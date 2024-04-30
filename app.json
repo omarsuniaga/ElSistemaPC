@@ -21,10 +21,17 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      }, 
+      "package": "com.omar_violin.elsistemapcosijpc"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "82f4e261-0d3c-47f6-b022-d541df8e57d6"
+      }
+    },
+    "owner": "omar_violin"
   }
 }
