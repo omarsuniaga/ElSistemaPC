@@ -1,0 +1,75 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "COMPASES",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "obraId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "instrumentosEstados.`Violin 2`",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "COMPASES",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "obraId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numero",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "COMPASES",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "obraId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "P",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "COMPASES",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "obraId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "Platillos",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "COMPASES",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "obraId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "Timpani",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

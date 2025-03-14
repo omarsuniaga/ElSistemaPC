@@ -1,0 +1,105 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function hasRole(role) {
+      return get(/databases/$(database)/documents/USERS/$(request.auth.uid)).data.role == role;
+    }
+
+    function isAdmin() {
+      return hasRole('Director') || hasRole('Admin');
+    }
+
+    function isTeacher() {
+      return hasRole('Maestro');
+    }
+
+    // Reglas para la colección USERS
+    match /USERS/{userId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == userId || isAdmin()
+      );
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && (
+        (request.auth.uid == userId && 
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['email', 'updatedAt'])) || 
+        isAdmin()
+      );
+    }
+
+    // Reglas para la colección MAESTROS
+    match /MAESTROS/{maestroId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && isAdmin();
+      allow delete: if request.auth != null && isAdmin();
+    }
+
+    // Reglas para la colección ALUMNOS
+    match /ALUMNOS/{alumnoId} {
+      allow read: if request.auth != null && (
+        isAdmin() || 
+        (isTeacher() && resource.data.teacherId == request.auth.uid)
+      );
+      allow create: if request.auth != null && (
+        isAdmin() || isTeacher()
+      );
+      allow update: if request.auth != null && (
+        isAdmin() || 
+        (isTeacher() && resource.data.teacherId == request.auth.uid)
+      );
+      allow delete: if request.auth != null && isAdmin();
+    }
+
+    // Reglas para la colección STUDENTS
+    match /STUDENTS/{studentId} {
+      allow read: if request.auth != null && (
+        isAdmin() || 
+        (isTeacher() && resource.data.teacherId == request.auth.uid)
+      );
+      allow create: if request.auth != null && (
+        isAdmin() || isTeacher()
+      );
+      allow update: if request.auth != null && (
+        isAdmin() || 
+        (isTeacher() && resource.data.teacherId == request.auth.uid)
+      );
+      allow delete: if request.auth != null && isAdmin();
+    }
+
+    // Reglas para profesores
+    match /teachers/{teacherId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // Reglas para asistencias
+    match /ATTENDANCE/{attendanceId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (
+        isAdmin() || 
+        (isTeacher() && resource.data.teacherId == request.auth.uid)
+      );
+    }
+
+    // Reglas para contenidos
+    match /contents/{contentId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (
+        hasRole('director') || 
+        hasRole('teacher')
+      );
+    }
+
+    // Reglas para clases
+    match /CLASSES/{classId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // Regla por defecto - denegar todo lo demás
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
