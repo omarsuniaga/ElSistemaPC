@@ -226,3 +226,4 @@ const handleCancel = () => {
   <div v-else class="py-6">
     <p>Estudiante no encontrado</p>
   </div>
+</template>

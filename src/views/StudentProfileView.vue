@@ -578,5 +578,6 @@ const handleDelete = () => {
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
