@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import type { Class } from '../types/class'
+// Importar directamente del services/classes.ts con nombres de funciones consistentes
 import { 
-  fetchClassesFromFirebase, 
-  addClass as addClassToFirebase, 
-  updateClass as updateClassToFirebase, 
-  deleteClass as deleteClassFromFirebase 
+  fetchClasses, 
+  addClass, 
+  updateClass, 
+  deleteClass 
 } from '../services/classes';
 
 interface ClassState {
@@ -24,7 +25,7 @@ export const useClassesStore = defineStore('classes', {
     async fetchClasses() {
       this.loading = true;
       try {
-        this.classes = await fetchClassesFromFirebase(); // Llama a la función de servicio
+        this.classes = await fetchClasses(); // Llama a la función del servicio
       } catch (error) {
         this.error = 'Error al cargar las clases';
         console.error(error);
@@ -41,7 +42,7 @@ export const useClassesStore = defineStore('classes', {
           id: String(Date.now()),
           studentIds: []
         }
-        await addClassToFirebase(newClass) 
+        await addClass(newClass) 
         this.classes.push(newClass)
         return newClass
       } catch (error) {
@@ -56,7 +57,7 @@ export const useClassesStore = defineStore('classes', {
     async updateClass(classData: Class) {
       this.loading = true
       try {
-        await updateClassToFirebase(classData)
+        await updateClass(classData)
         const index = this.classes.findIndex(c => c.id === classData.id)
         if (index !== -1) {
           this.classes[index] = classData
@@ -75,7 +76,7 @@ export const useClassesStore = defineStore('classes', {
     async deleteClass(id: string) {
       this.loading = true
       try {
-        await deleteClassFromFirebase(id)
+        await deleteClass(id)
         const index = this.classes.findIndex(c => c.id === id)
         if (index !== -1) {
           this.classes.splice(index, 1)
@@ -137,19 +138,6 @@ export const useClassesStore = defineStore('classes', {
       const classIndex = this.classes.findIndex(c => c.id === classId)
       if (classIndex !== -1) {
         this.classes[classIndex] = { ...this.classes[classIndex], studentIds }
-      }
-    },
-
-    async fetchClassesFromFirebase() {
-      this.loading = true
-      try {
-        const classes = await fetchClassesFromFirebase()
-        this.classes = classes
-      } catch (error) {
-        this.error = 'Error al cargar las clases'
-        console.error(error)
-      } finally {
-        this.loading = false
       }
     }
   }

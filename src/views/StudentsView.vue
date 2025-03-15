@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStudentsStore } from '../stores/students'
 import { PlusCircleIcon } from '@heroicons/vue/24/outline'
@@ -15,26 +15,36 @@ const studentToDelete = ref<string | null>(null)
 const error = ref<string | null>(null)
 const isDeleting = ref(false)
 
+// Computed property para ordenar estudiantes por apellido
+const sortedStudents = computed(() => {
+  return [...studentsStore.students].sort((a, b) => 
+    a.apellido.localeCompare(b.apellido)
+  )
+})
+
 onMounted(async () => {
   try {
     await studentsStore.fetchStudents()
   } catch (err: any) {
     console.error('❌ Error al cargar estudiantes:', err)
-    error.value = err.message
+    error.value = err.message || 'Error al cargar la lista de estudiantes'
   } finally {
     isLoading.value = false
   }
 })
 
 const handleView = (id: string) => {
+  if (!id) return
   router.push(`/students/${id}`)
 }
 
 const handleEdit = (id: string) => {
+  if (!id) return
   router.push(`/students/${id}/edit`)
 }
 
 const handleDelete = (id: string) => {
+  if (!id) return
   studentToDelete.value = id
   showDeleteModal.value = true
 }
@@ -47,11 +57,26 @@ const confirmDelete = async () => {
     await studentsStore.deleteStudent(studentToDelete.value)
     error.value = null
   } catch (err: any) {
-    error.value = err.message
+    error.value = err.message || 'Error al eliminar al estudiante'
   } finally {
     showDeleteModal.value = false
     studentToDelete.value = null
     isDeleting.value = false
+  }
+}
+
+// Función para recargar la lista de estudiantes
+const reloadStudents = async () => {
+  isLoading.value = true
+  error.value = null
+  
+  try {
+    await studentsStore.fetchStudents()
+  } catch (err: any) {
+    console.error('❌ Error al recargar estudiantes:', err)
+    error.value = err.message || 'Error al recargar la lista de estudiantes'
+  } finally {
+    isLoading.value = false
   }
 }
 </script>
@@ -82,7 +107,7 @@ const confirmDelete = async () => {
     >
       {{ error }}
       <button 
-        @click="studentsStore.fetchStudents()"
+        @click="reloadStudents"
         class="ml-2 text-sm underline hover:no-underline"
       >
         Reintentar
@@ -90,16 +115,16 @@ const confirmDelete = async () => {
     </div>
 
     <!-- Students List -->
-    <div v-else-if="studentsStore.students.length > 0" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-else-if="sortedStudents.length > 0" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <BaseCard
-        v-for="student in studentsStore.students"
+        v-for="student in sortedStudents"
         :key="student.id"
         :title="`${student.nombre} ${student.apellido}`"
-        :class="{'bg-pink-100': !student.grupo?.length}"
+        :class="{'bg-pink-100 dark:bg-pink-900/30': !student.grupo?.length}"
         class="relative"
         @click="handleView(student.id)"
         @edit="handleEdit(student.id)"
-        @delete="handleDelete(String(student.id))"
+        @delete="handleDelete(student.id)"
       >
         <template #header>
           <div class="flex items-center gap-4">
@@ -114,22 +139,27 @@ const confirmDelete = async () => {
               </h3>
               <div class="flex flex-wrap gap-1 mt-1">
                 <span 
-                  v-for="grupo in student.grupo"
+                  v-for="grupo in student.grupo || []"
                   :key="grupo"
                   class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full"
                 >
                   {{ grupo }}
+                </span>
+                <span 
+                  v-if="!student.grupo?.length"
+                  class="px-2 py-0.5 text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-200 rounded-full"
+                >
+                  Sin grupo asignado
                 </span>
               </div>
             </div>
           </div>
           <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
             <div class="grid grid-cols-2 gap-2">
-              <p><strong>Edad:</strong> {{ student.edad }} años</p>
-              <p><strong>Teléfono:</strong> {{ student.tlf }}</p>
-              <p class="col-span-2"><strong>Email:</strong> {{ student.email }}</p>
-              <p><strong>Instrumento:</strong> {{ student.instrumento }}</p>
-              <p><strong>Inscripción:</strong> {{ student.fecInscripcion }}</p>
+              <p><strong>{{ student.edad || "?" }}</strong> años</p>
+              <p>{{ student.tlf || "No disponible" }}</p>
+              <p>{{ student.instrumento || "Sin instrumento" }}</p>
+              <p><strong>Registrado</strong> {{ student.fecInscripcion || "Fecha no disponible" }}</p>
             </div>
           </div>
         </template>
@@ -146,13 +176,13 @@ const confirmDelete = async () => {
 
     <!-- Delete Confirmation Modal -->
     <ConfirmModal
-  v-if="showDeleteModal"
-  :show="showDeleteModal"
-  title="Eliminar Alumno"
-  message="¿Estás seguro que deseas eliminar este alumno? Esta acción no se puede deshacer."
-  :isLoading="isDeleting"
-  @confirm="confirmDelete"
-  @cancel="showDeleteModal = false"
-/>
+      v-if="showDeleteModal"
+      :show="showDeleteModal"
+      title="Eliminar Alumno"
+      message="¿Estás seguro que deseas eliminar este alumno? Esta acción no se puede deshacer."
+      :isLoading="isDeleting"
+      @confirm="confirmDelete"
+      @cancel="showDeleteModal = false"
+    />
   </div>
 </template>

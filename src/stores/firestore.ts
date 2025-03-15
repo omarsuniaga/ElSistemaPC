@@ -1,11 +1,19 @@
 import { defineStore } from 'pinia'
-import { db } from '../firebase'
-import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
-import type { Student } from '../types'
-
-// Nombre de la colección para las observaciones
-const OBSERVATIONS_COLLECTION = 'OBSERVACIONES'
+import { 
+  getCollection, 
+  getDocument, 
+  createDocument, 
+  updateDocument, 
+  deleteDocument,
+  FirestoreError
+} from '../services/firestore'
+import { getStudentsByClass } from '../services/firestore/studentsByClass'
+import { 
+  getObservations, 
+  addObservation, 
+  deleteObservation 
+} from '../services/firestore/observations'
 
 export const useFirestoreStore = defineStore('firestore', {
   state: () => ({
@@ -25,35 +33,30 @@ export const useFirestoreStore = defineStore('firestore', {
       this.error = null
 
       try {
-        let response
+        let response;
 
         switch (operation) {
           case 'getAll':
-            const querySnapshot = await getDocs(collection(db, collectionName))
-            response = querySnapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }))
+            response = await getCollection(collectionName)
             break
 
           case 'get':
             if (!id) throw new Error('ID es requerido para obtener un documento')
-            const docSnap = await getDoc(doc(db, collectionName, id))
-            response = docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null
+            response = await getDocument(collectionName, id)
             break
 
           case 'add':
-            const addedDoc = await addDoc(collection(db, collectionName), {
+            await createDocument(collectionName, {
               ...data,
               createdBy: auth.currentUser.uid,
               createdAt: new Date().toISOString()
             })
-            response = { id: addedDoc.id, ...data }
+            response = { id: data.id, ...data }
             break
 
           case 'update':
             if (!id) throw new Error('ID es requerido para actualizar')
-            await updateDoc(doc(db, collectionName, id), {
+            await updateDocument(collectionName, id, {
               ...data,
               updatedBy: auth.currentUser.uid,
               updatedAt: new Date().toISOString()
@@ -63,7 +66,7 @@ export const useFirestoreStore = defineStore('firestore', {
 
           case 'delete':
             if (!id) throw new Error('ID es requerido para eliminar')
-            await deleteDoc(doc(db, collectionName, id))
+            await deleteDocument(collectionName, id)
             response = { id }
             break
         }
@@ -86,16 +89,8 @@ export const useFirestoreStore = defineStore('firestore', {
       this.error = null
 
       try {
-        const q = query(
-          collection(db, 'ALUMNOS'),
-          where('grupo', 'array-contains', className)
-        )
-        const querySnapshot = await getDocs(q)
-        const students = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-
+        // Usamos el servicio específico para estudiantes por clase
+        const students = await getStudentsByClass(className)
         return students
       } catch (error) {
         console.error('Error getting students by class:', error)
@@ -106,52 +101,14 @@ export const useFirestoreStore = defineStore('firestore', {
       }
     },
 
-    // Nuevas funciones para manejar observaciones
+    // Funciones que usan el servicio de observaciones
     async getObservations(attendanceId: string) {
       this.isLoading = true
       this.error = null
 
       try {
-        // Intenta primero con la consulta ordenada
-        try {
-          const q = query(
-            collection(db, OBSERVATIONS_COLLECTION),
-            where('asistenciaId', '==', attendanceId),
-            orderBy('fecha', 'desc')
-          )
-          const querySnapshot = await getDocs(q)
-          return querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-        } catch (indexError: any) {
-          // Si el error es por falta de índice, usar consulta alternativa sin ordenamiento
-          if (indexError?.message?.includes('requires an index')) {
-            console.warn('Se requiere un índice para esta consulta. Usando consulta alternativa sin ordenamiento.')
-            console.warn('Cree el índice en: https://console.firebase.google.com/v1/r/project/orquestapuntacana/firestore/indexes')
-            
-            // Consulta alternativa sin ordenamiento
-            const q = query(
-              collection(db, OBSERVATIONS_COLLECTION),
-              where('asistenciaId', '==', attendanceId)
-            )
-            const querySnapshot = await getDocs(q)
-            const results = querySnapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }))
-            
-            // Ordenar manualmente los resultados
-            return results.sort((a, b) => {
-              const dateA = new Date(a.fecha).getTime()
-              const dateB = new Date(b.fecha).getTime()
-              return dateB - dateA // Orden descendente
-            })
-          } else {
-            // Si es otro tipo de error, relanzarlo
-            throw indexError
-          }
-        }
+        const observations = await getObservations(attendanceId)
+        return observations
       } catch (error) {
         console.error('Error al obtener observaciones:', error)
         this.error = error instanceof Error ? error.message : 'Error al obtener observaciones'
@@ -166,11 +123,8 @@ export const useFirestoreStore = defineStore('firestore', {
       this.error = null
 
       try {
-        const docRef = await addDoc(collection(db, OBSERVATIONS_COLLECTION), {
-          ...observation,
-          createdAt: new Date().toISOString()
-        })
-        return { id: docRef.id, ...observation }
+        const result = await addObservation(observation)
+        return result
       } catch (error) {
         console.error('Error al agregar observación:', error)
         this.error = error instanceof Error ? error.message : 'Error al agregar observación'
@@ -185,7 +139,7 @@ export const useFirestoreStore = defineStore('firestore', {
       this.error = null
 
       try {
-        await deleteDoc(doc(db, OBSERVATIONS_COLLECTION, observationId))
+        await deleteObservation(observationId)
         return { success: true }
       } catch (error) {
         console.error('Error al eliminar observación:', error)

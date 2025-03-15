@@ -1,16 +1,15 @@
-# Modal.vue
 <template>
   <Transition name="modal">
     <div v-if="show" class="modal-overlay" @click="$emit('close')">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3 class="modal-title">{{ title }}</h3>
-          <button class="modal-close" @click="$emit('close')">&times;</button>
+      <div class="modal-content dark:bg-gray-800" @click.stop>
+        <div class="modal-header dark:border-gray-700">
+          <h3 class="modal-title dark:text-gray-100">{{ title }}</h3>
+          <button class="modal-close dark:text-gray-400 dark:hover:text-gray-200" @click="$emit('close')">&times;</button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body dark:text-gray-200">
           <slot></slot>
         </div>
-        <div v-if="$slots.footer" class="modal-footer">
+        <div v-if="$slots.footer" class="modal-footer dark:border-gray-700">
           <slot name="footer"></slot>
         </div>
       </div>
@@ -41,6 +40,7 @@ defineEmits<{
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  backdrop-filter: blur(2px);
 }
 
 .modal-content {
@@ -51,6 +51,7 @@ defineEmits<{
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .modal-header {
@@ -65,6 +66,7 @@ defineEmits<{
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
+  color: #1f2937; /* gray-800 */
 }
 
 .modal-close {
@@ -75,15 +77,18 @@ defineEmits<{
   padding: 0.5rem;
   color: #64748b;
   transition: color 0.2s;
+  border-radius: 9999px;
 }
 
 .modal-close:hover {
   color: #334155;
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .modal-body {
   padding: 1rem;
   overflow-y: auto;
+  color: #374151; /* gray-700 */
 }
 
 .modal-footer {
@@ -94,15 +99,44 @@ defineEmits<{
   gap: 0.5rem;
 }
 
+/* Soporte para modo oscuro a través de CSS Variables */
+@media (prefers-color-scheme: dark) {
+  .modal-content {
+    background-color: var(--dark-bg, #1f2937);
+  }
+
+  .modal-title {
+    color: var(--dark-text, #f9fafb);
+  }
+
+  .modal-body {
+    color: var(--dark-text-secondary, #e5e7eb);
+  }
+
+  .modal-header, .modal-footer {
+    border-color: var(--dark-border, #374151);
+  }
+
+  .modal-close {
+    color: var(--dark-text-secondary, #9ca3af);
+  }
+
+  .modal-close:hover {
+    color: var(--dark-text, #f9fafb);
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
 /* Transiciones */
 .modal-enter-active,
 .modal-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .modal-enter-from,
 .modal-leave-to {
   opacity: 0;
+  transform: scale(0.95);
 }
 </style>
 

@@ -27,7 +27,7 @@ import {
       return querySnapshot.docs.map(doc => {
         const data = doc.data() as Omit<Class, 'id'>;
         return {
-          id: doc.id,
+          id: Number(doc.id),
           ...data
         };
       });
@@ -51,7 +51,7 @@ import {
           return querySnapshot.docs.map(doc => {
             const data = doc.data() as Omit<Class, 'id'>;
             return {
-              id: doc.id,
+              id: Number(doc.id),
               ...data
             };
           });
@@ -124,10 +124,9 @@ import {
           id: Number(doc.id),
           ...data
         };
-      }) as Class[];
+      });
     } catch (error) {
       console.error('Error finding classes by instructor:', error);
       throw error;
     }
   };
-  

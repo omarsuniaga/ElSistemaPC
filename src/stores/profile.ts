@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { useColorMode } from '@vueuse/core'
 import type { UserProfile, UserSettings, Achievement, Notification, ActivityLog } from '../types'
+import { initializeApp } from 'firebase/app'
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'
 
 // Demo profile with complete data structure
 const demoProfile: UserProfile = {
@@ -316,6 +318,41 @@ export const useProfileStore = defineStore('profile', {
         userId: this.profile.id,
         createdAt: new Date().toISOString()
       })
+    },
+
+    // Fetch user directly from Firestore
+    async fetchUserFromFirestore(userId) {
+      try {
+        const db = getFirestore()
+        const userRef = doc(db, 'USERS', userId)
+        const userDoc = await getDoc(userRef)
+        
+        if (userDoc.exists()) {
+          return userDoc.data()
+        }
+        return null
+      } catch (error) {
+        console.error('Error fetching user from Firestore:', error)
+        throw error
+      }
+    },
+    
+    // Save user data to Firestore
+    async saveUserToFirestore(userData) {
+      try {
+        if (!this.authStore.currentUser?.uid) {
+          throw new Error('No user ID available')
+        }
+        
+        const db = getFirestore()
+        const userRef = doc(db, 'USERS', this.authStore.currentUser.uid)
+        await setDoc(userRef, userData, { merge: true })
+        
+        return true
+      } catch (error) {
+        console.error('Error saving user to Firestore:', error)
+        throw error
+      }
     }
   }
 })
