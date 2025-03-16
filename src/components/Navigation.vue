@@ -5,7 +5,6 @@ import {
   UserGroupIcon, 
   AcademicCapIcon, 
   ClipboardDocumentCheckIcon, 
-  BookOpenIcon,
   UserCircleIcon,
   BookmarkSquareIcon,
   ViewColumnsIcon,
@@ -28,10 +27,8 @@ const navigation = computed(() => {
     { name: 'Inicio', icon: MusicalNoteIcon, to: '/', ariaLabel: 'Ir a la página principal' },
     { name: 'Alumnos', icon: UserGroupIcon, to: '/students', ariaLabel: 'Ir a gestión de alumnos' },
     { name: 'Maestros', icon: AcademicCapIcon, to: '/teachers', ariaLabel: 'Ir a gestión de maestros' },
-    { name: 'Clases', icon: BookmarkSquareIcon, to: '/classes', ariaLabel: 'Ir a gestión de clases' },
-    { name: 'Lienzo', icon: ViewColumnsIcon, to: '/workspace', ariaLabel: 'Ir al área de trabajo' },
     { name: 'Asistencias', icon: ClipboardDocumentCheckIcon, to: '/attendance', ariaLabel: 'Ir a control de asistencias' },
-    { name: 'Contenidos', icon: BookOpenIcon, to: '/contents', ariaLabel: 'Ir a gestión de contenidos' },
+    { name: 'Clases', icon: BookmarkSquareIcon, to: '/classes', ariaLabel: 'Ir a gestión de clases' },
     { name: 'Perfil', icon: UserCircleIcon, to: '/profile', ariaLabel: 'Ir a tu perfil' },
   ]
 
@@ -44,15 +41,15 @@ const navigation = computed(() => {
     class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-50"
     aria-label="Navegación principal"
   >
-    <div class="container mx-auto px-4">
-      <div class="flex justify-around py-3">
+    <div class="container mx-auto px-2">
+      <div class="flex justify-around py-1">
         <router-link
           v-for="item in navigation"
           :key="item.name"
           :to="item.to"
           :aria-label="item.ariaLabel"
           :aria-current="isActive(item.to) ? 'page' : undefined"
-          class="flex flex-col items-center p-2 rounded-md transition-all duration-200 relative"
+          class="flex flex-col items-center  rounded-md transition-all duration-200 relative"
           :class="[
             isActive(item.to)
               ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'

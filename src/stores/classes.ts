@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
 import type { Class } from '../types/class'
-// Importar directamente del services/classes.ts con nombres de funciones consistentes
 import { 
-  fetchClasses, 
-  addClass, 
-  updateClass, 
-  deleteClass 
-} from '../services/classes';
+  fetchClasses as fetchClassesService,
+  addClass as addClassService, 
+  updateClass as updateClassService, 
+  deleteClass as deleteClassService
+} from '../services/classes'
+import { getFromLocalStorage, saveToLocalStorage } from '../utils/localStorageUtils'
 
 interface ClassState {
   classes: Class[]
@@ -21,16 +21,41 @@ export const useClassesStore = defineStore('classes', {
     error: null
   }),
 
+  getters: {
+    getClasses: (state): Class[] => state.classes,
+    getClassById: (state) => (id: string): Class | undefined => 
+      state.classes.find(c => c.id === id)
+  },
+
   actions: {
     async fetchClasses() {
-      this.loading = true;
+      this.loading = true
       try {
-        this.classes = await fetchClasses(); // Llama a la función del servicio
+        // Try to get from localStorage first in development
+        if (process.env.NODE_ENV === 'development') {
+          const cachedClasses = getFromLocalStorage('classes')
+          if (cachedClasses) {
+            this.classes = cachedClasses
+            return cachedClasses
+          }
+        }
+
+        // If no cache or production, fetch from service
+        const classes = await fetchClassesService()
+        this.classes = classes
+
+        // Cache in development
+        if (process.env.NODE_ENV === 'development') {
+          saveToLocalStorage('classes', classes)
+        }
+
+        return classes
       } catch (error) {
-        this.error = 'Error al cargar las clases';
-        console.error(error);
+        this.error = 'Error al cargar las clases'
+        console.error(error)
+        throw error
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
 
@@ -42,7 +67,7 @@ export const useClassesStore = defineStore('classes', {
           id: String(Date.now()),
           studentIds: []
         }
-        await addClass(newClass) 
+        await addClassService(newClass) 
         this.classes.push(newClass)
         return newClass
       } catch (error) {
@@ -57,7 +82,7 @@ export const useClassesStore = defineStore('classes', {
     async updateClass(classData: Class) {
       this.loading = true
       try {
-        await updateClass(classData)
+        await updateClassService(classData)
         const index = this.classes.findIndex(c => c.id === classData.id)
         if (index !== -1) {
           this.classes[index] = classData
@@ -76,7 +101,7 @@ export const useClassesStore = defineStore('classes', {
     async deleteClass(id: string) {
       this.loading = true
       try {
-        await deleteClass(id)
+        await deleteClassService(id)
         const index = this.classes.findIndex(c => c.id === id)
         if (index !== -1) {
           this.classes.splice(index, 1)
@@ -95,12 +120,11 @@ export const useClassesStore = defineStore('classes', {
     async addStudentToClass(classId: string, studentId: string) {
       this.loading = true
       try {
-        // Simulated API call
-        await new Promise(resolve => setTimeout(resolve, 500))
         const index = this.classes.findIndex((c: Class) => c.id === classId)
         if (index !== -1) {
           if (!this.classes[index].studentIds.includes(studentId)) {
             this.classes[index].studentIds.push(studentId)
+            await this.updateClass(this.classes[index])
             return true
           }
         }
@@ -117,11 +141,10 @@ export const useClassesStore = defineStore('classes', {
     async removeStudentFromClass(classId: string, studentId: string) {
       this.loading = true
       try {
-        // Simulated API call
-        await new Promise(resolve => setTimeout(resolve, 500))
         const index = this.classes.findIndex((c: Class) => c.id === classId)
         if (index !== -1) {
           this.classes[index].studentIds = this.classes[index].studentIds.filter(id => id !== studentId)
+          await this.updateClass(this.classes[index])
           return true
         }
         throw new Error('Clase no encontrada')

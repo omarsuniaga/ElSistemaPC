@@ -1,0 +1,41 @@
+export interface QualificationCard {
+    id: string
+    classId: string
+    title: string
+    description?: string
+    locked: boolean
+    hideProgress: boolean
+    indicators: QualificationIndicator[]
+    comments?: string
+    createdAt?: Date
+    updatedAt?: Date
+  }
+  
+  export interface QualificationIndicator {
+    id: string
+    name: string
+    value: number
+    maxValue: number
+  }
+
+    export interface QualificationIndicatorCard {
+        id: string
+        name: string
+        value: number
+        maxValue: number
+    }
+
+    export interface QualificationCardForm {
+        id: string
+        classId: string
+        title: string
+        description?: string
+        locked: boolean
+        hideProgress: boolean
+        indicators: QualificationIndicatorCard[]
+        comments?: string
+        createdAt?: Date
+        updatedAt?: Date
+    }
+
+    

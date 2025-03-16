@@ -1,9 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
-// Rutas públicas que no requieren autenticación
-const publicRoutes = ['Login', 'Register', 'ForgotPassword']
-
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -137,7 +134,7 @@ const router = createRouter({
 })
 
 // Navigation guard global
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
   const isPublicRoute = to.meta.public
   

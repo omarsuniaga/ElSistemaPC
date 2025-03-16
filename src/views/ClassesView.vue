@@ -18,7 +18,8 @@ import StudentSelector from '../components/StudentSelector.vue'
 import {
   PlusCircleIcon,
   UserGroupIcon,
-  TrashIcon
+  TrashIcon,
+  BookOpenIcon
 } from '@heroicons/vue/24/outline'
 
 // Tipo de datos
@@ -297,6 +298,14 @@ watch([successMessage, errorMessage], clearMessages)
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Grupos y Clases</h1>
         <button 
+          @click="$router.push('/contents')" 
+          class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center gap-2"
+          :disabled="isLoading"
+        >
+          <BookOpenIcon class="w-5 h-5" />
+          <span>Ir a Contenidos</span>
+        </button>
+        <button 
           @click="showAddModal = true" 
           class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center gap-2"
           :disabled="isLoading"
@@ -355,6 +364,7 @@ watch([successMessage, errorMessage], clearMessages)
             <PlusCircleIcon class="h-5 w-5" />
             <span>Crear nuevo grupo</span>
           </button>
+         
         </div>
       </div>
     </div>

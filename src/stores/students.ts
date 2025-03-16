@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { useAuthStore } from './auth'
 import type { Student } from '../types'
 import * as studentService from '../services/firestore/students'
 
@@ -9,6 +8,18 @@ export const useStudentsStore = defineStore('students', {
     isLoading: false,
     error: null as string | null
   }),
+
+  getters: {
+    getStudentById: (state) => (id: string) => {
+      return state.students.find(student => student.id === id)
+    },
+    
+    getStudentsByClass: (state) => (className: string) => {
+      return state.students.filter(student => 
+        Array.isArray(student.grupo) && student.grupo.includes(className)
+      )
+    }
+  },
 
   actions: {
     async fetchStudents() {
@@ -47,35 +58,25 @@ export const useStudentsStore = defineStore('students', {
     },
 
     async updateStudent(id: string, student: Partial<Student>) {
-      this.isLoading = true;
-      this.error = null;
+      this.isLoading = true
+      this.error = null
 
       try {
-        // Verificar que el id sea un string
-        if (typeof id !== 'string') {
-          throw new Error('El ID debe ser un string');
-        }
-
-        // Verificar que student tenga la estructura correcta
-        if (student && typeof student.grupo !== 'undefined' && !Array.isArray(student.grupo)) {
-          throw new Error('La propiedad grupo debe ser un array');
-        }
-
-        await studentService.updateStudent(id, student);
-        const index = this.students.findIndex(s => s.id === id);
+        await studentService.updateStudent(id, student)
+        const index = this.students.findIndex(s => s.id === id)
         if (index !== -1) {
           this.students[index] = {
             ...this.students[index],
             ...student
-          };
+          }
         }
-        return true;
+        return true
       } catch (error: any) {
-        console.error(`❌ Error al actualizar estudiante ${id}:`, error);
-        this.error = error.message;
-        throw error;
+        console.error(`❌ Error al actualizar estudiante ${id}:`, error)
+        this.error = error.message
+        throw error
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     },
 
@@ -94,21 +95,6 @@ export const useStudentsStore = defineStore('students', {
       } finally {
         this.isLoading = false
       }
-    },
-
-    getStudentsByClass(className: string): Student[] {
-      // Primero intentamos buscar por la propiedad 'clase'
-      const studentsByClase = this.students.filter(student => student.clase === className);
-      if (studentsByClase.length > 0) {
-        return studentsByClase;
-      }
-      
-      // Si no encontramos estudiantes, buscamos por la propiedad 'grupo'
-      return this.students.filter(student => 
-        student.grupo && 
-        Array.isArray(student.grupo) && 
-        student.grupo.includes(className)
-      );
     }
   }
 })

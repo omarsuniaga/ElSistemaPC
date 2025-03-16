@@ -1,12 +1,19 @@
 <template>
   <div class="space-y-4">
     <div class="flex justify-end gap-1 sm:gap-2 mt-4">
+      <button 
+        @click="$router.push('/workspace')"
+        class="btn btn-primary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+      >
+        <ViewColumnsIcon class="w-5 h-5" />
+        Area de Trabajo
+      </button>
       <button class="btn btn-primary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm" @click="emit('update-status', 'all', 'save')">
         <ArrowDownOnSquareIcon class="w-3 h-3 sm:w-4 sm:h-4" />
         <span class="hidden xs:inline">Guardar</span>
         <span class="xs:hidden">G</span>
       </button>
-      <button class="btn btn-secondary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+      <button class="btn btn-secondary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm" @click="emit('open-export')">
         <ArrowDownTrayIcon class="w-3 h-3 sm:w-4 sm:h-4" />
         <span class="hidden xs:inline">Exportar</span>
         <span class="xs:hidden">E</span>
@@ -132,6 +139,7 @@ import type { Student, AttendanceStatus } from '../types'
 import {
   CheckCircleIcon,
   XCircleIcon,
+  ViewColumnsIcon,
   ClockIcon,
   DocumentCheckIcon,
   ChatBubbleLeftRightIcon,
@@ -149,6 +157,7 @@ const emit = defineEmits<{
   (e: 'update-status', studentId: string, status: AttendanceStatus | 'save'): void;
   (e: 'open-observation', student: Student | null): void;
   (e: 'open-justification', student: Student): void;
+  (e: 'open-export'): void;
 }>()
 
 // Funciones de utilidad

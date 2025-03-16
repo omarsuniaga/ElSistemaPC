@@ -15,6 +15,11 @@ import DateClassSelector from '../components/DateClassSelector.vue'
 import JustifiedAbsenceModal from '../components/JustifiedAbsenceModal.vue'
 import AttendanceExportModal from '../components/AttendanceExportModal.vue'
 
+// Router
+import { useRouter, useRoute } from 'vue-router'
+const router = useRouter()
+const route = useRoute()
+
 // Stores
 import { useAttendanceStore } from '../stores/attendance'
 import { useStudentsStore } from '../stores/students'
@@ -103,6 +108,7 @@ const selectDate = (date: string) => {
   view.value = 'class-select'
 }
 
+// Cargar datos iniciales y verificar si hay una clase en la URL
 async function fetchInitialData() {
   try {
     isLoading.value = true
@@ -114,12 +120,51 @@ async function fetchInitialData() {
       instrumentoStore.fetchInstrumentos()
     ])
     
+    // Verificar si existe una clase en la URL y cargarla
+    const classFromUrl = route.query.class as string
+    if (classFromUrl) {
+      selectedClass.value = classFromUrl
+      attendanceStore.selectedClass = classFromUrl
+      
+      await loadAttendanceData(classFromUrl)
+      view.value = 'attendance-form'
+    }
+    
     // Establecer estado inicial
     isLoading.value = false
     error.value = null
   } catch (err) {
     error.value = 'Error al cargar los datos iniciales'
     console.error('Error loading initial data:', err)
+  } finally {
+    isLoading.value = false
+    loadingMessage.value = ''
+  }
+}
+
+// Función para cargar datos de asistencia para una clase específica
+const loadAttendanceData = async (className: string) => {
+  try {
+    isLoading.value = true
+    loadingMessage.value = 'Cargando datos de asistencia...'
+    
+    await attendanceStore.fetchAttendance()
+
+    // Inicializar todos los estudiantes con estado 'Ausente' por defecto
+    const studentsInClass = studentsStore.getStudentsByClass(className)
+    studentsInClass.forEach(student => {
+      if (!attendanceStore.attendanceRecords[student.id]) {
+        attendanceStore.attendanceRecords[student.id] = 'Ausente'
+      }
+    })
+
+    // Actualizar analytics después de cargar los datos
+    await attendanceStore.updateAnalytics()
+    
+    return true
+  } catch (err) {
+    console.error('Error loading attendance data:', err)
+    return false
   } finally {
     isLoading.value = false
     loadingMessage.value = ''
@@ -136,41 +181,43 @@ const selectClass = async (className: string) => {
     selectedClass.value = className
     attendanceStore.selectedClass = className
     
-    isLoading.value = true
-    loadingMessage.value = 'Cargando datos de asistencia...'
+    // Actualizar la URL con la clase seleccionada
+    await router.push({ query: { class: className } })
     
-    await Promise.all([
-      classesStore.fetchClasses(),
-      studentsStore.fetchStudents(),
-      attendanceStore.fetchAttendance()
-    ])
-
-    // Inicializar todos los estudiantes con estado 'Ausente' por defecto
-    const studentsInClass = studentsStore.getStudentsByClass(className)
-    studentsInClass.forEach(student => {
-      if (!attendanceStore.attendanceRecords[student.id]) {
-        attendanceStore.attendanceRecords[student.id] = 'Ausente'
-      }
-    })
-
-    // Actualizar analytics después de cargar los datos
-    await attendanceStore.updateAnalytics()
+    // Cargar datos de asistencia para la clase seleccionada
+    const success = await loadAttendanceData(className)
     
-    // Cambiar a la vista de formulario de asistencia
-    view.value = 'attendance-form'
+    if (success) {
+      // Cambiar a la vista de formulario de asistencia
+      view.value = 'attendance-form'
+    } else {
+      error.value = 'Error al cargar los datos de asistencia'
+    }
   } catch (err) {
-    error.value = 'Error al cargar los datos iniciales'
-    console.error('Error loading initial data:', err)
-  } finally {
-    isLoading.value = false
-    loadingMessage.value = ''
+    error.value = 'Error al cargar los datos de la clase'
+    console.error('Error selecting class:', err)
   }
 }
 
+// Iniciar carga de datos al montar el componente
 onMounted(fetchInitialData)
+
+// Observar cambios en los filtros de reportes
 watch(reportFilters, () => {
   // Reiniciar paginación o actualizar vista de reporte
 }, { deep: true })
+
+// Observar cambios en la ruta
+watch(() => route.query.class, (newClass) => {
+  const classFromUrl = newClass as string
+  if (classFromUrl && classFromUrl !== selectedClass.value) {
+    selectedClass.value = classFromUrl
+    attendanceStore.selectedClass = classFromUrl
+    loadAttendanceData(classFromUrl).then(() => {
+      view.value = 'attendance-form'
+    })
+  }
+})
 
 // Mantener un registro local de cambios de asistencia
 const pendingAttendanceChanges = ref<{studentId: string, status: AttendanceStatus}[]>([])
@@ -319,6 +366,21 @@ const createNewAttendance = () => {
   selectedDate.value = getCurrentDate()
   view.value = 'class-select'
 }
+
+// Event handlers para abrir modales
+const handleOpenJustification = (student: any) => {
+  selectedStudentForJustification.value = student ? { id: student.id, nombre: student.nombre, apellido: student.apellido } : null
+  showJustifiedAbsenceModal.value = true
+}
+
+const handleOpenObservation = (student: any) => {
+  selectedStudentForObs.value = student
+  showObservationsModal.value = true
+}
+
+const handleOpenExport = () => {
+  showExportModal.value = true
+}
 </script>
 
 <template>
@@ -417,10 +479,9 @@ const createNewAttendance = () => {
             :students="studentsStore.getStudentsByClass(selectedClass)" 
             :attendanceRecords="attendanceStore.attendanceRecords"
             @update-status="handleUpdateStatus"
-            @open-justification="student => {
-              selectedStudentForJustification = student ? { id: student.id, nombre: student.nombre, apellido: student.apellido } : null
-              showJustifiedAbsenceModal = true
-            }"
+            @open-justification="handleOpenJustification"
+            @open-observation="handleOpenObservation"
+            @open-export="handleOpenExport"
           />
         </div>
       </div>

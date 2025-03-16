@@ -1,11 +1,15 @@
 import { defineStore } from 'pinia'
-import { format, parseISO, isWithinInterval, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns'
-import { es } from 'date-fns/locale'
-import type { AttendanceRecord, AttendanceStatus, AttendanceAnalytics, Attendance } from '../types'
-import AttendanceStats from '../components/AttendanceStats.vue'
-import { updateAttendance } from '../services/attendance';
-import { getAttendances, addAttendance, updateAttendanceWithJustification } from '../services/attendance';
+import { format, parseISO, eachDayOfInterval } from 'date-fns'
+import type { AttendanceRecord, AttendanceStatus, AttendanceAnalytics } from '../types'
+import { updateAttendance, getAttendances, updateAttendanceWithJustification } from '../services/attendance'
+import { useClassesStore } from './classes'
+import type { Class } from '../types/class'
 
+interface Schedule {
+  days: string[];
+  startTime: string;
+  endTime: string;
+}
 
 export const useAttendanceStore = defineStore('attendance', {
   state: () => ({
@@ -113,18 +117,18 @@ export const useAttendanceStore = defineStore('attendance', {
     getClassScheduleDays: () => {
       return (className: string) => {
         const classesStore = useClassesStore()
-        const class_ = classesStore.classes.find(c => c.name === className)
+        const classData = classesStore.classes.find(c => c.name === className) as Class | undefined
         
-        if (!class_) return []
+        if (!classData) return []
 
-        // Parse schedule string to get days
-        if (typeof class_.schedule === 'string') {
-          // Example format: "Lunes y Miércoles 15:00-17:00"
-          const schedule = class_.schedule.toLowerCase()
+        // Parse schedule depending on its type
+        if (typeof classData.schedule === 'string') {
+          const schedule = String(classData.schedule).toLowerCase()
           const days = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
-          return days.filter(day => schedule.toLowerCase().includes(day))
-        } else if (class_.schedule && Array.isArray(class_.schedule.days)) {
-          return class_.schedule.days
+          return days.filter(day => schedule.includes(day))
+        } else if (classData.schedule && 'days' in classData.schedule) {
+          const schedule = classData.schedule as Schedule
+          return schedule.days
         }
         return []
       }
@@ -172,33 +176,46 @@ export const useAttendanceStore = defineStore('attendance', {
   },
   
   actions: {
+    setSelectedClass(classId: string) {
+      this.selectedClass = classId
+    },
+
     async fetchAttendance() {
       this.isLoading = true
       this.error = null
       try {
-        // Consultar los registros de asistencia desde el servicio
-        const attendances = await getAttendances();
-        this.records = attendances;
-        // Manejar el caso de no registros
-        if (this.records.length === 0 && import.meta.env.DEV) {
-          console.log('No hay registros de asistencia');
-        }
+        const attendances = await getAttendances()
+        this.records = attendances
       } catch (error) {
-        this.error = 'Error al cargar las asistencias';
-        console.error(error);
+        this.error = 'Error al cargar las asistencias'
+        console.error(error)
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     },
 
-    async saveAttendance(records: AttendanceRecord[]) {
-      await addAttendance(records);
-      this.fetchAttendance();
+    async saveAttendance(record: AttendanceRecord) {
+      this.isLoading = true
+      try {
+        await updateAttendance({
+          studentId: record.studentId,
+          classId: record.classId,
+          Fecha: record.Fecha,
+          status: record.status,
+          justification: record.justification
+        })
+        await this.fetchAttendance()
+      } catch (error) {
+        this.error = 'Error al guardar la asistencia'
+        console.error(error)
+      } finally {
+        this.isLoading = false
+      }
     },
 
     async updateAttendance(record: AttendanceRecord) {
-      this.isLoading = true;
-      this.error = null;
+      this.isLoading = true
+      this.error = null
 
       try {
         await updateAttendance({
@@ -207,17 +224,17 @@ export const useAttendanceStore = defineStore('attendance', {
           Fecha: record.Fecha,
           status: record.status,
           justification: record.justification,
-        } as Attendance);
-        // Actualizar el estado global después de la actualización
-        const updatedRecord = this.records.find(r => r.id === record.id);
+        })
+        // Update global state after update
+        const updatedRecord = this.records.find(r => r.id === record.id)
         if (updatedRecord) {
-          Object.assign(updatedRecord, record);
+          Object.assign(updatedRecord, record)
         }
       } catch (error) {
-        this.error = 'Error al actualizar la asistencia';
-        console.error(error);
+        this.error = 'Error al actualizar la asistencia'
+        console.error(error)
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     },
     
@@ -231,20 +248,20 @@ export const useAttendanceStore = defineStore('attendance', {
     },
     
     async updateAttendanceWithJustification(studentId: string, date: string, classId: string, reason: string, file: File | null) {
-      this.isLoading = true;
-      this.error = null;
+      this.isLoading = true
+      this.error = null
 
       try {
-        const result = await updateAttendanceWithJustification(studentId, date, classId, reason, file);
+        const result = await updateAttendanceWithJustification(studentId, date, classId, reason, file)
         // Almacenar la respuesta en el estado global si es necesario
         if (result) {
-          console.log('Justificación actualizada con éxito');
+          console.log('Justificación actualizada con éxito')
         }
       } catch (error) {
-        this.error = 'Error al actualizar la justificación';
-        console.error(error);
+        this.error = 'Error al actualizar la justificación'
+        console.error(error)
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     },
     
@@ -305,13 +322,13 @@ export const useAttendanceStore = defineStore('attendance', {
     },
     
     async fetchAnalytics() {
-      console.log('El método está en construcción: fetchAnalytics');
+      console.log('El método está en construcción: fetchAnalytics')
       // Lógica para obtener analytics
     },
     
     async fetchJustifications() {
-      console.log('El método está en construcción: fetchJustifications');
+      console.log('El método está en construcción: fetchJustifications')
       // Lógica para obtener justificaciones
-    },
+    }
   }
 })

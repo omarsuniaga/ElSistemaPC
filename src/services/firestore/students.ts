@@ -1,13 +1,15 @@
 import { db } from '../../firebase'
 import { 
   collection, 
-  getDocs, 
+  getDocs,
   doc, 
   getDoc, 
   addDoc, 
   updateDoc, 
   deleteDoc, 
-  serverTimestamp
+  serverTimestamp,
+  query,
+  orderBy
 } from 'firebase/firestore'
 import type { Student } from '../../types'
 
@@ -16,11 +18,12 @@ const COLLECTION_NAME = 'ALUMNOS'
 export const getStudents = async (): Promise<Student[]> => {
   try {
     console.log('🔄 Consultando estudiantes en Firestore...')
-    const querySnapshot = await getDocs(collection(db, COLLECTION_NAME))
+    const q = query(collection(db, COLLECTION_NAME), orderBy('apellido'))
+    const querySnapshot = await getDocs(q)
     console.log(`✅ Estudiantes recuperados: ${querySnapshot.size}`)
     
     const students = querySnapshot.docs.map(doc => {
-      const data = doc.data();
+      const data = doc.data()
       return {
         id: doc.id,
         nombre: data.nombre || '',

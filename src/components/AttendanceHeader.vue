@@ -68,17 +68,18 @@ import {
   ChartBarIcon,
   DocumentTextIcon,
   ArrowDownTrayIcon,
-  PlusCircleIcon
+  PlusCircleIcon,
+  
 } from '@heroicons/vue/24/outline'
 
-const props = defineProps<{
+defineProps<{
   selectedDate?: string
   selectedClass?: string
   view: 'calendar' | 'class-select' | 'attendance-form'
   showAnalytics: boolean
 }>()
 
-const emit = defineEmits<{
+defineEmits<{
   (e: 'change-view', view: 'calendar' | 'class-select' | 'attendance-form'): void
   (e: 'toggle-analytics'): void
   (e: 'open-report-modal'): void

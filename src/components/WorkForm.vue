@@ -79,9 +79,13 @@ const removeInstrument = (id: number) => {
 const addMeasureToInstrument = (instrumentId: number) => {
   const instrument = formData.value.instruments.find(i => i.id === instrumentId)
   if (instrument) {
+    const nextId = Math.max(0, ...instrument.measures.map(m => m.id)) + 1;
     instrument.measures.push({
-      id: Math.max(0, ...instrument.measures.map(m => m.id)) + 1,
+      id: nextId,
+      number: nextId,
       progress: 0,
+      difficulty: "easy",
+      notes: "",
       studentProgress: {}
     })
   }
