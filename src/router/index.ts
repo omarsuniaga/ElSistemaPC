@@ -100,6 +100,13 @@ const router = createRouter({
       meta: { title: 'Asistencia' }
     },
     {
+      path: '/attendance/:date/:classId',
+      name: 'AttendanceDetail',
+      component: () => import('../views/AttendanceView.vue'),
+      meta: { title: 'Registro de Asistencia' },
+      props: true
+    },
+    {
       path: '/contents',
       name: 'Contents',
       component: () => import('../views/ContentsView.vue'),

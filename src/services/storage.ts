@@ -1,101 +1,128 @@
-import { storage } from '../firebase'
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
-import { useAuthStore } from '../stores/auth'
+/**
+ * Firebase Storage utility service
+ */
+import { 
+  getStorage, 
+  ref, 
+  uploadBytesResumable, 
+  getDownloadURL,
+  deleteObject,
+  type UploadTaskSnapshot
+} from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
 
-const ALLOWED_FILE_TYPES = {
-  images: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-  documents: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-  audio: ['audio/mpeg', 'audio/wav', 'audio/ogg'],
-  scores: ['application/pdf', 'application/xml', 'text/xml']
+/**
+ * UploadOptions interface
+ */
+interface UploadOptions {
+  path: string;
+  file: File;
+  metadata?: {
+    contentType?: string;
+    customMetadata?: Record<string, string>;
+  };
+  onProgress?: (progress: number, snapshot: UploadTaskSnapshot) => void;
+  generateUniqueName?: boolean;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
-
-export class StorageError extends Error {
-  constructor(message: string, public code?: string) {
-    super(message)
-    this.name = 'StorageError'
+/**
+ * Upload a file to Firebase Storage
+ * @param options Upload configuration options
+ * @returns Promise resolving to the download URL
+ */
+export const uploadFile = async (options: UploadOptions): Promise<string> => {
+  const { path, file, metadata, onProgress, generateUniqueName = true } = options;
+  
+  // Get current user ID for security checks
+  const auth = getAuth();
+  const userId = auth.currentUser?.uid;
+  
+  if (!userId) {
+    throw new Error('Usuario no autenticado');
   }
-}
-
-export const validateFile = (file: File, types: keyof typeof ALLOWED_FILE_TYPES) => {
-  if (!file) {
-    throw new StorageError('No se ha seleccionado ningún archivo')
+  
+  // Validate file
+  if (file.size > 10 * 1024 * 1024) { // 10MB limit
+    throw new Error('El archivo no puede superar los 10MB');
   }
-
-  if (file.size > MAX_FILE_SIZE) {
-    throw new StorageError('El archivo excede el tamaño máximo permitido (10MB)')
+  
+  // Create file path with optional unique name
+  let filePath = path;
+  if (generateUniqueName) {
+    const fileExtension = file.name.split('.').pop() || '';
+    const uniqueName = `${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+    filePath = `${path}/${uniqueName}${fileExtension ? `.${fileExtension}` : ''}`;
   }
+  
+  // Create storage reference
+  const storage = getStorage();
+  const storageRef = ref(storage, filePath);
+  
+  // Start upload with custom metadata
+  const uploadTask = uploadBytesResumable(storageRef, file, {
+    contentType: file.type,
+    customMetadata: {
+      uploadedBy: userId,
+      originalName: file.name,
+      ...metadata?.customMetadata
+    },
+    ...metadata
+  });
+  
+  // Return promise that resolves when upload completes
+  return new Promise((resolve, reject) => {
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        if (onProgress) {
+          onProgress(progress, snapshot);
+        }
+      },
+      (error) => {
+        console.error('Upload failed:', error);
+        reject(new Error('Error al subir el archivo. Intente nuevamente.'));
+      },
+      async () => {
+        try {
+          // Get download URL
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadURL);
+        } catch (error) {
+          console.error('Failed to get download URL:', error);
+          reject(new Error('Error al obtener la URL del archivo.'));
+        }
+      }
+    );
+  });
+};
 
-  if (!ALLOWED_FILE_TYPES[types].includes(file.type)) {
-    throw new StorageError(`Tipo de archivo no permitido. Tipos permitidos: ${ALLOWED_FILE_TYPES[types].join(', ')}`)
+/**
+ * Delete a file from Firebase Storage
+ * @param fileUrl Full URL of the file to delete
+ */
+export const deleteFile = async (fileUrl: string): Promise<void> => {
+  if (!fileUrl.includes('firebasestorage.googleapis.com')) {
+    console.warn('Not a Firebase Storage URL:', fileUrl);
+    return;
   }
-
-  return true
-}
-
-export const uploadFile = async (file: File, path: string, types: keyof typeof ALLOWED_FILE_TYPES) => {
+  
   try {
-    validateFile(file, types)
+    const storage = getStorage();
     
-    const authStore = useAuthStore()
-    if (!authStore.isLoggedIn) {
-      throw new StorageError('Usuario no autenticado')
+    // Extract path from URL
+    const filePath = fileUrl.split('?')[0].split('/o/')[1];
+    if (!filePath) {
+      throw new Error('Invalid file URL format');
     }
-
-    // Generar nombre único para el archivo
-    const extension = file.name.split('.').pop()
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${extension}`
-    const fullPath = `${path}/${fileName}`
-
-    // Crear referencia al archivo
-    const fileRef = ref(storage, fullPath)
-
-    // Subir archivo
-    const snapshot = await uploadBytes(fileRef, file)
-    const downloadURL = await getDownloadURL(snapshot.ref)
-
-    return {
-      url: downloadURL,
-      path: fullPath,
-      fileName
-    }
-  } catch (error: any) {
-    console.error('Error al subir archivo:', error)
-    throw new StorageError(
-      error.name === 'StorageError' ? error.message : 'Error al subir el archivo',
-      error.code
-    )
+    
+    const decodedPath = decodeURIComponent(filePath);
+    const fileRef = ref(storage, decodedPath);
+    
+    await deleteObject(fileRef);
+    console.log('File deleted successfully:', decodedPath);
+  } catch (error) {
+    console.error('Error deleting file:', error);
+    throw new Error('Error al eliminar el archivo.');
   }
-}
-
-export const deleteFile = async (path: string) => {
-  try {
-    const authStore = useAuthStore()
-    if (!authStore.isLoggedIn) {
-      throw new StorageError('Usuario no autenticado')
-    }
-
-    const fileRef = ref(storage, path)
-    await deleteObject(fileRef)
-  } catch (error: any) {
-    console.error('Error al eliminar archivo:', error)
-    throw new StorageError(
-      'Error al eliminar el archivo',
-      error.code
-    )
-  }
-}
-
-export const getFileUrl = async (path: string) => {
-  try {
-    const fileRef = ref(storage, path)
-    return await getDownloadURL(fileRef)
-  } catch (error: any) {
-    console.error('Error al obtener URL del archivo:', error)
-    throw new StorageError(
-      'Error al obtener la URL del archivo',
-      error.code
-    )
-  }
-}
+};

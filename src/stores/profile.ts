@@ -1,62 +1,29 @@
 import { defineStore } from 'pinia'
 import { useColorMode } from '@vueuse/core'
 import type { UserProfile, UserSettings, Achievement, Notification, ActivityLog } from '../types'
-import { initializeApp } from 'firebase/app'
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'
+import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import { getAuth } from 'firebase/auth'
+import { 
+  getStorage, 
+  ref as storageRef, 
+  uploadBytesResumable, 
+  getDownloadURL,
+  deleteObject 
+} from 'firebase/storage'
 
-// Demo profile with complete data structure
-const demoProfile: UserProfile = {
-  id: 'demo-user',
-  email: 'demo@example.com',
-  displayName: 'Demo User',
-  role: 'director',
-  photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo',
-  phoneNumber: '+1234567890',
-  preferences: {
-    theme: localStorage.getItem('vueuse-color-scheme') || 'system', // Get saved theme
-    emailNotifications: true,
-    language: 'es',
-    timezone: 'America/Mexico_City',
-    accessibility: {
-      highContrast: false,
-      fontSize: 'medium',
-      reduceMotion: false
-    },
-    notifications: {
-      email: true,
-      push: true,
-      inApp: true
-    },
-    privacy: {
-      profileVisibility: 'public',
-      activitySharing: true
-    }
-  },
-  bio: 'Director de academia con más de 10 años de experiencia en educación musical.',
-  location: 'Ciudad de México',
-  socialLinks: {
-    website: 'https://example.com',
-    linkedin: 'https://linkedin.com/in/demo',
-    twitter: 'https://twitter.com/demo'
-  },
-  achievements: [
-    {
-      id: 'first-class',
-      title: 'Primera Clase',
-      description: 'Completó su primera clase exitosamente',
-      earnedAt: '2024-01-15T00:00:00Z'
-    }
-  ],
-  stats: {
-    totalClasses: 150,
-    totalStudents: 45,
-    averageRating: 4.8,
-    completionRate: 95
-  },
-  lastLogin: new Date().toISOString(),
-  createdAt: '2024-01-01T00:00:00Z'
+/**
+ * Default user preferences
+ */
+const DEFAULT_USER_PREFERENCES = {
+  theme: 'system',
+  emailNotifications: true,
+  language: 'es',
+  timezone: 'America/Mexico_City'
 }
 
+/**
+ * Profile store - manages user profile data and interactions with Firestore
+ */
 export const useProfileStore = defineStore('profile', {
   state: () => ({
     profile: null as UserProfile | null,
@@ -72,7 +39,9 @@ export const useProfileStore = defineStore('profile', {
       'America/Mexico_City',
       'America/New_York',
       'America/Los_Angeles',
-      'Europe/Madrid'
+      'Europe/Madrid',
+      'Asia/Tokyo',
+    
     ]
   }),
 
@@ -80,17 +49,17 @@ export const useProfileStore = defineStore('profile', {
     isComplete: (state) => {
       if (!state.profile) return false
       return !!(
-        state.profile.displayName &&
+        state.profile.name &&
         state.profile.email &&
-        state.profile.phoneNumber &&
-        state.profile.bio
+        state.profile.phone &&
+        state.profile.address
       )
     },
     currentTheme: (state) => {
-      return state.profile?.preferences.theme || 'system'
+      return state.profile?.preferences?.theme || 'system'
     },
     unreadNotifications: (state) => {
-      return state.notifications.filter(n => !n.read)
+      return state.notifications.filter((n: Notification) => !n.read)
     },
     recentActivity: (state) => {
       return state.activityLogs.slice(0, 5)
@@ -98,167 +67,343 @@ export const useProfileStore = defineStore('profile', {
   },
 
   actions: {
+    /**
+     * Helper method to get the current user ID from Firebase Auth
+     * @returns User ID or throws error if not authenticated
+     */
+    _getCurrentUserId(): string {
+      const auth = getAuth();
+      const userId = auth.currentUser?.uid;
+      
+      if (!userId) {
+        throw new Error('No authenticated user found');
+      }
+      
+      return userId;
+    },
+    
+    /**
+     * Helper to apply and save theme preference
+     */
+    _applyThemePreference(theme: string): void {
+      const colorMode = useColorMode();
+      colorMode.value = theme === 'system' ? 'auto' : 
+                       (theme === 'light' || theme === 'dark') ? 
+                       (theme as 'light' | 'dark') : 'auto';
+      localStorage.setItem('vueuse-color-scheme', theme);
+    },
+    
+    /**
+     * Helper to ensure profile preferences exist
+     */
+    _ensurePreferences(): void {
+      if (!this.profile) return;
+      
+      if (!this.profile.preferences) {
+        this.profile.preferences = { ...DEFAULT_USER_PREFERENCES };
+      }
+    },
+
+    /**
+     * Wrapper for async actions to handle loading state and errors
+     * @param action The async function to execute
+     * @param errorMessage Default error message
+     */
+    async _executeAction<T>(action: () => Promise<T>, errorMessage: string): Promise<T> {
+      if (this.isLoading) return Promise.reject(new Error('Action in progress'));
+      
+      this.isLoading = true;
+      this.error = null;
+      
+      try {
+        return await action();
+      } catch (error) {
+        this.error = errorMessage;
+        console.error(`${errorMessage}:`, error);
+        throw error;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    /**
+     * Fetch user profile from Firestore
+     */
     async fetchProfile() {
-      if (this.isLoading) return
-      
-      this.isLoading = true
-      this.error = null
-
-      try {
-        await new Promise(resolve => setTimeout(resolve, 500))
+      return this._executeAction(async () => {
+        const userId = this._getCurrentUserId();
+        const db = getFirestore();
+        const userRef = doc(db, 'USERS', userId);
+        const userDoc = await getDoc(userRef);
         
-        // For demo, use static profile data
-        this.profile = { ...demoProfile }
-        
-        // Apply saved theme
-        const colorMode = useColorMode()
-        colorMode.value = this.profile.preferences.theme === 'system' ? 'light' : this.profile.preferences.theme
-        
-        return this.profile
-      } catch (error) {
-        this.error = 'Error al cargar el perfil'
-        console.error('Error fetching profile:', error)
-        throw error
-      } finally {
-        this.isLoading = false
-      }
-    },
-
-    async updateProfile(data: Partial<UserProfile>) {
-      if (this.isLoading) return
-      
-      this.isLoading = true
-      this.error = null
-
-      try {
-        await new Promise(resolve => setTimeout(resolve, 500))
-        
-        if (this.profile) {
-          this.profile = {
-            ...this.profile,
-            ...data,
-            updatedAt: new Date().toISOString()
-          }
+        if (!userDoc.exists()) {
+          // Create default profile
+          const auth = getAuth();
+          const defaultProfile: Partial<UserProfile> = {
+            id: userId,
+            email: auth.currentUser?.email || '',
+            displayName: auth.currentUser?.displayName || '',
+            photoURL: auth.currentUser?.photoURL || 
+                     `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`,
+            role: 'student',
+            preferences: { ...DEFAULT_USER_PREFERENCES },
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString()
+          };
           
-          // Log activity
-          this.logActivity({
-            type: 'profile_update',
-            description: 'Perfil actualizado',
-            metadata: data,
-            userId: this.profile.id,
-            createdAt: new Date().toISOString()
-          })
+          await setDoc(userRef, defaultProfile);
+          this.profile = defaultProfile as UserProfile;
         } else {
-          throw new Error('Profile not initialized')
+          // Use existing profile data
+          const userData = userDoc.data();
+          
+          // Ensure preferences exist
+          userData.preferences = userData.preferences || { ...DEFAULT_USER_PREFERENCES };
+          
+          // Update last login
+          userData.lastLogin = new Date().toISOString();
+          await updateDoc(userRef, { lastLogin: userData.lastLogin });
+          
+          this.profile = { id: userId, ...userData } as UserProfile;
         }
-      } catch (error) {
-        this.error = 'Error al actualizar el perfil'
-        console.error('Error updating profile:', error)
-        throw error
-      } finally {
-        this.isLoading = false
-      }
-    },
-
-    async updateSettings(settings: UserSettings) {
-      if (this.isLoading) return
-      
-      this.isLoading = true
-      this.error = null
-
-      try {
-        await new Promise(resolve => setTimeout(resolve, 500))
         
-        if (this.profile) {
-          this.profile.preferences = {
-            ...this.profile.preferences,
-            ...settings
-          }
-          this.profile.updatedAt = new Date().toISOString()
-
-          // Update theme and save to localStorage
-          const colorMode = useColorMode()
-          colorMode.value = settings.theme === 'system' ? 'light' : settings.theme
-          localStorage.setItem('vueuse-color-scheme', settings.theme)
-
-          // Log activity
-          this.logActivity({
-            type: 'settings_update',
-            description: 'Preferencias actualizadas',
-            metadata: settings,
-            userId: this.profile.id,
-            createdAt: new Date().toISOString()
-          })
-        } else {
-          throw new Error('Profile not initialized')
-        }
-      } catch (error) {
-        this.error = 'Error al actualizar las preferencias'
-        console.error('Error updating settings:', error)
-        throw error
-      } finally {
-        this.isLoading = false
-      }
+        // Apply theme
+        this._applyThemePreference(this.profile.preferences?.theme || 'system');
+        
+        return this.profile;
+      }, 'Error al cargar el perfil');
     },
 
-    async uploadPhoto(file: File) {
-      if (this.isLoading) return
-      
-      this.isLoading = true
-      this.error = null
-
-      try {
-        await new Promise(resolve => setTimeout(resolve, 500))
+    /**
+     * Update user profile in Firestore
+     */
+    async updateProfile(data: Partial<UserProfile>) {
+      return this._executeAction(async () => {
+        const userId = this._getCurrentUserId();
         
         if (!this.profile) {
-          throw new Error('Profile not initialized')
+          throw new Error('Profile not initialized');
+        }
+        
+        // Prepare update data with timestamp
+        const updateData = {
+          ...data,
+          updatedAt: new Date().toISOString()
+        };
+        
+        // Update local state
+        this.profile = {
+          ...this.profile,
+          ...updateData
+        };
+        
+        // Update in Firestore
+        const db = getFirestore();
+        const userRef = doc(db, 'USERS', userId);
+        await updateDoc(userRef, updateData);
+        
+        // Log activity
+        this.logActivity({
+          type: 'profile_update',
+          description: 'Perfil actualizado',
+          metadata: data,
+          userId: this.profile.id,
+          createdAt: new Date().toISOString()
+        });
+        
+        return this.profile;
+      }, 'Error al actualizar el perfil');
+    },
+
+    /**
+     * Update user settings in Firestore
+     */
+    async updateSettings(settings: UserSettings) {
+      return this._executeAction(async () => {
+        const userId = this._getCurrentUserId();
+        
+        if (!this.profile) {
+          throw new Error('Profile not initialized');
+        }
+        
+        this._ensurePreferences();
+        
+        // Update local state
+        this.profile.preferences = {
+          ...this.profile.preferences,
+          ...settings
+        };
+        this.profile.updatedAt = new Date().toISOString();
+        
+        // Update in Firestore
+        const db = getFirestore();
+        const userRef = doc(db, 'USERS', userId);
+        await updateDoc(userRef, {
+          preferences: this.profile.preferences,
+          updatedAt: this.profile.updatedAt
+        });
+        
+        // Apply theme changes
+        const theme = settings.theme || this.profile.preferences.theme || 'system';
+        this._applyThemePreference(theme);
+        
+        // Log activity
+        this.logActivity({
+          type: 'settings_update',
+          description: 'Preferencias actualizadas',
+          metadata: settings,
+          userId: this.profile.id,
+          createdAt: new Date().toISOString()
+        });
+        
+        return this.profile.preferences;
+      }, 'Error al actualizar las preferencias');
+    },
+
+    /**
+     * Upload user photo to Firebase Storage with progress tracking
+     */
+    async uploadPhoto(file: File, progressCallback?: (progress: number) => void) {
+      return this._executeAction(async () => {
+        const userId = this._getCurrentUserId();
+        
+        if (!this.profile) {
+          throw new Error('Profile not initialized');
         }
 
-        const photoURL = `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`
-        this.profile.photoURL = photoURL
-        this.profile.updatedAt = new Date().toISOString()
+        // Validate file type and size
+        if (!file.type.startsWith('image/')) {
+          throw new Error('El archivo debe ser una imagen');
+        }
 
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+          throw new Error('La imagen no puede superar los 5MB');
+        }
+        
+        // Delete previous profile photo if it exists and isn't a default avatar
+        if (
+          this.profile.photoURL && 
+          this.profile.photoURL.includes('firebasestorage.googleapis.com') &&
+          !this.profile.photoURL.includes('dicebear')
+        ) {
+          try {
+            // Extract path from URL - this is a simplistic approach
+            const storage = getStorage();
+            const oldPhotoPath = this.profile.photoURL.split('?')[0].split('/o/')[1];
+            if (oldPhotoPath) {
+              const decodedPath = decodeURIComponent(oldPhotoPath);
+              const oldPhotoRef = storageRef(storage, decodedPath);
+              await deleteObject(oldPhotoRef);
+              console.log('Previous profile photo deleted');
+            }
+          } catch (error) {
+            console.warn('Failed to delete previous profile photo:', error);
+            // Continue with upload even if delete fails
+          }
+        }
+        
+        // Create a storage reference with a unique name
+        const storage = getStorage();
+        const fileExtension = file.name.split('.').pop() || 'jpg';
+        const fileName = `profile_photos/${userId}/${Date.now()}_profile.${fileExtension}`;
+        const fileRef = storageRef(storage, fileName);
+        
+        // Start upload with progress tracking
+        const uploadTask = uploadBytesResumable(fileRef, file);
+        
+        // Create a promise to track upload completion
+        const uploadPromise = new Promise<string>((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            (snapshot) => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              if (progressCallback) {
+                progressCallback(progress);
+              }
+            },
+            (error) => {
+              console.error('Upload failed:', error);
+              reject(new Error('Error al subir la imagen. Intente nuevamente.'));
+            },
+            async () => {
+              try {
+                // Get download URL and update profile
+                const photoURL = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve(photoURL);
+              } catch (error) {
+                console.error('Failed to get download URL:', error);
+                reject(new Error('Error al obtener la URL de la imagen.'));
+              }
+            }
+          );
+        });
+        
+        // Wait for upload to complete
+        const photoURL = await uploadPromise;
+        
+        // Update local state
+        this.profile.photoURL = photoURL;
+        this.profile.updatedAt = new Date().toISOString();
+        
+        // Update in Firestore
+        const db = getFirestore();
+        const userRef = doc(db, 'USERS', userId);
+        await updateDoc(userRef, {
+          photoURL,
+          updatedAt: this.profile.updatedAt
+        });
+        
         // Log activity
         this.logActivity({
           type: 'photo_update',
           description: 'Foto de perfil actualizada',
-          metadata: { photoURL },
+          metadata: { 
+            photoURL,
+            fileSize: file.size,
+            fileType: file.type,
+            timestamp: new Date().toISOString()
+          },
           userId: this.profile.id,
           createdAt: new Date().toISOString()
-        })
-
-        return photoURL
-      } catch (error) {
-        this.error = 'Error al subir la foto'
-        console.error('Error uploading photo:', error)
-        throw error
-      } finally {
-        this.isLoading = false
-      }
+        });
+        
+        return photoURL;
+      }, 'Error al subir la foto');
     },
 
-    async markNotificationAsRead(notificationId: string) {
-      const notification = this.notifications.find(n => n.id === notificationId)
+    /**
+     * Mark a notification as read
+     */
+    markNotificationAsRead(notificationId: string) {
+      const notification = this.notifications.find(
+        (n: Notification) => n.id === notificationId
+      );
       if (notification) {
-        notification.read = true
+        notification.read = true;
       }
     },
 
+    /**
+     * Log user activity
+     */
     logActivity(activity: ActivityLog) {
-      this.activityLogs.unshift(activity)
-      // Keep only last 100 activities
+      this.activityLogs.unshift(activity);
+      
+      // Limit to 100 entries
       if (this.activityLogs.length > 100) {
-        this.activityLogs.pop()
+        this.activityLogs.pop();
       }
     },
 
+    /**
+     * Check and award achievements based on user stats
+     */
     async checkAchievements() {
-      if (!this.profile) return
-
-      const stats = this.profile.stats
-      if (!stats) return
-
-      // Example achievement checks
+      if (!this.profile || !this.profile.stats) return;
+      
+      const { stats } = this.profile;
+      
+      // Check for 100 classes achievement
       if (stats.totalClasses >= 100 && !this.hasAchievement('hundred-classes')) {
         await this.awardAchievement({
           id: 'hundred-classes',
@@ -268,9 +413,10 @@ export const useProfileStore = defineStore('profile', {
           criteria: 'Complete 100 clases',
           points: 100,
           category: 'teaching'
-        })
+        });
       }
-
+      
+      // Check for top rating achievement
       if (stats.averageRating >= 4.8 && !this.hasAchievement('top-rated')) {
         await this.awardAchievement({
           id: 'top-rated',
@@ -280,26 +426,38 @@ export const useProfileStore = defineStore('profile', {
           criteria: 'Mantener un promedio de calificación superior a 4.8',
           points: 150,
           category: 'performance'
-        })
+        });
       }
     },
 
-    hasAchievement(achievementId: string) {
-      return this.profile?.achievements?.some(a => a.id === achievementId)
+    /**
+     * Check if user has an achievement
+     */
+    hasAchievement(achievementId: string): boolean {
+      return !!this.profile?.achievements?.some(
+        (a: Achievement) => a.id === achievementId
+      );
     },
 
+    /**
+     * Award an achievement to the user
+     */
     async awardAchievement(achievement: Achievement) {
-      if (!this.profile) return
-
+      if (!this.profile) return;
+      
+      // Initialize achievements array if needed
       if (!this.profile.achievements) {
-        this.profile.achievements = []
+        this.profile.achievements = [];
       }
-
-      this.profile.achievements.push({
+      
+      // Add achievement with timestamp
+      const achievementWithTimestamp = {
         ...achievement,
         earnedAt: new Date().toISOString()
-      })
-
+      };
+      
+      this.profile.achievements.push(achievementWithTimestamp);
+      
       // Add notification
       this.notifications.unshift({
         id: Date.now().toString(),
@@ -308,8 +466,8 @@ export const useProfileStore = defineStore('profile', {
         message: `Has desbloqueado "${achievement.title}"`,
         read: false,
         createdAt: new Date().toISOString()
-      })
-
+      });
+      
       // Log activity
       this.logActivity({
         type: 'achievement_earned',
@@ -317,42 +475,19 @@ export const useProfileStore = defineStore('profile', {
         metadata: achievement,
         userId: this.profile.id,
         createdAt: new Date().toISOString()
-      })
-    },
-
-    // Fetch user directly from Firestore
-    async fetchUserFromFirestore(userId) {
+      });
+      
+      // Save to Firestore
       try {
-        const db = getFirestore()
-        const userRef = doc(db, 'USERS', userId)
-        const userDoc = await getDoc(userRef)
-        
-        if (userDoc.exists()) {
-          return userDoc.data()
-        }
-        return null
+        const userId = this._getCurrentUserId();
+        const db = getFirestore();
+        const userRef = doc(db, 'USERS', userId);
+        await updateDoc(userRef, {
+          achievements: this.profile.achievements
+        });
       } catch (error) {
-        console.error('Error fetching user from Firestore:', error)
-        throw error
-      }
-    },
-    
-    // Save user data to Firestore
-    async saveUserToFirestore(userData) {
-      try {
-        if (!this.authStore.currentUser?.uid) {
-          throw new Error('No user ID available')
-        }
-        
-        const db = getFirestore()
-        const userRef = doc(db, 'USERS', this.authStore.currentUser.uid)
-        await setDoc(userRef, userData, { merge: true })
-        
-        return true
-      } catch (error) {
-        console.error('Error saving user to Firestore:', error)
-        throw error
+        console.error('Error saving achievement to Firestore:', error);
       }
     }
   }
-})
+});

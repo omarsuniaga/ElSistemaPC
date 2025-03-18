@@ -1,129 +1,137 @@
 <template>
-  <Transition name="modal">
-    <Dialog v-if="show" as="div" class="modal-overlay" @close="$emit('close')">
-      <div class="modal-content dark:bg-gray-800" @click.stop>
-        <DialogOverlay class="fixed inset-0 bg-black opacity-30" />
-        <div class="modal-header dark:border-gray-700">
-          <DialogTitle class="modal-title dark:text-gray-100">{{ title }}</DialogTitle>
-          <button class="modal-close dark:text-gray-400 dark:hover:text-gray-200" @click="$emit('close')">&times;</button>
-        </div>
-        <div class="modal-body dark:text-gray-200">
-          <slot></slot>
-        </div>
-        <div v-if="$slots.footer" class="modal-footer dark:border-gray-700">
-          <slot name="footer"></slot>
-        </div>
+  <TransitionRoot appear :show="show">
+    <Dialog as="div" class="fixed inset-0 z-50 overflow-y-auto" @close="$emit('close')">
+      <div class="min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <TransitionChild
+          as="template"
+          enter="ease-out duration-300"
+          enter-from="opacity-0"
+          enter-to="opacity-100"
+          leave="ease-in duration-200"
+          leave-from="opacity-100"
+          leave-to="opacity-0"
+        >
+          <DialogOverlay class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity" />
+        </TransitionChild>
+
+        <!-- Este elemento es para centrar el modal -->
+        <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+        
+        <TransitionChild
+          as="template"
+          enter="ease-out duration-300"
+          enter-from="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+          enter-to="opacity-100 translate-y-0 sm:scale-100"
+          leave="ease-in duration-200"
+          leave-from="opacity-100 translate-y-0 sm:scale-100"
+          leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+        >
+          <div 
+            class="inline-block w-full transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all dark:bg-gray-800 sm:my-8 sm:w-full sm:max-w-lg sm:align-middle md:max-w-xl"
+          >
+            <div class="modal-header border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+              <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900 dark:text-white">
+                {{ title }}
+              </DialogTitle>
+              <button 
+                @click="$emit('close')" 
+                class="modal-close-btn ml-auto -mr-2 flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+                aria-label="Cerrar"
+              >
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div class="modal-body px-6 py-4 dark:text-gray-200">
+              <div class="max-h-[calc(100vh-14rem)] overflow-y-auto custom-scrollbar">
+                <slot></slot>
+              </div>
+            </div>
+            
+            <div v-if="$slots.footer" class="modal-footer border-t border-gray-200 bg-gray-50 px-6 py-3 dark:border-gray-700 dark:bg-gray-800/50">
+              <slot name="footer"></slot>
+            </div>
+          </div>
+        </TransitionChild>
       </div>
     </Dialog>
-  </Transition>
+  </TransitionRoot>
 </template>
 
 <script setup lang="ts">
-import { Dialog, DialogOverlay, DialogTitle } from '@headlessui/vue'
+import { Dialog, DialogOverlay, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue'
 
-const props = defineProps<{
+defineProps<{
   show: boolean
   title: string
 }>()
+
 defineEmits<{
   (e: 'close'): void
 }>()
 </script>
 
 <style scoped>
-.modal-overlay {
+.modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  backdrop-filter: blur(2px);
+  z-index: 50;
 }
-.modal-content {
-  background-color: white;
-  border-radius: 8px;
-  max-width: 90%;
-  width: 500px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
+
 .modal-header {
-  padding: 1rem;
-  border-bottom: 1px solid #e2e8f0;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
 }
-.modal-title {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #1f2937; /* gray-800 */
-}
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  color: #64748b;
-  transition: color 0.2s;
-  border-radius: 9999px;
-}
-.modal-close:hover {
-  color: #334155;
-  background-color: rgba(0, 0, 0, 0.05);
-}
+
 .modal-body {
-  padding: 1rem;
-  overflow-y: auto;
-  color: #374151; /* gray-700 */
+  color: #374151;
 }
-.modal-footer {
-  padding: 1rem;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
+
+/* Estilos para la barra de desplazamiento personalizada */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-/* Soporte para modo oscuro a través de CSS Variables */
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+/* Dark mode para scrollbar */
 @media (prefers-color-scheme: dark) {
-  .modal-content {
-    background-color: var(--dark-bg, #1f2937);
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #475569;
   }
-  .modal-title {
-    color: var(--dark-text, #f9fafb);
-  }
-  .modal-body {
-    color: var(--dark-text-secondary, #e5e7eb);
-  }
-  .modal-header, .modal-footer {
-    border-color: var(--dark-border, #374151);
-  }
-  .modal-close {
-    color: var(--dark-text-secondary, #9ca3af);
-  }
-  .modal-close:hover {
-    color: var(--dark-text, #f9fafb);
-    background-color: rgba(255, 255, 255, 0.1);
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #64748b;
   }
 }
-/* Transiciones */
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+
+/* Transiciones para el modal */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.25s ease;
 }
-.modal-enter-from,
-.modal-leave-to {
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
   opacity: 0;
-  transform: scale(0.95);
 }
 </style>
 

@@ -6,7 +6,9 @@ import { useProfileStore } from '../stores/profile'
 import { useColorMode } from '@vueuse/core'
 import FileUpload from '../components/FileUpload.vue'
 import ReportGenerator from '../components/ReportGenerator.vue'
-import { clearLocalStorageData } from '../services/attendance';
+import { clearLocalStorageData } from '../services/attendance'
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'
+import { getApp } from 'firebase/app'
 import {
   UserCircleIcon,
   EnvelopeIcon,
@@ -23,7 +25,8 @@ import {
   DocumentTextIcon,
   PencilSquareIcon,
   XMarkIcon,
-  CheckIcon
+  CheckIcon,
+  ArrowUpTrayIcon
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -34,20 +37,20 @@ const colorMode = useColorMode()
 // Establecer el modo oscuro como predeterminado
 colorMode.value = 'dark';
 
-// Add theme toggle function
+// Función para alternar el tema
 const toggleTheme = () => {
   colorMode.value = colorMode.value === 'dark' ? 'light' : 'dark'
   
-  // Update preferences if profile exists
-  if (profileStore.profile) {
-    profileStore.updateSettings({
+  if (profileStore.profile && profileStore.profile.preferences) {
+    const updatedPreferences = {
       ...profileStore.profile.preferences,
       theme: colorMode.value
-    })
+    };
+    profileStore.updateSettings(updatedPreferences)
   }
 }
 
-// Computed property for theme icon/text
+// Computed property para tema
 const themeInfo = computed(() => ({
   icon: colorMode.value === 'dark' ? SunIcon : MoonIcon,
   text: colorMode.value === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'
@@ -62,6 +65,7 @@ const formData = ref({
   displayName: '',
   email: '',
   phoneNumber: '',
+  // Se agregará la propiedad photoURL al actualizar la foto
   preferences: {
     theme: 'system',
     emailNotifications: true,
@@ -70,11 +74,11 @@ const formData = ref({
   }
 })
 
+// Cerrar sesión
 const handleSignOut = async () => {
   try {
     await clearLocalStorageData();
     await authStore.signOut()
-    
     router.push('/login')
   } catch (err) {
     error.value = 'Error al cerrar sesión'
@@ -82,24 +86,49 @@ const handleSignOut = async () => {
   }
 }
 
+// Estados para la carga de imagen
+const isUploading = ref(false)
+const uploadProgress = ref(0)
+
+// Manejar la subida de foto (se invoca desde FileUpload)
 const handlePhotoUpload = async (files: FileList) => {
   if (!files.length) return
-  
+  isUploading.value = true
+  error.value = ''
+  // La subida se realiza en el FileUpload, por lo que aquí se podría mostrar un indicador adicional si se requiere.
+}
+
+// Al recibir la URL de la imagen, se actualiza el formulario y el perfil en Firestore
+const handlePhotoSuccess = async (photoURL: string) => {
   try {
-    await profileStore.uploadPhoto(files[0])
-  } catch (err) {
-    error.value = 'Error al subir la foto'
-    console.error('Error uploading photo:', err)
+    // Actualiza el formData local
+    formData.value = {
+      ...formData.value,
+      photoURL
+    }
+    // Actualiza el perfil en Firestore usando el store
+    await profileStore.updateProfile({ photoURL })
+  } catch (err: any) {
+    error.value = err?.message || 'Error al actualizar la foto'
+    console.error('Error updating photo URL:', err)
+  } finally {
+    isUploading.value = false
+    uploadProgress.value = 0
   }
 }
 
 const startEditing = () => {
   if (profileStore.profile) {
     formData.value = {
-      displayName: profileStore.profile.displayName,
-      email: profileStore.profile.email,
-      phoneNumber: profileStore.profile.phoneNumber || '',
-      preferences: { ...profileStore.profile.preferences }
+      displayName: profileStore.profile.displayName ?? '',
+      email: profileStore.profile.email ?? '',
+      phoneNumber: profileStore.profile.phone || '',
+      preferences: {
+        theme: profileStore.profile.preferences?.darkMode ? 'dark' : 'system',
+        emailNotifications: profileStore.profile.preferences?.notifications ?? true,
+        language: profileStore.profile.preferences?.language || 'es',
+        timezone: profileStore.profile.preferences?.timezone || 'America/Mexico_City'
+      }
     }
   }
   isEditing.value = true
@@ -110,8 +139,21 @@ const cancelEditing = () => {
   error.value = ''
 }
 
-// Firebase integration for user data
-const userFirebaseData = ref(null)
+// Interfaz para datos de usuario de Firebase
+interface FirebaseUserData {
+  displayName?: string;
+  email?: string;
+  phoneNumber?: string;
+  preferences?: {
+    theme?: string;
+    emailNotifications?: boolean;
+    language?: string;
+    timezone?: string;
+  };
+  lastUpdated?: string;
+}
+
+const userFirebaseData = ref<FirebaseUserData | null>(null)
 const profileCompletion = computed(() => {
   if (!profileStore.profile) return 0
   
@@ -125,31 +167,33 @@ const profileCompletion = computed(() => {
   return Math.round((fields.filter(Boolean).length / fields.length) * 100)
 })
 
-// Fetch user data directly from Firebase USERS collection
+// Fetch de datos de usuario desde Firebase
 const fetchUserFromFirebase = async () => {
-  if (!authStore.currentUser?.uid) return
+  if (!authStore.user?.uid) return
   
   try {
-    const db = firebase.firestore()
-    const userDoc = await db.collection('USERS').doc(authStore.currentUser.uid).get()
+    const db = getFirestore(getApp())
+    const userDocRef = doc(db, 'USERS', authStore.user.uid)
+    const userDoc = await getDoc(userDocRef)
     
-    if (userDoc.exists) {
+    if (userDoc.exists()) {
       userFirebaseData.value = userDoc.data()
       
-      // Update form with fetched Firebase data
       formData.value = {
-        displayName: userFirebaseData.value.displayName || profileStore.profile?.displayName || '',
+        displayName: userFirebaseData.value?.displayName || profileStore.profile?.displayName || '',
         email: userFirebaseData.value.email || profileStore.profile?.email || '',
-        phoneNumber: userFirebaseData.value.phoneNumber || profileStore.profile?.phoneNumber || '',
+        phoneNumber: userFirebaseData.value.phoneNumber || profileStore.profile?.phone || '',
         preferences: { 
           ...profileStore.profile?.preferences,
           ...userFirebaseData.value.preferences
         }
       }
       
-      // Sync theme preference with current theme
       if (formData.value.preferences.theme) {
-        colorMode.value = formData.value.preferences.theme
+        const themeValue = formData.value.preferences.theme === 'system' ? 'auto' : formData.value.preferences.theme;
+        if (themeValue === 'light' || themeValue === 'dark' || themeValue === 'auto') {
+          colorMode.value = themeValue;
+        }
       }
     }
   } catch (err) {
@@ -158,22 +202,20 @@ const fetchUserFromFirebase = async () => {
   }
 }
 
-// Enhanced profile update to save to Firebase
 const handleSubmit = async () => {
   try {
-    // Update profile store
     await profileStore.updateProfile({
       displayName: formData.value.displayName,
       email: formData.value.email,
-      phoneNumber: formData.value.phoneNumber
+      phone: formData.value.phoneNumber
     })
     
     await profileStore.updateSettings(formData.value.preferences)
     
-    // Save directly to Firebase USERS collection
-    if (authStore.currentUser?.uid) {
-      const db = firebase.firestore()
-      await db.collection('USERS').doc(authStore.currentUser.uid).set({
+    if (authStore.user?.uid) {
+      const db = getFirestore(getApp())
+      const userDocRef = doc(db, 'USERS', authStore.user.uid)
+      await setDoc(userDocRef, {
         displayName: formData.value.displayName,
         email: formData.value.email,
         phoneNumber: formData.value.phoneNumber,
@@ -201,12 +243,12 @@ onMounted(async () => {
 
   try {
     await profileStore.fetchProfile()
-    await fetchUserFromFirebase() // Add Firebase fetch
+    await fetchUserFromFirebase()
     if (profileStore.profile) {
       formData.value = {
         displayName: profileStore.profile.displayName,
         email: profileStore.profile.email,
-        phoneNumber: profileStore.profile.phoneNumber || '',
+        phoneNumber: profileStore.profile.phone || '',
         preferences: { ...profileStore.profile.preferences }
       }
     } else {
@@ -219,37 +261,35 @@ onMounted(async () => {
     isLoading.value = false
   }
 })
+
 </script>
 
 <template>
   <div class="profile-container py-6 max-w-5xl mx-auto px-4">
-    <!-- Enhanced header section -->
+    <!-- Header y botones -->
     <div class="flex flex-wrap justify-between items-center mb-8 gap-4">
       <div class="flex items-center gap-3">
         <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">
           Mi Perfil
         </h1>
         
-        <!-- Profile completion indicator -->
         <div v-if="profileStore.profile" class="hidden md:flex items-center gap-2">
           <div class="bg-gray-200 dark:bg-gray-700 h-2 w-24 rounded-full overflow-hidden">
             <div 
               class="h-full bg-gradient-to-r from-green-400 to-blue-500" 
-              :style="{width: `${profileCompletion}%`}"
-            ></div>
+              :style="{width: `${profileCompletion}%`}">
+            </div>
           </div>
           <span class="text-xs text-gray-600 dark:text-gray-400">{{ profileCompletion }}%</span>
         </div>
       </div>
       
       <div class="flex flex-wrap items-center gap-3">
-        <!-- Theme toggle with improved design -->
         <button 
           @click="toggleTheme"
           class="theme-toggle-btn"
           :title="themeInfo.text"
-          aria-label="Toggle theme"
-        >
+          aria-label="Toggle theme">
           <component :is="themeInfo.icon" class="w-5 h-5" />
         </button>
         
@@ -257,8 +297,7 @@ onMounted(async () => {
           v-if="!isEditing"
           @click="showReports = !showReports"
           class="btn bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
-          title="Informes"
-        >
+          title="Informes">
           <DocumentTextIcon class="w-5 h-5" />
           <span class="hidden sm:inline">{{ showReports ? 'Ver Perfil' : 'Informes' }}</span>
         </button>
@@ -266,51 +305,44 @@ onMounted(async () => {
           v-if="!isEditing && !showReports"
           @click="startEditing"
           class="btn bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
-          title="Editar Perfil"
-        >
+          title="Editar Perfil">
           <PencilSquareIcon class="w-5 h-5" />
           <span class="hidden sm:inline">Editar Perfil</span>
         </button>
         <button 
           @click="handleSignOut"
           class="btn bg-red-600 text-white hover:bg-red-700 flex items-center gap-2"
-          title="Cerrar Sesión"
-        >
+          title="Cerrar Sesión">
           <ArrowRightOnRectangleIcon class="w-5 h-5" />
           <span class="hidden sm:inline">Cerrar Sesión</span>
         </button>
       </div>
     </div>
 
-    <!-- Enhanced loading state -->
+    <!-- Estados de carga y error -->
     <div v-if="isLoading" class="flex justify-center items-center py-12">
       <div class="loading-spinner"></div>
       <p class="text-gray-600 dark:text-gray-400 ml-3">Cargando perfil...</p>
     </div>
 
-    <!-- Enhanced error state -->
-    <div 
-      v-else-if="error" 
-      class="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-6 rounded-xl flex items-center gap-3"
-    >
+    <div v-else-if="error" class="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-6 rounded-xl flex items-center gap-3">
       <XMarkIcon class="w-6 h-6 flex-shrink-0" />
       <div>
         <p class="font-medium">{{ error }}</p>
         <button 
           @click="error = ''; fetchUserFromFirebase()" 
-          class="text-sm underline hover:text-primary-600 transition-colors"
-        >
+          class="text-sm underline hover:text-primary-600 transition-colors">
           Reintentar
         </button>
       </div>
     </div>
 
-    <!-- Reports View -->
+    <!-- Vista de Reportes -->
     <ReportGenerator v-else-if="showReports" />
 
-    <!-- Enhanced Profile View -->
+    <!-- Vista de Perfil -->
     <div v-else-if="profileStore.profile" class="space-y-8">
-      <!-- Profile Header Card -->
+      <!-- Tarjeta de perfil -->
       <div class="profile-card">
         <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
           <div class="relative group">
@@ -319,18 +351,48 @@ onMounted(async () => {
               <img
                 :src="profileStore.profile.photoURL"
                 :alt="profileStore.profile.displayName"
-                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                class="w-full h-full object-cover transition-transform duration-300"
+                :class="{'opacity-50': isUploading}"
               />
-              <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <div 
+                class="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center"
+                :class="{'opacity-100': isUploading}"
+              >
                 <FileUpload
                   accept="image/*"
+                  :path="`avatars/${authStore.user?.uid || 'default'}`"
+                  :maxSize="5"
                   @select="handlePhotoUpload"
+                  @success="handlePhotoSuccess"
+                  @error="err => error = err"
+                  @progress="progress => uploadProgress = progress"
                   class="w-full h-full"
                 >
                   <template #default>
                     <div class="flex flex-col items-center justify-center h-full cursor-pointer text-white">
-                      <CameraIcon class="w-6 h-6" />
-                      <span class="text-xs mt-1">Cambiar</span>
+                      <template v-if="isUploading">
+                        <div class="w-16 h-16 flex items-center justify-center">
+                          <svg class="circular-progress" viewBox="0 0 36 36">
+                            <path class="circular-bg"
+                              d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                            <path class="circular-progress-path"
+                              :stroke-dasharray="`${uploadProgress}, 100`"
+                              d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                          </svg>
+                          <span class="absolute text-xs font-semibold">{{ uploadProgress }}%</span>
+                        </div>
+                        <span class="text-xs mt-1">Subiendo...</span>
+                      </template>
+                      <template v-else>
+                        <CameraIcon class="w-5 h-5 mb-1" />
+                        <span class="text-xs">Cambiar foto</span>
+                      </template>
                     </div>
                   </template>
                 </FileUpload>
@@ -364,9 +426,9 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- Enhanced Edit Form -->
+      <!-- Formulario de edición -->
       <form v-if="isEditing" @submit.prevent="handleSubmit" class="space-y-6">
-        <!-- Personal Information -->
+        <!-- Información personal -->
         <div class="profile-card">
           <div class="flex items-center gap-2 mb-4">
             <UserCircleIcon class="w-5 h-5 text-primary-600 dark:text-primary-400" />
@@ -409,7 +471,7 @@ onMounted(async () => {
           </div>
         </div>
 
-        <!-- Preferences -->
+        <!-- Preferencias -->
         <div class="profile-card">
           <div class="flex items-center gap-2 mb-4">
             <ComputerDesktopIcon class="w-5 h-5 text-primary-600 dark:text-primary-400" />
@@ -517,9 +579,9 @@ onMounted(async () => {
         </div>
       </form>
 
-      <!-- Enhanced Profile View Display -->
+      <!-- Vista de perfil -->
       <div v-else class="space-y-8">
-        <!-- Account Information -->
+        <!-- Información de la cuenta -->
         <div class="profile-card">
           <div class="flex items-center gap-2 mb-6">
             <UserCircleIcon class="w-5 h-5 text-primary-600 dark:text-primary-400" />
@@ -540,7 +602,7 @@ onMounted(async () => {
               <div>
                 <p class="info-label">Teléfono</p>
                 <p class="info-value">
-                  {{ profileStore.profile.phoneNumber || 'No especificado' }}
+                  {{ profileStore.profile.phone || 'No especificado' }}
                 </p>
               </div>
             </div>
@@ -557,13 +619,13 @@ onMounted(async () => {
               <DocumentTextIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
               <div>
                 <p class="info-label">Usuario ID</p>
-                <p class="info-value text-xs">{{ authStore.currentUser?.uid || 'No disponible' }}</p>
+                <p class="info-value text-xs">{{ authStore.user?.uid || 'No disponible' }}</p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Current Preferences -->
+        <!-- Preferencias actuales -->
         <div class="profile-card">
           <div class="flex items-center gap-2 mb-6">
             <ComputerDesktopIcon class="w-5 h-5 text-primary-600 dark:text-primary-400" />
@@ -628,133 +690,3 @@ onMounted(async () => {
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Base enhanced styles */
-.profile-container {
-  @apply transition-colors duration-300;
-}
-
-/* Enhanced cards with animation */
-.profile-card {
-  @apply bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm;
-  border: 1px solid rgba(125, 125, 125, 0.1);
-  transition: all 0.3s ease;
-}
-
-.profile-card:hover {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
-  transform: translateY(-2px);
-}
-
-/* Loading spinner */
-.loading-spinner {
-  @apply w-10 h-10 border-4 border-gray-300 dark:border-gray-700 rounded-full;
-  border-top-color: #3b82f6;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Form styling */
-.form-group {
-  @apply flex flex-col;
-}
-
-.form-label {
-  @apply block text-sm font-medium mb-1.5 text-gray-700 dark:text-gray-300;
-}
-
-.form-input, .form-select {
-  @apply px-4 py-2.5 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900;
-  @apply focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:outline-none;
-  @apply transition-all duration-200;
-}
-
-.form-input:hover, .form-select:hover {
-  @apply border-gray-400 dark:border-gray-600;
-}
-
-/* Theme options */
-.theme-option {
-  @apply flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-lg cursor-pointer border border-gray-200 dark:border-gray-700;
-  @apply hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200;
-}
-
-.theme-option.active {
-  @apply border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400;
-}
-
-/* Switch toggle */
-.switch {
-  @apply flex items-center cursor-pointer;
-}
-
-.switch input {
-  @apply sr-only;
-}
-
-.slider {
-  @apply relative inline-block h-6 w-12 rounded-full bg-gray-300 dark:bg-gray-700 transition-colors duration-200;
-}
-
-.slider:before {
-  content: '';
-  @apply absolute left-1 bottom-1 h-4 w-4 rounded-full bg-white transition-transform duration-200;
-}
-
-input:checked + .slider {
-  @apply bg-primary-600;
-}
-
-input:checked + .slider:before {
-  transform: translateX(24px);
-}
-
-/* Info items */
-.info-item {
-  @apply flex items-center gap-4;
-}
-
-.info-label {
-  @apply text-sm text-gray-600 dark:text-gray-400;
-}
-
-.info-value {
-  @apply font-medium text-gray-900 dark:text-white;
-}
-
-.setting-icon {
-  @apply flex items-center justify-center p-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 w-10 h-10;
-}
-
-.setting-icon svg {
-  @apply w-5 h-5 text-gray-600 dark:text-gray-400;
-}
-
-/* Badges */
-.badge {
-  @apply inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200;
-}
-
-/* Primary and secondary buttons */
-.btn-primary {
-  @apply px-4 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white flex items-center gap-2 font-medium;
-  @apply hover:from-blue-700 hover:to-blue-800 transition-all duration-200;
-  @apply active:scale-95;
-}
-
-.btn-secondary {
-  @apply px-4 py-2.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 flex items-center gap-2 font-medium;
-  @apply hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200;
-}
-
-/* Theme toggle button */
-.theme-toggle-btn {
-  @apply w-10 h-10 rounded-full flex items-center justify-center;
-  @apply bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700;
-  @apply hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200;
-}
-</style>

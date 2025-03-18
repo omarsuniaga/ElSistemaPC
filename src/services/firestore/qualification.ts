@@ -1,40 +1,20 @@
 import { db } from '../../firebase';
 import { collection, getDocs, addDoc, query, updateDoc, where, doc, deleteDoc } from 'firebase/firestore';
 import { getFromLocalStorage, saveToLocalStorage, clearLocalStorage } from '../../utils/localStorageUtils';
+import type { QualificationData } from '../../types/qualification';
 
 const COLLECTION_NAME = 'CALIFICACIONES';
 
-// Interface for qualification data
-export interface QualificationData {
-  id?: string;
-  classId: string;
-  date?: string;
-  contentTitle: string;
-  contentSubtitle?: string;
-  group: string[]; // Array of student IDs
-  indicators: {
-    uniqueId: string;
-    label: string;
-    score: number;
-  }[];
-  comments?: string;
-  locked: boolean;
-  hideProgress?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
 /**
- * Fetches all qualifications from Firebase
+ * Obtener todas las calificaciones desde Firebase
  */
 export const fetchQualificationsFromFirebase = async () => {
   const q = query(collection(db, COLLECTION_NAME));
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as QualificationData[];
 };
-
 /**
- * Fetch qualifications by class ID
+ * Obtener calificaciones por ID de clase
  */
 export const fetchQualificationsByClass = async (classId: string) => {
   try {
@@ -51,7 +31,7 @@ export const fetchQualificationsByClass = async (classId: string) => {
 };
 
 /**
- * Adds a new qualification record to Firebase
+ * Agrega un nuevo registro de calificación a Firebase
  */
 export const addQualificationToFirebase = async (qualification: QualificationData) => {
   try {
@@ -77,8 +57,9 @@ export const addQualificationToFirebase = async (qualification: QualificationDat
   }
 };
 
+
 /**
- * Updates an existing qualification record
+ * Actualiza un registro de calificación existente.
  */
 export const updateQualificationInFirebase = async (qualification: QualificationData) => {
   try {
@@ -86,33 +67,44 @@ export const updateQualificationInFirebase = async (qualification: Qualification
       throw new Error("Qualification ID is required for update");
     }
     
-    // Create a clean copy of the data without the id field
+    // Crear una copia limpia de los datos sin el campo id
     const { id, ...updateData } = qualification;
     
-    // Ensure group is an array of strings
-    updateData.group = Array.isArray(updateData.group) 
-      ? updateData.group.map(id => typeof id === 'string' ? id : String(id))
-      : [];
-
-    // Ensure indicators array is properly formatted
-    if (updateData.indicators) {
-      updateData.indicators = updateData.indicators.map(indicator => ({
-        uniqueId: indicator.uniqueId || '',
-        label: indicator.label || '',
-        score: Number(indicator.score) || 0
-      }));
+    // Asegurarse de que "group" sea un array de strings
+    if (Array.isArray(updateData.group)) {
+      updateData.group = updateData.group.map(item =>
+        typeof item === 'string' ? item : String(item)
+      );
+    } else {
+      updateData.group = [];
     }
     
-    // Update timestamp
+    // Asegurarse de que "indicators" sea un array correctamente formateado
+    if (Array.isArray(updateData.indicators)) {
+      updateData.indicators = updateData.indicators.map(indicator => ({
+        uniqueId: indicator.uniqueId ? String(indicator.uniqueId) : '',
+        label: indicator.label ? String(indicator.label) : '',
+        score: typeof indicator.score === 'number' ? indicator.score : Number(indicator.score) || 0
+      }));
+    } else {
+      updateData.indicators = [];
+    }
+    
+    // Actualizar timestamp
     const updatedQualification = {
       ...updateData,
       updatedAt: new Date().toISOString()
     };
     
-    const docRef = doc(db, COLLECTION_NAME, id);
+    // Referencia al documento a actualizar
+    // Forzamos que id sea string usando String(id)
+    console.log("ID a actualizar:", id, "convertido a:", String(id));
+    const docRef = doc(db, COLLECTION_NAME, String(id));
+    console.log("Actualizando documento con:", updatedQualification);
+    
     await updateDoc(docRef, updatedQualification);
     
-    // Update local storage if in development
+    // Actualizar el almacenamiento local en desarrollo
     if (process.env.NODE_ENV === 'development') {
       const updatedQualifications = await fetchQualificationsFromFirebase();
       saveToLocalStorage('qualifications', updatedQualifications);
@@ -126,7 +118,7 @@ export const updateQualificationInFirebase = async (qualification: Qualification
 };
 
 /**
- * Deletes a qualification record
+ * Elimina un registro de calificación
  */
 export const deleteQualificationFromFirebase = async (qualificationId: string) => {
   try {
@@ -146,7 +138,7 @@ export const deleteQualificationFromFirebase = async (qualificationId: string) =
 };
 
 /**
- * Gets all qualifications, using localStorage cache in development
+ * Obtiene todas las calificaciones, utilizando el caché localStorage en desarrollo
  */
 export const getQualifications = async () => {
   if (process.env.NODE_ENV === 'development') {
@@ -166,7 +158,7 @@ export const getQualifications = async () => {
 };
 
 /**
- * Clears qualification data from localStorage
+ * Borra los datos de calificación del almacenamiento local
  */
 export const clearQualificationCache = () => {
   clearLocalStorage('qualifications');

@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { 
@@ -7,6 +6,7 @@ import {
   PhotoIcon,
   XMarkIcon
 } from '@heroicons/vue/24/outline'
+import { uploadFile } from '../services/storage'
 
 const props = defineProps<{
   accept?: string
@@ -14,11 +14,14 @@ const props = defineProps<{
   maxSize?: number // in MB
   label?: string
   showPreview?: boolean
+  path?: string // Ruta en Firebase Storage donde se guardará el archivo
 }>()
 
 const emit = defineEmits<{
   (e: 'select', files: FileList): void
   (e: 'error', message: string): void
+  (e: 'success', url: string): void
+  (e: 'progress', progress: number): void
 }>()
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -65,6 +68,41 @@ const validateFile = (file: File): boolean => {
   return true
 }
 
+const uploadFiles = async (files: FileList) => {
+  if (!props.path) {
+    emit('error', 'No se especificó la ruta de almacenamiento')
+    return
+  }
+
+  try {
+    isUploading.value = true
+    error.value = ''
+
+    for (const file of Array.from(files)) {
+      if (!validateFile(file)) continue
+
+      await uploadFile({
+        path: props.path,
+        file,
+        onProgress: (progress) => {
+          uploadProgress.value = progress
+          emit('progress', progress)
+        }
+      }).then((url) => {
+        emit('success', url)
+      }).catch((err) => {
+        throw err
+      })
+    }
+  } catch (err: any) {
+    error.value = err?.message || 'Error al subir el archivo'
+    emit('error', error.value)
+  } finally {
+    isUploading.value = false
+    uploadProgress.value = 0
+  }
+}
+
 const handleChange = (event: Event) => {
   const input = event.target as HTMLInputElement
   if (!input.files?.length) return
@@ -81,6 +119,7 @@ const handleChange = (event: Event) => {
   if (validFiles.length > 0) {
     selectedFiles.value = props.multiple ? validFiles : [validFiles[0]]
     emit('select', input.files)
+    uploadFiles(input.files)
   } else if (error.value) {
     emit('error', error.value)
   }
@@ -106,6 +145,7 @@ const handleDrop = (event: DragEvent) => {
   if (validFiles.length > 0) {
     selectedFiles.value = props.multiple ? validFiles : [validFiles[0]]
     emit('select', event.dataTransfer.files)
+    uploadFiles(event.dataTransfer.files)
   } else if (error.value) {
     emit('error', error.value)
   }
@@ -226,4 +266,3 @@ const removeFile = (index: number) => {
     </div>
   </div>
 </template>
-```

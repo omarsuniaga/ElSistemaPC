@@ -7,13 +7,12 @@ import {
   updateDoc, 
   deleteDoc, 
   query, 
-  where,
   DocumentData,
   QueryConstraint
 } from 'firebase/firestore'
 import { Firestore } from 'firebase/firestore'
-import { db as firestoreDb } from '../firebase'
-import { useOffline } from '../composables/useOffline'
+import { db as firestoreDb } from '../../firebase'
+import { useOffline } from '../../composables/useOffline'
 
 const db: Firestore = firestoreDb
 const { queueChange, isOffline } = useOffline()

@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, getCurrentInstance } from 'vue'
 import { openDB, DBSchema, IDBPDatabase } from 'idb'
 
 interface OfflineDB extends DBSchema {
@@ -147,13 +147,11 @@ export function useOffline() {
     }
   }
   
-  // Usar onMounted y onUnmounted correctamente cuando el composable se utiliza dentro de un componente
-  if (typeof onMounted === 'function') {
+  // Usar onMounted y onUnmounted sólo si hay una instancia activa
+  if (getCurrentInstance()) {
     onMounted(async () => {
       const cleanup = await initialize()
-      if (typeof onUnmounted === 'function') {
-        onUnmounted(cleanup)
-      }
+      onUnmounted(cleanup)
     })
   }
   
@@ -163,7 +161,7 @@ export function useOffline() {
     pendingChanges,
     queueChange,
     processQueue,
-    initialize,  // Exportamos initialize para poder usarlo manualmente si es necesario
+    initialize,  // Se exporta initialize para poder usarlo manualmente si es necesario
     closeDB: () => {
       if (db) {
         db.close()

@@ -89,6 +89,8 @@ export interface AttendanceRecord {
     documentUrl?: string;
     timestamp?: Date;
   };
+  documentUrl?: string;
+  timestamp?: string;  // Changed from 'date' to 'timestamp' to match usage
   createdAt?: string;
   updatedAt?: string;
 }
@@ -236,10 +238,10 @@ export interface WorkspaceElement {
 }
 
 export interface Class {
-  id: number
+  id: string
   name: string
-  teacherId: number
-  studentIds: number[]
+  teacherId: string
+  studentIds: string[]
   level: string
   instrument: string
   schedule: string | {
@@ -248,5 +250,118 @@ export interface Class {
     endTime?: string
   }
   description?: string
-  contentIds: number[]
+  contentIds: string[]
+  createdAt: string
+  updatedAt?: string
+  status?: string
+}
+
+export interface ClassRecord {
+  classId: string
+  studentId: string
+  attendance: AttendanceRecord[]
+  grades: GradeRecord[]
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface ClassTheme {
+  id: string
+  classId: string
+  themeId: string
+  createdAt: string
+  updatedAt?: string
+} 
+
+export interface ClassIndicator {
+  id: string
+  classId: string
+  indicatorId: string
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface ClassContent {
+  id: string
+  classId: string
+  contentId: string
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface ClassWorkspace {
+  classId: string
+  elements: WorkspaceElement[]
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface ClassAttendance {
+  classId: string
+  studentId: string
+  attendance: AttendanceRecord[]
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface UserProfile {
+  id: string;
+  uid: string;
+  name: string;
+  email: string;
+  phone: string;
+  photoURL: string;
+  address: string;
+  role: 'student' | 'teacher';
+  status: 'active' | 'inactive' | 'pending';
+  createdAt: string;
+  updatedAt?: string;
+  preferences?: UserSettings;
+  achievements?: Achievement[];
+  stats?: {
+    totalClasses: number;
+    averageRating: number;
+    [key: string]: any;
+  };
+  lastLogin?: string;
+  displayName?: string;
+}
+
+export interface UserSettings {
+  id: string
+  userId: string
+  darkMode: boolean
+  notifications: boolean
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface Achievement {
+  id: string
+  title: string
+  description: string
+  icon: string
+  points: number
+  criteria: string
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface Notification {
+  id: string
+  userId: string
+  title: string
+  message: string
+  type: 'info' | 'alert' | 'reminder'
+  status: 'read' | 'unread'
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface ActivityLog {
+  type: string;
+  description: string;
+  metadata?: any;
+  userId: string;
+  createdAt: string;
 }

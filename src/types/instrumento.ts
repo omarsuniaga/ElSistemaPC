@@ -18,6 +18,11 @@ export type InstrumentFamilyName =
 export interface Instrument {
   id?: string;       // Opcional si se usa para selección o creación.
   nombre: string;    // Nombre del instrumento.
+  serial: string;    // Número de serie.
+  marca: string;     // Marca del instrumento.
+  model: string;    // Modelo del instrumento.
+  size: string;      // Tamaño del instrumento.
+  state: string;     // Estado del instrumento.
   familia: InstrumentFamilyName; // Familia a la que pertenece.
 }
 

@@ -95,6 +95,80 @@ export const useStudentsStore = defineStore('students', {
       } finally {
         this.isLoading = false
       }
-    }
+    },
+
+    async fetchStudentGroups() {
+      this.isLoading = true
+      this.error = null
+      try {
+        // Objeto para almacenar la cantidad de estudiantes por grupo (tal como vienen)
+        const groupCounts: Record<string, number> = {}
+    
+        // Iterar sobre todos los estudiantes
+        this.students.forEach((student) => {
+          if (student.grupo && Array.isArray(student.grupo)) {
+            student.grupo.forEach((grupo) => {
+              groupCounts[grupo] = (groupCounts[grupo] || 0) + 1
+            })
+          }
+        })
+        
+        console.log('🔍 Original - Grupos de estudiantes encontrados:', groupCounts)
+        
+        // Función para normalizar el nombre del grupo (remover corchetes, comillas y espacios)
+        const normalizeGroupName = (name: string): string => {
+          return name.replace(/[\[\]"']/g, '').trim()
+        }
+        
+        // Objeto para almacenar los grupos normalizados
+        const normalizedCounts: Record<string, number> = {}
+        
+        Object.keys(groupCounts).forEach((originalKey) => {
+          const key = normalizeGroupName(originalKey)
+          normalizedCounts[key] = (normalizedCounts[key] || 0) + groupCounts[originalKey]
+        })
+        
+        console.log('🔍 Normalizado - Grupos de estudiantes encontrados:', normalizedCounts)
+        return normalizedCounts
+      } catch (error: any) {
+        console.error('❌ Error al cargar grupos de estudiantes:', error)
+        this.error = error.message
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+    // buscar alumnos segun la id
+    async fetchStudentById(id: string) {
+      this.isLoading = true
+      this.error = null
+
+      try {
+        console.log('🔍 Buscando estudiante por ID:', id)
+        const student = await studentService.getStudentById(id)
+        console.log('🔍 Estudiante encontrado:', student)
+        return student
+      } catch (error: any) {
+        console.error(`❌ Error al cargar estudiante ${id}:`, error)
+        this.error = error.message
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    /**
+     * Obtiene estudiantes por un array de IDs
+     * @param ids Array de IDs de estudiantes a buscar
+     * @returns Array de estudiantes que coinciden con los IDs proporcionados
+     */
+    fetchStudentsByIds(ids: string[]): Student[] {
+      if (!ids || ids.length === 0) return [];
+      
+      // Filtrar estudiantes que coinciden con los IDs proporcionados
+      return this.students.filter(student => ids.includes(student.id));
+    },
+    
+
   }
 })

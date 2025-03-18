@@ -30,7 +30,7 @@
           >
             <option value="" disabled>Selecciona una clase</option>
             <option v-for="class_ in availableClasses" :key="class_.id" :value="class_.name">
-              {{ class_.name }} ({{ getStudentCount(class_.name) }} alumnos)
+              {{ class_.name }} ({{ getStudentToClass().length }} alumnos)
             </option>
           </select>
           <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none mt-1">
@@ -81,11 +81,14 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
   (e: 'update:selectedDate', value: string): void
   (e: 'continue'): void
+  // studentsIDs: Array
+  (e: 'update:studentsIDs', value: Array<string>): void
 }>()
 
 const classesStore = useClassesStore()
 const studentsStore = useStudentsStore()
 const isLoading = ref(false)
+const studentByClass = ref<string[]>([])
 
 const handleDateChange = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -105,7 +108,7 @@ const availableClasses = computed(() => {
   if (!props.dayFilter) return classesStore.classes
 
   const currentDayName = getDayName(props.selectedDate).toLowerCase()
-  
+    
   return classesStore.classes.filter(c => {
     // Manejar tanto string como objeto para schedule
     if (typeof c.schedule === 'string') {
@@ -119,8 +122,9 @@ const availableClasses = computed(() => {
   })
 })
 
-const getStudentCount = (className: string) => {
-  return studentsStore.getStudentsByClass(className).length
+const getStudentToClass = () => {
+  studentByClass.value = classesStore.classes.map(c => c.studentIds).flat()
+  return studentByClass.value
 }
 
 onMounted(async () => {

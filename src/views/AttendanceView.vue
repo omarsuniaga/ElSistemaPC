@@ -20,46 +20,21 @@ import { useRouter, useRoute } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 
+// Props para recibir fecha y clase desde la URL
+const props = defineProps({
+  date: String,
+  classId: String
+})
+
 // Stores
 import { useAttendanceStore } from '../stores/attendance'
 import { useStudentsStore } from '../stores/students'
 import { useClassesStore } from '../stores/classes'
 import { useInstrumentoStore } from '../stores/instrumento'
 import { getCurrentDate } from '../utils/dateUtils'
-
-// Interfaces
-interface TeacherData {
-  id: string;
-  uid?: string;
-  name: string;
-  edad?: string;
-  email?: string;
-  phone?: string;
-  specialties?: string[];
-  clases?: string[];
-  schedule?: string[];
-  statistics?: string[];
-  avatar?: string;
-  photoURL?: string;
-  address?: string;
-  experiencia?: string;
-  biography?: string;
-  status?: 'activo' | 'inactivo' | 'pendiente';
-  createdAt?: any;
-  updatedAt?: any;
-}
-
-interface SelectedStudent {
-  id: string;
-  nombre: string;
-  apellido: string;
-}
-
-interface AttendanceFilters {
-  instrument: string;
-  level: string;
-  teacherId: string;
-}
+import type { SelectedStudent } from '../types/student'
+import type { TeacherData } from '../types/teachers'
+import type { AttendanceFiltersType } from '../types/attendance'
 
 const attendanceStore = useAttendanceStore()
 const studentsStore = useStudentsStore()
@@ -84,6 +59,12 @@ const selectedStudentForObs = ref<SelectedStudent | null>(null)
 const showJustifiedAbsenceModal = ref(false)
 const selectedStudentForJustification = ref<SelectedStudent | null>(null)
 
+// Lista de estudiantes filtrados
+const filteredStudents = ref<any[]>([])
+const errorMessage = ref('')
+const warningMessage = ref('')
+const selectedClassName = ref('')
+
 // Computed property para obtener profesores
 const teachers = computed<TeacherData[]>(() => {
   return studentsStore.students
@@ -95,7 +76,7 @@ const teachers = computed<TeacherData[]>(() => {
 })
 
 // Filtros para informes
-const reportFilters = ref<AttendanceFilters>({
+const reportFilters = ref<AttendanceFiltersType>({
   instrument: '',
   level: '',
   teacherId: ''
@@ -108,7 +89,19 @@ const selectDate = (date: string) => {
   view.value = 'class-select'
 }
 
-// Cargar datos iniciales y verificar si hay una clase en la URL
+// Computed para determinar si la fecha seleccionada es válida para editar
+const isDateEditable = computed(() => {
+  return attendanceStore.validateAttendanceDate(selectedDate.value);
+});
+
+// Método para navegar a la URL con formato /attendance/YYYYMMDD/class-id
+const navigateToAttendanceDetailUrl = (date: string, classId: string) => {
+  // Formatear la fecha eliminando guiones para URL
+  const formattedDate = date.replace(/-/g, '')
+  router.push(`/attendance/${formattedDate}/${classId}`)
+}
+
+// Función para cargar datos iniciales y verificar si hay una fecha y clase en la URL
 async function fetchInitialData() {
   try {
     isLoading.value = true
@@ -120,13 +113,29 @@ async function fetchInitialData() {
       instrumentoStore.fetchInstrumentos()
     ])
     
-    // Verificar si existe una clase en la URL y cargarla
-    const classFromUrl = route.query.class as string
-    if (classFromUrl) {
-      selectedClass.value = classFromUrl
-      attendanceStore.selectedClass = classFromUrl
+    // Verificar si tenemos fecha y clase en los props (de la URL)
+    if (props.date && props.classId) {
+      // Formatear la fecha a formato YYYY-MM-DD (si viene como YYYYMMDD)
+      const dateStr = props.date
+      const formattedDate = dateStr.length === 8
+        ? `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`
+        : dateStr
       
-      await loadAttendanceData(classFromUrl)
+      selectedDate.value = formattedDate
+      selectedClass.value = props.classId
+      
+      // También actualizar en el store
+      attendanceStore.selectedDate = formattedDate
+      attendanceStore.selectedClass = props.classId
+      
+      await selectClass(props.classId)
+    }
+    // Si no tenemos fecha/clase en la URL pero sí en el query
+    else if (route.query.class) {
+      selectedClass.value = route.query.class as string
+      attendanceStore.selectedClass = selectedClass.value
+      
+      await loadAttendanceData(selectedClass.value)
       view.value = 'attendance-form'
     }
     
@@ -148,16 +157,27 @@ const loadAttendanceData = async (className: string) => {
     isLoading.value = true
     loadingMessage.value = 'Cargando datos de asistencia...'
     
-    await attendanceStore.fetchAttendance()
-
-    // Inicializar todos los estudiantes con estado 'Ausente' por defecto
-    const studentsInClass = studentsStore.getStudentsByClass(className)
-    studentsInClass.forEach(student => {
-      if (!attendanceStore.attendanceRecords[student.id]) {
-        attendanceStore.attendanceRecords[student.id] = 'Ausente'
+    // Limpiar registros de asistencia previos
+    attendanceStore.attendanceRecords = {}
+    
+    // Actualizar contexto en el store
+    attendanceStore.selectedClass = className
+    attendanceStore.selectedDate = selectedDate.value
+    
+    // Cargar el documento de asistencia
+    await attendanceStore.fetchAttendanceDocument(selectedDate.value, className)
+    
+    // Ahora, cargar los registros de asistencia
+    await attendanceStore.fetchAttendanceByClassAndDate(className, selectedDate.value)
+    
+    // Inicializar todos los estudiantes que no tienen estado con estado 'Ausente'
+    const studentIds = classesStore.getStudentIdsByClass(className);
+    studentIds.forEach(studentId => {
+      if (!attendanceStore.attendanceRecords[studentId]) {
+        attendanceStore.attendanceRecords[studentId] = 'Ausente';
       }
-    })
-
+    });
+    
     // Actualizar analytics después de cargar los datos
     await attendanceStore.updateAnalytics()
     
@@ -171,100 +191,139 @@ const loadAttendanceData = async (className: string) => {
   }
 }
 
+// Función para seleccionar una clase y cargar sus estudiantes
 const selectClass = async (className: string) => {
-  if (!className) {
-    error.value = "Por favor selecciona una clase"
-    return
-  }
-  
   try {
-    selectedClass.value = className
-    attendanceStore.selectedClass = className
+    console.log('Seleccionando clase:', className);
+    selectedClass.value = className;
+    attendanceStore.selectedClass = className;
     
-    // Actualizar la URL con la clase seleccionada
-    await router.push({ query: { class: className } })
+    // Obtener IDs de estudiantes de la clase seleccionada
+    const studentIds = classesStore.getStudentIdsByClass(className);
+    console.log('IDs de estudiantes encontrados:', studentIds);
+    
+    // Obtener los datos completos de los estudiantes usando fetchStudentsByIds
+    const studentsData = studentsStore.fetchStudentsByIds(studentIds);
+    
+    // Almacenar los estudiantes filtrados
+    filteredStudents.value = studentsData;
+    
+    console.log('Estudiantes encontrados:', filteredStudents.value);
+    
+    // También actualizar el nombre de la clase seleccionada
+    const classObj = classesStore.classes.find(c => c.id === className || c.name === className)
+    selectedClassName.value = classObj?.name || className
+    
+    // Actualizar la URL con la nueva estructura /attendance/fecha/clase
+    const formattedDate = selectedDate.value.replace(/-/g, '')
+    await router.push(`/attendance/${formattedDate}/${className}`);
     
     // Cargar datos de asistencia para la clase seleccionada
-    const success = await loadAttendanceData(className)
+    const success = await loadAttendanceData(className);
     
     if (success) {
       // Cambiar a la vista de formulario de asistencia
-      view.value = 'attendance-form'
-    } else {
-      error.value = 'Error al cargar los datos de asistencia'
+      view.value = 'attendance-form';
     }
-  } catch (err) {
-    error.value = 'Error al cargar los datos de la clase'
-    console.error('Error selecting class:', err)
+  } catch (error) {
+    console.error('Error al seleccionar clase:', error);
+    errorMessage.value = 'Error al cargar los estudiantes de la clase';
   }
 }
 
 // Iniciar carga de datos al montar el componente
 onMounted(fetchInitialData)
 
-// Observar cambios en los filtros de reportes
-watch(reportFilters, () => {
-  // Reiniciar paginación o actualizar vista de reporte
-}, { deep: true })
-
-// Observar cambios en la ruta
-watch(() => route.query.class, (newClass) => {
-  const classFromUrl = newClass as string
-  if (classFromUrl && classFromUrl !== selectedClass.value) {
-    selectedClass.value = classFromUrl
-    attendanceStore.selectedClass = classFromUrl
-    loadAttendanceData(classFromUrl).then(() => {
-      view.value = 'attendance-form'
-    })
+// Observar cambios en los parámetros de URL
+watch(
+  () => [route.params.date, route.params.classId],
+  async ([newDate, newClassId]) => {
+    if (newDate && newClassId) {
+      // Formatear la fecha de YYYYMMDD a YYYY-MM-DD
+      const dateStr = newDate as string
+      const formattedDate = dateStr.length === 8
+        ? `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`
+        : dateStr
+      
+      // Actualizar los estados locales
+      selectedDate.value = formattedDate
+      selectedClass.value = newClassId as string
+      
+      // También actualizar en el store
+      attendanceStore.selectedDate = formattedDate
+      attendanceStore.selectedClass = newClassId as string
+      
+      // Si hay un cambio real en la clase o fecha, cargar los datos
+      await selectClass(newClassId as string)
+    }
   }
-})
+)
 
 // Mantener un registro local de cambios de asistencia
 const pendingAttendanceChanges = ref<{studentId: string, status: AttendanceStatus}[]>([])
 
 // Event handlers
-const handleUpdateStatus = (studentId: string, status: AttendanceStatus | 'save') => {
-  // Si el status es 'save', guardar todos los cambios pendientes
+const handleUpdateStatus = async (studentId: string, status: AttendanceStatus | 'save') => {
+  console.log('Actualizando estado de asistencia:', studentId, status)
+  
+  // No permitir cambios si la fecha es futura
+  if (!attendanceStore.validateAttendanceDate(selectedDate.value)) {
+    warningMessage.value = "No se puede modificar asistencia para fechas futuras";
+    return;
+  }
+  
   if (status === 'save') {
-    saveAllAttendanceChanges()
-    return
+    await saveAllAttendanceChanges();
+    return;
   }
   
-  // Actualizar el estado local sin mostrar mensaje de carga
-  attendanceStore.attendanceRecords[studentId] = status
+  // Actualizar el estado de asistencia localmente
+  attendanceStore.attendanceRecords[studentId] = status;
   
-  // Registrar el cambio para guardarlo más tarde
-  const existingIndex = pendingAttendanceChanges.value.findIndex(change => change.studentId === studentId)
-  if (existingIndex >= 0) {
-    pendingAttendanceChanges.value[existingIndex].status = status as AttendanceStatus
+  // Añadir a la lista de cambios pendientes
+  const existingChange = pendingAttendanceChanges.value.findIndex(c => c.studentId === studentId);
+  if (existingChange !== -1) {
+    pendingAttendanceChanges.value[existingChange].status = status;
   } else {
-    pendingAttendanceChanges.value.push({
-      studentId,
-      status: status as AttendanceStatus
-    })
+    pendingAttendanceChanges.value.push({ studentId, status });
   }
-}
+};
 
 // Función para guardar todos los cambios pendientes
 const saveAllAttendanceChanges = async () => {
-  if (pendingAttendanceChanges.value.length === 0) return
-  
   try {
     isLoading.value = true
     loadingMessage.value = 'Guardando asistencia...'
     
-    // Guardar cada cambio pendiente
-    for (const change of pendingAttendanceChanges.value) {
-      await attendanceStore.updateAttendance({
-        studentId: change.studentId,
-        classId: selectedClass.value,
-        Fecha: selectedDate.value,
-        status: change.status
-      })
-    }
+    // Crear el documento de asistencia que se guardará
+    const attendanceDoc = {
+      fecha: selectedDate.value,
+      classId: selectedClass.value,
+      data: {
+        presentes: [] as string[],
+        ausentes: [] as string[],
+        tarde: [] as string[],
+        justificacion: attendanceStore.currentAttendanceDoc?.data.justificacion || [],
+        observations: attendanceStore.currentAttendanceDoc?.data.observations || ''
+      }
+    };
+    
+    // Clasificar estudiantes según su estado de asistencia
+    Object.entries(attendanceStore.attendanceRecords).forEach(([studentId, status]) => {
+      if (status === 'Presente') {
+        attendanceDoc.data.presentes.push(studentId);
+      } else if (status === 'Ausente') {
+        attendanceDoc.data.ausentes.push(studentId);
+      } else if (status === 'Tardanza' || status === 'Justificado') {
+        attendanceDoc.data.tarde.push(studentId);
+      }
+    });
+    
+    // Guardar el documento
+    await attendanceStore.saveAttendanceDocument(attendanceDoc);
     
     // Limpiar los cambios pendientes
-    pendingAttendanceChanges.value = []
+    pendingAttendanceChanges.value = [];
     
     // Actualizar analytics después de guardar todos los cambios
     await attendanceStore.updateAnalytics()
@@ -277,11 +336,11 @@ const saveAllAttendanceChanges = async () => {
   }
 }
 
-const handleObservationAdded = async () => {
+const handleObservationAdded = async (observations: string) => {
   try {
-    // Recargar datos después de agregar la observación
-    await attendanceStore.fetchAttendance()
-    showObservationsModal.value = false
+    // Guardar las observaciones
+    await attendanceStore.updateObservations(selectedDate.value, selectedClass.value, observations);
+    showObservationsModal.value = false;
   } catch (err) {
     error.value = 'Error al actualizar las observaciones'
     console.error('Error updating observations:', err)
@@ -295,8 +354,8 @@ const handleJustificationSave = async (data: { reason: string, documentUrl?: str
     isLoading.value = true
     loadingMessage.value = 'Guardando justificación...'
     
-    // Use the new method that properly handles file uploads and justifications
-    await attendanceStore.updateAttendanceWithJustification(
+    // Usar el método del store para guardar la justificación
+    await attendanceStore.addJustificationToAttendance(
       selectedStudentForJustification.value.id,
       selectedDate.value,
       selectedClass.value,
@@ -305,7 +364,9 @@ const handleJustificationSave = async (data: { reason: string, documentUrl?: str
     )
     
     showJustifiedAbsenceModal.value = false
-    await attendanceStore.updateAnalytics()
+    
+    // Recargar los datos para reflejar los cambios
+    await loadAttendanceData(selectedClass.value);
   } catch (err) {
     error.value = 'Error al guardar la justificación'
     console.error('Error saving justification:', err)
@@ -381,6 +442,24 @@ const handleOpenObservation = (student: any) => {
 const handleOpenExport = () => {
   showExportModal.value = true
 }
+
+// Función para manejar la selección de fecha
+const handleDateChange = async (newDate: string) => {
+  selectedDate.value = newDate;
+  
+  // Si la fecha es futura, mostrar advertencia
+  if (!attendanceStore.validateAttendanceDate(selectedDate.value)) {
+    warningMessage.value = "No se puede registrar asistencia para fechas futuras";
+    return;
+  }
+  
+  // Si hay una clase seleccionada, actualizar la URL y cargar los datos
+  if (selectedClass.value) {
+    const formattedDate = newDate.replace(/-/g, '');
+    await router.push(`/attendance/${formattedDate}/${selectedClass.value}`);
+    await loadAttendanceData(selectedClass.value);
+  }
+};
 </script>
 
 <template>
@@ -388,7 +467,7 @@ const handleOpenExport = () => {
     <!-- Header -->
     <AttendanceHeader 
       :selectedDate="selectedDate" 
-      :selectedClass="selectedClass"
+      :selectedClass="selectedClassName"
       :view="view"
       :showAnalytics="showAnalytics"
       @change-view="view = $event"
@@ -469,19 +548,36 @@ const handleOpenExport = () => {
             v-model:selectedDate="selectedDate" 
             :dayFilter="true"
             @continue="() => selectClass(selectedClass)"
+            :isLoading="isLoading"
+            @date-change="handleDateChange"
           />
         </div>
 
         <!-- Vista de Lista de Asistencia -->
         <div v-else-if="view === 'attendance-form'" class="space-y-4 sm:space-y-6">
           <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-4">Lista de Asistencia</h2>
+          <!-- Mensaje de advertencia para fechas futuras -->
+          <div v-if="!isDateEditable" class="bg-yellow-100 dark:bg-yellow-800 p-4 rounded-lg mb-4">
+            <div class="flex items-center">
+              <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+              <span class="text-yellow-800 dark:text-yellow-300">
+                {{ warningMessage || "No se puede registrar asistencia para fechas futuras" }}
+              </span>
+            </div>
+          </div>
+          <!-- Lista de asistencia con botones deshabilitados para fechas futuras -->
           <AttendanceList 
-            :students="studentsStore.getStudentsByClass(selectedClass)" 
+            :students="filteredStudents" 
             :attendanceRecords="attendanceStore.attendanceRecords"
+            :selectedClassName="selectedClassName"
+            :isDisabled="!isDateEditable"
             @update-status="handleUpdateStatus"
             @open-justification="handleOpenJustification"
             @open-observation="handleOpenObservation"
             @open-export="handleOpenExport"
+            @class-changed="selectClass"
           />
         </div>
       </div>
