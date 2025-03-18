@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import type { AttendanceStatus, Student } from '../types'
+import { eachDayOfInterval, addMonths, isSameDay, parseISO, format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
 // Componentes importados
 import AttendanceHeader from '../components/AttendanceHeader.vue'
@@ -327,9 +329,17 @@ const saveAllAttendanceChanges = async () => {
     
     // Actualizar analytics después de guardar todos los cambios
     await attendanceStore.updateAnalytics()
+
+    showToast('Asistencia guardada exitosamente');
+    return true;
   } catch (err) {
     error.value = 'Error al guardar la asistencia'
     console.error('Error saving attendance:', err)
+    showToast(
+      'Error al guardar la asistencia: ' + (err instanceof Error ? err.message : 'Error desconocido'),
+      'error'
+    );
+    return false;
   } finally {
     isLoading.value = false
     loadingMessage.value = ''
@@ -460,10 +470,72 @@ const handleDateChange = async (newDate: string) => {
     await loadAttendanceData(selectedClass.value);
   }
 };
+
+// New reactive refs for messages
+const showMessage = ref(false);
+const message = ref('');
+const messageType = ref<'success' | 'error'>('success');
+
+// Function to show toast message
+const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+  message.value = msg;
+  messageType.value = type;
+  showMessage.value = true;
+  setTimeout(() => {
+    showMessage.value = false;
+  }, 3000);
+};
+
+// Computed for available class dates
+const availableClassDates = computed(() => {
+  if (!selectedClass.value) return [];
+  
+  // Get scheduled days for the class
+  const scheduledDays = attendanceStore.getClassScheduleDays(selectedClass.value);
+  
+  // Get date range (current month + next month)
+  const startDate = parseISO(format(new Date(), 'yyyy-MM-dd'));
+  const endDate = addMonths(startDate, 1);
+  
+  // Get all days in range
+  const allDates = eachDayOfInterval({ start: startDate, end: endDate });
+  
+  // Filter only the days that match class schedule
+  return allDates
+    .filter(date => scheduledDays.includes(format(date, 'EEEE', { locale: es }).toLowerCase()))
+    .map(date => format(date, 'yyyy-MM-dd'));
+});
+
+// Computed to get observations count
+const getObservationsCount = computed(() => {
+  if (!attendanceStore.currentAttendanceDoc) return 0;
+  return attendanceStore.currentAttendanceDoc.data.observations ? 1 : 0;
+});
+
+const showCalendarModal = ref(false);
+const handleCalendarSelect = (date: string) => {
+  selectedDate.value = date;
+  handleDateChange(date);
+  showCalendarModal.value = false;
+}
+
+// Computed para mostrar la fecha formateada en el título
+const formattedSelectedDate = computed(() => {
+  return format(parseISO(selectedDate.value), "d 'de' MMMM yyyy", { locale: es });
+});
 </script>
 
 <template>
   <div class="p-2 sm:p-4 md:p-6 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <!-- Toast Messages -->
+    <div 
+      v-if="showMessage"
+      class="fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg text-white transition-all duration-300"
+      :class="messageType === 'success' ? 'bg-green-500' : 'bg-red-500'"
+    >
+      {{ message }}
+    </div>
+
     <!-- Header -->
     <AttendanceHeader 
       :selectedDate="selectedDate" 
@@ -555,7 +627,29 @@ const handleDateChange = async (newDate: string) => {
 
         <!-- Vista de Lista de Asistencia -->
         <div v-else-if="view === 'attendance-form'" class="space-y-4 sm:space-y-6">
-          <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-4">Lista de Asistencia</h2>
+          <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-4">
+            Lista de Asistencia {{ formattedSelectedDate }}
+          </h2>
+          
+          <!-- Botón para cambiar de fecha mediante modal con calendario -->
+          <div class="mb-4">
+            <button @click="showCalendarModal = true" class="btn btn-secondary">
+              <i class="fas fa-calendar-alt mr-2"></i>
+              Cambiar Fecha
+            </button>
+          </div>
+          
+          <!-- Modal de calendario -->
+          <div v-if="showCalendarModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg">
+              <h3 class="text-lg font-semibold mb-4">Seleccionar Fecha</h3>
+              <Calendar :selected-date="selectedDate" :marked-dates="availableClassDates" @select="handleCalendarSelect" />
+              <div class="mt-4 text-right">
+                <button @click="showCalendarModal = false" class="btn btn-secondary">Cancelar</button>
+              </div>
+            </div>
+          </div>
+          
           <!-- Mensaje de advertencia para fechas futuras -->
           <div v-if="!isDateEditable" class="bg-yellow-100 dark:bg-yellow-800 p-4 rounded-lg mb-4">
             <div class="flex items-center">
@@ -573,11 +667,15 @@ const handleDateChange = async (newDate: string) => {
             :attendanceRecords="attendanceStore.attendanceRecords"
             :selectedClassName="selectedClassName"
             :isDisabled="!isDateEditable"
+            :currentDate="selectedDate"
+            :availableDates="availableClassDates"
+            :observationsCount="getObservationsCount"
             @update-status="handleUpdateStatus"
             @open-justification="handleOpenJustification"
             @open-observation="handleOpenObservation"
             @open-export="handleOpenExport"
             @class-changed="selectClass"
+            @date-changed="handleDateChange"
           />
         </div>
       </div>

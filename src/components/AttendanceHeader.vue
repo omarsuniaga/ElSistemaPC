@@ -13,7 +13,7 @@
       <div>
         <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Asistencias</h1>
         <p v-if="selectedDate || selectedClass" class="text-sm text-gray-600 dark:text-gray-400">
-          {{ selectedDate ? formatDate(selectedDate) : '' }}
+          {{ displayedDate }}
           {{ selectedClass ? `- ${selectedClass}` : '' }}
         </p>
       </div>
@@ -61,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import {
@@ -69,10 +70,9 @@ import {
   DocumentTextIcon,
   ArrowDownTrayIcon,
   PlusCircleIcon,
-  
 } from '@heroicons/vue/24/outline'
 
-defineProps<{
+const props = defineProps<{
   selectedDate?: string
   selectedClass?: string
   view: 'calendar' | 'class-select' | 'attendance-form'
@@ -87,9 +87,19 @@ defineEmits<{
   (e: 'create-new-attendance'): void
 }>()
 
+const displayedDate = computed(() => {
+  try {
+    return props.selectedDate ? formatDate(props.selectedDate) : ''
+  } catch {
+    return props.selectedDate || ''
+  }
+})
+
 const formatDate = (date: string) => {
   try {
-    return format(new Date(date), 'PPP', { locale: es })
+    // Forzar la fecha a medianoche local para evitar desfase
+    const localDate = new Date(date + "T00:00:00")
+    return format(localDate, "PPPP", { locale: es })
   } catch {
     return date
   }

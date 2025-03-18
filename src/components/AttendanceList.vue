@@ -1,7 +1,19 @@
 <template>
   <div class="space-y-4">
-    <div class="flex justify-between items-center mb-4">
+    <!-- Date and Actions Bar -->
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
+      <!-- Se reemplaza el select por un botón con icono de calendario -->
+      <div class="flex items-center gap-2">
+        <button 
+          @click="emit('open-calendar')"
+          class="btn btn-secondary flex items-center gap-2 px-3 py-1 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+        >
+          <CalendarIcon class="w-4 h-4" />
+          <span>{{ formatDate(selectedLocalDate) }}</span>
+        </button>
+      </div>
       
+      <!-- Action Buttons -->
       <div class="flex justify-end gap-1 sm:gap-2">
         <button 
           @click="$router.push('/workspace')"
@@ -24,14 +36,21 @@
           <span class="hidden xs:inline">Exportar</span>
           <span class="xs:hidden">E</span>
         </button>
+        <!-- Botón Observaciones (sin relación con Justificado) con Badge -->
         <button 
-          class="btn btn-info btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm" 
-          @click="emit('open-observation', null)"
+          class="btn btn-secondary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm relative" 
+          @click="emit('open-observation')"
           :disabled="isDisabled"
         >
           <ChatBubbleLeftRightIcon class="w-3 h-3 sm:w-4 sm:h-4" />
           <span class="hidden xs:inline">Observaciones</span>
           <span class="xs:hidden">O</span>
+          <span 
+            v-if="observationsCount > 0"
+            class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+          >
+            {{ observationsCount }}
+          </span>
         </button>
       </div>
     </div>
@@ -158,10 +177,12 @@
                   @click="emit('open-justification', student)"
                   :class="[
                     'btn btn-icon btn-sm sm:btn-sm',
-                    (attendanceRecords[student.id] || 'Ausente') === 'Justificado' ? 'btn-info-active' : 'btn-info'
+                    (attendanceRecords[student.id] || 'Ausente') === 'Justificado' 
+                      ? 'bg-blue-300 text-blue-900' 
+                      : 'bg-blue-600 text-white'
                   ]"
                   :disabled="isDisabled"
-                  title="Justificacion"
+                  title="Justificación"
                 >
                   <DocumentCheckIcon class="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
@@ -186,13 +207,16 @@ import {
   ChatBubbleLeftRightIcon,
   ArrowDownOnSquareIcon,
   ArrowDownTrayIcon,
-  PaperClipIcon
+  PaperClipIcon,
+  CalendarIcon
 } from '@heroicons/vue/24/outline'
 import './AttendanceList.css'
 import { useClassesStore } from '../stores/classes'
 import { useStudentsStore } from '../stores/students'
 import { useAttendanceStore } from '../stores/attendance'
 import { useRoute } from 'vue-router'
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 // Props y emits
 const props = defineProps<{
@@ -201,6 +225,9 @@ const props = defineProps<{
   initialClassId?: string;
   selectedClassName?: string; // Nombre de la clase seleccionada
   isDisabled?: boolean; // Para deshabilitar botones en fechas no editables
+  currentDate: string;
+  availableDates: string[];
+  observationsCount: number;
 }>()
 
 const emit = defineEmits<{
@@ -209,6 +236,8 @@ const emit = defineEmits<{
   (e: 'open-justification', student: Student): void;
   (e: 'open-export'): void;
   (e: 'class-changed', classId: string): void;
+  (e: 'date-changed', date: string): void;
+  (e: 'open-calendar'): void;
 }>()
 
 // Stores
@@ -272,6 +301,33 @@ const getStatusClass = (status: string) => {
     'Justificado': 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700'
   }
   return classes[status as keyof typeof classes] || 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200'
+}
+
+// Local date state
+const selectedLocalDate = computed({
+  get: () => props.currentDate,
+  set: (value) => emit('date-changed', value)
+})
+
+// Format date helper
+const formatDate = (date: string) => {
+	// Concatenar "T00:00:00" para forzar la interpretación a medianoche local.
+	const constructedDate = new Date(date + "T00:00:00");
+	if(isNaN(constructedDate.getTime())){
+		// Si la fecha es inválida, regresar el valor original
+		return date;
+	}
+	return format(constructedDate, "EEEE d 'de' MMMM", { locale: es });
+}
+
+// Modified style for Justified button
+const getStatusButtonClass = (status: string, currentStatus: string) => {
+  if (status === 'Justificado') {
+    return currentStatus === status 
+      ? 'bg-blue-200 text-blue-800' 
+      : 'bg-blue-100 text-blue-600 hover:bg-blue-200';
+  }
+  // ...rest of the existing status classes...
 }
 
 // Cargar las clases si no están ya cargadas
