@@ -637,6 +637,7 @@ onMounted(async () => {
               <div class="setting-icon">
                 <component
                   :is="profileStore.profile?.preferences?.theme === 'dark' ? MoonIcon : profileStore.profile?.preferences?.theme === 'light' ? SunIcon : ComputerDesktopIcon"
+                  class="w-5 h-5"
                 />
               </div>
               <div>
@@ -648,7 +649,7 @@ onMounted(async () => {
             </div>
 
             <div class="info-item">
-              <div class="setting-icon">
+              <div class="setting-icon w-5 h-5">
                 <LanguageIcon />
               </div>
               <div>
@@ -660,7 +661,7 @@ onMounted(async () => {
             </div>
 
             <div class="info-item">
-              <div class="setting-icon">
+              <div class="setting-icon w-5 h-5">
                 <GlobeAmericasIcon />
               </div>
               <div>
@@ -670,7 +671,7 @@ onMounted(async () => {
             </div>
 
             <div class="info-item">
-              <div class="setting-icon">
+              <div class="setting-icon w-5 h-5">
                 <BellIcon />
               </div>
               <div>
@@ -678,7 +679,7 @@ onMounted(async () => {
                 <p class="info-value">
                   <span 
                     :class="profileStore.profile.preferences.emailNotifications ? 'bg-green-500' : 'bg-red-500'" 
-                    class="inline-block h-2.5 w-2.5 rounded-full mr-2"
+                    class="inline-block h-5 w-5 rounded-full mr-2"
                   ></span>
                   {{ profileStore.profile.preferences.emailNotifications ? 'Activadas' : 'Desactivadas' }}
                 </p>
