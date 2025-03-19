@@ -372,12 +372,7 @@ const handleView = (classItem: any) => {
   selectedClass.value = classItem
   showClassDrawer.value = true
 }
-const handleEdit = (id: string) => {
-  activeDropdown.value = null
-  // Redirige a la edición o abre modal según convenga
-  console.log('Editar clase', id)
-}
-const handleDelete = (id: string) => {
+const handleClassDelete = (id: string) => {
   activeDropdown.value = null
   // Mostrar modal de confirmación para eliminar
   console.log('Eliminar clase', id)
@@ -640,7 +635,7 @@ const closeDropdowns = () => {
                 Editar
               </button>
               <button 
-                @click="handleDelete(classItem.id)"
+                @click="handleClassDelete(classItem.id)"
                 class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
               >
                 Eliminar
@@ -661,7 +656,7 @@ const closeDropdowns = () => {
       :classItem="selectedClass"
       @close="showClassDrawer = false"
       @edit="handleEdit"
-      @delete="handleDelete"
+      @delete="handleClassDelete"
     />
   </div>
 </template>
