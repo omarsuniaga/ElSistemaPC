@@ -120,6 +120,105 @@ export const useContentsStore = defineStore('contents', {
       }
     },
 
+    async deleteContent(contentId: number) {
+      this.isLoading = true
+      this.error = null
+      try {
+        await new Promise(resolve => setTimeout(resolve, 500))
+        this.contents = this.contents.filter(content => content.id !== contentId)
+      } catch (error) {
+        console.error('Error deleting content:', error)
+        this.error = 'Error al eliminar el contenido'
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+    async addContent(content: Omit<Content, 'id' | 'createdAt' | 'updatedAt'>) {
+      this.isLoading = true
+      this.error = null
+      try {
+        await new Promise(resolve => setTimeout(resolve, 500))
+        const newContent: Content = {
+          ...content,
+          id: this.contents.length + 1,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+        this.contents.push(newContent)
+        return newContent
+      } catch (error) {
+        console.error('Error adding content:', error)
+        this.error = 'Error al añadir el contenido'
+        throw error
+      }
+      finally {
+        this.isLoading = false
+      }
+    },
+    async updateContent(contentId: number, content: Partial<Omit<Content, 'id' | 'createdAt' | 'updatedAt'>>) {
+      this.isLoading = true
+      this.error = null
+      try {
+        await new Promise(resolve => setTimeout(resolve, 500))
+        const index = this.contents.findIndex(c => c.id === contentId)
+        if (index !== -1) {
+          this.contents[index] = {
+            ...this.contents[index],
+            ...content,
+            updatedAt: new Date().toISOString()
+          }
+        }
+      }
+
+      catch (error) {
+        console.error('Error updating content:', error)
+        this.error = 'Error al actualizar el contenido'
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+    async deleteTheme(contentId: number, themeId: number) {
+      this.isLoading = true
+      this.error = null
+      try {
+        await new Promise(resolve => setTimeout(resolve, 500))
+        const content = this.contents.find(c => c.id === contentId)
+        if (content) {
+          content.themes = content.themes.filter(theme => theme.id !== themeId)
+        }
+      } catch (error) {
+        console.error('Error deleting theme:', error)
+        this.error = 'Error al eliminar el tema'
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+    async addTheme(contentId: number, theme: Omit<ContentTheme, 'id' | 'indicators'>) {
+      this.isLoading = true
+      this.error = null
+      try {
+        await new Promise(resolve => setTimeout(resolve, 500))
+        const content = this.contents.find(c => c.id === contentId)
+        if (content) {
+          const newTheme: ContentTheme = {
+            ...theme,
+            id: content.themes.length + 1,
+            indicators: []
+          }
+          content.themes.push(newTheme)
+        }
+      } catch (error) {
+        console.error('Error adding theme:', error)
+        this.error = 'Error al añadir el tema'
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+
     async updateThemeWeight(contentId: number, themeId: number, weight: number) {
       const content = this.contents.find(c => c.id === contentId)
       const theme = content?.themes.find(t => t.id === themeId)

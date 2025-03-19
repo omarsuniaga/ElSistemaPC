@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import type { AttendanceStatus, Student } from '../types'
 import { eachDayOfInterval, addMonths, isSameDay, parseISO, format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -85,11 +85,46 @@ const reportFilters = ref<AttendanceFiltersType>({
 })
 
 // Funciones principales
-const selectDate = (date: string) => {
-  selectedDate.value = date
-  attendanceStore.selectedDate = date
-  view.value = 'class-select'
-}
+const isDateUpdating = ref(false);
+
+// Añadir un estado para controlar si estamos en medio de una actualización
+const isUpdating = ref(false);
+
+const selectDate = async (date) => {
+  // Si ya estamos actualizando, no hacer nada para evitar recursión
+  if (isUpdating.value) return;
+  
+  try {
+    // Bloquear nuevas actualizaciones
+    isUpdating.value = true;
+    
+    // Si la fecha es un string (formato YYYY-MM-DD), usarla directamente
+    if (typeof date === 'string') {
+      selectedDate.value = date;
+    } 
+    // Si es un objeto con propiedad date (como los objetos del calendario)
+    else if (date && date.date) {
+      selectedDate.value = date.date;
+    }
+    
+    // Si hay una clase seleccionada, actualizar la URL y cargar los datos
+    if (selectedClass.value) {
+      const formattedDate = selectedDate.value.replace(/-/g, '');
+      await router.push(`/attendance/${formattedDate}/${selectedClass.value}`);
+      await loadAttendanceData(selectedClass.value);
+    } else {
+      // Si no hay clase seleccionada, ir a la vista de selección de clase
+      view.value = 'class-select';
+    }
+  } catch (error) {
+    console.error('Error al seleccionar fecha:', error);
+  } finally {
+    // Esperar al siguiente ciclo antes de permitir nuevas actualizaciones
+    setTimeout(() => {
+      isUpdating.value = false;
+    }, 0);
+  }
+};
 
 // Computed para determinar si la fecha seleccionada es válida para editar
 const isDateEditable = computed(() => {
@@ -455,19 +490,29 @@ const handleOpenExport = () => {
 
 // Función para manejar la selección de fecha
 const handleDateChange = async (newDate: string) => {
-  selectedDate.value = newDate;
+  if (isUpdating.value) return;
   
-  // Si la fecha es futura, mostrar advertencia
-  if (!attendanceStore.validateAttendanceDate(selectedDate.value)) {
-    warningMessage.value = "No se puede registrar asistencia para fechas futuras";
-    return;
-  }
-  
-  // Si hay una clase seleccionada, actualizar la URL y cargar los datos
-  if (selectedClass.value) {
-    const formattedDate = newDate.replace(/-/g, '');
-    await router.push(`/attendance/${formattedDate}/${selectedClass.value}`);
-    await loadAttendanceData(selectedClass.value);
+  try {
+    isUpdating.value = true;
+    
+    selectedDate.value = newDate;
+    
+    // Si la fecha es futura, mostrar advertencia
+    if (!attendanceStore.validateAttendanceDate(selectedDate.value)) {
+      warningMessage.value = "No se puede registrar asistencia para fechas futuras";
+      return;
+    }
+    
+    // Si hay una clase seleccionada, actualizar la URL y cargar los datos
+    if (selectedClass.value) {
+      const formattedDate = newDate.replace(/-/g, '');
+      await router.push(`/attendance/${formattedDate}/${selectedClass.value}`);
+      await loadAttendanceData(selectedClass.value);
+    }
+  } finally {
+    setTimeout(() => {
+      isUpdating.value = false;
+    }, 0);
   }
 };
 
@@ -514,15 +559,50 @@ const getObservationsCount = computed(() => {
 
 const showCalendarModal = ref(false);
 const handleCalendarSelect = (date: string) => {
-  selectedDate.value = date;
-  handleDateChange(date);
-  showCalendarModal.value = false;
+  if (isUpdating.value) return;
+  
+  try {
+    isUpdating.value = true;
+    
+    if (typeof date === 'string') {
+      selectedDate.value = date;
+      
+      // Si hay una clase seleccionada, actualizar datos
+      if (selectedClass.value) {
+        const formattedDate = date.replace(/-/g, '');
+        router.push(`/attendance/${formattedDate}/${selectedClass.value}`);
+        loadAttendanceData(selectedClass.value);
+      } else {
+        view.value = 'class-select';
+      }
+      
+      showCalendarModal.value = false;
+    }
+  } finally {
+    // Usar setTimeout para romper el ciclo de actualizaciones
+    setTimeout(() => {
+      isUpdating.value = false;
+    }, 0);
+  }
 }
 
 // Computed para mostrar la fecha formateada en el título
 const formattedSelectedDate = computed(() => {
   return format(parseISO(selectedDate.value), "d 'de' MMMM yyyy", { locale: es });
 });
+
+// Modificar el manejo de la fecha seleccionada para evitar bucles infinitos
+const handleSelectedDateUpdate = (date) => {
+  // Evitar actualizar si ya estamos en un ciclo de actualización
+  if (isUpdating.value) return;
+  
+  isUpdating.value = true;
+  // Usar setTimeout para romper el ciclo de eventos reactivos
+  setTimeout(() => {
+    selectedDate.value = date;
+    isUpdating.value = false;
+  }, 0);
+};
 </script>
 
 <template>
@@ -622,6 +702,7 @@ const formattedSelectedDate = computed(() => {
             @continue="() => selectClass(selectedClass)"
             :isLoading="isLoading"
             @date-change="handleDateChange"
+            @update:selectedDate="handleSelectedDateUpdate"
           />
         </div>
 

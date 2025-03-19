@@ -32,6 +32,9 @@ const instrumentoStore = useInstrumentoStore();
 const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const levelOptions = ['Iniciación', 'Básico', 'Intermedio', 'Avanzado'];
 
+// Ensure initial data has schedule properly defined
+const initialSchedule = props.initialData?.schedule || { days: [], startTime: '', endTime: '' };
+
 // Datos del formulario
 const formData = ref<Partial<Class>>({
   name: '',
@@ -39,19 +42,10 @@ const formData = ref<Partial<Class>>({
   studentIds: [],
   level: '',
   instrument: '',
-  schedule: {
-    days: [],
-    startTime: '',
-    endTime: ''
-  },
+  schedule: initialSchedule,
   description: '',
   ...props.initialData
 });
-
-// Ensure schedule is always defined
-if (!formData.value.schedule) {
-  formData.value.schedule = { days: [], startTime: '', endTime: '' };
-}
 
 // Gestión de errores de validación
 const formErrors = ref<FormErrors>({});
@@ -70,15 +64,18 @@ const teachers = computed(() => teachersStore.teachers);
 
 // Métodos para trabajar con días
 const toggleDay = (day: string) => {
-  const days = formData.value.schedule?.days || [];
-  const index = days.indexOf(day);
-  if (index === -1) {
-    days.push(day);
+  if (!formData.value.schedule) {
+    formData.value.schedule = { days: [day], startTime: '', endTime: '' };
   } else {
-    days.splice(index, 1);
+    const days = formData.value.schedule.days || [];
+    const index = days.indexOf(day);
+    if (index === -1) {
+      days.push(day);
+    } else {
+      days.splice(index, 1);
+    }
+    formData.value.schedule.days = days;
   }
-  if (!formData.value.schedule) formData.value.schedule = { days, startTime: '', endTime: '' };
-  else formData.value.schedule.days = days;
 };
 
 const isDaySelected = (day: string) => {
@@ -355,8 +352,7 @@ const handleSubmit = () => {
   </div>
 </template>
 
-<style>
-/* Estilos para el select en modo oscuro */
+<style >
 select option {
   @apply bg-white text-gray-900;
 }

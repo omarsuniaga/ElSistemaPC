@@ -94,7 +94,7 @@ export const useClassesStore = defineStore('classes', {
         }
         
         // Save to Firestore and get the new ID
-        const newId = await addClassFirebase(classToCreate as Omit<Class, 'id'>)
+        const newId = await addClassFirebase(classToCreate as Omit<Class, 'id'> & { createdAt: string })
         console.log('✅ Nueva clase creada con ID:', newId)
         
         // Create final class object with the assigned ID

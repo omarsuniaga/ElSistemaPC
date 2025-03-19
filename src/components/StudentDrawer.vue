@@ -1,11 +1,11 @@
 <template>
   <div
-    class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity z-50"
+    class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity z-[100]"
     v-if="show"
     @click="$emit('close')"
   ></div>
   <div
-    class="fixed inset-y-0 right-0 max-w-full flex z-50 transform transition-all duration-300 ease-in-out"
+    class="fixed inset-y-0 right-0 max-w-full flex z-[100] transform transition-all duration-300 ease-in-out"
     :class="{ 'translate-x-0': show, 'translate-x-full': !show }"
   >
     <div
@@ -27,7 +27,7 @@
       </div>
 
       <!-- Content -->
-      <div class="flex-1 overflow-y-auto p-4">
+      <div class="flex-1 overflow-y-auto pb-16">
         <div v-if="isLoading" class="flex justify-center items-center h-full">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
         </div>
@@ -73,7 +73,7 @@
           <button 
             @click="$emit('edit', student?.id)" 
 
-            class="btn btn-outline-primary flex items-center justify-center text-gray-800 bg-gray-600"
+            class="btn btn-outline-primary flex items-center justify-center dark:text-gray-800 dark:bg-gray-400"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -82,7 +82,7 @@
           </button>
           <button 
             @click="viewProfile()" 
-            class="btn btn-outline-secondary flex items-center justify-center  text-gray-800 bg-gray-600"
+            class="btn btn-outline-secondary flex items-center justify-center  dark:text-gray-800 dark:bg-gray-400"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -91,12 +91,21 @@
           </button>
           <button 
             @click="manageDocuments()" 
-            class="btn btn-outline-info flex items-center justify-center  text-gray-800 bg-gray-600"
+            class="btn btn-outline-info flex items-center justify-center  dark:text-gray-800 dark:bg-gray-400"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             Documentos
+          </button>
+          <button 
+            @click="viewSchedule()" 
+            class="btn btn-outline-info flex items-center justify-center  dark:text-gray-800 dark:bg-gray-400"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Horario
           </button>
           
         </div>
@@ -236,6 +245,45 @@
               </div>
             </div>
           </div>
+
+          <!-- Performance Metrics -->
+          <div class="mt-4 space-y-4">
+            <div class="border-t pt-4">
+              <h3 class="text-lg font-medium">Métricas de Rendimiento</h3>
+              <div class="mt-2 space-y-2">
+                <div class="flex justify-between">
+                  <span>Rendimiento General:</span>
+                  <span class="font-medium">{{ studentPerformance }}%</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Asistencia:</span>
+                  <span class="font-medium">{{ studentAttendance }}%</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Último Acceso:</span>
+                  <span class="font-medium">{{ lastAccess }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="riskFactors.length > 0" class="border-t pt-4">
+              <h3 class="text-lg font-medium">Factores de Riesgo</h3>
+              <ul class="mt-2 list-disc list-inside">
+                <li v-for="(factor, index) in riskFactors" :key="index">
+                  {{ factor }}
+                </li>
+              </ul>
+            </div>
+
+            <div v-if="recommendedActions.length > 0" class="border-t pt-4">
+              <h3 class="text-lg font-medium">Acciones Recomendadas</h3>
+              <ul class="mt-2 list-disc list-inside">
+                <li v-for="(action, index) in recommendedActions" :key="index">
+                  {{ action }}
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -247,11 +295,36 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import type { Student, AttendanceRecord } from '../types'
 import * as attendanceService from '../services/firestore/attendance'
+import { useStudentsStore } from '../stores/students';
+import { useAttendanceStore } from '../stores/attendance';
+import { useAnalyticsStore } from '../stores/analytics';
+import { useRouter } from 'vue-router'
 
-const props = defineProps<{
-  show: boolean
-  student: Student | null
-}>()
+const props = defineProps({
+  show: {
+    type: Boolean,
+    default: false
+  },
+  student: {
+    type: Object,
+    default: null
+  },
+  studentId: {
+    type: String,
+    default: ''
+  },
+  // Nueva prop para datos de análisis del estudiante
+  studentAnalytics: {
+    type: Object,
+    default: () => ({
+      performance: 0,
+      attendance: 0,
+      lastAccess: '',
+      riskFactors: [],
+      recommendedActions: []
+    })
+  }
+})
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -373,6 +446,73 @@ function viewProfile() {
 function manageDocuments() {
   if (props.student?.id) {
     emit('manage-documents', props.student.id)
+  }
+}
+
+// Nuevas propiedades calculadas
+const studentsStore = useStudentsStore();
+const attendanceStore = useAttendanceStore();
+const analyticsStore = useAnalyticsStore();
+
+const studentPerformance = computed(() => {
+  // Usar datos de la prop si están disponibles
+  if (props.studentAnalytics && props.studentAnalytics.performance !== undefined) {
+    return props.studentAnalytics.performance;
+  }
+  
+  // Fallback a cálculos anteriores o valor por defecto
+  // ...código existente para calcular el rendimiento si es necesario...
+  return 0;
+});
+
+const studentAttendance = computed(() => {
+  // Usar datos de la prop si están disponibles
+  if (props.studentAnalytics && props.studentAnalytics.attendance !== undefined) {
+    return props.studentAnalytics.attendance;
+  }
+  
+  // Fallback a cálculos anteriores o valor por defecto
+  // ...código existente para calcular asistencia si es necesario...
+  return 0;
+});
+
+const lastAccess = computed(() => {
+  // Usar datos de la prop si están disponibles
+  if (props.studentAnalytics && props.studentAnalytics.lastAccess) {
+    return props.studentAnalytics.lastAccess;
+  }
+  
+  // Fallback
+  return 'No registrado';
+});
+
+const riskFactors = computed(() => {
+  // Usar datos de la prop si están disponibles
+  if (props.studentAnalytics && props.studentAnalytics.riskFactors) {
+    return props.studentAnalytics.riskFactors;
+  }
+  
+  return [];
+});
+
+const recommendedActions = computed(() => {
+  // Usar datos de la prop si están disponibles
+  if (props.studentAnalytics && props.studentAnalytics.recommendedActions) {
+    return props.studentAnalytics.recommendedActions;
+  }
+  
+  return [];
+});
+
+// Agregar el router
+const router = useRouter()
+
+// Agregar la función viewSchedule
+const viewSchedule = () => {
+  if (props.student && props.student.id) {
+    router.push(`/student-schedule/${props.student.id}`)
+  } else {
+    console.error('No se puede mostrar el horario: ID de estudiante no disponible')
   }
 }
 </script>

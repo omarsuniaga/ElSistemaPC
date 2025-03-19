@@ -39,7 +39,7 @@
         <!-- Botón Observaciones (sin relación con Justificado) con Badge -->
         <button 
           class="btn btn-secondary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm relative" 
-          @click="emit('open-observation')"
+          @click="emit('open-observation', null)"
           :disabled="isDisabled"
         >
           <ChatBubbleLeftRightIcon class="w-3 h-3 sm:w-4 sm:h-4" />
@@ -318,16 +318,6 @@ const formatDate = (date: string) => {
 		return date;
 	}
 	return format(constructedDate, "EEEE d 'de' MMMM", { locale: es });
-}
-
-// Modified style for Justified button
-const getStatusButtonClass = (status: string, currentStatus: string) => {
-  if (status === 'Justificado') {
-    return currentStatus === status 
-      ? 'bg-blue-200 text-blue-800' 
-      : 'bg-blue-100 text-blue-600 hover:bg-blue-200';
-  }
-  // ...rest of the existing status classes...
 }
 
 // Cargar las clases si no están ya cargadas

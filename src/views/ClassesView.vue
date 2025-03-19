@@ -12,7 +12,8 @@ import ClassCard from '../components/ClassCard.vue'
 import ClassForm from '../components/ClassForm.vue'
 import StudentManagement from '../components/StudentManagement.vue'
 import StudentSelector from '../components/StudentSelector.vue'
-import { PlusCircleIcon, InformationCircleIcon, UserGroupIcon, TrashIcon, BookOpenIcon } from '@heroicons/vue/24/outline'
+import ClassesDrawer from '../components/ClassesDrawer.vue'
+import { PlusCircleIcon, InformationCircleIcon, UserGroupIcon, TrashIcon, BookOpenIcon, EllipsisVerticalIcon } from '@heroicons/vue/24/outline'
 import type { Class } from '../types/class'
 // Stores
 const classesStore = useClassesStore()
@@ -37,6 +38,7 @@ const selectedGroupName = ref('')
 const selectedStudent = ref<string | null>(null)
 const searchQuery = ref('')
 const selectedStudentIds = ref<string[]>([])
+const selectedStudents = ref<any[]>([])
 
 // Constantes
 const levelOptions = ['Iniciación', 'Básico', 'Intermedio', 'Avanzado']
@@ -346,6 +348,47 @@ const reloadClasses = async () => {
 
 // Observar mensajes para limpiarlos automáticamente
 watch([successMessage, errorMessage], clearMessages)
+
+// Estados de UI
+const showClassDrawer = ref(false)
+const selectedClass = ref(null)
+const activeDropdown = ref<string | null>(null)
+
+// Computed para clases (puedes agregar filtros o búsqueda según existiera)
+const filteredClasses = computed(() => {
+  // ...existing code or filtros...
+  return classesStore.classes
+})
+
+// Utilidad para obtener el nombre del profesor
+const getTeacherName = (teacherId?: string): string => {
+  if (!teacherId) return 'Sin profesor asignado'
+  const teacher = teachersStore.teachers.find(t => t.id === teacherId)
+  return teacher ? `${teacher.nombre} ${teacher.apellido}` : 'Profesor no encontrado'
+}
+
+// Métodos
+const handleView = (classItem: any) => {
+  selectedClass.value = classItem
+  showClassDrawer.value = true
+}
+const handleEdit = (id: string) => {
+  activeDropdown.value = null
+  // Redirige a la edición o abre modal según convenga
+  console.log('Editar clase', id)
+}
+const handleDelete = (id: string) => {
+  activeDropdown.value = null
+  // Mostrar modal de confirmación para eliminar
+  console.log('Eliminar clase', id)
+}
+const toggleDropdown = (id: string, event: Event) => {
+  event.stopPropagation()
+  activeDropdown.value = activeDropdown.value === id ? null : id
+}
+const closeDropdowns = () => {
+  activeDropdown.value = null
+}
 </script>
 <template>
   <div class="p-4 sm:p-6 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -365,32 +408,35 @@ watch([successMessage, errorMessage], clearMessages)
       </div>
 
       <!-- Header y botones -->
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Grupos y Clases</h1>
-        <div class="flex flex-row sm:flex-row gap-2">
+      <div class="flex flex-col sm:flex-row justify-between items-start md:items-center mb-6 md:mb-6 gap-4 md:gap-2">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2 md:mb-0">Grupos y Clases</h1>
+        <div class="flex flex-wrap gap-2 w-full md:w-auto justify-end md:justify-end">
           <button 
             @click="openInfoModal" 
-            class="bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 flex items-center gap-2"
+            class="btn bg-red-600 text-white hover:bg-red-700 flex items-center gap-1 md:gap-2 px-2 md:px-2 py-2 rounded-lg transition-colors"
             :disabled="isLoading"
+            title="Información"
           >
             <InformationCircleIcon class="w-5 h-5" />
-            <span>Información</span>
+            <span class="hidden sm:inline">Información</span>
           </button>
           <button 
             @click="$router.push('/contents')" 
-            class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center gap-2"
+            class="btn bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-lg transition-colors"
             :disabled="isLoading"
+            title="Contenidos"
           >
             <BookOpenIcon class="w-5 h-5" />
-            <span>Contenidos</span>
+            <span class="hidden sm:inline">Contenidos</span>
           </button>
           <button 
             @click="showAddModal = true" 
-            class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 flex items-center gap-2"
+            class="btn bg-green-600 text-white hover:bg-green-700 flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-lg transition-colors"
             :disabled="isLoading"
+            title="Nuevo Grupo"
           >
             <UserGroupIcon class="w-5 h-5" />
-            <span>Nuevo Grupo</span>
+            <span class="hidden sm:inline">Nuevo Grupo</span>
           </button>
         </div>
       </div>
@@ -543,5 +589,79 @@ watch([successMessage, errorMessage], clearMessages)
         </div>
       </template>
     </ConfirmModal>
+  </div>
+
+  <div class="py-2" @click="closeDropdowns">
+    <div class="flex justify-between items-center mb-2">
+      <h1 class="text-2xl font-bold">Clases</h1>
+      <!-- ...opcional: controles de búsqueda/sort... -->
+    </div>
+
+    <!-- Lista de Clases (estilo WhatsApp/Telegram) -->
+    <div v-if="filteredClasses.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+      <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+        <li 
+          v-for="classItem in filteredClasses" 
+          :key="classItem.id"
+          class="flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors relative"
+          @click="handleView(classItem)"
+        >
+          <!-- Información de la clase -->
+          <div class="flex-1">
+            <h3 class="text-base font-medium text-gray-900 dark:text-white truncate">
+              {{ classItem.name }} <span v-if="classItem.instrument"> - {{ classItem.instrument }}</span>
+            </h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 truncate">
+              {{ getTeacherName(classItem.teacherId) }} &middot; {{ classItem.level }}
+            </p>
+          </div>
+          <!-- Conteo de estudiantes -->
+          <div class="mr-4">
+            <span class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
+              {{ classItem.studentIds ? classItem.studentIds.length : 0 }} Est.
+            </span>
+          </div>
+          <!-- Botón de acción (3 puntos) -->
+          <div @click.stop class="relative">
+            <button 
+              @click="toggleDropdown(classItem.id, $event)"
+              class="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
+              <EllipsisVerticalIcon class="h-5 w-5 text-gray-500 dark:text-gray-400" />
+            </button>
+            <div 
+              v-if="activeDropdown === classItem.id" 
+              class="absolute right-0 mt-1 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-1 w-36 z-10"
+            >
+              <button 
+                @click="handleEdit(classItem.id)"
+                class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+              >
+                Editar
+              </button>
+              <button 
+                @click="handleDelete(classItem.id)"
+                class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+    <!-- Estado vacío -->
+    <div v-else class="text-center py-12 text-gray-500 dark:text-gray-400">
+      No hay clases para mostrar.
+    </div>
+
+    <!-- Componente para ver detalles de clase -->
+    <ClassesDrawer
+      :show="showClassDrawer"
+      :classItem="selectedClass"
+      @close="showClassDrawer = false"
+      @edit="handleEdit"
+      @delete="handleDelete"
+    />
   </div>
 </template>

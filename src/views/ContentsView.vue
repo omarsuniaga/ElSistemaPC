@@ -15,7 +15,7 @@ import {
   PencilSquareIcon,
   TrashIcon
 } from '@heroicons/vue/24/outline'
-import BaseCard from '../components/BaseCard.vue'
+// import BaseCard from '../components/BaseCard.vue'
 import ContentForm from '../components/ContentForm.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 import type { Content } from '../types'
@@ -28,7 +28,7 @@ const showForm = ref(false)
 const showDeleteModal = ref(false)
 const selectedContent = ref<Content | null>(null)
 const expandedContent = ref<number | null>(null)
-const expandedTheme = ref<number | null>(null)
+// const expandedTheme = ref<number | null>(null)
 const isEditing = ref(false)
 const isLoading = ref(true)
 const error = ref('')
@@ -108,7 +108,7 @@ const handleFormSubmit = async (data: Partial<Content>) => {
     if (isEditing.value && selectedContent.value) {
       await contentsStore.updateContent(selectedContent.value.id, data)
     } else {
-      await contentsStore.addContent(data)
+      await contentsStore.addContent(data as Omit<Content, "id" | "createdAt" | "updatedAt">)
     }
     showForm.value = false
     error.value = ''

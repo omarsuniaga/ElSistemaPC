@@ -74,14 +74,12 @@ const getStudentCount = (studentIds: string[]) => {
   return studentIds?.length || 0
 }
 
-const getScheduleDays = (schedule: string) => {
-  const days = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
-  return days.filter(day => schedule.toLowerCase().includes(day))
+const getScheduleDays = (schedule: { days: string[] }) => {
+  return schedule?.days || []
 }
 
-const getScheduleTime = (schedule: string) => {
-  const timeMatch = schedule.match(/\d{1,2}:\d{2}-\d{1,2}:\d{2}/)
-  return timeMatch ? timeMatch[0] : ''
+const getScheduleTime = (schedule: { startTime: string; endTime: string }) => {
+  return `${schedule.startTime}-${schedule.endTime}`
 }
 
 const getStudents = (studentIds: string[]) => {

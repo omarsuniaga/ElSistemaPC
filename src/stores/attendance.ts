@@ -45,21 +45,38 @@ export const useAttendanceStore = defineStore('attendance', {
   }),
   
   getters: {
+    getAttendanceStats: (state) => {
+      const totalClasses = state.attendanceDocuments.length;
+      const totalStudents = new Set(state.records.map(record => record.studentId)).size;
+      const averageAttendance = state.analytics?.averageAttendance || 0;
+      
+      return {
+        totalClasses,
+        totalStudents,
+        averageAttendance
+      };
+    },
+    getAttendanceByClass: (state) => {
+      return (className: string) => state.records.filter(record => record.classId === className)
+    },
+    getAttendanceByStudent: (state) => {
+      return (studentId: string) => state.records.filter(record => record.studentId === studentId)
+    },
+    getAttendanceByDate: (state) => {
+      return (date: string) => state.records.filter(record => record.Fecha === date)
+    },
     getRecordsByDate: (state) => {
       return (date: string) => state.records.filter(record => record.Fecha === date)
     },
-
     getRecordsByDateAndClass: (state) => {
       return (date: string, className: string) => 
         state.records.filter(record => 
           record.Fecha === date && record.classId === className
         )
     },
-
     getDatesWithRecords: (state) => {
       return [...new Set(state.records.map(record => record.Fecha))]
     },
-
     getStudentStatus: (state) => {
       return (studentId: string, date: string, className: string) => {
         // Buscar primero en la estructura de documento actual
@@ -272,7 +289,8 @@ export const useAttendanceStore = defineStore('attendance', {
         
         if (!document) {
           // Si no está en caché, obtener de Firestore
-          document = await getAttendanceDocumentFirebase(fecha, classId);
+          const result = await getAttendanceDocumentFirebase(fecha, classId);
+          document = result || undefined;
         }
         
         // Si existe el documento, guardarlo en el estado

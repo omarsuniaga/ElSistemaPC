@@ -8,7 +8,7 @@
           <input
             type="date"
             id="selectedDate"
-            :value="selectedDate"
+            :value="internalSelectedDate"
             @input="handleDateChange"
             class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-200"
           />
@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useClassesStore } from '../stores/classes'
 import { useStudentsStore } from '../stores/students'
 import { getDayName } from '../utils/dateUtils'
@@ -90,12 +90,71 @@ const studentsStore = useStudentsStore()
 const isLoading = ref(false)
 const studentByClass = ref<string[]>([])
 
-const handleDateChange = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  if (target?.value) {
-    emit('update:selectedDate', target.value)
+// Agregar un estado para prevenir actualizaciones recursivas
+const isUpdating = ref(false);
+
+// Variable para almacenar la fecha seleccionada localmente
+const internalSelectedDate = ref(props.selectedDate ? structuredClone(props.selectedDate) : null);
+
+// Mejorar la función handleDateChange para evitar actualizaciones recursivas
+const handleDateChange = async (newDate) => {
+  // Si ya estamos en proceso de actualización, ignorar esta llamada
+  if (isUpdating.value) return;
+  
+  try {
+    isUpdating.value = true;
+    
+    // Verificar si la fecha es realmente diferente
+    const currentDateStr = JSON.stringify(internalSelectedDate.value);
+    const newDateStr = JSON.stringify(newDate);
+    
+    if (currentDateStr === newDateStr) {
+      return; // Evitar actualizaciones si la fecha es la misma
+    }
+    
+    // Actualizar el estado local primero
+    internalSelectedDate.value = newDate ? structuredClone(newDate) : null;
+    
+    // Esperar al siguiente ciclo de actualización
+    await nextTick();
+    
+    // Emitir evento sólo después de la actualización local
+    emit('update:selectedDate', newDate ? structuredClone(newDate) : null);
+  } finally {
+    // Un pequeño retraso para asegurar que otras actualizaciones terminen
+    setTimeout(() => {
+      isUpdating.value = false;
+    }, 0);
   }
-}
+};
+
+// Observar cambios en la prop selectedDate para sincronizar el estado interno
+watch(() => props.selectedDate, (newVal) => {
+  // Evitar actualización si ya estamos actualizando o si los valores son iguales
+  if (isUpdating.value) return;
+  
+  const currentDateStr = JSON.stringify(internalSelectedDate.value);
+  const newValStr = JSON.stringify(newVal);
+  
+  if (currentDateStr !== newValStr) {
+    internalSelectedDate.value = newVal ? structuredClone(newVal) : null;
+  }
+}, { deep: true });
+
+// Si hay dependencias como classesStore, evitar que su actualización cause renders recursivos
+const loadData = async () => {
+  if (!internalSelectedDate.value) return;
+  
+  try {
+    isUpdating.value = true;
+    // Cargar clases u otros datos aquí...
+    // await classesStore.fetchClasses();
+  } finally {
+    setTimeout(() => {
+      isUpdating.value = false;
+    }, 0);
+  }
+};
 
 const handleClassChange = (event: Event) => {
   const target = event.target as HTMLSelectElement
@@ -141,13 +200,13 @@ onMounted(async () => {
   }
 })
 
-// Watch para actualizar la selección cuando cambie la fecha
-watch(() => props.selectedDate, () => {
-  // Si la clase seleccionada no está disponible para el nuevo día, resetear la selección
-  if (props.modelValue && !availableClasses.value.find(c => c.name === props.modelValue)) {
-    emit('update:modelValue', '')
+// Modificar cualquier watch que observe props.selectedDate
+watch(() => props.selectedDate, (newVal) => {
+  // Evitar actualizaciones recursivas comparando valores
+  if (JSON.stringify(newVal) !== JSON.stringify(selectedDate.value)) {
+    selectedDate.value = newVal ? structuredClone(newVal) : null;
   }
-})
+}, { deep: true })
 </script>
 
 <style scoped>

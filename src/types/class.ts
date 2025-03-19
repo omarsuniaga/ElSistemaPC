@@ -16,4 +16,5 @@ export interface Class {
   status?: string;      // Propiedad opcional
   teacherName?: string; // Propiedad opcional
   teacherEmail?: string;// Propiedad opcional
+  contentIds?: string[]; // Propiedad opcional
 }

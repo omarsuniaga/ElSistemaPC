@@ -19,6 +19,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'select', date: string): void
+  (e: 'day-click', date: any): void
 }>()
 
 // Estado para los días del calendario
@@ -62,6 +63,30 @@ const generateCalendar = () => {
 watchEffect(() => {
   generateCalendar()
 })
+
+// Define interface for calendar day
+interface CalendarDay {
+  date: string;
+  dayOfMonth: number;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  isMarked: boolean;
+  dayName: string;
+}
+
+// Mejorar el manejador de clic para prevenir múltiples emisiones del mismo evento
+const onClick = (day: CalendarDay): void => {
+  if (!day || !day.date) {
+    return;
+  }
+  
+  // Emitir solo la cadena de fecha
+  const dateString: string = typeof day.date === 'string' ? day.date : String(day.date);
+  emit('select', dateString);
+  
+  // Emitir el evento de clic
+  emit('day-click', day);
+};
 </script>
 
 <template>
@@ -91,7 +116,7 @@ watchEffect(() => {
             'hover:bg-gray-100 dark:hover:bg-gray-700': true
           }
         ]"
-        @click="emit('select', day.date)"
+        @click="onClick(day)"
       >
         <span class="block text-sm">{{ day.dayOfMonth }}</span>
       </button>

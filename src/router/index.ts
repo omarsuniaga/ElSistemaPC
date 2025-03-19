@@ -132,6 +132,18 @@ const router = createRouter({
         requiresAuth: true
       }
     },
+    {
+      path: '/at-risk-students',
+      name: 'atRiskStudents',
+      component: () => import('../views/AtRiskStudentsView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/student-schedule/:id',
+      name: 'studentSchedule',
+      component: () => import('../views/StudentScheduleView.vue'),
+      meta: { requiresAuth: true }
+    },
     // Ruta 404
     {
       path: '/:pathMatch(.*)*',

@@ -62,14 +62,19 @@ const days = [
 ]
 
 const getClassesByDay = (day: string) => {
-  return classesStore.classes.filter(class_ => 
-    class_.schedule.toLowerCase().includes(day)
-  )
+  return classesStore.classes.filter(class_ => {
+    if (!class_.schedule || !class_.schedule.days || !Array.isArray(class_.schedule.days)) {
+      return false;
+    }
+    return class_.schedule.days.some(scheduleDay => 
+      typeof scheduleDay === 'string' && scheduleDay.toLowerCase() === day.toLowerCase()
+    );
+  });
 }
 
-const getScheduleTime = (schedule: string) => {
-  const timeMatch = schedule.match(/\d{1,2}:\d{2}-\d{1,2}:\d{2}/)
-  return timeMatch ? timeMatch[0] : ''
+const getScheduleTime = (schedule: { days: string[], startTime: string, endTime: string }) => {
+  if (!schedule || !schedule.startTime || !schedule.endTime) return '';
+  return `${schedule.startTime} - ${schedule.endTime}`;
 }
 
 const getTeacherName = (teacherId: string) => {

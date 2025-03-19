@@ -62,6 +62,14 @@
             <span v-else>Ninguna evaluación activa. Selecciona estudiantes y un contenido para comenzar.</span>
           </p>
           <div class="flex gap-2">
+            <!-- Agregar botón para contenido eventual -->
+            <button 
+              @click="showEmergentContentModal = true"
+              class="btn-secondary flex items-center gap-1 text-sm"
+            >
+              <PlusIcon class="h-4 w-4" />
+              Contenido Emergente
+            </button>
             <button 
               v-if="selectedStudents.length"
               @click="createEvaluationCard()"
@@ -140,6 +148,84 @@
         @click="closeMenus"
       ></div>
     </div>
+
+    <!-- Modal para Contenido Emergente -->
+    <Dialog :open="showEmergentContentModal" @close="showEmergentContentModal = false" class="relative z-50">
+      <div class="fixed inset-0 bg-black/30" aria-hidden="true" />
+      <div class="fixed inset-0 flex items-center justify-center p-4">
+        <DialogPanel class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+          <h2 class="text-lg font-semibold mb-4">Crear Contenido Emergente</h2>
+          
+          <form @submit.prevent="createEmergentContent" class="space-y-4">
+            <!-- Nombre del Contenido -->
+            <div>
+              <label class="block text-sm font-medium mb-1">Título del Contenido</label>
+              <input 
+                v-model="emergentContent.title" 
+                type="text" 
+                class="input w-full"
+                placeholder="Ej: Técnica de respiración"
+                required
+              />
+            </div>
+            
+            <!-- Subtítulo o Categoría -->
+            <div>
+              <label class="block text-sm font-medium mb-1">Subtítulo/Categoría</label>
+              <input 
+                v-model="emergentContent.subtitle" 
+                type="text" 
+                class="input w-full"
+                placeholder="Ej: Clase especial"
+              />
+            </div>
+            
+            <!-- Indicadores -->
+            <div>
+              <label class="block text-sm font-medium mb-1">Indicadores de Evaluación</label>
+              <div v-for="(indicator, index) in emergentContent.indicators" :key="index" class="flex gap-2 mb-2">
+                <input 
+                  v-model="emergentContent.indicators[index]" 
+                  type="text" 
+                  class="input flex-grow"
+                  placeholder="Ej: Precisión rítmica"
+                />
+                <button 
+                  type="button" 
+                  @click="emergentContent.indicators.splice(index, 1)"
+                  class="bg-red-500 hover:bg-red-600 text-white p-2 rounded"
+                >
+                  <XMarkIcon class="h-4 w-4" />
+                </button>
+              </div>
+              <button 
+                type="button" 
+                @click="emergentContent.indicators.push('')"
+                class="btn-secondary mt-2 w-full"
+              >
+                Agregar Indicador
+              </button>
+            </div>
+            
+            <div class="flex justify-end gap-3 pt-4">
+              <button 
+                type="button" 
+                @click="showEmergentContentModal = false"
+                class="btn-secondary"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="submit" 
+                class="btn-primary"
+              >
+                Crear Contenido
+              </button>
+            </div>
+          </form>
+        </DialogPanel>
+      </div>
+    </Dialog>
   </div>
 </template>
 
@@ -154,6 +240,7 @@ import {
   XMarkIcon,
 } from '@heroicons/vue/20/solid'
 import { useRoute } from 'vue-router'
+import { Dialog, DialogPanel } from '@headlessui/vue'
 
 // Componentes
 import NotificationSystem from '../components/NotificationSystem.vue'
@@ -491,16 +578,9 @@ const generateUniqueName = (item, card) => {
   return `${day}${month}${year}_${card.contentTitle.toLowerCase().replace(/\s+/g, '_')}_${groupId}_${item.title.toLowerCase().replace(/\s+/g, '_')}`
 }
 
-// Alterna el modo de edición de la card: si está bloqueada, habilita edición; si está en edición, guarda
-const toggleCardEdit = (card) => {
-  if (card.locked) {
-    card.locked = false
-    activeCard.value = card
-  } else {
-    saveCard(card)
-    activeCard.value = null
-  }
-}
+// Añadir estas variables para manejar el almacenamiento local
+const pendingOperations = ref([]);
+const isOfflineMode = ref(false);
 
 // Simula guardar la card (aquí se llamarían métodos del store de Pinia)
 const saveCard = async (card) => {
@@ -522,22 +602,237 @@ const saveCard = async (card) => {
       comments: card.comments,
       locked: card.locked,
       hideProgress: card.hideProgress,
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
+      lastModified: new Date().toISOString()
     }
 
-    if (card.id) {
-      await useQualificationStore().updateQualification(card.id, qualificationData)
-      showNotification('success', 'Actualizado', 'La evaluación se ha actualizado correctamente.')
-    } else {
-      const newId = await useQualificationStore().saveQualification(qualificationData)
-      card.id = newId
-      showNotification('success', 'Guardado', 'La evaluación se ha guardado correctamente.')
+    try {
+      let savedId;
+      
+      if (card.id) {
+        // Intentar actualizar en Firestore primero
+        try {
+          await useQualificationStore().updateQualification(card.id, qualificationData);
+          showNotification('success', 'Actualizado', 'La evaluación se ha actualizado correctamente.');
+        } catch (firestoreError) {
+          console.warn('Error al guardar en Firestore, usando almacenamiento local:', firestoreError);
+          isOfflineMode.value = true;
+          
+          // Guardar en localStorage
+          saveToLocalStorage('update', card.id, qualificationData);
+          showNotification('warning', 'Guardado local', 'La evaluación se ha guardado localmente. Se sincronizará cuando se restablezca la conexión.');
+          
+          // Añadir a la cola de operaciones pendientes
+          addToPendingOperations('update', card.id, qualificationData);
+        }
+      } else {
+        // Crear un nuevo ID único
+        const newId = Date.now().toString();
+        qualificationData.id = newId;
+        
+        // Intentar guardar en Firestore primero
+        try {
+          savedId = await useQualificationStore().saveQualification(qualificationData);
+          card.id = savedId;
+          showNotification('success', 'Guardado', 'La evaluación se ha guardado correctamente.');
+        } catch (firestoreError) {
+          console.warn('Error al guardar en Firestore, usando almacenamiento local:', firestoreError);
+          isOfflineMode.value = true;
+          
+          // Guardar en localStorage
+          saveToLocalStorage('create', newId, qualificationData);
+          showNotification('warning', 'Guardado local', 'La evaluación se ha guardado localmente. Se sincronizará cuando se restablezca la conexión.');
+          
+          // Asignar el ID local a la card
+          card.id = newId;
+          
+          // Añadir a la cola de operaciones pendientes
+          addToPendingOperations('create', newId, qualificationData);
+        }
+      }
+    } catch (error) {
+      throw error;
     }
   } catch (error) {
-    console.error('Error al guardar la evaluación:', error)
-    showNotification('error', 'Error', 'No se pudo guardar la evaluación.')
+    console.error('Error al guardar la evaluación:', error);
+    showNotification('error', 'Error', 'No se pudo guardar la evaluación.');
+    card.locked = false;
+    card.hideProgress = false;
+  }
+};
+
+// Función para guardar en localStorage
+const saveToLocalStorage = (operation, id, data) => {
+  try {
+    // Obtener datos existentes o crear un nuevo objeto
+    const localQualifications = JSON.parse(localStorage.getItem('qualifications') || '{}');
+    
+    // Agregar o actualizar los datos
+    localQualifications[id] = {
+      ...data,
+      _localOperation: operation, // Marcar la operación (create/update/delete)
+      _timestamp: new Date().toISOString()
+    };
+    
+    // Guardar de vuelta a localStorage
+    localStorage.setItem('qualifications', JSON.stringify(localQualifications));
+    console.log(`Calificación ${operation === 'create' ? 'creada' : 'actualizada'} localmente con ID: ${id}`);
+  } catch (error) {
+    console.error('Error al guardar en localStorage:', error);
+  }
+};
+
+// Función para agregar a la cola de operaciones pendientes
+const addToPendingOperations = (operation, id, data) => {
+  // Añadir a la cola en memoria
+  pendingOperations.value.push({
+    operation,
+    id,
+    data,
+    timestamp: new Date().toISOString()
+  });
+  
+  // También guardar la cola en localStorage
+  localStorage.setItem('pendingQualificationOperations', JSON.stringify(pendingOperations.value));
+};
+
+// Función para intentar sincronizar las operaciones pendientes
+const syncPendingOperations = async () => {
+  if (pendingOperations.value.length === 0) return;
+  
+  showNotification('info', 'Sincronizando', 'Intentando sincronizar datos guardados localmente...');
+  
+  const qualificationStore = useQualificationStore();
+  const operations = [...pendingOperations.value]; // Copia para no modificar durante la iteración
+  
+  for (const op of operations) {
+    try {
+      if (op.operation === 'create') {
+        await qualificationStore.saveQualification(op.data);
+      } else if (op.operation === 'update') {
+        await qualificationStore.updateQualification(op.id, op.data);
+      } else if (op.operation === 'delete') {
+        await qualificationStore.deleteQualification(op.id);
+      }
+      
+      // Si tiene éxito, eliminar de la cola
+      const index = pendingOperations.value.findIndex(p => p.id === op.id && p.operation === op.operation);
+      if (index !== -1) {
+        pendingOperations.value.splice(index, 1);
+      }
+      
+      // También eliminar del localStorage
+      const localQualifications = JSON.parse(localStorage.getItem('qualifications') || '{}');
+      if (localQualifications[op.id]) {
+        delete localQualifications[op.id]; // Remover del almacenamiento local
+        localStorage.setItem('qualifications', JSON.stringify(localQualifications));
+      }
+      
+    } catch (error) {
+      console.error(`Error al sincronizar operación ${op.operation} para ID ${op.id}:`, error);
+    }
+  }
+  
+  // Actualizar la cola guardada
+  localStorage.setItem('pendingQualificationOperations', JSON.stringify(pendingOperations.value));
+  
+  if (pendingOperations.value.length === 0) {
+    showNotification('success', 'Sincronizado', 'Todos los cambios se han sincronizado con el servidor.');
+    isOfflineMode.value = false;
+  } else {
+    showNotification('warning', 'Sincronización parcial', 'Algunos cambios no pudieron sincronizarse.');
+  }
+};
+
+// Cargar operaciones pendientes del localStorage al iniciar
+const loadPendingOperations = () => {
+  try {
+    const storedOperations = localStorage.getItem('pendingQualificationOperations');
+    if (storedOperations) {
+      pendingOperations.value = JSON.parse(storedOperations);
+      
+      if (pendingOperations.value.length > 0) {
+        isOfflineMode.value = true;
+        showNotification('info', 'Modo desconectado', `Hay ${pendingOperations.value.length} cambios pendientes de sincronizar.`);
+      }
+    }
+  } catch (error) {
+    console.error('Error al cargar operaciones pendientes:', error);
+  }
+};
+
+// Cargar operaciones pendientes al iniciar la aplicación
+onMounted(() => {
+  loadPendingOperations();
+  
+  // Añadir la siguiente línea para recuperar calificaciones locales y procesarlas
+  loadLocalQualifications();
+  
+  // Comprobar conexión cada cierto tiempo e intentar sincronizar
+  setInterval(() => {
+    if (navigator.onLine && pendingOperations.value.length > 0) {
+      syncPendingOperations();
+    }
+  }, 60000); // Intentar cada minuto
+});
+
+// Función para cargar calificaciones locales
+const loadLocalQualifications = () => {
+  try {
+    const localQualifications = JSON.parse(localStorage.getItem('qualifications') || '{}');
+    
+    // Solo procesar si hay calificaciones locales
+    if (Object.keys(localQualifications).length > 0) {
+      console.log(`Recuperando ${Object.keys(localQualifications).length} calificaciones del almacenamiento local`);
+      
+      // Convertir las calificaciones locales a formato de cards
+      Object.entries(localQualifications).forEach(([id, data]) => {
+        // Verificar si la card ya existe para evitar duplicados
+        const existingCardIndex = evaluationCards.value.findIndex(card => card.id === id);
+        
+        if (existingCardIndex === -1) {
+          // Agregar la card si no existe
+          evaluationCards.value.push({
+            id,
+            group: data.group.map(studentId => 
+              students.value.find(s => s.id === studentId)
+            ).filter(Boolean),
+            contentTitle: data.contentTitle,
+            contentSubtitle: data.contentSubtitle,
+            indicators: data.indicators,
+            locked: data.locked || true,
+            hideProgress: data.hideProgress || false,
+            comments: data.comments || '',
+            isLocalOnly: true // Marcar como solo local
+          });
+        }
+      });
+      
+      showNotification('info', 'Datos locales', `Se cargaron ${Object.keys(localQualifications).length} evaluaciones desde el almacenamiento local.`);
+    }
+  } catch (error) {
+    console.error('Error al cargar calificaciones locales:', error);
+  }
+};
+
+// Añadir un botón para forzar la sincronización
+const manualSync = async () => {
+  if (!navigator.onLine) {
+    showNotification('error', 'Sin conexión', 'No hay conexión a Internet. No se puede sincronizar.');
+    return;
+  }
+  
+  await syncPendingOperations();
+};
+
+// Alterna el modo de edición de la card: si está bloqueada, habilita edición; si está en edición, guarda
+const toggleCardEdit = (card) => {
+  if (card.locked) {
     card.locked = false
-    card.hideProgress = false
+    activeCard.value = card
+  } else {
+    saveCard(card)
+    activeCard.value = null
   }
 }
 
@@ -552,15 +847,37 @@ const deleteCard = async (card) => {
 
   try {
     if (card.id) {
-      await useQualificationStore().deleteQualification(card.id)
-      evaluationCards.value = evaluationCards.value.filter(c => c.id !== card.id)
-      showNotification('success', 'Eliminado', 'La evaluación se ha eliminado correctamente.')
+      try {
+        // Intentar eliminar en Firestore primero
+        await useQualificationStore().deleteQualification(card.id);
+        evaluationCards.value = evaluationCards.value.filter(c => c.id !== card.id);
+        showNotification('success', 'Eliminado', 'La evaluación se ha eliminado correctamente.');
+      } catch (firestoreError) {
+        console.warn('Error al eliminar en Firestore, marcando para eliminación futura:', firestoreError);
+        
+        // Si la card es solo local, eliminarla directamente del localStorage
+        if (card.isLocalOnly) {
+          const localQualifications = JSON.parse(localStorage.getItem('qualifications') || '{}');
+          if (localQualifications[card.id]) {
+            delete localQualifications[card.id];
+            localStorage.setItem('qualifications', JSON.stringify(localQualifications));
+          }
+        } else {
+          // Si la card está en Firestore, marcar para eliminación futura
+          addToPendingOperations('delete', card.id, { id: card.id });
+          saveToLocalStorage('delete', card.id, { id: card.id });
+        }
+        
+        // Eliminar de la UI
+        evaluationCards.value = evaluationCards.value.filter(c => c.id !== card.id);
+        showNotification('warning', 'Eliminación pendiente', 'La evaluación se eliminará del servidor cuando se restablezca la conexión.');
+      }
     } else {
-      evaluationCards.value = evaluationCards.value.filter(c => c.id !== card.id)
+      evaluationCards.value = evaluationCards.value.filter(c => c.id !== card.id);
     }
   } catch (error) {
-    console.error('Error al eliminar la evaluación:', error)
-    showNotification('error', 'Error', 'No se pudo eliminar la evaluación.')
+    console.error('Error al eliminar la evaluación:', error);
+    showNotification('error', 'Error', 'No se pudo eliminar la evaluación.');
   }
 }
 
@@ -762,6 +1079,70 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
+
+// Estado para el modal de contenido emergente
+const showEmergentContentModal = ref(false)
+const emergentContent = ref({
+  title: '',
+  subtitle: '',
+  indicators: ['']
+})
+
+// Función para crear un contenido emergente
+const createEmergentContent = () => {
+  // Validar que al menos haya un indicador válido
+  const validIndicators = emergentContent.value.indicators.filter(ind => ind.trim() !== '')
+  if (validIndicators.length === 0) {
+    showNotification('warning', 'Indicadores requeridos', 'Añade al menos un indicador de evaluación')
+    return
+  }
+
+  // Crear el nuevo contenido emergente
+  const newContent = {
+    title: emergentContent.value.title,
+    type: 'indicator', // Para que sea compatible con el sistema existente
+    isEmergent: true, // Marcar como contenido emergente
+    parentChain: ['Contenido Emergente', emergentContent.value.subtitle || 'Sin categoría']
+  }
+
+  // Si no hay estudiantes seleccionados, mostrar una alerta
+  if (selectedStudents.value.length === 0) {
+    showNotification('warning', 'Selecciona estudiantes', 'Debes seleccionar estudiantes antes de crear una evaluación')
+    studentsExpanded.value = true
+    showEmergentContentModal.value = false
+    return
+  }
+
+  // Crear una nueva card de evaluación con este contenido
+  const newCard = createEvaluationCard()
+  
+  if (newCard) {
+    newCard.contentTitle = 'Contenido Emergente'
+    newCard.contentSubtitle = emergentContent.value.subtitle || emergentContent.value.title
+
+    // Agregar los indicadores
+    validIndicators.forEach(indicator => {
+      const uniqueId = generateUniqueName({ title: indicator }, newCard)
+      newCard.indicators.push({
+        uniqueId,
+        label: indicator,
+        score: 0,
+        selectedStudents: newCard.group
+      })
+    })
+
+    // Cerrar el modal y limpiar el formulario
+    showEmergentContentModal.value = false
+    emergentContent.value = {
+      title: '',
+      subtitle: '',
+      indicators: ['']
+    }
+
+    // Mostrar notificación de éxito
+    showNotification('success', 'Contenido creado', 'Se ha creado una evaluación con el contenido emergente')
+  }
+}
 </script>
 
 <style scoped>

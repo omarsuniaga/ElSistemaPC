@@ -636,7 +636,7 @@ onMounted(async () => {
             <div class="info-item">
               <div class="setting-icon">
                 <component
-                  :is="profileStore.profile.preferences.theme === 'dark' ? MoonIcon : profileStore.profile.preferences.theme === 'light' ? SunIcon : ComputerDesktopIcon"
+                  :is="profileStore.profile?.preferences?.theme === 'dark' ? MoonIcon : profileStore.profile?.preferences?.theme === 'light' ? SunIcon : ComputerDesktopIcon"
                 />
               </div>
               <div>

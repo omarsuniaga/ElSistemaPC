@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useTable } from '../composables/useTable'
@@ -214,51 +213,31 @@ const getSortIcon = (column: TableColumn) => {
 
     <!-- Table -->
     <div class="overflow-x-auto">
-      <table class="w-full">
-        <thead>
+      <table class="min-w-full">
+        <thead class="bg-gray-50 dark:bg-gray-700">
           <tr>
-            <th
-              v-for="column in visibleColumns"
-              :key="column.id"
-              :class="[
-                'px-4 py-2 text-left bg-gray-50 dark:bg-gray-800',
-                column.align === 'right' ? 'text-right' : '',
-                column.align === 'center' ? 'text-center' : ''
-              ]"
-              :style="column.width ? { width: column.width } : {}"
+            <th 
+              v-for="column in columns" 
+              :key="column.key"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
             >
-              <div class="flex items-center gap-2">
-                <span>{{ column.label }}</span>
-                <button
-                  v-if="column.sortable"
-                  @click="setSort(column.key)"
-                  class="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
-                >
-                  <component
-                    :is="getSortIcon(column)"
-                    class="w-4 h-4"
-                  />
-                </button>
-              </div>
+              {{ column.label }}
             </th>
           </tr>
         </thead>
-        <tbody>
-          <tr
-            v-for="item in paginatedItems"
-            :key="item.id"
-            class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          <tr 
+            v-for="(row, idx) in data" 
+            :key="row.id || idx" 
+            class="hover:bg-gray-50 dark:hover:bg-gray-800"
           >
-            <td
-              v-for="column in visibleColumns"
-              :key="column.id"
-              class="px-4 py-2"
-              :class="[
-                column.align === 'right' ? 'text-right' : '',
-                column.align === 'center' ? 'text-center' : ''
-              ]"
+            <td 
+              v-for="column in columns" 
+              :key="column.key"
+              class="px-6 py-4 whitespace-nowrap"
             >
-              {{ column.format ? column.format(item[column.key]) : item[column.key] }}
+              <div v-if="column.format" v-html="column.format(row[column.key], row)"></div>
+              <div v-else>{{ row[column.key] }}</div>
             </td>
           </tr>
         </tbody>
@@ -297,4 +276,4 @@ const getSortIcon = (column: TableColumn) => {
     </div>
   </div>
 </template>
-```
+````
