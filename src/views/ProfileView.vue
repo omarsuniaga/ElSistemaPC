@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, onUnmounted, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { useProfileStore } from '../stores/profile'
+import { useProfileStore } from '../modulos/Profile/store/profile'
 import { useColorMode } from '@vueuse/core'
 import FileUpload from '../components/FileUpload.vue'
-import ReportGenerator from '../components/ReportGenerator.vue'
-import { clearLocalStorageData } from '../services/attendance'
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'
+import ReportGenerator from '../modulos/Analytics/components/ReportGenerator.vue'
+import AccessRequests from '../components/AccessRequests.vue'
+// import { clearLocalStorage } from '../utils/localStorageUtils'
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, onSnapshot } from 'firebase/firestore'
 import { getApp } from 'firebase/app'
 import {
   UserCircleIcon,
@@ -33,6 +34,12 @@ const router = useRouter()
 const authStore = useAuthStore()
 const profileStore = useProfileStore()
 const colorMode = useColorMode()
+
+// Estado para las solicitudes pendientes
+const pendingRequests = ref(0)
+const showAccessRequests = ref(false)
+// Referencia para la suscripción a Firestore
+const unsubscribePendingRequests = shallowRef<(() => void) | null>(null)
 
 // Establecer el modo oscuro como predeterminado
 colorMode.value = 'dark';
@@ -65,26 +72,35 @@ const formData = ref({
   displayName: '',
   email: '',
   phoneNumber: '',
-  // Se agregará la propiedad photoURL al actualizar la foto
+  photoURL: '', // Se ha agregado la propiedad photoURL para evitar errores de tipo
   preferences: {
     theme: 'system',
     emailNotifications: true,
     language: 'es',
     timezone: 'America/Mexico_City'
-  }
+  } as { theme: string; emailNotifications: boolean; language: string; timezone: string; }
 })
 
 // Cerrar sesión
 const handleSignOut = async () => {
   try {
-    await clearLocalStorageData();
-    await authStore.signOut()
-    router.push('/login')
+    // Cancela suscripciones activas
+    stopWatchingPendingRequests();
+    
+    // Otras limpiezas necesarias (por ejemplo, limpiar localStorage si aplica)
+    // await clearLocalStorage();
+
+    // Llama al método signOut del authStore (sin resetear el store teachers)
+    await authStore.signOut();
+
+    // Redirige al login
+    router.push('/login');
   } catch (err) {
-    error.value = 'Error al cerrar sesión'
-    console.error('Error signing out:', err)
+    error.value = 'Error al cerrar sesión';
+    console.error('Error signing out:', err);
   }
-}
+};
+
 
 // Estados para la carga de imagen
 const isUploading = ref(false)
@@ -123,6 +139,7 @@ const startEditing = () => {
       displayName: profileStore.profile.displayName ?? '',
       email: profileStore.profile.email ?? '',
       phoneNumber: profileStore.profile.phone || '',
+      photoURL: profileStore.profile.photoURL || '',
       preferences: {
         theme: profileStore.profile.preferences?.darkMode ? 'dark' : 'system',
         emailNotifications: profileStore.profile.preferences?.notifications ?? true,
@@ -160,7 +177,7 @@ const profileCompletion = computed(() => {
   const fields = [
     !!profileStore.profile.displayName,
     !!profileStore.profile.email,
-    !!profileStore.profile.phoneNumber,
+    !!profileStore.profile.phone,
     !!profileStore.profile.photoURL
   ]
   
@@ -183,9 +200,11 @@ const fetchUserFromFirebase = async () => {
         displayName: userFirebaseData.value?.displayName || profileStore.profile?.displayName || '',
         email: userFirebaseData.value.email || profileStore.profile?.email || '',
         phoneNumber: userFirebaseData.value.phoneNumber || profileStore.profile?.phone || '',
-        preferences: { 
-          ...profileStore.profile?.preferences,
-          ...userFirebaseData.value.preferences
+        preferences: {
+          theme: userFirebaseData.value.preferences?.theme ?? profileStore.profile?.preferences?.theme ?? 'system',
+          emailNotifications: userFirebaseData.value.preferences?.emailNotifications ?? profileStore.profile?.preferences?.emailNotifications ?? true,
+          language: userFirebaseData.value.preferences?.language ?? profileStore.profile?.preferences?.language ?? 'es',
+          timezone: userFirebaseData.value.preferences?.timezone ?? profileStore.profile?.preferences?.timezone ?? 'America/Mexico_City'
         }
       }
       
@@ -232,6 +251,66 @@ const handleSubmit = async () => {
   }
 }
 
+// Función optimizada para verificar solicitudes pendientes
+const startWatchingPendingRequests = () => {
+  // Solo directores y administradores pueden ver solicitudes
+  if (!['Director', 'Administrador'].includes(authStore.user?.role || '')) return;
+  
+  // Cancelar suscripción previa si existe
+  if (unsubscribePendingRequests.value) {
+    unsubscribePendingRequests.value();
+    unsubscribePendingRequests.value = null;
+  }
+  
+  // Iniciar nueva suscripción
+  const db = getFirestore(getApp());
+  const pendingRequestsQuery = query(
+    collection(db, 'USERS'),
+    where('status', '==', 'pendiente')
+  );
+  
+  // Suscribirse en tiempo real pero solo con una suscripción activa
+  unsubscribePendingRequests.value = onSnapshot(pendingRequestsQuery, (snapshot) => {
+    pendingRequests.value = snapshot.docs.length;
+  }, (err) => {
+    console.error('Error al verificar solicitudes pendientes:', err);
+  });
+};
+
+// Detener la suscripción cuando ya no es necesaria
+const stopWatchingPendingRequests = () => {
+  if (unsubscribePendingRequests.value) {
+    unsubscribePendingRequests.value();
+    unsubscribePendingRequests.value = null;
+  }
+};
+
+// Alternar la vista de solicitudes de acceso
+const toggleAccessRequests = () => {
+  showAccessRequests.value = !showAccessRequests.value;
+  showReports.value = false;
+};
+
+// Observar cambios en el rol de usuario para iniciar/detener suscripciones apropiadamente
+watch(() => authStore.user?.role, (newRole) => {
+  if (['Director', 'Administrador'].includes(newRole || '')) {
+    startWatchingPendingRequests();
+  } else {
+    stopWatchingPendingRequests();
+  }
+});
+
+// Mantener o detener la observación según el estado de la app
+watch(() => showAccessRequests.value, (isShowing) => {
+  // Si se muestra la vista de solicitudes, seguir observando
+  // Si cambia a otra vista y no hay notificaciones, considerar detener
+  if (!isShowing && pendingRequests.value === 0) {
+    stopWatchingPendingRequests();
+  } else if (['Director', 'Administrador'].includes(authStore.user?.role || '')) {
+    startWatchingPendingRequests();
+  }
+});
+
 onMounted(async () => {
   if (!authStore.isLoggedIn) {
     router.push('/login')
@@ -251,6 +330,11 @@ onMounted(async () => {
         phoneNumber: profileStore.profile.phone || '',
         preferences: { ...profileStore.profile.preferences }
       }
+      
+      // Iniciar vigilancia de solicitudes si es un admin/director
+      if (['Director', 'Administrador'].includes(authStore.user?.role || '')) {
+        startWatchingPendingRequests();
+      }
     } else {
       throw new Error('No se pudo cargar el perfil')
     }
@@ -262,10 +346,15 @@ onMounted(async () => {
   }
 })
 
+// Limpiar suscripciones al desmontar
+onUnmounted(() => {
+  stopWatchingPendingRequests();
+});
+
 </script>
 
 <template>
-  <div class="profile-container py-6 max-w-5xl mx-auto px-4">
+  <div class="profile-container py-6 max-w-5xl mx-auto px-4 mb-14">
     <!-- Header y botones -->
     <div class="flex flex-wrap justify-between items-center mb-8 gap-4">
       <div class="flex items-center gap-3">
@@ -293,22 +382,39 @@ onMounted(async () => {
           <component :is="themeInfo.icon" class="w-5 h-5" />
         </button>
         
+        <!-- Botón de solicitudes de acceso (solo para admin/director) -->
         <button 
-          v-if="!isEditing"
+          v-if="['Director', 'Administrador'].includes(authStore.user?.role || '') && !isEditing"
+          @click="toggleAccessRequests"
+          class="btn bg-indigo-600 text-white hover:bg-indigo-700 flex items-center gap-2 relative"
+          title="Solicitudes de acceso">
+          <BellIcon class="w-5 h-5" />
+          <span class="hidden sm:inline">{{ showAccessRequests ? 'Ver Perfil' : 'Solicitudes' }}</span>
+          <!-- Indicador de número de solicitudes -->
+          <span v-if="pendingRequests > 0 && !showAccessRequests" 
+                class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+            {{ pendingRequests > 9 ? '9+' : pendingRequests }}
+          </span>
+        </button>
+        
+        <button 
+          v-if="!isEditing && !showReports && !showAccessRequests"
           @click="showReports = !showReports"
           class="btn bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
           title="Informes">
           <DocumentTextIcon class="w-5 h-5" />
-          <span class="hidden sm:inline">{{ showReports ? 'Ver Perfil' : 'Informes' }}</span>
+          <span class="hidden sm:inline">Informes</span>
         </button>
+        
         <button 
-          v-if="!isEditing && !showReports"
+          v-if="!isEditing && !showReports && !showAccessRequests"
           @click="startEditing"
           class="btn bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
           title="Editar Perfil">
           <PencilSquareIcon class="w-5 h-5" />
           <span class="hidden sm:inline">Editar Perfil</span>
         </button>
+        
         <button 
           @click="handleSignOut"
           class="btn bg-red-600 text-white hover:bg-red-700 flex items-center gap-2"
@@ -336,6 +442,9 @@ onMounted(async () => {
         </button>
       </div>
     </div>
+
+    <!-- Vista de Solicitudes de Acceso -->
+    <AccessRequests v-else-if="showAccessRequests" @request-processed="pendingRequests--" />
 
     <!-- Vista de Reportes -->
     <ReportGenerator v-else-if="showReports" />
@@ -518,26 +627,28 @@ onMounted(async () => {
             </div>
             
             <div class="form-group">
-              <label class="form-label">Idioma</label>
-              <select v-model="formData.preferences.language" class="form-select">
+              <label class="form-label dark:text-white dark:bg-black/10">Idioma</label>
+              <select v-model="formData.preferences.language" class="form-select dark:text-white dark:bg-black/10">
                 <option
                   v-for="lang in profileStore.availableLanguages"
                   :key="lang.code"
                   :value="lang.code"
+                  class=""
                 >
                   {{ lang.name }}
                 </option>
               </select>
             </div>
             
-            <div class="form-group">
-              <label class="form-label">Zona Horaria</label>
-              <select v-model="formData.preferences.timezone" class="form-select">
+            <div class="form-group dark:text-white dark:bg-black/10">
+              <label class="form-label dark:text-white dark:bg-black/10">Zona Horaria</label>
+              <select v-model="formData.preferences.timezone" class="form-select dark:text-white dark:bg-black/10">
                 <option
+                class="dark:text-white dark:bg-black/10"
                   v-for="tz in profileStore.availableTimezones"
                   :key="tz"
                   :value="tz"
-                >
+                                  >
                   {{ tz }}
                 </option>
               </select>
@@ -636,7 +747,7 @@ onMounted(async () => {
             <div class="info-item">
               <div class="setting-icon">
                 <component
-                  :is="profileStore.profile?.preferences?.theme === 'dark' ? MoonIcon : profileStore.profile?.preferences?.theme === 'light' ? SunIcon : ComputerDesktopIcon"
+                  :is="profileStore.profile?.preferences?.darkMode ? MoonIcon : SunIcon"
                   class="w-5 h-5"
                 />
               </div>
@@ -666,7 +777,7 @@ onMounted(async () => {
               </div>
               <div>
                 <p class="info-label">Zona Horaria</p>
-                <p class="info-value">{{ profileStore.profile.preferences.timezone }}</p>
+                <p class="info-value">{{ profileStore.profile?.preferences?.timezone || 'No especificada' }}</p>
               </div>
             </div>
 
@@ -691,3 +802,12 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+<style lang="postcss">
+/* ... existing code ... */
+
+/* Estilo para el indicador de notificaciones */
+.notification-badge {
+  @apply absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center;
+}
+</style>

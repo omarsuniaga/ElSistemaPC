@@ -1,16 +1,12 @@
+// src/services/firestore/attendance.ts
 import { 
   collection, 
   doc, 
   getDocs, 
-  addDoc, 
   updateDoc, 
   setDoc,
   getDoc,
-  query, 
-  where,
-  orderBy,
   serverTimestamp,
-  Timestamp
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../firebase';

@@ -1,206 +1,218 @@
-import { ref, computed } from 'vue'
-import { useTeachersStore } from '../stores/teachers'
-import { useClassesStore } from '../stores/classes'
-import { useStudentsStore } from '../stores/students'
-import { format, parseISO, setDay } from 'date-fns'
-import { es } from 'date-fns/locale'
-import { dayNameToNumber, dayNumberToName, validateDateDayCoherence } from '../utils/dateUtils'
+import { ref, computed } from "vue";
+import { useClassesStore } from "../modulos/Classes/store/classes";
+import { useTeachersStore } from "../modulos/Teachers/store/teachers";
+import { useStudentsStore } from "../modulos/Students/store/students";
+import { parse, isWithinInterval, format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export function useSchedule() {
-  const teachersStore = useTeachersStore()
-  const classesStore = useClassesStore()
-  const studentsStore = useStudentsStore()
+  const classesStore = useClassesStore();
+  const teachersStore = useTeachersStore();
+  const studentsStore = useStudentsStore();
 
-  const conflicts = ref<{
-    teacherId: string
-    classId: number
-    type: 'overlap' | 'capacity' | 'level'
-    description: string
-  }[]>([])
+  const isLoading = ref(false);
+  const error = ref<string | null>(null);
+  const loadingCount = ref(0);
 
-  const schedule = computed(() => {
-    const allClasses = classesStore.classes
-    const allTeachers = teachersStore.teachers
+  // Stats
+  const classStats = computed(() => ({
+    total: classesStore.classes.length,
+    scheduled: classesStore.classes.filter(c => c.schedule).length,
+    unscheduled: classesStore.classes.filter(c => !c.schedule).length,
+    withoutTeacher: classesStore.classes.filter(c => !c.teacherId).length,
+    withoutStudents: classesStore.classes.filter(c => !c.studentIds || c.studentIds.length === 0).length,
+  }));
+
+  // Enhanced classes with additional information
+  const enhancedClasses = computed(() => classesStore.classes.map(classItem => {
+    const teacher = teachersStore.teachers.find(t => t.id === classItem.teacherId);
+    const students = studentsStore.students.filter(s => classItem.studentIds?.includes(s.id));
+
+    const status = !classItem.schedule
+      ? 'not_scheduled'
+      : !classItem.teacherId
+        ? 'no_teacher'
+        : (!classItem.studentIds || classItem.studentIds.length === 0)
+          ? 'no_students'
+          : 'ready';
+
+    return {
+      ...classItem,
+      teacherName: teacher?.name || 'Sin asignar',
+      studentCount: classItem.studentIds?.length || 0,
+      students,
+      status,
+      formattedSchedule: formatScheduleDisplay(classItem.schedule)
+    };
+  }));
+
+  // Format schedules
+  const formatScheduleDisplay = (schedule: any) => {
+    if (!schedule) return { days: [], startTime: '', endTime: '' };
+    if (typeof schedule === 'string') {
+      const [day, start, , end] = schedule.split(' ');
+      return { days: [day || ''], startTime: start || '', endTime: end || '' };
+    }
+    return schedule;
+  };
+
+  // Load data
+  const loadData = async () => {
+    try {
+      isLoading.value = true;
+      loadingCount.value++;
+      error.value = null;
+      await Promise.all([
+        classesStore.fetchClasses(),
+        teachersStore.fetchTeachers(),
+        studentsStore.fetchStudents(),
+      ]);
+    } catch (err: any) {
+      error.value = err.message || 'Error al cargar datos';
+    } finally {
+      isLoading.value = false;
+      loadingCount.value--;
+    }
+  };
+
+  // Schedule validation
+  const validateSchedule = (date: string, schedule: any): boolean => {
+    if (!date || !schedule) return false;
+
+    const dayOfWeek = format(parseISO(date), 'EEEE', { locale: es }).toLowerCase();
     
-    return allClasses.map(class_ => {
-      const teacher = allTeachers.find(t => t.id === class_.teacherId)
-      return {
-        ...class_,
-        teacher: teacher?.name || 'Sin asignar',
-        students: class_.studentIds.length,
-        hasConflict: conflicts.value.some(c => c.classId === class_.id)
+    if (typeof schedule === 'string') {
+      const scheduledDay = schedule.split(' ')[0].toLowerCase();
+      return dayOfWeek === scheduledDay;
+    }
+    
+    if (typeof schedule === 'object') {
+      if (Array.isArray(schedule.days)) {
+        return schedule.days.map((day: string) => day.toLowerCase()).includes(dayOfWeek);
       }
-    })
-  })
-
-  const checkTimeOverlap = (time1: string, time2: string) => {
-    const [start1, end1] = time1.split('-').map(t => t.trim())
-    const [start2, end2] = time2.split('-').map(t => t.trim())
+      if (schedule.slots) {
+        return schedule.slots.some((slot: any) => slot.day.toLowerCase() === dayOfWeek);
+      }
+    }
     
-    return (start1 <= end2 && end1 >= start2)
-  }
+    return false;
+  };
 
-  const checkConflicts = () => {
-    conflicts.value = []
+  // Time conflict validation
+  const hasTimeConflict = (schedule1: any, schedule2: any) => {
+    // Convertir los horarios al formato correcto para comparación
+    const formatScheduleTime = (schedule: any) => {
+      if (typeof schedule === 'string') {
+        const [day, startTime, , endTime] = schedule.split(' ');
+        return { day, startTime, endTime };
+      }
+      return schedule;
+    };
 
-    // Check schedule overlaps
-    schedule.value.forEach(class1 => {
-      schedule.value.forEach(class2 => {
-        if (class1.id !== class2.id && 
-            class1.teacherId === class2.teacherId &&
-            checkTimeOverlap(class1.schedule, class2.schedule)) {
-          conflicts.value.push({
-            teacherId: class1.teacherId.toString(),
-            classId: class1.id,
-            type: 'overlap',
-            description: `Conflicto de horario con ${class2.name}`
-          })
+    const s1 = formatScheduleTime(schedule1);
+    const s2 = formatScheduleTime(schedule2);
+
+    // Si son en diferentes días, no hay conflicto
+    if (s1.day !== s2.day) return false;
+
+    // Convertir horas a objetos Date para comparación
+    const baseDate = new Date();
+    const s1Start = parse(s1.startTime, 'HH:mm', baseDate);
+    const s1End = parse(s1.endTime, 'HH:mm', baseDate);
+    const s2Start = parse(s2.startTime, 'HH:mm', baseDate);
+    const s2End = parse(s2.endTime, 'HH:mm', baseDate);
+
+    // Verificar superposición de intervalos
+    return (
+      isWithinInterval(s1Start, { start: s2Start, end: s2End }) ||
+      isWithinInterval(s1End, { start: s2Start, end: s2End }) ||
+      isWithinInterval(s2Start, { start: s1Start, end: s1End }) ||
+      isWithinInterval(s2End, { start: s1Start, end: s1End })
+    );
+  };
+
+  // Schedule conflict validation
+  const validateScheduleConflicts = (schedule: any, classId?: string, teacherId?: string) => {
+    const conflicts: {
+      type: 'teacher' | 'room' | 'student';
+      message: string;
+      details?: string;
+    }[] = [];
+
+    const currentClasses = classesStore.classes.filter(c => c.id !== classId);
+
+    // Helper function to check time conflicts
+    const checkTimeConflict = (existingSchedule: any, newSchedule: any) => {
+      if (typeof newSchedule === 'string') {
+        return hasTimeConflict(existingSchedule, newSchedule);
+      } else if (newSchedule.times) {
+        return newSchedule.times.some((time: any) => 
+          hasTimeConflict(existingSchedule, `${time.day} ${time.startTime} - ${time.endTime}`)
+        );
+      }
+      return false;
+    };
+
+    // Check teacher conflicts
+    if (teacherId) {
+      const teacherClasses = currentClasses.filter(c => c.teacherId === teacherId);
+      teacherClasses.forEach(teacherClass => {
+        if (checkTimeConflict(teacherClass.schedule, schedule)) {
+          conflicts.push({
+            type: 'teacher',
+            message: 'El profesor ya tiene una clase programada en este horario',
+            details: `Conflicto con la clase: ${teacherClass.name}`
+          });
         }
-      })
-    })
-
-    // Check classroom capacity
-    schedule.value.forEach(class_ => {
-      if (class_.students > 10) {
-        conflicts.value.push({
-          teacherId: class_.teacherId.toString(),
-          classId: class_.id,
-          type: 'capacity',
-          description: 'Excede la capacidad maxima del aula'
-        })
-      }
-    })
-
-    // Check student level compatibility
-    schedule.value.forEach(class_ => {
-      const students = studentsStore.students.filter(s => 
-        class_.studentIds.includes(s.id)
-      )
-      
-      if (students.some(s => s.level !== class_.level)) {
-        conflicts.value.push({
-          teacherId: class_.teacherId.toString(),
-          classId: class_.id,
-          type: 'level',
-          description: 'Niveles de estudiantes incompatibles'
-        })
-      }
-    })
-
-    return conflicts.value
-  }
-
-  const optimizeSchedule = () => {
-    // Implement schedule optimization logic
-    const optimizedSchedule = [...schedule.value]
-    
-    // Sort by priority and constraints
-    optimizedSchedule.sort((a, b) => {
-      // Consider factors like:
-      // - Number of students
-      // - Teacher availability
-      // - Room availability
-      // - Level requirements
-      return 0 // Placeholder
-    })
-
-    return optimizedSchedule
-  }
-
-  const suggestChanges = () => {
-    const suggestions = []
-    
-    // Analyze current schedule
-    for (const conflict of conflicts.value) {
-      switch (conflict.type) {
-        case 'overlap':
-          suggestions.push({
-            type: 'reschedule',
-            classId: conflict.classId,
-            description: 'Sugerir horario alternativo'
-          })
-          break
-        case 'capacity':
-          suggestions.push({
-            type: 'split',
-            classId: conflict.classId,
-            description: 'Dividir en dos grupos'
-          })
-          break
-        case 'level':
-          suggestions.push({
-            type: 'regroup',
-            classId: conflict.classId,
-            description: 'Reagrupar estudiantes por nivel'
-          })
-          break
-      }
+      });
     }
 
-    return suggestions
-  }
-
-  // Usar TimeZone local
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
-  
-  const getCurrentDayName = () => {
-    const date = new Date()
-    return format(date, 'EEEE', { locale: es }).toLowerCase()
-  }
-
-  const getNextDayForClass = (className: string, scheduleConfig: any) => {
-    const today = new Date()
-    let targetDay: number
-
-    if (typeof scheduleConfig === 'string') {
-      // Buscar el primer día mencionado en el string del horario
-      for (const [name, number] of Object.entries(dayNameToNumber)) {
-        if (scheduleConfig.toLowerCase().includes(name)) {
-          targetDay = number
-          break
+    // Check room conflicts
+    if (typeof schedule === 'object' && schedule.classroom) {
+      const roomClasses = currentClasses.filter(c => 
+        c.classroom === schedule.classroom
+      );
+      roomClasses.forEach(roomClass => {
+        if (checkTimeConflict(roomClass.schedule, schedule)) {
+          conflicts.push({
+            type: 'room',
+            message: 'El aula ya está ocupada en este horario',
+            details: `Conflicto con la clase: ${roomClass.name}`
+          });
         }
-      }
-    } else if (scheduleConfig?.days?.length > 0) {
-      // Usar el primer día configurado
-      targetDay = dayNameToNumber[scheduleConfig.days[0].toLowerCase()]
+      });
     }
 
-    if (targetDay !== undefined) {
-      // Obtener la próxima fecha para ese día
-      const nextDate = setDay(today, targetDay, { weekStartsOn: 1 })
-      if (nextDate < today) {
-        // Si la fecha ya pasó, ir a la próxima semana
-        nextDate.setDate(nextDate.getDate() + 7)
-      }
-      return format(nextDate, 'yyyy-MM-dd')
+    // Verificar conflictos de estudiantes (si se proporcionan)
+    if (schedule.studentIds?.length > 0) {
+      currentClasses.forEach(existingClass => {
+        const hasCommonStudents = existingClass.studentIds?.some(
+          (id: string) => schedule.studentIds.includes(id)
+        );
+        
+        if (hasCommonStudents && checkTimeConflict(existingClass.schedule, schedule)) {
+          conflicts.push({
+            type: 'student',
+            message: 'Hay estudiantes que ya tienen clase en este horario',
+            details: `Conflicto con la clase: ${existingClass.name}`
+          });
+        }
+      });
     }
 
-    return null
-  }
-
-  const validateSchedule = (date: string, scheduleConfig: any) => {
-    const dayName = format(parseISO(date), 'EEEE', { locale: es }).toLowerCase()
-    
-    if (typeof scheduleConfig === 'string') {
-      return scheduleConfig.toLowerCase().includes(dayName)
-    } else if (scheduleConfig?.days?.length > 0) {
-      return scheduleConfig.days.some((day: string) => 
-        day.toLowerCase() === dayName
-      )
-    }
-    
-    return false
-  }
+    return conflicts;
+  };
 
   return {
-    schedule,
-    conflicts,
-    checkConflicts,
-    optimizeSchedule,
-    suggestChanges,
-    getCurrentDayName,
-    getNextDayForClass,
+    isLoading,
+    error,
+    loadingCount,
+    classStats,
+    enhancedClasses,
+    formatScheduleDisplay,
+    loadData,
     validateSchedule,
-    timeZone
-  }
+    validateScheduleConflicts,
+    hasTimeConflict
+  };
 }

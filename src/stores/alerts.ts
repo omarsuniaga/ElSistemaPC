@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { collection, doc, getDocs, addDoc, updateDoc, query, orderBy, Firestore } from 'firebase/firestore'
 import { db } from '../firebase'
-import type { AttendanceStatus } from './attendance'
 
 export type AlertType = 'ConsecutiveAbsences' | 'LowAttendance' | 'LatePattern'
 export type AlertPriority = 'High' | 'Medium' | 'Low'

@@ -26,7 +26,7 @@ const props = defineProps<{
 
 const showFilters = ref(false)
 const showColumnManager = ref(false)
-const exportFormat = ref<'excel' | 'csv' | 'pdf'>('excel')
+const exportFormat = ref<'xlsx' | 'csv'>('xlsx')
 
 const {
   state,
@@ -43,19 +43,30 @@ const {
   reorderColumns,
   exportData
 } = useTable(props.items, props.columns, {
-  storageKey: props.storageKey,
+  storageKey: props.storageKey || "",
   defaultPageSize: props.defaultPageSize || 10,
-  exportFileName: props.exportFileName
+  exportFileName: props.exportFileName || ""
 })
 
 const pageSizeOptions = [10, 25, 50, 100]
 
+const globalSearch = computed<string>({
+  get: () => state.searchQuery,
+  set: (value: string) => {
+    state.searchQuery = value
+  }
+})
+
 const handleExport = () => {
+  interface VisibleColumn {
+    id: string;
+  }
+
   const options: ExportOptions = {
     format: exportFormat.value,
-    fileName: props.exportFileName,
+    filename: props.exportFileName || "",
     includeHeaders: true,
-    columns: visibleColumns.value.map(col => col.id)
+    columnIds: visibleColumns.value.map((col: VisibleColumn) => col.id)
   }
   exportData(options)
 }
@@ -76,17 +87,20 @@ const getSortIcon = (column: TableColumn) => {
         <select
           v-model="state.pageSize"
           class="input w-24"
-          @change="setPageSize(Number($event.target.value))"
+          @change="setPageSize(Number(($event.target as HTMLSelectElement).value))"
         >
-          <option
-            v-for="size in pageSizeOptions"
-            :key="size"
-            :value="size"
-          >
-            {{ size }}
-          </option>
+          <option v-for="option in pageSizeOptions" :key="option" :value="option">{{ option }}</option>
         </select>
-
+        <div class="flex items-center gap-4">
+          <label for="globalSearch" class="text-sm font-medium">Buscar</label>
+          <input
+            id="globalSearch"
+            type="text"
+            v-model="globalSearch"
+            placeholder="Escribe para buscar..."
+            class="input w-64"
+          />
+        </div>
         <button
           @click="showFilters = !showFilters"
           class="btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
@@ -108,13 +122,12 @@ const getSortIcon = (column: TableColumn) => {
       <!-- Right Controls -->
       <div class="flex items-center gap-2">
         <select
-          v-model="exportFormat"
-          class="input w-24"
-        >
-          <option value="excel">Excel</option>
-          <option value="csv">CSV</option>
-          <option value="pdf">PDF</option>
-        </select>
+                  v-model="exportFormat"
+                  class="input w-24"
+                >
+                  <option value="xlsx">Excel</option>
+                  <option value="csv">CSV</option>
+                </select>
 
         <button
           @click="handleExport"
@@ -227,16 +240,16 @@ const getSortIcon = (column: TableColumn) => {
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
           <tr 
-            v-for="(row, idx) in data" 
+            v-for="(row, idx) in paginatedItems" 
             :key="row.id || idx" 
             class="hover:bg-gray-50 dark:hover:bg-gray-800"
           >
-            <td 
+            <td
               v-for="column in columns" 
               :key="column.key"
               class="px-6 py-4 whitespace-nowrap"
             >
-              <div v-if="column.format" v-html="column.format(row[column.key], row)"></div>
+              <div v-if="column.format" v-html="column.format(row[column.key])"></div>
               <div v-else>{{ row[column.key] }}</div>
             </td>
           </tr>

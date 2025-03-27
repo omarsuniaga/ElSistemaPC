@@ -1,560 +1,690 @@
+<!-- views/ClassesView.vue -->
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive, watch } from 'vue'
-import { auth, db } from '../firebase'
-import { doc, getDoc, DocumentData } from 'firebase/firestore'
+import { ref, computed, onMounted, watch, onBeforeMount } from 'vue'
+import { useClassesStore } from '../modulos/Classes/store/classes'
+import { useTeachersStore } from '../modulos/Teachers/store/teachers'
+import { useStudentsStore } from '../modulos/Students/store/students'
+import { useInstrumentoStore } from '../modulos/Instruments/store/instrumento'
+import type { Student } from '../modulos/Students/types/student'
+import Modal from '../components/shared/Modal.vue'
+import ConfirmModal from '../components/ConfirmModal.vue'
+import ClassForm from '../modulos/Classes/components/ClassForm.vue'
+import StudentManagement from '../modulos/Students/components/StudentManagement.vue'
+import StudentSelector from '../modulos/Students/components/StudentSelector.vue'
+import ClassDetail from '../modulos/Classes/components/ClassDetail.vue'
+import { PlusCircleIcon, InformationCircleIcon, UserGroupIcon, TrashIcon, BookOpenIcon, EllipsisVerticalIcon, ArrowLeftIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
-// Define the UpcomingClass interface
-interface UpcomingClass {
-  id: string;
-  title: string;
-  date: Date;
-  time: string;
-  teacher: string;
-  students: number;
-  room: string;
-}
-
-// Define interfaces for analytics data
-interface BestAttendanceClass {
+interface ClassData {
   id: string;
   name: string;
-  total: number;
-  attendanceRate: number;
+  description?: string;
+  level: string;
+  instrument?: string;
+  teacherId: string;
+  studentIds: string[];
+  schedule: { days: string[]; startTime: string; endTime: string; };
+  classroom?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
-
-// Importación de componentes
-import DashboardHeader from '../components/DashboardHeader.vue'
-import StatsCard from '../components/StatsCard.vue'
-import PerformanceKpi from '../components/PerformanceKpi.vue'
-import UpcomingClassesList from '../components/UpcomingClassesList.vue'
-import ChartContainer from '../components/ChartContainer.vue'
-import AnalysisPanel from '../components/AnalysisPanel.vue'
-import AccessRequests from '../components/AccessRequests.vue'
-
-// Iconos y gráficos
-import { 
-  UserGroupIcon, 
-  AcademicCapIcon,
-  BookOpenIcon,
-  ChartBarIcon,
-  ArrowTopRightOnSquareIcon,
-  CalendarIcon,
-  ClockIcon,
-  ExclamationTriangleIcon, 
-  CurrencyDollarIcon,
-  TrophyIcon
-} from '@heroicons/vue/24/outline'
-import { Line, Doughnut } from 'vue-chartjs'
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js'
-import { useStudentsStore } from '../stores/students'
-import { useTeachersStore } from '../stores/teachers'
-import { useContentsStore } from '../stores/contents'
-import { useClassesStore } from '../stores/classes'
-import { useAttendanceStore } from '../stores/attendance'
-import { useAnalyticsStore } from '../stores/analytics'
-import { format, eachMonthOfInterval, subMonths, parseISO, addDays, addWeeks, isAfter, isBefore, startOfToday, endOfDay } from 'date-fns'
-import { es } from 'date-fns/locale'
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-)
-
-const user = ref<DocumentData | null>(null)
-const userRole = ref('')
-const showAnalytics = ref(false)
 
 // Stores
-const studentsStore = useStudentsStore()
-const teachersStore = useTeachersStore()
-const contentsStore = useContentsStore()
 const classesStore = useClassesStore()
-const attendanceStore = useAttendanceStore()
-const analyticsStore = useAnalyticsStore()
+const teachersStore = useTeachersStore()
+const studentsStore = useStudentsStore()
+const instrumentoStore = useInstrumentoStore()
 
-// Simple metrics counts
-const totalStudents = computed(() => studentsStore.students.length)
-const totalTeachers = computed(() => teachersStore.teachers.length)
-const totalContents = computed(() => contentsStore.contents.length)
+// UI state
+const showAddModal = ref(false)
+const showEditModal = ref(false)
+const showDeleteModal = ref(false)
+const showStudentsModal = ref(false)
+const showAddStudentModal = ref(false)
+const showInfoModal = ref(false)
+const showClassDrawer = ref(false)
+const isLoading = ref(false)
+const errorMessage = ref('')
+const successMessage = ref('')
+const activeDropdown = ref<string | null>(null)
+const classesLoaded = ref(false)
 
-// Performance KPIs
-const performance = ref({
-  studentProgress: 0,
-  attendanceRate: 0,
-  teachingHours: 0
+// Selection state
+const selectedGroupId = ref<string | null>(null)
+const selectedGroupName = ref('')
+const selectedStudent = ref<string | null>(null)
+const selectedStudentIds = ref<string[]>([])
+const selectedClass = ref<ClassData | undefined>(undefined)
+const searchQuery = ref('')
+
+// Filter options
+const levelOptions = ['Iniciación', 'Básico', 'Intermedio', 'Avanzado']
+const filters = ref({
+  instrument: '',
+  level: '',
+  teacherId: ''
 })
 
-// Get last 12 months
-const months = eachMonthOfInterval({
-  start: subMonths(new Date(), 11),
-  end: new Date()
+// Computed properties
+const filteredGroups = computed(() => {
+  let groups = classesStore.classes || []
+
+  if (filters.value.instrument) {
+    groups = groups.filter((g) => g.instrument === filters.value.instrument)
+  }
+  
+  if (filters.value.level) {
+    groups = groups.filter((g) => g.level === filters.value.level)
+  }
+  
+  if (filters.value.teacherId) {
+    groups = groups.filter((g) => g.teacherId === filters.value.teacherId)
+  }
+  
+  return groups
 })
 
-// Calculate students per month (demo data for line chart)
-const studentsPerMonth = computed(() => {
-  // Generate demo data with gradual growth
-  const monthlyData = months.map((_, index) => {
-    // Start with base number and add some growth
-    return Math.floor(5 + (index * 0.8)) // Simulated growth
+const selectedGroupStudents = computed(() => {
+  if (!selectedGroupId.value) return []
+  
+  const group = classesStore.classes.find((g) => String(g.id) === String(selectedGroupId.value))
+  return group && group.studentIds 
+    ? studentsStore.students
+        .filter((s) => group.studentIds?.includes(s.id))
+        .map((s): Student => ({
+          id: s.id,
+          nombre: s.nombre || '',
+          apellido: s.apellido || '',
+          edad: (s as any).edad?.toString() || '',
+          nac: s.nac || '',
+          email: s.email || '',
+          tlf: s.tlf || '',
+          sexo: s.sexo || '',
+          madre: s.madre || '',
+          padre: s.padre || '',
+          tlf_madre: s.tlf_madre || '',
+          tlf_padre: s.tlf_padre || '',
+          grupo: s.grupo || [],
+          instrumento: s.instrumento || '',
+          colegio_trabajo: (s as any).colegio_trabajo || '',
+          horario_colegio_trabajo: (s as any).horario_colegio_trabajo || '',
+          clase: (s as any).clase || '',
+          propiedadExtra1: (s as any).propiedadExtra1 || '',
+          propiedadExtra2: (s as any).propiedadExtra2 || '',
+          propiedadExtra3: (s as any).propiedadExtra3 || ''
+        }))
+    : []
+})
+
+const students = computed(() => {
+  return studentsStore.students.filter((s) => {
+    const fullName = `${s.nombre || ''} ${s.apellido || ''}`.toLowerCase()
+    return fullName.includes(searchQuery.value.toLowerCase())
   })
-
-  return {
-    labels: months.map(month => format(month, 'MMM yyyy', { locale: es })),
-    datasets: [
-      {
-        label: 'Total de Alumnos',
-        data: monthlyData,
-        borderColor: '#0ea5e9',
-        backgroundColor: '#0ea5e9',
-        tension: 0.4
-      }
-    ]
-  }
 })
 
-// Line chart options configuration
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'top' as const
-    }
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      ticks: {
-        stepSize: 1
-      }
-    }
-  }
-}
-
-// Próximas clases - Generadas a partir de datos reales
-const upcomingClasses = computed(() => {
-  // Si no hay clases, devolver array vacío
-  if (!classesStore.classes || classesStore.classes.length === 0) {
-    return []
-  }
-
-  const today = startOfToday()
-  const nextWeek = addDays(today, 7) // Mostrar clases para exactamente una semana
-  const result = []
-  
-  // Procesar cada clase
-  classesStore.classes.forEach(classItem => {
-    // Verificar si la clase tiene horario configurado
-    if (!classItem.schedule || !classItem.schedule.days || classItem.schedule.days.length === 0) {
-      return
-    }
-    
-    // Mapear nombres de días en español a números (0 = domingo, 1 = lunes, etc.)
-    const dayMap: Record<string, number> = {
-      'domingo': 0,
-      'lunes': 1,
-      'martes': 2,
-      'miércoles': 3,
-      'jueves': 4,
-      'viernes': 5,
-      'sábado': 6
-    }
-    
-    // Obtener el profesor correctamente
-    let teacherName = 'Sin profesor asignado'
-    if (classItem.teacherId) {
-      const teacher = teachersStore.getTeacherById(classItem.teacherId)
-      if (teacher) {
-        teacherName = teacher.name || teacher.email || 'Sin nombre'
-      }
-    }
-
-    // Obtener cantidad de estudiantes
-    let studentCount = 0
-    if (Array.isArray(classItem.studentIds)) {
-      studentCount = classItem.studentIds.length
-    }
-    
-    // Para cada día de la semana en que la clase está programada
-    classItem.schedule.days.forEach(day => {
-      // Normalizar el día a minúsculas
-      const normalizedDay = day.toLowerCase().trim()
-      const dayNumber = dayMap[normalizedDay]
-      
-      if (dayNumber === undefined) {
-        console.warn(`Día no reconocido: ${day}`)
-        return
-      }
-      
-      // Calcular la próxima fecha para este día de la semana
-      let nextDate = new Date(today)
-      
-      // Ajustar al próximo día de la semana que corresponda
-      const currentDay = nextDate.getDay()
-      const daysUntilNext = (dayNumber - currentDay + 7) % 7
-      
-      if (daysUntilNext === 0) {
-        // Si es hoy, verificamos si ya pasó la hora para dejarlo hoy o moverlo a la próxima semana
-        const currentTime = new Date().toTimeString().substring(0, 5); // Formato HH:MM
-        if (classItem.schedule.startTime && currentTime > classItem.schedule.startTime) {
-          // Si la hora de inicio ya pasó, mostrar la clase de la próxima semana
-          nextDate = addDays(nextDate, 7)
-        }
-      } else {
-        // Si no es el día actual, ajustamos a la próxima vez que ocurra
-        nextDate = addDays(nextDate, daysUntilNext)
-      }
-      
-      // Verificar si la fecha está dentro del rango deseado (una semana exacta)
-      if (isBefore(nextDate, nextWeek) || nextDate.getTime() === nextWeek.getTime()) {
-        result.push({
-          id: classItem.id,
-          title: classItem.name,
-          date: nextDate,
-          time: classItem.schedule.startTime && classItem.schedule.endTime 
-            ? `${classItem.schedule.startTime} - ${classItem.schedule.endTime}`
-            : 'Horario no especificado',
-          teacher: teacherName,
-          students: studentCount,
-          room: (classItem as any).location || 'Consulta en administracion'
-        })
-      }
-    })
-  })
-  
-  // Ordenar por fecha y hora
-  return result.sort((a, b) => {
-    const dateComparison = a.date.getTime() - b.date.getTime()
-    if (dateComparison !== 0) return dateComparison
-    
-    // Si las fechas son iguales, comparar por hora
-    return a.time.localeCompare(b.time)
-  }).slice(0, 5) // Mostrar solo las primeras 5
+const availableStudents = computed(() => {
+  return students.value.map((s): Student => ({
+    id: s.id,
+    nombre: s.nombre || '',
+    apellido: s.apellido || '',
+    edad: s.edad?.toString() || '',
+    nac: s.nac || '',
+    email: s.email || '',
+    tlf: s.tlf || '',
+    sexo: s.sexo || '',
+    madre: s.madre || '',
+    padre: s.padre || '',
+    tlf_madre: s.tlf_madre || '',
+    tlf_padre: s.tlf_padre || '',
+    grupo: s.grupo || [],
+    instrumento: s.instrumento || '',
+    colegio_trabajo: (s as any).colegio_trabajo || '',
+    horario_colegio_trabajo: (s as any).horario_colegio_trabajo || '',
+    clase: s.clase || '',
+    propiedadExtra1: (s as any).propiedadExtra1 || '',
+    propiedadExtra2: (s as any).propiedadExtra2 || '',
+    propiedadExtra3: (s as any).propiedadExtra3 || ''
+  }))
 })
 
-// Función para formatear fecha
-const formatDate = (date) => {
-  return format(date, 'EEEE, d MMMM', { locale: es })
+const getTeacherName = (teacherId?: string): string => {
+  if (!teacherId) return 'Sin profesor asignado'
+  const teacher = teachersStore.teachers.find(t => t.id === teacherId)
+  return teacher?.name ?? 'Profesor no encontrado'
 }
 
-// Gráfico de asistencia por día de semana
-const attendanceByDayOfWeek = computed(() => {
-  if (!analyticsStore.attendanceMetrics.attendanceByDayOfWeek.length) {
-    return {
-      labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
-      datasets: [{
-        label: 'Tasa de Asistencia (%)',
-        data: [92, 88, 85, 90, 86, 91, 82], // Default demo data
-        backgroundColor: [
-          '#3b82f6', '#4ade80', '#f97316', '#a855f7',
-          '#ec4899', '#14b8a6', '#8b5cf6'
-        ],
-        borderWidth: 1,
-      }]
-    }
-  }
-  
-  // Use data from the store
-  const data = analyticsStore.attendanceMetrics.attendanceByDayOfWeek
-  return {
-    labels: data.map(d => d.day),
-    datasets: [{
-      label: 'Tasa de Asistencia (%)',
-      data: data.map(d => d.rate),
-      backgroundColor: [
-        '#3b82f6', '#4ade80', '#f97316', '#a855f7',
-        '#ec4899', '#14b8a6', '#8b5cf6'
-      ],
-      borderWidth: 1,
-    }]
-  }
+// UI state for responsive design
+const isMobile = ref(false)
+const showMobileDetail = ref(false)
+
+// Check if device is mobile on component mount and window resize
+const checkIsMobile = () => {
+  isMobile.value = window.innerWidth < 768 // md breakpoint
+}
+
+onBeforeMount(() => {
+  checkIsMobile()
+  window.addEventListener('resize', checkIsMobile)
 })
 
-// Gráfico de distribución de rendimiento de estudiantes
-const studentPerformance = computed(() => {
-  const distribution = analyticsStore.studentMetrics.performanceDistribution
-  
-  // Use default data if not available yet
-  if (!distribution.excellent && !distribution.good) {
-    return {
-      labels: ['Excelente (90-100%)', 'Bueno (80-89%)', 'Regular (70-79%)', 'Necesita Mejorar (<70%)'],
-      datasets: [{
-        data: [30, 45, 15, 10], // Default demo percentages
-        backgroundColor: ['#22c55e', '#3b82f6', '#eab308', '#ef4444'],
-      }]
-    }
-  }
-  
-  // Use data from the store
-  return {
-    labels: ['Excelente (90-100%)', 'Bueno (80-89%)', 'Regular (70-79%)', 'Necesita Mejorar (<70%)'],
-    datasets: [{
-      data: [
-        distribution.excellent,
-        distribution.good,
-        distribution.average,
-        distribution.needsImprovement
-      ],
-      backgroundColor: ['#22c55e', '#3b82f6', '#eab308', '#ef4444'],
-    }]
-  }
-})
-
-const doughnutOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'right' as const,
-      labels: {
-        boxWidth: 15,
-        font: {
-          size: 12
-        }
-      }
-    }
-  }
-}
-
-// Add new state for at-risk students detail view
-const showAtRiskDetails = ref(false)
-const selectedAtRiskStudents = computed(() => analyticsStore.studentMetrics.atRiskStudents || [])
-
-// Add method to handle showing details
-const openAtRiskDetails = () => {
-  showAtRiskDetails.value = true
-}
-
-// Load all data for dashboard
-async function loadDashboardData() {
-  try {
-    // Load data from stores
-    await Promise.all([
-      studentsStore.fetchStudents(),
-      teachersStore.fetchTeachers(),
-      contentsStore.fetchContents(),
-      classesStore.fetchClasses()
-    ]).catch(error => console.error('Error cargando datos básicos:', error))
-    
-    // Get all metrics from analytics store
-    await analyticsStore.fetchAnalytics()
-    
-    // Update performance KPIs
-    performance.value = {
-      studentProgress: analyticsStore.studentMetrics.averagePerformance || 78,
-      attendanceRate: analyticsStore.attendanceMetrics.averageRate || 92,
-      teachingHours: Object.values(analyticsStore.teacherMetrics.teachingHours)
-        .reduce((sum, hours) => sum + Number(hours), 0) || 124
-    }
-  } catch (error) {
-    console.error('Error cargando datos del dashboard:', error)
-  }
-}
-
+// Loading and data fetching
 onMounted(async () => {
-  if (auth.currentUser) {
-    const userDoc = await getDoc(doc(db, 'USERS', auth.currentUser.uid))
-    if (userDoc.exists()) {
-      user.value = userDoc.data()
-      userRole.value = userDoc.data().role
-    }
+  isLoading.value = true
+  try {
+    await classesStore.fetchClasses()
+    console.log(`Se encontraron ${classesStore.classes.length} clases en Firestore`)
+    classesLoaded.value = true
+    
+    await Promise.all([
+      teachersStore.fetchTeachers(),
+      studentsStore.fetchStudents(),
+      instrumentoStore.fetchInstruments()
+    ])
+  } catch (error) {
+    errorMessage.value = `Error al cargar los datos: ${error}`
+    console.error('Error al cargar los datos:', error)
+  } finally {
+    isLoading.value = false
   }
+})
+
+// Class operations
+async function handleSubmit(formData: any) {
+  isLoading.value = true
+  errorMessage.value = ''
   
-  // Load initial dashboard data
-  await loadDashboardData()
-})
+  try {
+    const classData: ClassData = {
+      ...formData,
+      level: formData.level || 'Iniciación',
+      teacherId: formData.teacherId,
+      studentIds: formData.studentIds || [],
+      schedule: {
+        days: Array.isArray(formData.schedule?.days) ? formData.schedule.days : [],
+        startTime: typeof formData.schedule?.startTime === 'string' ? formData.schedule.startTime : '',
+        endTime: typeof formData.schedule?.endTime === 'string' ? formData.schedule.endTime : ''
+      },
+      updatedAt: new Date().toISOString()
+    }
 
-// Reload metrics when analytics panel is shown
-watch(showAnalytics, async (newValue) => {
-  if (newValue) {
-    await analyticsStore.fetchAnalytics()
+    if (showEditModal.value) {
+      if (!formData.id) {
+        throw new Error('ID de clase no válido')
+      }
+      
+      const existingClass = classesStore.classes.find(c => c.id === formData.id)
+      if (!existingClass) {
+        throw new Error(`No se encontró la clase con ID ${formData.id}`)
+      }
+
+      await classesStore.updateClass({
+        ...classData,
+        id: formData.id,
+        createdAt: formData.createdAt ? new Date(formData.createdAt) : (existingClass.createdAt || new Date()),
+        updatedAt: new Date()
+      })
+      successMessage.value = 'Clase actualizada correctamente'
+    } else {
+      await classesStore.addClass({
+        ...classData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      successMessage.value = 'Clase creada correctamente'
+    }
+    
+    closeModal()
+    await classesStore.fetchClasses() // Recargar la lista de clases
+  } catch (err: any) {
+    console.error('❌ Error en handleSubmit:', err)
+    errorMessage.value = `Error: ${err.message}`
+  } finally {
+    isLoading.value = false
   }
-})
+}
 
-const isAdmin = computed(() => ['admin', 'director'].includes(userRole.value))
+const handleEdit = (groupId: string) => {
+  const group = classesStore.classes.find((g) => String(g.id) === String(groupId))
+  if (!group) return
+  selectedGroupId.value = groupId
+  showEditModal.value = true
+  activeDropdown.value = null
+}
+
+const handleDelete = (groupId: string) => {
+  selectedGroupId.value = groupId
+  showDeleteModal.value = true
+  activeDropdown.value = null
+}
+
+const confirmDelete = async () => {
+  if (!selectedGroupId.value) return
+  
+  try {
+    isLoading.value = true
+    console.log('🗑️ Eliminando grupo con ID:', selectedGroupId.value)
+    
+    await classesStore.removeClass(selectedGroupId.value)
+    
+    successMessage.value = 'Grupo eliminado exitosamente'
+    showDeleteModal.value = false
+  } catch (error) {
+    errorMessage.value = 'Error al eliminar el grupo'
+    console.error('❌ Error en confirmDelete:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Updated handleView for responsive behavior
+const handleView = (classItem: ClassData) => {
+  selectedClass.value = classItem
+  if (isMobile.value) {
+    showMobileDetail.value = true
+  } else {
+    showClassDrawer.value = true
+  }
+  closeDropdowns()
+}
+
+const goBackToList = () => {
+  showMobileDetail.value = false
+}
+
+// Student management
+const showStudentList = (groupId: string) => {
+  selectedGroupId.value = groupId
+  const group = classesStore.classes.find((g) => String(g.id) === String(groupId))
+  if (group) {
+    selectedGroupName.value = group.name || 'Grupo sin nombre'
+  }
+  showStudentsModal.value = true
+  activeDropdown.value = null
+}
+
+const removeStudentFromGroup = async (studentId: string) => {
+  if (!selectedGroupId.value) return
+  try {
+    isLoading.value = true
+    const classItem = classesStore.classes.find(c => String(c.id) === String(selectedGroupId.value))
+    if (!classItem) {
+      throw new Error('Clase no encontrada')
+    }
+    const updatedStudentIds = (classItem.studentIds || []).filter(id => id !== studentId)
+    await classesStore.updateClass({
+      ...classItem,
+      studentIds: updatedStudentIds,
+      createdAt: classItem.createdAt ? new Date(classItem.createdAt) : undefined,
+      updatedAt: new Date()
+    })
+    successMessage.value = 'Estudiante removido exitosamente'
+  } catch (error: any) {
+    errorMessage.value = 'Error al remover el estudiante'
+    console.error('Error:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const selectStudent = (studentId: string) => {
+  selectedStudent.value = studentId
+  searchQuery.value = ''
+  if (!selectedStudentIds.value.includes(studentId)) {
+    selectedStudentIds.value.push(studentId)
+  }
+}
+
+const addSelectedStudents = async () => {
+  if (!selectedGroupId.value || selectedStudentIds.value.length === 0) return
+  try {
+    isLoading.value = true
+    const classItem = classesStore.classes.find(c => String(c.id) === String(selectedGroupId.value))
+    if (classItem) {
+      const updatedIds = [...(classItem.studentIds || []), ...selectedStudentIds.value]
+        await classesStore.updateClass({
+          ...classItem,
+          studentIds: updatedIds,
+          updatedAt: new Date()
+        })
+    }
+    successMessage.value = 'Estudiantes agregados exitosamente'
+    showAddStudentModal.value = false
+    selectedStudentIds.value = []
+  } catch (error) {
+    errorMessage.value = 'Error al agregar estudiantes'
+    console.error('Error:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const showAddStudentForm = () => {
+  selectedStudentIds.value = []
+  showAddStudentModal.value = true
+}
+
+const removeSelectedStudent = (studentId: string) => {
+  selectedStudentIds.value = selectedStudentIds.value.filter(id => id !== studentId)
+}
+
+// UI interactions
+const toggleDropdown = (id: string, event: Event) => {
+  event.stopPropagation()
+  activeDropdown.value = activeDropdown.value === id ? null : id
+}
+
+const closeDropdowns = () => {
+  activeDropdown.value = null
+}
+
+
+const closeModal = () => {
+  showAddModal.value = false
+  showEditModal.value = false
+  showAddStudentModal.value = false
+  showInfoModal.value = false
+  selectedGroupId.value = null
+  selectedStudentIds.value = []
+  successMessage.value = ''
+  errorMessage.value = ''
+}
+const clearMessages = () => {
+  successMessage.value = ''
+  errorMessage.value = ''
+}
+
+watch([successMessage, errorMessage], clearMessages)
 </script>
 
 <template>
-  <div class="py-6">
-    <!-- Header y welcome message -->
-    <DashboardHeader 
-      :showAnalytics="showAnalytics" 
-      @toggle-analytics="showAnalytics = !showAnalytics"
-    >
-      <template #access-requests>
-        <AccessRequests v-if="isAdmin" class="mb-8" />
-      </template>
-    </DashboardHeader>
-
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      <!-- Students Stats -->
-      <StatsCard 
-        :icon="UserGroupIcon"
-        title="Total Alumnos"
-        :value="totalStudents"
-        bgColorClass="bg-blue-100 dark:bg-blue-900"
-        iconColorClass="text-blue-600 dark:text-blue-400"
-      />
-
-      <!-- Teachers Stats -->
-      <StatsCard 
-        :icon="AcademicCapIcon"
-        title="Total Maestros"
-        :value="totalTeachers"
-        bgColorClass="bg-green-100 dark:bg-green-900"
-        iconColorClass="text-green-600 dark:text-green-400"
-      />
-
-      <!-- Contents Stats -->
-      <StatsCard 
-        :icon="BookOpenIcon"
-        title="Total Contenidos"
-        :value="totalContents"
-        bgColorClass="bg-purple-100 dark:bg-purple-900"
-        iconColorClass="text-purple-600 dark:text-purple-400"
-      />
-    </div>
-    
-    <!-- Performance KPIs -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      <PerformanceKpi 
-        title="Progreso Estudiantil" 
-        :value="performance.studentProgress" 
-        description="Promedio de avance en los contenidos"
-        isPercentage
-        :thresholds="{high: 80, medium: 60}"
-      />
-      
-      <PerformanceKpi 
-        title="Tasa de Asistencia" 
-        :value="performance.attendanceRate" 
-        description="Promedio de asistencia a clases"
-        isPercentage
-        :thresholds="{high: 90, medium: 75}"
-      />
-      
-      <PerformanceKpi 
-        title="Horas de Enseñanza" 
-        :value="performance.teachingHours" 
-        description="Horas de clase este mes"
-        :colorClasses="{high: '', medium: '', low: '', default: 'border-blue-500 text-blue-500'}"
-      />
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden ">
+    <!-- Mobile view navigation when showing details -->
+    <div v-if="isMobile && showMobileDetail" class="fixed top-0 left-0 w-full z-10  
+    bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 
+    py-3 flex items-center">
+      <button @click="goBackToList" class="mr-4 text-gray-600 dark:text-gray-300">
+        <ArrowLeftIcon class="h-6 w-6" />
+      </button>
+      <div>
+        <h2 class="text-lg font-medium truncate">{{ selectedClass?.name || 'Detalles de clase' }}</h2>
+        <!-- subtitulo -->
+        <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">
+          {{ selectedClass?.classroom || 'Preguntar en admin' }}
+        </span>
+      </div>
+        <!-- mostrar avatar -->
+      <div class="ml-auto">
+        <button 
+          @click="toggleDropdown(classItem.id, $event)"
+          class="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+          <EllipsisVerticalIcon class="h-5 w-5 text-gray-500 dark:text-gray-400" />
+        </button>
+      </div>
     </div>
 
-    <!-- Two column layout -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-      <!-- Upcoming Classes -->
-      <UpcomingClassesList :classes="upcomingClasses" />
-      
-      <!-- Chart - Only show when analytics is enabled -->
-      <ChartContainer 
-        v-if="showAnalytics" 
-        title="Crecimiento de Alumnos" 
-        :icon="ChartBarIcon"
-        iconClass="text-blue-500"
+    <!-- Main responsive container -->
+    <div class="flex h-screen fixed top-0 left-0 w-full">
+      <!-- List panel (full width on mobile, 30% on desktop) -->
+      <div 
+        :class="{
+          'w-full': isMobile && !showMobileDetail,
+          'hidden': isMobile && showMobileDetail,
+          'w-full md:w-1/3 border-r border-gray-200 dark:border-gray-700': !isMobile
+        }"
+        class="h-full overflow-y-auto "
       >
-        <Line
-          :data="studentsPerMonth"
-          :options="chartOptions"
-        />
-      </ChartContainer>
-    </div>
-
-    <!-- Analytics Dashboard - Only shown when showAnalytics is true -->
-    <AnalysisPanel
-      v-if="showAnalytics"
-      :attendanceByDayOfWeek="attendanceByDayOfWeek"
-      :studentPerformance="studentPerformance"
-      :chartOptions="chartOptions"
-      :doughnutOptions="doughnutOptions"
-      :atRiskStudents="analyticsStore.studentMetrics.atRiskStudents"
-      :bestAttendanceClasses="analyticsStore.attendanceMetrics.bestAttendanceClasses"
-      :lowestPerformanceIndicators="analyticsStore.academicMetrics.lowestPerformanceIndicators"
-      @show-at-risk-details="openAtRiskDetails"
-    />
-
-    <!-- Modal for At-Risk Students Details -->
-    <div v-if="showAtRiskDetails" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="p-6">
-          <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-              Estudiantes en Riesgo - Detalles
-            </h2>
-            <button 
-              @click="showAtRiskDetails = false"
-              class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            >
-              <span class="sr-only">Cerrar</span>
-              <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+        <div class="p-2 md:top-0">
+          <!-- Mensajes de error y éxito -->
+          <div v-if="errorMessage" class="mb-4 p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-lg">
+            <p class="flex items-center">
+              <span class="mr-2">⚠️</span>
+              {{ errorMessage }}
+            </p>
+          </div>
+          <div v-if="successMessage" class="mb-4 p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg">
+            <p class="flex items-center">
+              <span class="mr-2">✅</span>
+              {{ successMessage }}
+            </p>
           </div>
 
-          <div class="space-y-6">
-            <div v-for="student in selectedAtRiskStudents" :key="student.id" 
-                 class="p-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/20">
-              <h3 class="font-semibold text-lg text-red-800 dark:text-red-200">
-                {{ student.name }}
-              </h3>
-              <div class="mt-2 space-y-2">
-                <p class="text-red-700 dark:text-red-300">
-                  <span class="font-medium">Rendimiento:</span> {{ student.performance }}%
-                </p>
-                <p class="text-red-700 dark:text-red-300">
-                  <span class="font-medium">Asistencia:</span> {{ student.attendance }}%
-                </p>
-                <p class="text-red-700 dark:text-red-300">
-                  <span class="font-medium">Último acceso:</span> {{ student.lastAccess }}
-                </p>
-                <div class="mt-3">
-                  <h4 class="font-medium text-red-800 dark:text-red-200">Factores de riesgo:</h4>
-                  <ul class="list-disc list-inside mt-1 text-red-700 dark:text-red-300">
-                    <li v-for="(factor, index) in student.riskFactors" :key="index">
-                      {{ factor }}
-                    </li>
-                  </ul>
-                </div>
-                <div class="mt-3">
-                  <h4 class="font-medium text-red-800 dark:text-red-200">Acciones recomendadas:</h4>
-                  <ul class="list-disc list-inside mt-1 text-red-700 dark:text-red-300">
-                    <li v-for="(action, index) in student.recommendedActions" :key="index">
-                      {{ action }}
-                    </li>
-                  </ul>
-                </div>
-              </div>
+          <!-- Cabecera y botones de acción -->
+          <div class="flex flex-col  justify-between items-start  mb-6 md:mb-6 gap-4 md:gap-2 ">
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2 md:mb-0">El Sistema Punta Cana</h1>
+            <div class="flex flex-wrap gap-2 w-full md:w-auto justify-end md:justify-end">
+            <!-- icono lupa -->
+            <!-- <ClassFilters 
+              :initial-filters="filters"
+              :level-options="levelOptions"
+              @update:filters="filters = $event"
+            /> -->
             </div>
           </div>
 
-          <div class="mt-6 flex justify-end">
-            <button 
-              @click="showAtRiskDetails = false"
-              class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
-            >
-              Cerrar
-            </button>
+          <!-- Filtros de clases -->
+          
+          <!-- Indicador de carga -->
+          <div v-if="isLoading" class="text-center py-12">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">Cargando...</p>
+          </div>
+
+          <!-- Lista de clases estilo chat -->
+          <div v-else-if="filteredGroups.length > 0" class="mt-4">
+            <div class="mb-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <p class="text-sm text-blue-800 dark:text-blue-200">
+                {{ filteredGroups.length }} clases encontradas
+              </p>
+            </div>
+            
+            <ul class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden ">
+              <li 
+                v-for="classItem in filteredGroups" 
+                :key="classItem.id"
+                :class="{'bg-blue-50 dark:bg-blue-900/20': selectedClass?.id === classItem.id}"
+                class="flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors relative"
+                @click="handleView({...classItem, level: classItem.level || 'Iniciación', teacherId: classItem.teacherId || '', studentIds: classItem.studentIds || [], schedule: classItem.schedule || { days: [], startTime: '', endTime: '' }})"
+              >
+                <div class="flex-shrink-0 mr-3">
+                  <div class="bg-blue-100 dark:bg-blue-900 w-12 h-12 rounded-full flex items-center justify-center text-blue-800 dark:text-blue-200">
+                    {{ classItem.name.substring(0, 2).toUpperCase() }}
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-base font-medium text-gray-900 dark:text-white truncate">
+                    {{ classItem.name }} 
+                    <span v-if="classItem.instrument" class="text-sm text-gray-500 dark:text-gray-400">
+                      ({{ classItem.instrument }})
+                    </span>
+                  </h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400 truncate">
+                    {{ getTeacherName(classItem.teacherId) }} • {{ classItem.level }}
+                  </p>
+                </div>
+                <div class="ml-3 flex-shrink-0">
+                  <span class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
+                    {{ classItem.studentIds ? classItem.studentIds.length : 0 }}
+                  </span>
+                </div>
+                <div @click.stop class="ml-2 relative">
+                  <button 
+                    @click="toggleDropdown(classItem.id, $event)"
+                    class="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    <EllipsisVerticalIcon class="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                  </button>
+                  <div 
+                    v-if="activeDropdown === classItem.id" 
+                    class="absolute right-0 mt-1 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-1 w-36 z-10"
+                  >
+                    <button 
+                      @click="handleEdit(classItem.id)"
+                      class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                    >
+                      Editar
+                    </button>
+                    <button 
+                      @click="showStudentList(classItem.id)"
+                      class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                    >
+                      Estudiantes
+                    </button>
+                    <button 
+                      @click="handleDelete(classItem.id)"
+                      class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Estado vacío -->
+          <div v-else-if="classesLoaded && filteredGroups.length === 0" class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <div class="mx-auto h-24 w-24 text-gray-400 dark:text-gray-500 mb-4">
+              <UserGroupIcon class="h-full w-full" />
+            </div>
+            <h3 class="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">No hay clases</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ filteredGroups.length === 0 && Object.values(filters).some(f => f) ? 
+                'No se encontraron clases con los filtros seleccionados.' : 
+                'Aún no hay clases creadas.' 
+              }}
+            </p>
+            <div class="mt-6 flex justify-center">
+              <button
+                @click="showAddModal = true"
+                class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center gap-2"
+              >
+                <PlusCircleIcon class="h-5 w-5" />
+                <span>Crear nueva clase</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail panel -->
+      <div 
+        :class="{
+          'w-full': isMobile && showMobileDetail,
+          'hidden': isMobile && !showMobileDetail,
+          'hidden md:block md:w-2/3': !isMobile && !selectedClass,
+          'md:w-2/3': !isMobile && selectedClass
+        }"
+        class="h-full w-full  bg-gray-50 dark:bg-gray-900 p-1 overflow-y-auto"
+      >
+        <ClassDetail
+          v-if="selectedClass"
+          :selected-class="selectedClass"
+          :is-mobile="isMobile"
+          :show-mobile-detail="showMobileDetail"
+          @show-student-list="showStudentList"
+          @handle-edit="handleEdit"
+          @handle-delete="handleDelete"
+        />
+        <div v-else class="h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <div class="text-center p-6">
+            <UserGroupIcon class="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Selecciona una clase</h3>
+            <p class="mt-1 text-gray-500 dark:text-gray-400">
+              Selecciona una clase del panel izquierdo para ver sus detalles
+            </p>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Modales -->
+    <Modal
+      :show="showAddModal || showEditModal"
+      :title="showEditModal ? 'Editar Clase' : 'Nueva Clase'"
+      @close="closeModal"
+    >
+      <ClassForm
+        :initial-data="selectedGroupId ? (() => { const c = classesStore.classes.find(g => String(g.id) === String(selectedGroupId)); return c ? { ...c, createdAt: c.createdAt ? c.createdAt.toISOString() : undefined, updatedAt: c.updatedAt ? c.updatedAt.toISOString() : undefined } : undefined; })() : undefined"
+        :is-loading="isLoading"
+        @submit="handleSubmit"
+        @cancel="closeModal"
+      />
+    </Modal>
+    
+    <Modal
+      :show="showInfoModal"
+      title="Información de Clases"
+      @close="showInfoModal = false"
+    >
+      
+      <template #footer>
+        <button @click="showInfoModal = false" class="btn bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          Cerrar
+        </button>
+      </template>
+    </Modal>
+
+    <Modal
+      :show="showStudentsModal"
+      title="Estudiantes del Grupo"
+      @close="showStudentsModal = false"
+    >
+      <StudentManagement
+        :group-name="selectedGroupName"
+        :students="selectedGroupStudents"
+        :is-loading="isLoading"
+        @remove-student="removeStudentFromGroup"
+        @add-student="showAddStudentForm"
+      />
+    </Modal>
+
+    <Modal
+      :show="showAddStudentModal"
+      title="Agregar Estudiante al Grupo"
+      @close="showAddStudentModal = false"
+    >
+      <StudentSelector
+        :available-students="availableStudents"
+        :selected-student-ids="selectedStudentIds"
+        :is-loading="isLoading"
+        :group-name="selectedGroupName"
+        @select-student="selectStudent"
+        @add-selected="addSelectedStudents"
+        @cancel="showAddStudentModal = false"
+        @remove-student="removeSelectedStudent"
+      />
+    </Modal>
+
+    <ConfirmModal
+      :show="showDeleteModal"
+      title="Eliminar Grupo"
+      message="¿Estás seguro de que deseas eliminar este grupo? Esta acción eliminará el grupo y lo quitará de todos los estudiantes asignados. Esta acción no se puede deshacer."
+      :loading="isLoading"
+      @confirm="confirmDelete"
+      @cancel="showDeleteModal = false"
+    >
+      <template #icon>
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+          <TrashIcon class="h-6 w-6 text-red-600 dark:text-red-400" aria-hidden="true" />
+        </div>
+      </template>
+    </ConfirmModal>
+
+    <button
+      @click="router.push('/classes/new')"
+      class="fixed bottom-16 right-6 w-10 h-10 rounded-full bg-primary-600 hover:bg-primary-700 text-white shadow-lg flex items-center justify-center z-10 transition-all duration-200 hover:scale-105"
+      title="Añadir Alumno"
+    >
+      <PlusIcon class="w-8 h-8" />
+    </button>
+    <!-- Drawer para detalles de clase -->
+    <!-- <ClassesDrawer
+      :show="showClassDrawer"
+      :classItem="selectedClass"
+      @close="showClassDrawer = false"
+      @edit="handleEdit"
+      @delete="handleDelete"
+      @manage-students="showStudentList"
+    /> -->
   </div>
 </template>

@@ -1,7 +1,50 @@
+<!-- components/AbsenteesList.vue -->
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { useStudentsStore } from "../modulos/Students/store/students"
+import { useAttendanceStore } from '../modulos/Attendance/store/attendance'
+
+// Definición de propiedades (props) del componente
+const props = defineProps<{
+  className?: string
+  limit?: number
+}>()
+
+const studentsStore = useStudentsStore()
+const attendanceStore = useAttendanceStore()
+
+// Lista de estudiantes más ausentes (computed)
+const absentStudents = computed(() =>
+  attendanceStore.getMostAbsentStudents(props.limit || 5)
+)
+
+// Funciones para obtener información del estudiante y tasa de asistencia
+const getStudent = (studentId: string) =>
+  studentsStore.students.find(s => s.id === studentId)
+
+const getAttendanceRate = (studentId: string) =>
+  props.className
+    ? attendanceStore.getStudentAttendanceRate(studentId, props.className)
+    : 0
+
+// Función para formatear la fecha
+const formatDate = (date: string) =>
+  format(parseISO(date), 'PPP', { locale: es })
+
+// Función para obtener la clase de estilo según la tasa de asistencia
+const getAttendanceRateClass = (rate: number) => {
+  if (rate >= 90) return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+  if (rate >= 75) return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+  return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+}
+</script>
 <template>
   <div class="space-y-4">
     <h3 class="text-lg font-semibold">Alumnos con Mayor Ausencia</h3>
-    
+
     <div class="space-y-2">
       <div
         v-for="student in absentStudents"
@@ -32,7 +75,7 @@
             <p class="text-sm text-gray-600 dark:text-gray-400">ausencias</p>
           </div>
         </div>
-        
+
         <div class="mt-2 pt-2 border-t dark:border-gray-700">
           <p class="text-sm text-gray-600 dark:text-gray-400">
             Última asistencia: {{ formatDate(student.lastAttendance) }}
@@ -50,40 +93,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { computed } from 'vue'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
-import { useStudentsStore } from '../stores/students'
-import { useAttendanceStore } from '../stores/attendance'
-
-const props = defineProps<{
-  className?: string
-  limit?: number
-}>()
-
-const studentsStore = useStudentsStore()
-const attendanceStore = useAttendanceStore()
-
-const absentStudents = computed(() => 
-  attendanceStore.getMostAbsentStudents(props.limit || 5)
-)
-
-const getStudent = (studentId: string) => 
-  studentsStore.students.find(s => s.id === studentId)
-
-const getAttendanceRate = (studentId: string) =>
-  props.className
-    ? attendanceStore.getStudentAttendanceRate(studentId, props.className)
-    : 0
-
-const formatDate = (date: string) =>
-  format(new Date(date), 'PPP', { locale: es })
-
-const getAttendanceRateClass = (rate: number) => {
-  if (rate >= 90) return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
-  if (rate >= 75) return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
-  return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
-}
-</script>

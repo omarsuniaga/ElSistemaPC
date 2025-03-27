@@ -1,93 +1,50 @@
-import { format, parseISO, isValid, parse } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { format } from 'date-fns';
 
-// En src/utils/dateUtils.ts
-export const getDayOfWeek = (date: Date): string => {
-  return date.toLocaleDateString('es-ES', { 
-    weekday: 'long',
-    timeZone: 'America/Caracas' // Ajusta según tu zona horaria
-  }).replace(/^\w/, c => c.toUpperCase());
-};
+/**
+ * Returns the current date in YYYY-MM-DD format
+ */
+export function getCurrentDate(): string {
+  return format(new Date(), 'yyyy-MM-dd');
+}
 
-export function formatDate(date: Date | string, formatStr: string = 'PPP') {
-  try {
-    const dateObj = typeof date === 'string' ? parseISO(date) : date
-    if (!isValid(dateObj)) {
-      throw new Error('Fecha inválida')
-    }
-    return format(dateObj, formatStr, { locale: es })
-  } catch (error) {
-    console.error('Error formateando fecha:', error)
-    return 'Fecha inválida'
+/**
+ * Formats a date string to YYYY-MM-DD
+ * @param date The date to format
+ */
+export function formatDateToYYYYMMDD(date: Date | string): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return format(dateObj, 'yyyy-MM-dd');
+}
+
+/**
+ * Formats a date string from YYYYMMDD to YYYY-MM-DD
+ * @param dateStr The date string in YYYYMMDD format
+ */
+export function formatYYYYMMDDToDateString(dateStr: string): string {
+  if (dateStr.length !== 8) return dateStr;
+  return `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+}
+
+/**
+ * Checks if a date is in the future
+ * @param date The date to check
+ */
+export function isFutureDate(date: Date | string): boolean {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  dateObj.setHours(0, 0, 0, 0);
+  return dateObj > today;
+}
+
+/**
+ * Checks if a date is valid
+ * @param date The date to check
+ */
+export function isValidDate(date: Date | string): boolean {
+  if (typeof date === 'string') {
+    const d = new Date(date);
+    return !isNaN(d.getTime());
   }
-}
-
-export function getDayName(date: Date | string) {
-  try {
-    const dateObj = typeof date === 'string' ? parseISO(date) : date
-    if (!isValid(dateObj)) {
-      throw new Error('Fecha inválida')
-    }
-    return format(dateObj, 'EEEE', { locale: es })
-  } catch (error) {
-    console.error('Error obteniendo nombre del día:', error)
-    return 'Día inválido'
-  }
-}
-
-export function getCurrentDate(formatStr: string = 'yyyy-MM-dd') {
-  return format(new Date(), formatStr)
-}
-
-export function isValidDate(dateString: string) {
-  const parsedDate = parseISO(dateString)
-  return isValid(parsedDate)
-}
-
-export function parseDate(dateString: string, formatStr: string = 'yyyy-MM-dd') {
-  try {
-    if (!dateString) return null
-    const parsedDate = parse(dateString, formatStr, new Date())
-    return isValid(parsedDate) ? parsedDate : null
-  } catch {
-    return null
-  }
-}
-
-// Mapeo de días de la semana (0 = domingo, 1 = lunes, etc.)
-export const dayNumberToName = {
-  0: 'domingo',
-  1: 'lunes',
-  2: 'martes',
-  3: 'miércoles',
-  4: 'jueves',
-  5: 'viernes',
-  6: 'sábado'
-}
-
-export const dayNameToNumber = {
-  'domingo': 0,
-  'lunes': 1,
-  'martes': 2,
-  'miércoles': 3,
-  'jueves': 4,
-  'viernes': 5,
-  'sábado': 6
-}
-
-// Función para obtener el número del día (0-6) de una fecha
-export function getDayNumber(date: Date | string): number {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date
-  return dateObj.getDay()
-}
-
-// Función para validar la coherencia entre fecha y día
-export function validateDateDayCoherence(date: string, expectedDayName: string): boolean {
-  try {
-    const dateObj = parseISO(date)
-    const actualDayName = format(dateObj, 'EEEE', { locale: es }).toLowerCase()
-    return actualDayName === expectedDayName.toLowerCase()
-  } catch {
-    return false
-  }
+  return !isNaN(date.getTime());
 }

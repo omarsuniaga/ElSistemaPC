@@ -1,40 +1,41 @@
+<!-- components/JustifiedAbsenceModal.vue -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Dialog, DialogPanel } from '@headlessui/vue'
 import FileUpload from './FileUpload.vue'
 
+// Definición de propiedades (props) del componente
 const props = defineProps<{
-  student: {
-    id: string;
-    nombre: string;
-    apellido: string;
-  } | null;
+  student: { id: string; nombre: string; apellido: string; } | null;
   date?: string;
 }>()
 
+// Definición de eventos que emite el componente (emits)
 const emit = defineEmits<{
   (e: 'save', data: { reason: string; documentUrl?: string; file?: File }): void
   (e: 'close'): void
 }>()
 
+// Estados locales del componente
 const reason = ref('')
 const file = ref<File | null>(null)
 const error = ref('')
 const isUploading = ref(false)
 const uploadProgress = ref(0)
 
-// Computed property for the formatted date
+// Propiedad computada para formatear la fecha
 const formattedDate = computed(() => {
   if (!props.date) return new Date().toLocaleDateString()
   return new Date(props.date).toLocaleDateString()
 })
 
-// Computed property for the student's full name
+// Propiedad computada para el nombre completo del estudiante
 const studentName = computed(() => {
   if (!props.student) return ''
   return `${props.student.nombre} ${props.student.apellido}`
 })
 
+// Manejador del envío del formulario
 const handleSubmit = async () => {
   if (!reason.value.trim()) {
     error.value = 'La razón es requerida'
@@ -43,21 +44,21 @@ const handleSubmit = async () => {
 
   try {
     isUploading.value = true
-    
-    // Instead of uploading the file here, we'll pass it to the parent component
-    // to be handled by the attendance store
+
+    // Emitir evento 'save' con los datos de justificación
     emit('save', {
       reason: reason.value,
       file: file.value || undefined
     })
   } catch (err) {
-    console.error('Error processing justification:', err)
+    console.error('Error procesando justificación:', err)
     error.value = 'Error al procesar la justificación'
   } finally {
     isUploading.value = false
   }
 }
 
+// Manejador para la selección de archivo
 const handleFileSelect = (files: FileList) => {
   if (files.length > 0) {
     file.value = files[0]
@@ -71,7 +72,7 @@ const handleFileSelect = (files: FileList) => {
     <div class="fixed inset-0 flex items-center justify-center p-4">
       <DialogPanel class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
         <h2 class="text-lg font-semibold mb-4">Justificar Ausencia</h2>
-        
+
         <div class="mb-4">
           <p class="text-sm text-gray-600 dark:text-gray-400">
             Alumno: {{ studentName }}

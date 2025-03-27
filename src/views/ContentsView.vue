@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useContentsStore } from '../stores/contents'
+import { useContentsStore } from '../modulos/Contents/store/contents'
 import { 
   PlusCircleIcon, 
   FunnelIcon, 

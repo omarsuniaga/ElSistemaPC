@@ -2,6 +2,12 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import { 
+  ExclamationCircleIcon, 
+  EyeIcon, 
+  EyeSlashIcon,
+  CheckCircleIcon 
+} from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const route = useRoute()
@@ -10,13 +16,33 @@ const authStore = useAuthStore()
 const email = ref('')
 const password = ref('')
 const error = ref('')
+const successMessage = ref('')
 const isLoading = ref(false)
+const showPassword = ref(false)
 
-// Verificar si ya está autenticado
+// Verificar si hay un mensaje de registro exitoso
 onMounted(async () => {
+  if (route.query.registered === 'true') {
+    successMessage.value = 'Registro exitoso. Por favor inicia sesión para continuar.'
+  }
+
+  // Verificar si ya está autenticado
   const user = await authStore.checkAuth()
+  
   if (user) {
-    router.push(route.query.redirect?.toString() || '/')
+    // Verificar el estado del usuario
+    const userStatus = user.status
+    const profileCompleted = user.profileCompleted
+    
+    if (userStatus === 'pendiente' && !profileCompleted) {
+      router.push('/complete-profile')
+    } else if (userStatus === 'pendiente' && profileCompleted) {
+      router.push('/pending-approval')
+    } else if (userStatus === 'aprobado') {
+      router.push(route.query.redirect?.toString() || '/')
+    } else if (userStatus === 'rechazado') {
+      router.push('/pending-approval')
+    }
   }
 })
 
@@ -32,12 +58,18 @@ const handleSubmit = async () => {
   }
 
   error.value = ''
+  successMessage.value = ''
   isLoading.value = true
   
   try {
-    await authStore.login(email.value, password.value)
-    const redirectPath = route.query.redirect?.toString() || '/'
-    router.push(redirectPath)
+    const result = await authStore.login(email.value, password.value)
+    
+    // Redirigir según el resultado
+    if (result.redirectTo) {
+      router.push(result.redirectTo)
+    } else {
+      router.push(route.query.redirect?.toString() || '/')
+    }
   } catch (e: any) {
     error.value = e.message
     console.error('Error de login:', e)
@@ -49,23 +81,37 @@ const handleSubmit = async () => {
 
 <template>
   <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8">
+    <div class="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg">
       <div>
-        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
+        <h2 class="mt-2 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
           Iniciar Sesión
         </h2>
-        
-        <!-- Demo notice -->
-        <div class="mt-2 text-center">
-          <button
-            @click="setDemoCredentials"
-            class="text-sm text-primary-600 hover:text-primary-500 font-medium"
-          >
-            Usar cuenta demo
-          </button>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Demo: demo@example.com / demo123
-          </p>
+      </div>
+      
+      <!-- Mensajes de estado -->
+      <div v-if="successMessage" class="rounded-md bg-green-50 dark:bg-green-900/20 p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <CheckCircleIcon class="h-5 w-5 text-green-400" />
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-green-800 dark:text-green-200">
+              {{ successMessage }}
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <div v-if="error" class="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <ExclamationCircleIcon class="h-5 w-5 text-red-400" />
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-red-800 dark:text-red-200">
+              {{ error }}
+            </p>
+          </div>
         </div>
       </div>
       
@@ -87,31 +133,26 @@ const handleSubmit = async () => {
           </div>
           <div>
             <label for="password" class="sr-only">Contraseña</label>
-            <input
-              v-model="password"
-              id="password"
-              name="password"
-              type="password"
-              autocomplete="current-password"
-              required
-              class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-b-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm dark:bg-gray-700"
-              placeholder="Contraseña"
-              :disabled="isLoading"
-            />
-          </div>
-        </div>
-
-        <div v-if="error" class="rounded-md bg-red-50 dark:bg-red-900/50 p-4">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-              </svg>
-            </div>
-            <div class="ml-3">
-              <p class="text-sm text-red-700 dark:text-red-200">
-                {{ error }}
-              </p>
+            <div class="relative">
+              <input
+                v-model="password"
+                id="password"
+                :type="showPassword ? 'text' : 'password'"
+                name="password"
+                autocomplete="current-password"
+                required
+                class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-b-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm dark:bg-gray-700 pr-10"
+                placeholder="Contraseña"
+                :disabled="isLoading"
+              />
+              <button 
+                type="button"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 dark:text-gray-400"
+                @click="showPassword = !showPassword"
+              >
+                <EyeIcon v-if="!showPassword" class="h-5 w-5" />
+                <EyeSlashIcon v-else class="h-5 w-5" />
+              </button>
             </div>
           </div>
         </div>
@@ -137,14 +178,21 @@ const handleSubmit = async () => {
                 />
               </svg>
             </span>
-            {{ isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión' }}
+            <span v-if="isLoading" class="flex items-center">
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Iniciando sesión...
+            </span>
+            <span v-else>Iniciar Sesión</span>
           </button>
         </div>
 
         <div class="text-center space-y-2">
           <router-link
             to="/register"
-            class="font-medium text-primary-600 hover:text-primary-500"
+            class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
           >
             ¿No tienes cuenta? Regístrate
           </router-link>

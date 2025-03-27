@@ -6,7 +6,6 @@ import {
   createDocument, 
   updateDocument, 
   deleteDocument,
-  FirestoreError
 } from '../services/firestore'
 import { getStudentsByClass } from '../services/firestore/studentsByClass'
 import { 

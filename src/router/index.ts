@@ -2,148 +2,146 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    {
-      path: '/',
-      name: 'Home',
-      component: () => import('../views/HomeView.vue'),
-      meta: { title: 'Inicio' }
-    },
+    // Rutas públicas
     {
       path: '/login',
       name: 'Login',
       component: () => import('../views/auth/LoginView.vue'),
-      meta: { public: true, title: 'Iniciar Sesión' }
+      meta: { public: true }
     },
     {
       path: '/register',
       name: 'Register',
       component: () => import('../views/auth/RegisterView.vue'),
-      meta: { public: true, title: 'Registro' }
+      meta: { public: true }
+    },
+    
+    // Rutas específicas para maestros
+    {
+      path: '/teacher',
+      name: 'TeacherHome',
+      component: () => import('../views/TeachersView/TeachersHomeView.vue'),
+      meta: { 
+        requiresAuth: true,
+        allowedRoles: ['Maestro']
+      }
     },
     {
-      path: '/profile',
-      name: 'Profile',
-      component: () => import('../views/ProfileView.vue'),
-      meta: { title: 'Perfil' }
+      path: '/teacher/attendance',
+      name: 'TeacherAttendance',
+      component: () => import('../views/AttendanceView.vue'),
+      meta: { 
+        requiresAuth: true,
+        allowedRoles: ['Maestro']
+      }
     },
+    {
+      path: '/teacher/schedule',
+      name: 'TeacherSchedule',
+      component: () => import('../modulos/Schedules/view/TeacherScheduleView.vue'),
+      meta: { 
+        requiresAuth: true,
+        allowedRoles: ['Maestro']
+      }
+    },
+    {
+      path: '/teacher/profile',
+      name: 'TeacherProfile',
+      component: () => import('../views/ProfileView.vue'),
+      meta: { 
+        requiresAuth: true,
+        allowedRoles: ['Maestro']
+      }
+    },
+
+    // Rutas para directores y administradores
     {
       path: '/students',
       name: 'Students',
       component: () => import('../views/StudentsView.vue'),
-      meta: { title: 'Estudiantes' }
-    },
-    {
-      path: '/students/new',
-      name: 'StudentNew',
-      component: () => import('../views/StudentNewView.vue'),
-      meta: { title: 'Nuevo Estudiante' }
-    },
-    {
-      path: '/students/:id',
-      name: 'StudentProfile',
-      component: () => import('../views/StudentProfileView.vue'),
-      meta: { title: 'Perfil de Estudiante' },
-      props: true
-    },
-    {
-      path: '/students/:id/edit',
-      name: 'StudentEdit',
-      component: () => import('../views/StudentEditView.vue'),
-      meta: { title: 'Editar Estudiante' },
-      props: true
-    },
-    {
-      path: '/students/:id/delete',
-      name: 'StudentDelete',
-      component: () => import('../views/StudentDeleteView.vue'),
-      meta: { title: 'Eliminar Estudiante' },
-      props: true
+      meta: { 
+        requiresAuth: true,
+        allowedRoles: ['Director', 'Admin']
+      }
     },
     {
       path: '/teachers',
       name: 'Teachers',
-      component: () => import('../views/TeachersView.vue'),
-      meta: { title: 'Profesores' }
+      component: () => import('../modulos/Teachers/view/TeachersView.vue'),
+      meta: { 
+        requiresAuth: true,
+        allowedRoles: ['Director', 'Admin']
+      }
     },
     {
-      path: '/teachers/new',
-      name: 'TeacherNew',
-      component: () => import('../views/TeacherNewView.vue'),
-      meta: { title: 'Nuevo Profesor' }
+      path: '/instruments',
+      name: 'Instruments',
+      component: () => import('../modulos/Instruments/view/InstrumentManagement.vue'),
+      meta: { 
+        requiresAuth: true,
+        allowedRoles: ['Director', 'Admin']
+      }
     },
     {
-      path: '/teachers/:id',
-      name: 'TeacherProfile',
-      component: () => import('../views/TeacherProfileView.vue'),
-      meta: { title: 'Perfil de Profesor' },
-      props: true
-    },
-    {
-      path: '/teachers/:id/edit',
-      name: 'TeacherEdit',
-      component: () => import('../views/TeacherEditView.vue'),
-      meta: { title: 'Editar Profesor' },
-      props: true
+      path: '/analytics',
+      name: 'Analytics',
+      component: () => import('../modulos/Analytics/view/AnalyticsDashboard.vue'),
+      meta: { 
+        requiresAuth: true,
+        allowedRoles: ['Director', 'Admin']
+      }
     },
     {
       path: '/classes',
       name: 'Classes',
       component: () => import('../views/ClassesView.vue'),
-      meta: { title: 'Clases' }
-    },
-    {
-      path: '/attendance',
-      name: 'Attendance',
-      component: () => import('../views/AttendanceView.vue'),
-      meta: { title: 'Asistencia' }
-    },
-    {
-      path: '/attendance/:date/:classId',
-      name: 'AttendanceDetail',
-      component: () => import('../views/AttendanceView.vue'),
-      meta: { title: 'Registro de Asistencia' },
-      props: true
+      meta: { 
+        requiresAuth: true,
+        allowedRoles: ['Director', 'Admin']
+      }
     },
     {
       path: '/contents',
       name: 'Contents',
       component: () => import('../views/ContentsView.vue'),
-      meta: { title: 'Contenidos' }
-    },
-    {
-      path: '/repertoire',
-      name: 'Repertoire',
-      component: () => import('../views/RepertoireView.vue'),
-      meta: { title: 'Repertorio' }
-    },
-    {
-      path: '/workspace',
-      name: 'Workspace',
-      component: () => import('../views/WorkspaceView.vue'),
-      meta: { title: 'Área de Trabajo' }
-    },
-    {
-      path: '/schedule',
-      name: 'schedule',
-      component: () => import('../views/ScheduleView.vue'),
-      meta: {
-        requiresAuth: true
+      meta: { 
+        requiresAuth: true,
+        allowedRoles: ['Director', 'Admin']
       }
     },
     {
-      path: '/at-risk-students',
-      name: 'atRiskStudents',
-      component: () => import('../views/AtRiskStudentsView.vue'),
-      meta: { requiresAuth: true }
+      path: '/schedule',
+      name: 'Schedule',
+      component: () => import('../modulos/Schedules/view/ScheduleView.vue'),
+      meta: { 
+        requiresAuth: true,
+        allowedRoles: ['Director', 'Admin']
+      }
     },
     {
-      path: '/student-schedule/:id',
-      name: 'studentSchedule',
-      component: () => import('../views/StudentScheduleView.vue'),
+      path: '/profile',
+      name: 'Profile',
+      component: () => import('../views/ProfileView.vue'),
+      meta: {
+        requiresAuth: true,
+        allowedRoles: ['Director', 'Admin']
+      }
+    },
+  
+
+    // Ruta inicial (se redirigirá según el rol)
+    {
+      path: '/',
+      name: 'home',
+      redirect: () => {
+        const authStore = useAuthStore()
+        return authStore.isTeacher ? '/teacher' : '/schedule'
+      },
       meta: { requiresAuth: true }
     },
+
     // Ruta 404
     {
       path: '/:pathMatch(.*)*',
@@ -152,23 +150,28 @@ const router = createRouter({
   ]
 })
 
-// Navigation guard global
+// Navigation guard
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
   const isPublicRoute = to.meta.public
   
-  // Actualizar título de la página
-  if (to.meta.title) {
-    document.title = `${to.meta.title} - Academia de Música`
-  }
-
   try {
-    // Verificar autenticación
     if (!authStore.isLoggedIn) {
       await authStore.checkAuth()
     }
+    
+    const user = authStore.user
+    const userRole = user?.role
+    const userStatus = user?.status
+    const allowedRoles = to.meta.allowedRoles as string[] | undefined
 
-    // Redireccionar a login si la ruta requiere autenticación
+    // Verificar acceso basado en rol
+    if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
+      console.log(`⚠️ Acceso denegado: rol ${userRole} no tiene permiso para ${to.path}`)
+      next(authStore.isTeacher ? '/teacher' : '/')
+      return
+    }
+
     if (!isPublicRoute && !authStore.isLoggedIn) {
       next({ 
         name: 'Login',
@@ -176,33 +179,37 @@ router.beforeEach(async (to, _from, next) => {
       })
       return
     }
-
-    // Redireccionar al home si ya está autenticado y va a una ruta pública
-    if (isPublicRoute && authStore.isLoggedIn) {
-      next({ name: 'Home' })
-      return
-    }
-
-    // Verificar permisos según el rol
-    if (to.meta.requiresDirector && !authStore.isDirector) {
-      next({ name: 'Home' })
+    
+    if (isPublicRoute && authStore.isLoggedIn && userStatus === 'aprobado') {
+      next(authStore.isTeacher ? '/teacher' : '/')
       return
     }
 
     next()
   } catch (error) {
-    console.error('Error en la navegación:', error)
+    console.error('❌ Error en la navegación:', error)
     next({ name: 'Login' })
   }
 })
 
 // Error handler para navegación
 router.onError((error) => {
-  console.error('Error de enrutamiento:', error)
+  console.error('❌ Error de enrutamiento:', error)
   
-  // Si el error es de carga de chunk, recargar la página
+  // Modificar para evitar el bucle infinito de recargas
   if (error.message.includes('Failed to fetch dynamically imported module')) {
-    window.location.reload()
+    console.warn('⚠️ Error al cargar módulo dinámico. Probando una única recarga...')
+    
+    // Usar localStorage para evitar recargas infinitas
+    const reloadCount = parseInt(localStorage.getItem('route_reload_count') || '0')
+    if (reloadCount < 1) {
+      localStorage.setItem('route_reload_count', (reloadCount + 1).toString())
+      window.location.reload()
+    } else {
+      console.error('❌ Múltiples errores al cargar módulos. Deteniendo ciclo de recargas.')
+      localStorage.removeItem('route_reload_count')
+      // Aquí podrías mostrar un error al usuario en lugar de recargar indefinidamente
+    }
   }
 })
 

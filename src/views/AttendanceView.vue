@@ -1,47 +1,49 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import type { AttendanceStatus, Student } from '../types'
+import { storeToRefs } from 'pinia'
+import '@vuepic/vue-datepicker/dist/main.css'
+import { ref, computed, onMounted, watch } from 'vue'
+import Modal from '../components/shared/Modal.vue';
+import Datepicker from '@vuepic/vue-datepicker'
+import type { AttendanceStatus } from '../types'
 import { eachDayOfInterval, addMonths, isSameDay, parseISO, format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 // Componentes importados
-import AttendanceHeader from '../components/AttendanceHeader.vue'
-import AttendanceFilters from '../components/AttendanceFilters.vue'
-import AttendanceList from '../components/AttendanceList.vue'
-import AttendanceReportModal from '../components/AttendanceReportModal.vue'
-import AttendanceObservation from '../components/AttendanceObservation.vue'
-import AttendanceAnalytics from '../components/AttendanceAnalytics.vue'
-import AttendanceTrends from '../components/AttendanceTrends.vue'
+import AttendanceHeader from '../modulos/Attendance/components/AttendanceHeader.vue'
+import AttendanceList from '../modulos/Attendance/components/AttendanceList.vue'
+import AttendanceReportModal from '../modulos/Attendance/components/AttendanceReportModal.vue'
+import AttendanceObservation from '../modulos/Attendance/components/AttendanceObservation.vue'
+import AttendanceAnalytics from '../modulos/Attendance/components/AttendanceAnalytics.vue'
+import AttendanceTrends from '../modulos/Attendance/components/AttendanceTrends.vue'
+import AttendanceExportModal from '../modulos/Attendance/components/AttendanceExportModal.vue'
 import Calendar from '../components/Calendar.vue'
-import DateClassSelector from '../components/DateClassSelector.vue'
+import DateClassSelector from '../modulos/Classes/components/DateClassSelector.vue'
 import JustifiedAbsenceModal from '../components/JustifiedAbsenceModal.vue'
-import AttendanceExportModal from '../components/AttendanceExportModal.vue'
 
 // Router
 import { useRouter, useRoute } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 
+// Stores
+import { useAttendanceStore } from '../modulos/Attendance/store/attendance'
+import { useStudentsStore } from '../modulos/Students/store/students'
+import { useClassesStore } from '../modulos/Classes/store/classes'
+// import { useInstrumentoStore } from '../modulos/Instruments/store/instrumento'
+import { getCurrentDate } from '../utils/dateUtils'
+import type { SelectedStudent } from '../modulos/Students/types/student'
+import type { TeacherData } from '../modulos/Teachers/types/teachers'
+import type { AttendanceFiltersType } from '../modulos/Attendance/types/attendance'
 // Props para recibir fecha y clase desde la URL
 const props = defineProps({
   date: String,
   classId: String
 })
 
-// Stores
-import { useAttendanceStore } from '../stores/attendance'
-import { useStudentsStore } from '../stores/students'
-import { useClassesStore } from '../stores/classes'
-import { useInstrumentoStore } from '../stores/instrumento'
-import { getCurrentDate } from '../utils/dateUtils'
-import type { SelectedStudent } from '../types/student'
-import type { TeacherData } from '../types/teachers'
-import type { AttendanceFiltersType } from '../types/attendance'
-
 const attendanceStore = useAttendanceStore()
 const studentsStore = useStudentsStore()
 const classesStore = useClassesStore()
-const instrumentoStore = useInstrumentoStore()
+// const instrumentoStore = useInstrumentoStore()
 
 // Estados globales y de vista
 const view = ref<'calendar' | 'class-select' | 'attendance-form'>('calendar')
@@ -85,7 +87,7 @@ const reportFilters = ref<AttendanceFiltersType>({
 })
 
 // Funciones principales
-const isDateUpdating = ref(false);
+const isDateUpdating = ref(false); // Evitar bucles infinitos al seleccionar fecha
 
 // Añadir un estado para controlar si estamos en medio de una actualización
 const isUpdating = ref(false);
@@ -147,7 +149,7 @@ async function fetchInitialData() {
     await Promise.all([
       classesStore.fetchClasses(),
       studentsStore.fetchStudents(),
-      instrumentoStore.fetchInstrumentos()
+      // instrumentoStore.fetchInstrumentos()
     ])
     
     // Verificar si tenemos fecha y clase en los props (de la URL)
@@ -191,42 +193,39 @@ async function fetchInitialData() {
 // Función para cargar datos de asistencia para una clase específica
 const loadAttendanceData = async (className: string) => {
   try {
-    isLoading.value = true
-    loadingMessage.value = 'Cargando datos de asistencia...'
-    
+    isLoading.value = true;
+    loadingMessage.value = 'Cargando datos de asistencia...';
+
     // Limpiar registros de asistencia previos
-    attendanceStore.attendanceRecords = {}
-    
+    attendanceStore.attendanceRecords = {};
+
     // Actualizar contexto en el store
-    attendanceStore.selectedClass = className
-    attendanceStore.selectedDate = selectedDate.value
-    
+    attendanceStore.selectedClass = className;
+    attendanceStore.selectedDate = selectedDate.value;
+
     // Cargar el documento de asistencia
-    await attendanceStore.fetchAttendanceDocument(selectedDate.value, className)
-    
-    // Ahora, cargar los registros de asistencia
-    await attendanceStore.fetchAttendanceByClassAndDate(className, selectedDate.value)
-    
+    await attendanceStore.fetchAttendanceDocument(selectedDate.value, className);
+
+    // Obtener estudiantes de la clase seleccionada
+    const students = studentsStore.getStudentsByClass(className); // Usar el método del store
+    filteredStudents.value = students;
+
     // Inicializar todos los estudiantes que no tienen estado con estado 'Ausente'
-    const studentIds = classesStore.getStudentIdsByClass(className);
-    studentIds.forEach(studentId => {
-      if (!attendanceStore.attendanceRecords[studentId]) {
-        attendanceStore.attendanceRecords[studentId] = 'Ausente';
+    students.forEach(student => {
+      if (!attendanceStore.attendanceRecords[student.id]) {
+        attendanceStore.attendanceRecords[student.id] = 'Ausente';
       }
     });
-    
+
     // Actualizar analytics después de cargar los datos
-    await attendanceStore.updateAnalytics()
-    
-    return true
+    await attendanceStore.updateAnalytics();
   } catch (err) {
-    console.error('Error loading attendance data:', err)
-    return false
+    console.error('Error loading attendance data:', err);
   } finally {
-    isLoading.value = false
-    loadingMessage.value = ''
+    isLoading.value = false;
+    loadingMessage.value = '';
   }
-}
+};
 
 // Función para seleccionar una clase y cargar sus estudiantes
 const selectClass = async (className: string) => {
@@ -235,12 +234,16 @@ const selectClass = async (className: string) => {
     selectedClass.value = className;
     attendanceStore.selectedClass = className;
     
-    // Obtener IDs de estudiantes de la clase seleccionada
-    const studentIds = classesStore.getStudentIdsByClass(className);
+    // Obtener estudiantes de la clase seleccionada
+    const students = studentsStore.getStudentsByClass(className);
+    console.log('Estudiantes encontrados para la clase:', students);
+    
+    // Extraer los IDs de los estudiantes
+    const studentIds = students.map(student => student.id);
     console.log('IDs de estudiantes encontrados:', studentIds);
     
-    // Obtener los datos completos de los estudiantes usando fetchStudentsByIds
-    const studentsData = studentsStore.fetchStudentsByIds(studentIds);
+    // Ya tenemos los estudiantes directamente, así que los usamos
+    const studentsData = students;
     
     // Almacenar los estudiantes filtrados
     filteredStudents.value = studentsData;
@@ -256,12 +259,10 @@ const selectClass = async (className: string) => {
     await router.push(`/attendance/${formattedDate}/${className}`);
     
     // Cargar datos de asistencia para la clase seleccionada
-    const success = await loadAttendanceData(className);
+    await loadAttendanceData(className);
     
-    if (success) {
-      // Cambiar a la vista de formulario de asistencia
-      view.value = 'attendance-form';
-    }
+    // Cambiar a la vista de formulario de asistencia
+    view.value = 'attendance-form';
   } catch (error) {
     console.error('Error al seleccionar clase:', error);
     errorMessage.value = 'Error al cargar los estudiantes de la clase';
@@ -647,12 +648,12 @@ const handleSelectedDateUpdate = (date) => {
         :class="showTrends ? 'btn-primary' : 'btn-secondary'"
       >
         <i class="fas fa-chart-line mr-2"></i>
-        Tendencias Temporales
+        Tendencias
       </button>
       
       <button @click="openReportModal" class="btn btn-secondary">
         <i class="fas fa-file-alt mr-2"></i>
-        Generar Informe
+        Informe
       </button>
       
       <button @click="openExportModal" class="btn btn-secondary">
@@ -721,7 +722,7 @@ const handleSelectedDateUpdate = (date) => {
           </div>
           
           <!-- Modal de calendario -->
-          <div v-if="showCalendarModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <!-- <div v-if="showCalendarModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg">
               <h3 class="text-lg font-semibold mb-4">Seleccionar Fecha</h3>
               <Calendar :selected-date="selectedDate" :marked-dates="availableClassDates" @select="handleCalendarSelect" />
@@ -730,7 +731,7 @@ const handleSelectedDateUpdate = (date) => {
               </div>
             </div>
           </div>
-          
+           -->
           <!-- Mensaje de advertencia para fechas futuras -->
           <div v-if="!isDateEditable" class="bg-yellow-100 dark:bg-yellow-800 p-4 rounded-lg mb-4">
             <div class="flex items-center">
@@ -781,7 +782,7 @@ const handleSelectedDateUpdate = (date) => {
       :attendanceId="selectedDate"
       :attendanceDate="selectedDate"
       @update:modelValue="showObservationsModal = $event"
-      @observation-added="handleObservationAdded"
+      @observation-added="(observations: string) => handleObservationAdded(observations)"
     />
 
     <JustifiedAbsenceModal 

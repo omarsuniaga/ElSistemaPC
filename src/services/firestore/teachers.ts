@@ -1,123 +1,67 @@
-import { 
-  collection, 
-  getDocs, 
-  doc, 
-  getDoc,
-  addDoc,
-  updateDoc, 
-  deleteDoc, 
-  Timestamp
-} from 'firebase/firestore'
 import { db } from '../../firebase'
-import type { Teacher } from '../../types'
+import { collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
+import type { Teacher } from '../../modulos/Teachers/types/teachers'
 
-const COLLECTION_NAME = 'MAESTROS'
+const COLLECTION_NAME = 'TEACHERS'
 
-export const getTeachers = async (): Promise<Teacher[]> => {
+/**
+ * Fetches all teachers from Firestore.
+ */
+export const fetchTeachersFromFirebase = async (): Promise<Teacher[]> => {
   try {
-    console.log(' Consultando maestros en Firestore...')
     const querySnapshot = await getDocs(collection(db, COLLECTION_NAME))
-    console.log(` Maestros recuperados: ${querySnapshot.size}`)
-    
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-      updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString()
-    } as Teacher))
+      ...doc.data()
+    })) as Teacher[]
   } catch (error) {
-    console.error(' Error al obtener maestros:', error)
-    throw new Error('Error al obtener la lista de maestros')
+    console.error('Error fetching teachers from Firestore:', error)
+    throw new Error('Failed to fetch teachers')
   }
 }
 
-export const getTeacherById = async (id: string): Promise<Teacher | null> => {
+/**
+ * Adds a new teacher to Firestore.
+ */
+export const addTeacherToFirebase = async (teacher: Omit<Teacher, 'id'>): Promise<Teacher> => {
+  try {
+    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+      ...teacher,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    })
+    return { id: docRef.id, ...teacher } as Teacher
+  } catch (error) {
+    console.error('Error adding teacher to Firestore:', error)
+    throw new Error('Failed to add teacher')
+  }
+}
+
+/**
+ * Updates an existing teacher in Firestore.
+ */
+export const updateTeacherInFirebase = async (id: string, updates: Partial<Teacher>): Promise<void> => {
   try {
     const docRef = doc(db, COLLECTION_NAME, id)
-    const docSnap = await getDoc(docRef)
-    
-    if (docSnap.exists()) {
-      const data = docSnap.data()
-      return {
-        id: docSnap.id,
-        ...data,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString()
-      } as Teacher
-    }
-    
-    return null
-  } catch (error) {
-    console.error(` Error al obtener maestro ${id}:`, error)
-    throw new Error('Error al obtener los datos del maestro')
-  }
-}
-
-export const createTeacher = async (teacher: Omit<Teacher, 'id'>): Promise<Teacher> => {
-  try {
-    const collectionRef = collection(db, COLLECTION_NAME)
-    
-    const teacherData = {
-      ...teacher,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-      status: 'active'
-    }
-
-    const docRef = await addDoc(collectionRef, teacherData)
-    
-    return {
-      id: docRef.id,
-      ...teacher,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    } as Teacher
-  } catch (error) {
-    console.error(' Error al crear maestro:', error)
-    throw new Error('Error al crear el maestro')
-  }
-}
-
-export const updateTeacher = async (id: string, teacher: Partial<Teacher>): Promise<Teacher | void> => {
-  try {
-    const docRef = doc(db, COLLECTION_NAME, id)
-    const docSnap = await getDoc(docRef)
-    const collectionRef = collection(db, COLLECTION_NAME)
-
-    if (!docSnap.exists()) {
-      // Si el documento no existe, lo creamos con el ID especificado
-      const teacherData = {
-        ...teacher,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
-        status: 'active'
-      }
-      const newDoc = await addDoc(collectionRef, teacherData)
-      return {
-        id: newDoc.id,
-        ...teacher,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      } as Teacher
-    }
-
-    // Si el documento existe, lo actualizamos
     await updateDoc(docRef, {
-      ...teacher,
-      updatedAt: Timestamp.now()
+      ...updates,
+      updatedAt: serverTimestamp()
     })
   } catch (error) {
-    console.error(` Error al actualizar maestro ${id}:`, error)
-    throw new Error('Error al actualizar los datos del maestro')
+    console.error(`Error updating teacher with ID ${id} in Firestore:`, error)
+    throw new Error('Failed to update teacher')
   }
 }
 
-export const deleteTeacher = async (id: string): Promise<void> => {
+/**
+ * Deletes a teacher from Firestore.
+ */
+export const deleteTeacherFromFirebase = async (id: string): Promise<void> => {
   try {
     const docRef = doc(db, COLLECTION_NAME, id)
     await deleteDoc(docRef)
   } catch (error) {
-    console.error(` Error al eliminar maestro ${id}:`, error)
-    throw new Error('Error al eliminar el maestro')
+    console.error(`Error deleting teacher with ID ${id} from Firestore:`, error)
+    throw new Error('Failed to delete teacher')
   }
 }

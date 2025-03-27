@@ -20,7 +20,7 @@ const showNavigation = computed(() => !route.meta.public)
 
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <main class="container mx-auto px-4 pb-24">
+    <main class="container mx-auto p-4">
       <router-view />
     </main>
     <!-- Show navigation only for authenticated routes -->

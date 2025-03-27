@@ -37,3 +37,9 @@ export const useInstrumentoStore = defineStore('instrumento', {
     }
   }
 })
+
+// Nueva función para obtener los instrumentos del store
+export const getInstruments = (): string[] => {
+  const instrumentoStore = useInstrumentoStore();
+  return instrumentoStore.instruments;
+}

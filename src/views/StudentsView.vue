@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useStudentsStore } from '../stores/students'
-import { useAttendanceStore } from '../stores/attendance'
-import { useAnalyticsStore } from '../stores/analytics'
+import { useStudentsStore } from '../modulos/Students/store/students'
+import { useAttendanceStore } from '../modulos/Attendance/store/attendance'
+import { useAnalyticsStore } from '../modulos/Analytics/store/analytics'
 import { PlusCircleIcon, MagnifyingGlassIcon, EllipsisVerticalIcon } from '@heroicons/vue/24/outline'
-// import BaseCard from '../components/BaseCard.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
-import StudentDrawer from '../components/StudentDrawer.vue'
+import StudentDrawer from '../modulos/Students/components/StudentDrawer.vue'
+// import BaseCard from '../components/BaseCard.vue'
 
 // Student interface definition
 interface Student {

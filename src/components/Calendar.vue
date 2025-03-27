@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue'
+import { ref, watchEffect, watch } from 'vue'
 import { 
   startOfMonth,
   format,
@@ -35,6 +35,18 @@ const calendarDays = ref<{
 // Nombres de los días de la semana en español
 const weekDays = ref(['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'])
 
+// Función para verificar si una fecha está marcada
+const isDateMarked = (date) => {
+  if (!props.markedDates || props.markedDates.length === 0) return false;
+  
+  // Normalizar formato de fecha para comparación
+  const normalizedDate = typeof date === 'string' 
+    ? date 
+    : date.date ? date.date : format(date, 'yyyy-MM-dd');
+  
+  return props.markedDates.some(markedDate => markedDate === normalizedDate);
+};
+
 const generateCalendar = () => {
   const currentDate = parseISO(props.selectedDate)
   const firstDay = startOfMonth(currentDate)
@@ -63,6 +75,10 @@ const generateCalendar = () => {
 watchEffect(() => {
   generateCalendar()
 })
+
+watch(() => [props.selectedDate, props.markedDates], () => {
+  generateCalendar();
+}, { deep: true });
 
 // Define interface for calendar day
 interface CalendarDay {
@@ -108,17 +124,23 @@ const onClick = (day: CalendarDay): void => {
         v-for="day in calendarDays"
         :key="day.date"
         :class="[
-          'p-2 text-center rounded-lg transition-colors',
+          'p-2 text-center rounded-lg transition-colors relative',
           {
             'text-gray-400 dark:text-gray-600': !day.isCurrentMonth,
             'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-100': day.isToday,
-            'bg-green-100 dark:bg-green-900/30': day.isMarked,
-            'hover:bg-gray-100 dark:hover:bg-gray-700': true
+            'hover:bg-gray-100 dark:hover:bg-gray-700': true,
+            'font-bold border-2 border-blue-500 dark:border-blue-400': day.date === selectedDate
           }
         ]"
         @click="onClick(day)"
       >
         <span class="block text-sm">{{ day.dayOfMonth }}</span>
+        <!-- Indicador de registro para fechas marcadas -->
+        <span 
+          v-if="day.isMarked" 
+          class="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-green-500 dark:bg-green-400"
+          :title="`Hay registros de asistencia para ${day.date}`"
+        ></span>
       </button>
     </div>
   </div>
