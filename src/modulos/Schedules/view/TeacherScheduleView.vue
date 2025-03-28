@@ -2,7 +2,6 @@
 // @ts-ignore
 import html2pdf from 'html2pdf.js'
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { useTeachersStore } from '../../Teachers/store/teachers'
 import { useClassesStore } from '../../Classes/store/classes'
 import { format } from 'date-fns'
@@ -248,12 +247,14 @@ const getTeacherClasses = (teacherId: string) => {
             <ScheduleManager :schedule="schedule" :teacherId="teacher?.id" />
             <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
               <div class="divide-y divide-gray-200 dark:divide-gray-700">
-                <div v-for="(day, index) in schedule.schedule" :key="index" class="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <div class="w-24 font-medium">{{ day.dayOfWeek }}</div>
-                  <div class="flex-1">
-                    <div class="font-medium">{{ day.className }}</div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">
-                      {{ day.startTime }} - {{ day.endTime }}
+                <div v-for="(day, index) in schedule.schedule || []" :key="index" class="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <div class="flex justify-between items-start w-full">
+                    <div class="w-24 font-medium">{{ day?.dayOfWeek || 'Sin día' }}</div>
+                    <div class="flex-1">
+                      <div class="font-medium">{{ day?.className || 'Sin nombre' }}</div>
+                      <div class="text-sm text-gray-500 dark:text-gray-400">
+                        {{ (day?.startTime || '--:--') + ' - ' + (day?.endTime || '--:--') }}
+                      </div>
                     </div>
                   </div>
                 </div>

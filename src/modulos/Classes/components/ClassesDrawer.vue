@@ -1,168 +1,168 @@
-
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
-import { useRouter } from 'vue-router';
-import { useTeachersStore } from '../../Teachers/store/teachers';
-import { useStudentsStore } from '../../Students/store/students';
-import type { Class } from '../../Classes/types/class';
-import Modal from '../../../components/shared/Modal.vue';
+import { computed, ref } from 'vue';
+import { useTeachersStore } from '../../../modulos/Teachers/store/teachers';
+import { useStudentsStore } from '../../../modulos/Students/store/students';
 import { 
+  PencilIcon, 
+  TrashIcon, 
+  UserGroupIcon, 
   XMarkIcon, 
-  UserIcon, 
-  UserGroupIcon,
-  AcademicCapIcon,
-  MusicalNoteIcon,
-  CalendarIcon,
+  CalendarIcon, 
   ClockIcon,
-  PencilIcon,
-  TrashIcon,
-  ChevronRightIcon,
-  ExclamationTriangleIcon,
-  ExclamationCircleIcon,
-  InformationCircleIcon
+  AcademicCapIcon
 } from '@heroicons/vue/24/outline';
 
-const props = defineProps<{
-  show: boolean;
-  classItem?: Class;
-}>();
+const props = defineProps({
+  show: Boolean,
+  classItem: Object
+});
 
-const emit = defineEmits<{
-  (e: 'close'): void;
-  (e: 'edit', id: string): void;
-  (e: 'delete', id: string): void;
-  (e: 'manage-students', id: string): void;
-}>();
+const emit = defineEmits(['close', 'edit', 'delete', 'manage-students']);
 
-const router = useRouter();
 const teachersStore = useTeachersStore();
 const studentsStore = useStudentsStore();
-const isLoading = ref(false);
-const drawerPanel = ref<HTMLElement | null>(null);
-const showDeleteConfirm = ref(false);
 
-// Computed properties
-const teacherName = computed(() => {
-  if (!props.classItem?.teacherId) return 'No asignado';
-  const teacher = teachersStore.teachers.find(t => t.id === props.classItem!.teacherId);
-  return teacher ? teacher.name : 'No asignado';
+const getTeacherName = (teacherId) => {
+  if (!teacherId) return 'Sin profesor asignado';
+  const teacher = teachersStore.teachers.find(t => t.id === teacherId);
+  return teacher?.name ?? 'Profesor no encontrado';
+};
+
+const studentCount = computed(() => {
+  return props.classItem?.studentIds?.length || 0;
 });
 
-const teacherAvatar = computed(() => {
-  if (!props.classItem?.teacherId) return `https://api.dicebear.com/7.x/avataaars/svg?seed=default`;
-  const teacher = teachersStore.teachers.find(t => t.id === props.classItem!.teacherId);
-  return teacher?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${teacher?.name}`;
-});
-
-const students = computed(() => {
-  if (!props.classItem?.studentIds?.length) return [];
-  return studentsStore.students.filter(student => 
-    props.classItem?.studentIds?.includes(student.id)
-  );
-});
-
-// Methods
-const closeDrawer = () => {
-  emit('close');
-};
-
-const formatDay = (day: string): string => {
-  const days: Record<string, string> = {
-    'monday': 'Lunes',
-    'tuesday': 'Martes',
-    'wednesday': 'Miércoles',
-    'thursday': 'Jueves',
-    'friday': 'Viernes',
-    'saturday': 'Sábado',
-    'sunday': 'Domingo',
-    'lunes': 'Lunes',
-    'martes': 'Martes',
-    'miércoles': 'Miércoles',
-    'miercoles': 'Miércoles',
-    'jueves': 'Jueves',
-    'viernes': 'Viernes',
-    'sábado': 'Sábado',
-    'sabado': 'Sábado',
-    'domingo': 'Domingo'
-  };
-  return days[day.toLowerCase()] || day;
-};
-
-const editSchedule = () => {
-  emit('edit', props.classItem!.id);
-};
-
-const confirmDelete = () => {
-  showDeleteConfirm.value = true;
-};
-
-const handleDelete = () => {
-  showDeleteConfirm.value = false;
-  emit('delete', props.classItem!.id);
-};
-
-const goToStudentProfile = (studentId: string) => {
-  router.push(`/students/${studentId}`);
-};
-
-const isStudentActive = (student: any) => {
-  // Implementar lógica para determinar si el estudiante está activo
-  // Por ejemplo, basado en asistencia reciente o estado de pagos
-  return true;
-};
-
-// Keyboard events
-const handleEscape = (e: KeyboardEvent) => {
-  if (e.key === 'Escape' && props.show) {
-    if (showDeleteConfirm.value) {
-      showDeleteConfirm.value = false;
-    } else {
-      closeDrawer();
-    }
+const formattedSchedule = computed(() => {
+  if (!props.classItem?.schedule?.slots?.length) {
+    return [];
   }
+  
+  return props.classItem.schedule.slots.map(slot => ({
+    day: slot.day || '',
+    time: `${slot.startTime || ''} - ${slot.endTime || ''}`
+  }));
+});
+
+const daysOfWeek = {
+  'monday': 'Lunes',
+  'tuesday': 'Martes',
+  'wednesday': 'Miércoles',
+  'thursday': 'Jueves',
+  'friday': 'Viernes',
+  'saturday': 'Sábado',
+  'sunday': 'Domingo'
 };
 
-// Lifecycle hooks
-onMounted(() => {
-  document.addEventListener('keydown', handleEscape);
-});
+const translateDay = (day) => {
+  return daysOfWeek[day.toLowerCase()] || day;
+};
 
-onBeforeUnmount(() => {
-  document.removeEventListener('keydown', handleEscape);
-});
-
-// Prevent body scroll when drawer is open
-watch(() => props.show, (isOpen) => {
-  if (isOpen) {
-    document.body.style.overflow = 'hidden';
-  } else {
-    document.body.style.overflow = '';
-  }
+const getStudents = computed(() => {
+  if (!props.classItem?.studentIds) return [];
+  return studentsStore.students
+    .filter(s => props.classItem.studentIds.includes(s.id))
+    .slice(0, 5); // Only show first 5 students
 });
 </script>
+
 <template>
-  <div
-    class="fixed inset-0 overflow-hidden z-30"
-    v-if="show"
-    @click="closeDrawer"
-  >
-    <!-- Backdrop with blur and fade animation -->
-    <div 
-      class="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300"
-      :class="show ? 'opacity-100' : 'opacity-0'"
-    ></div>
-    
-    <!-- Drawer Panel -->
-    <div class="absolute inset-y-0 right-0 max-w-full flex">
-      <div 
-        class="relative w-screen max-w-2xl transform transition-transform duration-300 ease-in-out pb-20"
-        :class="show ? 'translate-x-0' : 'translate-x-full'"
-        @click.stop
-        ref="drawerPanel"
-      >
-        <div class="h-full flex flex-col bg-gray-50 dark:bg-gray-900 rounded-l-xl shadow-2xl">
-          <!-- Header with gradient -->
-          <div class="relative overflow-hidden">
+  <div v-if="show" class="fixed inset-0 bg-black bg-opacity-30 z-40 flex justify-end" @click="emit('close')">
+    <div
+      class="w-full max-w-md bg-white dark:bg-gray-800 h-full overflow-y-auto shadow-xl p-4 transform transition-transform duration-300 ease-in-out"
+      @click.stop
+    >
+      <!-- Header -->
+      <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Detalles de la Clase</h2>
+        <button
+          @click="emit('close')"
+          class="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+        >
+          <XMarkIcon class="h-6 w-6 text-gray-500 dark:text-gray-400" />
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div v-if="classItem" class="space-y-6">
+        <!-- Basic Info -->
+        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{{ classItem.name }}</h3>
+          
+          <div class="flex items-center text-gray-600 dark:text-gray-300 mb-1">
+            <AcademicCapIcon class="h-5 w-5 mr-2" />
+            <span>{{ classItem.instrument }} - {{ classItem.level }}</span>
+          </div>
+          
+          <div class="flex items-center text-gray-600 dark:text-gray-300 mb-1">
+            <UserGroupIcon class="h-5 w-5 mr-2" />
+            <span>{{ getTeacherName(classItem.teacherId) }}</span>
+          </div>
+          
+          <p v-if="classItem.description" class="mt-2 text-gray-600 dark:text-gray-400">
+            {{ classItem.description }}
+          </p>
+        </div>
+
+        <!-- Schedule -->
+        <div>
+          <h3 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center">
+            <CalendarIcon class="h-5 w-5 mr-1" />
+            Horario
+          </h3>
+          
+          <div v-if="formattedSchedule.length > 0" class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+            <div
+              v-for="(slot, index) in formattedSchedule"
+              :key="index"
+              class="flex items-center p-3 border-b border-gray-200 dark:border-gray-600 last:border-b-0"
+            >
+              <div class="flex-1">
+                <div class="font-medium">{{ translateDay(slot.day) }}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">{{ slot.time }}</div>
+              </div>
+              <div class="flex items-center">
+                <ClockIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
+              </div>
+            </div>
+          </div>
+          <div v-else class="text-gray-500 dark:text-gray-400 text-sm italic">
+            No hay horarios configurados
+          </div>
+        </div>
+
+        <!-- Students -->
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="font-medium text-gray-900 dark:text-white flex items-center">
+              <UserGroupIcon class="h-5 w-5 mr-1" />
+              Estudiantes ({{ studentCount }})
+            </h3>
+            <button
+              @click="emit('manage-students', classItem.id)"
+              class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Administrar
+            </button>
+          </div>
+          
+          <div v-if="getStudents.length" class="space-y-2">
+            <div
+              v-for="student in getStudents"
+              :key="student.id"
+              class="flex items-center p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg"
+            >
+              <div class="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 mr-3">
+                {{ `${student.nombre?.charAt(0) || ''}${student.apellido?.charAt(0) || ''}` }}
+              </div>
+              <div>
+                <div class="font-medium text-gray-800 dark:text-gray-200">
+                  {{ student.nombre }} {{ student.apellido }}
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ student.instrumento || 'Sin instrumento' }}
+                </div>
+              </div>
+            </div>
             <div class="absolute inset-0 bg-gradient-to-br from-primary-600/20 to-primary-800/20 backdrop-blur-sm"></div>
             <div class="relative px-6 py-4">
               <div class="flex items-center justify-between">

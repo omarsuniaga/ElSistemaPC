@@ -55,7 +55,15 @@ export const fetchClassesFirestore = async (): Promise<Class[]> => {
     const currentUser = await getCurrentUserFromFirestore();
     const classesCollection = collection(db, CLASSES_COLLECTION);
     let classesSnapshot;
-    if (currentUser) {
+    
+    // En desarrollo, siempre devolver todas las clases para facilitar pruebas
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    if (isDevelopment) {
+      console.log('🔍 Modo desarrollo: obteniendo todas las clases sin restricciones de rol');
+      classesSnapshot = await getDocs(classesCollection);
+    }
+    else if (currentUser) {
       const role = currentUser.role;
       console.log('Rol del usuario actual:', currentUser.uid);
       if (role === 'Maestro' || role === 'teacher') {
@@ -67,15 +75,20 @@ export const fetchClassesFirestore = async (): Promise<Class[]> => {
       } else if (role === 'Admin' || role === 'Director') {
         classesSnapshot = await getDocs(classesCollection);
       } else {
-        return [];
+        classesSnapshot = await getDocs(classesCollection);
       }
     } else {
-      return [];
+      // Si no hay usuario, obtenemos todas las clases (útil para desarrollo/pruebas)
+      classesSnapshot = await getDocs(classesCollection);
     }
-    return classesSnapshot.docs.map(doc => ({
+    
+    const classes = classesSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Class[];
+    
+    console.log(`✅ Se encontraron ${classes.length} clases en Firestore`);
+    return classes;
   } catch (error) {
     console.error("Error fetching classes:", error);
     throw error;

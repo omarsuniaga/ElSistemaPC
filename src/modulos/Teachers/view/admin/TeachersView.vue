@@ -1,8 +1,9 @@
+<!-- src/modulos/Teachers/view/TeachersView.vue -->
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useTeachersStore } from '../store/teachers'
-import { useClassesStore } from '../../Classes/store/classes'
+import { useTeachersStore } from '../../store/teachers'
+import { useClassesStore } from '../../../Classes/store/classes'
 import { PlusCircleIcon, EllipsisVerticalIcon } from '@heroicons/vue/24/outline'
 import { default as ConfirmModal } from '../../../components/ConfirmModal.vue'
 import TeacherDrawer from '../components/TeacherDrawer.vue'

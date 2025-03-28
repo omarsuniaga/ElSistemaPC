@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useClassesStore } from '../stores/classes';
+import { useClassesStore } from '../../../stores/classes';
 
 const props = defineProps({
   modelValue: String,

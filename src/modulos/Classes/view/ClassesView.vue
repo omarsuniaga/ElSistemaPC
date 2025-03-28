@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useClassesStore } from '../store/classes';
-import { useTeachersStore } from '@/modulos/Teachers/store/teachers';
-import { useStudentsStore } from '@/modulos/Students/store/students';
+import { useTeachersStore } from '../../../modulos/Teachers/store/teachers';
+import { useStudentsStore } from '../../../modulos/Students/store/students';
 import ClassDetail from '../components/ClassDetail.vue';
 import ClassCard from '../components/ClassCard.vue';
 import ClassForm from '../components/ClassForm.vue';
 import ClassStudentManager from '../components/ClassStudentManager.vue';
 import UpcomingClassesList from '../components/UpcomingClassesList.vue';
 import { PlusIcon, ViewColumnsIcon, ViewListIcon } from '@heroicons/vue/24/outline';
-import { useToast } from '@/components/ui/toast/use-toast';
+import { useToast } from '../components/ui/toast/use-toast';
 import { Dialog, DialogPanel, DialogOverlay, TransitionRoot, TransitionChild } from '@headlessui/vue';
 
 // Stores
@@ -117,22 +117,173 @@ const handleSaveClass = async (classData: any) => {
   }
 };
 
+// Métodos para manejar la visualización
+const toggleViewType = () => {
+  viewType.value = viewType.value === 'grid' ? 'list' : 'grid';
+};
+
+const handleViewClass = (classId) => {
+  selectedClassId.value = classId;
+  showDetail.value = true;
+};
+
+const handleCloseDetail = () => {
+  showDetail.value = false;
+};
+
+const handleAddClass = () => {
+  isEditing.value = false;
+  selectedClassId.value = '';
+  showForm.value = true;
+};
+
+const handleEditClass = (classId) => {
+  selectedClassId.value = classId;
+  isEditing.value = true;
+  showForm.value = true;
+  showDetail.value = false;
+};
+
+const handleDeleteClass = async (classId) => {
+  if (!confirm('¿Está seguro de eliminar esta clase?')) return;
+  
+  try {
+    await classesStore.removeClass(classId);
+    toast({
+      title: "Clase Eliminada",
+      description: "La clase ha sido eliminada exitosamente."
+    });
+    if (selectedClassId.value === classId) {
+      selectedClassId.value = '';
+      showDetail.value = false;
+    }
+  } catch (error) {
+    console.error('Error al eliminar la clase:', error);
+    toast({
+      title: "Error",
+      description: "No se pudo eliminar la clase. Intente nuevamente.",
+      variant: "destructive"
+    });
+  }
+};
+
+// Métodos para la gestión de estudiantes
+const handleManageStudents = (classId) => {
+  selectedClassId.value = classId;
+  showStudentManager.value = true;
+  showDetail.value = false;
+};
+
+const handleStudentChange = async (classId, studentIds) => {
+  try {
+    const classData = classesStore.getClassById(classId);
+    if (!classData) {
+      throw new Error('Clase no encontrada');
+    }
+    
+    await classesStore.updateClass({
+      ...classData,
+      id: classId,
+      studentIds: studentIds,
+      updatedAt: new Date()
+    });
+    
+    toast({
+      title: "Estudiantes Actualizados",
+      description: "La lista de estudiantes ha sido actualizada exitosamente."
+    });
+    
+    showStudentManager.value = false;
+  } catch (error) {
+    console.error('Error al actualizar estudiantes:', error);
+    toast({
+      title: "Error",
+      description: "No se pudieron actualizar los estudiantes. Intente nuevamente.",
+      variant: "destructive"
+    });
+  }
+};
+
+// Helper para obtener los estudiantes destacados de una clase (para mostrar en las tarjetas)
+const getTopStudents = (classItem) => {
+  if (!classItem.studentIds || classItem.studentIds.length === 0) {
+    return [];
+  }
+  
+  // Obtenemos hasta 3 estudiantes para mostrar en la vista previa
+  return classItem.studentIds
+    .slice(0, 3)
+    .map(id => studentsStore.students.find(s => s.id === id))
+    .filter(Boolean);
+};
+
+// Helper para obtener las próximas clases (para la sección de upcoming classes)
+const upcomingClasses = computed(() => {
+  if (!classesStore.classes?.length) return [];
+  
+  // Filtramos clases con horarios y los ordenamos según el día de la semana
+  const today = new Date();
+  const dayMap = {
+    'Lunes': 1,
+    'Martes': 2, 
+    'Miércoles': 3,
+    'Jueves': 4,
+    'Viernes': 5,
+    'Sábado': 6,
+    'Domingo': 0
+  };
+
+  const classesWithSchedule = classesStore.classes
+    .filter(c => c.schedule && c.schedule.slots && c.schedule.slots.length > 0)
+    .map(c => {
+      // Usamos el primer slot para determinar el día y hora
+      const slot = c.schedule?.slots[0];
+      const dayValue = dayMap[slot?.day];
+      
+      // Calcular próxima fecha para este día
+      let nextDate = new Date();
+      const currentDay = nextDate.getDay();
+      const daysUntilNext = (dayValue + 7 - currentDay) % 7;
+      nextDate.setDate(nextDate.getDate() + daysUntilNext);
+      
+      // Adaptar los datos al formato esperado por UpcomingClassesList
+      return {
+        id: c.id,
+        title: c.name,
+        date: nextDate,
+        time: `${slot?.startTime || '--:--'} - ${slot?.endTime || '--:--'}`,
+        teacher: teachersStore.teachers.find(t => t.id === c.teacherId)?.name || 'Sin asignar',
+        students: c.studentIds?.length || 0,
+        room: c.classroom || 'Sin asignar'
+      };
+    });
+    
+  // Ordenamos por fecha (los más cercanos primero) y tomamos solo 3
+  return classesWithSchedule
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .slice(0, 3);
+});
+
 // Otros métodos (handleViewClass, handleEditClass, etc.) se mantienen según tu lógica original
 
 onMounted(async () => {
   loading.value = true;
   try {
-    // Ejemplo: Setup del listener en tiempo real y carga de datos adicionales
-    const unsubscribeClasses = classesStore.setupRealTimeListener && classesStore.setupRealTimeListener();
+    console.log('🔍 Cargando clases...');
+    // Cargar clases explícitamente
+    const classes = await classesStore.fetchClasses();
+    console.log(`✅ Se cargaron ${classes.length} clases:`, classes);
+    
+    // Cargar datos adicionales
     await Promise.all([
       teachersStore.fetchTeachers && teachersStore.fetchTeachers(),
       studentsStore.fetchStudents && studentsStore.fetchStudents()
     ]);
   } catch (error) {
-    console.error('Error cargando datos:', error);
+    console.error('❌ Error cargando datos:', error);
     toast({
       title: "Error de Carga",
-      description: "No se pudieron cargar todos los datos. Intente recargar la página.",
+      description: "No se pudieron cargar las clases. Intente recargar la página.",
       variant: "destructive"
     });
   } finally {
@@ -172,7 +323,7 @@ onMounted(async () => {
     <!-- Class List -->
     <div v-else-if="!showDetail && !showForm && !showStudentManager" class="flex-1">
       <!-- Upcoming Classes Section -->
-      <div class="mb-8" v-if="classesStore.upcomingClasses?.length > 0"></div>
+      <div class="mb-8" v-if="upcomingClasses?.length > 0">
         <UpcomingClassesList :classes="upcomingClasses" />
       </div>
       <!-- Main Class List -->

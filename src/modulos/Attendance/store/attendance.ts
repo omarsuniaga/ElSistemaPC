@@ -231,17 +231,43 @@ export const useAttendanceStore = defineStore('attendance', {
         const classesStore = useClassesStore();
         const classData = classesStore.classes.find(c => c.name === className || c.id === className);
         
-        if (!classData) return [];
+        if (!classData) {
+          console.warn(`Class not found: ${className}`);
+          return [];
+        }
+
+        // Check if schedule exists
+        if (!classData.schedule) {
+          console.warn(`No schedule found for class: ${className}`);
+          return [];
+        }
 
         // Parse schedule depending on its type
         if (typeof classData.schedule === 'string') {
           const schedule = String(classData.schedule).toLowerCase();
           const days = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
           return days.filter(day => schedule.includes(day));
-        } else if (classData.schedule && typeof classData.schedule === 'object' && 'days' in classData.schedule) {
-          const schedule = classData.schedule as Schedule;
-          return schedule.days;
+        } else if (classData.schedule && typeof classData.schedule === 'object') {
+          if ('days' in classData.schedule && Array.isArray(classData.schedule.days)) {
+            return classData.schedule.days;
+          } else if ('slots' in classData.schedule && Array.isArray(classData.schedule.slots)) {
+            // Extract days from slots array
+            const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+            const result: string[] = [];
+            
+            classData.schedule.slots.forEach((slot: any) => {
+              if (typeof slot.day === 'number' && slot.day >= 0 && slot.day < 7) {
+                result.push(days[slot.day]);
+              } else if (typeof slot.day === 'string') {
+                result.push(slot.day.toLowerCase());
+              }
+            });
+            
+            return result;
+          }
         }
+        
+        console.warn(`Could not parse schedule for class: ${className}`, classData.schedule);
         return [];
       }
     },

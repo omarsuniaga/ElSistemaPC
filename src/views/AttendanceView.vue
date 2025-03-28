@@ -539,6 +539,12 @@ const availableClassDates = computed(() => {
   // Get scheduled days for the class
   const scheduledDays = attendanceStore.getClassScheduleDays(selectedClass.value);
   
+  // Ensure scheduledDays is an array
+  if (!Array.isArray(scheduledDays) || scheduledDays.length === 0) {
+    console.warn('No scheduled days found or invalid format:', scheduledDays);
+    return [];
+  }
+  
   // Get date range (current month + next month)
   const startDate = parseISO(format(new Date(), 'yyyy-MM-dd'));
   const endDate = addMonths(startDate, 1);

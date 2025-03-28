@@ -4,7 +4,7 @@ import App from './App.vue'
 import router from './router'
 import './style.css'
 import { validateEnvVars } from './utils/env-validator'
-
+import ToastProvider from './components/ui/toast/ToastProvider.vue'
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -28,6 +28,8 @@ app.config.warnHandler = (msg, instance, trace) => {
   console.warn('Componente:', instance)
   console.warn('Trace:', trace)
 }
+
+app.component('ToastProvider', ToastProvider)
 
 app.mount('#app')
 

@@ -1,0 +1,247 @@
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue';
+import {
+  CalendarIcon,
+  MapPinIcon,
+  UserGroupIcon,
+  PencilIcon,
+  TrashIcon,
+  UserPlusIcon
+} from '@heroicons/vue/24/outline';
+import { useStudentsStore } from '../../../modulos/Students/store/students';
+
+const props = defineProps({
+  classData: {
+    type: Object,
+    required: true
+  }
+});
+
+const emit = defineEmits(['view', 'edit', 'delete', 'manage-students']);
+
+// Referencia local para almacenar información de depuración
+const debugInfo = ref({
+  loaded: false,
+  studentsCount: 0,
+  foundStudents: 0,
+  error: null
+});
+
+// Uso del store de estudiantes para obtener nombres
+const studentsStore = useStudentsStore();
+
+// Verificación segura para validar studentIds
+const hasStudentIds = computed(() => {
+  return Array.isArray(props.classData.studentIds) && props.classData.studentIds.length > 0;
+});
+
+// Obtiene los tres primeros estudiantes para mostrar en la tarjeta
+const topStudents = computed(() => {
+  if (!hasStudentIds.value) {
+    return [];
+  }
+
+  const result = [];
+  const sliceLength = Math.min(3, props.classData.studentIds.length);
+  let foundStudents = 0;
+  
+  for (let i = 0; i < sliceLength; i++) {
+    try {
+      const id = props.classData.studentIds[i];
+      if (!id) continue;
+      
+      const student = studentsStore.getStudentById(id);
+      if (student) {
+        foundStudents++;
+        result.push(student.nombre ? `${student.nombre} ${student.apellido || ''}`.trim() : 'Nombre no disponible');
+      } else {
+        result.push(`Estudiante ID: ${id}`);
+      }
+    } catch (error) {
+      console.error('Error procesando estudiante:', error);
+      result.push('Error al cargar estudiante');
+    }
+  }
+  
+  // Actualizar información de depuración
+  debugInfo.value.foundStudents = foundStudents;
+  
+  return result;
+});
+
+// Calcula el número de estudiantes adicionales que no se muestran en la tarjeta
+const additionalStudents = computed(() => {
+  if (!hasStudentIds.value) return 0;
+  return Math.max(0, props.classData.studentIds.length - 3);
+});
+
+// Formatea los horarios de clase para mostrar en la tarjeta
+const formatSchedule = computed(() => {
+  if (!props.classData.schedule || !props.classData.schedule.slots || props.classData.schedule.slots.length === 0) {
+    return 'Sin horario asignado';
+  }
+
+  const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  return props.classData.schedule.slots.map(slot => {
+    // Intentar obtener el índice del día
+    let dayIndex;
+    if (typeof slot.day === 'number' && slot.day >= 0 && slot.day <= 6) {
+      dayIndex = slot.day;
+    } else if (typeof slot.day === 'string') {
+      // Intentar convertir a número
+      const dayNum = parseInt(slot.day, 10);
+      if (!isNaN(dayNum) && dayNum >= 0 && dayNum <= 6) {
+        dayIndex = dayNum;
+      } else {
+        // Usar el primer día como fallback
+        dayIndex = 1;
+      }
+    } else {
+      // Si no hay información válida del día, usar el primer día como fallback
+      dayIndex = 1;
+    }
+    return `${dayNames[dayIndex]} ${slot.startTime}-${slot.endTime}`;
+  }).join(', ');
+});
+
+// Manejadores de eventos
+const handleView = () => {
+  emit('view', props.classData.id);
+};
+
+const handleEdit = (e) => {
+  e.stopPropagation();
+  emit('edit', props.classData.id);
+};
+
+const handleDelete = (e) => {
+  e.stopPropagation();
+  emit('delete', props.classData.id);
+};
+
+const handleManageStudents = (e) => {
+  e.stopPropagation();
+  emit('manage-students', props.classData.id);
+};
+
+// Asegurar que los estudiantes estén cargados cuando se monta el componente
+onMounted(async () => {
+  try {
+    // Si no hay estudiantes cargados en el store, cargarlos
+    if (studentsStore.students.length === 0) {
+      await studentsStore.fetchStudents();
+    }
+    
+    // Actualizar información de depuración
+    debugInfo.value = {
+      loaded: true,
+      studentsCount: studentsStore.students.length,
+      foundStudents: topStudents.value.length,
+      error: null
+    };
+    
+    console.log('TeacherClassesCard - Debug info:', {
+      classId: props.classData.id,
+      className: props.classData.name,
+      studentIds: props.classData.studentIds,
+      studentsInStore: studentsStore.students.length,
+      foundStudents: topStudents.value.length
+    });
+  } catch (error) {
+    console.error('Error cargando estudiantes:', error);
+    debugInfo.value.error = error.message;
+  }
+});
+</script>
+
+<template>
+  <div 
+    @click="handleView" 
+    class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+  >
+    <!-- Cabecera con color según nivel -->
+    <div 
+      class="h-2"
+      :class="{
+        'bg-green-500': classData.level === 'Básico',
+        'bg-blue-500': classData.level === 'Intermedio',
+        'bg-purple-500': classData.level === 'Avanzado',
+        'bg-gray-500': !classData.level
+      }"
+    ></div>
+    
+    <div class="p-4">
+      <!-- Nombre y nivel -->
+      <div class="flex justify-between items-start mb-3">
+        <div>
+          <h3 class="font-medium text-gray-900 dark:text-white">{{ classData.name }}</h3>
+          <span class="text-sm text-gray-600 dark:text-gray-400 block">
+            {{ classData.level }}
+            <span v-if="classData.instrument"> - {{ classData.instrument }}</span>
+          </span>
+        </div>
+        <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs font-medium px-2 py-1 rounded-full">
+          {{ hasStudentIds ? classData.studentIds.length : 0 }} estudiantes
+        </span>
+      </div>
+      
+      <!-- Información adicional -->
+      <div class="space-y-2 mb-4">
+        <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+          <CalendarIcon class="h-4 w-4 mr-2" />
+          <span>{{ formatSchedule }}</span>
+        </div>
+        <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+          <MapPinIcon class="h-4 w-4 mr-2" />
+          <span>{{ classData.classroom || 'Sin aula asignada' }}</span>
+        </div>
+      </div>
+
+      <!-- Lista de estudiantes -->
+      <div class="mb-3">
+        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Estudiantes:</div>
+        <div v-if="hasStudentIds" class="space-y-1">
+          <div 
+            v-for="(student, index) in topStudents" 
+            :key="index" 
+            class="flex items-center text-sm text-gray-700 dark:text-gray-300"
+          >
+            <UserGroupIcon class="h-3 w-3 mr-2 text-gray-500" />
+            <span class="truncate">{{ student }}</span>
+          </div>
+          <div v-if="additionalStudents > 0" class="text-xs text-gray-500 dark:text-gray-400">
+            Y {{ additionalStudents }} estudiante(s) más...
+          </div>
+        </div>
+        <div v-else class="text-sm text-gray-500 dark:text-gray-400">
+          No hay estudiantes inscritos
+        </div>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="flex justify-end space-x-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+        <button 
+          @click="handleManageStudents" 
+          class="p-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/20 rounded-md"
+          title="Gestionar estudiantes"
+        >
+          <UserPlusIcon class="h-5 w-5" />
+        </button>
+        <button 
+          @click="handleEdit" 
+          class="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-md"
+          title="Editar clase"
+        >
+          <PencilIcon class="h-5 w-5" />
+        </button>
+        <button 
+          @click="handleDelete" 
+          class="p-1 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-md"
+          title="Eliminar clase"
+        >
+          <TrashIcon class="h-5 w-5" />
+        </button>
+      </div>
+    </div>
+  </div>
+</template>

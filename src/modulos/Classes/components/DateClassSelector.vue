@@ -92,8 +92,8 @@
       <!-- Botón continuar -->
       <div class="mt-6 flex justify-end">
         <button
+          @click="handleContinue"
           :disabled="!modelValue || loading || isLoading"
-          @click="continueToAttendance"
           :class="[
             'px-4 py-2 rounded-lg font-medium transition-colors',
             modelValue 
@@ -139,6 +139,7 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { ChevronRightIcon, CalendarDaysIcon } from '@heroicons/vue/24/outline'
 import Calendar from '../../../components/Calendar.vue'
+import { useRouter } from 'vue-router'
 
 // Definir props correctamente para evitar advertencias de props extraños
 const props = defineProps({
@@ -173,6 +174,7 @@ const loading = ref(false)
 const error = ref('')
 const searchQuery = ref('')
 const showCalendarModal = ref(false)
+const router = useRouter()
 
 // Definir filteredClasses para resolver la advertencia
 const filteredClasses = ref<any[]>([])
@@ -187,12 +189,18 @@ const availableClassDates = computed(() => {
   
   // Para cada clase, añadir sus días programados
   scheduledClasses.forEach(classItem => {
-    if (classItem.schedule && classItem.schedule.days) {
+    if (classItem.schedule && classItem.schedule.slots && Array.isArray(classItem.schedule.slots)) {
       // Añadir los días de la semana de esta clase
-      classItem.schedule.days.forEach((day: string) => {
-        // Aquí podríamos convertir los días de la semana a fechas reales
-        // pero por ahora solo marcamos que hay clases disponibles
-        availableDates.add(day.toLowerCase())
+      classItem.schedule.slots.forEach((slot: any) => {
+        if (typeof slot.day === 'number') {
+          // Convertir el índice del día a nombre de día
+          const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+          if (slot.day >= 0 && slot.day < days.length) {
+            availableDates.add(days[slot.day])
+          }
+        } else if (typeof slot.day === 'string') {
+          availableDates.add(slot.day.toLowerCase())
+        }
       })
     }
   })
@@ -204,16 +212,27 @@ const availableClassDates = computed(() => {
 const filterClassesByDay = (date: string) => {
   try {
     const dayName = format(new Date(date), 'EEEE', { locale: es }).toLowerCase()
+    const dayIndex = getDayIndex(dayName)
     
     return classesStore.classes.filter(c => {
       // Si no hay filtro por día, mostrar todas
       if (!props.dayFilter) return true
       
-      // Si la clase no tiene horario o días, no filtrar
-      if (!c.schedule || !c.schedule.days) return true
+      // Verificar si la clase tiene la estructura correcta de horarios
+      if (!c.schedule || !c.schedule.slots || !Array.isArray(c.schedule.slots)) return true
       
-      // Filtrar por día de la semana
-      return c.schedule.days.some((d: string) => d.toLowerCase() === dayName)
+      // Filtrar por día de la semana usando la nueva estructura slots
+      return c.schedule.slots.some(slot => {
+        // Si slot.day es un número, compararlo directamente con dayIndex
+        if (typeof slot.day === 'number') {
+          return slot.day === dayIndex
+        }
+        // Si slot.day es un string, intentar interpretar como nombre del día
+        else if (typeof slot.day === 'string') {
+          return slot.day.toLowerCase() === dayName
+        }
+        return false
+      })
     })
   } catch (err) {
     console.error('Error al filtrar clases por día:', err)
@@ -225,12 +244,29 @@ const filterClassesByDay = (date: string) => {
 const isClassScheduledForDay = (classItem: any) => {
   try {
     const dayName = format(new Date(props.selectedDate), 'EEEE', { locale: es }).toLowerCase()
+    const dayIndex = getDayIndex(dayName)
+    
     return classItem.schedule && 
-           classItem.schedule.days && 
-           classItem.schedule.days.some((d: string) => d.toLowerCase() === dayName)
+           classItem.schedule.slots && 
+           Array.isArray(classItem.schedule.slots) &&
+           classItem.schedule.slots.some(slot => {
+             if (typeof slot.day === 'number') {
+               return slot.day === dayIndex
+             } else if (typeof slot.day === 'string') {
+               return slot.day.toLowerCase() === dayName
+             }
+             return false
+           })
   } catch (err) {
+    console.error('Error al verificar si la clase está programada:', err)
     return false
   }
+}
+
+// Función helper para convertir nombre de día a índice
+const getDayIndex = (dayName: string): number => {
+  const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+  return days.indexOf(dayName)
 }
 
 // Cargar datos
@@ -292,8 +328,29 @@ const handleCalendarSelect = (date: string) => {
 }
 
 // Continuar al siguiente paso
-const continueToAttendance = () => {
-  emit('continue')
+const handleContinue = async () => {
+  try {
+    if (!props.modelValue || !props.selectedDate) {
+      return;
+    }
+    
+    // Formatear la fecha para la URL (remover los guiones)
+    const formattedDate = props.selectedDate.replace(/-/g, '');
+    
+    // Usar router.push con replace: true para evitar que el usuario regrese a la selección
+    await router.push({
+      name: 'attendance',
+      params: {
+        date: formattedDate,
+        classId: props.modelValue
+      },
+      replace: true // Esto reemplazará la entrada actual en el historial
+    });
+    
+    emit('continue');
+  } catch (error) {
+    console.error('Error navigating to attendance page:', error);
+  }
 }
 
 // Observar cambios en fecha y filtro

@@ -15,21 +15,50 @@ import {
   XMarkIcon
 } from '@heroicons/vue/24/outline';
 
+// Define proper types for the activities
+interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  size: string;
+  url: string;
+}
+
+interface ActivityMetadata {
+  present?: number;
+  absent?: number;
+  score?: number;
+  dueDate?: string;
+}
+
+interface Activity {
+  id: string;
+  type: 'system' | 'attendance' | 'content' | 'evaluation' | 'task' | 'message' | 'student_added' | 'schedule_change' | 'student_action';
+  user: string;
+  content: string;
+  timestamp: string;
+  metadata?: ActivityMetadata;
+  attachments?: Attachment[];
+  important?: boolean;
+}
+
 const props = defineProps({
   activities: {
-    type: Array,
+    type: Array as () => Activity[],
     required: true,
     default: () => []
   }
 });
 
+const emit = defineEmits(['download-attachment']);
+
 // Helper functions
-const formattedTime = (timestamp) => {
+const formattedTime = (timestamp: string) => {
   const date = new Date(timestamp);
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-const formattedDate = (timestamp) => {
+const formattedDate = (timestamp: string) => {
   const date = new Date(timestamp);
   const today = new Date();
   const yesterday = new Date();
@@ -44,8 +73,18 @@ const formattedDate = (timestamp) => {
   }
 };
 
+// Add the missing formatDate function
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-ES', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+};
+
 // Activity icon selection
-const showActivityIcon = (type) => {
+const showActivityIcon = (type: Activity['type']) => {
   switch (type) {
     case 'system': return UserCircleIcon;
     case 'attendance': return ClipboardDocumentCheckIcon;
@@ -61,7 +100,7 @@ const showActivityIcon = (type) => {
 };
 
 // File icon selection
-const getFileIcon = (mimeType) => {
+const getFileIcon = (mimeType: string) => {
   if (mimeType.startsWith('image/')) {
     return PhotoIcon;
   } else if (mimeType.startsWith('audio/')) {
@@ -71,6 +110,11 @@ const getFileIcon = (mimeType) => {
   } else {
     return PaperClipIcon;
   }
+};
+
+// Handle attachment download
+const handleDownloadAttachment = (attachment: Attachment) => {
+  emit('download-attachment', attachment);
 };
 </script>
 
@@ -98,7 +142,8 @@ const getFileIcon = (mimeType) => {
         <div class="max-w-[85%] rounded-lg px-3 py-2"
              :class="{
                'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700': activity.user === 'Sistema',
-               'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-100': activity.user !== 'Sistema'
+               'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-100': activity.user !== 'Sistema',
+               'border-l-4 border-l-amber-500': activity.important
              }">
           <div class="flex items-center gap-1">
             <span class="font-medium text-xs"
@@ -145,7 +190,8 @@ const getFileIcon = (mimeType) => {
           <!-- Attachments -->
           <div v-if="activity.attachments && activity.attachments.length > 0" class="mt-2 space-y-1">
             <div v-for="file in activity.attachments" :key="file.id" 
-                 class="flex items-center text-xs p-1.5 bg-gray-100 dark:bg-gray-700 rounded">
+                 class="flex items-center text-xs p-1.5 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer transition-colors"
+                 @click="handleDownloadAttachment(file)">
               <component :is="getFileIcon(file.type)" class="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
               <span class="flex-1 truncate">{{ file.name }}</span>
               <span class="text-gray-500">{{ file.size }}</span>
@@ -160,5 +206,7 @@ const getFileIcon = (mimeType) => {
 <style scoped>
 .activity-feed {
   scroll-behavior: smooth;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 </style>

@@ -1,12 +1,19 @@
 import { defineStore } from 'pinia'
-import { addTeacherToFirebase, updateTeacherInFirebase, deleteTeacherFromFirebase, fetchTeachersFromFirebase } from '../services/teachers'
+import { 
+  addTeacherToFirebase, 
+  updateTeacherInFirebase, 
+  deleteTeacherFromFirebase, 
+  fetchTeachersFromFirebase 
+} from '../services/teachers'
 import type { Teacher, TeacherData } from '../types/teachers'
 import { TeacherStatus } from '../types/teachers'
 import { useClassesStore } from '../../Classes/store/classes'
 import { useScheduleStore } from '../../Schedules/store/schedule'
 import { getFirestore, getDoc, doc, query, collection, where, getDocs } from 'firebase/firestore'
 
-// Define the WeeklySchedule type locally since it's not exported from the schedule module
+/**
+ * Tipo para definir la estructura de un horario semanal.
+ */
 type WeeklySchedule = Array<{
   dayOfWeek: string;
   startTime: string;
@@ -18,12 +25,54 @@ type WeeklySchedule = Array<{
   students?: any[];
 }>;
 
-// Agregar la interfaz para tipar el resumen de horario
+/**
+ * Interfaz para resumir el horario de un profesor.
+ */
 interface TeacherScheduleSummary {
   weeklyHours: number;
   totalClasses: number;
   schedule: WeeklySchedule;
   hasConflicts: boolean;
+}
+
+/**
+ * Función para normalizar los datos que vienen de Firebase
+ * y convertirlos al formato TeacherData.
+ */
+function normalizeTeacherData(teacher: any): TeacherData {
+  return {
+    id: teacher.id,
+    uid: teacher.uid,
+    name: teacher.name,
+    email: teacher.email,
+    phone: teacher.phone,
+    specialties: teacher.specialties || [],
+    photoURL: teacher.photo || teacher.avatar,
+    status: teacher.status === TeacherStatus.ACTIVE ? 'activo' : 
+            teacher.status === TeacherStatus.INACTIVE ? 'inactivo' : 'pendiente',
+    biography: teacher.bio,
+    createdAt: new Date(teacher.createdAt),
+    updatedAt: teacher.updatedAt ? new Date(teacher.updatedAt) : undefined,
+    experiencia: teacher.experience,
+    address: teacher.address,
+  }
+}
+
+/**
+ * Helper para manejar el estado "loading" y capturar errores de forma centralizada.
+ * Se utiliza en cada acción asíncrona.
+ */
+async function withLoading<T>(store: any, action: () => Promise<T>): Promise<T> {
+  store.loading = true
+  store.error = null
+  try {
+    return await action()
+  } catch (error: any) {
+    store.error = error.message || 'Error inesperado'
+    throw error
+  } finally {
+    store.loading = false
+  }
 }
 
 export const useTeachersStore = defineStore('teacher', {
@@ -35,98 +84,58 @@ export const useTeachersStore = defineStore('teacher', {
   }),
 
   getters: {
+    // Devuelve la lista completa de maestros.
     items: (state) => state.teachers,
-
-    activeTeachers: (state) => {
-      return state.teachers.filter(teacher =>
-        teacher.status === 'activo' // Manteniendo en español según tu definición de TeacherData
-      )
-    },
-
+    // Filtra los maestros activos.
+    activeTeachers: (state) => state.teachers.filter(teacher => teacher.status === 'activo'),
+    // Busca un maestro por su nombre (búsqueda parcial, case insensitive).
     getTeacherByName: (state) => (name: string) => {
-      return state.teachers.find(teacher => {
-        const teacherName = teacher.name || ''
-        return teacherName.toLowerCase().includes(name.toLowerCase())
-      })
+      return state.teachers.find(teacher => (teacher.name || '').toLowerCase().includes(name.toLowerCase()))
     },
-
-    getTeacherById: (state) => (id: string) => {
-      return state.teachers.find(teacher => teacher.id === id)
-    },
-
-    // Nuevo getter para filtrar profesores por especialidad
+    // Busca un maestro por ID.
+    getTeacherById: (state) => (id: string) => state.teachers.find(teacher => teacher.id === id),
+    // Filtra maestros que tengan la especialidad indicada.
     getTeachersBySpecialty: (state) => (specialty: string) => {
       return state.teachers.filter(teacher =>
-        teacher.specialties?.some(s =>
-          s.toLowerCase().includes(specialty.toLowerCase())
-        )
+        teacher.specialties?.some(s => s.toLowerCase().includes(specialty.toLowerCase()))
       )
     },
-
-    // Nuevo getter para obtener todos los maestros ordenados por nombre
-    sortedTeachers: (state) => {
-      return [...state.teachers].sort((a, b) => a.name.localeCompare(b.name))
-    }
+    // Devuelve la lista de maestros ordenada alfabéticamente.
+    sortedTeachers: (state) => [...state.teachers].sort((a, b) => a.name.localeCompare(b.name))
   },
 
   actions: {
-    async fetchTeachers() {
-      this.loading = true
-      this.error = null
+    /* === CRUD BASICO === */
 
-      try {
+    /**
+     * Obtiene todos los maestros desde Firebase y actualiza el store.
+     */
+    async fetchTeachers() {
+      return await withLoading(this, async () => {
         console.log('🔍 Consultando maestros desde el servicio...')
         const teachers = await fetchTeachersFromFirebase()
         console.log(`✅ Se encontraron ${teachers.length} maestros`)
-
-        // Mapear los datos desde Teacher a TeacherData
-        const formattedTeachers = teachers.map(teacher => {
-          return {
-            id: teacher.id,
-            uid: teacher.uid,
-            name: teacher.name,
-            email: teacher.email,
-            phone: teacher.phone,
-            specialties: teacher.specialties || [],
-            photoURL: teacher.photo,
-            status: teacher.status === TeacherStatus.ACTIVE ? 'activo' : // Usando el enum para la comparación
-                    teacher.status === TeacherStatus.INACTIVE ? 'inactivo' : 'pendiente', // Manteniendo el valor en español
-            biography: teacher.bio,
-            createdAt: new Date(teacher.createdAt),
-            updatedAt: teacher.updatedAt ? new Date(teacher.updatedAt) : undefined,
-            // Añadir campos adicionales
-            avatar: teacher.photo || teacher.avatar,
-            experiencia: teacher.experience,
-            address: teacher.address
-          } as TeacherData
-        });
-
-        // Actualizar el store
+        const formattedTeachers = teachers.map(normalizeTeacherData)
         this.teachers = formattedTeachers
         this.lastSync = new Date()
-
         return this.teachers
-      } catch (error: any) {
-        console.error('❌ Error al obtener maestros:', error)
-        this.error = error.message || 'Error al cargar los maestros'
-        return
-      } finally {
-        this.loading = false
-      }
+      })
     },
 
-    // Función de compatibilidad con el patrón BaseStore
+    /**
+     * Compatibilidad con el patrón BaseStore para obtener items.
+     */
     async fetchItems() {
       return this.fetchTeachers()
     },
 
+    /**
+     * Agrega un nuevo maestro. Recibe un objeto sin el ID.
+     */
     async addTeacher(teacher: Omit<TeacherData, 'id'>) {
-      this.loading = true
-
-      try {
+      return await withLoading(this, async () => {
         console.log('📝 Preparando datos para crear nuevo maestro...')
-
-        // Convertir al formato esperado por el servicio
+        // Convertir los datos al formato que espera el servicio.
         const teacherData: Omit<Teacher, 'id'> = {
           uid: teacher.uid || '',
           name: teacher.name,
@@ -135,64 +144,38 @@ export const useTeachersStore = defineStore('teacher', {
           photo: teacher.photoURL,
           bio: teacher.biography,
           specialties: teacher.specialties || [],
-          status: teacher.status === 'activo' ? TeacherStatus.ACTIVE : // Usando el enum para el servicio
-                  teacher.status === 'inactivo' ? TeacherStatus.INACTIVE : TeacherStatus.ON_LEAVE, // Usando el enum para el servicio
+          status: teacher.status === 'activo' ? TeacherStatus.ACTIVE :
+                  teacher.status === 'inactivo' ? TeacherStatus.INACTIVE : TeacherStatus.ON_LEAVE,
           hireDate: new Date(),
           hourlyRate: 0,
           createdAt: new Date(),
           updatedAt: new Date()
         }
-
-        // Crear nuevo maestro usando el servicio
+        // Crear el maestro en Firebase.
         const newTeacher = await addTeacherToFirebase(teacherData)
         console.log('✅ Maestro creado correctamente con ID:', newTeacher.id)
-
-        // Convertir de nuevo al formato TeacherData para el store
-        const newTeacherData: TeacherData = {
-          id: newTeacher.id,
-          uid: newTeacher.uid,
-          name: newTeacher.name,
-          email: newTeacher.email,
-          phone: newTeacher.phone,
-          specialties: Array.isArray(newTeacher.specialties) ? newTeacher.specialties : [],
-          experiencia: newTeacher.experience,
-          photoURL: newTeacher.photo,
-          status: newTeacher.status === TeacherStatus.ACTIVE ? 'activo' : // Usando el enum para la comparación
-                  newTeacher.status === TeacherStatus.INACTIVE ? 'inactivo' : 'pendiente', // Manteniendo el valor en español
-          biography: newTeacher.bio,
-          createdAt: newTeacher.createdAt,
-          updatedAt: newTeacher.updatedAt,
-
-          avatar: newTeacher.photo || newTeacher.avatar
-        }
-
-        // Actualizar el store
+        const newTeacherData = normalizeTeacherData(newTeacher)
         this.teachers.push(newTeacherData)
-
         return newTeacherData
-      } catch (error: any) {
-        console.error('❌ Error adding teacher:', error)
-        this.error = error.message
-        throw error
-      } finally {
-        this.loading = false
-      }
+      })
     },
 
-    // Función de compatibilidad
+    /**
+     * Compatibilidad con BaseStore para agregar un item.
+     */
     async addItem(teacher: Omit<TeacherData, 'id'>) {
       return this.addTeacher(teacher)
     },
 
+    /**
+     * Actualiza los datos de un maestro existente.
+     * @param id - ID del maestro a actualizar.
+     * @param updates - Objeto con las propiedades a actualizar.
+     */
     async updateTeacher(id: string, updates: Partial<TeacherData>) {
-      this.loading = true
-
-      try {
+      return await withLoading(this, async () => {
         console.log(`📝 Actualizando maestro con ID: ${id}`)
-
-        // Convertir al formato esperado por el servicio
         const teacherUpdates: Partial<Teacher> = {}
-
         if (updates.name) teacherUpdates.name = updates.name
         if (updates.email) teacherUpdates.email = updates.email
         if (updates.phone) teacherUpdates.phone = updates.phone
@@ -202,74 +185,58 @@ export const useTeachersStore = defineStore('teacher', {
         if (updates.avatar) teacherUpdates.avatar = updates.avatar
         if (updates.experiencia) teacherUpdates.experience = updates.experiencia
         if (updates.address) teacherUpdates.address = updates.address
-
         if (updates.status) {
           teacherUpdates.status = updates.status === 'activo' ? TeacherStatus.ACTIVE :
                                   updates.status === 'inactivo' ? TeacherStatus.INACTIVE : TeacherStatus.ON_LEAVE
         }
-
-        // Actualizar en Firebase a través del servicio
+        // Actualizar en Firebase.
         await updateTeacherInFirebase(id, teacherUpdates)
         console.log('✅ Maestro actualizado correctamente')
-
-        // Actualizar en el store
         const index = this.teachers.findIndex(item => item.id === id)
         if (index !== -1) {
           this.teachers[index] = { ...this.teachers[index], ...updates }
         }
-
         return this.teachers[index]
-      } catch (error: any) {
-        console.error('❌ Error updating teacher:', error)
-        this.error = error.message
-        throw error
-      } finally {
-        this.loading = false
-      }
+      })
     },
 
-    // Función de compatibilidad
+    /**
+     * Compatibilidad con BaseStore para actualizar un item.
+     */
     async updateItem(id: string, updates: Partial<TeacherData>) {
       return this.updateTeacher(id, updates)
     },
 
+    /**
+     * Elimina un maestro por su ID.
+     */
     async deleteTeacher(id: string) {
-      this.loading = true
-
-      try {
+      return await withLoading(this, async () => {
         console.log(`🗑️ Eliminando maestro con ID: ${id}`)
-
-        // Eliminar de Firebase usando el servicio
         await deleteTeacherFromFirebase(id)
         console.log('✅ Maestro eliminado correctamente')
-
-        // Eliminar del store
         this.teachers = this.teachers.filter(item => item.id !== id)
-      } catch (error: any) {
-        console.error('❌ Error deleting teacher:', error)
-        this.error = error.message
-        throw error
-      } finally {
-        this.loading = false
-      }
+      })
     },
 
-    // Función de compatibilidad
+    /**
+     * Compatibilidad con BaseStore para eliminar un item.
+     */
     async deleteItem(id: string) {
       return this.deleteTeacher(id)
     },
 
-    // FUNCIONES DE DATOS CRUZADOS (se mantiene getTeacherClasses y getTeacherSchedule)
+    /* === FUNCIONES AUXILIARES Y DE DATOS CRUZADOS === */
+
+    /**
+     * Obtiene las clases asociadas a un maestro.
+     * Se consulta el store de Clases y se filtra por el teacherId.
+     */
     async getTeacherClasses(teacherId: string) {
       try {
-        // Obtiene las clases desde el store de clases
         const classesStore = useClassesStore()
         await classesStore.fetchClasses()
-
-        // Filtra las clases por el ID del profesor
-        return classesStore.classes.filter((classItem) => 
-          classItem.teacherId && classItem.teacherId === teacherId
-        )
+        return classesStore.classes.filter(classItem => classItem.teacherId === teacherId)
       } catch (error: any) {
         console.error('❌ Error al obtener clases del profesor:', error)
         this.error = error.message
@@ -277,46 +244,40 @@ export const useTeachersStore = defineStore('teacher', {
       }
     },
 
+    /**
+     * Obtiene el horario consolidado de un maestro.
+     * Calcula el total de horas, organiza el horario semanal y detecta conflictos.
+     */
     async getTeacherSchedule(teacherId: string): Promise<TeacherScheduleSummary> {
       try {
-        // Obtener las clases del profesor
         const classes = await this.getTeacherClasses(teacherId)
         if (!classes || classes.length === 0) {
-          return {
-            weeklyHours: 0,
-            totalClasses: 0,
-            schedule: [],
-            hasConflicts: false
-          }
+          return { weeklyHours: 0, totalClasses: 0, schedule: [], hasConflicts: false }
         }
-
-        // Procesar horarios de todas las clases
-        const schedule: WeeklySchedule= []
+        const schedule: WeeklySchedule = []
         let totalHours = 0
         const timeSlots = new Map<string, string[]>()
 
-        // Procesar cada clase y sus horarios
         for (const classData of classes) {
           if (classData.schedule && Array.isArray(classData.schedule)) {
             for (const slot of classData.schedule) {
-              const daySchedule: WeeklySchedule = {
-                dayOfWeek: slot.day || slot.dia, // Considerar estandarizar la propiedad en tus datos
-                startTime: slot.startTime || slot.horaInicio, // Considerar estandarizar la propiedad en tus datos
-                endTime: slot.endTime || slot.horaFin, // Considerar estandarizar la propiedad en tus datos
+              const daySchedule = {
+                dayOfWeek: slot.day || slot.dia,
+                startTime: slot.startTime || slot.horaInicio,
+                endTime: slot.endTime || slot.horaFin,
                 className: classData.name,
                 classId: classData.id,
-                room: slot.room || slot.salon, // Considerar estandarizar la propiedad en tus datos
+                room: slot.room || slot.salon,
                 studentCount: classData.studentIds?.length || 0,
                 students: await this.getStudentsForClass(classData.id)
               }
-
-              // Calcular horas por sesión
+              // Calcular duración de la sesión.
               const start = new Date(`2000-01-01 ${daySchedule.startTime}`)
               const end = new Date(`2000-01-01 ${daySchedule.endTime}`)
               const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
               totalHours += hours
 
-              // Verificar conflictos
+              // Verificar posibles conflictos en horarios.
               const timeKey = `${daySchedule.dayOfWeek}-${daySchedule.startTime}`
               if (timeSlots.has(timeKey)) {
                 const existing = timeSlots.get(timeKey) || []
@@ -324,68 +285,60 @@ export const useTeachersStore = defineStore('teacher', {
               } else {
                 timeSlots.set(timeKey, [classData.id])
               }
-
               schedule.push(daySchedule)
             }
           }
         }
-
-        // Detectar si hay conflictos de horario
         const hasConflicts = Array.from(timeSlots.values()).some(slots => slots.length > 1)
-
-        // Ordenar horario por día y hora
-        const sortedSchedule: WeeklySchedule = schedule.sort((a: { dayOfWeek: string; startTime: string }, b: { dayOfWeek: string; startTime: string }) => {
-          const days: string[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-          const dayDiff: number = days.indexOf(a.dayOfWeek) - days.indexOf(b.dayOfWeek);
-          if (dayDiff !== 0) return dayDiff;
-          return a.startTime.localeCompare(b.startTime);
-        });
-
-        return {
-          weeklyHours: totalHours,
-          totalClasses: classes.length,
-          schedule: sortedSchedule,
-          hasConflicts
-        }
+        const daysOrder = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+        const sortedSchedule = schedule.sort((a, b) => {
+          const dayDiff = daysOrder.indexOf(a.dayOfWeek) - daysOrder.indexOf(b.dayOfWeek)
+          if (dayDiff !== 0) return dayDiff
+          return a.startTime.localeCompare(b.startTime)
+        })
+        return { weeklyHours: totalHours, totalClasses: classes.length, schedule: sortedSchedule, hasConflicts }
       } catch (error: any) {
         console.error('❌ Error al obtener horario del profesor:', error)
         throw error
       }
     },
 
-    async forceSync() {
-      return this.fetchTeachers()
-    },
-
-    // Nueva función auxiliar para obtener ALUMNOS de una clase
+    /**
+     * Obtiene los alumnos inscritos en una clase dada.
+     */
     async getStudentsForClass(classId: string) {
       try {
         const db = getFirestore()
-        // Reemplaza llamadas al API de la vieja forma
         const classDocRef = doc(db, 'CLASES', classId)
         const classDocSnap = await getDoc(classDocRef)
         const classData = classDocSnap.data()
-
-        if (!classData?.studentIds?.length) return
-
-        // Usar getDocs y query de Firebase v9
+        if (!classData?.studentIds?.length) return []
         const q = query(collection(db, 'ALUMNOS'), where('id', 'in', classData.studentIds))
         const studentsSnapshot = await getDocs(q)
-
         return studentsSnapshot.docs.map(doc => ({
           id: doc.id,
           name: doc.data().name
         }))
       } catch (error) {
         console.error('Error al obtener ALUMNOS de la clase:', error)
-        return
+        return []
       }
     },
 
+    /**
+     * Obtiene métricas relacionadas con el horario del profesor.
+     */
     async getTeacherMetrics(teacherId: string) {
       const scheduleStore = useScheduleStore()
       await scheduleStore.fetchAllSchedules()
       return scheduleStore.getTeacherMetrics(teacherId)
+    },
+
+    /**
+     * Forzar sincronización de maestros.
+     */
+    async forceSync() {
+      return this.fetchTeachers()
     }
   }
 })

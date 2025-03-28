@@ -2,6 +2,9 @@ import { defineStore } from 'pinia'
 import { db } from '../firebase'
 import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore'
 
+// Constante para el nombre de la colección
+const COLLECTION_NAME = 'CLASES'
+
 interface Clase {
   id: string
   nombre: string
@@ -42,7 +45,7 @@ export const useClassesStore = defineStore('classes', {
       this.error = null
       
       try {
-        const querySnapshot = await getDocs(collection(db, 'CLASSES'))
+        const querySnapshot = await getDocs(collection(db, COLLECTION_NAME))
         this.classes = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
@@ -63,7 +66,7 @@ export const useClassesStore = defineStore('classes', {
       this.error = null
       
       try {
-        const newDocRef = doc(collection(db, 'CLASSES'))
+        const newDocRef = doc(collection(db, COLLECTION_NAME))
         const newClass = {
           ...classData,
           id: newDocRef.id,
@@ -89,7 +92,7 @@ export const useClassesStore = defineStore('classes', {
       this.error = null
       
       try {
-        const docRef = doc(db, 'CLASSES', id)
+        const docRef = doc(db, COLLECTION_NAME, id)
         await updateDoc(docRef, {
           ...updates,
           updatedAt: new Date().toISOString()
@@ -117,7 +120,7 @@ export const useClassesStore = defineStore('classes', {
       this.error = null
       
       try {
-        await deleteDoc(doc(db, 'CLASSES', id))
+        await deleteDoc(doc(db, COLLECTION_NAME, id))
         this.classes = this.classes.filter(c => c.id !== id)
       } catch (error: any) {
         console.error('Error deleting class:', error)

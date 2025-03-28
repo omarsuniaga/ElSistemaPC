@@ -10,19 +10,27 @@ const props = defineProps({
   },
   studentIds: {
     type: Array,
-    default: () => []
+    default: () => [],
+    // Validador para asegurar que sea siempre un array
+    validator: (value) => {
+      return Array.isArray(value);
+    }
   }
 });
 
 const emit = defineEmits(['update', 'close']);
 
 const studentsStore = useStudentsStore();
-const selectedStudentIds = ref([...props.studentIds]);
+
+// Inicialización segura del estado
+const selectedStudentIds = ref(
+  Array.isArray(props.studentIds) ? [...props.studentIds] : []
+);
+
 const searchQuery = ref('');
 const isLoading = ref(false);
 const multiSelectMode = ref(false);
 const selectedForAddition = ref<string[]>([]);
-
 
 // Computed properties for filtering students
 const availableStudents = computed(() => {
@@ -83,10 +91,21 @@ const removeStudent = (studentId) => {
   selectedStudentIds.value = selectedStudentIds.value.filter(id => id !== studentId);
 };
 
+// Función segura para guardar los cambios de estudiantes
 const saveChanges = async () => {
   isLoading.value = true;
   try {
-    await emit('update', props.classId, selectedStudentIds.value);
+    // Asegurarnos de que los IDs de estudiantes sean un array válido
+    // Esto es crítico para evitar errores en componentes que usan estos datos
+    const validatedStudentIds = Array.isArray(selectedStudentIds.value) 
+      ? selectedStudentIds.value 
+      : [];
+    
+    // Emitimos el evento con los IDs validados
+    await emit('update', validatedStudentIds);
+    console.log('ClassStudentManager: Estudiantes actualizados correctamente', validatedStudentIds);
+    
+    // Cerramos el modal
     emit('close');
   } catch (error) {
     console.error('Error al guardar cambios:', error);

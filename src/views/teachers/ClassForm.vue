@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref, watch, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { useTeachersStore } from '@/modulos/Teachers/store/teachers';
+import { useTeachersStore } from '../../modulos/Teachers/store/teachers';
 
 const props = defineProps({
   classData: {

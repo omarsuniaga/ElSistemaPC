@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref, watch, onMounted } from 'vue';
-import { useAuthStore } from '@/stores/auth';
-import { useTeachersStore } from '@/modulos/Teachers/store/teachers';
+import { useAuthStore } from '../../../stores/auth';
+import { useTeachersStore } from '../../../modulos/Teachers/store/teachers';
 
 const props = defineProps({
   classData: {
@@ -132,11 +132,13 @@ const prepareClassData = () => cleanData({
   teacherId: form.teacherId,
   classroom: form.classroom.trim(),
   schedule: {
-    slots: form.schedule.slots.map(session => ({
-      day: session.day,
-      startTime: session.startTime,
-      endTime: session.endTime
-    }))
+    slots: form.schedule.slots
+      .filter(session => session.day && session.startTime && session.endTime) // Filtramos slots vacíos
+      .map(session => ({
+        day: session.day || 'Sin definir',
+        startTime: session.startTime || '',
+        endTime: session.endTime || ''
+      }))
   },
   studentIds: props.classData?.studentIds || []
 });
@@ -191,37 +193,37 @@ onMounted(() => {
     <!-- Campo: Nombre -->
     <div>
       <label for="name" class="block text-sm font-medium">Nombre de la clase *</label>
-      <input id="name" v-model="form.name" type="text" class="mt-1 block w-full p-2 border rounded-md" :class="{'border-red-500': errors.name}">
+      <input id="name" v-model="form.name" type="text" class="mt-1 block w-full p-2 border rounded-md dark:text-black" :class="{'border-red-500': errors.name}">
       <p v-if="errors.name" class="mt-1 text-sm text-red-500">{{ errors.name }}</p>
     </div>
     <!-- Campo: Descripción -->
     <div>
       <label for="description" class="block text-sm font-medium">Descripción</label>
-      <textarea id="description" v-model="form.description" rows="3" class="mt-1 block w-full p-2 border rounded-md"></textarea>
+      <textarea id="description" v-model="form.description" rows="3" class="mt-1 block w-full p-2 dark:text-black border rounded-md"></textarea>
     </div>
     <!-- Selección: Nivel e Instrumento -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ">
       <div>
-        <label for="level" class="block text-sm font-medium">Nivel *</label>
-        <select id="level" v-model="form.level" class="mt-1 block w-full p-2 border rounded-md" :class="{'border-red-500': errors.level}">
+        <label for="level" class="block text-sm  font-medium">Nivel *</label>
+        <select id="level" v-model="form.level" class="mt-1 block w-full p-2 dark:text-black border dark:text-black rounded-md" :class="{'border-red-500': errors.level}">
           <option v-for="level in levels" :key="level" :value="level">{{ level }}</option>
         </select>
         <p v-if="errors.level" class="mt-1 text-sm text-red-500">{{ errors.level }}</p>
       </div>
       <div>
         <label for="instrument" class="block text-sm font-medium">Instrumento</label>
-        <input id="instrument" v-model="form.instrument" type="text" class="mt-1 block w-full p-2 border rounded-md" />
+        <input id="instrument" v-model="form.instrument" type="text" class="mt-1 block dark:text-black w-full p-2 border rounded-md" />
       </div>
     </div>
     <!-- Campo: Aula -->
     <div>
       <label for="classroom" class="block text-sm font-medium">Aula</label>
-      <input id="classroom" v-model="form.classroom" type="text" class="mt-1 block w-full p-2 border rounded-md" />
+      <input id="classroom" v-model="form.classroom" type="text" class="mt-1 block w-full dark:text-black p-2 border rounded-md" />
     </div>
     <!-- Sección: Horarios -->
     <div>
       <label class="block text-sm font-medium">Horarios *</label>
-      <div v-for="(slot, index) in form.schedule.slots" :key="index" class="flex items-center gap-2 mt-2">
+      <div v-for="(slot, index) in form.schedule.slots" :key="index" class="flex dark:text-black items-center gap-2 mt-2">
         <select v-model="slot.day" class="block w-1/4 p-2 border rounded-md">
           <option value="" disabled>Seleccione un día</option>
           <option v-for="day in days" :key="day" :value="day">{{ day }}</option>
