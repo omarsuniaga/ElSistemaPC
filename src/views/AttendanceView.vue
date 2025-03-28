@@ -17,8 +17,10 @@ import AttendanceAnalytics from '../modulos/Attendance/components/AttendanceAnal
 import AttendanceTrends from '../modulos/Attendance/components/AttendanceTrends.vue'
 import AttendanceExportModal from '../modulos/Attendance/components/AttendanceExportModal.vue'
 import Calendar from '../components/Calendar.vue'
+import CalendarModal from '../modulos/Attendance/components/CalendarModal.vue'
 import DateClassSelector from '../modulos/Classes/components/DateClassSelector.vue'
 import JustifiedAbsenceModal from '../components/JustifiedAbsenceModal.vue'
+import { CalendarDaysIcon } from '@heroicons/vue/24/outline'
 
 // Router
 import { useRouter, useRoute } from 'vue-router'
@@ -62,6 +64,7 @@ const showObservationsModal = ref(false)
 const selectedStudentForObs = ref<SelectedStudent | null>(null)
 const showJustifiedAbsenceModal = ref(false)
 const selectedStudentForJustification = ref<SelectedStudent | null>(null)
+const showCalendarModal = ref(false)
 
 // Lista de estudiantes filtrados
 const filteredStudents = ref<any[]>([])
@@ -343,8 +346,23 @@ const handleUpdateStatus = async (studentId: string, status: AttendanceStatus | 
     return;
   }
   
+  // Verificar si el estado anterior era "Justificado" y el nuevo no lo es
+  const previousStatus = attendanceStore.attendanceRecords[studentId];
+  const removingJustification = previousStatus === 'Justificado' && status !== 'Justificado';
+  
   // Actualizar el estado de asistencia localmente
   attendanceStore.attendanceRecords[studentId] = status;
+  
+  // Si estamos quitando una justificación, asegurarnos de limpiar la justificación en el documento
+  if (removingJustification && attendanceStore.currentAttendanceDoc) {
+    // Filtrar la justificación del estudiante
+    if (attendanceStore.currentAttendanceDoc.data.justificacion) {
+      attendanceStore.currentAttendanceDoc.data.justificacion = 
+        attendanceStore.currentAttendanceDoc.data.justificacion.filter(j => j.id !== studentId);
+    }
+    
+    console.log(`Se ha eliminado la justificación del estudiante ${studentId} al cambiar su estado a ${status}`);
+  }
   
   // Añadir a la lista de cambios pendientes
   const existingChange = pendingAttendanceChanges.value.findIndex(c => c.studentId === studentId);
@@ -369,7 +387,10 @@ const saveAllAttendanceChanges = async () => {
         presentes: [] as string[],
         ausentes: [] as string[],
         tarde: [] as string[],
-        justificacion: attendanceStore.currentAttendanceDoc?.data.justificacion || [],
+        justificacion: attendanceStore.currentAttendanceDoc?.data.justificacion?.filter(j => 
+          // Mantener solo justificaciones de estudiantes que siguen con estado "Justificado"
+          attendanceStore.attendanceRecords[j.id] === 'Justificado'
+        ) || [],
         observations: attendanceStore.currentAttendanceDoc?.data.observations || ''
       }
     };
@@ -383,8 +404,7 @@ const saveAllAttendanceChanges = async () => {
       } else if (status === 'Tardanza') {
         attendanceDoc.data.tarde.push(studentId);
       } else if (status === 'Justificado') {
-        // Para justificados, agregamos a la lista de tardanza
-        // (ya que en el modelo de datos es donde se almacenan)
+        // Para justificados, agregamos a la lista de tarde
         attendanceDoc.data.tarde.push(studentId);
         
         // Verificar si ya existe una justificación para este estudiante
@@ -426,13 +446,31 @@ const saveAllAttendanceChanges = async () => {
 
 const handleObservationAdded = async (observations: string) => {
   try {
-    // Guardar las observaciones
+    isLoading.value = true;
+    loadingMessage.value = 'Guardando observación...';
+    
+    // Guardar las observaciones usando el método del store
     await attendanceStore.updateObservations(selectedDate.value, selectedClass.value, observations);
+    
+    // Mostrar mensaje de éxito
+    showToast('Observación guardada correctamente', 'success');
+    
+    // Cerrar el modal
     showObservationsModal.value = false;
   } catch (err) {
-    error.value = 'Error al actualizar las observaciones'
-    console.error('Error updating observations:', err)
+    error.value = 'Error al actualizar las observaciones';
+    console.error('Error updating observations:', err);
+    showToast('Error al guardar la observación', 'error');
+  } finally {
+    isLoading.value = false;
+    loadingMessage.value = '';
   }
+}
+
+// Función para abrir el modal de observaciones de clase
+const handleOpenObservation = (student: any) => {
+  selectedStudentForObs.value = student;
+  showObservationsModal.value = true;
 }
 
 const handleJustificationSave = async (data: { reason: string, documentUrl?: string, file?: File }) => {
@@ -539,11 +577,6 @@ const handleOpenJustification = (student: any) => {
   showJustifiedAbsenceModal.value = true
 }
 
-const handleOpenObservation = (student: any) => {
-  selectedStudentForObs.value = student
-  showObservationsModal.value = true
-}
-
 const handleOpenExport = () => {
   showExportModal.value = true
 }
@@ -634,27 +667,24 @@ const getObservationsCount = computed(() => {
   return attendanceStore.currentAttendanceDoc.data.observations ? 1 : 0;
 });
 
-const showCalendarModal = ref(false);
 const handleCalendarSelect = (date: string) => {
   if (isUpdating.value) return;
   
   try {
     isUpdating.value = true;
     
-    if (typeof date === 'string') {
-      selectedDate.value = date;
-      
-      // Si hay una clase seleccionada, actualizar datos
-      if (selectedClass.value) {
-        const formattedDate = date.replace(/-/g, '');
-        router.push(`/attendance/${formattedDate}/${selectedClass.value}`);
-        loadAttendanceData(selectedClass.value);
-      } else {
-        view.value = 'class-select';
-      };
-      
-      showCalendarModal.value = false;
+    selectedDate.value = date;
+    
+    // Si hay una clase seleccionada, actualizar datos
+    if (selectedClass.value) {
+      const formattedDate = date.replace(/-/g, '');
+      router.push(`/attendance/${formattedDate}/${selectedClass.value}`);
+      loadAttendanceData(selectedClass.value);
+    } else {
+      view.value = 'class-select';
     }
+    
+    showCalendarModal.value = false;
   } finally {
     // Usar setTimeout para romper el ciclo de actualizaciones
     setTimeout(() => {
@@ -790,12 +820,30 @@ const updateView = (newView: 'calendar' | 'class-select' | 'attendance-form') =>
           <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-4">
             Lista de Asistencia {{ formattedSelectedDate }}
           </h2>
-          <!-- Botón para cambiar de fecha mediante modal con calendario -->
-          <div class="mb-4">
-            <button @click="showCalendarModal = true" class="btn btn-secondary">
-              <i class="fas fa-calendar-alt mr-2"></i>
+          
+          <!-- Sección de información y acciones -->
+          <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
+            <!-- Botón para cambiar fecha -->
+            <button 
+              @click="showCalendarModal = true" 
+              class="btn btn-secondary inline-flex items-center"
+            >
+              <CalendarDaysIcon class="w-5 h-5 mr-2" />
               Cambiar Fecha
             </button>
+            
+            <!-- Indicador de observaciones en la clase actual si hay -->
+            <div v-if="attendanceStore.getObservations" class="flex items-center">
+              <span class="text-sm text-gray-600 dark:text-gray-400 italic mr-2">
+                Esta clase tiene observaciones
+              </span>
+              <button 
+                @click="handleOpenObservation(null)" 
+                class="btn btn-sm btn-info"
+              >
+                Ver/Editar
+              </button>
+            </div>
           </div>
           
           <!-- Mensaje de advertencia para fechas futuras -->
@@ -841,14 +889,14 @@ const updateView = (newView: 'calendar' | 'class-select' | 'attendance-form') =>
     <AttendanceObservation 
       v-if="showObservationsModal" 
       :modelValue="showObservationsModal"
-      :studentId="selectedStudentForObs?.id || ''"
-      :studentName="(selectedStudentForObs?.nombre + ' ' + selectedStudentForObs?.apellido) || ''"
+      :studentId="selectedStudentForObs?.id"
+      :studentName="selectedStudentForObs ? `${selectedStudentForObs.nombre} ${selectedStudentForObs.apellido}` : ''"
       :classId="selectedClass"
-      :className="selectedClass"
+      :className="selectedClassName || selectedClass"
       :attendanceId="selectedDate"
       :attendanceDate="selectedDate"
       @update:modelValue="showObservationsModal = $event"
-      @observation="(observations: string) => handleObservationAdded(observations)"
+      @observation="handleObservationAdded"
     />
 
     <JustifiedAbsenceModal 
@@ -867,6 +915,14 @@ const updateView = (newView: 'calendar' | 'class-select' | 'attendance-form') =>
       :attendanceRecords="attendanceStore.attendanceRecords"
       @update:modelValue="showExportModal = $event"
       @close="showExportModal = false"
+    />
+
+    <!-- Modal de Calendario -->
+    <CalendarModal
+      v-model="showCalendarModal"
+      :initial-date="selectedDate"
+      :marked-dates="attendanceStore.getDatesWithRecords"
+      @select="handleCalendarSelect"
     />
   </div>
 </template>

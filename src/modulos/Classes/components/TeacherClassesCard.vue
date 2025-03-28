@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   CalendarIcon,
   MapPinIcon,
   UserGroupIcon,
   PencilIcon,
   TrashIcon,
-  UserPlusIcon
+  UserPlusIcon,
+  ClipboardDocumentCheckIcon
 } from '@heroicons/vue/24/outline';
 import { useStudentsStore } from '../../../modulos/Students/store/students';
+import { format } from 'date-fns';
 
 // Interface for schedule slot
 interface ScheduleSlot {
@@ -33,6 +36,9 @@ const emit = defineEmits(['view', 'edit', 'delete', 'manage-students']);
 
 // Uso del store de estudiantes para obtener nombres
 const studentsStore = useStudentsStore();
+
+// Router para redireccionar a la página de asistencia
+const router = useRouter();
 
 // Verifica si hay un array de estudiantes
 const hasStudents = computed(() => {
@@ -150,6 +156,17 @@ const handleManageStudents = (e) => {
   e.stopPropagation();
   emit('manage-students', props.classData.id);
 };
+
+// Función para gestionar la redirección a la toma de asistencia
+const handleAttendance = (e) => {
+  e.stopPropagation(); // Evitar que se active el evento del card
+  
+  // Obtener la fecha actual en formato YYYYMMDD para la URL
+  const currentDate = format(new Date(), 'yyyyMMdd');
+  
+  // Redireccionar a la página de asistencia con la clase ya preseleccionada
+  router.push(`/attendance/${currentDate}/${props.classData.id}`);
+};
 </script>
 
 <template>
@@ -218,6 +235,13 @@ const handleManageStudents = (e) => {
 
       <!-- Botones de acción -->
       <div class="flex justify-end space-x-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+        <button 
+          @click="handleAttendance" 
+          class="p-1 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/20 rounded-md"
+          title="Tomar Asistencia"
+        >
+          <ClipboardDocumentCheckIcon class="h-5 w-5" />
+        </button>
         <button 
           @click="handleManageStudents" 
           class="p-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/20 rounded-md"

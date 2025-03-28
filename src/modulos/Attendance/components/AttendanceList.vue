@@ -18,6 +18,7 @@ import { useClassesStore } from '../../Classes/store/classes'
 import { useStudentsStore } from '../../Students/store/students'
 import { useAttendanceStore } from '../store/attendance'
 import { useRoute } from 'vue-router'
+import ClassObservationBadge from './ClassObservationBadge.vue'
 
 // Props y emits
 const props = defineProps<{
@@ -78,13 +79,21 @@ const handleUpdateAttendance = (studentId: string, status: AttendanceStatus | 's
     return;
   }
   
+  // Verificar si cambia desde "Justificado" a otro estado
+  const wasJustified = localAttendanceRecords.value[studentId] === 'Justificado';
+  const isLeavingJustified = wasJustified && status !== 'Justificado';
+  
   // Actualizar estado local
   localAttendanceRecords.value[studentId] = status;
   
   // Marcar este estudiante como pendiente de guardar
   pendingChanges.value.add(studentId);
   
-  // Emitir evento al componente padre
+  // Emitir evento al componente padre con información adicional
+  if (isLeavingJustified) {
+    console.log(`El estudiante ${studentId} ha cambiado de Justificado a ${status}, se eliminará su justificación`);
+  }
+  
   emit('update-status', studentId, status);
 };
 
@@ -109,6 +118,10 @@ const handleOpenJustification = (student: any) => {
   selectedStudentForJustification.value = student ? 
     { id: student.id, nombre: student.nombre, apellido: student.apellido } : null;
   emit('open-justification', student);
+};
+
+const handleOpenObservation = () => {
+  emit('open-observation', null);
 };
 
 // Funciones de utilidad originales
@@ -200,6 +213,13 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
 <template>
   <div class="space-y-4">
     <div class="flex justify-between items-center mb-4">
+      <div class="flex items-center space-x-2">
+        <!-- Indicador de observaciones de clase -->
+        <ClassObservationBadge 
+          :observations="attendanceStore.getObservations"
+          @click="handleOpenObservation"
+        />
+      </div>
       
       <div class="flex justify-end gap-1 sm:gap-2">
         <button 

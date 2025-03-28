@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   CalendarIcon,
   MapPinIcon,
   UserGroupIcon,
   PencilIcon,
   TrashIcon,
-  UserPlusIcon
+  UserPlusIcon,
+  ClipboardDocumentCheckIcon
 } from '@heroicons/vue/24/outline';
 import { useStudentsStore } from '../../../modulos/Students/store/students';
+import { format } from 'date-fns';
 
 const props = defineProps({
   classData: {
@@ -29,6 +32,9 @@ const debugInfo = ref({
 
 // Uso del store de estudiantes para obtener nombres
 const studentsStore = useStudentsStore();
+
+// Router para la navegación
+const router = useRouter();
 
 // Verificación segura para validar studentIds
 const hasStudentIds = computed(() => {
@@ -122,6 +128,17 @@ const handleDelete = (e) => {
 const handleManageStudents = (e) => {
   e.stopPropagation();
   emit('manage-students', props.classData.id);
+};
+
+// Función para manejar el botón de asistencia
+const handleAttendance = (e) => {
+  e.stopPropagation(); // Prevenir que se active el evento del card
+  
+  // Obtener la fecha actual en formato YYYYMMDD para la URL
+  const currentDate = format(new Date(), 'yyyyMMdd');
+  
+  // Redireccionar a la página de asistencia con la clase ya seleccionada
+  router.push(`/attendance/${currentDate}/${props.classData.id}`);
 };
 
 // Asegurar que los estudiantes estén cargados cuando se monta el componente
@@ -221,6 +238,13 @@ onMounted(async () => {
       <!-- Botones de acción -->
       <div class="flex justify-end space-x-2 pt-2 border-t border-gray-200 dark:border-gray-700">
         <button 
+          @click="handleAttendance" 
+          class="p-1 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/20 rounded-md"
+          title="Tomar asistencia"
+        >
+          <ClipboardDocumentCheckIcon class="h-5 w-5" />
+        </button>
+        <button 
           @click="handleManageStudents" 
           class="p-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/20 rounded-md"
           title="Gestionar estudiantes"
@@ -234,6 +258,7 @@ onMounted(async () => {
         >
           <PencilIcon class="h-5 w-5" />
         </button>
+
         <button 
           @click="handleDelete" 
           class="p-1 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-md"

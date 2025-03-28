@@ -176,7 +176,10 @@ export const useAttendanceStore = defineStore('attendance', {
     
     // Get observations for current class date
     getObservations: (state): string => {
-      return state.currentAttendanceDoc?.data.observations || state.observations || '';
+      if (state.currentAttendanceDoc && state.currentAttendanceDoc.data && state.currentAttendanceDoc.data.observations) {
+        return state.currentAttendanceDoc.data.observations;
+      }
+      return state.observations || '';
     },
 
     getStudentAttendanceRate: (state) => {
@@ -460,6 +463,22 @@ export const useAttendanceStore = defineStore('attendance', {
       this.isLoading = true;
       this.error = null;
       try {
+        // Verificar y limpiar justificaciones obsoletas
+        // Si un alumno no está en "tarde" o su estado ya no es "Justificado",
+        // debemos eliminar su justificación
+        if (document.data.justificacion && document.data.justificacion.length > 0) {
+          document.data.justificacion = document.data.justificacion.filter(justificacion => {
+            // Verificar si el estudiante sigue en la lista de tarde
+            const isInTarde = document.data.tarde.includes(justificacion.id);
+            
+            // Verificar si el estado del estudiante sigue siendo "Justificado"
+            const isJustificado = this.attendanceRecords[justificacion.id] === 'Justificado';
+            
+            // Solo mantener justificaciones de estudiantes que siguen en tarde Y tienen estado "Justificado"
+            return isInTarde && isJustificado;
+          });
+        }
+        
         await saveAttendanceDocumentFirebase(document);
         
         // Actualizar el documento actual
@@ -586,15 +605,22 @@ export const useAttendanceStore = defineStore('attendance', {
       this.isLoading = true;
       this.error = null;
       try {
+        console.log('Actualizando observaciones para fecha:', date, 'clase:', classId);
+        
+        // Actualizar en Firestore
         await updateObservationsFirebase(date, classId, observations);
         
         // Actualizar localmente
+        this.observations = observations;
+        
         if (this.currentAttendanceDoc && 
             this.currentAttendanceDoc.fecha === date && 
             this.currentAttendanceDoc.classId === classId) {
+          // Si está cargado el documento actual, actualizar también ahí
           this.currentAttendanceDoc.data.observations = observations;
-          this.observations = observations;
         }
+        
+        console.log('Observaciones actualizadas con éxito');
         
         // Limpiar caché
         if (process.env.NODE_ENV === 'development') {
