@@ -10,8 +10,7 @@ export interface Attendance {
   updatedAt?: Date; // Fecha de última actualización del registro
 }
 
-
-export type AttendanceStatus = 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado'
+export type AttendanceStatus = 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
 
 /**
  * Interfaz para justificación de ausencia
@@ -35,25 +34,25 @@ export interface AttendanceDocument {
     tarde: string[]; // Lista de IDs de alumnos con tardanza
     justificacion: JustificationData[]; // Datos de justificaciones
     observations: string; // Observaciones o criterios de la clase
-  }
+  };
 }
 
 // Mantenemos algunas interfaces anteriores por compatibilidad
 export interface AttendanceRecord {
-  id?: string
-  studentId: string
-  classId: string
-  Fecha: string
-  status: AttendanceStatus
+  id?: string;
+  studentId: string;
+  classId: string;
+  Fecha: string;
+  status: AttendanceStatus;
   justification?: {
-    reason?: string
-    documentUrl?: string
-    timestamp?: Date
-  }
-  documentUrl?: string
-  timestamp?: string
-  createdAt?: string
-  updatedAt?: string
+    reason?: string;
+    documentUrl?: string;
+    timestamp?: Date;
+  };
+  documentUrl?: string;
+  timestamp?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AttendanceFilters {
@@ -78,29 +77,52 @@ export interface AttendanceFiltersType {
 }
 
 export interface AttendanceAnalytics {
-  totalClasses: number
-  totalStudents: number
-  averageAttendance: number
+  totalClasses: number;
+  totalStudents: number;
+  averageAttendance: number;
   absentStudents: {
-    studentId: string
-    absences: number
-    lastAttendance: string
-    attendanceRate: number
-  }[]
-  byClass: Record<string, {
-    present: number
-    absent: number
-    delayed: number
-    justified: number
-    total: number
-  }>
+    studentId: string;
+    absences: number;
+    lastAttendance: string;
+    attendanceRate: number;
+  }[];
+  byClass: Record<
+    string,
+    {
+      present: number;
+      absent: number;
+      delayed: number;
+      justified: number;
+      total: number;
+    }
+  >;
 }
 
 export interface StatusChange {
-  studentId: number
-  date: string
-  clase: string
-  oldStatus: AttendanceStatus | null
-  newStatus: AttendanceStatus
-  timestamp: string
+  studentId: number;
+  date: string;
+  clase: string;
+  oldStatus: AttendanceStatus | null;
+  newStatus: AttendanceStatus;
+  timestamp: string;
+}
+
+export type EmergencyClassStatus = 'Pendiente' | 'Aceptada' | 'Rechazada' | 'Ignorada';
+
+export interface EmergencyClass {
+  id: string;
+  classId: string;
+  className: string;
+  teacherId: string;
+  teacherName: string;
+  date: string;
+  createdAt: string;
+  reason?: string;
+  status: EmergencyClassStatus;
+  responder?: {
+    id: string;
+    name: string;
+    timestamp: string;
+  };
+  attendanceDocumentId?: string; // Referencia al documento de asistencia relacionado
 }

@@ -88,25 +88,51 @@ const formatSchedule = computed(() => {
   }
 
   const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const dayMapping = {
+    'domingo': 0, 'dom': 0, 'sunday': 0, 'sun': 0, '0': 0,
+    'lunes': 1, 'lun': 1, 'monday': 1, 'mon': 1, '1': 1,
+    'martes': 2, 'mar': 2, 'tuesday': 2, 'tue': 2, '2': 2,
+    'miércoles': 3, 'miercoles': 3, 'mié': 3, 'mie': 3, 'wednesday': 3, 'wed': 3, '3': 3,
+    'jueves': 4, 'jue': 4, 'thursday': 4, 'thu': 4, '4': 4,
+    'viernes': 5, 'vie': 5, 'friday': 5, 'fri': 5, '5': 5,
+    'sábado': 6, 'sabado': 6, 'sáb': 6, 'sab': 6, 'saturday': 6, 'sat': 6, '6': 6
+  };
+
   return props.classData.schedule.slots.map(slot => {
     // Intentar obtener el índice del día
     let dayIndex;
+    
     if (typeof slot.day === 'number' && slot.day >= 0 && slot.day <= 6) {
+      // Si el día es un número válido (0-6)
       dayIndex = slot.day;
     } else if (typeof slot.day === 'string') {
-      // Intentar convertir a número
-      const dayNum = parseInt(slot.day, 10);
-      if (!isNaN(dayNum) && dayNum >= 0 && dayNum <= 6) {
-        dayIndex = dayNum;
+      // Normalizar e intentar mapear la cadena a un índice
+      const normalizedDay = slot.day.toLowerCase().trim();
+      
+      // Verificar si está en nuestro mapeo
+      if (normalizedDay in dayMapping) {
+        dayIndex = dayMapping[normalizedDay];
       } else {
-        // Usar el primer día como fallback
-        dayIndex = 1;
+        // Intentar convertir a número como fallback
+        const dayNum = parseInt(normalizedDay, 10);
+        if (!isNaN(dayNum) && dayNum >= 0 && dayNum <= 6) {
+          dayIndex = dayNum;
+        } else {
+          // Si no podemos determinar el día, registrar el problema
+          console.warn(`Día de clase no reconocido: ${slot.day}`);
+          dayIndex = 0; // Default a domingo si no se puede determinar
+        }
       }
     } else {
-      // Si no hay información válida del día, usar el primer día como fallback
-      dayIndex = 1;
+      // Si no hay información del día, registrar problema
+      console.warn('Formato de día inválido o ausente:', slot);
+      dayIndex = 0; // Default a domingo si no hay información
     }
-    return `${dayNames[dayIndex]} ${slot.startTime}-${slot.endTime}`;
+    
+    // Asegurarse de que dayIndex esté dentro del rango válido
+    dayIndex = Math.max(0, Math.min(6, dayIndex));
+    
+    return `${dayNames[dayIndex]} ${slot.startTime || '00:00'}-${slot.endTime || '00:00'}`;
   }).join(', ');
 });
 

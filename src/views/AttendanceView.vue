@@ -21,6 +21,7 @@ import CalendarModal from '../modulos/Attendance/components/CalendarModal.vue'
 import DateClassSelector from '../modulos/Classes/components/DateClassSelector.vue'
 import JustifiedAbsenceModal from '../components/JustifiedAbsenceModal.vue'
 import { CalendarDaysIcon } from '@heroicons/vue/24/outline'
+import EmergencyClassModal from '../modulos/Attendance/components/EmergencyClassModal.vue'
 
 // Router
 import { useRouter, useRoute } from 'vue-router'
@@ -31,7 +32,7 @@ const route = useRoute()
 import { useAttendanceStore } from '../modulos/Attendance/store/attendance'
 import { useStudentsStore } from '../modulos/Students/store/students'
 import { useClassesStore } from '../modulos/Classes/store/classes'
-// import { useInstrumentoStore } from '../modulos/Instruments/store/instrumento'
+import { useEmergencyClassStore } from '../modulos/Attendance/store/emergencyClass'
 import { getCurrentDate } from '../utils/dateUtils'
 import type { SelectedStudent } from '../modulos/Students/types/student'
 import type { TeacherData } from '../modulos/Teachers/types/teachers'
@@ -45,7 +46,7 @@ const props = defineProps({
 const attendanceStore = useAttendanceStore()
 const studentsStore = useStudentsStore()
 const classesStore = useClassesStore()
-// const instrumentoStore = useInstrumentoStore()
+const emergencyClassStore = useEmergencyClassStore()
 
 // Estados globales y de vista
 const view = ref<'calendar' | 'class-select' | 'attendance-form'>('calendar')
@@ -65,6 +66,7 @@ const selectedStudentForObs = ref<SelectedStudent | null>(null)
 const showJustifiedAbsenceModal = ref(false)
 const selectedStudentForJustification = ref<SelectedStudent | null>(null)
 const showCalendarModal = ref(false)
+const showEmergencyClassModal = ref(false)
 
 // Lista de estudiantes filtrados
 const filteredStudents = ref<any[]>([])
@@ -376,8 +378,30 @@ const handleUpdateStatus = async (studentId: string, status: AttendanceStatus | 
 // Función para guardar todos los cambios pendientes
 const saveAllAttendanceChanges = async () => {
   try {
-    isLoading.value = true
-    loadingMessage.value = 'Guardando asistencia...'
+    // Verificar si la fecha está fuera del horario programado
+    const isRegularSchedule = isDateInClassSchedule(selectedDate.value, selectedClass.value);
+    
+    // Si no es horario regular, mostrar el modal de clase emergente
+    if (!isRegularSchedule) {
+      // Obtener el nombre de la clase
+      const classObj = classesStore.classes.find(c => c.id === selectedClass.value);
+      const className = classObj?.name || selectedClass.value;
+      
+      // Mostrar modal de clase emergente solo una vez por sesión y clase/fecha
+      const sessionKey = `emergency_shown_${selectedDate.value}_${selectedClass.value}`;
+      const alreadyShown = sessionStorage.getItem(sessionKey);
+      
+      if (!alreadyShown) {
+        // Mostrar el modal de clase emergente
+        showEmergencyClassModal.value = true;
+        sessionStorage.setItem(sessionKey, 'true');
+        return false;
+      }
+    }
+    
+    // Continuar con el guardado normal
+    isLoading.value = true;
+    loadingMessage.value = 'Guardando asistencia...';
     
     // Crear el documento de asistencia que se guardará
     const attendanceDoc = {
@@ -388,7 +412,6 @@ const saveAllAttendanceChanges = async () => {
         ausentes: [] as string[],
         tarde: [] as string[],
         justificacion: attendanceStore.currentAttendanceDoc?.data.justificacion?.filter(j => 
-          // Mantener solo justificaciones de estudiantes que siguen con estado "Justificado"
           attendanceStore.attendanceRecords[j.id] === 'Justificado'
         ) || [],
         observations: attendanceStore.currentAttendanceDoc?.data.observations || ''
@@ -431,18 +454,18 @@ const saveAllAttendanceChanges = async () => {
     showToast('Asistencia guardada exitosamente');
     return true;
   } catch (err) {
-    error.value = 'Error al guardar la asistencia'
-    console.error('Error saving attendance:', err)
+    error.value = 'Error al guardar la asistencia';
+    console.error('Error saving attendance:', err);
     showToast(
       'Error al guardar la asistencia: ' + (err instanceof Error ? err.message : 'Error desconocido'),
       'error'
     );
     return false;
   } finally {
-    isLoading.value = false
-    loadingMessage.value = ''
+    isLoading.value = false;
+    loadingMessage.value = '';
   }
-}
+};
 
 const handleObservationAdded = async (observations: string) => {
   try {
@@ -715,6 +738,45 @@ const handleSelectedDateUpdate = (date) => {
 const updateView = (newView: 'calendar' | 'class-select' | 'attendance-form') => {
   view.value = newView;
 };
+
+// Función para comprobar si la fecha está en el horario programado de la clase
+const isDateInClassSchedule = (date: string, classId: string): boolean => {
+  try {
+    // Obtener los días programados para la clase
+    const scheduledDays = attendanceStore.getClassScheduleDays(classId);
+    
+    // Si no hay días programados, considerar siempre como fuera de horario
+    if (!scheduledDays || scheduledDays.length === 0) {
+      return false;
+    }
+    
+    // Obtener el nombre del día de la semana para la fecha seleccionada
+    const dayName = format(parseISO(date), 'EEEE', { locale: es }).toLowerCase();
+    
+    // Verificar si el día de la semana está en la programación de la clase
+    return scheduledDays.includes(dayName);
+  } catch (error) {
+    console.error('Error al verificar si la fecha está en el horario de la clase:', error);
+    return false;
+  }
+};
+
+// Manejar el envío de la clase emergente
+const handleEmergencyClassSubmitted = async (success: boolean) => {
+  if (success) {
+    showToast('Clase emergente registrada correctamente. Pendiente de aprobación.', 'success');
+    
+    // Intentar guardar la asistencia después de registrar la clase emergente
+    await saveAllAttendanceChanges();
+  } else {
+    showToast('Error al registrar la clase emergente', 'error');
+  }
+};
+
+// Manejar la cancelación de la clase emergente
+const handleEmergencyClassCancelled = () => {
+  showToast('Registro de clase emergente cancelado', 'info');
+};
 </script>
 
 <template>
@@ -923,6 +985,17 @@ const updateView = (newView: 'calendar' | 'class-select' | 'attendance-form') =>
       :initial-date="selectedDate"
       :marked-dates="attendanceStore.getDatesWithRecords"
       @select="handleCalendarSelect"
+    />
+
+    <!-- Modal para clases emergentes -->
+    <EmergencyClassModal
+      v-if="showEmergencyClassModal"
+      v-model="showEmergencyClassModal"
+      :classId="selectedClass"
+      :className="selectedClassName || selectedClass"
+      :date="selectedDate"
+      @submitted="handleEmergencyClassSubmitted"
+      @cancel="handleEmergencyClassCancelled"
     />
   </div>
 </template>
