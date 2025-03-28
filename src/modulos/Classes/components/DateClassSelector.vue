@@ -211,8 +211,10 @@ const availableClassDates = computed(() => {
 // Filtrar clases según el día seleccionado
 const filterClassesByDay = (date: string) => {
   try {
-    const dayName = format(new Date(date), 'EEEE', { locale: es }).toLowerCase()
-    const dayIndex = getDayIndex(dayName)
+    // Force date to be parsed as local midnight to prevent timezone issues
+    const localDate = new Date(date + 'T00:00:00');
+    const dayName = format(localDate, 'EEEE', { locale: es }).toLowerCase();
+    const dayIndex = getDayIndex(dayName);
     
     return classesStore.classes.filter(c => {
       // Si no hay filtro por día, mostrar todas
@@ -243,8 +245,10 @@ const filterClassesByDay = (date: string) => {
 // Verificar si una clase está programada para el día de la fecha seleccionada
 const isClassScheduledForDay = (classItem: any) => {
   try {
-    const dayName = format(new Date(props.selectedDate), 'EEEE', { locale: es }).toLowerCase()
-    const dayIndex = getDayIndex(dayName)
+    // Force date to be parsed as local midnight to prevent timezone issues
+    const localDate = new Date(props.selectedDate + 'T00:00:00');
+    const dayName = format(localDate, 'EEEE', { locale: es }).toLowerCase();
+    const dayIndex = getDayIndex(dayName);
     
     return classItem.schedule && 
            classItem.schedule.slots && 
@@ -304,9 +308,11 @@ const loadData = async () => {
 // Formatear fecha
 const formatDate = (date: string) => {
   try {
-    return format(new Date(date), "EEEE d 'de' MMMM", { locale: es })
+    // Use UTC to prevent timezone issues - force midnight in local timezone
+    const dateObj = new Date(date + 'T00:00:00');
+    return format(dateObj, "EEEE d 'de' MMMM", { locale: es });
   } catch {
-    return date
+    return date;
   }
 }
 

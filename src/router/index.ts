@@ -92,6 +92,27 @@ const routes: Array<RouteRecordRaw> = [
       allowedRoles: ['Maestro', 'Director', 'Admin']
     }
   },
+  // Ruta para la lista dinámica de actividades según la fecha (ej: /attendance/20250318)
+  {
+    path: '/attendance/:date(\\d{8})',
+    name: 'AttendanceActivities',
+    component: () => import('../views/AttendanceActivitiesView.vue'),
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Maestro', 'Director', 'Admin']
+    }
+  },
+  // Ruta para el detalle de una actividad (ej: /attendance/20250318/123)
+  {
+    path: '/attendance/:date(\\d{8})/:classId',
+    name: 'AttendanceDetail',
+    component: () => import('../views/AttendanceView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Maestro', 'Director', 'Admin']
+    }
+  },
 
   // Rutas para directores y administradores
   {

@@ -8,7 +8,7 @@ import ClassCard from '../components/ClassCard.vue';
 import ClassForm from '../components/ClassForm.vue';
 import ClassStudentManager from '../components/ClassStudentManager.vue';
 import UpcomingClassesList from '../components/UpcomingClassesList.vue';
-import { PlusIcon, ViewColumnsIcon, ViewListIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, ViewColumnsIcon, Bars4Icon as ViewListIcon } from '@heroicons/vue/24/outline';
 import { useToast } from '../components/ui/toast/use-toast';
 import { Dialog, DialogPanel, DialogOverlay, TransitionRoot, TransitionChild } from '@headlessui/vue';
 
@@ -122,7 +122,11 @@ const toggleViewType = () => {
   viewType.value = viewType.value === 'grid' ? 'list' : 'grid';
 };
 
-const handleViewClass = (classId) => {
+interface HandleViewClassFn {
+  (classId: string): void;
+}
+
+const handleViewClass: HandleViewClassFn = (classId: string): void => {
   selectedClassId.value = classId;
   showDetail.value = true;
 };
@@ -137,14 +141,60 @@ const handleAddClass = () => {
   showForm.value = true;
 };
 
-const handleEditClass = (classId) => {
+interface HandleEditClassFn {
+  (classId: string): void;
+}
+
+const handleEditClass: HandleEditClassFn = (classId: string): void => {
   selectedClassId.value = classId;
   isEditing.value = true;
   showForm.value = true;
   showDetail.value = false;
 };
 
-const handleDeleteClass = async (classId) => {
+interface ToastOptions {
+  title: string;
+  description: string;
+  variant?: string;
+}
+
+interface ScheduleSlot {
+  day: string;
+  startTime: string;
+  endTime: string;
+}
+
+interface ClassSchedule {
+  slots: ScheduleSlot[];
+}
+
+interface ClassData {
+  id?: string;
+  name: string;
+  description?: string;
+  level: string;
+  teacherId: string;
+  classroom?: string;
+  instrument?: string;
+  schedule: ClassSchedule;
+  studentIds: string[];
+}
+
+interface Teacher {
+  id: string;
+  name: string;
+}
+
+interface Student {
+  id: string;
+  name: string;
+}
+
+interface HandleDeleteClassFn {
+  (classId: string): Promise<void>;
+}
+
+const handleDeleteClass: HandleDeleteClassFn = async (classId: string): Promise<void> => {
   if (!confirm('¿Está seguro de eliminar esta clase?')) return;
   
   try {
@@ -152,23 +202,49 @@ const handleDeleteClass = async (classId) => {
     toast({
       title: "Clase Eliminada",
       description: "La clase ha sido eliminada exitosamente."
-    });
+    } as ToastOptions);
     if (selectedClassId.value === classId) {
       selectedClassId.value = '';
       showDetail.value = false;
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error al eliminar la clase:', error);
     toast({
       title: "Error",
       description: "No se pudo eliminar la clase. Intente nuevamente.",
       variant: "destructive"
-    });
+    } as ToastOptions);
   }
 };
 
 // Métodos para la gestión de estudiantes
-const handleManageStudents = (classId) => {
+type ClassId = string;
+
+interface StudentChangePayload {
+  classId: ClassId;
+  studentIds: string[];
+}
+
+interface TopStudent {
+  id: string;
+  name: string;
+}
+
+interface UpcomingClass {
+  id: string;
+  title: string;
+  date: Date;
+  time: string;
+  teacher: string;
+  students: number;
+  room: string;
+}
+
+interface HandleManageStudentsFn {
+  (classId: ClassId): void;
+}
+
+const handleManageStudents: HandleManageStudentsFn = (classId: string) => {
   selectedClassId.value = classId;
   showStudentManager.value = true;
   showDetail.value = false;
@@ -238,13 +314,14 @@ const upcomingClasses = computed(() => {
     .map(c => {
       // Usamos el primer slot para determinar el día y hora
       const slot = c.schedule?.slots[0];
-      const dayValue = dayMap[slot?.day];
+      const dayValue = slot?.day && slot.day in dayMap ? dayMap[slot.day as keyof typeof dayMap] : undefined;
       
       // Calcular próxima fecha para este día
       let nextDate = new Date();
       const currentDay = nextDate.getDay();
-      const daysUntilNext = (dayValue + 7 - currentDay) % 7;
-      nextDate.setDate(nextDate.getDate() + daysUntilNext);
+      const daysUntilNext = dayValue !== undefined ? (dayValue + 7 - currentDay) % 7 : 0;
+      const calculatedNextDate: Date = new Date();
+      calculatedNextDate.setDate(nextDate.getDate() + daysUntilNext);
       
       // Adaptar los datos al formato esperado por UpcomingClassesList
       return {

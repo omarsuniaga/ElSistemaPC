@@ -72,7 +72,7 @@ const selectedClassName = ref('')
 // Computed property para obtener profesores
 const teachers = computed<TeacherData[]>(() => {
   return studentsStore.students
-    .filter(student => !!student.isTeacher) // Use optional field
+    .filter(student => student.grupo?.includes('teacher')) // Assuming 'teacher' is a group identifier
     .map(teacher => ({
       id: teacher.id,
       name: `${teacher.nombre} ${teacher.apellido}`
@@ -81,10 +81,16 @@ const teachers = computed<TeacherData[]>(() => {
 
 // Filtros para informes
 const reportFilters = ref<AttendanceFiltersType>({
-  instrument: '',
-  level: '',
-  teacherId: ''
+  instrument: '' as string,
+  level: '' as string,
+  teacherId: '' as string
 })
+
+interface ReportFilters {
+  instrument: string;
+  level: string;
+  teacherId: string;
+}
 
 // Funciones principales
 const isDateUpdating = ref(false); // Evitar bucles infinitos al seleccionar fecha
@@ -140,6 +146,25 @@ const navigateToAttendanceDetailUrl = (date: string, classId: string) => {
   router.push(`/attendance/${formattedDate}/${classId}`)
 }
 
+// Añadir función para depurar el StudentsStore al inicio
+const debugStudentsStore = () => {
+  console.log('========== DEBUG STUDENTS STORE ==========');
+  console.log('Total estudiantes:', studentsStore.students.length);
+  
+  if (studentsStore.students.length > 0) {
+    const sample = studentsStore.students[0];
+    console.log('Estructura del primer estudiante:', sample);
+    
+    // Verificar si hay clases asignadas a estudiantes
+    const studentsWithClasses = studentsStore.students.filter(s => s.classes && s.classes.length > 0);
+    console.log('Estudiantes con clases asignadas:', studentsWithClasses.length);
+    
+    if (studentsWithClasses.length > 0) {
+      console.log('Ejemplo de estudiante con clases:', studentsWithClasses[0]);
+    }
+  }
+};
+
 // Función para cargar datos iniciales y verificar si hay una fecha y clase en la URL
 async function fetchInitialData() {
   try {
@@ -151,6 +176,8 @@ async function fetchInitialData() {
       studentsStore.fetchStudents(),
       // instrumentoStore.fetchInstrumentos()
     ])
+    
+    debugStudentsStore(); // Añadir esta línea para depuración
     
     // Verificar si tenemos fecha y clase en los props (de la URL)
     if (props.date && props.classId) {
@@ -173,12 +200,9 @@ async function fetchInitialData() {
     else if (route.query.class) {
       selectedClass.value = route.query.class as string
       attendanceStore.selectedClass = selectedClass.value
-      
       await loadAttendanceData(selectedClass.value)
       view.value = 'attendance-form'
     }
-    
-    // Establecer estado inicial
     isLoading.value = false
     error.value = null
   } catch (err) {
@@ -207,7 +231,7 @@ const loadAttendanceData = async (className: string) => {
     await attendanceStore.fetchAttendanceDocument(selectedDate.value, className);
 
     // Obtener estudiantes de la clase seleccionada
-    const students = studentsStore.getStudentsByClass(className); // Usar el método del store
+    const students = studentsStore.getStudentsByClass(className);
     filteredStudents.value = students;
 
     // Inicializar todos los estudiantes que no tienen estado con estado 'Ausente'
@@ -234,23 +258,23 @@ const selectClass = async (className: string) => {
     selectedClass.value = className;
     attendanceStore.selectedClass = className;
     
-    // Obtener estudiantes de la clase seleccionada
-    const students = studentsStore.getStudentsByClass(className);
-    console.log('Estudiantes encontrados para la clase:', students);
+    // Obtener estudiantes con el método del store
+    let students = studentsStore.getStudentsByClass(className);
+    console.log('Estudiantes encontrados (getStudentsByClass):', students);
     
-    // Extraer los IDs de los estudiantes
-    const studentIds = students.map(student => student.id);
-    console.log('IDs de estudiantes encontrados:', studentIds);
+    // Fallback: si no se encontraron, buscar en todos los estudiantes comprobando otras propiedades
+    if (!students.length) {
+      console.warn('No se encontraron estudiantes usando getStudentsByClass, aplicando búsqueda alternativa...');
+      students = studentsStore.students.filter(s =>
+        // Comprobar si tienen la propiedad "clases" o "grupo" que incluye la clase
+        (s.clase && (Array.isArray(s.clase) ? s.clase.includes(className) : s.clase === className)) ||
+        (s.grupo && (Array.isArray(s.grupo) ? s.grupo.includes(className) : s.grupo === className))
+      );
+      console.log('Estudiantes encontrados con búsqueda alternativa:', students);
+    }
     
-    // Ya tenemos los estudiantes directamente, así que los usamos
-    const studentsData = students;
+    filteredStudents.value = students;
     
-    // Almacenar los estudiantes filtrados
-    filteredStudents.value = studentsData;
-    
-    console.log('Estudiantes encontrados:', filteredStudents.value);
-    
-    // También actualizar el nombre de la clase seleccionada
     const classObj = classesStore.classes.find(c => c.id === className || c.name === className)
     selectedClassName.value = classObj?.name || className
     
@@ -283,7 +307,6 @@ watch(
         ? `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`
         : dateStr
       
-      // Actualizar los estados locales
       selectedDate.value = formattedDate
       selectedClass.value = newClassId as string
       
@@ -303,7 +326,6 @@ const pendingAttendanceChanges = ref<{studentId: string, status: AttendanceStatu
 // Event handlers
 const handleUpdateStatus = async (studentId: string, status: AttendanceStatus | 'save') => {
   console.log('Actualizando estado de asistencia:', studentId, status)
-  
   // No permitir cambios si la fecha es futura
   if (!attendanceStore.validateAttendanceDate(selectedDate.value)) {
     warningMessage.value = "No se puede modificar asistencia para fechas futuras";
@@ -365,7 +387,7 @@ const saveAllAttendanceChanges = async () => {
     
     // Actualizar analytics después de guardar todos los cambios
     await attendanceStore.updateAnalytics()
-
+    
     showToast('Asistencia guardada exitosamente');
     return true;
   } catch (err) {
@@ -410,7 +432,6 @@ const handleJustificationSave = async (data: { reason: string, documentUrl?: str
     )
     
     showJustifiedAbsenceModal.value = false
-    
     // Recargar los datos para reflejar los cambios
     await loadAttendanceData(selectedClass.value);
   } catch (err) {
@@ -515,7 +536,7 @@ const handleDateChange = async (newDate: string) => {
       isUpdating.value = false;
     }, 0);
   }
-};
+}
 
 // New reactive refs for messages
 const showMessage = ref(false);
@@ -536,26 +557,37 @@ const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
 const availableClassDates = computed(() => {
   if (!selectedClass.value) return [];
   
-  // Get scheduled days for the class
-  const scheduledDays = attendanceStore.getClassScheduleDays(selectedClass.value);
-  
-  // Ensure scheduledDays is an array
-  if (!Array.isArray(scheduledDays) || scheduledDays.length === 0) {
-    console.warn('No scheduled days found or invalid format:', scheduledDays);
+  try {
+    // Get scheduled days for the class
+    const scheduledDays = attendanceStore.getClassScheduleDays(selectedClass.value);
+    
+    // Debug to see what the actual value is
+    console.log('Scheduled days for class:', scheduledDays);
+    
+    // Ensure scheduledDays is a proper array and handle edge cases
+    if (!scheduledDays || !Array.isArray(scheduledDays) || scheduledDays.length === 0) {
+      console.warn('No valid scheduled days found for the class:', selectedClass.value);
+      return [];
+    }
+    
+    // Get date range (current month + next month)
+    const startDate = parseISO(format(new Date(), 'yyyy-MM-dd'));
+    const endDate = addMonths(startDate, 1);
+    
+    // Get all days in range
+    const allDates = eachDayOfInterval({ start: startDate, end: endDate });
+    
+    // Filter only the days that match class schedule - with additional error checking
+    return allDates
+      .filter(date => {
+        const dayName = format(date, 'EEEE', { locale: es }).toLowerCase();
+        return scheduledDays.includes(dayName);
+      })
+      .map(date => format(date, 'yyyy-MM-dd'));
+  } catch (error) {
+    console.error('Error in availableClassDates computed property:', error);
     return [];
   }
-  
-  // Get date range (current month + next month)
-  const startDate = parseISO(format(new Date(), 'yyyy-MM-dd'));
-  const endDate = addMonths(startDate, 1);
-  
-  // Get all days in range
-  const allDates = eachDayOfInterval({ start: startDate, end: endDate });
-  
-  // Filter only the days that match class schedule
-  return allDates
-    .filter(date => scheduledDays.includes(format(date, 'EEEE', { locale: es }).toLowerCase()))
-    .map(date => format(date, 'yyyy-MM-dd'));
 });
 
 // Computed to get observations count
@@ -581,7 +613,7 @@ const handleCalendarSelect = (date: string) => {
         loadAttendanceData(selectedClass.value);
       } else {
         view.value = 'class-select';
-      }
+      };
       
       showCalendarModal.value = false;
     }
@@ -610,6 +642,11 @@ const handleSelectedDateUpdate = (date) => {
     isUpdating.value = false;
   }, 0);
 };
+
+// Método para actualizar la vista
+const updateView = (newView: 'calendar' | 'class-select' | 'attendance-form') => {
+  view.value = newView;
+};
 </script>
 
 <template>
@@ -629,7 +666,7 @@ const handleSelectedDateUpdate = (date) => {
       :selectedClass="selectedClassName"
       :view="view"
       :showAnalytics="showAnalytics"
-      @change-view="view = $event"
+      @update:view="updateView"  
       @toggle-analytics="toggleAnalytics" 
       @open-report-modal="openReportModal" 
       @open-export-modal="openExportModal"
@@ -647,7 +684,6 @@ const handleSelectedDateUpdate = (date) => {
         <i class="fas fa-chart-pie mr-2"></i>
         Análisis
       </button>
-      
       <button 
         @click="toggleTrends" 
         class="btn" 
@@ -656,12 +692,10 @@ const handleSelectedDateUpdate = (date) => {
         <i class="fas fa-chart-line mr-2"></i>
         Tendencias
       </button>
-      
       <button @click="openReportModal" class="btn btn-secondary">
         <i class="fas fa-file-alt mr-2"></i>
         Informe
       </button>
-      
       <button @click="openExportModal" class="btn btn-secondary">
         <i class="fas fa-file-export mr-2"></i>
         Exportar
@@ -718,7 +752,6 @@ const handleSelectedDateUpdate = (date) => {
           <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-4">
             Lista de Asistencia {{ formattedSelectedDate }}
           </h2>
-          
           <!-- Botón para cambiar de fecha mediante modal con calendario -->
           <div class="mb-4">
             <button @click="showCalendarModal = true" class="btn btn-secondary">
@@ -727,17 +760,6 @@ const handleSelectedDateUpdate = (date) => {
             </button>
           </div>
           
-          <!-- Modal de calendario -->
-          <!-- <div v-if="showCalendarModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg">
-              <h3 class="text-lg font-semibold mb-4">Seleccionar Fecha</h3>
-              <Calendar :selected-date="selectedDate" :marked-dates="availableClassDates" @select="handleCalendarSelect" />
-              <div class="mt-4 text-right">
-                <button @click="showCalendarModal = false" class="btn btn-secondary">Cancelar</button>
-              </div>
-            </div>
-          </div>
-           -->
           <!-- Mensaje de advertencia para fechas futuras -->
           <div v-if="!isDateEditable" class="bg-yellow-100 dark:bg-yellow-800 p-4 rounded-lg mb-4">
             <div class="flex items-center">
@@ -788,7 +810,7 @@ const handleSelectedDateUpdate = (date) => {
       :attendanceId="selectedDate"
       :attendanceDate="selectedDate"
       @update:modelValue="showObservationsModal = $event"
-      @observation-added="(observations: string) => handleObservationAdded(observations)"
+      @observation="(observations: string) => handleObservationAdded(observations)"
     />
 
     <JustifiedAbsenceModal 
