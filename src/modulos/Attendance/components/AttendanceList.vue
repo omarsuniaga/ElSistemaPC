@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import type { AttendanceStatus } from '../types/attendance'
 import type { Student } from '../../Students/types/student'
 import {
@@ -45,12 +45,14 @@ const route = useRoute();
 // Estado local
 const selectedClass = ref<string>(props.initialClassId || '');
 const students = ref<Student[]>([])
-const tempJustifications = ref<Record<string, string>>({});
-const showJustifiedAbsenceModal = ref(false);
-const selectedStudentForJustification = ref<Student | null>(null);
-const pendingAttendanceChanges = ref<{ studentId: string, status: AttendanceStatus }[]>([]);
-const warningMessage = ref<string | null>(null);
-const activeStatus = ref<Record<string, AttendanceStatus>>({});
+const pendingChanges = ref<Set<string>>(new Set()); // Registro de IDs de estudiantes con cambios pendientes
+const localAttendanceRecords = ref<Record<string, string>>({}); // Estado local para gestionar cambios antes de guardar
+const selectedStudentForJustification = ref<{ id: string; nombre: string; apellido: string } | null>(null);
+
+// Watch para inicializar el estado local cuando cambian los attendanceRecords
+watch(() => props.attendanceRecords, (newRecords) => {
+  localAttendanceRecords.value = { ...newRecords };
+}, { immediate: true, deep: true });
 
 // Funciones para obtener información de justificación
 const hasJustification = (studentId: string): boolean => {
@@ -65,6 +67,48 @@ const getJustificationReason = (studentId: string): string => {
 const getJustificationDocument = (studentId: string): string | undefined => {
   const justification = attendanceStore.getJustification(studentId);
   return justification?.documentURL;
+};
+
+// Event handlers para botones de acción de asistencia
+const handleUpdateAttendance = (studentId: string, status: AttendanceStatus | 'save') => {
+  console.log('Actualizando estado localmente:', studentId, status);
+  
+  if (status === 'save') {
+    emit('update-status', 'all', 'save');
+    return;
+  }
+  
+  // Actualizar estado local
+  localAttendanceRecords.value[studentId] = status;
+  
+  // Marcar este estudiante como pendiente de guardar
+  pendingChanges.value.add(studentId);
+  
+  // Emitir evento al componente padre
+  emit('update-status', studentId, status);
+};
+
+// Event handlers para abrir modales
+const handleOpenJustification = (student: any) => {
+  // Actualizar inmediatamente el estado visual a "Justificado"
+  if (student && student.id) {
+    // Solo aplicamos el estado visual si no está deshabilitada la edición
+    if (!props.isDisabled) {
+      // Actualizamos el estado local
+      localAttendanceRecords.value[student.id] = 'Justificado';
+      
+      // Marcamos como pendiente de guardar
+      pendingChanges.value.add(student.id);
+      
+      // Notificar al componente padre sobre el cambio de estado
+      emit('update-status', student.id, 'Justificado');
+    }
+  }
+  
+  // Luego abrimos el modal de justificación
+  selectedStudentForJustification.value = student ? 
+    { id: student.id, nombre: student.nombre, apellido: student.apellido } : null;
+  emit('open-justification', student);
 };
 
 // Funciones de utilidad originales
@@ -90,90 +134,6 @@ const getStatusClass = (status: string) => {
   }
   return classes[status as keyof typeof classes] || 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200'
 }
-
-// Event handlers
-const handleUpdateStatus = async (studentId: string, status: AttendanceStatus | 'save') => {
-  console.log('Actualizando estado de asistencia:', studentId, status)
-  
-  // No permitir cambios si la fecha es futura
-  if (!props.isDisabled) {
-    warningMessage.value = "No se puede modificar asistencia para fechas futuras";
-    return;
-  }
-  
-  if (status === 'save') {
-    await saveAllAttendanceChanges();
-    return;
-  }
-  
-  // Actualizar el estado de asistencia localmente
-  attendanceStore.attendanceRecords[studentId] = status;
-  
-  // Actualizar el estado activo localmente
-  activeStatus.value = { ...activeStatus.value, [studentId]: status };
-  
-  // Si el estado es justificado y no hay justificación temporal, abrir el modal
-  if (status === 'Justificado' && !tempJustifications.value[studentId]) {
-    selectedStudentForJustification.value = props.students.find(s => s.id === studentId) || null;
-    showJustifiedAbsenceModal.value = true;
-    return;
-  }
-  
-  // Añadir a la lista de cambios pendientes
-  const existingChange = pendingAttendanceChanges.value.findIndex(c => c.studentId === studentId);
-  if (existingChange !== -1) {
-    pendingAttendanceChanges.value[existingChange].status = status;
-  } else {
-    pendingAttendanceChanges.value.push({ studentId, status });
-  }
-};
-
-const handleJustificationSave = async (data: { reason: string, documentUrl?: string, file?: File }) => {
-  try {
-    if (!selectedStudentForJustification.value) return
-    
-    // Guardar la justificación temporalmente
-    tempJustifications.value[selectedStudentForJustification.value.id] = data.reason;
-    
-    // Actualizar el estado de asistencia localmente a 'Justificado'
-    handleUpdateStatus(selectedStudentForJustification.value.id, 'Justificado');
-    
-    // Cerrar el modal
-    showJustifiedAbsenceModal.value = false
-  } catch (err) {
-    console.error('Error saving justification:', err)
-  }
-}
-
-// Event handlers para abrir modales
-const handleOpenJustification = (student: any) => {
-  selectedStudentForJustification.value = student ? { id: student.id, nombre: student.nombre, apellido: student.apellido } : null
-  showJustifiedAbsenceModal.value = true
-}
-
-const getButtonClass = (studentId: string, status: AttendanceStatus): string => {
-  const isJustifiedWithReason = status === 'Justificado' && tempJustifications.value[studentId];
-  const isActive = activeStatus.value[studentId] === status || (props.attendanceRecords[studentId] === status && !activeStatus.value[studentId]) || isJustifiedWithReason;
-  
-  let baseClass = 'btn btn-icon btn-sm sm:btn-sm';
-  
-  switch (status) {
-    case 'Presente':
-      baseClass += isActive ? ' btn-success-active' : ' btn-success';
-      break;
-    case 'Ausente':
-      baseClass += isActive ? ' btn-danger-active' : ' btn-danger';
-      break;
-    case 'Tardanza':
-      baseClass += isActive ? ' btn-warning-active' : ' btn-warning';
-      break;
-    case 'Justificado':
-      baseClass += isActive ? ' btn-info-active' : ' btn-info';
-      break;
-  }
-  
-  return baseClass;
-};
 
 // Cargar las clases si no están ya cargadas
 onMounted(async () => {
@@ -232,6 +192,10 @@ const loadStudentsForClass = async (classId: string) => {
     console.error("Error al cargar estudiantes para la clase:", error);
   }
 };
+
+// Verificar si hay cambios sin guardar
+const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
+
 </script>
 <template>
   <div class="space-y-4">
@@ -247,12 +211,13 @@ const loadStudentsForClass = async (classId: string) => {
         </button>
         <button 
           class="btn btn-primary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm" 
-          @click="emit('update-status', 'all', 'save')"
-          :disabled="isDisabled"
+          @click="handleUpdateAttendance('all', 'save')"
+          :disabled="isDisabled || !hasPendingChanges"
+          :class="{'opacity-50': !hasPendingChanges}"
         >
           <ArrowDownOnSquareIcon class="w-3 h-3 sm:w-4 sm:h-4" />
-          <span class="hidden xs:inline">Guardar</span>
-          <span class="xs:hidden">G</span>
+          <span class="hidden xs:inline">Guardar{{hasPendingChanges ? ' (' + pendingChanges.size + ')' : ''}}</span>
+          <span class="xs:hidden">G{{hasPendingChanges ? ' (' + pendingChanges.size + ')' : ''}}</span>
         </button>
         <button class="btn btn-secondary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm" @click="emit('open-export')">
           <ArrowDownTrayIcon class="w-3 h-3 sm:w-4 sm:h-4" />
@@ -311,24 +276,33 @@ const loadStudentsForClass = async (classId: string) => {
             <td class="px-1 sm:px-4 py-2 sm:py-3 text-sm font-medium">
               <div class="flex no-wrap gap-2 justify-end">
                 <button 
-                  @click="handleUpdateStatus(student.id, 'Presente')"
-                  :class="getButtonClass(student.id, 'Presente')"
+                  @click="handleUpdateAttendance(student.id, 'Presente')"
+                  :class="[
+                    'btn btn-icon btn-sm sm:btn-sm',
+                    (localAttendanceRecords[student.id] || 'Ausente') === 'Presente' ? 'btn-success-active' : 'btn-success'
+                  ]"
                   :disabled="isDisabled"
                   title="Presente"
                 >
                   <CheckCircleIcon class="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
                 <button 
-                  @click="handleUpdateStatus(student.id, 'Ausente')"
-                  :class="getButtonClass(student.id, 'Ausente')"
+                  @click="handleUpdateAttendance(student.id, 'Ausente')"
+                  :class="[
+                    'btn btn-icon btn-sm sm:btn-sm',
+                    (localAttendanceRecords[student.id] || 'Ausente') === 'Ausente' ? 'btn-danger-active' : 'btn-danger'
+                  ]"
                   :disabled="isDisabled"
                   title="Ausente"
                 >
                   <XCircleIcon class="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
                 <button 
-                  @click="handleUpdateStatus(student.id, 'Tardanza')"
-                  :class="getButtonClass(student.id, 'Tardanza')"
+                  @click="handleUpdateAttendance(student.id, 'Tardanza')"
+                  :class="[
+                    'btn btn-icon btn-sm sm:btn-sm',
+                    (localAttendanceRecords[student.id] || 'Ausente') === 'Tardanza' ? 'btn-warning-active' : 'btn-warning'
+                  ]"
                   :disabled="isDisabled"
                   title="Tardanza"
                 >
@@ -336,12 +310,19 @@ const loadStudentsForClass = async (classId: string) => {
                 </button>
                 <button
                   @click="handleOpenJustification(student)"
-                  :class="getButtonClass(student.id, 'Justificado')"
+                  :class="[
+                    'btn btn-icon btn-sm sm:btn-sm',
+                    (localAttendanceRecords[student.id] || 'Ausente') === 'Justificado' ? 'btn-info-active' : 'btn-info'
+                  ]"
                   :disabled="isDisabled"
                   title="Justificacion"
                 >
                   <DocumentCheckIcon class="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
+                <!-- Indicador de cambio pendiente -->
+                <div v-if="pendingChanges.has(student.id)" class="flex items-center">
+                  <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+                </div>
               </div>
             </td>
           </tr>

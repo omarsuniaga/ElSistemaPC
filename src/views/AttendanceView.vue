@@ -326,6 +326,7 @@ const pendingAttendanceChanges = ref<{studentId: string, status: AttendanceStatu
 // Event handlers
 const handleUpdateStatus = async (studentId: string, status: AttendanceStatus | 'save') => {
   console.log('Actualizando estado de asistencia:', studentId, status)
+  
   // No permitir cambios si la fecha es futura
   if (!attendanceStore.validateAttendanceDate(selectedDate.value)) {
     warningMessage.value = "No se puede modificar asistencia para fechas futuras";
@@ -333,7 +334,12 @@ const handleUpdateStatus = async (studentId: string, status: AttendanceStatus | 
   }
   
   if (status === 'save') {
-    await saveAllAttendanceChanges();
+    const success = await saveAllAttendanceChanges();
+    if (success) {
+      // Limpiar la lista de cambios pendientes al guardar exitosamente
+      pendingAttendanceChanges.value = [];
+      showToast('Asistencia guardada correctamente', 'success');
+    }
     return;
   }
   
@@ -374,16 +380,30 @@ const saveAllAttendanceChanges = async () => {
         attendanceDoc.data.presentes.push(studentId);
       } else if (status === 'Ausente') {
         attendanceDoc.data.ausentes.push(studentId);
-      } else if (status === 'Tardanza' || status === 'Justificado') {
+      } else if (status === 'Tardanza') {
         attendanceDoc.data.tarde.push(studentId);
+      } else if (status === 'Justificado') {
+        // Para justificados, agregamos a la lista de tardanza
+        // (ya que en el modelo de datos es donde se almacenan)
+        attendanceDoc.data.tarde.push(studentId);
+        
+        // Verificar si ya existe una justificación para este estudiante
+        const existingJustification = attendanceDoc.data.justificacion.find(j => j.id === studentId);
+        
+        if (!existingJustification) {
+          // Si no existe justificación previa, añadir una básica
+          attendanceDoc.data.justificacion.push({
+            id: studentId,
+            reason: 'Justificación pendiente de detalles'
+          });
+        }
       }
     });
     
+    console.log('Guardando documento de asistencia:', attendanceDoc);
+    
     // Guardar el documento
     await attendanceStore.saveAttendanceDocument(attendanceDoc);
-    
-    // Limpiar los cambios pendientes
-    pendingAttendanceChanges.value = [];
     
     // Actualizar analytics después de guardar todos los cambios
     await attendanceStore.updateAnalytics()
@@ -422,9 +442,22 @@ const handleJustificationSave = async (data: { reason: string, documentUrl?: str
     isLoading.value = true
     loadingMessage.value = 'Guardando justificación...'
     
+    const studentId = selectedStudentForJustification.value.id;
+    
+    // Asegurar que el estado del estudiante sea "Justificado"
+    attendanceStore.attendanceRecords[studentId] = 'Justificado';
+    
+    // Actualizar lista de cambios pendientes
+    const existingChange = pendingAttendanceChanges.value.findIndex(c => c.studentId === studentId);
+    if (existingChange !== -1) {
+      pendingAttendanceChanges.value[existingChange].status = 'Justificado';
+    } else {
+      pendingAttendanceChanges.value.push({ studentId, status: 'Justificado' });
+    }
+    
     // Usar el método del store para guardar la justificación
     await attendanceStore.addJustificationToAttendance(
-      selectedStudentForJustification.value.id,
+      studentId,
       selectedDate.value,
       selectedClass.value,
       data.reason,
@@ -432,11 +465,16 @@ const handleJustificationSave = async (data: { reason: string, documentUrl?: str
     )
     
     showJustifiedAbsenceModal.value = false
-    // Recargar los datos para reflejar los cambios
+    
+    // Mostrar mensaje de éxito
+    showToast('Justificación guardada correctamente', 'success');
+    
+    // Recargar los datos para reflejar los cambios inmediatamente
     await loadAttendanceData(selectedClass.value);
   } catch (err) {
     error.value = 'Error al guardar la justificación'
     console.error('Error saving justification:', err)
+    showToast('Error al guardar la justificación', 'error');
   } finally {
     isLoading.value = false
     loadingMessage.value = ''

@@ -120,6 +120,12 @@ export const useAttendanceStore = defineStore('attendance', {
             state.currentAttendanceDoc.fecha === date && 
             state.currentAttendanceDoc.classId === className) {
           
+          // Verificar si tiene justificación
+          const hasJustification = state.currentAttendanceDoc.data.justificacion?.some(j => j.id === studentId);
+          if (hasJustification) {
+            return 'Justificado';
+          }
+
           if (state.currentAttendanceDoc.data.presentes.includes(studentId)) {
             return 'Presente';
           }
@@ -129,9 +135,7 @@ export const useAttendanceStore = defineStore('attendance', {
           }
           
           if (state.currentAttendanceDoc.data.tarde.includes(studentId)) {
-            // Verificar si tiene justificación
-            const hasJustification = state.currentAttendanceDoc.data.justificacion?.some(j => j.id === studentId);
-            return hasJustification ? 'Justificado' : 'Tardanza';
+            return 'Tardanza';
           }
           
           // Si no está en ninguna lista, considerarlo ausente por defecto
@@ -383,21 +387,39 @@ export const useAttendanceStore = defineStore('attendance', {
           // Actualizar los registros de asistencia para UI
           this.attendanceRecords = {};
           
-          // Rellenar presentes
+          // Primero procesamos justificaciones para darles prioridad
+          // y que no sean sobreescritas por otros estados
+          if (document.data.justificacion && Array.isArray(document.data.justificacion)) {
+            document.data.justificacion.forEach(justification => {
+              if (justification && justification.id) {
+                this.attendanceRecords[justification.id] = 'Justificado';
+              }
+            });
+          }
+          
+          // Ahora procesamos el resto de estados respetando las justificaciones
           document.data.presentes.forEach(studentId => {
-            this.attendanceRecords[studentId] = 'Presente';
+            // Solo asignamos si no es ya justificado
+            if (!this.attendanceRecords[studentId]) {
+              this.attendanceRecords[studentId] = 'Presente';
+            }
           });
           
-          // Rellenar ausentes
           document.data.ausentes.forEach(studentId => {
-            this.attendanceRecords[studentId] = 'Ausente';
+            // Solo asignamos si no es ya justificado
+            if (!this.attendanceRecords[studentId]) {
+              this.attendanceRecords[studentId] = 'Ausente';
+            }
           });
           
-          // Rellenar tarde y justificados
           document.data.tarde.forEach(studentId => {
-            // Verificar si tiene justificación
+            // Para estudiantes en tarde, verificar si tienen justificación
             const hasJustification = document.data.justificacion?.some(j => j.id === studentId);
-            this.attendanceRecords[studentId] = hasJustification ? 'Justificado' : 'Tardanza';
+            
+            // Solo asignamos si no es ya justificado
+            if (!this.attendanceRecords[studentId]) {
+              this.attendanceRecords[studentId] = hasJustification ? 'Justificado' : 'Tardanza';
+            }
           });
           
           // Guardar las observaciones
@@ -501,8 +523,48 @@ export const useAttendanceStore = defineStore('attendance', {
         
         await addJustificationToAttendanceFirebase(date, classId, justification, file);
         
-        // Actualizar el documento actual
-        await this.fetchAttendanceDocument(date, classId);
+        // Actualizar inmediatamente el registro local
+        this.attendanceRecords[studentId] = 'Justificado';
+        
+        // Actualizar el documento actual si existe
+        if (this.currentAttendanceDoc &&
+            this.currentAttendanceDoc.fecha === date &&
+            this.currentAttendanceDoc.classId === classId) {
+          
+          // Asegurar que el estudiante esté en la lista de tarde
+          if (!this.currentAttendanceDoc.data.tarde.includes(studentId)) {
+            this.currentAttendanceDoc.data.tarde.push(studentId);
+          }
+          
+          // Quitar de ausentes si está ahí
+          this.currentAttendanceDoc.data.ausentes = 
+            this.currentAttendanceDoc.data.ausentes.filter(id => id !== studentId);
+          
+          // Quitar de presentes si está ahí
+          this.currentAttendanceDoc.data.presentes = 
+            this.currentAttendanceDoc.data.presentes.filter(id => id !== studentId);
+          
+          // Añadir o actualizar la justificación
+          if (!this.currentAttendanceDoc.data.justificacion) {
+            this.currentAttendanceDoc.data.justificacion = [];
+          }
+          
+          const existingJustIndex = this.currentAttendanceDoc.data.justificacion.findIndex(j => j.id === studentId);
+          if (existingJustIndex !== -1) {
+            this.currentAttendanceDoc.data.justificacion[existingJustIndex].reason = reason;
+          } else {
+            this.currentAttendanceDoc.data.justificacion.push(justification);
+          }
+        }
+        
+        // Actualizar el documento en el array de documentos
+        const docIndex = this.attendanceDocuments.findIndex(
+          doc => doc.fecha === date && doc.classId === classId
+        );
+        
+        if (docIndex !== -1 && this.currentAttendanceDoc) {
+          this.attendanceDocuments[docIndex] = { ...this.currentAttendanceDoc };
+        }
         
         // Limpiar caché
         if (process.env.NODE_ENV === 'development') {
