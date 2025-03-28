@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run migrate:schedules && vite build",
+    "build": "vite build",
+    "build:with-migration": "npm run migrate:schedules && vite build",
     "build:type-check": "vue-tsc -b && npm run migrate:schedules && vite build",
     "preview": "vite preview",
     "test:unit": "vitest",

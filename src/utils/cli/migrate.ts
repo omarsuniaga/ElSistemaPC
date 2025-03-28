@@ -1,20 +1,36 @@
 import 'dotenv/config'
-import { initializeApp, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { fileURLToPath } from 'url'
-import { dirname, resolve } from 'path'
-import path from 'path'
+import { dirname } from 'path'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-// Get absolute path to service account file
-const serviceAccountPath = resolve(__dirname, '../../../service-account.json')
-
-// Initialize Firebase Admin
-initializeApp({
-  credential: cert(serviceAccountPath)
-})
+let admin;
+try {
+  // Try to load from file first
+  admin = require('firebase-admin');
+  admin.initializeApp({
+    credential: admin.credential.cert('./service-account.json')
+  });
+} catch (error) {
+  // If file doesn't exist, try to use environment variables
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      admin = require('firebase-admin');
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+    } catch (e) {
+      console.warn('⚠️ Could not initialize Firebase Admin from environment variables. Skipping migration.');
+      process.exit(0);
+    }
+  } else {
+    console.warn('⚠️ No Firebase service account available. Skipping migration.');
+    process.exit(0);
+  }
+}
 
 // Get Firestore instance with admin privileges
 const adminDb = getFirestore()
