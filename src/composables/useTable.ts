@@ -11,7 +11,8 @@ import type {
 } from '../types'
 import { jsPDF } from 'jspdf'
 import 'jspdf-autotable'
-import * as XLSX from 'xlsx'
+// Reemplazar xlsx por ExcelJS (solución segura)
+import ExcelJS from 'exceljs'
 import Papa from 'papaparse'
 
 export function useTable(
@@ -184,8 +185,6 @@ export function useTable(
   }
 
   const savePreferences = () => {
-    if (!options.storageKey) return
-
     const preferences: TablePreferences = {
       pageSize: state.value.pageSize,
       visibleColumns: state.value.columns
@@ -220,19 +219,69 @@ export function useTable(
 
     switch (exportOptions.format) {
       case 'excel':
-        const wb = XLSX.utils.book_new()
-        const ws = XLSX.utils.json_to_sheet(data)
-        XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
-        XLSX.writeFile(wb, `${fileName}.xlsx`)
+        // Usar ExcelJS en lugar de xlsx
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'Music Academy App';
+        workbook.lastModifiedBy = 'Music Academy App';
+        workbook.created = new Date();
+        workbook.modified = new Date();
+        
+        // Crear hoja de trabajo
+        const worksheet = workbook.addWorksheet('Data');
+        
+        // Añadir encabezados si se solicita
+        if (exportOptions.includeHeaders !== false) {
+          const headers = Object.keys(data[0] || {});
+          worksheet.addRow(headers);
+          
+          // Dar formato a los encabezados
+          const headerRow = worksheet.getRow(1);
+          headerRow.font = { bold: true };
+          headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF2980B9' }
+          };
+        }
+        
+        // Añadir los datos
+        data.forEach(row => {
+          worksheet.addRow(Object.values(row));
+        });
+        
+        // Autoajustar anchos de columna
+        worksheet.columns.forEach(column => {
+          let maxLength = 10;
+          column.eachCell({ includeEmpty: false }, cell => {
+            const cellLength = cell.value ? cell.value.toString().length : 10;
+            maxLength = Math.max(maxLength, cellLength);
+          });
+          column.width = Math.min(maxLength + 2, 30); // Limitar el ancho máximo
+        });
+        
+        // Convertir a blob y descargar
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { 
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${fileName}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
         break
 
       case 'csv':
         const csv = Papa.unparse(data)
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-        const link = document.createElement('a')
-        link.href = URL.createObjectURL(blob)
-        link.download = `${fileName}.csv`
-        link.click()
+        const csvBlob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+        const csvUrl = URL.createObjectURL(csvBlob)
+        const csvLink = document.createElement('a')
+        csvLink.href = csvUrl
+        csvLink.download = `${fileName}.csv`
+        csvLink.click()
         break
 
       case 'pdf':
@@ -243,8 +292,12 @@ export function useTable(
         doc.autoTable({
           head: [headers],
           body: rows,
-          startY: 20,
-          margin: { top: 20 }
+          theme: 'grid',
+          headStyles: {
+            fillColor: [41, 128, 185],
+            textColor: 255,
+            fontStyle: 'bold',
+          },
         })
         doc.save(`${fileName}.pdf`)
         break

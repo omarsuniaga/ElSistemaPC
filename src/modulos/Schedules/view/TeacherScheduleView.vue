@@ -206,7 +206,7 @@
       <div class="bg-red-100 dark:bg-red-900/30 p-4 rounded-lg text-red-700 dark:text-red-400">
         <p class="mb-2">{{ error }}</p>
         <p>Este módulo está diseñado para maestros. Si eres maestro y ves este mensaje, por favor contacta al administrador.</p>
-        <button @click="loadData(authStore.user?.uid)" class="mt-4 btn btn-secondary">
+        <button @click="loadData(authStore.user?.uid || '')" class="mt-4 btn btn-secondary">
           Reintentar
         </button>
       </div>
@@ -230,6 +230,18 @@ import ScheduleNavigation from '../components/ScheduleNavigation.vue'
 import ScheduleManager from './ScheduleManager.vue'
 import { useAuthStore } from '../../../stores/auth'
 
+interface Teacher {
+  id: string;
+  uid: string;
+  name: string;
+  email: string;
+  phone: string;
+  experiencia: string;
+  specialties: string[];
+  photoURL?: string;
+  role?: string;
+}
+
 const authStore = useAuthStore()
 const teachersStore = useTeachersStore()
 const classesStore = useClassesStore()
@@ -252,17 +264,17 @@ const loadData = async (uid: string) => {
     
     await teachersStore.fetchTeachers()
     
-    const foundTeacher = teachersStore.teachers.find(t => t.uid === uid || t.id === uid)
+    const foundTeacher = teachersStore.teachers.find((t): t is Teacher => t.uid === uid || t.id === uid)
     if (foundTeacher) {
       teacher.value = foundTeacher
       schedule.value = await teachersStore.getTeacherSchedule(foundTeacher.id)
       console.log('Maestro encontrado:', teacher.value)
     } else {
-      await teachersStore.fetchTeachers(true)
-      const retryTeacher = teachersStore.teachers.find(t => t.uid === uid || t.id === uid)
+      await teachersStore.fetchTeachers()
+      const retryTeacher = teachersStore.teachers.find((t) => t.uid === uid || t.id === uid)
       
       if (retryTeacher) {
-        teacher.value = retryTeacher
+        teacher.value = retryTeacher as Teacher
         schedule.value = await teachersStore.getTeacherSchedule(retryTeacher.id)
         console.log('Maestro encontrado en segundo intento:', teacher.value)
       } else {
@@ -309,7 +321,11 @@ const downloadPDF = () => {
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   }
   
-  html2pdf().from(element).set(options).save()
+  if (element) {
+    html2pdf().from(element).set(options).save()
+  } else {
+    console.error('Element with ID "schedule-pdf" not found')
+  }
 }
 
 const shareSchedule = async () => {
@@ -320,6 +336,10 @@ const shareSchedule = async () => {
     }
 
     const element = document.getElementById('schedule-pdf')
+    if (!element) {
+      console.error('Element with ID "schedule-pdf" not found')
+      return
+    }
     const options = {
       margin: 10,
       image: { type: 'jpeg', quality: 0.98 },

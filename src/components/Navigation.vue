@@ -1,19 +1,28 @@
 <!-- /src/components/Navigation.vue -->
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
 import { teacherMenuItems, adminMenuItems } from '../modulos/Teachers/constants/menuItems'
 
+// Use refs to store data that will be populated after component is mounted
 const route = useRoute()
-const authStore = useAuthStore()
+const isTeacher = ref(false)
+const isAdminOrDirector = ref(false)
+const menuItems = ref(adminMenuItems)
+const canAccessNavigation = ref(false)
 
-// Aprovechamos los getters del authStore para roles
-const isTeacher = computed(() => authStore.isTeacher)
-const isAdminOrDirector = computed(() => authStore.isDirector || authStore.isAdmin)
-
-// Selecciona el menú según el rol: maestros o administradores/directores
-const menuItems = computed(() => isTeacher.value ? teacherMenuItems : adminMenuItems)
+// Initialize auth store only after component is mounted
+onMounted(async () => {
+  // Dynamic import of the auth store to ensure Pinia is initialized first
+  const { useAuthStore } = await import('../stores/auth')
+  const authStore = useAuthStore()
+  
+  // Set the data after auth store is available
+  isTeacher.value = authStore.isTeacher
+  isAdminOrDirector.value = authStore.isDirector || authStore.isAdmin
+  menuItems.value = isTeacher.value ? teacherMenuItems : adminMenuItems
+  canAccessNavigation.value = authStore.isApproved
+})
 
 // Función mejorada para determinar si una ruta está activa
 const isActive = (path: string) => {
@@ -38,7 +47,6 @@ const isActive = (path: string) => {
       return false;
     }
   }
-
   // Si el ítem del menú tiene solo un segmento, necesitamos ser más estrictos
   // para evitar que rutas como /teachers y /teaching se activen simultáneamente
   if (itemSegments.length === 1 && routeSegments.length > 1) {
@@ -57,9 +65,6 @@ const isActive = (path: string) => {
   // Si pasamos todas las validaciones, el ítem está activo
   return true;
 }
-
-// Mostrar navegación solo si el usuario está aprobado
-const canAccessNavigation = computed(() => authStore.isApproved)
 </script>
 
 <template>

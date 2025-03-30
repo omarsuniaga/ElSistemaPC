@@ -4,7 +4,8 @@ import { format, parseISO, eachMonthOfInterval, subMonths, startOfMonth, endOfMo
 import { es } from 'date-fns/locale'
 import { jsPDF } from 'jspdf'
 import 'jspdf-autotable'
-import * as XLSX from 'xlsx'
+// Reemplazar XLSX por ExcelJS (solución segura)
+import ExcelJS from 'exceljs'
 import { Line, Bar, Doughnut } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -325,32 +326,74 @@ const generatePDFReport = async (data: any[], title: string) => {
   }
 }
 
-// Generar informe Excel
+// Generar informe Excel (reemplazando XLSX con ExcelJS)
 const generateExcelReport = async (data: any[], title: string) => {
-  // Implementación para generar Excel con XLSX
-  const worksheet = XLSX.utils.json_to_sheet(data)
-  const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, title.substring(0, 30))
+  // Crear libro de trabajo con ExcelJS
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Music Academy App';
+  workbook.lastModifiedBy = 'Music Academy App';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+  
+  // Crear hoja con nombre limitado a 31 caracteres (límite de Excel)
+  const worksheet = workbook.addWorksheet(title.substring(0, 31));
+  
+  if (data.length > 0) {
+    // Añadir encabezados
+    const headers = Object.keys(data[0]);
+    worksheet.addRow(headers);
+    
+    // Dar formato a los encabezados
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF2980B9' } // Azul
+    };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    
+    // Añadir filas de datos
+    data.forEach(item => {
+      const row = [];
+      headers.forEach(header => {
+        row.push(item[header] || '');
+      });
+      worksheet.addRow(row);
+    });
+    
+    // Autoajustar ancho de columnas
+    worksheet.columns.forEach(column => {
+      let maxLength = 10;
+      column.eachCell({ includeEmpty: false }, cell => {
+        const cellLength = cell.value ? cell.value.toString().length : 10;
+        maxLength = Math.max(maxLength, cellLength);
+      });
+      column.width = Math.min(maxLength + 2, 30); // Limitar ancho máximo
+    });
+  }
   
   // Guardar el archivo
-  const excelOutput = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
-  const blob = new Blob([excelOutput], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-  const url = URL.createObjectURL(blob)
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
   
   // Crear enlace de descarga
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = `${title.toLowerCase().replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `${title.toLowerCase().replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
   
   // Si no estamos en vista previa, descargar automáticamente
   if (!showPreview.value) {
-    anchor.click()
+    anchor.click();
   } else {
-    reportUrl.value = url
+    reportUrl.value = url;
   }
   
   // Liberar recursos
-  URL.revokeObjectURL(url)
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 1000);
 }
 
 // Métodos auxiliares para la interfaz de usuario

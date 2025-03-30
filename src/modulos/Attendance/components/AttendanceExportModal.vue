@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useAttendanceStore } from '../store/attendance'
@@ -6,7 +5,8 @@ import { useStudentsStore } from '../../Students/store/students'
 import { useClassesStore } from '../../Classes/store/classes'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import * as XLSX from 'xlsx'
+// Reemplazar xlsx por ExcelJS
+import ExcelJS from 'exceljs'
 import { jsPDF } from 'jspdf'
 import 'jspdf-autotable'
 
@@ -174,132 +174,112 @@ const exportData = async () => {
   }
 }
 
-// Exportar a Excel
-const exportToExcel = (data: any[], title: string) => {
-  // Crear hoja de cálculo
-  const worksheet = XLSX.utils.json_to_sheet(data)
+// Exportar a Excel con ExcelJS (más seguro)
+const exportToExcel = async (data: any[], title: string) => {
+  // Crear un nuevo libro de trabajo
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Music Academy App';
+  workbook.lastModifiedBy = 'Music Academy App';
+  workbook.created = new Date();
+  workbook.modified = new Date();
   
-  // Crear libro
-  const workbook = XLSX.utils.book_new()
+  // Crear hoja principal para datos de asistencia
+  const worksheet = workbook.addWorksheet('Asistencias');
   
-  // Añadir hoja de cálculo
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Asistencias')
+  // Añadir encabezados
+  const headers = Object.keys(data[0] || {});
+  worksheet.addRow(headers);
+  
+  // Añadir datos
+  data.forEach(row => {
+    worksheet.addRow(Object.values(row));
+  });
+  
+  // Dar formato a las columnas
+  worksheet.columns.forEach(column => {
+    column.width = 20;
+  });
+  
+  // Dar formato a los encabezados
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true };
+  headerRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF2980B9' } // Azul
+  };
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
   
   // Si se incluyen estadísticas, añadir hoja de estadísticas
   if (includeStats.value) {
-    const statsData = [
-      { Métrica: 'Total de registros', Valor: stats.value.total },
-      { Métrica: 'Presentes', Valor: stats.value.present },
-      { Métrica: 'Ausentes', Valor: stats.value.absent },
-      { Métrica: 'Tardanzas', Valor: stats.value.late },
-      { Métrica: 'Justificados', Valor: stats.value.justified },
-      { Métrica: 'Tasa de asistencia', Valor: `${stats.value.attendanceRate}%` }
-    ]
+    const statsSheet = workbook.addWorksheet('Estadísticas');
     
-    const statsWorksheet = XLSX.utils.json_to_sheet(statsData)
-    XLSX.utils.book_append_sheet(workbook, statsWorksheet, 'Estadísticas')
+    // Añadir encabezados de estadísticas
+    statsSheet.addRow(['Métrica', 'Valor']);
+    
+    // Añadir datos de estadísticas
+    statsSheet.addRow(['Total de registros', stats.value.total]);
+    statsSheet.addRow(['Presentes', stats.value.present]);
+    statsSheet.addRow(['Ausentes', stats.value.absent]);
+    statsSheet.addRow(['Tardanzas', stats.value.late]);
+    statsSheet.addRow(['Justificados', stats.value.justified]);
+    statsSheet.addRow(['Tasa de asistencia', `${stats.value.attendanceRate}%`]);
+    
+    // Dar formato a la hoja de estadísticas
+    statsSheet.getColumn('A').width = 25;
+    statsSheet.getColumn('B').width = 15;
+    statsSheet.getRow(1).font = { bold: true };
   }
   
   // Generar nombre de archivo
-  const fileName = `asistencias_${filters.value.startDate}_${filters.value.endDate}.xlsx`
+  const fileName = `asistencias_${filters.value.startDate}_${filters.value.endDate}.xlsx`;
   
-  // Escribir y descargar
-  XLSX.writeFile(workbook, fileName)
+  // Escribir a un buffer
+  const buffer = await workbook.xlsx.writeBuffer();
+  
+  // Crear blob y descargar
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
-// Exportar a PDF
-const exportToPdf = (data: any[], title: string) => {
-  // Crear documento PDF
-  const doc = new jsPDF()
+// Exportar a CSV con ExcelJS en lugar de XLSX
+const exportToCsv = async (data: any[], title: string) => {
+  // Crear un nuevo libro de trabajo
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Asistencias');
   
-  // Añadir título
-  doc.setFontSize(18)
-  doc.text(title, 14, 20)
+  // Añadir encabezados
+  const headers = Object.keys(data[0] || {});
+  worksheet.addRow(headers);
   
-  // Añadir filtros aplicados
-  doc.setFontSize(11)
-  doc.text(`Periodo: ${formatDate(filters.value.startDate)} - ${formatDate(filters.value.endDate)}`, 14, 30)
-  
-  if (filters.value.class) {
-    doc.text(`Clase: ${filters.value.class}`, 14, 35)
-  }
-  
-  if (filters.value.student) {
-    doc.text(`Estudiante: ${getStudentName(filters.value.student)}`, 14, 40)
-  }
-  
-  let yPosition = 45
-  
-  // Si se incluyen estadísticas, añadirlas
-  if (includeStats.value) {
-    doc.setFontSize(14)
-    doc.text('Estadísticas Generales', 14, yPosition += 10)
-    
-    const statsData = [
-      ['Métrica', 'Valor'],
-      ['Total de registros', stats.value.total.toString()],
-      ['Presentes', stats.value.present.toString()],
-      ['Ausentes', stats.value.absent.toString()],
-      ['Tardanzas', stats.value.late.toString()],
-      ['Justificados', stats.value.justified.toString()],
-      ['Tasa de asistencia', `${stats.value.attendanceRate}%`]
-    ]
-    
-    // @ts-ignore: la librería tiene tipos incorrectos
-    doc.autoTable({
-      startY: yPosition += 5,
-      head: [statsData[0]],
-      body: statsData.slice(1),
-      theme: 'grid',
-      headStyles: { fillColor: [41, 128, 185], textColor: 255 }
-    })
-    
-    // @ts-ignore: accediendo a última posición Y después de la tabla
-    yPosition = doc.lastAutoTable.finalY + 15
-  }
-  
-  // Añadir tabla principal
-  doc.setFontSize(14)
-  doc.text('Registros de Asistencia', 14, yPosition)
-  
-  // @ts-ignore: la librería tiene tipos incorrectos
-  doc.autoTable({
-    startY: yPosition + 5,
-    head: [['Estudiante', 'Clase', 'Fecha', 'Estado', 'Justificación']],
-    body: data.map(row => [
-      row.Estudiante,
-      row.Clase,
-      row.Fecha,
-      row.Estado,
-      row.Justificacion
-    ]),
-    theme: 'grid',
-    headStyles: { fillColor: [41, 128, 185], textColor: 255 }
-  })
+  // Añadir datos
+  data.forEach(row => {
+    worksheet.addRow(Object.values(row));
+  });
   
   // Generar nombre de archivo
-  const fileName = `asistencias_${filters.value.startDate}_${filters.value.endDate}.pdf`
+  const fileName = `asistencias_${filters.value.startDate}_${filters.value.endDate}.csv`;
   
-  // Guardar archivo
-  doc.save(fileName)
-}
-
-// Exportar a CSV
-const exportToCsv = (data: any[], title: string) => {
-  // Crear hoja de cálculo
-  const worksheet = XLSX.utils.json_to_sheet(data)
+  // Escribir a un buffer
+  const buffer = await workbook.csv.writeBuffer();
   
-  // Crear libro
-  const workbook = XLSX.utils.book_new()
-  
-  // Añadir hoja de cálculo
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Asistencias')
-  
-  // Generar nombre de archivo
-  const fileName = `asistencias_${filters.value.startDate}_${filters.value.endDate}.csv`
-  
-  // Escribir y descargar como CSV
-  XLSX.writeFile(workbook, fileName, { bookType: 'csv' })
+  // Crear blob y descargar
+  const blob = new Blob([buffer], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // Cargar datos al montar el componente

@@ -20,7 +20,7 @@ import ContentForm from '../components/ContentForm.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 import type { Content } from '../types'
 import { jsPDF } from 'jspdf'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 
 const router = useRouter()
 const contentsStore = useContentsStore()
@@ -169,7 +169,18 @@ const exportToPDF = () => {
   doc.save('contenidos.pdf')
 }
 
-const exportToExcel = () => {
+const exportToExcel = async () => {
+  // Usar ExcelJS en lugar de xlsx para mayor seguridad
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Music Academy App';
+  workbook.lastModifiedBy = 'Music Academy App';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+  
+  // Crear hoja de trabajo
+  const worksheet = workbook.addWorksheet('Contenidos');
+  
+  // Preparar datos para exportar
   const data = filteredContents.value.map(content => ({
     'Título': content.title,
     'Descripción': content.description,
@@ -178,12 +189,47 @@ const exportToExcel = () => {
     'Duración': content.duration,
     'Objetivos': content.objectives.join(', '),
     'Prerequisitos': content.prerequisites.join(', ')
-  }))
-
-  const ws = XLSX.utils.json_to_sheet(data)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Contenidos')
-  XLSX.writeFile(wb, 'contenidos.xlsx')
+  }));
+  
+  // Añadir encabezados
+  const headers = Object.keys(data[0] || {});
+  worksheet.addRow(headers);
+  
+  // Dar formato a los encabezados
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true };
+  headerRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF2980B9' }
+  };
+  
+  // Añadir datos
+  data.forEach(row => {
+    worksheet.addRow(Object.values(row));
+  });
+  
+  // Autoajustar anchos de columna
+  worksheet.columns.forEach(column => {
+    let maxLength = 10;
+    column.eachCell({ includeEmpty: false }, cell => {
+      const cellLength = cell.value ? cell.value.toString().length : 10;
+      maxLength = Math.max(maxLength, cellLength);
+    });
+    column.width = Math.min(maxLength + 2, 30); // Limitar ancho máximo
+  });
+  
+  // Generar archivo y descargar
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'contenidos.xlsx';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 const clearFilters = () => {

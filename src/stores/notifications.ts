@@ -60,7 +60,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
         // Query notifications where the user is a recipient or their role is a recipient
         const userId = authStore.user.uid;
-        const userRoles = authStore.userRoles || [];
+        const userRoles = authStore.user.userRoles as string[] || [];
 
         const q = query(
           collection(db, 'notifications'),

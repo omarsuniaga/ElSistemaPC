@@ -20,6 +20,7 @@ interface User {
   status?: string
   createdAt?: string
   updatedAt?: string
+  userRoles?: string[];
   // Agrega otros campos si es necesario
 }
 

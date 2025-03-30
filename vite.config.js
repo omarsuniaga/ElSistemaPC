@@ -1,3 +1,4 @@
+// filepath: vite.config.js
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
@@ -10,6 +11,11 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  
+  optimizeDeps: {
+    exclude: ['firebase', 'firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+  },
+  
   build: {
     // Add these options to ensure proper build output
     sourcemap: true,
@@ -26,8 +32,12 @@ export default defineConfig({
     }
   },
   server: {
-    headers: {
-      'Content-Type': 'application/javascript',
-    },
+    host: 'localhost',
+    port: 5173,
+    open: true,
+    hmr: {
+      host: 'localhost',
+      port: 5173
+    }
   }
 })
