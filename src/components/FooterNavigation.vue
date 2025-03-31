@@ -1,54 +1,21 @@
 <template>
   <footer class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700 z-40">
-    <div class="grid grid-cols-5 h-16">
+    <div class="grid" :class="[navigationItems.length === 5 ? 'grid-cols-5' : 'grid-cols-4']">
+      <!-- Renderizamos dinámicamente los elementos de navegación según el rol -->
       <router-link 
-        to="/home" 
-        class="flex flex-col items-center justify-center text-xs space-y-1"
-        :class="[currentRoute.includes('/home') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']"
+        v-for="item in navigationItems" 
+        :key="item.path" 
+        :to="item.path" 
+        class="flex flex-col items-center justify-center text-xs space-y-1 py-3"
+        :class="[currentRoute.includes(item.path) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']"
         active-class="text-primary-600 dark:text-primary-400"
       >
-        <HomeIcon :class="[currentRoute.includes('/home') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']" class="h-6 w-6" />
-        <span>Inicio</span>
-      </router-link>
-      
-      <router-link 
-        to="/students" 
-        class="flex flex-col items-center justify-center text-xs space-y-1"
-        :class="[currentRoute.includes('/students') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']"
-        active-class="text-primary-600 dark:text-primary-400"
-      >
-        <UserGroupIcon :class="[currentRoute.includes('/students') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']" class="h-6 w-6" />
-        <span>Alumnos</span>
-      </router-link>
-      
-      <router-link 
-        to="/classes" 
-        class="flex flex-col items-center justify-center text-xs space-y-1"
-        :class="[currentRoute.includes('/classes') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']"
-        active-class="text-primary-600 dark:text-primary-400"
-      >
-        <AcademicCapIcon :class="[currentRoute.includes('/classes') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']" class="h-6 w-6" />
-        <span>Clases</span>
-      </router-link>
-      
-      <router-link 
-        to="/teachers" 
-        class="flex flex-col items-center justify-center text-xs space-y-1"
-        :class="[currentRoute.includes('/teachers') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']"
-        active-class="text-primary-600 dark:text-primary-400"
-      >
-        <UserIcon :class="[currentRoute.includes('/teachers') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']" class="h-6 w-6" />
-        <span>Profesores</span>
-      </router-link>
-      
-      <router-link 
-        to="/attendance" 
-        class="flex flex-col items-center justify-center text-xs space-y-1"
-        :class="[currentRoute.includes('/attendance') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']"
-        active-class="text-primary-600 dark:text-primary-400"
-      >
-        <ClipboardDocumentListIcon :class="[currentRoute.includes('/attendance') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']" class="h-6 w-6" />
-        <span>Asistencia</span>
+        <component 
+          :is="item.icon" 
+          :class="[currentRoute.includes(item.path) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']" 
+          class="h-6 w-6" 
+        />
+        <span>{{ item.label }}</span>
       </router-link>
     </div>
   </footer>
@@ -57,16 +24,104 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 import {
   HomeIcon,
   UserGroupIcon,
   AcademicCapIcon,
   UserIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  BookOpenIcon,
+  CalendarDaysIcon,
+  ClockIcon
 } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
+const authStore = useAuthStore()
 const currentRoute = computed(() => route.path)
+
+// Items de navegación basados en el rol del usuario
+const navigationItems = computed(() => {
+  // Elementos comunes a todos los roles
+  const commonItems = [
+    {
+      path: '/home',
+      label: 'Inicio',
+      icon: HomeIcon
+    }
+  ]
+
+  // Para directores
+  if (authStore.isDirector) {
+    return [
+      ...commonItems,
+      {
+        path: '/students',
+        label: 'Alumnos',
+        icon: UserGroupIcon
+      },
+      {
+        path: '/classes',
+        label: 'Clases',
+        icon: AcademicCapIcon
+      },
+      {
+        path: '/attendance',
+        label: 'Asistencia',
+        icon: ClipboardDocumentListIcon
+      },
+      {
+        path: '/profile',
+        label: 'Perfil',
+        icon: UserIcon
+      }
+    ]
+  }
+  
+  // Para maestros
+  else if (authStore.isTeacher) {
+    return [
+      ...commonItems,
+      {
+        path: '/students',
+        label: 'Alumnos',
+        icon: UserGroupIcon
+      },
+      {
+        path: '/attendance',
+        label: 'Asistencia',
+        icon: ClipboardDocumentListIcon
+      },
+      {
+        path: '/schedule',
+        label: 'Horarios',
+        icon: ClockIcon
+      },
+      {
+        path: '/profile',
+        label: 'Perfil',
+        icon: UserIcon
+      }
+    ]
+  }
+  
+  // Para administradores u otros roles
+  else {
+    return [
+      ...commonItems,
+      {
+        path: '/profile',
+        label: 'Perfil',
+        icon: UserIcon
+      },
+      {
+        path: '/settings',
+        label: 'Ajustes',
+        icon: UserIcon
+      }
+    ]
+  }
+})
 </script>
 
 <style scoped>

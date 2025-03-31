@@ -37,6 +37,18 @@ export interface AttendanceDocument {
   };
 }
 
+/**
+ * Nueva interfaz para las observaciones de clase con historial
+ */
+export interface ClassObservation {
+  id: string;
+  classId: string;
+  date: string;
+  text: string;
+  timestamp: number;
+  author: string; // ID o nombre del profesor
+}
+
 // Mantenemos algunas interfaces anteriores por compatibilidad
 export interface AttendanceRecord {
   id?: string;

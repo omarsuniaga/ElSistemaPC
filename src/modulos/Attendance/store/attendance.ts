@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { format, parseISO, eachDayOfInterval, isValid } from 'date-fns' // Añadido isValid para validaciones
 import { collection, getDocs, query, where } from 'firebase/firestore' // Añadidos métodos de consulta
 import { db } from '../../../firebase'
-import type { AttendanceRecord, AttendanceStatus, AttendanceAnalytics, AttendanceDocument } from '../types/attendance'
+import type { AttendanceRecord, AttendanceStatus, AttendanceAnalytics, AttendanceDocument, ClassObservation } from '../types/attendance'
 // Importar directamente desde firestore
 import { 
   getAttendancesFirebase, 
@@ -15,7 +15,10 @@ import {
   saveAttendanceDocumentFirebase,
   addJustificationToAttendanceFirebase,
   updateObservationsFirebase,
-  getAllAttendanceDocumentsFirebase
+  getAllAttendanceDocumentsFirebase,
+  addClassObservationFirebase,
+  getClassObservationsHistoryFirebase,
+  getClassObservationsByDateFirebase
 } from '../service/attendance'
 import { useClassesStore } from '../../Classes/store/classes'
 import { useStudentsStore } from '../../Students/store/students'
@@ -65,7 +68,8 @@ export const useAttendanceStore = defineStore('attendance', {
       documentUrl?: string
     }>,
     observations: '' as string,
-    datesWithRecords: [] as string[]
+    datesWithRecords: [] as string[],
+    observationsHistory: [] as ClassObservation[] // Nuevo campo para el historial de observaciones
   }),
   
   getters: {
@@ -600,6 +604,82 @@ export const useAttendanceStore = defineStore('attendance', {
       }
     },
 
+    // Guardar una nueva observación en el historial
+    async addObservationToHistory(classId: string, date: string, text: string, author: string) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        console.log('Añadiendo observación al historial:', { classId, date, text, author });
+        
+        // Guardar en Firebase
+        const observationId = await addClassObservationFirebase(classId, date, text, author);
+        
+        // Actualizar también la observación actual por compatibilidad
+        this.observations = text;
+        
+        if (this.currentAttendanceDoc &&
+            this.currentAttendanceDoc.fecha === date &&
+            this.currentAttendanceDoc.classId === classId) {
+          this.currentAttendanceDoc.data.observations = text;
+        }
+        
+        // Recargar el historial
+        await this.fetchObservationsHistory(classId);
+        
+        return observationId;
+      } catch (error) {
+        this.error = 'Error al añadir observación al historial';
+        console.error('Error al añadir observación:', error);
+        throw error;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    
+    // Cargar historial de observaciones para una clase
+    async fetchObservationsHistory(classId: string) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        console.log('Cargando historial de observaciones para la clase:', classId);
+        
+        // Obtener historial de Firebase
+        const observations = await getClassObservationsHistoryFirebase(classId);
+        
+        // Actualizar el state
+        this.observationsHistory = observations;
+        
+        return observations;
+      } catch (error) {
+        this.error = 'Error al cargar historial de observaciones';
+        console.error('Error al cargar historial:', error);
+        return [];
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    
+    // Cargar historial de observaciones para una clase en una fecha específica
+    async fetchObservationsByDate(classId: string, date: string) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        console.log('Cargando observaciones para la clase y fecha:', classId, date);
+      
+        // Obtener observaciones por fecha y clase
+        const observations = await getClassObservationsByDateFirebase(classId, date);
+        
+        // No reemplazamos todo el historial, solo devolvemos las observaciones filtradas
+        return observations;
+      } catch (error) {
+        this.error = 'Error al cargar observaciones por fecha';
+        console.error('Error al cargar observaciones por fecha:', error);
+        return [];
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
     // Actualizar observaciones
     async updateObservations(date: string, classId: string, observations: string) {
       this.isLoading = true;
@@ -607,18 +687,9 @@ export const useAttendanceStore = defineStore('attendance', {
       try {
         console.log('Actualizando observaciones para fecha:', date, 'clase:', classId);
         
-        // Actualizar en Firestore
-        await updateObservationsFirebase(date, classId, observations);
-        
-        // Actualizar localmente
-        this.observations = observations;
-        
-        if (this.currentAttendanceDoc && 
-            this.currentAttendanceDoc.fecha === date && 
-            this.currentAttendanceDoc.classId === classId) {
-          // Si está cargado el documento actual, actualizar también ahí
-          this.currentAttendanceDoc.data.observations = observations;
-        }
+        // Primero añadir al historial (esto también actualiza la observación actual)
+        const author = 'Sistema'; // Ideal sería obtenerlo del usuario actual
+        await this.addObservationToHistory(classId, date, observations, author);
         
         console.log('Observaciones actualizadas con éxito');
         

@@ -7,11 +7,14 @@ import {
   setDoc,
   getDoc,
   serverTimestamp,
-  query
+  query,
+  where,
+  orderBy,
+  addDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../firebase';
-import type { AttendanceDocument, JustificationData, AttendanceRecord } from '../../Attendance/types/attendance';
+import type { AttendanceDocument, JustificationData, AttendanceRecord, ClassObservation } from '../../Attendance/types/attendance';
 
 /**
  * Obtiene un documento de asistencia por fecha y clase
@@ -302,8 +305,6 @@ export const getAllAttendanceDocumentsFirebase = async (): Promise<AttendanceDoc
   }
 };
 
-// Métodos de compatibilidad con el sistema anterior
-
 /**
  * Convierte documentos al formato anterior para compatibilidad
  * @param document - El documento en nuevo formato
@@ -350,7 +351,131 @@ export const convertDocumentToRecords = (document: AttendanceDocument): Attendan
   return records;
 };
 
-// Funciones de compatibilidad con el sistema anterior
+/**
+ * Añade una nueva observación al historial de una clase
+ * @param classId - El ID de la clase
+ * @param date - La fecha de la clase (YYYY-MM-DD)
+ * @param text - El texto de la observación
+ * @param author - El nombre o ID del profesor que añade la observación
+ * @returns El ID de la nueva observación
+ */
+export const addClassObservationFirebase = async (
+  classId: string,
+  date: string,
+  text: string,
+  author: string
+): Promise<string> => {
+  try {
+    console.log('📝 Añadiendo nueva observación de clase');
+    
+    // Crear documento en la colección de observaciones
+    const observationsCollection = collection(db, 'OBSERVACIONES_CLASE');
+    
+    const newObservation: ClassObservation = {
+      id: '', // Se asignará después
+      classId,
+      date,
+      text,
+      timestamp: Date.now(),
+      author
+    };
+    
+    // Añadir el documento y obtener su ID
+    const docRef = await addDoc(observationsCollection, {
+      ...newObservation,
+      createdAt: serverTimestamp()
+    });
+    
+    // Actualizar el ID con el generado por Firestore
+    await updateDoc(docRef, {
+      id: docRef.id
+    });
+    
+    console.log('✅ Observación añadida con éxito:', docRef.id);
+    
+    // También actualizar la observación actual en el documento de asistencia por compatibilidad
+    await updateObservationsFirebase(date, classId, text);
+    
+    return docRef.id;
+  } catch (error) {
+    console.error('❌ Error al añadir observación:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obtiene el historial de observaciones para una clase
+ * @param classId - El ID de la clase
+ * @returns Lista de observaciones ordenadas por fecha (la más reciente primero)
+ */
+export const getClassObservationsHistoryFirebase = async (
+  classId: string
+): Promise<ClassObservation[]> => {
+  try {
+    console.log('🔍 Obteniendo historial de observaciones para la clase:', classId);
+    
+    const observationsCollection = collection(db, 'OBSERVACIONES_CLASE');
+    const q = query(
+      observationsCollection,
+      where('classId', '==', classId),
+      orderBy('timestamp', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    
+    const observations: ClassObservation[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data() as ClassObservation;
+      observations.push(data);
+    });
+    
+    console.log(`✅ Se encontraron ${observations.length} observaciones para la clase`);
+    return observations;
+  } catch (error) {
+    console.error('❌ Error al obtener historial de observaciones:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obtiene el historial de observaciones para una fecha y clase específicas
+ * @param classId - El ID de la clase
+ * @param date - La fecha de la clase (YYYY-MM-DD)
+ * @returns Lista de observaciones ordenadas por fecha (la más reciente primero)
+ */
+export const getClassObservationsByDateFirebase = async (
+  classId: string,
+  date: string
+): Promise<ClassObservation[]> => {
+  try {
+    console.log(`🔍 Obteniendo observaciones para clase ${classId} en fecha ${date}`);
+    
+    const observationsCollection = collection(db, 'OBSERVACIONES_CLASE');
+    const q = query(
+      observationsCollection,
+      where('classId', '==', classId),
+      where('date', '==', date),
+      orderBy('timestamp', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    
+    const observations: ClassObservation[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data() as ClassObservation;
+      observations.push(data);
+    });
+    
+    console.log(`✅ Se encontraron ${observations.length} observaciones para la fecha y clase`);
+    return observations;
+  } catch (error) {
+    console.error('❌ Error al obtener observaciones por fecha:', error);
+    throw error;
+  }
+};
+
+// Métodos de compatibilidad con el sistema anterior
+
 export const getAttendancesFirebase = async (): Promise<AttendanceRecord[]> => {
   try {
     const documents = await getAllAttendanceDocumentsFirebase();
