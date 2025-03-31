@@ -76,7 +76,7 @@ const isEditing = ref(false);
 
 // Computar el ID del maestro actual desde el sistema de autenticación
 // En un sistema real, esto vendría del usuario autenticado
-const currentTeacherId = computed(() => authStore.user?.id); // Default for development
+const currentTeacherId = computed(() => authStore.user?.uid); // Using uid instead of id for Firebase auth user
 
 // Computar clases del maestro actual
 const teacherClasses = computed(() => {
