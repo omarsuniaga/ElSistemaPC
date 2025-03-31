@@ -8,7 +8,16 @@ import { teacherMenuItems, adminMenuItems } from '../modulos/Teachers/constants/
 const route = useRoute()
 const isTeacher = ref(false)
 const isAdminOrDirector = ref(false)
-const menuItems = ref([])
+import { FunctionalComponent, HTMLAttributes, VNodeProps } from 'vue';
+
+interface MenuItem {
+  name: string;
+  icon: string | FunctionalComponent<HTMLAttributes & VNodeProps, {}, any, {}>;
+  to: string;
+  ariaLabel: string;
+}
+
+const menuItems = ref<MenuItem[]>([])
 const visibleMenuItems = computed(() => {
   // Mostrar solo los primeros 5 items para evitar sobrecarga en la interfaz móvil
   return menuItems.value.slice(0, 5)

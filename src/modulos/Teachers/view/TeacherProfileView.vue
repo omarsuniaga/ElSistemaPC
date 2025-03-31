@@ -83,6 +83,22 @@ const handleEdit = () => {
   router.push(`/teachers/${teacherId}/edit`)
 }
 
+const handleEditEnrollment = () => {
+  router.push(`/teachers/${teacherId}/edit-enrollment`)
+}
+
+const handleCompleteForm = () => {
+  // Navegar al formulario sin afectar el tema
+  router.push({
+    path: '/complete-profile',
+    query: { 
+      teacherId: teacherId,
+      mode: 'edit'
+    },
+    replace: true // Evita que se acumule en el historial
+  })
+}
+
 const handleDelete = () => {
   router.push(`/teachers/${teacherId}/delete`)
 }
@@ -136,6 +152,7 @@ const handleDelete = () => {
             </div>
           </div>
           
+          <!-- Botones de acción -->
           <div class="flex gap-3">
             <button
               @click="handleEdit"
@@ -143,6 +160,20 @@ const handleDelete = () => {
             >
               <PencilIcon class="w-5 h-5 mr-2" />
               Editar Perfil
+            </button>
+            <button
+              @click="handleEditEnrollment"
+              class="btn bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            >
+              <DocumentTextIcon class="w-5 h-5 mr-2" />
+              Editar Ficha de Inscripción
+            </button>
+            <button
+              @click="handleCompleteForm"
+              class="btn bg-green-600 text-white hover:bg-green-700 transition-colors preserve-theme"
+            >
+              <DocumentTextIcon class="w-5 h-5 mr-2" />
+              Completar Formulario
             </button>
             <button
               @click="handleDelete"
@@ -284,5 +315,10 @@ const handleDelete = () => {
 <style scoped>
 .btn {
   @apply px-4 py-2 rounded-lg text-sm font-medium flex items-center shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors;
+}
+
+/* Clase para preservar el tema */
+.preserve-theme {
+  color-scheme: inherit;
 }
 </style>

@@ -16,6 +16,17 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/auth/RegisterView.vue'),
     meta: { public: true }
   },
+  // Ruta para editar la ficha de inscripción de un maestro
+  {
+    path: '/teachers/:id/edit-enrollment',
+    name: 'TeacherEditEnrollment',
+    component: () => import('../modulos/Teachers/view/TeacherEditEnrollmentView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Maestro', 'Director', 'Admin']
+    }
+  },
   // Rutas específicas para Maestros y Directores
   {
     path: '/teachers',
@@ -67,7 +78,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/teacher/profile',
     name: 'TeacherProfile',
-    component: () => import('../views/ProfileView.vue'),
+    component: () => import('../modulos/Teachers/view/TeacherProfileView.vue'),
     meta: { 
       requiresAuth: true,
       allowedRoles: ['Maestro']

@@ -28,6 +28,12 @@ const teacherRoutes: Array<RouteRecordRaw> = [
         name: 'TeacherEdit',
         component: () => import('@/modulos/Teachers/view/TeacherEditView.vue'),
         meta: { roles: ['Director', 'Admin'] }
+      },
+      {
+        path: ':id/edit-enrollment',
+        name: 'TeacherEditEnrollment',
+        component: () => import('@/modulos/Teachers/view/TeacherEditEnrollmentView.vue'),
+        meta: { roles: ['Director', 'Admin', 'Maestro', 'Teacher'] }
       }
     ]
   }

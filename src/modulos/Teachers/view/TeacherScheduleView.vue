@@ -159,7 +159,7 @@ const getTeacherClasses = (teacherId: string) => {
           class="btn btn-primary flex items-center gap-2 transition-all hover:scale-105"
         >
           <DocumentArrowDownIcon class="w-5 h-5" />
-          Descargar PDF
+          PDF
         </button>
         
         <button 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useClassesStore } from '../../../modulos/Classes/store/classes';
 import { useTeachersStore } from '../../../modulos/Teachers/store/teachers';
 import { useStudentsStore } from '../../../modulos/Students/store/students';
@@ -419,8 +420,19 @@ onMounted(async () => {
 <template>
   <div class="teacher-dashboard">
     <header class="dashboard-header bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Panel de Control de Maestros</h1>
-      <p class="text-gray-600 dark:text-gray-400">Aquí puedes gestionar y visualizar información relevante sobre tus clases y estudiantes.</p>
+      <div class="flex justify-between items-start">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Panel de Control de Maestros</h1>
+          <p class="text-gray-600 dark:text-gray-400">Aquí puedes gestionar y visualizar información relevante sobre tus clases y estudiantes.</p>
+        </div>
+        <button 
+          @click="$router.push(`/teachers/${currentTeacherId}/edit`)" 
+          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
+        >
+          <PencilIcon class="w-5 h-5" />
+          <span>Editar Perfil</span>
+        </button>
+      </div>
       
       <!-- Tabs de navegación -->
       <div class="flex mt-6 border-b border-gray-200 dark:border-gray-700">

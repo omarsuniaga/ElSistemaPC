@@ -211,15 +211,46 @@ const saveProfile = async () => {
 
 // Validar y enviar el formulario
 const handleSubmit = () => {
-  // Validación básica
+  error.value = ''
+
+  // Validaciones obligatorias
   if (formData.bio.trim().length < 10) {
-    error.value = 'Por favor, introduce una biografía más detallada'
+    error.value = 'Por favor, introduce una biografía más detallada (mínimo 10 caracteres)'
     return
   }
-  
+
   if (formData.specialties.length === 0) {
     error.value = 'Por favor, añade al menos una especialidad'
     return
+  }
+
+  if (!formData.address.trim()) {
+    error.value = 'Por favor, ingresa tu dirección'
+    return
+  }
+
+  if (formData.education.length === 0) {
+    error.value = 'Por favor, añade al menos una formación académica'
+    return
+  }
+
+  // Validar horario si es tiempo parcial
+  if (formData.availability.type === 'partial') {
+    const hasEnabledDay = formData.availability.schedule.some(day => day.enabled)
+    if (!hasEnabledDay) {
+      error.value = 'Por favor, selecciona al menos un día de disponibilidad'
+      return
+    }
+
+    // Validar que los días habilitados tengan horarios válidos
+    const invalidSchedule = formData.availability.schedule
+      .filter(day => day.enabled)
+      .some(day => !day.startTime || !day.endTime)
+
+    if (invalidSchedule) {
+      error.value = 'Por favor, completa los horarios para todos los días seleccionados'
+      return
+    }
   }
   
   saveProfile()

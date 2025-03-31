@@ -121,6 +121,7 @@ const teacherClasses = computed(() => {
 
 // Cargar clases si aún no están cargadas
 onMounted(async () => {
+  console.log("Aqui")
   if (classesStore.classes.length === 0) {
     await classesStore.fetchClasses()
   }

@@ -19,11 +19,11 @@ import {
   Tooltip,
   Legend
 } from 'chart.js'
-import { useStudentsStore } from '../stores/students'
-import { useTeachersStore } from '../stores/teachers'
+import { useStudentsStore } from '../modulos/Students/store/students'
+import { useTeachersStore } from '../modulos/Teachers/store/teachers'
 import { useClassesStore } from '../stores/classes'
-import { useAttendanceStore } from '../stores/attendance'
-import { useContentsStore } from '../stores/contents'
+import { useAttendanceStore } from '../modulos/Attendance/store/attendance'
+import { useContentsStore } from '../modulos/Contents/store/contents'
 
 ChartJS.register(
   CategoryScale,
@@ -61,6 +61,7 @@ const isConfiguring = ref(false)
 const reportGenerated = ref(false)
 const reportUrl = ref('')
 const error = ref('')
+const reportData = ref<any>(null)
 const showPreview = ref(false)
 
 // Opciones avanzadas para la personalización de informes
@@ -147,10 +148,33 @@ const applyCustomFilters = () => {
   generatePreview()
 }
 
-// Método para generar vista previa
-const generatePreview = () => {
+const generatePreview = async () => {
   showPreview.value = true
   // Implementar lógica de vista previa
+  try {
+    // Determinar qué datos incluir según el tipo de informe
+    let data: any[] = []
+
+    switch (selectedReport.value) {
+      case 'students':
+        data = await getStudentsReportData()
+        break
+      case 'teachers':
+        data = await getTeachersReportData()
+        break
+      case 'attendance':
+        data = await getAttendanceReportData()
+        break
+      default:
+        throw new Error('Tipo de informe no válido')
+    }
+
+    reportData.value = data
+  } catch (err: any) {
+    console.error('Error al generar la vista previa:', err)
+    error.value = err.message || 'Error al generar la vista previa'
+  }
+}
 }
 
 // Función mejorada para generar informes
@@ -428,6 +452,113 @@ onMounted(async () => {
     console.error('Error al cargar datos iniciales:', err)
   }
 })
+
+const getTeachersReportData = async () => {
+  if (teachersStore.teachers.length === 0) {
+    await teachersStore.fetchTeachers()
+  }
+
+  let teachers = [...teachersStore.teachers]
+
+  // Aplicar filtros si están seleccionados (ejemplo)
+  if (selectedInstruments.value.length > 0) {
+    teachers = teachers.filter(teacher =>
+      teacher.instrumento.some(instrument => selectedInstruments.value.includes(instrument))
+    )
+  }
+
+  // Mapear a formato de informe
+  return teachers.map(teacher => ({
+    id: teacher.id,
+    name: teacher.name,
+    email: teacher.email,
+    instrumento: teacher.instrumento.join(', '), // Mostrar instrumentos como cadena
+    tlf: teacher.tlf,
+    fecInscripcion: teacher.fecInscripcion
+    // ... otros campos relevantes
+  }))
+}
+
+const getAttendanceReportData = async () => {
+  if (attendanceStore.records.length === 0) {
+    await attendanceStore.fetchAttendance()
+  }
+
+  let attendances = [...attendanceStore.records]
+
+  // Aplicar filtros de fecha
+  if (dateRange.value.startDate && dateRange.value.endDate) {
+    attendances = attendances.filter(attendance => {
+      const attendanceDate = format(parseISO(attendance.date), 'yyyy-MM-dd')
+      return attendanceDate >= dateRange.value.startDate && attendanceDate <= dateRange.value.endDate
+    })
+  }
+
+  // Aplicar filtros de clase, maestro y alumno
+  if (selectedFilters.value.length > 0) {
+    if (selectedFilters.value.includes('class')) {
+      attendances = attendances.filter(attendance =>
+        classesStore.classes.find(c => c.name === attendance.clase)?.id === selectedFilters.value[0]
+      )
+    }
+    if (selectedFilters.value.includes('teacher')) {
+      attendances = attendances.filter(attendance =>
+        teachersStore.teachers.find(t => t.name === attendance.maestro)?.id === selectedFilters.value[0]
+      )
+    }
+    if (selectedFilters.value.includes('student')) {
+      attendances = attendances.filter(attendance =>
+        studentsStore.students.find(s => s.nombre === attendance.alumno)?.id === selectedFilters.value[0]
+      )
+    }
+  }
+
+  // Mapear a formato de informe
+  return attendances.map(attendance => ({
+    date: attendance.date,
+    clase: attendance.clase,
+    alumno: attendance.alumno,
+    estado: attendance.estado,
+    comentario: attendance.comentario
+  }))
+}
+
+const getProgressReportData = async () => {
+  // This is a placeholder implementation. Replace with actual logic.
+  // This function should fetch and process data related to student progress.
+
+  // Example: Fetch student data and calculate average attendance
+  if (studentsStore.students.length === 0) {
+    await studentsStore.fetchStudents()
+  }
+
+  if (attendanceStore.attendances.length === 0) {
+    await attendanceStore.fetchAttendance()
+  }
+
+  const progressData = studentsStore.students.map(student => {
+    // Filter attendance records for the current student
+    const studentAttendances = attendanceStore.attendances.filter(
+      attendance => attendance.alumno === student.nombre
+    )
+
+    const totalClasses = studentAttendances.length
+    const presentClasses = studentAttendances.filter(
+      attendance => attendance.estado === 'Presente'
+    ).length
+
+    const attendanceRate = totalClasses > 0 ? (presentClasses / totalClasses) * 100 : 0
+
+    return {
+      studentName: `${student.nombre} ${student.apellido}`,
+      instrument: student.instrumento,
+      attendanceRate: attendanceRate,
+      // Include other relevant progress metrics here, e.g., grades, completed lessons, etc.
+    }
+  })
+
+  return progressData
+}
 </script>
 
 <template>

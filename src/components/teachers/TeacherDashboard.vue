@@ -183,7 +183,26 @@ const studentsStore = useStudentsStore();
 const teacherId = '1'; // En un caso real, se obtendría del usuario autenticado
 
 // Estado de los datos
-const nextClass = ref(null);
+interface ClassType {
+  id: string;
+  name: string;
+  description: string;
+  instrument?: string;
+  level?: string;
+  studentIds?: string[];
+  teacherId: string;
+  nextDate: string;
+}
+
+interface Student {
+const nextClassTime = ref(null);
+const students = ref<Student[]>([]);
+const attendanceStats = reactive({
+  total: 0,
+  present: 0,
+}
+
+const nextClass = ref<ClassType | null>(null);
 const nextClassTime = ref(null);
 const students = ref([]);
 const attendanceStats = reactive({

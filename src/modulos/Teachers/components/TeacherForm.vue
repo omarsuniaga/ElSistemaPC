@@ -1,128 +1,118 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { Teacher, TeacherInstrument, TeacherSchedule } from '../types'
-import FileUpload from './FileUpload.vue'
-import { uploadFile } from '../services/storage'
-import { MinusCircleIcon, PlusCircleIcon } from '@heroicons/vue/24/outline'
+import { ref, computed, watchEffect } from 'vue';
+import FileUpload from '@/components/FileUpload.vue';
+import { MinusCircleIcon, PlusCircleIcon } from '@heroicons/vue/24/outline';
+import type { Teacher } from '../types';
+import { uploadFile } from '@/firebase';
 
-const props = withDefaults(defineProps<{
-  initialData?: Partial<Teacher>
-  isLoading?: boolean
-}>(), {
-  initialData: () => ({}),
-  isLoading: false
-})
+const props = defineProps<{
+  initialData?: Teacher;
+  isLoading?: boolean;
+  enrollmentOnly?: boolean;  // New prop to control which fields to display
+}>();
 
-const emit = defineEmits<{
-  (e: 'submit', data: Partial<Teacher>): void
-  (e: 'cancel'): void
-}>()
+const emit = defineEmits(['submit', 'cancel']);
 
-const formData = ref({
+// Default data structure
+const defaultData = {
+  id: '',
   name: '',
   email: '',
   phone: '',
   address: '',
   biography: '',
   photoURL: '',
-  specialties: [] as string[],
-  instruments: [] as TeacherInstrument[],
-  schedule: [] as TeacherSchedule[],
-  status: 'activo' as const,
-  ...props.initialData
-})
+  specialties: [],
+  instruments: [],
+  schedule: [],
+  role: 'teacher',
+};
 
-const newInstrument = ref({ name: '', level: 'Principiante' })
+// Form data with provided initial data or defaults
+const formData = ref({ ...defaultData, ...props.initialData });
+
+// Input fields for adding new items
+const newSpecialty = ref('');
+const newInstrument = ref({ name: '', level: 'Intermedio' });
 const newSchedule = ref({
   dayOfWeek: 1,
-  startTime: '09:00',
-  endTime: '10:00',
-  className: ''
-})
-const newSpecialty = ref('')
+  className: '',
+  startTime: '',
+  endTime: '',
+});
 
-const handlePhotoUpload = async (files: FileList) => {
-  if (!files.length) return
-  
-  try {
-    const file = files[0]
-    const fileName = file.name
-    const path = `photos/teachers/${fileName}`
-    const result = await uploadFile(file, path, "images")
-    
-    formData.value.avatar = result.url
-  } catch (error) {
-    console.error('Error uploading photo:', error)
+// Watch for prop changes and update form data
+watchEffect(() => {
+  if (props.initialData) {
+    formData.value = { ...defaultData, ...props.initialData };
   }
+});
+
+// Methods
+function handlePhotoUpload(file: File) {
+  if (!file) return;
+  const uploadPath = `teachers/${Date.now()}_${file.name}`;
+  uploadFile(uploadPath, file).then((url) => {
+    formData.value.photoURL = url;
+  });
 }
 
-const addInstrument = () => {
-  if (newInstrument.value.name && newInstrument.value.level) {
-    formData.value.instruments.push({
-      id: '',
-      teacherId: '',
-      instrument: newInstrument.value.name,
-      level: newInstrument.value.level,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    })
-    newInstrument.value = { name: '', level: 'Principiante' }
-  }
+function addSpecialty() {
+  if (!newSpecialty.value.trim()) return;
+  formData.value.specialties.push(newSpecialty.value.trim());
+  newSpecialty.value = '';
 }
 
-const removeInstrument = (index: number) => {
-  formData.value.instruments.splice(index, 1)
+function removeSpecialty(index: number) {
+  formData.value.specialties.splice(index, 1);
 }
 
-const addSchedule = () => {
-  if (newSchedule.value.className) {
-    formData.value.schedule.push({
-      id: '',
-      teacherId: '',
-      day: newSchedule.value.dayOfWeek.toString(),
-      start: newSchedule.value.startTime,
-      end: newSchedule.value.endTime,
-      class: newSchedule.value.className,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    })
-    newSchedule.value = {
-      dayOfWeek: 1,
-      startTime: '09:00',
-      endTime: '10:00',
-      className: ''
-    }
-  }
+function addInstrument() {
+  if (!newInstrument.value.name.trim()) return;
+  formData.value.instruments.push({
+    instrument: newInstrument.value.name.trim(),
+    level: newInstrument.value.level,
+  });
+  newInstrument.value = { name: '', level: 'Intermedio' };
 }
 
-const removeSchedule = (index: number) => {
-  formData.value.schedule.splice(index, 1)
+function removeInstrument(index: number) {
+  formData.value.instruments.splice(index, 1);
 }
 
-const addSpecialty = () => {
-  if (newSpecialty.value && !formData.value.specialties.includes(newSpecialty.value)) {
-    formData.value.specialties.push(newSpecialty.value)
-    newSpecialty.value = ''
-  }
+function addSchedule() {
+  if (!newSchedule.value.className.trim() || !newSchedule.value.startTime || !newSchedule.value.endTime) return;
+  formData.value.schedule.push({
+    day: newSchedule.value.dayOfWeek.toString(),
+    class: newSchedule.value.className.trim(),
+    start: newSchedule.value.startTime,
+    end: newSchedule.value.endTime,
+  });
+  newSchedule.value = {
+    dayOfWeek: 1,
+    className: '',
+    startTime: '',
+    endTime: '',
+  };
 }
 
-const removeSpecialty = (index: number) => {
-  formData.value.specialties.splice(index, 1)
+function removeSchedule(index: number) {
+  formData.value.schedule.splice(index, 1);
 }
 
-const handleSubmit = () => {
-  emit('submit', formData.value)
+function handleSubmit() {
+  emit('submit', { ...formData.value });
 }
 
-const handleCancel = () => {
-  emit('cancel')
+function handleCancel() {
+  emit('cancel');
 }
 </script>
 
 <template>
   <form @submit.prevent="handleSubmit" class="space-y-6">
-    <!-- Profile Photo -->
-    <div>
+    <!-- Profile Photo (only shown when not in enrollmentOnly mode) -->
+    <div v-if="!props.enrollmentOnly">
       <label class="form-label">Foto de Perfil</label>
       <div class="flex items-center gap-4">
         <img
@@ -138,8 +128,8 @@ const handleCancel = () => {
       </div>
     </div>
 
-    <!-- Basic Info -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Basic Info (only shown when not in enrollmentOnly mode) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" v-if="!props.enrollmentOnly">
       <div>
         <label for="name" class="form-label">Nombre Completo</label>
         <input
@@ -148,7 +138,7 @@ const handleCancel = () => {
           type="text"
           required
           class="form-input"
-          :disabled="isLoading"
+          :disabled="props.isLoading"
         />
       </div>
 
@@ -160,7 +150,7 @@ const handleCancel = () => {
           type="email"
           required
           class="form-input"
-          :disabled="isLoading"
+          :disabled="props.isLoading"
         />
       </div>
 
@@ -172,7 +162,7 @@ const handleCancel = () => {
           type="tel"
           required
           class="form-input"
-          :disabled="isLoading"
+          :disabled="props.isLoading"
         />
       </div>
 
@@ -184,20 +174,20 @@ const handleCancel = () => {
           type="text"
           required
           class="form-input"
-          :disabled="isLoading"
+          :disabled="props.isLoading"
         />
       </div>
     </div>
 
-    <!-- Biography -->
-    <div>
+    <!-- Biography (only shown when not in enrollmentOnly mode) -->
+    <div v-if="!props.enrollmentOnly">
       <label for="biography" class="form-label">Biografía</label>
       <textarea
         id="biography"
         v-model="formData.biography"
         rows="4"
         class="form-input"
-        :disabled="isLoading"
+        :disabled="props.isLoading"
       ></textarea>
     </div>
 
@@ -210,13 +200,13 @@ const handleCancel = () => {
           type="text"
           class="form-input"
           placeholder="Nueva especialidad"
-          :disabled="isLoading"
+          :disabled="props.isLoading"
         />
         <button
           type="button"
           class="btn btn-primary"
           @click="addSpecialty"
-          :disabled="isLoading"
+          :disabled="props.isLoading"
         >
           <PlusCircleIcon class="w-5 h-5" />
         </button>
@@ -232,7 +222,7 @@ const handleCancel = () => {
             type="button"
             class="text-gray-500 hover:text-red-500"
             @click="removeSpecialty(index)"
-            :disabled="isLoading"
+            :disabled="props.isLoading"
           >
             <MinusCircleIcon class="w-4 h-4" />
           </button>
@@ -249,12 +239,12 @@ const handleCancel = () => {
           type="text"
           class="form-input"
           placeholder="Nombre del instrumento"
-          :disabled="isLoading"
+          :disabled="props.isLoading"
         />
         <select
           v-model="newInstrument.level"
           class="form-input"
-          :disabled="isLoading"
+          :disabled="props.isLoading"
         >
           <option value="Principiante">Principiante</option>
           <option value="Intermedio">Intermedio</option>
@@ -265,7 +255,7 @@ const handleCancel = () => {
           type="button"
           class="btn btn-primary"
           @click="addInstrument"
-          :disabled="isLoading"
+          :disabled="props.isLoading"
         >
           <PlusCircleIcon class="w-5 h-5" />
         </button>
@@ -281,7 +271,7 @@ const handleCancel = () => {
             type="button"
             class="text-gray-500 hover:text-red-500"
             @click="removeInstrument(index)"
-            :disabled="isLoading"
+            :disabled="props.isLoading"
           >
             <MinusCircleIcon class="w-5 h-5" />
           </button>
@@ -296,7 +286,7 @@ const handleCancel = () => {
         <select
           v-model="newSchedule.dayOfWeek"
           class="form-input"
-          :disabled="isLoading"
+          :disabled="props.isLoading"
         >
           <option :value="1">Lunes</option>
           <option :value="2">Martes</option>
@@ -311,25 +301,25 @@ const handleCancel = () => {
           type="text"
           class="form-input"
           placeholder="Nombre de la clase"
-          :disabled="isLoading"
+          :disabled="props.isLoading"
         />
         <input
           v-model="newSchedule.startTime"
           type="time"
           class="form-input"
-          :disabled="isLoading"
+          :disabled="props.isLoading"
         />
         <input
           v-model="newSchedule.endTime"
           type="time"
           class="form-input"
-          :disabled="isLoading"
+          :disabled="props.isLoading"
         />
         <button
           type="button"
           class="btn btn-primary md:col-span-2"
           @click="addSchedule"
-          :disabled="isLoading"
+          :disabled="props.isLoading"
         >
           Agregar Horario
         </button>
@@ -348,7 +338,7 @@ const handleCancel = () => {
             type="button"
             class="text-gray-500 hover:text-red-500"
             @click="removeSchedule(index)"
-            :disabled="isLoading"
+            :disabled="props.isLoading"
           >
             <MinusCircleIcon class="w-5 h-5" />
           </button>
@@ -362,16 +352,16 @@ const handleCancel = () => {
         type="button"
         class="btn btn-secondary"
         @click="handleCancel"
-        :disabled="isLoading"
+        :disabled="props.isLoading"
       >
         Cancelar
       </button>
       <button
         type="submit"
         class="btn btn-primary"
-        :disabled="isLoading"
+        :disabled="props.isLoading"
       >
-        {{ isLoading ? 'Guardando...' : 'Guardar' }}
+        {{ props.isLoading ? 'Guardando...' : 'Guardar' }}
       </button>
     </div>
   </form>
