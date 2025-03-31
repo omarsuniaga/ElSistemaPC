@@ -9,13 +9,16 @@ import {
   ChartBarIcon,
   AcademicCapIcon,
   BookOpenIcon,
-  CalendarDaysIcon
+  CalendarDaysIcon,
+  DocumentTextIcon,
+  DocumentChartBarIcon
 } from '@heroicons/vue/24/outline'
 
-// Menú para maestros: rutas que comienzan con "/teacher"
+// Menú para maestros: rutas que comienzan con "/teacher" 
+// (asegurándose de que las rutas coincidan con las definidas en el router)
 export const teacherMenuItems = [
   { 
-    name: 'Inicio', 
+    name: 'Dashboard', 
     icon: HomeIcon, 
     to: '/teacher', 
     ariaLabel: 'Panel de control del maestro'

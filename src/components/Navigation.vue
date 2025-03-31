@@ -8,7 +8,11 @@ import { teacherMenuItems, adminMenuItems } from '../modulos/Teachers/constants/
 const route = useRoute()
 const isTeacher = ref(false)
 const isAdminOrDirector = ref(false)
-const menuItems = ref(adminMenuItems)
+const menuItems = ref([])
+const visibleMenuItems = computed(() => {
+  // Mostrar solo los primeros 5 items para evitar sobrecarga en la interfaz móvil
+  return menuItems.value.slice(0, 5)
+})
 const canAccessNavigation = ref(false)
 
 // Initialize auth store only after component is mounted
@@ -20,7 +24,20 @@ onMounted(async () => {
   // Set the data after auth store is available
   isTeacher.value = authStore.isTeacher
   isAdminOrDirector.value = authStore.isDirector || authStore.isAdmin
-  menuItems.value = isTeacher.value ? teacherMenuItems : adminMenuItems
+  
+  // Asignar los items del menú según el rol
+  if (isTeacher.value) {
+    menuItems.value = teacherMenuItems
+  } else if (isAdminOrDirector.value) {
+    menuItems.value = adminMenuItems
+  } else {
+    // Menú básico para usuarios sin rol específico
+    menuItems.value = [
+      { name: 'Inicio', icon: 'HomeIcon', to: '/', ariaLabel: 'Inicio' },
+      { name: 'Perfil', icon: 'UserCircleIcon', to: '/profile', ariaLabel: 'Mi perfil' }
+    ]
+  }
+  
   canAccessNavigation.value = authStore.isApproved
 })
 
@@ -76,7 +93,7 @@ const isActive = (path: string) => {
     <div class="container mx-auto px-2">
       <div class="flex justify-around py-1">
         <router-link
-          v-for="item in menuItems"
+          v-for="item in visibleMenuItems"
           :key="item.name"
           :to="item.to"
           :aria-label="item.ariaLabel"

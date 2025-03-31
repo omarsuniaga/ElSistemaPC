@@ -4,18 +4,19 @@
       <!-- Renderizamos dinámicamente los elementos de navegación según el rol -->
       <router-link 
         v-for="item in navigationItems" 
-        :key="item.path" 
-        :to="item.path" 
+        :key="item.to" 
+        :to="item.to" 
         class="flex flex-col items-center justify-center text-xs space-y-1 py-3"
-        :class="[currentRoute.includes(item.path) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']"
+        :class="[currentRoute.includes(item.to) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']"
         active-class="text-primary-600 dark:text-primary-400"
+        :aria-label="item.ariaLabel"
       >
         <component 
           :is="item.icon" 
-          :class="[currentRoute.includes(item.path) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']" 
+          :class="[currentRoute.includes(item.to) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']" 
           class="h-6 w-6" 
         />
-        <span>{{ item.label }}</span>
+        <span>{{ item.name }}</span>
       </router-link>
     </div>
   </footer>
@@ -25,101 +26,43 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import {
-  HomeIcon,
-  UserGroupIcon,
-  AcademicCapIcon,
-  UserIcon,
-  ClipboardDocumentListIcon,
-  BookOpenIcon,
-  CalendarDaysIcon,
-  ClockIcon
-} from '@heroicons/vue/24/outline'
+import { teacherMenuItems, adminMenuItems } from '../modulos/Teachers/constants/menuItems'
+import { HomeIcon, UserIcon } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
 const authStore = useAuthStore()
 const currentRoute = computed(() => route.path)
 
-// Items de navegación basados en el rol del usuario
+// Items de navegación basados en el rol del usuario - usando las mismas constantes que Navigation.vue
 const navigationItems = computed(() => {
-  // Elementos comunes a todos los roles
-  const commonItems = [
-    {
-      path: '/home',
-      label: 'Inicio',
-      icon: HomeIcon
-    }
-  ]
-
   // Para directores
   if (authStore.isDirector) {
-    return [
-      ...commonItems,
-      {
-        path: '/students',
-        label: 'Alumnos',
-        icon: UserGroupIcon
-      },
-      {
-        path: '/classes',
-        label: 'Clases',
-        icon: AcademicCapIcon
-      },
-      {
-        path: '/attendance',
-        label: 'Asistencia',
-        icon: ClipboardDocumentListIcon
-      },
-      {
-        path: '/profile',
-        label: 'Perfil',
-        icon: UserIcon
-      }
-    ]
+    // Mostrar hasta 5 elementos del menú de admin
+    return adminMenuItems.slice(0, 5);
   }
   
   // Para maestros
   else if (authStore.isTeacher) {
-    return [
-      ...commonItems,
-      {
-        path: '/students',
-        label: 'Alumnos',
-        icon: UserGroupIcon
-      },
-      {
-        path: '/attendance',
-        label: 'Asistencia',
-        icon: ClipboardDocumentListIcon
-      },
-      {
-        path: '/schedule',
-        label: 'Horarios',
-        icon: ClockIcon
-      },
-      {
-        path: '/profile',
-        label: 'Perfil',
-        icon: UserIcon
-      }
-    ]
+    // Mostrar hasta 5 elementos del menú de maestros
+    return teacherMenuItems.slice(0, 5);
   }
   
   // Para administradores u otros roles
   else {
     return [
-      ...commonItems,
       {
-        path: '/profile',
-        label: 'Perfil',
-        icon: UserIcon
+        name: 'Inicio',
+        icon: HomeIcon,
+        to: '/',
+        ariaLabel: 'Inicio'
       },
       {
-        path: '/settings',
-        label: 'Ajustes',
-        icon: UserIcon
+        name: 'Perfil',
+        icon: UserIcon,
+        to: '/profile',
+        ariaLabel: 'Mi perfil'
       }
-    ]
+    ];
   }
 })
 </script>
