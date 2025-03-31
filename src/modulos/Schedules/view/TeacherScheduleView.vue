@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useTeachersStore } from '../../Teachers/store/teachers'
-import { useClassesStore } from '../../Classes/store/classes'
+import { useTeachersStore } from '@/modulos/Teachers/store/teachers'
+import { useClassesStore } from '@/modulos/Classes/store/classes'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import ScheduleNavigation from '../../Schedules/components/ScheduleNavigation.vue'
@@ -19,14 +19,21 @@ import {
   UserIcon 
 } from '@heroicons/vue/24/outline'
 
-// Obtener teacherId de la ruta
+// Obtener teacherId de Firebase auth o de la ruta
+import { getAuth } from 'firebase/auth'
 const route = useRoute()
 const teachersStore = useTeachersStore()
 const classesStore = useClassesStore()
 const selectedTeacher = ref('')
+const auth = getAuth()
 
 // Agregar tipos explícitos para mejorar la seguridad de tipos
-const teacherId = computed(() => route.params.id as string)
+const teacherId = computed(() => {
+  // Primero intentar obtener el ID del usuario autenticado
+  if (auth.currentUser) return auth.currentUser.uid
+  // Si no hay usuario autenticado, usar el ID de la ruta
+  return route.params.id as string
+})
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 // Definir una interfaz para el teacher para mejorar el tipado
@@ -63,7 +70,7 @@ const loadData = async () => {
     await teachersStore.fetchTeachers()
     teacher.value = teachersStore.getTeacherById(teacherId.value)
     if (!teacher.value) {
-      throw new Error('Maestro no encontrado')
+      throw new Error('No se encontró información del maestro. Por favor verifique que el ID sea correcto o contacte al administrador.')
     }
     schedule.value = await teachersStore.getTeacherSchedule(teacher.value.id)
   } catch (err: any) {
@@ -193,7 +200,7 @@ const getTeacherClasses = (teacherId: string) => {
         <div>
           <div class="flex items-center gap-2">
             <!-- Puede sustituir por el logo de la Academia -->
-            <img src="../assets/ElSistemaPCLogo.jpeg" alt="Logo Academia" class="h-12 w-auto" />
+            <img src="@/assets/ElSistemaPCLogo.jpeg" alt="Logo Academia" class="h-12 w-auto" />
             <div>
               <h1 class="text-2xl font-bold text-primary-700">Academia de Música</h1>
               <p class="text-gray-600">Horario de Clases - Maestro</p>
@@ -275,7 +282,7 @@ const getTeacherClasses = (teacherId: string) => {
             </div>
             
             <!-- Integración del componente TeacherWeeklySchedule -->
-            <TeacherWeeklySchedule :teacherId="teacher?.id" />
+            <TeacherWeeklySchedule :teacherId="teacherId" />
           </div>
           <div v-else class="text-center py-4 text-gray-500">
             No hay clases asignadas
@@ -365,7 +372,6 @@ const getTeacherClasses = (teacherId: string) => {
 </template>
 
 <style scoped>
-/* ...existing code similar a StudentScheduleView... */
 @media print {
   body {
     -webkit-print-color-adjust: exact !important;

@@ -103,7 +103,7 @@ const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado
 const timeSlots = Array.from({ length: 13 }, (_, i) => i + 7)
 
 const props = defineProps<{
-  teacherId: string
+  teacherId?: string
   classes?: any[]
 }>()
 
@@ -115,7 +115,10 @@ const teacherClasses = computed(() => {
     return props.classes
   }
   
-  if (!props.teacherId) return []
+  if (!props.teacherId) {
+    console.warn('TeacherWeeklySchedule: teacherId prop is required')
+    return []
+  }
   return classesStore.classes.filter(c => c.teacherId === props.teacherId)
 })
 

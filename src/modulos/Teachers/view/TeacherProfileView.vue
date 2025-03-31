@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTeachersStore } from '../store/teachers'
-import { uploadFile } from '../../../services/storage'
+import { uploadFile } from '@/services/storage'
 import FileUpload from '../../../components/FileUpload.vue'
 import { 
   UserIcon, 
@@ -24,9 +24,22 @@ const router = useRouter()
 const teachersStore = useTeachersStore()
 
 const teacherId = route.params.id as string
+const isLoading = ref(true)
+const error = ref<string | null>(null)
 const teacher = computed(() => teachersStore.teachers.find(t => t.id === teacherId))
 
 const isUploading = ref(false)
+
+// Watch for teacher changes to handle loading state
+watch(teacher, (newTeacher) => {
+  if (newTeacher) {
+    isLoading.value = false
+    error.value = null
+  } else {
+    error.value = 'No se pudo cargar la información del profesor'
+    isLoading.value = false
+  }
+}, { immediate: true })
 
 const statistics = ref({
   totalStudents: 0,
@@ -40,10 +53,15 @@ const loadStatistics = async () => {
   if (!teacher.value) return
 
   let totalStudents = 0
-  // Use optional chaining since clases might be undefined
-  for (const clase of teacher.value.clases || []) {
-    const classStudents = await teachersStore.getClassStudents(clase)
-    totalStudents += classStudents.length
+  try {
+    // Use optional chaining since clases might be undefined
+    for (const clase of teacher.value.clases || []) {
+      const classStudents = await teachersStore.getClassStudents(clase)
+      totalStudents += classStudents.length
+    }
+  } catch (err) {
+    console.error('Error loading class students:', err)
+    throw err
   }
 
   statistics.value = {
@@ -56,7 +74,10 @@ const loadStatistics = async () => {
 }
 
 onMounted(() => {
-  loadStatistics()
+  loadStatistics().catch(err => {
+    console.error('Error loading statistics:', err)
+    error.value = 'Error al cargar estadísticas'
+  })
 })
 
 const handleProfilePhotoUpload = async (files: FileList) => {
@@ -106,7 +127,11 @@ const handleDelete = () => {
 </script>
 
 <template>
-  <div v-if="teacher" class="py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div v-if="!isLoading" class="py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div v-if="error" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
+      <p>{{ error }}</p>
+    </div>
+    <div v-if="teacher" class="space-y-6">
     <!-- Header con foto e información principal -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
       <div class="relative h-32 sm:h-48 bg-gradient-to-r from-primary-600 to-primary-800">
@@ -303,10 +328,12 @@ const handleDelete = () => {
       </div>
     </div>
   </div>
-  <div v-else class="py-6 text-center">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-        <p class="text-gray-600 dark:text-gray-400">Maestro no encontrado</p>
+  </div>
+    <div v-else class="py-6 text-center">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          <p class="text-gray-600 dark:text-gray-400">Maestro no encontrado</p>
+        </div>
       </div>
     </div>
   </div>

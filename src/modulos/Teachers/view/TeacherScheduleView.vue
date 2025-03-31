@@ -5,10 +5,12 @@ import { useTeachersStore } from '../store/teachers'
 import { useClassesStore } from '../../Classes/store/classes'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import ScheduleNavigation from '../../Schedules/components/ScheduleNavigation.vue'
-import TeacherWeeklySchedule from '../components/TeacherWeeklySchedule.vue'
+// Temporarily comment out until ScheduleNavigation is properly configured in tsconfig.json
+// import ScheduleNavigation from '../../Schedules/components/ScheduleNavigation.vue'
+import { TeacherWeeklySchedule } from '../components/TeacherWeeklySchedule.vue'
 import html2pdf from 'html2pdf.js'
 import type { SVGAttributes } from 'vue'
+import { getAuth } from 'firebase/auth'
 
 export interface HeroIconProps extends SVGAttributes {}
 
@@ -19,14 +21,20 @@ import {
   UserIcon 
 } from '@heroicons/vue/24/outline'
 
-// Obtener teacherId de la ruta
+// Obtener teacherId de la ruta o auth
 const route = useRoute()
+const auth = getAuth()
 const teachersStore = useTeachersStore()
 const classesStore = useClassesStore()
 const selectedTeacher = ref('')
 
 // Agregar tipos explícitos para mejorar la seguridad de tipos
-const teacherId = computed(() => route.params.id as string)
+const teacherId = computed(() => {
+  // Preferir el ID del usuario autenticado si está disponible
+  if (auth.currentUser?.uid) return auth.currentUser.uid
+  // Fallback al ID de la ruta
+  return route.params.id as string
+})
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 // Definir una interfaz para el teacher para mejorar el tipado
@@ -365,7 +373,6 @@ const getTeacherClasses = (teacherId: string) => {
 </template>
 
 <style scoped>
-/* ...existing code similar a StudentScheduleView... */
 @media print {
   body {
     -webkit-print-color-adjust: exact !important;

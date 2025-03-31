@@ -423,14 +423,14 @@ watch([successMessage, errorMessage], clearMessages)
     <div v-if="isMobile && showMobileDetail" class="fixed top-0 left-0 w-full z-10 
     bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 
     py-3 flex items-center">
-      <button @click="goBackToList" class="mr-4 text-gray-600 dark:text-gray-300">
+      <button @click="goBackToList" class="mr-4 text-gray-600 dark:text-gray-300 p-2 -ml-2">
         <ArrowLeftIcon class="h-6 w-6" />
       </button>
       <h2 class="text-lg font-medium truncate">{{ selectedClass?.name || 'Detalles de clase' }}</h2>
     </div>
 
     <!-- Main responsive container -->
-    <div class="flex h-screen">
+    <div class="flex h-screen flex-col md:flex-row">
       <!-- List panel (full width on mobile, 30% on desktop) -->
       <div 
         :class="{
@@ -438,7 +438,7 @@ watch([successMessage, errorMessage], clearMessages)
           'hidden': isMobile && showMobileDetail,
           'w-full md:w-1/3 border-r border-gray-200 dark:border-gray-700': !isMobile
         }"
-        class="h-full overflow-y-auto "
+        class="h-full overflow-y-auto"
       >
         <div class="p-2 md:top-0">
           <!-- Mensajes de error y éxito -->
@@ -461,7 +461,7 @@ watch([successMessage, errorMessage], clearMessages)
             <div class="flex flex-wrap gap-2 w-full md:w-auto justify-end md:justify-end">
               <button 
                 @click="openInfoModal" 
-                class="btn bg-red-600 text-white hover:bg-red-700 flex items-center gap-1 md:gap-2 px-2 md:px-2 py-2 rounded-lg transition-colors"
+                class="btn bg-red-600 text-white hover:bg-red-700 flex items-center gap-1 md:gap-2 px-4 py-3 rounded-lg transition-colors"
                 :disabled="isLoading"
                 title="Información"
               >

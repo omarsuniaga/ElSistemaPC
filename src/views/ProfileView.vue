@@ -312,6 +312,7 @@ watch(() => showAccessRequests.value, (isShowing) => {
 });
 
 onMounted(async () => {
+  console.log("Aqui toy")
   if (!authStore.isLoggedIn) {
     router.push('/login')
     return

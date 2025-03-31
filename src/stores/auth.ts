@@ -60,7 +60,7 @@ export const useAuthStore = defineStore('auth', {
     canAccessModule: (state) => (moduleName: string) => {
       const roleModules = {
         'Maestro': ['home', 'attendance', 'schedule', 'profile'],
-        'Director': ['home', 'attendance', 'schedule', 'profile', 'students', 'classes', 'reports', 'teachers'],
+        'Director': ['home', 'attendance', 'schedule', 'students', 'classes', 'reports', 'teachers', 'profile'],
         'Admin': ['home', 'profile']
       }
       return state.user?.role && roleModules[state.user.role as keyof typeof roleModules]?.includes(moduleName)

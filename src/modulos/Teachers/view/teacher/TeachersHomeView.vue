@@ -181,6 +181,36 @@ const notifications = ref([
 ]);
 
 // Funciones auxiliares
+function getStudentCounts() {
+  const counts: Record<string, number> = {};
+  teacherClasses.value.forEach(classItem => {
+    counts[classItem.id] = classItem.studentIds?.length || 0;
+  });
+  return counts;
+}
+
+function getTopStudents() {
+  const topStudents: Record<string, Array<{id: string, nombre: string, apellido: string}>> = {};
+  teacherClasses.value.forEach(classItem => {
+    if (!classItem.studentIds) {
+      topStudents[classItem.id] = [];
+      return;
+    }
+    
+    topStudents[classItem.id] = classItem.studentIds
+      .slice(0, 3) // Get first 3 students as top students
+      .map(studentId => {
+        const student = studentsStore.getStudentById(studentId);
+        return {
+          id: studentId,
+          nombre: student?.nombre || 'Unknown',
+          apellido: student?.apellido || 'Student'
+        };
+      });
+  });
+  return topStudents;
+}
+
 function getNextClassDate(day, time) {
   const today = new Date();
   const currentDay = today.getDay();
@@ -488,12 +518,7 @@ onMounted(async () => {
     if (classesStore.classes.length > 0) {
       console.log('🔍 Estructura de ejemplo de una clase:');
       const sampleClass = classesStore.classes[0];
-      console.log({
-        id: sampleClass.id,
-        name: sampleClass.name,
-        schedule: sampleClass.schedule,
-        teacherId: sampleClass.teacherId
-      });
+      
     }
   } catch (error) {
     console.error('❌ Error cargando datos:', error);
@@ -591,7 +616,11 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
       </div>
     </header>
     
-    <ClassCards />
+    <ClassCards 
+  :classes="teacherClasses"
+  :student-counts="getStudentCounts()"
+  :top-students="getTopStudents()"
+/>
     <!-- Estado de carga -->
     <div v-if="loading" class="flex justify-center items-center py-12">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
