@@ -3,7 +3,7 @@
     <div class="flex items-center gap-4">
       <button 
         v-if="view !== 'calendar'"
-        @click="$emit('change-view', 'calendar')"
+        @click="navigateToCalendar"
         class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         title="Volver al calendario"
       >
@@ -60,6 +60,7 @@
 import { computed } from 'vue'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { useRouter } from 'vue-router'
 import {
   ArrowLeftIcon,
   ChartBarIcon,
@@ -68,6 +69,7 @@ import {
   PlusCircleIcon,
 } from '@heroicons/vue/24/outline'
 
+const router = useRouter()
 const props = defineProps<{
   selectedDate?: string
   selectedClass?: string
@@ -75,13 +77,24 @@ const props = defineProps<{
   showAnalytics: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'change-view', view: 'calendar' | 'class-select' | 'attendance-form'): void
   (e: 'toggle-analytics'): void
   (e: 'open-report-modal'): void
   (e: 'open-export-modal'): void
   (e: 'create-new-attendance'): void
 }>()
+
+// Función para navegar al calendario
+const navigateToCalendar = () => {
+  // Emitir el evento para cambiar la vista
+  emit('change-view', 'calendar')
+  
+  // Como respaldo, también navegamos a la ruta de asistencias
+  if (props.view !== 'calendar') {
+    router.push('/attendance')
+  }
+}
 
 const displayedDate = computed(() => {
   try {
