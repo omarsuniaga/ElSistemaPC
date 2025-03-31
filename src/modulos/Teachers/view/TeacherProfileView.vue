@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTeachersStore } from '../store/teachers'
-import { uploadFile } from '@/services/storage'
+import { uploadFile } from '../../../services/storage'
 import FileUpload from '../../../components/FileUpload.vue'
 import { 
   UserIcon, 
@@ -68,7 +68,8 @@ const loadStatistics = async () => {
   try {
     // Use optional chaining since clases might be undefined
     for (const clase of teacher.value.clases || []) {
-      const classStudents = await teachersStore.getStudentsInClass(clase)
+      const classStudents = await teachersStore.getStudentsForClass(clase)
+
       totalStudents += classStudents.length
     }
   } catch (err) {
@@ -78,8 +79,8 @@ const loadStatistics = async () => {
 
   statistics.value = {
     totalStudents,
-    averageAttendance: teachersStore.getTeacherAttendanceRate(teacherId),
-    classesGiven: teachersStore.getTeacherClassesCount(teacherId),
+    averageAttendance: 0, // TODO: Implement attendance calculation when API method is available
+    classesGiven: (await teachersStore.getTeacherClasses(teacherId.value))?.length || 0,
     activeClasses: teacher.value.clases?.length || 0,
     lastUpdated: new Date().toISOString()
   }
@@ -99,11 +100,11 @@ const handleProfilePhotoUpload = async (files: FileList) => {
   try {
     const file = files[0]
     const path = `photos/teachers/${teacher.value.id}/${Date.now()}-${file.name}`
-    const result = await uploadFile(file, path, "images")
+    const result = await uploadFile({ file, path })
     
-    await teachersStore.updateTeacher(teacherId, {
+    await teachersStore.updateTeacher(String(teacherId.value), {
       ...teacher.value,
-      avatar: result.url
+      avatar: result
     })
   } catch (error) {
     console.error('Error uploading profile photo:', error)
