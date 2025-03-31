@@ -23,7 +23,7 @@ const handleSubmit = async (data: Partial<Teacher>) => {
   error.value = null
   
   try {
-    await teachersStore.updateTeacherEnrollment(teacherId, {
+    await teachersStore.updateTeacher(teacherId, {
       instruments: data.instruments,
       specialties: data.specialties,
       schedule: data.schedule

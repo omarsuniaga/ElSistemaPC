@@ -35,10 +35,10 @@ watch(teacherId, (newId) => {
   } else {
     localStorage.removeItem('teacherId')
   }
-})
+}, { immediate: true })
 const isLoading = ref(true)
 const error = ref<string | null>(null)
-const teacher = computed(() => teachersStore.teachers.find(t => t.id === teacherId))
+const teacher = computed(() => teachersStore.teachers.find((t: { id: string; [key: string]: any }) => t.id === teacherId.value))
 
 const isUploading = ref(false)
 
@@ -68,7 +68,7 @@ const loadStatistics = async () => {
   try {
     // Use optional chaining since clases might be undefined
     for (const clase of teacher.value.clases || []) {
-      const classStudents = await teachersStore.getClassStudents(clase)
+      const classStudents = await teachersStore.getStudentsInClass(clase)
       totalStudents += classStudents.length
     }
   } catch (err) {
@@ -125,7 +125,7 @@ const handleCompleteForm = () => {
   router.push({
     path: '/complete-profile',
     query: { 
-      teacherId: teacherId,
+      teacherId: String(teacherId.value),
       mode: 'edit'
     },
     replace: true // Evita que se acumule en el historial
@@ -140,8 +140,8 @@ const handleDelete = () => {
 
 <template>
   <div v-if="!isLoading" class="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-    <div v-if="error" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
-      <p>{{ error }}</p>
+    <div v-if="error" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg">
+      <p class="font-medium">{{ error }}</p>
     </div>
     <div v-if="teacher" class="space-y-6">
     <!-- Header con foto e información principal -->
@@ -153,8 +153,8 @@ const handleDelete = () => {
       
       <div class="relative px-4 sm:px-6 pb-6">
         <!-- Foto y acciones -->
-        <div class="flex justify-between items-start -mt-16 sm:-mt-20 mb-4 relative z-10">
-          <div class="flex items-end">
+        <div class="flex flex-col sm:flex-row justify-between items-start gap-4 -mt-16 sm:-mt-20 mb-4 relative z-10">
+          <div class="flex flex-col sm:flex-row items-start sm:items-end gap-4">
             <div class="relative">
               <img
                 :src="teacher.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${teacher.name}`"
@@ -179,7 +179,7 @@ const handleDelete = () => {
                 </FileUpload>
               </div>
             </div>
-            <div class="ml-4">
+            <div class="ml-0 sm:ml-4">
               <h1 class="text-2xl sm:text-3xl font-bold">
                 {{ teacher.nombre }} {{ teacher.apellido }}
               </h1>
@@ -190,31 +190,31 @@ const handleDelete = () => {
           </div>
           
           <!-- Botones de acción -->
-          <div class="flex gap-3">
+          <div class="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto justify-end">
             <button
               @click="handleEdit"
-              class="btn bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+              class="btn bg-primary-600 text-white hover:bg-primary-700 transition-colors flex items-center justify-center"
             >
               <PencilIcon class="w-5 h-5 mr-2" />
               Editar Perfil
             </button>
             <button
               @click="handleEditEnrollment"
-              class="btn bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              class="btn bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center justify-center"
             >
               <DocumentTextIcon class="w-5 h-5 mr-2" />
-              Editar Ficha de Inscripción
+              Editar Ficha
             </button>
             <button
               @click="handleCompleteForm"
-              class="btn bg-green-600 text-white hover:bg-green-700 transition-colors preserve-theme"
+              class="btn bg-green-600 text-white hover:bg-green-700 transition-colors preserve-theme flex items-center justify-center"
             >
               <DocumentTextIcon class="w-5 h-5 mr-2" />
-              Completar Formulario
+              Completar
             </button>
             <button
               @click="handleDelete"
-              class="btn bg-red-600 text-white hover:bg-red-700 transition-colors"
+              class="btn bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center justify-center"
             >
               <TrashIcon class="w-5 h-5 mr-2" />
               Eliminar

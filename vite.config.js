@@ -23,6 +23,7 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     rollupOptions: {
+      external: ['@rollup/rollup-linux-x64-gnu', '@rollup/rollup-linux-x64-musl'],
       output: {
         manualChunks: undefined,
         entryFileNames: 'assets/[name].[hash].js',
