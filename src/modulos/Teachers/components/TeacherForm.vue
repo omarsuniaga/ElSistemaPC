@@ -52,7 +52,7 @@ watchEffect(() => {
 function handlePhotoUpload(file: File) {
   if (!file) return;
   const uploadPath = `teachers/${Date.now()}_${file.name}`;
-  uploadFile(uploadPath, file).then((url) => {
+  uploadFile(uploadPath, file).then((url: string) => {
     formData.value.photoURL = url;
   });
 }

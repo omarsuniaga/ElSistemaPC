@@ -19,7 +19,6 @@ import { useToast } from '../../../../components/ui/toast/use-toast';
 import { Dialog, DialogPanel, DialogOverlay, TransitionRoot, TransitionChild } from '@headlessui/vue';
 import TeacherWeeklySchedule from '../../components/TeacherWeeklySchedule.vue'; // Componente que acabamos de crear
 import TeacherClassesCard from '../../components/TeacherClassesCard.vue';
-import ClassCards from '@/modulos/Classes/components/ClassCards.vue';
 import ClassForm from '@/modulos/Classes/components/ClassForm.vue'; // Componente existente
 import ClassStudentManager from '@/modulos/Classes/components/ClassStudentManager.vue'; // Componente existente
 
@@ -616,11 +615,7 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
       </div>
     </header>
     
-    <ClassCards 
-  :classes="teacherClasses"
-  :student-counts="getStudentCounts()"
-  :top-students="getTopStudents()"
-/>
+  
     <!-- Estado de carga -->
     <div v-if="loading" class="flex justify-center items-center py-12">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
