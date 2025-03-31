@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useTeachersStore } from '../store/teachers'
+import { useTeachersStore } from '../../Teachers/store/teachers'
 import type { Class } from '../types/class'
 import {
   UserIcon,

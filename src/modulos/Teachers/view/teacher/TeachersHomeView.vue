@@ -19,6 +19,7 @@ import { useToast } from '../../../../components/ui/toast/use-toast';
 import { Dialog, DialogPanel, DialogOverlay, TransitionRoot, TransitionChild } from '@headlessui/vue';
 import TeacherWeeklySchedule from '../../components/TeacherWeeklySchedule.vue'; // Componente que acabamos de crear
 import TeacherClassesCard from '../../components/TeacherClassesCard.vue';
+import ClassCards from '@/modulos/Classes/components/ClassCards.vue';
 import ClassForm from '@/modulos/Classes/components/ClassForm.vue'; // Componente existente
 import ClassStudentManager from '@/modulos/Classes/components/ClassStudentManager.vue'; // Componente existente
 
@@ -67,7 +68,7 @@ const { toast } = useToast();
 
 // Estados
 const loading = ref(true);
-const activeTab = ref('overview'); // 'overview', 'schedule', 'classes', 'upcoming', 'statistics'
+const activeTab = ref('classes'); // 'overview', 'schedule', 'classes', 'upcoming', 'statistics'
 const selectedClassId = ref('');
 const showForm = ref(false);
 const showStudentManager = ref(false);
@@ -75,7 +76,7 @@ const isEditing = ref(false);
 
 // Computar el ID del maestro actual desde el sistema de autenticación
 // En un sistema real, esto vendría del usuario autenticado
-const currentTeacherId = computed(() => authStore.userId || '1'); // Default para desarrollo
+const currentTeacherId = computed(() => authStore.user?.id); // Default for development
 
 // Computar clases del maestro actual
 const teacherClasses = computed(() => {
@@ -428,7 +429,7 @@ const formatDateTime = (date) => {
 
 // Cambiar de tab
 const setActiveTab = (tab) => {
-  activeTab.value = tab;
+    activeTab.value = tab;
 };
 
 // Cargar datos iniciales
@@ -533,6 +534,19 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
       <!-- Tabs de navegación -->
       <div class="flex mt-6 border-b border-gray-200 dark:border-gray-700">
         <button 
+          @click="setActiveTab('classes')" 
+          class="px-4 py-2 font-medium text-sm focus:outline-none"
+          :class="{
+            'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'classes',
+            'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'classes'
+          }"
+        >
+          <div class="flex items-center gap-1">
+            <BookOpenIcon class="h-4 w-4" />
+            Mis Clases
+          </div>
+        </button>
+        <button 
           @click="setActiveTab('overview')" 
           class="px-4 py-2 font-medium text-sm focus:outline-none"
           :class="{
@@ -560,19 +574,6 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
           </div>
         </button>
         
-        <button 
-          @click="setActiveTab('classes')" 
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
-          :class="{
-            'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'classes',
-            'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'classes'
-          }"
-        >
-          <div class="flex items-center gap-1">
-            <BookOpenIcon class="h-4 w-4" />
-            Mis Clases
-          </div>
-        </button>
         
         <button 
           @click="setActiveTab('upcoming')" 
@@ -590,6 +591,7 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
       </div>
     </header>
     
+    <ClassCards />
     <!-- Estado de carga -->
     <div v-if="loading" class="flex justify-center items-center py-12">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
