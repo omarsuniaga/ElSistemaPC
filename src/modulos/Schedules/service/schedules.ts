@@ -310,3 +310,53 @@ export const checkTeacherScheduleConflicts = async (teacherId: string, dayOfWeek
     throw new Error('Error al verificar conflictos de horario')
   }
 }
+
+/**
+ * Verifica conflictos de horario para un nuevo horario
+ */
+export const getScheduleConflicts = async (request: ScheduleCreationRequest | ScheduleUpdateRequest): Promise<Array<{type: string, description: string}>> => {
+  try {
+    const conflicts: Array<{type: string, description: string}> = []
+    
+    // Verificar conflictos de profesor
+    const teacherConflict = await checkTeacherScheduleConflicts(
+      request.teacherId,
+      request.dayOfWeek,
+      request.startTime,
+      request.endTime,
+      'id' in request ? request.id : undefined
+    )
+    
+    if (teacherConflict) {
+      conflicts.push({
+        type: 'teacher',
+        description: 'El profesor ya tiene una clase programada en este horario'
+      })
+    }
+    
+    // Verificar conflictos de aula (similar a teacher conflict pero para aula)
+    const roomSchedules = await getSchedulesByRoom(request.roomId)
+    const roomConflict = roomSchedules.some(schedule => {
+      if ('id' in request && schedule.id === request.id) return false
+      
+      return (
+        schedule.dayOfWeek === request.dayOfWeek &&
+        ((request.startTime >= schedule.startTime && request.startTime < schedule.endTime) ||
+         (request.endTime > schedule.startTime && request.endTime <= schedule.endTime) ||
+         (request.startTime <= schedule.startTime && request.endTime >= schedule.endTime))
+      )
+    })
+    
+    if (roomConflict) {
+      conflicts.push({
+        type: 'room',
+        description: 'El aula ya está reservada en este horario'
+      })
+    }
+    
+    return conflicts
+  } catch (error) {
+    console.error('❌ Error al verificar conflictos de horario:', error)
+    throw new Error('Error al verificar conflictos de horario')
+  }
+}

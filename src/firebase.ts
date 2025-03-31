@@ -80,3 +80,16 @@ const connectToEmulators = () => {
 // Evitar conectar automáticamente a los emuladores
 // Exportar la función para conectar cuando sea seguro hacerlo
 export { app, auth, db, storage, setupPersistence, connectToEmulators };
+
+export const uploadFile = async (file: File, path: string, type: string) => {
+  try {
+    const storageRef = ref(storage, path);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+    await uploadTask;
+    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+    return { url: downloadURL };
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    throw error;
+  }
+};

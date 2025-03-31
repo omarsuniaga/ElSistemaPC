@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTeachersStore } from '../store/teachers'
 import { uploadFile } from '@/services/storage'
@@ -23,7 +23,19 @@ const route = useRoute()
 const router = useRouter()
 const teachersStore = useTeachersStore()
 
-const teacherId = route.params.id as string
+import { getAuth } from 'firebase/auth'
+const auth = getAuth()
+// Get teacher ID from route params, localStorage or current user
+const teacherId = ref(route.params.id as string || localStorage.getItem('teacherId') || auth.currentUser?.uid || '')
+
+// Store teacher ID in localStorage when it changes
+watch(teacherId, (newId) => {
+  if (newId) {
+    localStorage.setItem('teacherId', newId)
+  } else {
+    localStorage.removeItem('teacherId')
+  }
+})
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 const teacher = computed(() => teachersStore.teachers.find(t => t.id === teacherId))
@@ -127,14 +139,14 @@ const handleDelete = () => {
 </script>
 
 <template>
-  <div v-if="!isLoading" class="py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div v-if="!isLoading" class="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
     <div v-if="error" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
       <p>{{ error }}</p>
     </div>
     <div v-if="teacher" class="space-y-6">
     <!-- Header con foto e información principal -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-      <div class="relative h-32 sm:h-48 bg-gradient-to-r from-primary-600 to-primary-800">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
+      <div class="relative h-40 sm:h-56 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700">
         <!-- Overlay para efecto visual -->
         <div class="absolute inset-0 bg-black/20"></div>
       </div>
@@ -222,10 +234,10 @@ const handleDelete = () => {
         </div>
 
         <!-- Grid de información -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
           <!-- Columna 1: Información Personal -->
           <div class="space-y-6">
-            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6 shadow-sm transition-all duration-300 hover:shadow-md">
               <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
                 <UserIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 Información Personal
@@ -260,7 +272,7 @@ const handleDelete = () => {
 
           <!-- Columna 2: Estadísticas y Métricas -->
           <div class="space-y-6">
-            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6 shadow-sm transition-all duration-300 hover:shadow-md">
               <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
                 <ChartBarIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 Estadísticas
@@ -291,7 +303,7 @@ const handleDelete = () => {
 
           <!-- Columna 3: Clases y Horarios -->
           <div class="space-y-6">
-            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6 shadow-sm transition-all duration-300 hover:shadow-md">
               <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
                 <ClockIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 Clases Actuales
@@ -315,7 +327,7 @@ const handleDelete = () => {
 
         <!-- Descripción/Biografía -->
         <div class="mt-6" v-if="teacher.descripcion">
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6 shadow-sm transition-all duration-300 hover:shadow-md">
             <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
               <DocumentTextIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
               Biografía
@@ -327,7 +339,6 @@ const handleDelete = () => {
         </div>
       </div>
     </div>
-  </div>
   </div>
     <div v-else class="py-6 text-center">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
