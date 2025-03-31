@@ -34,6 +34,7 @@ export default defineConfig(({ mode }) => {
     plugins: [vue(), 
       VitePWA({
         registerType: 'autoUpdate',
+      injectRegister: 'auto',
         workbox: {
           //configuracion de workbox 
           globPatterns: ['**/*.{js,css,html,png,jpg,jpeg,svg,woff2,woff}'],

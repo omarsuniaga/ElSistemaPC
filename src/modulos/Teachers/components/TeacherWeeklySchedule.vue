@@ -1,329 +1,304 @@
-<script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-
-const props = defineProps({
-  classes: {
-    type: Array,
-    required: true,
-    default: () => []
-  }
-});
-
-const emit = defineEmits(['view-class']);
-
-// Horario académico: de 8am a 8pm
-const timeSlots = Array.from({ length: 13 }, (_, i) => i + 8);
-const days = [
-  { id: 0, name: 'Domingo' },
-  { id: 1, name: 'Lunes' },
-  { id: 2, name: 'Martes' },
-  { id: 3, name: 'Miércoles' },
-  { id: 4, name: 'Jueves' },
-  { id: 5, name: 'Viernes' },
-  { id: 6, name: 'Sábado' }
-];
-
-// Formatea la hora para mostrarla (9 -> "09:00")
-const formatHour = (hour) => {
-  return `${hour.toString().padStart(2, '0')}:00`;
-};
-
-// Obtiene el color de fondo según la clase
-const getClassColor = (classId) => {
-  // Lista de colores para las clases
-  const colors = [
-    'bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200',
-    'bg-green-200 dark:bg-green-900/50 text-green-800 dark:text-green-200',
-    'bg-purple-200 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200',
-    'bg-yellow-200 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200',
-    'bg-red-200 dark:bg-red-900/50 text-red-800 dark:text-red-200',
-    'bg-pink-200 dark:bg-pink-900/50 text-pink-800 dark:text-pink-200',
-    'bg-indigo-200 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200',
-  ];
-  
-  if (!classId) return colors[0]; // Color por defecto si no hay ID
-  
-  // Asignar color según el ID de la clase (de forma pseudoaleatoria pero consistente)
-  const stringId = String(classId);
-  const index = stringId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
-  return colors[index];
-};
-
-// Parse para horario en formato string (ej: "15:30")
-const parseTime = (timeStr) => {
-  if (!timeStr || typeof timeStr !== 'string') return { hour: 8, minutes: 0 }; // Valor por defecto
-  
-  try {
-    const parts = timeStr.split(':');
-    if (parts.length >= 2) {
-      return {
-        hour: parseInt(parts[0], 10) || 8,
-        minutes: parseInt(parts[1], 10) || 0
-      };
-    }
-    return { hour: parseInt(timeStr, 10) || 8, minutes: 0 };
-  } catch (error) {
-    console.warn(`[TeacherWeeklySchedule] Error al parsear hora: ${timeStr}`, error);
-    return { hour: 8, minutes: 0 };
-  }
-};
-
-// Parse para día de la semana (acepta número, string, nombre del día)
-const parseDay = (day) => {
-  if (day === undefined || day === null) return 1; // Default: Lunes
-  
-  // Si ya es un número entre 0-6, lo devolvemos
-  if (typeof day === 'number' && day >= 0 && day <= 6) {
-    return day;
-  }
-  
-  // Si es string, intentamos convertirlo
-  if (typeof day === 'string') {
-    // Intenta convertir a número primero
-    const dayNum = parseInt(day, 10);
-    if (!isNaN(dayNum) && dayNum >= 0 && dayNum <= 6) {
-      return dayNum;
-    }
-    
-    // Si es nombre de día, buscar su índice
-    const dayLower = day.toLowerCase();
-    const dayMap = {
-      'domingo': 0, 'lunes': 1, 'martes': 2, 'miércoles': 3, 'miercoles': 3, 
-      'jueves': 4, 'viernes': 5, 'sábado': 6, 'sabado': 6,
-      'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3, 
-      'thursday': 4, 'friday': 5, 'saturday': 6,
-      'dom': 0, 'lun': 1, 'mar': 2, 'mié': 3, 'mie': 3, 
-      'jue': 4, 'vie': 5, 'sáb': 6, 'sab': 6,
-      'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6
-    };
-    
-    if (dayMap[dayLower] !== undefined) {
-      return dayMap[dayLower];
-    }
-  }
-  
-  // Si no se pudo determinar, devolver Lunes
-  return 1;
-};
-
-// Procesa una clase y extrae sus slots de horario
-const processClassSchedule = (classItem) => {
-  if (!classItem) return [];
-  
-  try {
-    // 1. Estructura esperada con schedule.slots
-    if (classItem.schedule && Array.isArray(classItem.schedule.slots)) {
-      return classItem.schedule.slots.map(slot => {
-        if (!slot) return null;
-        
-        // Validar estructura básica
-        const day = parseDay(slot.day);
-        const startTime = parseTime(slot.startTime);
-        const endTime = parseTime(slot.endTime);
-        
-        return {
-          day,
-          startTime: startTime.hour,
-          endTime: endTime.hour,
-          startTimeStr: `${startTime.hour}:${String(startTime.minutes).padStart(2, '0')}`,
-          endTimeStr: `${endTime.hour}:${String(endTime.minutes).padStart(2, '0')}`,
-          valid: true
-        };
-      }).filter(slot => slot && slot.valid);
-    }
-    
-    // 2. Estructura alternativa con days + startTime + endTime
-    if (classItem.schedule && classItem.schedule.days) {
-      const days = Array.isArray(classItem.schedule.days) 
-        ? classItem.schedule.days 
-        : [classItem.schedule.days];
-      
-      const startTime = parseTime(classItem.schedule.startTime);
-      const endTime = parseTime(classItem.schedule.endTime);
-      
-      return days.map(day => {
-        const parsedDay = parseDay(day);
-        return {
-          day: parsedDay,
-          startTime: startTime.hour,
-          endTime: endTime.hour,
-          startTimeStr: `${startTime.hour}:${String(startTime.minutes).padStart(2, '0')}`,
-          endTimeStr: `${endTime.hour}:${String(endTime.minutes).padStart(2, '0')}`,
-          valid: true
-        };
-      });
-    }
-    
-    // 3. Horario como string (ej: "Lunes 15:30 - 17:30")
-    if (typeof classItem.schedule === 'string') {
-      const parts = classItem.schedule.split(' ');
-      if (parts.length >= 3) {
-        const dayPart = parts[0];
-        const startPart = parts[1];
-        const endPart = parts.length > 3 ? parts[3] : ""; // Asumiendo formato "Día HH:MM - HH:MM"
-        
-        const day = parseDay(dayPart);
-        const startTime = parseTime(startPart);
-        const endTime = parseTime(endPart);
-        
-        return [{
-          day,
-          startTime: startTime.hour,
-          endTime: endTime.hour,
-          startTimeStr: `${startTime.hour}:${String(startTime.minutes).padStart(2, '0')}`,
-          endTimeStr: `${endTime.hour}:${String(endTime.minutes).padStart(2, '0')}`,
-          valid: true
-        }];
-      }
-    }
-    
-    // 4. Caso de formato desconocido o sin horario
-    return [];
-  } catch (error) {
-    console.error('[TeacherWeeklySchedule] Error procesando horario de clase:', error);
-    console.log('Clase con error:', classItem);
-    return [];
-  }
-};
-
-// Organiza las clases por día y hora
-const classesSchedule = computed(() => {
-  const schedule = {};
-  
-  // Inicializar estructura
-  days.forEach(day => {
-    schedule[day.id] = {};
-    timeSlots.forEach(hour => {
-      schedule[day.id][hour] = [];
-    });
-  });
-  
-  // Procesar cada clase
-  props.classes.forEach(classItem => {
-    try {
-      if (!classItem) return;
-      
-      const slots = processClassSchedule(classItem);
-      
-      slots.forEach(slot => {
-        if (!slot || typeof slot.day !== 'number' || typeof slot.startTime !== 'number') {
-          return;
-        }
-        
-        const { day, startTime, endTime, startTimeStr, endTimeStr } = slot;
-        
-        // Verificar que el día y hora están dentro de los rangos aceptados
-        if (day < 0 || day > 6 || !schedule[day]) {
-          console.warn('[TeacherWeeklySchedule] Día inválido:', day);
-          return;
-        }
-        
-        if (startTime < timeSlots[0] || startTime >= timeSlots[timeSlots.length - 1]) {
-          console.warn('[TeacherWeeklySchedule] Hora de inicio fuera de rango:', startTime);
-          return;
-        }
-        
-        const duration = Math.max(1, endTime - startTime);
-        
-        schedule[day][startTime].push({
-          ...classItem,
-          duration,
-          startTime: startTimeStr,
-          endTime: endTimeStr
-        });
-      });
-    } catch (error) {
-      console.error('[TeacherWeeklySchedule] Error procesando clase:', error);
-      console.log('Clase con error:', classItem);
-    }
-  });
-  
-  return schedule;
-});
-
-// Maneja el clic en una clase
-const handleClassClick = (classId) => {
-  emit('view-class', classId);
-};
-
-// Debugging y diagnóstico
-onMounted(() => {
-  if (props.classes.length > 0) {
-    console.log(`[TeacherWeeklySchedule] Procesando ${props.classes.length} clases`);
-    
-    // Mostrar la primera clase como ejemplo
-    if (props.classes[0]) {
-      const sampleClass = props.classes[0];
-      console.log('[TeacherWeeklySchedule] Ejemplo de clase:', {
-        id: sampleClass.id,
-        name: sampleClass.name,
-        schedule: sampleClass.schedule
-      });
-      
-      const slots = processClassSchedule(sampleClass);
-      console.log('[TeacherWeeklySchedule] Slots procesados:', slots);
-    }
-  } else {
-    console.log('[TeacherWeeklySchedule] No hay clases para mostrar');
-  }
-});
-
-// Observar cambios en las clases
-watch(() => props.classes, (newClasses) => {
-  console.log(`[TeacherWeeklySchedule] Clases actualizadas: ${newClasses.length}`);
-}, { deep: true });
-</script>
-
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
-    <!-- Mensaje si no hay clases -->
-    <div v-if="!props.classes || props.classes.length === 0" class="p-6 text-center text-gray-500">
-      No hay clases programadas. Para añadir una nueva clase, haz clic en el botón "Nueva Clase".
+  <div class="teacher-weekly-schedule">
+    <!-- Calendario semanal -->
+    <div class="weekly-grid overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-800">
+          <tr>
+            <th class="w-24 p-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Hora
+            </th>
+            <th 
+              v-for="day in weekDays" 
+              :key="day" 
+              class="p-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+            >
+              {{ day }}
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+          <tr v-for="hour in timeSlots" :key="hour">
+            <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+              {{ formatTime(hour) }}
+            </td>
+            <td 
+              v-for="day in weekDays" 
+              :key="`${day}-${hour}`"
+              class="px-1 py-1 relative h-16 border-r border-gray-100 dark:border-gray-800 last:border-r-0"
+            >
+              <div
+                v-for="class_ in getClassesForDayAndHour(day, hour)"
+                :key="class_.id"
+                :class="[
+                  'absolute rounded-md p-2 shadow-sm overflow-hidden cursor-pointer transform transition-all hover:-translate-y-0.5 hover:shadow-md',
+                  getClassBackgroundColor(class_)
+                ]"
+                :style="getClassPositionStyle(class_, hour)"
+                @click="selectClass(class_)"
+              >
+                <div class="font-medium text-sm truncate">{{ class_.name }}</div>
+                <div class="text-xs truncate">{{ formatClassTime(class_) }}</div>
+                <div v-if="class_.classroom" class="text-xs truncate">{{ class_.classroom }}</div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    
-    <div v-else class="min-w-[800px]">
-      <!-- Cabecera con los días -->
-      <div class="grid grid-cols-8 border-b border-gray-200 dark:border-gray-700">
-        <div class="p-3 font-medium text-gray-500 dark:text-gray-400 text-center">Hora</div>
-        <div 
-          v-for="day in days" 
-          :key="day.id" 
-          class="p-3 font-medium text-gray-700 dark:text-gray-300 text-center"
-        >
-          {{ day.name }}
+
+    <!-- Detalle de clase seleccionada -->
+    <div v-if="selectedClass" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4 border-l-4 border-primary-500">
+      <div class="flex justify-between items-start">
+        <h3 class="text-lg font-bold">{{ selectedClass.name }}</h3>
+        <button @click="selectedClass = null" class="text-gray-500 hover:text-gray-700">
+          <XMarkIcon class="h-5 w-5" />
+        </button>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div class="text-sm text-gray-500">Horario</div>
+          <div class="font-medium">{{ formatClassSchedule(selectedClass) }}</div>
+        </div>
+        <div>
+          <div class="text-sm text-gray-500">Aula</div>
+          <div class="font-medium">{{ selectedClass.classroom || 'Sin asignar' }}</div>
+        </div>
+        <div>
+          <div class="text-sm text-gray-500">Instrumento</div>
+          <div class="font-medium">{{ selectedClass.instrument || 'No especificado' }}</div>
+        </div>
+        <div>
+          <div class="text-sm text-gray-500">Estudiantes</div>
+          <div class="font-medium">{{ selectedClass.studentIds?.length || 0 }} estudiantes</div>
         </div>
       </div>
 
-      <!-- Filas de horario -->
-      <div v-for="hour in timeSlots" :key="hour" class="grid grid-cols-8 border-b border-gray-200 dark:border-gray-700">
-        <!-- Columna de la hora -->
-        <div class="p-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">
-          {{ formatHour(hour) }}
-        </div>
-
-        <!-- Columnas de los días -->
-        <div 
-          v-for="day in days" 
-          :key="`${hour}-${day.id}`" 
-          class="p-1 border-l border-gray-200 dark:border-gray-700 min-h-[60px] relative"
+      <div class="mt-4 flex justify-end">
+        <router-link
+          :to="`/teacher/attendance/${getCurrentDate()}/${selectedClass.id}`"
+          class="btn btn-primary text-sm"
         >
-          <!-- Clases en este horario -->
-          <div 
-            v-for="(classItem, index) in classesSchedule[day.id][hour]" 
-            :key="`${day.id}-${hour}-${classItem.id || index}`"
-            :class="[
-              getClassColor(classItem.id),
-              'absolute inset-x-1 rounded-md p-2 overflow-hidden shadow-sm cursor-pointer hover:shadow-md transition-shadow'
-            ]"
-            :style="`height: calc(${classItem.duration} * 60px - 8px);`"
-            @click="handleClassClick(classItem.id)"
-          >
-            <div class="font-medium text-sm truncate">{{ classItem.name || 'Sin nombre' }}</div>
-            <div class="text-xs truncate">{{ classItem.startTime || '' }} - {{ classItem.endTime || '' }}</div>
-            <div class="text-xs truncate">{{ classItem.classroom || 'Sin aula' }}</div>
-          </div>
-        </div>
+          Tomar asistencia
+        </router-link>
       </div>
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue'
+import { useClassesStore } from '../../Classes/store/classes'
+import { format } from 'date-fns'
+import { XMarkIcon } from '@heroicons/vue/24/outline'
+
+// Estado reactivo
+const selectedClass = ref(null)
+
+// Días de la semana para mostrar en el calendario
+const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+
+// Slots de tiempo para el calendario (de 7 a 19 horas)
+const timeSlots = Array.from({ length: 13 }, (_, i) => i + 7)
+
+const props = defineProps<{
+  teacherId: string
+  classes?: any[]
+}>()
+
+const classesStore = useClassesStore()
+
+// Clases del profesor (ahora puede ser pasado como prop o consultado al store)
+const teacherClasses = computed(() => {
+  if (props.classes && props.classes.length > 0) {
+    return props.classes
+  }
+  
+  if (!props.teacherId) return []
+  return classesStore.classes.filter(c => c.teacherId === props.teacherId)
+})
+
+// Cargar clases si aún no están cargadas
+onMounted(async () => {
+  if (classesStore.classes.length === 0) {
+    await classesStore.fetchClasses()
+  }
+})
+
+// Observar cambios en el teacherId
+watch(() => props.teacherId, async (newVal) => {
+  if (newVal && classesStore.classes.length === 0) {
+    await classesStore.fetchClasses()
+  }
+})
+
+// Obtener clases para un día y hora específicos
+const getClassesForDayAndHour = (day, hour) => {
+  return teacherClasses.value.filter(class_ => {
+    if (!class_.schedule) return false
+    
+    // Normalizar el formato de horario
+    const schedule = normalizeSchedule(class_.schedule)
+    
+    return schedule.some(s => {
+      if (s.day !== day) return false
+      
+      const startHour = parseInt(s.startTime.split(':')[0])
+      const endHour = parseInt(s.endTime.split(':')[0])
+      const startMinutes = parseInt(s.startTime.split(':')[1])
+      const endMinutes = parseInt(s.endTime.split(':')[1])
+      
+      // Si la clase comienza en esta hora o está en curso durante esta hora
+      return (startHour === hour) || 
+             (startHour < hour && endHour > hour) ||
+             (startHour < hour && endHour === hour && endMinutes > 0)
+    })
+  })
+}
+
+// Calcular la posición y altura de una clase en la cuadrícula
+const getClassPositionStyle = (class_, slotHour) => {
+  const schedule = normalizeSchedule(class_.schedule)[0] // Tomar el primer horario
+  if (!schedule) return {}
+  
+  const startHour = parseInt(schedule.startTime.split(':')[0])
+  const startMinute = parseInt(schedule.startTime.split(':')[1])
+  const endHour = parseInt(schedule.endTime.split(':')[0])
+  const endMinute = parseInt(schedule.endTime.split(':')[1])
+  
+  // Calcular la posición superior (top) basada en minutos después de la hora
+  let top = '0%'
+  if (startHour === slotHour) {
+    top = `${(startMinute / 60) * 100}%`
+  }
+  
+  // Calcular la altura basada en la duración
+  let height = '100%'
+  if (startHour === slotHour) {
+    const durationInMinutes = (endHour - startHour) * 60 + (endMinute - startMinute)
+    const slotDurationInMinutes = 60 - startMinute
+    
+    if (durationInMinutes < slotDurationInMinutes) {
+      height = `${(durationInMinutes / 60) * 100}%`
+    } else {
+      height = `${(slotDurationInMinutes / 60) * 100}%`
+    }
+  }
+  
+  return {
+    top,
+    height,
+    left: '2px',
+    right: '2px'
+  }
+}
+
+// Obtener color de fondo para la clase basado en algún criterio (ej: instrumento)
+const getClassBackgroundColor = (class_) => {
+  const instrument = class_.instrument?.toLowerCase() || ''
+  
+  if (instrument.includes('piano')) {
+    return 'bg-blue-100 border border-blue-300 text-blue-800 dark:bg-blue-900/20 dark:border-blue-700 dark:text-blue-200'
+  }
+  if (instrument.includes('violin') || instrument.includes('viola') || instrument.includes('cello')) {
+    return 'bg-purple-100 border border-purple-300 text-purple-800 dark:bg-purple-900/20 dark:border-purple-700 dark:text-purple-200'
+  }
+  if (instrument.includes('flauta') || instrument.includes('clarinete') || instrument.includes('saxo')) {
+    return 'bg-green-100 border border-green-300 text-green-800 dark:bg-green-900/20 dark:border-green-700 dark:text-green-200'
+  }
+  if (instrument.includes('percusión') || instrument.includes('batería')) {
+    return 'bg-yellow-100 border border-yellow-300 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-200'
+  }
+  
+  // Valor predeterminado
+  return 'bg-gray-100 border border-gray-300 text-gray-800 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200'
+}
+
+// Formatear la hora (de 24h a 12h con AM/PM)
+const formatTime = (hour) => {
+  return `${hour}:00`
+}
+
+// Formatear la hora de la clase
+const formatClassTime = (class_) => {
+  const schedule = normalizeSchedule(class_.schedule)[0]
+  if (!schedule) return ''
+  return `${schedule.startTime} - ${schedule.endTime}`
+}
+
+// Formatear el horario completo de la clase
+const formatClassSchedule = (class_) => {
+  const schedule = normalizeSchedule(class_.schedule)[0]
+  if (!schedule) return 'Sin horario asignado'
+  return `${schedule.day} ${schedule.startTime} - ${schedule.endTime}`
+}
+
+// Función para normalizar diferentes formatos de horario
+const normalizeSchedule = (schedule) => {
+  if (!schedule) return []
+  
+  // Si es array, se asume estructura correcta
+  if (Array.isArray(schedule)) {
+    return schedule.map(s => ({
+      day: s.day || 'Lunes',
+      startTime: s.startTime || '08:00',
+      endTime: s.endTime || '09:30'
+    }))
+  }
+  
+  // Si es objeto con days como array
+  if (typeof schedule === 'object' && schedule.days) {
+    const days = Array.isArray(schedule.days) ? schedule.days : [schedule.days]
+    return days.map(day => ({
+      day: day,
+      startTime: schedule.startTime || '08:00',
+      endTime: schedule.endTime || '09:30'
+    }))
+  }
+  
+  // Si es string (formato antiguo: "Lunes 14:30 - 16:00")
+  if (typeof schedule === 'string') {
+    const parts = schedule.split(' ')
+    if (parts.length >= 4) {
+      return [{
+        day: parts[0],
+        startTime: parts[1],
+        endTime: parts[3]
+      }]
+    }
+  }
+  
+  return []
+}
+
+// Seleccionar una clase para mostrar sus detalles
+const selectClass = (class_) => {
+  selectedClass.value = class_
+}
+
+// Fecha actual para la URL de asistencia
+const getCurrentDate = () => {
+  return format(new Date(), 'yyyyMMdd')
+}
+</script>
+
+<style scoped>
+.weekly-grid {
+  background: #ffffff;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.dark .weekly-grid {
+  background: #1f2937;
+}
+
+.btn {
+  @apply px-3 py-2 rounded-md font-medium text-sm transition-colors;
+}
+
+.btn-primary {
+  @apply bg-primary-600 text-white hover:bg-primary-700;
+}
+</style>

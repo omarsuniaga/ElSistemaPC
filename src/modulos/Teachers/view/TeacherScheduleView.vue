@@ -6,6 +6,7 @@ import { useClassesStore } from '../../Classes/store/classes'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import ScheduleNavigation from '../../Schedules/components/ScheduleNavigation.vue'
+import TeacherWeeklySchedule from '../components/TeacherWeeklySchedule.vue'
 import html2pdf from 'html2pdf.js'
 import type { SVGAttributes } from 'vue'
 
@@ -269,26 +270,12 @@ const getTeacherClasses = (teacherId: string) => {
                 <div class="text-xl font-semibold">{{ formatHours(schedule.weeklyHours) }}</div>
               </div>
             </div>
-            
             <div v-if="schedule.hasConflicts" class="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 p-3 rounded-lg text-sm">
               ⚠️ Hay conflictos en el horario
             </div>
             
-            <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
-              <div class="divide-y divide-gray-200 dark:divide-gray-700">
-                <div v-for="(day, index) in schedule.schedule || []" :key="index" class="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <div class="flex justify-between items-start w-full">
-                    <div class="w-24 font-medium">{{ day?.dayOfWeek || 'Sin día' }}</div>
-                    <div class="flex-1">
-                      <div class="font-medium">{{ day?.className || 'Sin nombre' }}</div>
-                      <div class="text-sm text-gray-500 dark:text-gray-400">
-                        {{ (day?.startTime || '--:--') + ' - ' + (day?.endTime || '--:--') }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <!-- Integración del componente TeacherWeeklySchedule -->
+            <TeacherWeeklySchedule :teacherId="teacher?.id" />
           </div>
           <div v-else class="text-center py-4 text-gray-500">
             No hay clases asignadas
