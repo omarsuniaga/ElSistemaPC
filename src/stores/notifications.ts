@@ -1,3 +1,4 @@
+// src/stores/notifications.ts
 import { defineStore } from 'pinia';
 import { 
   collection, 
@@ -63,7 +64,7 @@ export const useNotificationsStore = defineStore('notifications', {
         const userRoles = authStore.user.userRoles as string[] || [];
 
         const q = query(
-          collection(db, 'notifications'),
+          collection(db, 'NOTIFICATIONS'),
           where('recipientIds', 'array-contains', userId),
           orderBy('createdAt', 'desc')
         );
@@ -79,7 +80,7 @@ export const useNotificationsStore = defineStore('notifications', {
         if (userRoles.length > 0) {
           for (const role of userRoles) {
             const roleQuery = query(
-              collection(db, 'notifications'),
+              collection(db, 'NOTIFICATIONS'),
               where('recipientRoles', 'array-contains', role),
               orderBy('createdAt', 'desc')
             );
@@ -120,7 +121,7 @@ export const useNotificationsStore = defineStore('notifications', {
       this.isLoading = true;
       try {
         // Update in Firestore
-        const notificationRef = doc(db, 'notifications', notificationId);
+        const notificationRef = doc(db, 'NOTIFICATIONS', notificationId);
         await updateDoc(notificationRef, {
           read: true,
           updatedAt: serverTimestamp()
@@ -153,7 +154,7 @@ export const useNotificationsStore = defineStore('notifications', {
           createdAt: serverTimestamp()
         };
 
-        const docRef = await addDoc(collection(db, 'notifications'), newNotification);
+        const docRef = await addDoc(collection(db, 'NOTIFICATIONS'), newNotification);
         
         return docRef.id;
       } catch (error) {

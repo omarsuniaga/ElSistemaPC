@@ -1,40 +1,5 @@
-<template>
-  <div class="fixed top-4 right-4 z-50 flex flex-col gap-2 w-full max-w-sm">
-    <transition-group name="notification">
-      <div
-        v-for="notification in notifications"
-        :key="notification.id"
-        v-show="notification.visible"
-        :class="[
-          'p-4 rounded-lg shadow-lg border-l-4 transform transition-all duration-300',
-          'flex items-start gap-3',
-          getNotificationClass(notification.type)
-        ]"
-      >
-        <div class="flex-shrink-0">
-          <CheckCircleIcon v-if="notification.type === 'success'" class="w-5 h-5" />
-          <ExclamationTriangleIcon v-else-if="notification.type === 'warning'" class="w-5 h-5" />
-          <XCircleIcon v-else-if="notification.type === 'error'" class="w-5 h-5" />
-          <InformationCircleIcon v-else class="w-5 h-5" />
-        </div>
-        
-        <div class="flex-1">
-          <h3 class="font-medium text-sm">{{ notification.title }}</h3>
-          <p class="text-xs mt-1">{{ notification.message }}</p>
-        </div>
-        
-        <button 
-          @click="$emit('dismiss', notification.id)" 
-          class="flex-shrink-0 text-gray-400 hover:text-gray-500 focus:outline-none"
-        >
-          <XMarkIcon class="w-4 h-4" />
-        </button>
-      </div>
-    </transition-group>
-  </div>
-</template>
-
-<script setup>
+<script lang="ts" setup>
+// src/components/NotificationSystem.vue
 import { 
   CheckCircleIcon,
   ExclamationTriangleIcon,
@@ -79,3 +44,38 @@ const getNotificationClass = (type) => {
   transform: translateX(30px);
 }
 </style>
+<template>
+  <div class="fixed top-4 right-4 z-50 flex flex-col gap-2 w-full max-w-sm">
+    <transition-group name="notification">
+      <div
+        v-for="notification in notifications"
+        :key="notification.id"
+        v-show="notification.visible"
+        :class="[
+          'p-4 rounded-lg shadow-lg border-l-4 transform transition-all duration-300',
+          'flex items-start gap-3',
+          getNotificationClass(notification.type)
+        ]"
+      >
+        <div class="flex-shrink-0">
+          <CheckCircleIcon v-if="notification.type === 'success'" class="w-5 h-5" />
+          <ExclamationTriangleIcon v-else-if="notification.type === 'warning'" class="w-5 h-5" />
+          <XCircleIcon v-else-if="notification.type === 'error'" class="w-5 h-5" />
+          <InformationCircleIcon v-else class="w-5 h-5" />
+        </div>
+        
+        <div class="flex-1">
+          <h3 class="font-medium text-sm">{{ notification.title }}</h3>
+          <p class="text-xs mt-1">{{ notification.message }}</p>
+        </div>
+        
+        <button 
+          @click="$emit('dismiss', notification.id)" 
+          class="flex-shrink-0 text-gray-400 hover:text-gray-500 focus:outline-none"
+        >
+          <XMarkIcon class="w-4 h-4" />
+        </button>
+      </div>
+    </transition-group>
+  </div>
+</template>

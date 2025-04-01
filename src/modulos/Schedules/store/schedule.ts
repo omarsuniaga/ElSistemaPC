@@ -90,6 +90,14 @@ export const useScheduleStore = defineStore('schedule', {
               console.warn('Horario inválido detectado (falta scheduleDay):', schedule)
               return false
             }
+            
+            // Validar estructura básica de scheduleDay
+            if (!schedule.scheduleDay.dayOfWeek || !schedule.scheduleDay.timeSlot || 
+                !schedule.scheduleDay.timeSlot.startTime || !schedule.scheduleDay.timeSlot.endTime) {
+              console.warn('Estructura de scheduleDay inválida:', schedule)
+              return false
+            }
+            
             return true
           }).map((schedule: any) => schedule as Schedule)
 
@@ -146,50 +154,29 @@ export const useScheduleStore = defineStore('schedule', {
      * createSchedule: Crea un nuevo horario a partir de los datos del request.
      * Verifica conflictos antes de crear el horario.
      */
-    async createSchedule(request: ScheduleCreationRequest) {
-      this.loading = true
-      try {
-        // Verificar conflictos de horario
-        const conflicts = await scheduleService.getScheduleConflicts(request)
-        if (conflicts.length > 0) {
-          throw new Error(
-            'Conflictos detectados:\n' + 
-            conflicts.map(c => c.description).join('\n')
-          )
-        }
-
-        // Preparar los datos para crear el horario
-        const scheduleData: Omit<Schedule, 'id'> = {
-          startTime: request.timeSlot.startTime,
-          endTime: request.timeSlot.endTime,
-          ...request
-        }
-
-        const response = await scheduleService.createSchedule(scheduleData)
-        if (response && response.id) {
-          // Se construye un objeto ScheduleAssignment completo
-          const scheduleAssignment: ScheduleAssignment = {
-            ...response,
-            scheduleDay: response.scheduleDay,
-            class: null,
-            teacher: null,
-            students: [],
-            room: null
-          }
-          const populatedSchedule = await this.populateScheduleData([scheduleAssignment])
-          this.schedules.push(populatedSchedule[0])
-          await this.calculateMetrics()
-        } else {
-          throw new Error('Error creating schedule')
-        }
-      } catch (error: any) {
-        console.error('Error in createSchedule:', error)
-        this.error = error.message
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
+    // En schedule.ts (store de schedules)
+// En schedule.ts (store de schedules)
+async createSchedule(request: ScheduleCreationRequest) {
+  this.loading = true;
+  try {
+    // Llama al servicio que crea el schedule
+    const response = await scheduleService.createSchedule(request);
+    if (response.success && response.data) {
+      // Se puede poblar la información extra si fuera necesario
+      this.schedules.push(response.data[0]); // Suponiendo que response.data es un array
+      await this.calculateMetrics();
+      return response.data;
+    } else {
+      throw new Error(response.error || 'Error creating schedule');
+    }
+  } catch (error: any) {
+    console.error('Error in createSchedule:', error);
+    this.error = error.message;
+    throw error;
+  } finally {
+    this.loading = false;
+  }
+},
 
     /**
      * updateSchedule: Actualiza un horario existente.

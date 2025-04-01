@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// ../modulos/Teacher/components/TeacherStatistics.vue
 import { computed } from 'vue';
 import { ChartBarIcon, PieChartIcon } from '@heroicons/vue/24/outline';
 

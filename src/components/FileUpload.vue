@@ -131,6 +131,7 @@ const uploadToFirebase = async (file: File) => {
 // Reset the file input
 // Add resetFileInput call in onFilesSelected and onDrop
 // Reset file input after selection/upload
+// Reset file input after selection/upload
 const resetFileInput = () => {
   if (fileInput.value) {
     fileInput.value.value = ''

@@ -311,6 +311,11 @@ const getTeacherClasses = (teacherId: string) => {
               <span class="text-gray-500 dark:text-gray-400">Email:</span>
               <span class="ml-1 font-medium">{{ teacher.email || "No disponible" }}</span>
             </div>
+            <div class="col-span-2">
+              <span class="text-gray-500 dark:text-gray-400">Clases Asignadas:</span>
+              <span class="ml-1 font-medium">{{ schedule.totalClasses }}</span>
+            </div>
+
           </div>
         </div>
       </div>
@@ -323,16 +328,7 @@ const getTeacherClasses = (teacherId: string) => {
         </div>
         <div class="bg-gray-50 p-4 rounded-b-lg shadow-sm">
           <div v-if="schedule && schedule.totalClasses > 0" class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                <div class="text-sm text-gray-500 dark:text-gray-400">Clases Asignadas</div>
-                <div class="text-xl font-semibold">{{ schedule.totalClasses }}</div>
-              </div>
-              <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                <div class="text-sm text-gray-500 dark:text-gray-400">Horas Semanales</div>
-                <div class="text-xl font-semibold">{{ formatHours(schedule.weeklyHours) }}</div>
-              </div>
-            </div>
+   
             <div v-if="schedule.hasConflicts" class="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 p-3 rounded-lg text-sm">
               ⚠️ Hay conflictos en el horario
             </div>

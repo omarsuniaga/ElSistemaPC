@@ -1,29 +1,312 @@
+<template>
+  <div class="teacher-dashboard px-4 md:px-6 lg:px-8 max-w-screen-xl mx-auto">
+    <!-- Header: Sticky para navegación rápida -->
+    <header class="dashboard-header bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6 sticky top-0 z-10">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        Panel de Control de Maestros
+      </h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-2">
+        Aquí puedes gestionar y visualizar información relevante sobre tus clases y estudiantes.
+      </p>
+      <!-- Tabs de navegación con overflow para pantallas pequeñas -->
+      <div class="flex mt-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <button
+          @click="setActiveTab('classes')"
+          class="px-4 py-2 font-medium text-sm focus:outline-none whitespace-nowrap"
+          :class="activeTab === 'classes' ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+        >
+          <div class="flex items-center gap-1">
+            <BookOpenIcon class="h-4 w-4" />
+            Mis Clases
+          </div>
+        </button>
+        <button
+          @click="setActiveTab('upcoming')"
+          class="px-4 py-2 font-medium text-sm focus:outline-none whitespace-nowrap"
+          :class="activeTab === 'upcoming' ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+        >
+          <div class="flex items-center gap-1">
+            <ClockIcon class="h-4 w-4" />
+            Próximas Clases
+          </div>
+        </button>
+        <button
+          @click="setActiveTab('overview')"
+          class="px-4 py-2 font-medium text-sm focus:outline-none whitespace-nowrap"
+          :class="activeTab === 'overview' ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+        >
+          <div class="flex items-center gap-1">
+            <ChartBarSquareIcon class="h-4 w-4" />
+            Panel General
+          </div>
+        </button>
+      </div>
+    </header>
+
+    <!-- Estado de carga: Skeleton Loader -->
+    <div v-if="loading" class="flex justify-center items-center py-12">
+      <div class="w-full max-w-md space-y-4 animate-pulse">
+        <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+      </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <section v-else class="dashboard-content space-y-6">
+      <!-- Vista General (Overview) -->
+      <div v-if="activeTab === 'overview'" class="space-y-6">
+        <!-- Tarjetas de métricas en grid responsivo -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div
+            v-for="metric in dashboardMetrics"
+            :key="metric.title"
+            class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 transition-transform hover:scale-105"
+          >
+            <div class="flex items-center">
+              <div :class="`${metric.color} p-3 rounded-lg`">
+                <component :is="metric.icon" class="h-6 w-6" />
+              </div>
+              <div class="ml-4">
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ metric.title }}</p>
+                <p class="text-xl font-bold">{{ metric.value }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Notificaciones -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <h2 class="text-lg font-semibold mb-3">Notificaciones</h2>
+          <div v-if="notifications.length > 0" class="space-y-3">
+            <div
+              v-for="notification in notifications"
+              :key="notification.id"
+              class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
+              :class="{
+                'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500': notification.type === 'info' && !notification.read,
+                'bg-amber-50 dark:bg-amber-900/20 border-l-4 border-l-amber-500': notification.type === 'reminder' && !notification.read
+              }"
+            >
+              <div class="flex justify-between">
+                <h3 class="font-medium">{{ notification.title }}</h3>
+                <span class="text-xs text-gray-500">
+                  {{ new Intl.DateTimeFormat('es-ES', { dateStyle: 'short' }).format(notification.date) }}
+                </span>
+              </div>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ notification.message }}</p>
+            </div>
+          </div>
+          <p v-else class="text-center text-gray-500 dark:text-gray-400 py-3">No hay notificaciones.</p>
+        </div>
+        <!-- Botones de acción rápida -->
+        <div class="flex flex-wrap gap-3">
+          
+        </div>
+      </div>
+
+      <!-- Vista del Horario Semanal -->
+      <div v-if="activeTab === 'schedule'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <h2 class="text-lg font-semibold mb-4 flex justify-between items-center">
+          <span>Horario Semanal</span>
+          <button
+            @click="handleAddClass"
+            class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 focus:outline-none"
+            aria-label="Crear nueva clase"
+          >
+            <PlusIcon class="w-4 h-4" />
+            <span>Nueva Clase</span>
+          </button>
+        </h2>
+        <TeacherWeeklySchedule :classes="teacherClasses" @view-class="handleViewClass" />
+      </div>
+
+      <!-- Vista de Listado de Clases -->
+      <div v-if="activeTab === 'classes'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <h2 class="text-lg font-semibold mb-1 flex justify-between items-center">
+          <span>Mis Clases</span>
+          <button
+            @click="handleAddClass"
+            class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 focus:outline-none"
+            aria-label="Crear nueva clase"
+          >
+            <PlusIcon class="w-4 h-4" />
+            <span>Nueva Clase</span>
+          </button>
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <template v-if="teacherClasses.length > 0">
+            <TeacherClassesCard
+              v-for="classItem in teacherClasses"
+              :key="classItem.id"
+              :class-data="classItem"
+              @view="handleViewClass"
+              @edit="handleEditClass"
+              @delete="handleDeleteClass"
+              @manage-students="handleManageStudents"
+            />
+          </template>
+          <div v-else class="col-span-full py-12 text-center text-gray-500 dark:text-gray-400">
+            No tienes clases asignadas actualmente.
+            <button @click="handleAddClass" class="ml-2 text-blue-500 hover:underline">
+              Crear una nueva clase
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista de Próximas Clases -->
+      <div v-if="activeTab === 'upcoming'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <h2 class="text-lg font-semibold mb-4">Próximas Clases (24h)</h2>
+        <div class="space-y-4">
+          <template v-if="upcomingClasses.length > 0">
+            <div
+              v-for="classItem in upcomingClasses"
+              :key="classItem.id"
+              class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow p-4 border-l-4 border-blue-500 transition-all hover:shadow-xl"
+            >
+              <div class="flex justify-between items-start">
+                <div>
+                  <h3 class="font-medium text-lg">{{ classItem.name }}</h3>
+                  <p class="text-gray-600 dark:text-gray-400">
+                    {{ classItem.level }} - {{ classItem.instrument || 'Sin instrumento' }}
+                  </p>
+                  <div class="mt-2 flex items-center text-sm">
+                    <span class="font-medium mr-2">Próxima sesión:</span>
+                    <span>{{ formatDateTime(getNextSession(classItem)) }}</span>
+                  </div>
+                  <p class="mt-1 text-sm text-gray-500">Aula: {{ classItem.classroom || 'Sin asignar' }}</p>
+                  <p class="text-sm text-gray-500">Estudiantes: {{ classItem.studentIds?.length || 0 }}</p>
+                </div>
+                <div class="flex space-x-2">
+                  <button
+                    @click="handleEditClass(classItem.id)"
+                    class="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-md focus:outline-none"
+                    title="Editar clase"
+                    aria-label="Editar clase"
+                  >
+                    <PencilIcon class="h-5 w-5" />
+                  </button>
+                  <button
+                    @click="handleManageStudents(classItem.id)"
+                    class="p-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/20 rounded-md focus:outline-none"
+                    title="Gestionar estudiantes"
+                    aria-label="Gestionar estudiantes"
+                  >
+                    <UserGroupIcon class="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </template>
+          <div v-else class="py-12 text-center text-gray-500 dark:text-gray-400">
+            No tienes clases programadas para las próximas 24 horas.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Modal: Formulario de Clase -->
+    <TransitionRoot appear :show="showForm">
+      <Dialog as="div" class="fixed inset-0 z-50 overflow-y-auto" @close="showForm = false">
+        <div class="min-h-screen px-4 text-center">
+          <TransitionChild
+            as="template"
+            enter="ease-out duration-300"
+            enter-from="opacity-0"
+            enter-to="opacity-100"
+            leave="ease-in duration-200"
+            leave-from="opacity-100"
+            leave-to="opacity-0"
+          >
+            <DialogOverlay class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
+          </TransitionChild>
+          <span class="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
+          <TransitionChild
+            as="template"
+            enter="ease-out duration-300"
+            enter-from="opacity-0 scale-95"
+            enter-to="opacity-100 scale-100"
+            leave="ease-in duration-200"
+            leave-from="opacity-100 scale-100"
+            leave-to="opacity-0 scale-95"
+          >
+            <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-900 shadow-xl rounded-lg">
+              <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+                {{ isEditing ? 'Editar Clase' : 'Nueva Clase' }}
+              </h2>
+              <ClassForm
+                :class-data="isEditing ? selectedClass : null"
+                @save="handleSaveClass"
+                @cancel="showForm = false"
+              />
+            </DialogPanel>
+          </TransitionChild>
+        </div>
+      </Dialog>
+    </TransitionRoot>
+
+    <!-- Modal: Gestión de Estudiantes -->
+    <TransitionRoot appear :show="showStudentManager && selectedClass !== null">
+      <Dialog as="div" class="fixed inset-0 z-50 overflow-y-auto" @close="showStudentManager = false">
+        <div class="min-h-screen px-4 text-center">
+          <TransitionChild
+            as="template"
+            enter="ease-out duration-300"
+            enter-from="opacity-0"
+            enter-to="opacity-100"
+            leave="ease-in duration-200"
+            leave-from="opacity-100"
+            leave-to="opacity-0"
+          >
+            <DialogOverlay class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
+          </TransitionChild>
+          <span class="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
+          <TransitionChild
+            as="template"
+            enter="ease-out duration-300"
+            enter-from="opacity-0 scale-95"
+            enter-to="opacity-100 scale-100"
+            leave="ease-in duration-200"
+            leave-from="opacity-100 scale-100"
+            leave-to="opacity-0 scale-95"
+          >
+            <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-900 shadow-xl rounded-lg">
+              <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+                Gestionar Estudiantes - {{ selectedClass?.name }}
+              </h2>
+              <ClassStudentManager
+                :class-id="selectedClass ? selectedClass.id : ''"
+                :student-ids="Array.isArray(selectedClass?.studentIds) ? selectedClass?.studentIds : []"
+                @update="handleStudentChange"
+                @close="showStudentManager = false"
+              />
+            </DialogPanel>
+          </TransitionChild>
+        </div>
+      </Dialog>
+    </TransitionRoot>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useClassesStore } from '../../../../modulos/Classes/store/classes';
 import { useTeachersStore } from '../../store/teachers';
 import { useStudentsStore } from '../../../../modulos/Students/store/students';
-import { useAuthStore } from '../../../../stores/auth'; // Store de autenticación
+import { useAuthStore } from '../../../../stores/auth';
 import { useScheduleStore } from "../../../../modulos/Schedules/store/schedule";
-import {
-  CalendarIcon,
-  BookOpenIcon,
-  ClockIcon,
-  UserGroupIcon,
-  PlusIcon,
-  PencilIcon,
-  TrashIcon,
-  ChartBarSquareIcon,
-  AcademicCapIcon
+import { 
+  CalendarIcon, 
+  BookOpenIcon, 
+  ClockIcon, 
+  UserGroupIcon, 
+  PlusIcon, 
+  PencilIcon, 
+  TrashIcon, 
+  ChartBarSquareIcon 
 } from '@heroicons/vue/24/outline';
 import { useToast } from '../../../../components/ui/toast/use-toast';
-import {
-  Dialog,
-  DialogPanel,
-  DialogOverlay,
-  TransitionRoot,
-  TransitionChild
-} from '@headlessui/vue';
+import { Dialog, DialogPanel, DialogOverlay, TransitionRoot, TransitionChild } from '@headlessui/vue';
 import TeacherWeeklySchedule from '../../components/TeacherWeeklySchedule.vue';
 import TeacherClassesCard from '../../components/TeacherClassesCard.vue';
 import ClassForm from '../../../../modulos/Classes/components/ClassForm.vue';
@@ -45,7 +328,7 @@ const showForm = ref(false);
 const showStudentManager = ref(false);
 const isEditing = ref(false);
 
-// Computar el ID del maestro actual desde el store de autenticación
+// Computar el ID del maestro actual
 const currentTeacherId = computed(() => authStore.user?.uid);
 
 // Computar las clases del maestro actual
@@ -53,13 +336,13 @@ const teacherClasses = computed(() =>
   classesStore.classes.filter(classItem => classItem.teacherId === currentTeacherId.value)
 );
 
-// Clase seleccionada, obtenida a partir del ID seleccionado
+// Clase seleccionada a partir del ID seleccionado
 const selectedClass = computed(() => {
   if (!selectedClassId.value) return null;
   return classesStore.getClassById(selectedClassId.value);
 });
 
-// Computar métricas para el dashboard (ejemplo de tarjetas informativas)
+// Métricas para el dashboard
 const dashboardMetrics = computed(() => {
   const classes = teacherClasses.value;
   const totalStudents = classes.reduce((acc, curr) => acc + (curr.studentIds?.length || 0), 0);
@@ -101,7 +384,7 @@ const dashboardMetrics = computed(() => {
   ];
 });
 
-// Próximas clases en las próximas 24 horas
+// Próximas clases (24h)
 const upcomingClasses = computed(() => {
   const now = new Date();
   const tomorrow = new Date();
@@ -118,7 +401,7 @@ const upcomingClasses = computed(() => {
     .sort((a, b) => getNextSession(a).getTime() - getNextSession(b).getTime());
 });
 
-// Notificaciones (para demostración)
+// Notificaciones de prueba
 const notifications = ref([
   {
     id: 1,
@@ -154,24 +437,56 @@ function mapDayNameToIndex(day: string): number {
     'Viernes': 5,
     'Sábado': 6
   };
-  return mapping[day] ?? 1; // Valor por defecto Lunes
+  return mapping[day] ?? 1;
 }
 
 /**
- * getNextClassDate: Retorna la fecha del próximo día en que se imparte la clase.
- * @param day - Nombre del día (ej. "Lunes")
- * @param time - Hora de inicio en formato "HH:mm"
+ * calculateDuration: Calcula la duración en minutos entre dos tiempos en formato "HH:mm".
  */
-function getNextClassDate(day: string, time: string): Date {
+ function calculateDuration(startTime: string, endTime: string): number {
+  const [startHours, startMinutes] = startTime.split(':').map(Number);
+  const [endHours, endMinutes] = endTime.split(':').map(Number);
+  return (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+}
+// ---------------------------
+// Helpers: Funciones de mapeo y formateo
+// ---------------------------
+/**
+ * mapDayNameToNumber: Convierte un nombre de día (ej. "Lunes") a su índice numérico (0-6).
+ */
+function mapDayNameToNumber(day: string): number {
+  const mapping: Record<string, number> = {
+    'Domingo': 0,
+    'Lunes': 1,
+    'Martes': 2,
+    'Miércoles': 3,
+    'Miercoles': 3, // en caso de omitir acento
+    'Jueves': 4,
+    'Viernes': 5,
+    'Sábado': 6,
+    'Sabado': 6
+  };
+  return mapping[day] ?? -1;
+}
+/**
+ * getNextClassDate: Calcula la fecha del próximo día en que se imparte la clase.
+ * @param day - Puede ser un número o un nombre de día.
+ * @param time - Hora de inicio en formato "HH:mm".
+ */
+function getNextClassDate(day: number | string, time: string): Date {
   const today = new Date();
+  let targetDay: number;
+  if (typeof day === 'string') {
+    targetDay = mapDayNameToNumber(day);
+  } else {
+    targetDay = day;
+  }
   const currentDay = today.getDay();
-  const targetDay = mapDayNameToIndex(day);
   let daysUntilClass = (targetDay - currentDay + 7) % 7;
   const classDate = new Date(today);
   classDate.setDate(today.getDate() + daysUntilClass);
   const [hours, minutes] = time.split(':').map(Number);
   classDate.setHours(hours, minutes, 0, 0);
-  // Si la clase es hoy pero ya pasó, se programa para la próxima semana
   if (daysUntilClass === 0 && classDate < today) {
     classDate.setDate(classDate.getDate() + 7);
   }
@@ -183,7 +498,7 @@ function getNextClassDate(day: string, time: string): Date {
  */
 function getNextSession(classItem: any): Date {
   const now = new Date();
-  let closestDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // Fecha lejana (7 días después)
+  let closestDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   if (classItem.schedule?.slots) {
     classItem.schedule.slots.forEach((slot: any) => {
       const slotDate = getNextClassDate(slot.day, slot.startTime);
@@ -229,7 +544,7 @@ const formatDateTime = (date: Date): string =>
     minute: '2-digit'
   });
 
-/* ------------------ Handlers de acciones ------------------ */
+/* ------------------ Handlers ------------------ */
 
 const handleAddClass = () => {
   isEditing.value = false;
@@ -283,9 +598,9 @@ const handleManageStudents = (classId: string) => {
   selectedClassId.value = classId;
   showStudentManager.value = true;
 };
-
 const handleSaveClass = async (classData: any) => {
   try {
+    // Validación mínima
     if (!classData.name || !classData.level) {
       toast({
         title: "Error",
@@ -294,7 +609,11 @@ const handleSaveClass = async (classData: any) => {
       });
       return;
     }
+
+    // Añadir automáticamente el ID del maestro actual
     classData.teacherId = currentTeacherId.value;
+
+    // Preparar datos y limpiar propiedades vacías
     const preparedData = cleanData({
       name: classData.name.trim(),
       description: classData.description?.trim(),
@@ -314,10 +633,10 @@ const handleSaveClass = async (classData: any) => {
       studentIds: classData.studentIds
     }) as { name: string; [key: string]: any };
 
-    // Usar variable para almacenar el ID de la clase creada o actualizada
     let classId: string = '';
 
     if (isEditing.value) {
+      // Actualizar clase existente
       await classesStore.updateClass({ ...preparedData, id: selectedClassId.value });
       toast({
         title: "Clase Actualizada",
@@ -325,6 +644,7 @@ const handleSaveClass = async (classData: any) => {
       });
       classId = selectedClassId.value;
     } else {
+      // Crear nueva clase
       const newClass = await classesStore.addClass(preparedData);
       toast({
         title: "Clase Creada",
@@ -334,30 +654,31 @@ const handleSaveClass = async (classData: any) => {
       selectedClassId.value = newClass.id;
     }
     
-    // Crear horarios si se proporcionaron slots
+    // Crear el módulo de schedule para la clase recién creada
     if (classData.schedule?.slots && classData.schedule.slots.length > 0) {
       console.log('📅 Schedule data structure:', classData.schedule.slots);
       for (const slot of classData.schedule.slots) {
-        const scheduleData = {
+        const scheduleRequest: ScheduleCreationRequest = {
           classId: classId,
           teacherId: classData.teacherId,
+          roomId: classData.classroom, // o se puede tener un valor por defecto
           studentIds: classData.studentIds || [],
-          scheduleDay: {
-            dayOfWeek: slot.day,
+          dayOfWeek: slot.day, // Se asume que slot.day es válido
+          timeSlot: {
             startTime: slot.startTime,
             endTime: slot.endTime,
-            teacherId: classData.teacherId,
-            classId: classId,
-            studentIds: classData.studentIds || [],
-            roomId: classData.classroom
+            duration: calculateDuration(slot.startTime, slot.endTime)
           }
         };
-        console.log('➕ Creating schedule with data:', scheduleData);
-        await scheduleStore.createSchedule(scheduleData);
+        console.log('➕ Creando schedule con datos:', scheduleRequest);
+        await scheduleStore.createSchedule(scheduleRequest);
       }
+      
+      // Actualizar el listado de horarios
       const allSchedules = await scheduleStore.fetchAllSchedules();
-      console.log('📋 All schedules after creation:', allSchedules);
+      console.log('📋 Horarios después de la creación:', allSchedules);
     }
+    
     showForm.value = false;
   } catch (error) {
     console.error('Error al guardar la clase:', error);
@@ -368,6 +689,7 @@ const handleSaveClass = async (classData: any) => {
     });
   }
 };
+
 
 const handleStudentChange = async (studentIds: any) => {
   try {
@@ -396,7 +718,6 @@ const handleStudentChange = async (studentIds: any) => {
   }
 };
 
-// Cambiar de tab
 const setActiveTab = (tab: 'overview' | 'schedule' | 'classes' | 'upcoming' | 'statistics') => {
   activeTab.value = tab;
 };
@@ -463,294 +784,6 @@ watch(
   }
 );
 </script>
-
-<template>
-  <div class="teacher-dashboard">
-    <header class="dashboard-header bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Panel de Control de Maestros</h1>
-      <p class="text-gray-600 dark:text-gray-400">
-        Aquí puedes gestionar y visualizar información relevante sobre tus clases y estudiantes.
-      </p>
-      <!-- Tabs de navegación -->
-      <div class="flex mt-6 border-b border-gray-200 dark:border-gray-700">
-        <button
-          @click="setActiveTab('classes')"
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
-          :class="{
-            'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'classes',
-            'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'classes'
-          }"
-        >
-          <div class="flex items-center gap-1">
-            <BookOpenIcon class="h-4 w-4" />
-            Mis Clases
-          </div>
-        </button>
-        <button
-          @click="setActiveTab('upcoming')"
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
-          :class="{
-            'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'upcoming',
-            'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'upcoming'
-          }"
-        >
-          <div class="flex items-center gap-1">
-            <ClockIcon class="h-4 w-4" />
-            Próximas Clases
-          </div>
-        </button>
-        <button
-          @click="setActiveTab('overview')"
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
-          :class="{
-            'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'overview',
-            'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'overview'
-          }"
-        >
-          <div class="flex items-center gap-1">
-            <ChartBarSquareIcon class="h-4 w-4" />
-            Panel General
-          </div>
-        </button>
-      </div>
-    </header>
-    <!-- Estado de carga -->
-    <div v-if="loading" class="flex justify-center items-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-    </div>
-    <section v-else class="dashboard-content space-y-6">
-      <!-- Vista general (Overview) -->
-      <div v-if="activeTab === 'overview'" class="space-y-6">
-        <!-- Tarjetas de métricas -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div
-            v-for="metric in dashboardMetrics"
-            :key="metric.title"
-            class="bg-white dark:bg-gray-800 rounded-lg shadow p-4"
-          >
-            <div class="flex items-center">
-              <div :class="`${metric.color} p-3 rounded-lg`">
-                <component :is="metric.icon" class="h-6 w-6" />
-              </div>
-              <div class="ml-4">
-                <p class="text-sm text-gray-500 dark:text-gray-400">{{ metric.title }}</p>
-                <p class="text-xl font-bold">{{ metric.value }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Notificaciones -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <h2 class="text-lg font-semibold mb-3">Notificaciones</h2>
-          <div v-if="notifications.length > 0" class="space-y-3">
-            <div
-              v-for="notification in notifications"
-              :key="notification.id"
-              class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
-              :class="{
-                'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500': notification.type === 'info' && !notification.read,
-                'bg-amber-50 dark:bg-amber-900/20 border-l-4 border-l-amber-500': notification.type === 'reminder' && !notification.read
-              }"
-            >
-              <div class="flex justify-between">
-                <h3 class="font-medium">{{ notification.title }}</h3>
-                <span class="text-xs text-gray-500">
-                  {{ new Intl.DateTimeFormat('es-ES', { dateStyle: 'short' }).format(notification.date) }}
-                </span>
-              </div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ notification.message }}</p>
-            </div>
-          </div>
-          <p v-else class="text-center text-gray-500 dark:text-gray-400 py-3">No hay notificaciones.</p>
-        </div>
-        <!-- Botones de acción rápida -->
-        <div class="flex flex-wrap gap-3">
-          <button
-            @click="handleAddClass"
-            class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            <PlusIcon class="w-5 h-5" />
-            <span>Agregar Clase</span>
-          </button>
-          <button
-            @click="filterTeachers"
-            class="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
-          >
-            <span>Gestionar Estudiantes</span>
-          </button>
-        </div>
-      </div>
-      <!-- Vista del horario semanal -->
-      <div v-if="activeTab === 'schedule'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-4 flex justify-between items-center">
-          <span>Horario Semanal</span>
-          <button
-            @click="handleAddClass"
-            class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700"
-          >
-            <PlusIcon class="w-4 h-4" />
-            Nueva Clase
-          </button>
-        </h2>
-        <TeacherWeeklySchedule :classes="teacherClasses" @view-class="handleViewClass" />
-      </div>
-      <!-- Vista de listado de clases -->
-      <div v-if="activeTab === 'classes'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-1 flex justify-between items-center">
-          <span>Mis Clases</span>
-          <button
-            @click="handleAddClass"
-            class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700"
-          >
-            <PlusIcon class="w-4 h-4" />
-            Nueva Clase
-          </button>
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-3">
-          <template v-if="teacherClasses.length > 0">
-            <TeacherClassesCard
-              v-for="classItem in teacherClasses"
-              :key="classItem.id"
-              :class-data="classItem"
-              @view="handleViewClass"
-              @edit="handleEditClass"
-              @delete="handleDeleteClass"
-              @manage-students="handleManageStudents"
-            />
-          </template>
-          <div v-else class="col-span-full py-12 text-center text-gray-500 dark:text-gray-400">
-            No tienes clases asignadas actualmente.
-            <button @click="handleAddClass" class="ml-2 text-blue-500 hover:underline">
-              Crear una nueva clase
-            </button>
-          </div>
-        </div>
-      </div>
-      <!-- Vista de próximas clases -->
-      <div v-if="activeTab === 'upcoming'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-4">Próximas Clases (24h)</h2>
-        <div class="space-y-4">
-          <template v-if="upcomingClasses.length > 0">
-            <div
-              v-for="classItem in upcomingClasses"
-              :key="classItem.id"
-              class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow p-4 border-l-4 border-blue-500"
-            >
-              <div class="flex justify-between items-start">
-                <div>
-                  <h3 class="font-medium text-lg">{{ classItem.name }}</h3>
-                  <p class="text-gray-600 dark:text-gray-400">
-                    {{ classItem.level }} - {{ classItem.instrument || 'Sin instrumento' }}
-                  </p>
-                  <div class="mt-2 flex items-center text-sm">
-                    <span class="font-medium mr-2">Próxima sesión:</span>
-                    <span>{{ formatDateTime(getNextSession(classItem)) }}</span>
-                  </div>
-                  <p class="mt-1 text-sm text-gray-500">Aula: {{ classItem.classroom || 'Sin asignar' }}</p>
-                  <p class="text-sm text-gray-500">Estudiantes: {{ classItem.studentIds?.length || 0 }}</p>
-                </div>
-                <div class="flex space-x-2">
-                  <button
-                    @click="handleEditClass(classItem.id)"
-                    class="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-md"
-                    title="Editar clase"
-                  >
-                    <PencilIcon class="h-5 w-5" />
-                  </button>
-                  <button
-                    @click="handleManageStudents(classItem.id)"
-                    class="p-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/20 rounded-md"
-                    title="Gestionar estudiantes"
-                  >
-                    <UserGroupIcon class="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </template>
-          <div v-else class="py-12 text-center text-gray-500 dark:text-gray-400">
-            No tienes clases programadas para las próximas 24 horas.
-          </div>
-        </div>
-      </div>
-    </section>
-    <!-- Modal: Formulario de Clase -->
-    <TransitionRoot appear :show="showForm">
-      <Dialog as="div" class="fixed inset-0 z-50 overflow-y-auto" @close="showForm = false">
-        <div class="min-h-screen px-4 text-center">
-          <TransitionChild
-            as="template"
-            enter="ease-out duration-300"
-            enter-from="opacity-0"
-            enter-to="opacity-100"
-            leave="ease-in duration-200"
-            leave-from="opacity-100"
-            leave-to="opacity-0"
-          >
-            <DialogOverlay class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
-          </TransitionChild>
-          <span class="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
-          <TransitionChild
-            as="template"
-            enter="ease-out duration-300"
-            enter-from="opacity-0 scale-95"
-            enter-to="opacity-100 scale-100"
-            leave="ease-in duration-200"
-            leave-from="opacity-100 scale-100"
-            leave-to="opacity-0 scale-95"
-          >
-            <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
-              <h2 class="text-xl font-semibold mb-4">{{ isEditing ? 'Editar Clase' : 'Nueva Clase' }}</h2>
-              <ClassForm
-                :class-data="isEditing ? selectedClass : null"
-                @save="handleSaveClass"
-                @cancel="showForm = false"
-              />
-            </DialogPanel>
-          </TransitionChild>
-        </div>
-      </Dialog>
-    </TransitionRoot>
-    <!-- Modal: Gestión de Estudiantes -->
-    <TransitionRoot appear :show="showStudentManager && selectedClass !== null">
-      <Dialog as="div" class="fixed inset-0 z-50 overflow-y-auto" @close="showStudentManager = false">
-        <div class="min-h-screen px-4 text-center">
-          <TransitionChild
-            as="template"
-            enter="ease-out duration-300"
-            enter-from="opacity-0"
-            enter-to="opacity-100"
-            leave="ease-in duration-200"
-            leave-from="opacity-100"
-            leave-to="opacity-0"
-          >
-            <DialogOverlay class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
-          </TransitionChild>
-          <span class="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
-          <TransitionChild
-            as="template"
-            enter="ease-out duration-300"
-            enter-from="opacity-0 scale-95"
-            enter-to="opacity-100 scale-100"
-            leave="ease-in duration-200"
-            leave-from="opacity-100 scale-100"
-            leave-to="opacity-0 scale-95"
-          >
-            <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
-              <h2 class="text-xl font-semibold mb-4">Gestionar Estudiantes - {{ selectedClass?.name }}</h2>
-              <ClassStudentManager
-                :class-id="selectedClass ? selectedClass.id : ''"
-                :student-ids="Array.isArray(selectedClass?.studentIds) ? selectedClass?.studentIds : []"
-                @update="handleStudentChange"
-                @close="showStudentManager = false"
-              />
-            </DialogPanel>
-          </TransitionChild>
-        </div>
-      </Dialog>
-    </TransitionRoot>
-  </div>
-</template>
 
 <style scoped>
 .teacher-dashboard {
