@@ -12,6 +12,24 @@ import { useTeachersStore } from '../../Teachers/store/teachers'
 import { useStudentsStore } from '../../Students/store/students'
 import { useClassesStore } from '../../Classes/store/classes'
 
+// Definición de tipos internos para métricas (opcional, para mejorar el tipeo)
+type TeacherStats = {
+  weeklyHours: number;
+  totalClasses: number;
+  totalStudents: number;
+  classesPerDay: Record<string, number>;
+}
+
+type ClassStats = {
+  enrolledStudents: number;
+  averageAttendance: number;
+  scheduleConflicts: number;
+}
+
+type RoomStats = {
+  usageHours: number;
+  utilizationRate: number;
+}
 
 export const useScheduleStore = defineStore('schedule', {
   state: (): ScheduleState => ({
@@ -56,37 +74,36 @@ export const useScheduleStore = defineStore('schedule', {
   },
 
   actions: {
+    /**
+     * fetchAllSchedules: Recupera todos los horarios desde Firebase.
+     * Filtra aquellos objetos que no tengan la propiedad scheduleDay y asigna los horarios válidos.
+     * Actualiza las métricas y la fecha de última sincronización.
+     */
     async fetchAllSchedules() {
       this.loading = true
       try {
         const result = await scheduleService.getAllSchedulesFirebase()
         if (result.success && result.data) {
-          // Ensure result.data matches the Schedule type before assignment
-          const validSchedules = result.data.map(schedule => {
-            // Type guard to check if schedule has the expected Schedule shape
-            if (!('scheduleDay' in schedule)) {
-              throw new Error('Invalid schedule data: missing scheduleDay')
+          // Filtrar solo los horarios que tienen scheduleDay definido
+          const validSchedules = result.data.filter((schedule: any) => {
+            if (!schedule.scheduleDay) {
+              console.warn('Horario inválido detectado (falta scheduleDay):', schedule)
+              return false
             }
-            // Validate the schedule object matches Schedule type
-            const typedSchedule = schedule as unknown as Schedule
-            // Check if scheduleDay exists and has required properties
-            if (!typedSchedule || !('scheduleDay' in typedSchedule) || !typedSchedule.scheduleDay) {
-              throw new Error('Invalid schedule data: scheduleDay is null or undefined')
-            }
-            return typedSchedule
-          })
-          
-          // Populate the required fields before assigning to schedules
+            return true
+          }).map((schedule: any) => schedule as Schedule)
+
+          // Asignar propiedades adicionales que se poblarán después (por ejemplo, datos de clase, profesor, estudiantes y salón)
           this.schedules = validSchedules.map(schedule => ({
             ...schedule,
-            class: null, // Will be populated by populateScheduleData
-            teacher: null, // Will be populated by populateScheduleData
-            students: [], // Will be populated by populateScheduleData
-            room: null // Will be populated by populateScheduleData
+            class: null,   // Se poblará con populateScheduleData
+            teacher: null, // Se poblará con populateScheduleData
+            students: [],  // Se poblará con populateScheduleData
+            room: null     // Se poblará con populateScheduleData
           }))
           this.lastSync = new Date()
           
-          // Also refresh metrics
+          // Recalcular métricas basadas en los horarios válidos
           await this.calculateMetrics()
         }
         return this.schedules
@@ -99,6 +116,9 @@ export const useScheduleStore = defineStore('schedule', {
       }
     },
 
+    /**
+     * fetchScheduleById: Recupera un horario específico por ID y lo actualiza o agrega al estado.
+     */
     async fetchScheduleById(id: string) {
       this.loading = true
       try {
@@ -122,10 +142,14 @@ export const useScheduleStore = defineStore('schedule', {
       }
     },
 
+    /**
+     * createSchedule: Crea un nuevo horario a partir de los datos del request.
+     * Verifica conflictos antes de crear el horario.
+     */
     async createSchedule(request: ScheduleCreationRequest) {
       this.loading = true
       try {
-        // Verificar conflictos antes de crear
+        // Verificar conflictos de horario
         const conflicts = await scheduleService.getScheduleConflicts(request)
         if (conflicts.length > 0) {
           throw new Error(
@@ -134,14 +158,16 @@ export const useScheduleStore = defineStore('schedule', {
           )
         }
 
+        // Preparar los datos para crear el horario
         const scheduleData: Omit<Schedule, 'id'> = {
           startTime: request.timeSlot.startTime,
           endTime: request.timeSlot.endTime,
           ...request
-        };
+        }
+
         const response = await scheduleService.createSchedule(scheduleData)
         if (response && response.id) {
-          // Create a complete ScheduleAssignment object with required properties
+          // Se construye un objeto ScheduleAssignment completo
           const scheduleAssignment: ScheduleAssignment = {
             ...response,
             scheduleDay: response.scheduleDay,
@@ -165,13 +191,17 @@ export const useScheduleStore = defineStore('schedule', {
       }
     },
 
+    /**
+     * updateSchedule: Actualiza un horario existente.
+     * Se espera que request contenga scheduleId y los campos a actualizar.
+     */
     async updateSchedule(request: ScheduleUpdateRequest) {
       this.loading = true
       try {
         const response = await scheduleService.updateSchedule(request.scheduleId, {
           scheduleId: request.scheduleId,
           status: request.status,
-          // Remove notes property since it's not defined in ScheduleUpdateRequest type
+          // Otras propiedades a actualizar se pueden agregar aquí
         })
         if (!response || !response.success) {
           throw new Error('Failed to update schedule')
@@ -191,6 +221,9 @@ export const useScheduleStore = defineStore('schedule', {
       }
     },
 
+    /**
+     * deleteSchedule: Elimina un horario a partir de su ID.
+     */
     async deleteSchedule(id: string) {
       this.loading = true
       try {
@@ -206,20 +239,24 @@ export const useScheduleStore = defineStore('schedule', {
       }
     },
 
-    // Helpers
-    async populateScheduleData(schedules: ScheduleAssignment[]) {
+    /**
+     * populateScheduleData: Enriquecer un arreglo de horarios (ScheduleAssignment)
+     * agregando datos de profesores, estudiantes, clases y salón.
+     * Retorna un arreglo de horarios con datos derivados (por ejemplo, teacherName, className, studentNames).
+     */
+    async populateScheduleData(schedules: ScheduleAssignment[]): Promise<ScheduleAssignment[]> {
       if (!schedules || !schedules.length) return []
 
       const teachersStore = useTeachersStore()
       const studentsStore = useStudentsStore()
       const classesStore = useClassesStore()
 
-      // Cache frequently accessed data
+      // Caches para evitar búsquedas repetidas
       const teacherCache = new Map<string, any>()
       const studentCache = new Map<string, any>()
       const classCache = new Map<string, any>()
 
-      // Batch load all required data
+      // Recopilar todos los IDs necesarios
       const teacherIds = new Set<string>()
       const studentIds = new Set<string>()
       const classIds = new Set<string>()
@@ -230,13 +267,14 @@ export const useScheduleStore = defineStore('schedule', {
         schedule.scheduleDay?.studentIds?.forEach(id => studentIds.add(id))
       })
 
+      // Cargar datos en paralelo
       await Promise.all([
         teachersStore.fetchTeachers(),
         studentsStore.fetchStudents(),
         classesStore.fetchClasses()
       ])
 
-      // Populate caches
+      // Poblar las caches
       teachersStore.teachers?.forEach(teacher => teacherCache.set(teacher.id, teacher))
       studentsStore.students?.forEach(student => studentCache.set(student.id, student))
       classesStore.classes?.forEach(class_ => classCache.set(class_.id, class_))
@@ -253,14 +291,18 @@ export const useScheduleStore = defineStore('schedule', {
           teacher,
           class: class_,
           students,
-          // Add derived data for easier access
+          // Datos derivados para facilitar el acceso
           teacherName: teacher?.name,
           className: class_?.name,
-          studentNames: students.map(s => s.name)
+          studentNames: students.map((s: any) => s.name)
         }
       })
     },
 
+    /**
+     * calculateMetrics: Calcula las métricas basadas en los horarios almacenados.
+     * Se calculan estadísticas por profesor, clase, salón y globales.
+     */
     async calculateMetrics() {
       if (!this.schedules.length) return
 
@@ -277,17 +319,13 @@ export const useScheduleStore = defineStore('schedule', {
         }
       }
 
-      // Calcular métricas por profesor
-      const teacherMap = new Map()
+      // --- Cálculo de métricas por profesor ---
+      const teacherMap = new Map<string, TeacherStats>()
       this.schedules.forEach(schedule => {
-        // Handle both flat and nested structures
-        const teacherId = schedule.scheduleDay?.teacherId || schedule.teacher?.id
-        const timeSlot = schedule.scheduleDay?.timeSlot || {
-          startTime: schedule.scheduleDay?.timeSlot?.startTime,
-          endTime: schedule.scheduleDay?.timeSlot?.endTime,
-          duration: calculateDuration(schedule.scheduleDay.timeSlot.startTime, schedule.scheduleDay.timeSlot.endTime)
-        }
-const studentIds = schedule.scheduleDay?.studentIds || schedule.students?.map(s => s.id) || []
+        // Soporta estructuras anidadas o con datos poblados
+        const teacherId: string | undefined = schedule.scheduleDay?.teacherId || schedule.teacher?.id
+        const timeSlot = schedule.scheduleDay?.timeSlot
+        const studentIds: string[] = schedule.scheduleDay?.studentIds || (schedule.students ? schedule.students.map((s: any) => s.id) : [])
         const dayOfWeek = schedule.scheduleDay?.dayOfWeek
 
         if (!teacherId) {
@@ -295,18 +333,12 @@ const studentIds = schedule.scheduleDay?.studentIds || schedule.students?.map(s 
           return
         }
         
-        // Validate teacherId format
-        if (typeof teacherId !== 'string' || teacherId.trim() === '') {
-          console.warn('Invalid teacherId format:', teacherId)
-          return
-        }
-        
-        // Validate time slot
         if (!timeSlot || !timeSlot.startTime || !timeSlot.endTime) {
           console.warn('Schedule missing time values:', schedule)
           return
         }
 
+        const duration = calculateDuration(timeSlot.startTime, timeSlot.endTime)
         if (!teacherMap.has(teacherId)) {
           teacherMap.set(teacherId, {
             weeklyHours: 0,
@@ -315,13 +347,13 @@ const studentIds = schedule.scheduleDay?.studentIds || schedule.students?.map(s 
             classesPerDay: {}
           })
         }
-        
-        const teacherStats = teacherMap.get(teacherId)
-        teacherStats.weeklyHours += timeSlot.duration / 60
+        const teacherStats = teacherMap.get(teacherId)!
+        teacherStats.weeklyHours += duration / 60
         teacherStats.totalClasses++
         teacherStats.totalStudents += studentIds.length
-        teacherStats.classesPerDay[dayOfWeek] =
-          (teacherStats.classesPerDay[dayOfWeek] || 0) + 1
+        if (dayOfWeek) {
+          teacherStats.classesPerDay[dayOfWeek] = (teacherStats.classesPerDay[dayOfWeek] || 0) + 1
+        }
       })
 
       metrics.teacherMetrics = Array.from(teacherMap.entries()).map(([teacherId, stats]) => ({
@@ -329,29 +361,20 @@ const studentIds = schedule.scheduleDay?.studentIds || schedule.students?.map(s 
         ...stats
       }))
 
-      // Calcular métricas por clase
-      const classMap = new Map()
+      // --- Cálculo de métricas por clase ---
+      const classMap = new Map<string, ClassStats>()
       this.schedules.forEach(schedule => {
-        const classId = schedule.scheduleDay?.classId || schedule.class?.id
-        const studentIds = schedule.scheduleDay?.studentIds || schedule.students?.map(s => s.id) || []
+        const classId: string | undefined = schedule.scheduleDay?.classId || schedule.class?.id
+        const studentIds: string[] = schedule.scheduleDay?.studentIds || (schedule.students ? schedule.students.map((s: any) => s.id) : [])
 
         if (!classId) {
           console.warn('Schedule missing classId:', schedule)
           return
         }
-        
-        // Validate classId format
-        if (typeof classId !== 'string' || classId.trim() === '') {
-          console.warn('Invalid classId format:', classId)
-          return
-        }
-        
-        // Validate student IDs
         if (!Array.isArray(studentIds)) {
           console.warn('Invalid studentIds format:', schedule)
           return
         }
-
         if (!classMap.has(classId)) {
           classMap.set(classId, {
             enrolledStudents: 0,
@@ -359,11 +382,8 @@ const studentIds = schedule.scheduleDay?.studentIds || schedule.students?.map(s 
             scheduleConflicts: 0
           })
         }
-        const classStats = classMap.get(classId)
-        classStats.enrolledStudents = Math.max(
-          classStats.enrolledStudents,
-          studentIds.length
-        )
+        const classStats = classMap.get(classId)!
+        classStats.enrolledStudents = Math.max(classStats.enrolledStudents, studentIds.length)
       })
 
       metrics.classMetrics = Array.from(classMap.entries()).map(([classId, stats]) => ({
@@ -371,84 +391,77 @@ const studentIds = schedule.scheduleDay?.studentIds || schedule.students?.map(s 
         ...stats
       }))
 
-      // Calcular métricas por salón
-      const roomMap = new Map()
+      // --- Cálculo de métricas por salón ---
+      const roomMap = new Map<string, RoomStats>()
       this.schedules.forEach(schedule => {
-const roomId = schedule.scheduleDay?.roomId || schedule.room?.id
-        const timeSlot = schedule.scheduleDay?.timeSlot || {
-          startTime: schedule.scheduleDay.timeSlot.startTime,
-          endTime: schedule.scheduleDay.timeSlot.endTime,
-          duration: calculateDuration(schedule.scheduleDay.timeSlot.startTime, schedule.scheduleDay.timeSlot.endTime)
-        }
-
+        const roomId: string | undefined = schedule.scheduleDay?.roomId || schedule.room?.id
+        const timeSlot = schedule.scheduleDay?.timeSlot
         if (!roomId) {
           console.warn('Schedule missing roomId:', schedule)
           return
         }
-        
-        // Validate roomId format
         if (typeof roomId !== 'string' || roomId.trim() === '') {
           console.warn('Invalid roomId format:', roomId)
           return
         }
-        
-        // Validate time slot
         if (!timeSlot || !timeSlot.startTime || !timeSlot.endTime) {
           console.warn('Schedule missing time values:', schedule)
           return
         }
-
+        const duration = calculateDuration(timeSlot.startTime, timeSlot.endTime)
         if (!roomMap.has(roomId)) {
           roomMap.set(roomId, {
             usageHours: 0,
             utilizationRate: 0
           })
         }
-        const roomStats = roomMap.get(roomId)
-        roomStats.usageHours += timeSlot.duration / 60
+        const roomStats = roomMap.get(roomId)!
+        roomStats.usageHours += duration / 60
       })
 
       metrics.roomUtilization = Array.from(roomMap.entries()).map(([roomId, stats]) => ({
         roomId,
         ...stats,
-        utilizationRate: (stats.usageHours / (40 * 4)) * 100 // Asumiendo 40 horas por semana
+        utilizationRate: (stats.usageHours / (40 * 4)) * 100 // Asumiendo 40 horas por semana durante 4 semanas
       }))
 
-      // Calcular métricas globales
+      // --- Cálculo de métricas globales ---
       metrics.globalMetrics = {
         totalActiveClasses: classMap.size,
         totalActiveTeachers: teacherMap.size,
-        totalEnrolledStudents: Array.from(classMap.values())
-          .reduce((total, stats) => total + stats.enrolledStudents, 0),
-        averageClassSize: metrics.classMetrics.reduce((sum, metric) => 
-          sum + metric.enrolledStudents, 0) / metrics.classMetrics.length || 0,
-        roomUtilizationRate: metrics.roomUtilization.reduce((sum, metric) =>
-          sum + metric.utilizationRate, 0) / metrics.roomUtilization.length || 0
+        totalEnrolledStudents: Array.from(classMap.values()).reduce((total, stats) => total + stats.enrolledStudents, 0),
+        averageClassSize: metrics.classMetrics.reduce((sum, metric) => sum + metric.enrolledStudents, 0) / (metrics.classMetrics.length || 1),
+        roomUtilizationRate: metrics.roomUtilization.reduce((sum, metric) => sum + metric.utilizationRate, 0) / (metrics.roomUtilization.length || 1)
       }
 
       this.metrics = metrics
     },
 
-    // Método para forzar una sincronización
+    /**
+     * forceSync: Forzar una sincronización de los horarios.
+     */
     async forceSync() {
       await this.fetchAllSchedules()
     }
   }
 })
 
-// Helper function to calculate duration between two time strings (HH:mm)
+/**
+ * calculateDuration: Calcula la duración en minutos entre dos horas (formato "HH:mm").
+ * Realiza validaciones del formato de tiempo.
+ */
 function calculateDuration(startTime: string, endTime: string): number {
   if (!startTime || !endTime) {
-    console.warn('Invalid time values:', {startTime, endTime})
+    console.warn('Invalid time values:', { startTime, endTime })
     return 0
   }
   
-  // Validate time format (HH:mm)
   const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
   if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
-    console.warn('Invalid time format:', {startTime, endTime})
+    console.warn('Invalid time format:', { startTime, endTime })
     return 0
   }
+  
   const [startHours, startMinutes] = startTime.split(':').map(Number)
   const [endHours, endMinutes] = endTime.split(':').map(Number)
   

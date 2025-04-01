@@ -12,7 +12,6 @@ import {
   CameraIcon,
   ChartBarIcon,
   PencilIcon,
-  TrashIcon,
   CalendarIcon,
   BriefcaseIcon,
   ChevronRightIcon,
@@ -29,8 +28,12 @@ const teachersStore = useTeachersStore()
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 const auth = getAuth()
 
-// Wait for auth to initialize before getting current user
-const teacherId = ref('')
+// Get teacher ID from route params, localStorage or current user
+const teacherId = ref(localStorage.getItem('teacherId') || auth.currentUser?.uid || '')
+// Load teacher data when teacherId changes
+watch(teacherId, async () => {
+  teacher.value = await loadTeacher()
+})
 
 onMounted(() => {
   const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -46,8 +49,6 @@ onMounted(() => {
   
   return () => unsubscribe()
 })
-// Get teacher ID from route params, localStorage or current user
-const teacherId = ref(localStorage.getItem('teacherId') || auth.currentUser?.uid || '')
 
 // Store teacher ID in localStorage when it changes
 watch(teacherId, (newId) => {
@@ -182,9 +183,6 @@ const handleCompleteForm = () => {
   })
 }
 
-const handleDelete = () => {
-  router.push(`/teachers/${teacherId}/delete`)
-}
 
 const isDark = ref(false)
 const selectedTimezone = ref('America/New_York')

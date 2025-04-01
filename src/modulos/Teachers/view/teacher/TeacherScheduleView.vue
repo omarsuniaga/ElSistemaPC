@@ -5,7 +5,7 @@
     import { useClassesStore } from '../../../Classes/store/classes'
     import { format, parseISO } from 'date-fns'
     import { es } from 'date-fns/locale'
-    import TeacherWeeklySchedule from '../../components/TeacherWeeklySchedule.vue'
+    import { TeacherWeeklySchedule } from '../../components/TeacherWeeklySchedule.vue'
     import html2pdf from 'html2pdf.js'
     import type { SVGAttributes } from 'vue'
     import { getAuth } from 'firebase/auth'
@@ -80,7 +80,20 @@
         error.value = null
         // Cargar maestros si aún no se han cargado
         await teachersStore.fetchTeachers()
-        teacher.value = teachersStore.getTeacherById(teacherId.value)
+        const fetchedTeacher = teachersStore.getTeacherById(teacherId.value)
+        if (fetchedTeacher) {
+          teacher.value = {
+            id: fetchedTeacher.id,
+            name: fetchedTeacher.name,
+            photoURL: fetchedTeacher.photoURL,
+            specialties: fetchedTeacher.specialties,
+            experiencia: fetchedTeacher.experiencia,
+            phone: fetchedTeacher.phone,
+            email: fetchedTeacher.email
+          }
+        } else {
+          teacher.value = null
+        }
         if (!teacher.value) {
           throw new Error('Maestro no encontrado')
         }

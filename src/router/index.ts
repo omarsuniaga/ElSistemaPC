@@ -78,7 +78,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/teacher/profile',
     name: 'TeacherProfile',
-    component: () => import('../modulos/Teachers/view/TeacherProfileView.vue'),
+    component: () => import('../modulos/Teachers/view/teacher/TeacherProfileView.vue'),
     meta: { 
       requiresAuth: true,
       allowedRoles: ['Maestro']

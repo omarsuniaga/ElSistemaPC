@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// ../modulos/Teacher/components/TeacherForm.vue
 import { ref, computed, watchEffect } from 'vue';
 import FileUpload from '@/components/FileUpload.vue';
 import { MinusCircleIcon, PlusCircleIcon } from '@heroicons/vue/24/outline';

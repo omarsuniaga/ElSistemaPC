@@ -1,25 +1,24 @@
+// /types/schedules.ts
+
+// Importamos los tipos necesarios de otros módulos
 import type { Teacher } from '../../Teachers/types/teachers'
 import type { Student } from '../../Students/types/student'
 import type { Class } from '../../Classes/types/class'
 
+/**
+ * TimeSlot: Representa un intervalo de tiempo con hora de inicio, fin y duración (en minutos)
+ */
 export interface TimeSlot {
   startTime: string
   endTime: string
   duration: number // en minutos
 }
 
-
-
-export interface ScheduleState {
-  schedules: ScheduleAssignment[]
-  rooms: Room[]
-  metrics: ScheduleMetrics | null
-  loading: boolean
-  error: string | null
-  lastSync: Date | null
-}
-
-
+/**
+ * ScheduleDay: Define la programación de un día para una clase.
+ * Incluye la información del día de la semana, el intervalo de tiempo (TimeSlot)
+ * y las referencias a la clase, profesor, salón y estudiantes.
+ */
 export interface ScheduleDay {
   dayOfWeek: 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes' | 'Sábado' | 'Domingo'
   timeSlot: TimeSlot
@@ -27,10 +26,14 @@ export interface ScheduleDay {
   teacherId: string
   roomId: string
   studentIds: string[]
-  capacity: number
-  isActive: boolean
+  capacity: number      // Capacidad máxima del grupo para ese día
+  isActive: boolean     // Indica si el horario está activo
 }
 
+/**
+ * Room: Representa un salón o aula.
+ * Incluye su identificador, nombre, capacidad, descripción, estado y lista de equipos (opcional).
+ */
 export interface Room {
   id: string
   name: string
@@ -40,16 +43,25 @@ export interface Room {
   equipment?: string[]
 }
 
+/**
+ * ScheduleConfiguration: Configuración general para la programación de horarios.
+ * Define el año académico, término, fechas de inicio y fin, días festivos, días laborales y los intervalos diarios.
+ */
 export interface ScheduleConfiguration {
   academicYear: string
   term: 'Primavera' | 'Verano' | 'Otoño' | 'Invierno'
   startDate: Date
   endDate: Date
   holidayDates: Date[]
-  workingDays: string[] // ['Lunes', 'Martes', etc.]
+  workingDays: string[]      // Ejemplo: ['Lunes', 'Martes', ...]
   dailyTimeSlots: TimeSlot[]
 }
 
+/**
+ * ScheduleAssignment: Representa la asignación de un horario a una clase.
+ * Incluye el día de programación (ScheduleDay), y los datos completos de la clase, profesor, estudiantes y salón.
+ * Además, incluye metadatos de creación, actualización y el estado actual.
+ */
 export interface ScheduleAssignment {
   id: string
   scheduleDay: ScheduleDay
@@ -66,6 +78,10 @@ export interface ScheduleAssignment {
   }[]
 }
 
+/**
+ * ScheduleMetrics: Define las métricas obtenidas a partir de los horarios.
+ * Contiene estadísticas desglosadas por profesor, clase y salón, así como métricas globales.
+ */
 export interface ScheduleMetrics {
   teacherMetrics: {
     teacherId: string
@@ -83,7 +99,7 @@ export interface ScheduleMetrics {
   roomUtilization: {
     roomId: string
     usageHours: number
-    utilizationRate: number // porcentaje
+    utilizationRate: number // en porcentaje
   }[]
   globalMetrics: {
     totalActiveClasses: number
@@ -94,20 +110,40 @@ export interface ScheduleMetrics {
   }
 }
 
-// Tipos para las respuestas de la API
+/**
+ * ScheduleState: Representa el estado del módulo de horarios en el store.
+ * Incluye la lista de horarios, salones, métricas, indicadores de carga, error y la fecha de última sincronización.
+ */
+export interface ScheduleState {
+  schedules: ScheduleAssignment[]
+  rooms: Room[]
+  metrics: ScheduleMetrics | null
+  loading: boolean
+  error: string | null
+  lastSync: Date | null
+}
+
+/**
+ * ScheduleResponse: Tipo de respuesta para las solicitudes de horarios a la API.
+ */
 export type ScheduleResponse = {
   success: boolean
   data: ScheduleAssignment[] | null
   error?: string
 }
 
+/**
+ * ScheduleMetricsResponse: Tipo de respuesta para las solicitudes de métricas de horarios.
+ */
 export type ScheduleMetricsResponse = {
   success: boolean
   data: ScheduleMetrics | null
   error?: string
 }
 
-// Tipos para las solicitudes
+/**
+ * ScheduleCreationRequest: Representa la solicitud para crear un nuevo horario.
+ */
 export interface ScheduleCreationRequest {
   classId: string
   teacherId: string
@@ -117,16 +153,25 @@ export interface ScheduleCreationRequest {
   timeSlot: TimeSlot
 }
 
+/**
+ * ScheduleUpdateRequest: Representa la solicitud para actualizar un horario existente.
+ * Se envía el ID del horario a actualizar y un objeto con las propiedades a modificar (excepto id y createdAt).
+ */
 export interface ScheduleUpdateRequest {
   scheduleId: string
   updates: Partial<Omit<ScheduleAssignment, 'id' | 'createdAt'>>
 }
 
+/**
+ * ScheduleDeletionRequest: Representa la solicitud para eliminar un horario.
+ */
 export interface ScheduleDeletionRequest {
   scheduleId: string
 }
 
-// interface para Schedule
+/**
+ * Schedule: Representa un horario en un formato simplificado, útil para ciertos procesos o transformaciones.
+ */
 export interface Schedule {
   id: string
   classId: string

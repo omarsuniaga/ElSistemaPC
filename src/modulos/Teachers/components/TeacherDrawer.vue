@@ -1,3 +1,94 @@
+<script setup lang="ts">
+// ../modulos/Teacher/components/TeacherDrawer.vue
+import { ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { useTeachersStore } from '../../../stores/teachers'
+import { CalendarIcon, ClockIcon } from '@heroicons/vue/24/outline'
+import type { Teacher } from '../../../types/teachers'
+
+interface ScheduleItem {
+  className: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  room: string;
+  studentCount: number;
+  students: {
+    id: string;
+    name: string;
+  }[];
+}
+
+interface Schedule {
+  totalClasses: number;
+  weeklyHours: number;
+  schedule: ScheduleItem[];
+}
+
+const props = withDefaults(defineProps<{
+  show: boolean
+  teacher?: Teacher | null
+}>(), {
+  teacher: null
+})
+
+const emit = defineEmits(['close', 'edit'])
+const teachersStore = useTeachersStore()
+const router = useRouter()
+
+const schedule = ref<Schedule | null>(null)
+const isLoadingSchedule = ref(false)
+const scheduleError = ref<string | null>(null)
+
+const loadSchedule = async () => {
+  if (!props.teacher?.id) return
+  
+  isLoadingSchedule.value = true
+  scheduleError.value = null
+  
+  try {
+    const data = await teachersStore.getTeacherSchedule(props.teacher.id)
+    // Convert the returned data to match our Schedule interface
+    schedule.value = {
+      totalClasses: data.totalClasses,
+      weeklyHours: data.weeklyHours,
+      schedule: Array.isArray(data.schedule) ? data.schedule : []
+    }
+  } catch (error: any) {
+    scheduleError.value = error.message
+  } finally {
+    isLoadingSchedule.value = false
+  }
+}
+
+watch(() => props.show, (newValue) => {
+  if (newValue && props.teacher) {
+    loadSchedule()
+  }
+})
+
+// Función auxiliar para formatear horas
+const formatHours = (hours: number) => {
+  const wholeHours = Math.floor(hours)
+  const minutes = Math.round((hours % 1) * 60)
+  return wholeHours > 0 
+    ? `${wholeHours}h ${minutes > 0 ? `${minutes}m` : ''}`
+    : `${minutes}m`
+}
+
+const goToTeacherSchedule = () => {
+  if (!props.teacher?.id) return
+  router.push(`/teacher-schedule/${props.teacher.id}`)
+  emit('close')
+}
+
+// Función para calcular total de estudiantes
+const getTotalStudents = () => {
+  if (!schedule.value?.schedule) return 0
+  return schedule.value.schedule.reduce((total: number, day: ScheduleItem) => 
+    total + (day.studentCount || 0), 0)
+}
+</script>
 <template>
   <!-- Backdrop -->
   <div
@@ -189,94 +280,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useTeachersStore } from '../../../stores/teachers'
-import { CalendarIcon, ClockIcon } from '@heroicons/vue/24/outline'
-import type { Teacher } from '../../../types/teachers'
-
-interface ScheduleItem {
-  className: string;
-  dayOfWeek: string;
-  startTime: string;
-  endTime: string;
-  room: string;
-  studentCount: number;
-  students: {
-    id: string;
-    name: string;
-  }[];
-}
-
-interface Schedule {
-  totalClasses: number;
-  weeklyHours: number;
-  schedule: ScheduleItem[];
-}
-
-const props = withDefaults(defineProps<{
-  show: boolean
-  teacher?: Teacher | null
-}>(), {
-  teacher: null
-})
-
-const emit = defineEmits(['close', 'edit'])
-const teachersStore = useTeachersStore()
-const router = useRouter()
-
-const schedule = ref<Schedule | null>(null)
-const isLoadingSchedule = ref(false)
-const scheduleError = ref<string | null>(null)
-
-const loadSchedule = async () => {
-  if (!props.teacher?.id) return
-  
-  isLoadingSchedule.value = true
-  scheduleError.value = null
-  
-  try {
-    const data = await teachersStore.getTeacherSchedule(props.teacher.id)
-    // Convert the returned data to match our Schedule interface
-    schedule.value = {
-      totalClasses: data.totalClasses,
-      weeklyHours: data.weeklyHours,
-      schedule: Array.isArray(data.schedule) ? data.schedule : []
-    }
-  } catch (error: any) {
-    scheduleError.value = error.message
-  } finally {
-    isLoadingSchedule.value = false
-  }
-}
-
-watch(() => props.show, (newValue) => {
-  if (newValue && props.teacher) {
-    loadSchedule()
-  }
-})
-
-// Función auxiliar para formatear horas
-const formatHours = (hours: number) => {
-  const wholeHours = Math.floor(hours)
-  const minutes = Math.round((hours % 1) * 60)
-  return wholeHours > 0 
-    ? `${wholeHours}h ${minutes > 0 ? `${minutes}m` : ''}`
-    : `${minutes}m`
-}
-
-const goToTeacherSchedule = () => {
-  if (!props.teacher?.id) return
-  router.push(`/teacher-schedule/${props.teacher.id}`)
-  emit('close')
-}
-
-// Función para calcular total de estudiantes
-const getTotalStudents = () => {
-  if (!schedule.value?.schedule) return 0
-  return schedule.value.schedule.reduce((total: number, day: ScheduleItem) => 
-    total + (day.studentCount || 0), 0)
-}
-</script>

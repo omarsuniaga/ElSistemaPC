@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// ../modulos/Teacher/components/TeacherDashboardView.vue
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useClassesStore } from '../../../modulos/Classes/store/classes';

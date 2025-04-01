@@ -47,7 +47,7 @@ onMounted(async () => {
     ]
   }
   
-  canAccessNavigation.value = authStore.isApproved
+  canAccessNavigation.value = authStore.isAuthenticated && authStore.isApproved
 })
 
 // Función mejorada para determinar si una ruta está activa
