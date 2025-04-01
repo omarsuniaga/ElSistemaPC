@@ -183,13 +183,7 @@ onMounted(async () => {
       error: null
     };
     
-    console.log('TeacherClassesCard - Debug info:', {
-      classId: props.classData.id,
-      className: props.classData.name,
-      studentIds: props.classData.studentIds,
-      studentsInStore: studentsStore.students.length,
-      foundStudents: topStudents.value.length
-    });
+    
   } catch (error) {
     console.error('Error cargando estudiantes:', error);
     debugInfo.value.error = error.message;

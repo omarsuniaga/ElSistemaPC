@@ -57,39 +57,25 @@ const isActive = (path: string) => {
     return route.path === '/';
   }
   
-  // Dividimos las rutas en segmentos para comparaciones más precisas
-  const routeSegments = route.path.split('/').filter(Boolean);
-  const itemSegments = path.split('/').filter(Boolean);
-  
-  // Si el ítem no tiene segmentos (caso raro), no está activo
-  if (itemSegments.length === 0) return false;
-  
-  // Si la ruta actual tiene menos segmentos que el ítem, no puede ser activo
-  if (routeSegments.length < itemSegments.length) return false;
-  
-  // Comparamos solo la cantidad de segmentos que tiene el ítem del menú
-  for (let i = 0; i < itemSegments.length; i++) {
-    if (routeSegments[i] !== itemSegments[i]) {
-      return false;
-    }
+  // Exact match for paths
+  if (route.path === path) {
+    return true;
   }
-  // Si el ítem del menú tiene solo un segmento, necesitamos ser más estrictos
-  // para evitar que rutas como /teachers y /teaching se activen simultáneamente
-  if (itemSegments.length === 1 && routeSegments.length > 1) {
-    // Verificamos si hay otro ítem de menú con más segmentos que coinciden mejor
-    const betterMatch = menuItems.value.some(menuItem => {
-      const menuItemSegments = menuItem.to.split('/').filter(Boolean);
-      return menuItemSegments.length > 1 && 
-             menuItemSegments[0] === itemSegments[0] &&
-             menuItemSegments.every((seg, idx) => routeSegments[idx] === seg);
+  
+  // For nested routes, only activate if the current route starts with the menu path
+  // and there isn't a more specific menu item that matches better
+  if (route.path.startsWith(path) && path !== '/') {
+    // Check if there's a more specific menu item that matches better
+    const hasBetterMatch = menuItems.value.some(menuItem => {
+      return menuItem.to !== path && 
+             menuItem.to.startsWith(path) && 
+             route.path.startsWith(menuItem.to);
     });
     
-    // Si hay una coincidencia mejor, este ítem no debería estar activo
-    if (betterMatch) return false;
+    return !hasBetterMatch;
   }
   
-  // Si pasamos todas las validaciones, el ítem está activo
-  return true;
+  return false;
 }
 </script>
 

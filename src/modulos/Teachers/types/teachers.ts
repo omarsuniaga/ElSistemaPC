@@ -87,3 +87,45 @@ export interface TeacherSpecialty extends BaseRecord {
   lastUpdated: string;
   totalStudents: number;
 }
+
+export interface TeacherData {
+  id: string;
+  uid: string;
+  name: string;
+  email: string;
+  phone: string;
+  specialties: string[];
+  photoURL: string;
+  status: string;
+  biography: string;
+  createdAt: Date;
+  updatedAt?: Date;
+  experiencia: string;
+  address: string;
+}
+
+
+/**
+ * Tipo para definir la estructura de un horario semanal.
+ */
+type WeeklySchedule = Array<{
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  className?: string;
+  classId?: string;
+  room?: string;
+  studentCount?: number;
+  students?: any[];
+}>;
+
+
+/**
+ * Interfaz para resumir el horario de un profesor.
+ */
+export interface TeacherScheduleSummary {
+  weeklyHours: number;
+  totalClasses: number;
+  schedule: WeeklySchedule;
+  hasConflicts: boolean;
+}

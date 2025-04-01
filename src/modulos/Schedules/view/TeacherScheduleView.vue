@@ -3,9 +3,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTeachersStore } from '@/modulos/Teachers/store/teachers'
 import { useClassesStore } from '@/modulos/Classes/store/classes'
+import { useScheduleStore } from '@/modulos/Schedules/store/schedule'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import ScheduleNavigation from '../../Schedules/components/ScheduleNavigation.vue'
 import TeacherWeeklySchedule from '../../Teachers/components/TeacherWeeklySchedule.vue'
 import html2pdf from 'html2pdf.js'
 import type { SVGAttributes } from 'vue'
@@ -24,6 +24,7 @@ import { getAuth } from 'firebase/auth'
 const route = useRoute()
 const teachersStore = useTeachersStore()
 const classesStore = useClassesStore()
+const scheduleStore = useScheduleStore()
 const selectedTeacher = ref('')
 const auth = getAuth()
 
@@ -42,7 +43,7 @@ interface Teacher {
   name: string;
   photoURL?: string;
   specialties?: string[];
-  experiencia?: string;
+  experiencia?: any;
   phone?: string;
   email?: string;
 }
@@ -57,9 +58,13 @@ interface Schedule {
     className: string;
     startTime: string;
     endTime: string;
+    classId?: string;
+    room?: string;
+    studentCount?: number;
   }>;
 }
 const schedule = ref<Schedule | null>(null)
+const teacherClasses = ref<any[]>([])
 
 // Función para cargar datos del maestro y su horario
 const loadData = async () => {
@@ -72,7 +77,56 @@ const loadData = async () => {
     if (!teacher.value) {
       throw new Error('No se encontró información del maestro. Por favor verifique que el ID sea correcto o contacte al administrador.')
     }
-    schedule.value = await teachersStore.getTeacherSchedule(teacher.value.id)
+    
+    // Cargar horarios desde el store de schedules
+    await scheduleStore.fetchAllSchedules()
+    const teacherSchedules = scheduleStore.getSchedulesByTeacher(teacher.value.id)
+    
+    // Procesar los horarios para obtener la información necesaria
+    if (teacherSchedules && teacherSchedules.length > 0) {
+      // Obtener clases para el componente TeacherWeeklySchedule
+      await classesStore.fetchClasses()
+      teacherClasses.value = teacherSchedules.map(scheduleItem => {
+        const classInfo = classesStore.getClassById(scheduleItem.scheduleDay.classId)
+        return {
+          id: scheduleItem.scheduleDay.classId,
+          name: classInfo?.name || 'Clase sin nombre',
+          teacherId: scheduleItem.scheduleDay.teacherId,
+          instrument: classInfo?.instrument || '',
+          classroom: scheduleItem.scheduleDay.roomId,
+          studentIds: scheduleItem.scheduleDay.studentIds,
+          schedule: [{
+            day: scheduleItem.scheduleDay.dayOfWeek,
+            startTime: scheduleItem.scheduleDay.timeSlot.startTime,
+            endTime: scheduleItem.scheduleDay.timeSlot.endTime
+          }]
+        }
+      })
+      
+      // Calcular métricas para mostrar en la vista
+      const weeklyHours = teacherSchedules.reduce((total, s) => {
+        return total + (s.scheduleDay.timeSlot.duration / 60)
+      }, 0)
+      
+      // Crear objeto de horario para la vista
+      schedule.value = {
+        totalClasses: teacherSchedules.length,
+        weeklyHours: weeklyHours,
+        hasConflicts: false, // Podría implementarse detección de conflictos
+        schedule: teacherSchedules.map(s => ({
+          dayOfWeek: s.scheduleDay.dayOfWeek,
+          className: classesStore.getClassById(s.scheduleDay.classId)?.name || 'Clase sin nombre',
+          startTime: s.scheduleDay.timeSlot.startTime,
+          endTime: s.scheduleDay.timeSlot.endTime,
+          classId: s.scheduleDay.classId,
+          room: s.scheduleDay.roomId,
+          studentCount: s.scheduleDay.studentIds.length
+        }))
+      }
+    } else {
+      // Si no hay horarios en el store de schedules, intentar con el método del store de teachers
+      schedule.value = await teachersStore.getTeacherSchedule(teacher.value.id)
+    }
   } catch (err: any) {
     console.error('Error cargando datos:', err)
     error.value = err.message || 'Error cargando datos'
@@ -142,7 +196,7 @@ const getCurrentFormattedDate = (): string => {
 
 const getTeacherClasses = (teacherId: string) => {
   if (!teacherId) return []
-  return classesStore.classes.filter(class_ => class_.teacherId === teacherId)
+  return teacherClasses.value.length > 0 ? teacherClasses.value : classesStore.classes.filter(class_ => class_.teacherId === teacherId)
 }
 </script>
 
@@ -245,7 +299,9 @@ const getTeacherClasses = (teacherId: string) => {
           <div class="grid grid-cols-2 gap-3 text-sm mt-4">
             <div>
               <span class="text-gray-500 dark:text-gray-400">Experiencia:</span>
-              <span class="ml-1 font-medium">{{ teacher.experiencia || "No disponible" }}</span>
+              <span class="ml-1 font-medium">{{ teacher.experiencia.institution || "No disponible" }} |</span>
+              <span class="ml-1 font-medium">{{ teacher.experiencia.description || "No disponible" }} |</span>
+              <span class="ml-1 font-medium">{{ teacher.experiencia.role || "No disponible" }}</span>
             </div>
             <div>
               <span class="text-gray-500 dark:text-gray-400">Teléfono:</span>
@@ -282,7 +338,7 @@ const getTeacherClasses = (teacherId: string) => {
             </div>
             
             <!-- Integración del componente TeacherWeeklySchedule -->
-            <TeacherWeeklySchedule :teacherId="teacherId" />
+            <TeacherWeeklySchedule :teacherId="teacherId" :classes="getTeacherClasses(teacher.id)" />
           </div>
           <div v-else class="text-center py-4 text-gray-500">
             No hay clases asignadas
@@ -302,73 +358,7 @@ const getTeacherClasses = (teacherId: string) => {
       No se encontró información del maestro
     </div>
   </div>
-
-  <div>
-    <h1 class="text-2xl font-bold mb-4">Gestión de Horarios</h1>
-    <ScheduleNavigation />
-    
-    <!-- Mejorada la semántica del formulario de selección -->
-    <section class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
-      <h2 class="text-xl font-semibold mb-4">Horarios de Profesores</h2>
-      
-      <form class="mb-4" @submit.prevent>
-        <label for="teacher-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Seleccionar Profesor
-        </label>
-        <select
-          id="teacher-select"
-          v-model="selectedTeacher"
-          class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          aria-label="Seleccionar profesor"
-        >
-          <option value="">Seleccione un profesor</option>
-          <option v-for="teacher in teachersStore.teachers" :key="teacher.id" :value="teacher.id">
-            {{ teacher.name }}
-          </option>
-        </select>
-      </form>
-      
-      <div v-if="selectedTeacher" class="mt-6">
-        <h3 class="text-lg font-medium mb-3">
-          Clases de {{ teachersStore.teachers.find(t => t.id === selectedTeacher)?.name }}
-        </h3>
-        
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead>
-              <tr>
-                <th class="px-4 py-2 text-left bg-gray-50 dark:bg-gray-700">Clase</th>
-                <th class="px-4 py-2 text-left bg-gray-50 dark:bg-gray-700">Nivel</th>
-                <th class="px-4 py-2 text-left bg-gray-50 dark:bg-gray-700">Horario</th>
-                <th class="px-4 py-2 text-left bg-gray-50 dark:bg-gray-700">Estudiantes</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr 
-                v-for="class_ in getTeacherClasses(selectedTeacher)" 
-                :key="class_.id" 
-                class="border-b dark:border-gray-700"
-              >
-                <td class="px-4 py-2">{{ class_.name }}</td>
-                <td class="px-4 py-2">{{ class_.level }}</td>
-                <td class="px-4 py-2">{{ class_.schedule }}</td>
-                <td class="px-4 py-2">{{ class_.studentIds ? class_.studentIds.length : 0 }}</td>
-              </tr>
-              <tr v-if="getTeacherClasses(selectedTeacher).length === 0">
-                <td colspan="4" class="px-4 py-2 text-center text-gray-500">
-                  Este profesor no tiene clases asignadas
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      
-      <div v-else class="mt-6 text-center text-gray-500">
-        Seleccione un profesor para ver su horario
-      </div>
-    </section>
-  </div>
+  
 </template>
 
 <style scoped>

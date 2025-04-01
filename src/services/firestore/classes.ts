@@ -16,6 +16,7 @@ export interface ClassData {
   classroom?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  
 }
 
 // Get Firebase auth instance
@@ -49,7 +50,8 @@ const classesService = {
           id: doc.id,
           ...doc.data()
         }))
-        .filter(classData => classData.teacherId === user.uid) as ClassData[];
+        .filter((classData): classData is ClassData => 
+          'teacherId' in classData && classData.teacherId === user.uid);
     } catch (error) {
       console.error('Error al obtener clases del profesor:', error);
       throw error;

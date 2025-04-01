@@ -294,11 +294,8 @@ export const useClassesStore = defineStore('classes', {
     async forceSync() {
       return await this.withLoading(async () => {
         try {
-          console.log('🔄 Forzando sincronización de clases con Firebase...');
-          
           // Limpiar caché local si estamos en desarrollo
           if (process.env.NODE_ENV === 'development') {
-            console.log('🧹 Limpiando caché local de clases...');
             localStorage.removeItem('classes');
           }
           
@@ -307,7 +304,6 @@ export const useClassesStore = defineStore('classes', {
           this.classes = classes.map((classItem: any) => this.normalizeClassData(classItem));
           this.lastSync = new Date();
           
-          console.log(`✅ Sincronización completada: ${this.classes.length} clases cargadas`);
           return this.classes;
         } catch (error) {
           console.error('❌ Error forzando sincronización:', error);

@@ -1,84 +1,85 @@
 <template>
   <div class="teacher-weekly-schedule">
-    <!-- Calendario semanal -->
-    <div class="weekly-grid overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead class="bg-gray-50 dark:bg-gray-800">
-          <tr>
-            <th class="w-24 p-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Hora
-            </th>
-            <th 
-              v-for="day in weekDays" 
-              :key="day" 
-              class="p-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              {{ day }}
-            </th>
-          </tr>
-        </thead>
-        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-          <tr v-for="hour in timeSlots" :key="hour">
-            <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-              {{ formatTime(hour) }}
-            </td>
-            <td 
-              v-for="day in weekDays" 
-              :key="`${day}-${hour}`"
-              class="px-1 py-1 relative h-16 border-r border-gray-100 dark:border-gray-800 last:border-r-0"
-            >
-              <div
-                v-for="class_ in getClassesForDayAndHour(day, hour)"
-                :key="class_.id"
-                :class="[
-                  'absolute rounded-md p-2 shadow-sm overflow-hidden cursor-pointer transform transition-all hover:-translate-y-0.5 hover:shadow-md',
-                  getClassBackgroundColor(class_)
-                ]"
-                :style="getClassPositionStyle(class_, hour)"
-                @click="selectClass(class_)"
-              >
-                <div class="font-medium text-sm truncate">{{ class_.name }}</div>
-                <div class="text-xs truncate">{{ formatClassTime(class_) }}</div>
-                <div v-if="class_.classroom" class="text-xs truncate">{{ class_.classroom }}</div>
+    <!-- Listado de clases por día -->
+    <div class="space-y-8">
+      <div v-for="day in weekDays" :key="day" class="day-section">
+        <div class="day-header">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">{{ day }}</h3>
+        </div>
+        
+        <div class="class-list">
+          <div 
+            v-for="class_ in teacherClasses.filter(c => normalizeSchedule(c.schedule).some(s => s.day === day))" 
+            :key="class_.id"
+            :class="['class-item', getClassBackgroundColor(class_)]"
+            @click="selectClass(class_)"
+          >
+            <div class="class-item-content">
+              <div class="class-name">{{ class_.name }}</div>
+              
+              <div class="class-details">
+                <div class="class-time">
+                  <ClockIcon class="h-4 w-4 mr-1" />
+                  <span>{{ formatClassTime(class_) }}</span>
+                </div>
+                
+                <div v-if="class_.classroom" class="class-location">
+                  <MapPinIcon class="h-4 w-4 mr-1" />
+                  <span>{{ class_.classroom }}</span>
+                </div>
+                
+                <div v-if="class_.instrument" class="class-instrument">
+                  <MusicalNoteIcon class="h-4 w-4 mr-1" />
+                  <span>{{ class_.instrument }}</span>
+                </div>
+                
+                <div class="class-students">
+                  <UserGroupIcon class="h-4 w-4 mr-1" />
+                  <span>{{ class_.studentIds?.length || 0 }} estudiantes</span>
+                </div>
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+          </div>
+          
+          <div v-if="!teacherClasses.some(c => normalizeSchedule(c.schedule).some((s: { day: string }) => s.day === day))" class="empty-day">
+            <p>No hay clases programadas</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Detalle de clase seleccionada -->
-    <div v-if="selectedClass" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4 border-l-4 border-primary-500">
-      <div class="flex justify-between items-start">
-        <h3 class="text-lg font-bold">{{ selectedClass.name }}</h3>
-        <button @click="selectedClass = null" class="text-gray-500 hover:text-gray-700">
+    <div v-if="selectedClass" class="selected-class-detail">
+      <div class="selected-class-header">
+        <h3 class="selected-class-title">{{ selectedClass.name }}</h3>
+        <button @click="selectedClass = null" class="close-button">
           <XMarkIcon class="h-5 w-5" />
         </button>
       </div>
 
-      <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <div class="text-sm text-gray-500">Horario</div>
-          <div class="font-medium">{{ formatClassSchedule(selectedClass) }}</div>
+      <div class="selected-class-info">
+        <div class="info-item">
+          <div class="info-label">Horario</div>
+          <div class="info-value">{{ formatClassSchedule(selectedClass) }}</div>
         </div>
-        <div>
-          <div class="text-sm text-gray-500">Aula</div>
-          <div class="font-medium">{{ selectedClass.classroom || 'Sin asignar' }}</div>
+        <div class="info-item">
+          <div class="info-label">Aula</div>
+          <div class="info-value">{{ selectedClass.classroom || 'Sin asignar' }}</div>
         </div>
-        <div>
-          <div class="text-sm text-gray-500">Instrumento</div>
-          <div class="font-medium">{{ selectedClass.instrument || 'No especificado' }}</div>
+        <div class="info-item">
+          <div class="info-label">Instrumento</div>
+          <div class="info-value">{{ selectedClass.instrument || 'No especificado' }}</div>
         </div>
-        <div>
-          <div class="text-sm text-gray-500">Estudiantes</div>
-          <div class="font-medium">{{ selectedClass.studentIds?.length || 0 }} estudiantes</div>
+        <div class="info-item">
+          <div class="info-label">Estudiantes</div>
+          <div class="info-value">{{ selectedClass.studentIds?.length || 0 }} estudiantes</div>
         </div>
       </div>
 
-      <div class="mt-4 flex justify-end">
+      <div class="selected-class-actions">
         <router-link
           :to="`/teacher/attendance/${getCurrentDate()}/${selectedClass.id}`"
-          class="btn btn-primary text-sm"
+          class="attendance-button"
         >
           Tomar asistencia
         </router-link>
@@ -91,16 +92,14 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useClassesStore } from '../../Classes/store/classes'
 import { format } from 'date-fns'
-import { XMarkIcon } from '@heroicons/vue/24/outline'
+import { XMarkIcon, ClockIcon, MapPinIcon, UserGroupIcon } from '@heroicons/vue/24/outline'
+import { MusicalNoteIcon } from '@heroicons/vue/24/solid'
 
 // Estado reactivo
 const selectedClass = ref(null)
 
 // Días de la semana para mostrar en el calendario
 const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-
-// Slots de tiempo para el calendario (de 7 a 19 horas)
-const timeSlots = Array.from({ length: 13 }, (_, i) => i + 7)
 
 const props = defineProps<{
   teacherId?: string
@@ -124,7 +123,6 @@ const teacherClasses = computed(() => {
 
 // Cargar clases si aún no están cargadas
 onMounted(async () => {
-  console.log("Aqui")
   if (classesStore.classes.length === 0) {
     await classesStore.fetchClasses()
   }
@@ -288,21 +286,194 @@ const getCurrentDate = () => {
 </script>
 
 <style scoped>
-.weekly-grid {
-  background: #ffffff;
+.teacher-weekly-schedule {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.day-section {
+  margin-bottom: 2rem;
+}
+
+.day-header {
+  padding: 0.75rem 0;
+  margin-bottom: 0.75rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.class-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.class-item {
+  padding: 1rem;
   border-radius: 0.5rem;
-  overflow-x: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.dark .weekly-grid {
-  background: #1f2937;
+.class-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.btn {
-  @apply px-3 py-2 rounded-md font-medium text-sm transition-colors;
+.class-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.btn-primary {
-  @apply bg-primary-600 text-white hover:bg-primary-700;
+.class-name {
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: #111827;
+}
+
+.dark .class-name {
+  color: #f9fafb;
+}
+
+.class-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.class-time, .class-location, .class-instrument, .class-students {
+  display: flex;
+  align-items: center;
+  color: #4b5563;
+}
+
+.dark .class-time, .dark .class-location, .dark .class-instrument, .dark .class-students {
+  color: #9ca3af;
+}
+
+.empty-day {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.dark .empty-day {
+  background-color: #1f2937;
+  color: #9ca3af;
+}
+
+/* Selected class detail styles */
+.selected-class-detail {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  background-color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #4f46e5;
+}
+
+.dark .selected-class-detail {
+  background-color: #1f2937;
+  border-left-color: #6366f1;
+}
+
+.selected-class-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.selected-class-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.dark .selected-class-title {
+  color: #f9fafb;
+}
+
+.close-button {
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.close-button:hover {
+  color: #111827;
+}
+
+.dark .close-button:hover {
+  color: #f9fafb;
+}
+
+.selected-class-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.info-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.dark .info-label {
+  color: #9ca3af;
+}
+
+.info-value {
+  font-weight: 500;
+  color: #111827;
+}
+
+.dark .info-value {
+  color: #f9fafb;
+}
+
+.selected-class-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.attendance-button {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: #4f46e5;
+  color: white;
+  font-weight: 500;
+  font-size: 0.875rem;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+  text-decoration: none;
+}
+
+.attendance-button:hover {
+  background-color: #4338ca;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .class-details {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .selected-class-info {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

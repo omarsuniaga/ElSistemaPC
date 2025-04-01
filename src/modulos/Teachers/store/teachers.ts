@@ -6,34 +6,16 @@ import {
   fetchTeachersFromFirebase 
 } from '../services/teachers'
 import type { Teacher, TeacherData } from '../types/teachers'
-import { TeacherStatus } from '../types/teachers'
 import { useClassesStore } from '../../Classes/store/classes'
 import { useScheduleStore } from '../../Schedules/store/schedule'
 import { getFirestore, getDoc, doc, query, collection, where, getDocs } from 'firebase/firestore'
 
-/**
- * Tipo para definir la estructura de un horario semanal.
- */
-type WeeklySchedule = Array<{
-  dayOfWeek: string;
-  startTime: string;
-  endTime: string;
-  className?: string;
-  classId?: string;
-  room?: string;
-  studentCount?: number;
-  students?: any[];
-}>;
-
-/**
- * Interfaz para resumir el horario de un profesor.
- */
-interface TeacherScheduleSummary {
-  weeklyHours: number;
-  totalClasses: number;
-  schedule: WeeklySchedule;
-  hasConflicts: boolean;
+export enum TeacherStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  ON_LEAVE = 'ON_LEAVE'
 }
+
 
 /**
  * Función para normalizar los datos que vienen de Firebase
@@ -48,10 +30,10 @@ function normalizeTeacherData(teacher: any): TeacherData {
     phone: teacher.phone,
     specialties: teacher.specialties || [],
     photoURL: teacher.photo || teacher.avatar,
-    status: teacher.status === TeacherStatus.ACTIVE ? 'activo' : 
-            teacher.status === TeacherStatus.INACTIVE ? 'inactivo' : 'pendiente',
+    status: teacher.status === 'ACTIVE' ? 'activo' :
+            teacher.status === 'INACTIVE' ? 'inactivo' : 'pendiente',
     biography: teacher.bio,
-    createdAt: new Date(teacher.createdAt),
+    createdAt: new Date(teacher.createdAt), 
     updatedAt: teacher.updatedAt ? new Date(teacher.updatedAt) : undefined,
     experiencia: teacher.experience,
     address: teacher.address,
@@ -87,21 +69,26 @@ export const useTeachersStore = defineStore('teacher', {
     // Devuelve la lista completa de maestros.
     items: (state) => state.teachers,
     // Filtra los maestros activos.
-    activeTeachers: (state) => state.teachers.filter(teacher => teacher.status === 'activo'),
+    activeTeachers: (state) => state.teachers.filter((teacher: TeacherData) => teacher.status === 'activo'),
     // Busca un maestro por su nombre (búsqueda parcial, case insensitive).
     getTeacherByName: (state) => (name: string) => {
-      return state.teachers.find(teacher => (teacher.name || '').toLowerCase().includes(name.toLowerCase()))
+      return state.teachers.find((teacher: TeacherData) => (teacher.name || '').toLowerCase().includes(name.toLowerCase()))
     },
     // Busca un maestro por ID.
-    getTeacherById: (state) => (id: string) => state.teachers.find(teacher => teacher.id === id),
+    getTeacherById: (state) => (id: string) => state.teachers.find((teacher: TeacherData) => teacher.id === id),
     // Filtra maestros que tengan la especialidad indicada.
     getTeachersBySpecialty: (state) => (specialty: string) => {
-      return state.teachers.filter(teacher =>
-        teacher.specialties?.some(s => s.toLowerCase().includes(specialty.toLowerCase()))
+      return state.teachers.filter((teacher: TeacherData) =>
+        teacher.specialties?.some((s: string) => s.toLowerCase().includes(specialty.toLowerCase()))
       )
     },
     // Devuelve la lista de maestros ordenada alfabéticamente.
-    sortedTeachers: (state) => [...state.teachers].sort((a, b) => a.name.localeCompare(b.name))
+    sortedTeachers: (state) => [...state.teachers].sort((a, b) => a.name.localeCompare(b.name)),
+    // Devuelve la Uid del maestro con la session activa
+    getCurrentTeacherUid: (state) => {
+      const authStore = useAuthStore()
+      return authStore.user?.uid || null
+    },
   },
 
   actions: {
@@ -121,7 +108,6 @@ export const useTeachersStore = defineStore('teacher', {
         return this.teachers
       })
     },
-
     /**
      * Compatibilidad con el patrón BaseStore para obtener items.
      */

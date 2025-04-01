@@ -35,6 +35,9 @@ const authStore = useAuthStore()
 const profileStore = useProfileStore()
 const colorMode = useColorMode()
 
+// Get current user UID
+const currentUserUid = computed(() => authStore.user?.uid || '')
+
 // Estado para las solicitudes pendientes
 const pendingRequests = ref(0)
 const showAccessRequests = ref(false)
@@ -48,210 +51,25 @@ colorMode.value = 'dark';
 const toggleTheme = () => {
   colorMode.value = colorMode.value === 'dark' ? 'light' : 'dark'
   
-  if (profileStore.profile && profileStore.profile.preferences) {
+  // Update theme preference in both local state and Firestore
+  if (profileStore.profile) {
     const updatedPreferences = {
       ...profileStore.profile.preferences,
       theme: colorMode.value
     };
     profileStore.updateSettings(updatedPreferences)
-  }
-}
-
-// Computed property para tema
-const themeInfo = computed(() => ({
-  icon: colorMode.value === 'dark' ? SunIcon : MoonIcon,
-  text: colorMode.value === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'
-}))
-
-const isLoading = ref(true)
-const isEditing = ref(false)
-const showReports = ref(false)
-const error = ref('')
-
-const formData = ref({
-  displayName: '',
-  email: '',
-  phoneNumber: '',
-  photoURL: '', // Se ha agregado la propiedad photoURL para evitar errores de tipo
-  preferences: {
-    theme: 'system',
-    emailNotifications: true,
-    language: 'es',
-    timezone: 'America/Mexico_City'
-  } as { theme: string; emailNotifications: boolean; language: string; timezone: string; }
-})
-
-// Cerrar sesión
-const handleSignOut = async () => {
-  try {
-    // Cancela suscripciones activas
-    stopWatchingPendingRequests();
     
-    // Otras limpiezas necesarias (por ejemplo, limpiar localStorage si aplica)
-    // await clearLocalStorage();
-
-    // Llama al método signOut del authStore (sin resetear el store teachers)
-    await authStore.signOut();
-
-    // Redirige al login
-    router.push('/login');
-  } catch (err) {
-    error.value = 'Error al cerrar sesión';
-    console.error('Error signing out:', err);
-  }
-};
-
-
-// Estados para la carga de imagen
-const isUploading = ref(false)
-const uploadProgress = ref(0)
-
-// Manejar la subida de foto (se invoca desde FileUpload)
-const handlePhotoUpload = async (files: FileList) => {
-  if (!files.length) return
-  isUploading.value = true
-  error.value = ''
-  // La subida se realiza en el FileUpload, por lo que aquí se podría mostrar un indicador adicional si se requiere.
-}
-
-// Al recibir la URL de la imagen, se actualiza el formulario y el perfil en Firestore
-const handlePhotoSuccess = async (photoURL: string) => {
-  try {
-    // Actualiza el formData local
-    formData.value = {
-      ...formData.value,
-      photoURL
-    }
-    // Actualiza el perfil en Firestore usando el store
-    await profileStore.updateProfile({ photoURL })
-  } catch (err: any) {
-    error.value = err?.message || 'Error al actualizar la foto'
-    console.error('Error updating photo URL:', err)
-  } finally {
-    isUploading.value = false
-    uploadProgress.value = 0
-  }
-}
-
-const startEditing = () => {
-  if (profileStore.profile) {
-    formData.value = {
-      displayName: profileStore.profile.displayName ?? '',
-      email: profileStore.profile.email ?? '',
-      phoneNumber: profileStore.profile.phone || '',
-      photoURL: profileStore.profile.photoURL || '',
-      preferences: {
-        theme: profileStore.profile.preferences?.darkMode ? 'dark' : 'system',
-        emailNotifications: profileStore.profile.preferences?.notifications ?? true,
-        language: profileStore.profile.preferences?.language || 'es',
-        timezone: profileStore.profile.preferences?.timezone || 'America/Mexico_City'
-      }
-    }
-  }
-  isEditing.value = true
-}
-
-const cancelEditing = () => {
-  isEditing.value = false
-  error.value = ''
-}
-
-// Interfaz para datos de usuario de Firebase
-interface FirebaseUserData {
-  displayName?: string;
-  email?: string;
-  phoneNumber?: string;
-  preferences?: {
-    theme?: string;
-    emailNotifications?: boolean;
-    language?: string;
-    timezone?: string;
-  };
-  lastUpdated?: string;
-}
-
-const userFirebaseData = ref<FirebaseUserData | null>(null)
-const profileCompletion = computed(() => {
-  if (!profileStore.profile) return 0
-  
-  const fields = [
-    !!profileStore.profile.displayName,
-    !!profileStore.profile.email,
-    !!profileStore.profile.phone,
-    !!profileStore.profile.photoURL
-  ]
-  
-  return Math.round((fields.filter(Boolean).length / fields.length) * 100)
-})
-
-// Fetch de datos de usuario desde Firebase
-const fetchUserFromFirebase = async () => {
-  if (!authStore.user?.uid) return
-  
-  try {
-    const db = getFirestore(getApp())
-    const userDocRef = doc(db, 'USERS', authStore.user.uid)
-    const userDoc = await getDoc(userDocRef)
-    
-    if (userDoc.exists()) {
-      userFirebaseData.value = userDoc.data()
-      
-      formData.value = {
-        displayName: userFirebaseData.value?.displayName || profileStore.profile?.displayName || '',
-        email: userFirebaseData.value.email || profileStore.profile?.email || '',
-        phoneNumber: userFirebaseData.value.phoneNumber || profileStore.profile?.phone || '',
-        preferences: {
-          theme: userFirebaseData.value.preferences?.theme ?? profileStore.profile?.preferences?.theme ?? 'system',
-          emailNotifications: userFirebaseData.value.preferences?.emailNotifications ?? profileStore.profile?.preferences?.emailNotifications ?? true,
-          language: userFirebaseData.value.preferences?.language ?? profileStore.profile?.preferences?.language ?? 'es',
-          timezone: userFirebaseData.value.preferences?.timezone ?? profileStore.profile?.preferences?.timezone ?? 'America/Mexico_City'
-        }
-      }
-      
-      if (formData.value.preferences.theme) {
-        const themeValue = formData.value.preferences.theme === 'system' ? 'auto' : formData.value.preferences.theme;
-        if (themeValue === 'light' || themeValue === 'dark' || themeValue === 'auto') {
-          colorMode.value = themeValue;
-        }
-      }
-    }
-  } catch (err) {
-    error.value = 'Error al cargar datos de usuario desde Firebase'
-    console.error('Firebase user fetch error:', err)
-  }
-}
-
-const handleSubmit = async () => {
-  try {
-    await profileStore.updateProfile({
-      displayName: formData.value.displayName,
-      email: formData.value.email,
-      phone: formData.value.phoneNumber
-    })
-    
-    await profileStore.updateSettings(formData.value.preferences)
-    
-    if (authStore.user?.uid) {
+    // Also update in Firestore users collection
+    if (currentUserUid.value) {
       const db = getFirestore(getApp())
-      const userDocRef = doc(db, 'USERS', authStore.user.uid)
-      await setDoc(userDocRef, {
-        displayName: formData.value.displayName,
-        email: formData.value.email,
-        phoneNumber: formData.value.phoneNumber,
-        preferences: formData.value.preferences,
-        lastUpdated: new Date().toISOString()
+      const userDocRef = doc(db, 'USERS', currentUserUid.value)
+      setDoc(userDocRef, {
+        preferences: updatedPreferences
       }, { merge: true })
     }
-    
-    isEditing.value = false
-    error.value = ''
-  } catch (err) {
-    error.value = 'Error al actualizar el perfil'
-    console.error('Error updating profile:', err)
   }
 }
 
-// Función optimizada para verificar solicitudes pendientes
 const startWatchingPendingRequests = () => {
   // Solo directores y administradores pueden ver solicitudes
   if (!['Director', 'Administrador'].includes(authStore.user?.role || '')) return;
@@ -312,7 +130,7 @@ watch(() => showAccessRequests.value, (isShowing) => {
 });
 
 onMounted(async () => {
-  console.log("Aqui toy")
+  
   if (!authStore.isLoggedIn) {
     router.push('/login')
     return
@@ -805,8 +623,6 @@ onUnmounted(() => {
 </template>
 
 <style lang="postcss">
-/* ... existing code ... */
-
 /* Estilo para el indicador de notificaciones */
 .notification-badge {
   @apply absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center;

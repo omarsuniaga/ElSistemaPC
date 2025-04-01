@@ -596,6 +596,8 @@ export const useAnalyticsStore = defineStore('analytics', {
     calculateStudentsGrowth() {
       // Ejemplo: crecimiento simulado de estudiantes
       this.studentMetrics.growth = Math.floor(Math.random() * 30) - 10;
-    }
+    },
+
+    // Obtener a los mejores estudiantes
   }
 })

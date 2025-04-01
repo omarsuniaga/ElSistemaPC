@@ -4,6 +4,7 @@ import { useClassesStore } from '../../../../modulos/Classes/store/classes';
 import { useTeachersStore } from '../../store/teachers';
 import { useStudentsStore } from '../../../../modulos/Students/store/students';
 import { useAuthStore } from '../../../../stores/auth'; // Asumiendo que existe un store de autenticación
+import {useScheduleStore} from "../../../../modulos/Schedules/store/schedule"
 import { 
   CalendarIcon, 
   BookOpenIcon, 
@@ -19,50 +20,14 @@ import { useToast } from '../../../../components/ui/toast/use-toast';
 import { Dialog, DialogPanel, DialogOverlay, TransitionRoot, TransitionChild } from '@headlessui/vue';
 import TeacherWeeklySchedule from '../../components/TeacherWeeklySchedule.vue'; // Componente que acabamos de crear
 import TeacherClassesCard from '../../components/TeacherClassesCard.vue';
-import ClassForm from '@/modulos/Classes/components/ClassForm.vue'; // Componente existente
-import ClassStudentManager from '@/modulos/Classes/components/ClassStudentManager.vue'; // Componente existente
-
-/**
- * ANÁLISIS DE REQUISITOS
- * 
- * Este componente debe cubrir las siguientes funcionalidades:
- * 
- * 1. Visualización de horario semanal del maestro
- *    - Vista tipo calendario con días de la semana
- *    - Visualización por horas de las clases programadas
- *    - Identificación visual clara de cada clase (colores, etiquetas)
- * 
- * 2. Listado de clases asignadas al maestro
- *    - Mostrar todas las clases que imparte el maestro
- *    - Incluir detalles como: nombre de la clase, nivel, instrumento, aula, horarios
- *    - Mostrar cantidad de estudiantes por clase
- * 
- * 3. Vista de próximas clases en las siguientes 24 horas
- *    - Mostrar clases programadas para hoy/mañana
- *    - Ordenar por proximidad temporal
- *    - Incluir detalles como aula y hora exacta
- * 
- * 4. Capacidad para crear, modificar y eliminar clases
- *    - Formulario para crear nuevas clases
- *    - Opciones para editar detalles de clases existentes
- *    - Confirmación para eliminar clases
- * 
- * 5. Gestión de estudiantes dentro de cada clase
- *    - Agregar/eliminar estudiantes de las clases
- *    - Visualizar lista de estudiantes por clase
- *    - Buscar estudiantes para agregar a clases
- * 
- * 6. Estadísticas relevantes para el maestro
- *    - Total de horas de clase semanal
- *    - Total de estudiantes
- *    - Distribución de clases por niveles/instrumentos
- */
-
+import ClassForm from '../../../../modulos/Classes/components/ClassForm.vue'; // Componente existente
+import ClassStudentManager from '../../../../modulos/Classes/components/ClassStudentManager.vue'; // Componente existente
 // Stores
 const classesStore = useClassesStore();
 const teachersStore = useTeachersStore();
 const studentsStore = useStudentsStore();
 const authStore = useAuthStore();
+const scheduleStore = useScheduleStore();
 const { toast } = useToast();
 
 // Estados
@@ -74,7 +39,6 @@ const showStudentManager = ref(false);
 const isEditing = ref(false);
 
 // Computar el ID del maestro actual desde el sistema de autenticación
-// En un sistema real, esto vendría del usuario autenticado
 const currentTeacherId = computed(() => authStore.user?.uid); // Using uid instead of id for Firebase auth user
 
 // Computar clases del maestro actual
@@ -179,37 +143,6 @@ const notifications = ref([
   }
 ]);
 
-// Funciones auxiliares
-function getStudentCounts() {
-  const counts: Record<string, number> = {};
-  teacherClasses.value.forEach(classItem => {
-    counts[classItem.id] = classItem.studentIds?.length || 0;
-  });
-  return counts;
-}
-
-function getTopStudents() {
-  const topStudents: Record<string, Array<{id: string, nombre: string, apellido: string}>> = {};
-  teacherClasses.value.forEach(classItem => {
-    if (!classItem.studentIds) {
-      topStudents[classItem.id] = [];
-      return;
-    }
-    
-    topStudents[classItem.id] = classItem.studentIds
-      .slice(0, 3) // Get first 3 students as top students
-      .map(studentId => {
-        const student = studentsStore.getStudentById(studentId);
-        return {
-          id: studentId,
-          nombre: student?.nombre || 'Unknown',
-          apellido: student?.apellido || 'Student'
-        };
-      });
-  });
-  return topStudents;
-}
-
 function getNextClassDate(day, time) {
   const today = new Date();
   const currentDay = today.getDay();
@@ -220,7 +153,6 @@ function getNextClassDate(day, time) {
   
   const [hours, minutes] = time.split(':').map(Number);
   classDate.setHours(hours, minutes, 0, 0);
-  
   // Si la clase es hoy pero ya pasó, añadimos 7 días
   if (daysUntilClass === 0 && classDate < today) {
     classDate.setDate(classDate.getDate() + 7);
@@ -393,6 +325,22 @@ const handleSaveClass = async (classData) => {
       });
       selectedClassId.value = newClass.id;
     }
+    
+    // Verificar si hay información de horario para crear el registro en el store de horarios
+    if (classData.schedule?.slots && classData.schedule.slots.length > 0) {
+      // Preparar datos específicos para el horario
+      const scheduleData = {
+        // Aquí se deben mapear las propiedades necesarias para crear un horario,
+        // por ejemplo, se puede incluir la referencia a la clase recién creada y sus slots.
+        classId: newClass.id,
+        teacherId: classData.teacherId,
+        slots: classData.schedule.slots // o aplicar una transformación si es necesario
+      };
+
+      // Llamar al método createSchedule del store de horarios
+      await scheduleStore.createSchedule(scheduleData);
+    }
+
     showForm.value = false;
   } catch (error) {
     console.error('Error al guardar la clase:', error);
@@ -457,7 +405,7 @@ const formatDateTime = (date) => {
 };
 
 // Cambiar de tab
-const setActiveTab = (tab) => {
+const setActiveTab = (tab: 'overview' | 'schedule' | 'classes' | 'upcoming' | 'statistics') => {
     activeTab.value = tab;
 };
 
@@ -465,8 +413,6 @@ const setActiveTab = (tab) => {
 onMounted(async () => {
   loading.value = true;
   try {
-    console.log('🔄 Iniciando carga de datos desde Firebase...');
-    
     // Asegurarnos de que los métodos existen antes de llamarlos
     const promises: Promise<any>[] = [];
     
@@ -496,13 +442,6 @@ onMounted(async () => {
     
     // Esperar a que todas las promesas se resuelvan
     await Promise.all(promises);
-    
-    // Verificar que se hayan cargado los datos
-    console.log(`✅ Datos cargados correctamente:`);
-    console.log(`   - Clases: ${classesStore.classes.length}`);
-    console.log(`   - Clases del profesor: ${teacherClasses.value.length}`);
-    console.log(`   - Profesores: ${teachersStore.teachers?.length || 0}`);
-    console.log(`   - Estudiantes: ${studentsStore.students?.length || 0}`);
     
     // Si no hay clases, intentar nuevamente para asegurarnos
     if (classesStore.classes.length === 0) {
@@ -571,6 +510,19 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
           </div>
         </button>
         <button 
+          @click="setActiveTab('upcoming')" 
+          class="px-4 py-2 font-medium text-sm focus:outline-none"
+          :class="{
+            'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'upcoming',
+            'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'upcoming'
+          }"
+        >
+          <div class="flex items-center gap-1">
+            <ClockIcon class="h-4 w-4" />
+            Próximas Clases
+          </div>
+        </button>
+        <button 
           @click="setActiveTab('overview')" 
           class="px-4 py-2 font-medium text-sm focus:outline-none"
           :class="{
@@ -584,34 +536,10 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
           </div>
         </button>
         
-        <button 
-          @click="setActiveTab('schedule')" 
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
-          :class="{
-            'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'schedule',
-            'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'schedule'
-          }"
-        >
-          <div class="flex items-center gap-1">
-            <CalendarIcon class="h-4 w-4" />
-            Horario Semanal
-          </div>
-        </button>
         
         
-        <button 
-          @click="setActiveTab('upcoming')" 
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
-          :class="{
-            'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'upcoming',
-            'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'upcoming'
-          }"
-        >
-          <div class="flex items-center gap-1">
-            <ClockIcon class="h-4 w-4" />
-            Próximas Clases
-          </div>
-        </button>
+        
+       
       </div>
     </header>
     
@@ -868,7 +796,7 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
             <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
               <h2 class="text-xl font-semibold mb-4">Gestionar Estudiantes - {{ selectedClass?.name }}</h2>
               <ClassStudentManager 
-                :class-id="selectedClass?.id"
+                :class-id="selectedClass ? selectedClass.id : ''"
                 :student-ids="Array.isArray(selectedClass?.studentIds) ? selectedClass?.studentIds : []"
                 @update="handleStudentChange"
                 @close="showStudentManager = false"
