@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useStudentsStore } from '../stores/students'
+import { useStudentsStore } from '../store/students'
 import { PlusCircleIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
