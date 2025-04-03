@@ -9,13 +9,20 @@ import {
   XMarkIcon, 
   CalendarIcon, 
   ClockIcon,
-  AcademicCapIcon
+  AcademicCapIcon,
+  ExclamationCircleIcon,
+  UserIcon,
+  ChevronRightIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/vue/24/outline';
+import Modal from '../../../shared/Modal.vue';
 
 const props = defineProps({
   show: Boolean,
   classItem: Object
 });
+
+const showDeleteConfirm = ref(false);
 
 const emit = defineEmits(['close', 'edit', 'delete', 'manage-students']);
 
@@ -27,6 +34,20 @@ const getTeacherName = (teacherId) => {
   const teacher = teachersStore.teachers.find(t => t.id === teacherId);
   return teacher?.name ?? 'Profesor no encontrado';
 };
+
+const teacherAvatar = computed(() => {
+  if (!props.classItem?.teacherId) return '';
+  const teacher = teachersStore.teachers.find(t => t.id === props.classItem.teacherId);
+  return teacher?.avatar || '';
+});
+
+const teacherName = computed(() => getTeacherName(props.classItem?.teacherId));
+
+const students = computed(() => {
+  if (!props.classItem?.studentIds) return [];
+  return studentsStore.students
+    .filter(s => props.classItem.studentIds.includes(s.id));
+});
 
 const studentCount = computed(() => {
   return props.classItem?.studentIds?.length || 0;

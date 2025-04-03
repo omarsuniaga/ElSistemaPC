@@ -11,6 +11,31 @@ export const useTeachersStore = defineStore('teachers', {
   }),
 
   actions: {
+    /**
+     * Obtiene todos los profesores de Firestore
+     */
+    async fetchTeachers() {
+      try {
+        this.loading = true
+        this.error = null
+        const teachersCollection = collection(db, 'TEACHERS')
+        const querySnapshot = await getDocs(teachersCollection)
+        
+        this.teachers = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        
+        return this.teachers
+      } catch (error: any) {
+        console.error('Error al obtener profesores:', error)
+        this.error = error.message
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
     async getTeacherSchedule(teacherId: string): Promise<TeacherScheduleSummary> {
       try {
         const teacherDoc = await getDoc(doc(db, 'teachers', teacherId))

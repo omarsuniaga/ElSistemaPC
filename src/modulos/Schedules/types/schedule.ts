@@ -170,19 +170,29 @@ export interface ScheduleDeletionRequest {
 }
 
 /**
- * Schedule: Representa un horario en un formato simplificado, útil para ciertos procesos o transformaciones.
+ * LegacySchedule: Representa el formato anterior de horarios para migración
  */
-export interface Schedule {
+export interface LegacySchedule {
   id: string
-  classId: string
-  teacherId: string
-  studentIds: string[]
-  startTime: string
-  endTime: string
-  dayOfWeek: ScheduleDay['dayOfWeek']
-  roomId: string
+  dayOfWeek?: string
+  startTime?: string
+  endTime?: string
+  classId?: string
+  teacherId?: string
+  roomId?: string
+  classroom?: string
+  studentIds?: string[]
+  capacity?: number
+  isActive?: boolean
   createdAt?: Date
   updatedAt?: Date
-  customId?: string
   status?: 'active' | 'cancelled' | 'completed'
+}
+
+/**
+ * Schedule: Representa un horario en un formato simplificado, útil para ciertos procesos o transformaciones.
+ * Extiende LegacySchedule para incluir compatibilidad con el formato anterior.
+ */
+export interface Schedule extends LegacySchedule {
+  scheduleDay?: ScheduleDay
 }

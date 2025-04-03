@@ -17,4 +17,6 @@ export interface Class {
   teacherName?: string; // Propiedad opcional
   teacherEmail?: string;// Propiedad opcional
   contentIds?: string[]; // Propiedad opcional
+  content?: string[];   // Propiedad opcional
+  studentNames?: string[]; // Propiedad opcional
 }

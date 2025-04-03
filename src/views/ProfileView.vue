@@ -10,6 +10,7 @@ import AccessRequests from '../components/AccessRequests.vue'
 // import { clearLocalStorage } from '../utils/localStorageUtils'
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, onSnapshot } from 'firebase/firestore'
 import { getApp } from 'firebase/app'
+import { getAuth, signOut } from 'firebase/auth'
 import {
   UserCircleIcon,
   EnvelopeIcon,
@@ -27,7 +28,11 @@ import {
   PencilSquareIcon,
   XMarkIcon,
   CheckIcon,
-  ArrowUpTrayIcon
+  ArrowUpTrayIcon,
+  ShieldCheckIcon,
+  KeyIcon,
+  LockClosedIcon,
+  ClockIcon
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -35,14 +40,90 @@ const authStore = useAuthStore()
 const profileStore = useProfileStore()
 const colorMode = useColorMode()
 
+// Variables de estado
+const isLoading = ref(false)
+const error = ref('')
+const isEditing = ref(false)
+const showReports = ref(false)
+const isUploading = ref(false)
+const uploadProgress = ref(0)
+const profileActivityLog = ref<Array<{ activity: string; timestamp: string }>>([])
+const showSecuritySettings = ref(false)
+
 // Get current user UID
 const currentUserUid = computed(() => authStore.user?.uid || '')
+
+// Datos del formulario
+const formData = ref({
+  displayName: '',
+  email: '',
+  phoneNumber: '',
+  preferences: {
+    theme: 'dark',
+    language: 'es',
+    timezone: '',
+    emailNotifications: true
+  }
+})
 
 // Estado para las solicitudes pendientes
 const pendingRequests = ref(0)
 const showAccessRequests = ref(false)
 // Referencia para la suscripción a Firestore
 const unsubscribePendingRequests = shallowRef<(() => void) | null>(null)
+
+// Cálculo del completado del perfil
+const profileCompletion = computed(() => {
+  if (!profileStore.profile) return 0
+  
+  let total = 0
+  let completed = 0
+  
+  // Campos básicos
+  const fields = [
+    'displayName', 
+    'email', 
+    'phone', 
+    'photoURL'
+  ]
+  
+  total += fields.length
+  
+  fields.forEach(field => {
+    if (profileStore.profile?.[field]) completed++
+  })
+  
+  // Preferencias
+  const preferenceFields = [
+    'theme',
+    'language',
+    'timezone',
+    'emailNotifications'
+  ]
+  
+  total += preferenceFields.length
+  
+  preferenceFields.forEach(field => {
+    if (profileStore.profile?.preferences?.[field]) completed++
+  })
+  
+  return Math.round((completed / total) * 100)
+})
+
+// Información del tema actual para el botón
+const themeInfo = computed(() => {
+  if (colorMode.value === 'dark') {
+    return {
+      icon: SunIcon,
+      text: 'Cambiar a modo claro'
+    }
+  } else {
+    return {
+      icon: MoonIcon,
+      text: 'Cambiar a modo oscuro'
+    }
+  }
+})
 
 // Establecer el modo oscuro como predeterminado
 colorMode.value = 'dark';
@@ -67,6 +148,126 @@ const toggleTheme = () => {
         preferences: updatedPreferences
       }, { merge: true })
     }
+  }
+}
+
+// Función para iniciar modo de edición
+const startEditing = () => {
+  if (!profileStore.profile) return
+  
+  formData.value = {
+    displayName: profileStore.profile.displayName,
+    email: profileStore.profile.email,
+    phoneNumber: profileStore.profile.phone || '',
+    preferences: { ...profileStore.profile.preferences }
+  }
+  
+  isEditing.value = true
+  showReports.value = false
+  showAccessRequests.value = false
+  showSecuritySettings.value = false
+}
+
+// Función para cancelar edición
+const cancelEditing = () => {
+  isEditing.value = false
+}
+
+// Función para manejar el envío del formulario
+const handleSubmit = async () => {
+  if (!profileStore.profile) return
+  
+  isLoading.value = true
+  error.value = ''
+  
+  try {
+    await profileStore.updateProfile({
+      displayName: formData.value.displayName,
+      email: formData.value.email,
+      phone: formData.value.phoneNumber
+    })
+    
+    await profileStore.updateSettings(formData.value.preferences)
+    
+    isEditing.value = false
+    
+    // Registrar actividad
+    addToActivityLog('Perfil actualizado')
+  } catch (err) {
+    error.value = 'Error al actualizar el perfil'
+    console.error('Error updating profile:', err)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Función para manejar la selección de una nueva foto
+const handlePhotoUpload = () => {
+  isUploading.value = true
+  uploadProgress.value = 0
+}
+
+// Función para manejar el éxito de la carga de la foto
+const handlePhotoSuccess = async (url) => {
+  isUploading.value = false
+  
+  try {
+    await profileStore.updateProfile({
+      photoURL: url
+    })
+    
+    // Registrar actividad
+    addToActivityLog('Foto de perfil actualizada')
+  } catch (err) {
+    error.value = 'Error al actualizar la foto de perfil'
+    console.error('Error updating profile photo:', err)
+  }
+}
+
+// Función para cerrar sesión
+const handleSignOut = async () => {
+  try {
+    const auth = getAuth()
+    await signOut(auth)
+    router.push('/login')
+  } catch (err) {
+    error.value = 'Error al cerrar sesión'
+    console.error('Error signing out:', err)
+  }
+}
+
+// Función para obtener información adicional del usuario desde Firebase
+const fetchUserFromFirebase = async () => {
+  if (!currentUserUid.value) return
+  
+  try {
+    const db = getFirestore(getApp())
+    const userDocRef = doc(db, 'USERS', currentUserUid.value)
+    const userDoc = await getDoc(userDocRef)
+    
+    if (userDoc.exists()) {
+      const userData = userDoc.data()
+      
+      // Actualizar datos del perfil local si hay información adicional
+      if (userData) {
+        await profileStore.mergeFirebaseData(userData)
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching user data from Firebase:', err)
+  }
+}
+
+// Función para añadir entradas al registro de actividad
+const addToActivityLog = (activity) => {
+  profileActivityLog.value.unshift({
+    activity,
+    timestamp: new Date().toISOString()
+  })
+  
+  // Mantener el registro limitado a 10 entradas
+  if (profileActivityLog.value.length > 10) {
+    profileActivityLog.value = profileActivityLog.value.slice(0, 10)
   }
 }
 
@@ -107,6 +308,16 @@ const stopWatchingPendingRequests = () => {
 const toggleAccessRequests = () => {
   showAccessRequests.value = !showAccessRequests.value;
   showReports.value = false;
+  isEditing.value = false;
+  showSecuritySettings.value = false;
+};
+
+// Alternar la vista de configuración de seguridad
+const toggleSecuritySettings = () => {
+  showSecuritySettings.value = !showSecuritySettings.value;
+  showReports.value = false;
+  isEditing.value = false;
+  showAccessRequests.value = false;
 };
 
 // Observar cambios en el rol de usuario para iniciar/detener suscripciones apropiadamente
@@ -154,6 +365,9 @@ onMounted(async () => {
       if (['Director', 'Administrador'].includes(authStore.user?.role || '')) {
         startWatchingPendingRequests();
       }
+      
+      // Registrar actividad
+      addToActivityLog('Perfil cargado')
     } else {
       throw new Error('No se pudo cargar el perfil')
     }
@@ -201,6 +415,16 @@ onUnmounted(() => {
           <component :is="themeInfo.icon" class="w-5 h-5" />
         </button>
         
+        <!-- Botón de configuración de seguridad -->
+        <button 
+          v-if="!isEditing && !showAccessRequests && !showReports"
+          @click="toggleSecuritySettings"
+          class="btn bg-yellow-600 text-white hover:bg-yellow-700 flex items-center gap-2"
+          title="Configuración de Seguridad">
+          <ShieldCheckIcon class="w-5 h-5" />
+          <span class="hidden sm:inline">{{ showSecuritySettings ? 'Ver Perfil' : 'Seguridad' }}</span>
+        </button>
+        
         <!-- Botón de solicitudes de acceso (solo para admin/director) -->
         <button 
           v-if="['Director', 'Administrador'].includes(authStore.user?.role || '') && !isEditing"
@@ -217,7 +441,7 @@ onUnmounted(() => {
         </button>
         
         <button 
-          v-if="!isEditing && !showReports && !showAccessRequests"
+          v-if="!isEditing && !showReports && !showAccessRequests && !showSecuritySettings"
           @click="showReports = !showReports"
           class="btn bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
           title="Informes">
@@ -226,7 +450,7 @@ onUnmounted(() => {
         </button>
         
         <button 
-          v-if="!isEditing && !showReports && !showAccessRequests"
+          v-if="!isEditing && !showReports && !showAccessRequests && !showSecuritySettings"
           @click="startEditing"
           class="btn bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
           title="Editar Perfil">
@@ -267,6 +491,93 @@ onUnmounted(() => {
 
     <!-- Vista de Reportes -->
     <ReportGenerator v-else-if="showReports" />
+    
+    <!-- Vista de Configuración de Seguridad -->
+    <div v-else-if="showSecuritySettings" class="space-y-8">
+      <div class="profile-card">
+        <div class="flex items-center gap-2 mb-4">
+          <ShieldCheckIcon class="w-5 h-5 text-primary-600 dark:text-primary-400" />
+          <h3 class="text-lg font-semibold">Configuración de Seguridad</h3>
+        </div>
+        
+        <div class="space-y-8">
+          <!-- Cambio de contraseña -->
+          <div class="border-b border-gray-200 dark:border-gray-700 pb-6">
+            <h4 class="text-base font-medium flex items-center gap-2 mb-4">
+              <KeyIcon class="w-4 h-4 text-yellow-500" />
+              <span>Cambiar Contraseña</span>
+            </h4>
+            
+            <form class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-group">
+                <label class="form-label">Contraseña Actual</label>
+                <input type="password" class="form-input" placeholder="••••••••" />
+              </div>
+              
+              <div class="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-group">
+                  <label class="form-label">Nueva Contraseña</label>
+                  <input type="password" class="form-input" placeholder="••••••••" />
+                </div>
+                
+                <div class="form-group">
+                  <label class="form-label">Confirmar Nueva Contraseña</label>
+                  <input type="password" class="form-input" placeholder="••••••••" />
+                </div>
+              </div>
+              
+              <div class="mt-2">
+                <button type="button" class="btn bg-yellow-600 hover:bg-yellow-700 text-white">
+                  Actualizar Contraseña
+                </button>
+              </div>
+            </form>
+          </div>
+          
+          <!-- Sesiones activas -->
+          <div class="border-b border-gray-200 dark:border-gray-700 pb-6">
+            <h4 class="text-base font-medium flex items-center gap-2 mb-4">
+              <ComputerDesktopIcon class="w-4 h-4 text-blue-500" />
+              <span>Sesiones Activas</span>
+            </h4>
+            
+            <div class="space-y-4">
+              <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <ComputerDesktopIcon class="w-5 h-5 text-green-500" />
+                  <div>
+                    <p class="font-medium">Este dispositivo</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">Última actividad: Ahora</p>
+                  </div>
+                </div>
+                <span class="badge bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Activo</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Verificación en dos pasos -->
+          <div>
+            <h4 class="text-base font-medium flex items-center gap-2 mb-4">
+              <LockClosedIcon class="w-4 h-4 text-indigo-500" />
+              <span>Verificación en Dos Pasos</span>
+            </h4>
+            
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                  Añade una capa adicional de seguridad a tu cuenta activando la verificación en dos pasos.
+                </p>
+              </div>
+              
+              <label class="switch">
+                <input type="checkbox">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Vista de Perfil -->
     <div v-else-if="profileStore.profile" class="space-y-8">
@@ -617,6 +928,61 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
+        
+        <!-- Estadísticas del Usuario -->
+        <div class="profile-card">
+          <div class="flex items-center gap-2 mb-6">
+            <DocumentTextIcon class="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            <h3 class="text-lg font-semibold">Estadísticas</h3>
+          </div>
+          
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="stat-card bg-blue-50 dark:bg-blue-900/20">
+              <span class="stat-number text-blue-600 dark:text-blue-400">{{ profileStore.profile.logins || 0 }}</span>
+              <span class="stat-label text-blue-800 dark:text-blue-300">Inicios de sesión</span>
+            </div>
+            
+            <div class="stat-card bg-green-50 dark:bg-green-900/20">
+              <span class="stat-number text-green-600 dark:text-green-400">{{ profileStore.profile.daysActive || 0 }}</span>
+              <span class="stat-label text-green-800 dark:text-green-300">Días activo</span>
+            </div>
+            
+            <div class="stat-card bg-purple-50 dark:bg-purple-900/20">
+              <span class="stat-number text-purple-600 dark:text-purple-400">{{ profileStore.profile.contributions || 0 }}</span>
+              <span class="stat-label text-purple-800 dark:text-purple-300">Contribuciones</span>
+            </div>
+            
+            <div class="stat-card bg-amber-50 dark:bg-amber-900/20">
+              <span class="stat-number text-amber-600 dark:text-amber-400">{{ profileCompletion }}%</span>
+              <span class="stat-label text-amber-800 dark:text-amber-300">Perfil completo</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Actividad reciente -->
+        <div class="profile-card">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-2">
+              <ClockIcon class="w-5 h-5 text-primary-600 dark:text-primary-400" />
+              <h3 class="text-lg font-semibold">Actividad Reciente</h3>
+            </div>
+            
+            <button v-if="profileActivityLog.length > 0" @click="profileActivityLog = []" class="text-sm text-gray-500 hover:text-red-500 transition-colors">
+              Limpiar historial
+            </button>
+          </div>
+          
+          <div v-if="profileActivityLog.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
+            <p>No hay actividad reciente</p>
+          </div>
+          
+          <ul v-else class="space-y-3">
+            <li v-for="(activity, index) in profileActivityLog" :key="index" class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+              <span>{{ activity.activity }}</span>
+              <span class="text-sm text-gray-500">{{ new Date(activity.timestamp).toLocaleString() }}</span>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
@@ -626,5 +992,145 @@ onUnmounted(() => {
 /* Estilo para el indicador de notificaciones */
 .notification-badge {
   @apply absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center;
+}
+
+/* Estilos para tarjetas de perfil */
+.profile-card {
+  @apply bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700;
+}
+
+/* Estilos para campos de formulario */
+.form-group {
+  @apply space-y-2;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+}
+
+.form-input, .form-select {
+  @apply block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white;
+}
+
+/* Estilos para botones */
+.btn-primary {
+  @apply flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors;
+}
+
+.btn-secondary {
+  @apply flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-md shadow-sm hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors;
+}
+
+.theme-toggle-btn {
+  @apply p-2 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors;
+}
+
+.btn {
+  @apply px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors;
+}
+
+/* Estilos para opciones de tema */
+.theme-option {
+  @apply flex flex-col items-center gap-1 p-3 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors;
+}
+
+.theme-option.active {
+  @apply border-primary-500 bg-primary-50 dark:bg-primary-900/30;
+}
+
+/* Estilos para items de información */
+.info-item {
+  @apply flex items-start gap-3;
+}
+
+.info-label {
+  @apply text-sm text-gray-500 dark:text-gray-400;
+}
+
+.info-value {
+  @apply font-medium;
+}
+
+/* Estilos para iconos de configuraciones */
+.setting-icon {
+  @apply flex-shrink-0 h-5 w-5 text-gray-500 dark:text-gray-400;
+}
+
+/* Estilos para botones badge */
+.badge {
+  @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200;
+}
+
+/* Estilos para switch toggle */
+.switch {
+  @apply relative inline-flex items-center cursor-pointer;
+}
+
+.switch input {
+  @apply sr-only;
+}
+
+.slider {
+  @apply relative inline-block w-10 h-5 bg-gray-300 dark:bg-gray-600 rounded-full transition-all duration-300 mr-3;
+}
+
+.slider::before {
+  @apply content-[''] absolute h-4 w-4 left-0.5 bottom-0.5 bg-white rounded-full transition-all duration-300;
+}
+
+input:checked + .slider {
+  @apply bg-primary-500;
+}
+
+input:checked + .slider::before {
+  @apply translate-x-5;
+}
+
+/* Estilos para tarjetas de estadísticas */
+.stat-card {
+  @apply flex flex-col items-center justify-center p-4 rounded-lg text-center;
+}
+
+.stat-number {
+  @apply text-2xl font-bold mb-1;
+}
+
+.stat-label {
+  @apply text-xs font-medium;
+}
+
+/* Estilos para el indicador de progreso circular */
+.circular-progress {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.circular-bg {
+  fill: none;
+  stroke: rgba(255,255,255,0.2);
+  stroke-width: 3;
+}
+
+.circular-progress-path {
+  fill: none;
+  stroke: white;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.5s ease;
+}
+
+/* Estilo para el spinner de carga */
+.loading-spinner {
+  @apply h-6 w-6 border-2 border-t-primary-500 border-r-primary-500 border-b-primary-200 border-l-primary-200 rounded-full animate-spin;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 </style>

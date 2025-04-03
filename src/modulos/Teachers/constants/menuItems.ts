@@ -43,13 +43,12 @@ export const teacherMenuItems = [
   }
 ]
 
-// Menú para directores/administradores: rutas que comienzan con "/teachers/admin"
-// (O ajusta las rutas según tu convención)
+// Menú para directores/administradores: rutas que coinciden con las definidas en el router
 export const adminMenuItems = [
   { 
     name: 'Inicio', 
     icon: HomeIcon, 
-    to: '/teachers/admin', 
+    to: '/', 
     ariaLabel: 'Panel de control'
   },
   { 
@@ -61,7 +60,7 @@ export const adminMenuItems = [
   { 
     name: 'Maestros', 
     icon: AcademicCapIcon, 
-    to: '/teachers/admin', 
+    to: '/teachers', 
     ariaLabel: 'Gestionar maestros'
   },
   { 

@@ -70,7 +70,34 @@ export const useScheduleStore = defineStore('schedule', {
     getRoomUtilization: (state) => (roomId: string) =>
       state.metrics?.roomUtilization.find(metric => metric.roomId === roomId),
     
-    getGlobalMetrics: (state) => state.metrics?.globalMetrics
+    getGlobalMetrics: (state) => state.metrics?.globalMetrics,
+
+    // obtener horario por dia de la semana y franja horaria
+    getSchedulesByDayAndTime: (state) => (dayOfWeek: string, timeSlot: { startTime: string; endTime: string }) =>
+      state.schedules.filter(schedule => {
+        const scheduleDay = schedule.scheduleDay
+        return scheduleDay && scheduleDay.dayOfWeek === dayOfWeek && 
+               scheduleDay.timeSlot.startTime === timeSlot.startTime && 
+               scheduleDay.timeSlot.endTime === timeSlot.endTime
+      }),
+      // obtener horarios por profesor y dia de la semana
+    getSchedulesByTeacherAndDay: (state) => (teacherId: string, dayOfWeek: string) =>
+      state.schedules.filter(schedule => {
+        const scheduleDay = schedule.scheduleDay
+        return scheduleDay && scheduleDay.teacherId === teacherId && scheduleDay.dayOfWeek === dayOfWeek
+      }),
+
+      // obtener horarios por clase y dia de la semana
+  getSchedulesByClassAndDay: (state) => (classId: string, dayOfWeek: string) =>
+    state.schedules.filter(schedule => {
+      const scheduleDay = schedule.scheduleDay
+      return scheduleDay && scheduleDay.classId === classId && scheduleDay.dayOfWeek === dayOfWeek
+    }
+  ),
+  // obtener horarios por dia de la semana
+  getSchedulesByDay: (state) => (dayOfWeek: string) =>
+    state.schedules.filter(schedule => schedule.scheduleDay.dayOfWeek === dayOfWeek),
+
   },
 
   actions: {
@@ -85,9 +112,8 @@ export const useScheduleStore = defineStore('schedule', {
         const result = await scheduleService.getAllSchedulesFirebase()
         if (result.success && result.data) {
           // Filtrar solo los horarios que tienen scheduleDay definido
-          const validSchedules = result.data.filter((schedule: any) => {
+          const validSchedules = result.data.filter((schedule) => {
             if (!schedule.scheduleDay) {
-              console.warn('Horario inválido detectado (falta scheduleDay):', schedule)
               return false
             }
             
@@ -99,16 +125,9 @@ export const useScheduleStore = defineStore('schedule', {
             }
             
             return true
-          }).map((schedule: any) => schedule as Schedule)
+          })
 
-          // Asignar propiedades adicionales que se poblarán después (por ejemplo, datos de clase, profesor, estudiantes y salón)
-          this.schedules = validSchedules.map(schedule => ({
-            ...schedule,
-            class: null,   // Se poblará con populateScheduleData
-            teacher: null, // Se poblará con populateScheduleData
-            students: [],  // Se poblará con populateScheduleData
-            room: null     // Se poblará con populateScheduleData
-          }))
+          this.schedules = await this.populateScheduleData(validSchedules as ScheduleAssignment[])
           this.lastSync = new Date()
           
           // Recalcular métricas basadas en los horarios válidos
@@ -130,7 +149,7 @@ export const useScheduleStore = defineStore('schedule', {
     async fetchScheduleById(id: string) {
       this.loading = true
       try {
-        const response = await scheduleService.getScheduleById(id)
+        const response = await scheduleService.getScheduleByIdFirebase(id)
         if (response.success && response.data) {
           const populatedSchedule = await this.populateScheduleData(response.data)
           const index = this.schedules.findIndex(s => s.id === id)
@@ -429,6 +448,69 @@ async createSchedule(request: ScheduleCreationRequest) {
      */
     async forceSync() {
       await this.fetchAllSchedules()
+    },
+
+    /**
+     * fixInvalidSchedules: Corrige los horarios que no tienen la estructura scheduleDay correcta
+     */
+    async fixInvalidSchedules() {
+      try {
+        this.loading = true;
+        const invalidSchedules = this.schedules.filter(schedule => {
+          // Verificar estructura del horario
+          if (!schedule.scheduleDay || 
+              !schedule.scheduleDay.dayOfWeek || 
+              !schedule.scheduleDay.timeSlot || 
+              !schedule.scheduleDay.timeSlot.startTime || 
+              !schedule.scheduleDay.timeSlot.endTime) {
+            return true;
+          }
+          return false;
+        });
+
+        if (invalidSchedules.length === 0) {
+          return { success: true, message: 'No se encontraron horarios inválidos' };
+        }
+
+        // Corregir cada horario inválido
+        const updates = invalidSchedules.map(async (schedule) => {
+          const fixedSchedule = {
+            ...schedule,
+            scheduleDay: {
+              dayOfWeek: schedule.scheduleDay?.dayOfWeek || 'Lunes',
+              timeSlot: {
+                startTime: schedule.scheduleDay?.timeSlot?.startTime || '08:00',
+                endTime: schedule.scheduleDay?.timeSlot?.endTime || '09:30',
+                duration: 90
+              },
+              classId: schedule.scheduleDay?.classId || '',
+              teacherId: schedule.scheduleDay?.teacherId || '',
+              roomId: schedule.scheduleDay?.roomId || '',
+              studentIds: schedule.scheduleDay?.studentIds || []
+            }
+          };
+          
+          // Actualizar en Firestore
+          await this.updateSchedule(fixedSchedule);
+          return fixedSchedule;
+        });
+
+        await Promise.all(updates);
+        await this.fetchAllSchedules(); // Recargar horarios
+
+        return {
+          success: true,
+          message: `Se corrigieron ${invalidSchedules.length} horarios`
+        };
+      } catch (error: any) {
+        console.error('Error fixing schedules:', error);
+        return {
+          success: false,
+          error: error.message
+        };
+      } finally {
+        this.loading = false;
+      }
     }
   }
 })

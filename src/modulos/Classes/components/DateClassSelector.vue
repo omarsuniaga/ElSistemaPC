@@ -211,34 +211,29 @@ const availableClassDates = computed(() => {
 // Filtrar clases según el día seleccionado
 const filterClassesByDay = (date: string) => {
   try {
-    // Force date to be parsed as local midnight to prevent timezone issues
     const localDate = new Date(date + 'T00:00:00');
     const dayName = format(localDate, 'EEEE', { locale: es }).toLowerCase();
     const dayIndex = getDayIndex(dayName);
     
-    return classesStore.classes.filter(c => {
-      // Si no hay filtro por día, mostrar todas
-      if (!props.dayFilter) return true
+    // Filtrar clases que tienen actividad en el día seleccionado
+    const classesForDay = classesStore.classes.filter(c => {
+      if (!c.schedule?.slots || !Array.isArray(c.schedule.slots)) return false;
       
-      // Verificar si la clase tiene la estructura correcta de horarios
-      if (!c.schedule || !c.schedule.slots || !Array.isArray(c.schedule.slots)) return true
-      
-      // Filtrar por día de la semana usando la nueva estructura slots
       return c.schedule.slots.some(slot => {
-        // Si slot.day es un número, compararlo directamente con dayIndex
         if (typeof slot.day === 'number') {
-          return slot.day === dayIndex
+          return slot.day === dayIndex;
+        } else if (typeof slot.day === 'string') {
+          return slot.day.toLowerCase() === dayName;
         }
-        // Si slot.day es un string, intentar interpretar como nombre del día
-        else if (typeof slot.day === 'string') {
-          return slot.day.toLowerCase() === dayName
-        }
-        return false
-      })
-    })
+        return false;
+      });
+    });
+
+    // Solo retornar las clases si hay actividad ese día
+    return classesForDay;
   } catch (err) {
-    console.error('Error al filtrar clases por día:', err)
-    return classesStore.classes
+    console.error('Error al filtrar clases por día:', err);
+    return [];
   }
 }
 

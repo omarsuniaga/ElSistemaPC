@@ -5,7 +5,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import Modal from '../components/shared/Modal.vue';
 import Datepicker from '@vuepic/vue-datepicker'
 import type { AttendanceStatus } from '../types'
-import { eachDayOfInterval, addMonths, isSameDay, parseISO, format } from 'date-fns'
+import { eachDayOfInterval, addMonths, isSameDay, parseISO, format, startOfToday, startOfMonth } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 // Componentes importados
@@ -51,6 +51,7 @@ const emergencyClassStore = useEmergencyClassStore()
 // Estados globales y de vista
 const view = ref<'calendar' | 'class-select' | 'attendance-form'>('calendar')
 const selectedDate = ref(getCurrentDate())
+const currentMonth = ref(new Date()) // Mes actual para el calendario
 const selectedClass = ref('')
 const isLoading = ref(true)
 const error = ref<string | null>(null)
@@ -151,6 +152,13 @@ const navigateToAttendanceDetailUrl = (date: string, classId: string) => {
   router.push(`/attendance/${formattedDate}/${classId}`)
 }
 
+// Función para manejar el cambio de mes en el calendario
+const handleMonthChange = (newMonth: Date) => {
+  currentMonth.value = newMonth
+  // Cargar los registros de asistencia para el nuevo mes
+  attendanceStore.fetchMonthlyAttendanceRecords(format(newMonth, 'yyyy-MM'))
+}
+
 // Añadir función para depurar el StudentsStore al inicio
 const debugStudentsStore = () => {
   console.log('========== DEBUG STUDENTS STORE ==========');
@@ -179,7 +187,7 @@ async function fetchInitialData() {
     await Promise.all([
       classesStore.fetchClasses(),
       studentsStore.fetchStudents(),
-      // instrumentoStore.fetchInstrumentos()
+      attendanceStore.fetchAllAttendanceDates() // Agregamos la carga de fechas con registros
     ])
     
     debugStudentsStore(); // Añadir esta línea para depuración
@@ -299,7 +307,18 @@ const selectClass = async (className: string) => {
 }
 
 // Iniciar carga de datos al montar el componente
-onMounted(fetchInitialData)
+const mounted = async () => {
+  isLoading.value = true;
+  try {
+    await attendanceStore.fetchAllAttendanceDates();
+  } catch (error) {
+    console.error('Error al cargar las fechas de asistencia:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(mounted);
 
 // Observar cambios en los parámetros de URL
 watch(
@@ -650,38 +669,12 @@ const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
 // Computed for available class dates
 const availableClassDates = computed(() => {
   if (!selectedClass.value) return [];
-  
-  try {
-    // Get scheduled days for the class
-    const scheduledDays = attendanceStore.getClassScheduleDays(selectedClass.value);
-    
-    // Debug to see what the actual value is
-    console.log('Scheduled days for class:', scheduledDays);
-    
-    // Ensure scheduledDays is a proper array and handle edge cases
-    if (!scheduledDays || !Array.isArray(scheduledDays) || scheduledDays.length === 0) {
-      console.warn('No valid scheduled days found for the class:', selectedClass.value);
-      return [];
-    }
-    
-    // Get date range (current month + next month)
-    const startDate = parseISO(format(new Date(), 'yyyy-MM-dd'));
-    const endDate = addMonths(startDate, 1);
-    
-    // Get all days in range
-    const allDates = eachDayOfInterval({ start: startDate, end: endDate });
-    
-    // Filter only the days that match class schedule - with additional error checking
-    return allDates
-      .filter(date => {
-        const dayName = format(date, 'EEEE', { locale: es }).toLowerCase();
-        return scheduledDays.includes(dayName);
-      })
-      .map(date => format(date, 'yyyy-MM-dd'));
-  } catch (error) {
-    console.error('Error in availableClassDates computed property:', error);
-    return [];
-  }
+  const scheduledDays = attendanceStore.getClassScheduleDays(selectedClass.value);
+  // Solo retornar días que tienen clases programadas
+  return scheduledDays.filter(day => {
+    const classesForDay = classesStore.getClassesByDay(day);
+    return classesForDay.length > 0;
+  });
 });
 
 // Computed to get observations count
@@ -858,8 +851,10 @@ const handleEmergencyClassCancelled = () => {
           <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-4">Seleccionar Fecha</h2>
           <Calendar 
             :selected-date="selectedDate" 
+            :current-month="currentMonth"
             :marked-dates="attendanceStore.getDatesWithRecords" 
             @select="selectDate"
+            @month-change="handleMonthChange"
           />
         </div>
 

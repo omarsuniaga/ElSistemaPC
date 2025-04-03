@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useSchedule } from '../../../composables/useSchedule';
 import { useClassesStore } from '../../Classes/store/classes';
 import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useScheduleStore } from '../store/schedule';
 import ScheduleNavigation from '../components/ScheduleNavigation.vue';
 import ScheduleEntryForm from '../components/ScheduleEntryForm.vue';
 import ScheduleCalendarView from '../components/ScheduleCalendarView.vue';
@@ -10,6 +11,7 @@ import ScheduleCalendarView from '../components/ScheduleCalendarView.vue';
 // Stores y composables
 const classesStore = useClassesStore();
 const teachersStore = useTeachersStore();
+const scheduleStore = useScheduleStore();
 const { 
   isLoading, 
   error, 
@@ -201,6 +203,23 @@ const runDiagnostic = () => {
   showDiagnostic.value = true;
 };
 
+const fixSchedules = async () => {
+  try {
+    isLoading.value = true;
+    const result = await scheduleStore.fixInvalidSchedules();
+    if (result.success) {
+      showMessage(result.message, 'success');
+      await loadData();
+    } else {
+      showMessage(`Error: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    showMessage(`Error inesperado: ${error.message}`, 'error');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
 onMounted(loadData);
 </script>
 <template>
@@ -246,6 +265,14 @@ onMounted(loadData);
           >
             <i class="fas fa-plus mr-2"></i>
             Programar Nueva Clase
+          </button>
+
+          <button
+            @click="fixSchedules"
+            class="px-3 py-2 bg-green-600 text-white hover:bg-green-700 rounded"
+          >
+            <i class="fas fa-wrench mr-2"></i>
+            Corregir Horarios
           </button>
         </div>
       </div>

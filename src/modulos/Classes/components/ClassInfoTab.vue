@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { PencilIcon, XCircleIcon, CheckIcon, UserGroupIcon } from '@heroicons/vue/24/outline';
 import { useTeachersStore } from '../../Teachers/store/teachers';
 import { useStudentsStore } from '../../Students/store/students';
+import StudentProgress from '../../../components/StudentProgress.vue';
 
 const props = defineProps({
   selectedClass: {
@@ -256,5 +257,12 @@ onMounted(() => {
         </button>
       </div>
     </div>
+
+    <!-- Student Progress Section -->
+    <StudentProgress 
+      v-if="selectedClass.id"
+      :class-id="selectedClass.id"
+      @student-progressed="$emit('refresh')"
+    />
   </div>
 </template>

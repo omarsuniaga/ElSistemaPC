@@ -37,9 +37,10 @@ const newSpecialty = ref('');
 const newInstrument = ref({ name: '', level: 'Intermedio' });
 const newSchedule = ref({
   dayOfWeek: 1,
-  className: '',
+  isAvailable: true,
   startTime: '',
   endTime: '',
+  timeBlocks: []
 });
 
 // Watch for prop changes and update form data
@@ -82,23 +83,57 @@ function removeInstrument(index: number) {
 }
 
 function addSchedule() {
-  if (!newSchedule.value.className.trim() || !newSchedule.value.startTime || !newSchedule.value.endTime) return;
-  formData.value.schedule.push({
-    day: newSchedule.value.dayOfWeek.toString(),
-    class: newSchedule.value.className.trim(),
-    start: newSchedule.value.startTime,
-    end: newSchedule.value.endTime,
-  });
+  if (!newSchedule.value.startTime || !newSchedule.value.endTime) return;
+  
+  // Verificar si ya existe un registro para este día
+  const existingDayIndex = formData.value.schedule.findIndex(
+    item => item.day === newSchedule.value.dayOfWeek.toString()
+  );
+  
+  if (existingDayIndex >= 0) {
+    // Si el día ya existe, agregamos un nuevo bloque de tiempo
+    formData.value.schedule[existingDayIndex].timeBlocks.push({
+      start: newSchedule.value.startTime,
+      end: newSchedule.value.endTime,
+      isAvailable: newSchedule.value.isAvailable
+    });
+  } else {
+    // Si es un nuevo día, creamos un nuevo registro
+    formData.value.schedule.push({
+      day: newSchedule.value.dayOfWeek.toString(),
+      isAvailable: newSchedule.value.isAvailable,
+      timeBlocks: [{
+        start: newSchedule.value.startTime,
+        end: newSchedule.value.endTime,
+        isAvailable: newSchedule.value.isAvailable
+      }]
+    });
+  }
+  
+  // Resetear el formulario
   newSchedule.value = {
     dayOfWeek: 1,
-    className: '',
+    isAvailable: true,
     startTime: '',
     endTime: '',
+    timeBlocks: []
   };
 }
 
-function removeSchedule(index: number) {
-  formData.value.schedule.splice(index, 1);
+function removeSchedule(dayIndex: number, blockIndex?: number) {
+  if (blockIndex !== undefined) {
+    // Si se proporciona un índice de bloque, eliminamos solo ese bloque de tiempo
+    const day = formData.value.schedule[dayIndex];
+    day.timeBlocks.splice(blockIndex, 1);
+    
+    // Si no quedan bloques de tiempo, eliminamos el día completo
+    if (day.timeBlocks.length === 0) {
+      formData.value.schedule.splice(dayIndex, 1);
+    }
+  } else {
+    // Si no se proporciona un índice de bloque, eliminamos el día completo
+    formData.value.schedule.splice(dayIndex, 1);
+  }
 }
 
 function handleSubmit() {
@@ -280,9 +315,9 @@ function handleCancel() {
       </div>
     </div>
 
-    <!-- Schedule -->
+    <!-- Schedule - Disponibilidad del Profesor -->
     <div>
-      <label class="form-label">Horario de Clases</label>
+      <label class="form-label">Disponibilidad del Profesor</label>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
         <select
           v-model="newSchedule.dayOfWeek"
@@ -297,52 +332,92 @@ function handleCancel() {
           <option :value="6">Sábado</option>
           <option :value="7">Domingo</option>
         </select>
-        <input
-          v-model="newSchedule.className"
-          type="text"
-          class="form-input"
-          placeholder="Nombre de la clase"
-          :disabled="props.isLoading"
-        />
-        <input
-          v-model="newSchedule.startTime"
-          type="time"
-          class="form-input"
-          :disabled="props.isLoading"
-        />
-        <input
-          v-model="newSchedule.endTime"
-          type="time"
-          class="form-input"
-          :disabled="props.isLoading"
-        />
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Disponible:</span>
+          <input
+            v-model="newSchedule.isAvailable"
+            type="checkbox"
+            class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            :disabled="props.isLoading"
+          />
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 dark:text-gray-400">Hora de inicio</label>
+          <input
+            v-model="newSchedule.startTime"
+            type="time"
+            class="form-input"
+            :disabled="props.isLoading"
+          />
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 dark:text-gray-400">Hora de fin</label>
+          <input
+            v-model="newSchedule.endTime"
+            type="time"
+            class="form-input"
+            :disabled="props.isLoading"
+          />
+        </div>
         <button
           type="button"
           class="btn btn-primary md:col-span-2"
           @click="addSchedule"
           :disabled="props.isLoading"
         >
-          Agregar Horario
+          Agregar Disponibilidad
         </button>
       </div>
-      <div class="space-y-2">
+      
+      <!-- Mostrar disponibilidad por día -->
+      <div class="space-y-4 mt-4">
         <div
-          v-for="(schedule, index) in formData.schedule"
-          :key="index"
-          class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"
+          v-for="(daySchedule, dayIndex) in formData.schedule"
+          :key="dayIndex"
+          class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
         >
-          <span>
-            {{ ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][parseInt(schedule.day) - 1] }}:
-            {{ schedule.class }} ({{ schedule.start }} - {{ schedule.end }})
-          </span>
-          <button
-            type="button"
-            class="text-gray-500 hover:text-red-500"
-            @click="removeSchedule(index)"
-            :disabled="props.isLoading"
-          >
-            <MinusCircleIcon class="w-5 h-5" />
-          </button>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">
+              {{ ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][parseInt(daySchedule.day) - 1] }}
+            </h4>
+            <button
+              type="button"
+              class="text-gray-500 hover:text-red-500"
+              @click="removeSchedule(dayIndex)"
+              :disabled="props.isLoading"
+            >
+              <MinusCircleIcon class="w-5 h-5" />
+            </button>
+          </div>
+          
+          <!-- Bloques de tiempo para este día -->
+          <div class="space-y-2 pl-4">
+            <div
+              v-for="(timeBlock, blockIndex) in daySchedule.timeBlocks"
+              :key="blockIndex"
+              class="flex items-center justify-between p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600"
+            >
+              <div class="flex items-center gap-2">
+                <span
+                  :class="{
+                    'text-green-600 dark:text-green-400': timeBlock.isAvailable,
+                    'text-red-600 dark:text-red-400': !timeBlock.isAvailable
+                  }"
+                >
+                  {{ timeBlock.isAvailable ? 'Disponible' : 'No disponible' }}
+                </span>
+                <span>{{ timeBlock.start }} - {{ timeBlock.end }}</span>
+              </div>
+              <button
+                type="button"
+                class="text-gray-500 hover:text-red-500"
+                @click="removeSchedule(dayIndex, blockIndex)"
+                :disabled="props.isLoading"
+              >
+                <MinusCircleIcon class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

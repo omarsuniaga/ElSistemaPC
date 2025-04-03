@@ -27,6 +27,12 @@ const routes: Array<RouteRecordRaw> = [
       allowedRoles: ['Maestro', 'Director', 'Admin']
     }
   },
+  {
+    path: '/teachers/:id/edit',
+    name: 'TeacherEdit',
+    component: () => import('../modulos/Teachers/view/TeacherEditView.vue'),
+    meta: { requiresAuth: true }
+  },
   // Rutas específicas para Maestros y Directores
   {
     path: '/teachers',
@@ -127,6 +133,24 @@ const routes: Array<RouteRecordRaw> = [
 
   // Rutas para directores y administradores
   {
+    path: '/dashboard',
+    name: 'AdminHomeView',
+    component: () => import('../modulos/Teachers/view/admin/AdminHomeView.vue'),
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin']
+    }
+  },
+  {
+    path: '/monitoring',
+    name: 'DailyMonitoring',
+    component: () => import('../views/DailyMonitoringView.vue'),
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin']
+    }
+  },
+  {
     path: '/students',
     name: 'Students',
     component: () => import('../views/StudentsView.vue'),
@@ -189,6 +213,15 @@ const routes: Array<RouteRecordRaw> = [
       allowedRoles: ['Director', 'Admin']
     }
   },
+  {
+    path: '/students/new',
+    name: 'NewStudent',
+    component: () => import('../modulos/Students/view/NewStudentView.vue'),
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin']
+    }
+  },
 
   // Ruta inicial: redirige según el rol
   {
@@ -197,7 +230,7 @@ const routes: Array<RouteRecordRaw> = [
     redirect: () => {
       const authStore = useAuthStore()
       // Si el usuario es maestro se redirige a '/teacher', de lo contrario a '/schedule'
-      return authStore.isTeacher ? '/teacher' : '/schedule'
+      return authStore.isTeacher ? '/teacher' : '/dashboard'
     },
     meta: { requiresAuth: true }
   },

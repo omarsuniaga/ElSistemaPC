@@ -1,269 +1,356 @@
-<script setup lang="ts">
-import { ref, computed } from 'vue';
-
-// ---------------------------
-// Interfaces internas
-// ---------------------------
-interface ClassSlot {
-  day: number | string;   // Puede ser 0-6 o "Lunes", etc.
-  startTime: string;      // Formato "HH:mm"
-  endTime: string;        // Formato "HH:mm"
-}
-
-interface ClassSchedule {
-  slots: ClassSlot[];
-}
-
-export interface ClassItem {
-  id: string;
-  name: string;
-  classroom?: string;
-  studentIds?: string[];
-  schedule: ClassSchedule;
-  duration?: number;
-  startTime?: string;
-  endTime?: string;
-}
-
-interface DayItem {
-  id: number;    // 0: Domingo, 1: Lunes, …, 6: Sábado
-  name: string;
-}
-
-interface ClassSlotDetail {
-  key: string;
-  id: string;
-  name: string;
-  startTime: string;
-  endTime: string;
-  classroom?: string;
-  studentCount: number;
-  duration: number; // Duración en horas (mínimo 1)
-}
-
-interface ClassesByDay {
-  [day: number]: ClassSlotDetail[];
-}
-
-// ---------------------------
-// Props y Emits
-// ---------------------------
-const props = defineProps({
-  classes: {
-    type: Array as () => ClassItem[],
-    required: true,
-    default: () => []
-  },
-  schedules: {
-    type: Array as () => any[],
-    required: false,
-    default: () => []
-  }
-});
-
-const emit = defineEmits(['view-class']);
-
-// ---------------------------
-// Constantes: Días de la semana
-// ---------------------------
-const days: DayItem[] = [
-  { id: 0, name: 'Domingo' },
-  { id: 1, name: 'Lunes' },
-  { id: 2, name: 'Martes' },
-  { id: 3, name: 'Miércoles' },
-  { id: 4, name: 'Jueves' },
-  { id: 5, name: 'Viernes' },
-  { id: 6, name: 'Sábado' }
-];
-
-// ---------------------------
-// Helpers
-// ---------------------------
-function mapDayNameToNumber(day: string): number {
-  const mapping: Record<string, number> = {
-    'Domingo': 0,
-    'Lunes': 1,
-    'Martes': 2,
-    'Miércoles': 3,
-    'Miercoles': 3,
-    'Jueves': 4,
-    'Viernes': 5,
-    'Sábado': 6,
-    'Sabado': 6
-  };
-  return mapping[day] ?? -1;
-}
-
-function handleClassClick(classId: string): void {
-  emit('view-class', classId);
-}
-
-function calculateDuration(startTime: string, endTime: string): number {
-  const [sh, sm] = startTime.split(':').map(Number);
-  const [eh, em] = endTime.split(':').map(Number);
-  return (eh * 60 + em) - (sh * 60 + sm);
-}
-
-// ---------------------------
-// Computed: Combinar data de clases y schedules
-// ---------------------------
-const combinedClasses = computed<ClassItem[]>(() => {
-  return props.classes.map(classItem => {
-    const matchingSchedules = props.schedules.filter(s => s.scheduleDay && s.scheduleDay.classId === classItem.id);
-    let slots: ClassSlot[] = [];
-    if (matchingSchedules.length > 0) {
-      slots = matchingSchedules.map(s => ({
-        day: s.scheduleDay.dayOfWeek,
-        startTime: s.scheduleDay.timeSlot.startTime,
-        endTime: s.scheduleDay.timeSlot.endTime
-      }));
-    } else if (classItem.schedule && Array.isArray(classItem.schedule.slots)) {
-      slots = classItem.schedule.slots;
-    }
-    return { ...classItem, schedule: { slots } };
-  });
-});
-
-// ---------------------------
-// Computed: Agrupar clases por día
-// ---------------------------
-const classesByDay = computed<ClassesByDay>(() => {
-  const result: ClassesByDay = {};
-  days.forEach(day => {
-    result[day.id] = [];
-  });
-
-  combinedClasses.value.forEach(classItem => {
-    if (!classItem.schedule || !Array.isArray(classItem.schedule.slots)) return;
-    classItem.schedule.slots.forEach(slot => {
-      if (!slot.day || !slot.startTime || !slot.endTime) return;
-
-      const dayId: number = typeof slot.day === 'string'
-        ? mapDayNameToNumber(slot.day)
-        : Number(slot.day);
-      if (isNaN(dayId) || dayId < 0 || dayId > 6) return;
-
-      const durationInMinutes = calculateDuration(slot.startTime, slot.endTime);
-      // Mínimo 60 minutos (1 hora) en caso de error o superposición
-      const durationHours = Math.max(durationInMinutes / 60, 1);
-
-      const slotDetail: ClassSlotDetail = {
-        key: `${classItem.id}-${slot.startTime}`,
-        id: classItem.id,
-        name: classItem.name,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-        classroom: classItem.classroom,
-        studentCount: Array.isArray(classItem.studentIds) ? classItem.studentIds.length : 0,
-        duration: durationHours
-      };
-      result[dayId].push(slotDetail);
-    });
-  });
-
-  // Ordenar cada día por la hora de inicio
-  Object.keys(result).forEach(dayKey => {
-    result[Number(dayKey)] = result[Number(dayKey)].sort((a, b) => a.startTime.localeCompare(b.startTime));
-  });
-
-  return result;
-});
-
-// ---------------------------
-// Computed: Total de horas semanales
-// ---------------------------
-const totalWeeklyHours = computed<number>(() => {
-  let total = 0;
-  for (const day in classesByDay.value) {
-    classesByDay.value[Number(day)].forEach(slot => {
-      total += slot.duration;
-    });
-  }
-  return total;
-});
-
-// ---------------------------
-// Computed: Días activos (con clases)
-// ---------------------------
-const activeDays = computed<DayItem[]>(() => {
-  return days.filter(day => classesByDay.value[day.id] && classesByDay.value[day.id].length > 0);
-});
-</script>
-
 <template>
-  <div class="teacher-weekly-schedule p-2">
-    <!-- Cabecera con horas semanales -->
-    <div class="flex justify-end mb-4">
-      <div class="text-sm font-semibold text-gray-700 dark:text-gray-200">
-        Horas Semanales: {{ totalWeeklyHours.toFixed(1) }}
-      </div>
+  <div class="teacher-weekly-schedule">
+    <div class="space-y-8">
+      <template v-for="day in weekDays" :key="day">
+        <div v-if="classesStore.getClassByDaysAndTeacher(props.teacherId, day).length > 0" class="day-section">
+          <div class="day-header">
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">{{ day }}</h3>
+          </div>
+          
+          <div class="class-list">
+            <div 
+              v-for="class_ in classesStore.getClassByDaysAndTeacher(props.teacherId, day)" 
+              :key="class_.id"
+              class="class-item"
+              @click="selectClass(class_)"
+            >
+              <div class="class-item-content">
+                <div class="class-name">{{ class_.name }}</div>
+                
+                <div class="class-details">
+                  <div class="class-time">
+                    <ClockIcon class="h-4 w-4 mr-1" />
+                    <span>{{ formatScheduleTime(getScheduleForDay(class_, day)) }}</span>
+                  </div>
+                  
+                  <div v-if="class_.classroom" class="class-location">
+                    <MapPinIcon class="h-4 w-4 mr-1" />
+                    <span>{{ class_.classroom }}</span>
+                  </div>
+                  
+                  <div v-if="class_.instrument" class="class-instrument">
+                    <MusicalNoteIcon class="h-4 w-4 mr-1" />
+                    <span>{{ class_.instrument }}</span>
+                  </div>
+                  
+                  <div class="class-students">
+                    <UserGroupIcon class="h-4 w-4 mr-1" />
+                    <span>{{ class_.studentIds?.length || 0 }} estudiantes</span>
+                  </div>
+                  <!-- Duracion -->
+                  
+                  <div v-if="class_.schedule?.slots?.[0]" class="class-students">
+                    <ClockIcon class="h-4 w-4 mr-1" />
+                    <span>{{ formatClassDuration(class_.schedule.slots[0].startTime, class_.schedule.slots[0].endTime) }}</span>
+                  </div>  
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
 
-    <!-- Iterar solo por días activos -->
-    <div v-if="activeDays.length > 0">
-      <div
-        v-for="day in activeDays"
-        :key="day.id"
-        class="mb-6 page-break-inside-avoid"
-      >
-        <!-- Encabezado del día -->
-        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2 border-b border-gray-300 dark:border-gray-600">
-          {{ day.name }}
-        </h3>
-        <!-- Tabla con las clases de ese día -->
-        <table class="w-full text-sm border border-gray-300 dark:border-gray-600">
-          <thead class="bg-gray-100 dark:bg-gray-700 border-b border-gray-300 dark:border-gray-600">
-            <tr>
-              <th class="p-2 text-left text-gray-700 dark:text-gray-300">Hora</th>
-              <th class="p-2 text-left text-gray-700 dark:text-gray-300">Clase</th>
-              <th class="p-2 text-left text-gray-700 dark:text-gray-300">Aula</th>
-              <th class="p-2 text-left text-gray-700 dark:text-gray-300">Est.</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="slot in classesByDay[day.id]"
-              :key="slot.key"
-              class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-              @click="handleClassClick(slot.id)"
-            >
-              <td class="p-2 text-gray-600 dark:text-gray-200">
-                {{ slot.startTime }} - {{ slot.endTime }}
-              </td>
-              <td class="p-2 font-semibold text-gray-700 dark:text-gray-100 truncate">
-                {{ slot.name }}
-              </td>
-              <td class="p-2 text-gray-600 dark:text-gray-200">
-                {{ slot.classroom || 'Sin aula' }}
-              </td>
-              <td class="p-2 text-center text-gray-600 dark:text-gray-200">
-                {{ slot.studentCount }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Detalle de clase seleccionada -->
+    <div v-if="selectedClass" class="selected-class-detail">
+      <div class="selected-class-header">
+        <h3 class="selected-class-title">{{ selectedClass.name }}</h3>
+        <button @click="selectedClass = null" class="close-button">
+          <XMarkIcon class="h-5 w-5" />
+        </button>
       </div>
-    </div>
-    <div v-else class="text-center text-gray-500 italic">
-      No hay clases programadas.
+
+      <div class="selected-class-info">
+        <div class="info-item">
+          <div class="info-label">Horario</div>
+          <div class="info-value">{{ formatClassSchedule(selectedClass) }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Duración</div>
+          <div class="info-value">
+            {{ selectedClass?.schedule?.slots?.[0] ? 
+               formatClassDuration(selectedClass.schedule.slots[0].startTime, selectedClass.schedule.slots[0].endTime) : 
+               'No disponible' }}
+          </div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Aula</div>
+          <div class="info-value">{{ selectedClass.classroom || 'Sin asignar' }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Instrumento</div>
+          <div class="info-value">{{ selectedClass.instrument || 'No especificado' }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Estudiantes</div>
+          <div class="info-value">{{ selectedClass.studentIds?.length || 0 }} estudiantes</div>
+        </div>
+      </div>
+
+      <div class="selected-class-actions">
+        <router-link
+          :to="`/teacher/attendance/${getCurrentDate()}/${selectedClass.id}`"
+          class="attendance-button"
+        >
+          Tomar asistencia
+        </router-link>
+      </div>
     </div>
   </div>
 </template>
 
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useClassesStore } from '../../Classes/store/classes'
+import { format } from 'date-fns'
+import { 
+  XMarkIcon, 
+  ClockIcon, 
+  MapPinIcon, 
+  UserGroupIcon,
+  MusicalNoteIcon 
+} from '@heroicons/vue/24/outline'
+
+interface ScheduleSlot {
+  day: string;
+  startTime: string;
+  endTime: string;
+}
+
+interface ClassData {
+  id: string;
+  name: string;
+  description?: string;
+  level?: string;
+  instrument?: string;
+  teacherId?: string;
+  studentIds?: string[];
+  schedule?: {
+    slots: ScheduleSlot[];
+  };
+  classroom?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const classesStore = useClassesStore()
+
+const props = defineProps<{
+  teacherId: string;
+}>()
+
+const selectedClass = ref<ClassData | null>(null)
+const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+
+const selectClass = (class_: ClassData) => {
+  if (class_.teacherId) { // Verify teacherId exists
+    selectedClass.value = class_
+  }
+}
+
+const getCurrentDate = () => {
+  return format(new Date(), 'yyyyMMdd')
+}
+
+const getScheduleForDay = (class_: ClassData, day: string): ScheduleSlot | undefined => {
+  if (class_.teacherId) { // Verify teacherId exists
+    return class_.schedule?.slots.find(slot => slot.day === day)
+  }
+  return undefined
+}
+
+const formatScheduleTime = (scheduleSlot: ScheduleSlot | undefined): string => {
+  if (!scheduleSlot) return 'Horario no disponible'
+  return `${scheduleSlot.startTime} - ${scheduleSlot.endTime}`
+}
+
+const formatClassSchedule = (class_: ClassData): string => {
+  if (!class_.schedule?.slots?.length) return 'Sin horario asignado'
+  return class_.schedule.slots.map(slot => 
+    `${slot.day} ${slot.startTime} - ${slot.endTime}`
+  ).join(', ')
+}
+
+const formatClassDuration = (startTime: string, endTime: string): string => {
+  if (!startTime || !endTime) return 'Duración no disponible';
+  
+  const [startHours, startMinutes] = startTime.split(':').map(Number);
+  const [endHours, endMinutes] = endTime.split(':').map(Number);
+  
+  const totalMinutes = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+  
+  if (totalMinutes <= 0) return 'Duración inválida';
+  
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  if (hours > 0) {
+    return minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
+  }
+  return `${minutes}min`;
+}
+</script>
+
 <style scoped>
 .teacher-weekly-schedule {
-  font-family: 'Helvetica', sans-serif;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 1rem;
 }
-.page-break-inside-avoid {
-  page-break-inside: avoid;
+
+.day-section {
+  margin-bottom: 2rem;
 }
-@media print {
-  .teacher-weekly-schedule {
-    padding: 4mm;
-    font-size: 0.8rem;
+
+.day-header {
+  padding: 0.75rem 0;
+  margin-bottom: 0.75rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.class-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.class-item {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.class-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.class-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.class-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.class-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.class-time, .class-location, .class-instrument, .class-students {
+  display: flex;
+  align-items: center;
+}
+
+.selected-class-detail {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.selected-class-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.selected-class-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.close-button {
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+}
+
+.close-button:hover {
+  background-color: #f3f4f6;
+}
+
+.selected-class-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-item {
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  border-radius: 0.375rem;
+}
+
+.info-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.info-value {
+  font-weight: 500;
+}
+
+.attendance-button {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  border-radius: 0.375rem;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.attendance-button:hover {
+  background-color: #2563eb;
+}
+
+.empty-day {
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 0.375rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+@media (prefers-color-scheme: dark) {
+  .class-item {
+    background-color: #1f2937;
   }
-  table {
-    page-break-inside: avoid;
+  
+  .class-details {
+    color: #9ca3af;
+  }
+  
+  .selected-class-detail {
+    background-color: #1f2937;
+  }
+  
+  .close-button:hover {
+    background-color: #374151;
+  }
+  
+  .info-item {
+    background-color: #111827;
+  }
+  
+  .empty-day {
+    background-color: #111827;
+    color: #9ca3af;
   }
 }
 </style>

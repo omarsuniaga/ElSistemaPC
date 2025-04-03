@@ -396,6 +396,44 @@ export const useProfileStore = defineStore('profile', {
     },
 
     /**
+     * Merge additional user data from Firebase into the profile
+     * This function combines data from Firestore with the current profile data
+     */
+    async mergeFirebaseData(userData: any) {
+      return this._executeAction(async () => {
+        if (!this.profile) {
+          throw new Error('Profile not initialized');
+        }
+        
+        // Merge the user data with current profile
+        this.profile = {
+          ...this.profile,
+          ...userData,
+          // Ensure we keep existing preferences but merge with new ones if provided
+          preferences: {
+            ...(this.profile.preferences || DEFAULT_USER_PREFERENCES),
+            ...(userData.preferences || {})
+          }
+        };
+        
+        // Apply theme preference if it exists in the merged data
+        if (userData.preferences?.theme) {
+          this._applyThemePreference(userData.preferences.theme);
+        }
+        
+        // Log activity for tracking purposes
+        this.logActivity({
+          type: 'data_merge',
+          description: 'Datos adicionales sincronizados',
+          userId: this.profile.id,
+          createdAt: new Date().toISOString()
+        });
+        
+        return this.profile;
+      }, 'Error al fusionar datos adicionales del usuario');
+    },
+
+    /**
      * Check and award achievements based on user stats
      */
     async checkAchievements() {

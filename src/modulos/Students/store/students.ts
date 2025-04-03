@@ -3,6 +3,7 @@ import { useScheduleStore } from '../../Schedules/store/schedule'
 import type { Student } from "../types/student"
 import { getStudentsFirebase, createStudentFirebase, updateStudentFirebase, deleteStudentFirebase } from '../service/students'
 import { getAttendanceReport } from '../../Attendance/service/attendance'
+import { useClassesStore } from '../../Classes/store/classes'
 
 export const useStudentsStore = defineStore('students', {
   state: () => ({
@@ -55,11 +56,19 @@ export const useStudentsStore = defineStore('students', {
 
     getStudentsByClass: (state) => (classId: string) => {
       if (!classId) return [];
+      
+      // Primero buscar por studentIds en las clases
+      const classesStore = useClassesStore();
+      const classData = classesStore.classes.find(c => c.id === classId || c.name === classId);
+      
+      if (classData?.studentIds?.length) {
+        return state.students.filter(student => classData.studentIds.includes(student.id));
+      }
+      
+      // Si no se encuentra por studentIds, buscar en las propiedades del estudiante
       return state.students.filter(student => {
         if (student.clase === classId) return true;
-        if (Array.isArray(student.grupo) && student.grupo.includes(classId)) {
-          return true;
-        }
+        if (Array.isArray(student.grupo) && student.grupo.includes(classId)) return true;
         return false;
       });
     },

@@ -393,7 +393,7 @@ watch(sortOrder, (newValue) => {
 
     <!-- Floating Action Button for adding new student -->
     <button
-      @click="router.push('/students/new')"
+      @click="router.push({ name: 'NewStudent' })"
       class="fixed bottom-16 right-6 w-10 h-10 rounded-full bg-primary-600 hover:bg-primary-700 text-white shadow-lg flex items-center justify-center z-10 transition-all duration-200 hover:scale-105"
       title="Añadir Alumno"
     >

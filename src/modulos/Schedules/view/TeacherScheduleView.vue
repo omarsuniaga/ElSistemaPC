@@ -37,32 +37,9 @@ const teacherId = computed(() => {
 })
 const isLoading = ref(true)
 const error = ref<string | null>(null)
-// Definir una interfaz para el teacher para mejorar el tipado
-interface Teacher {
-  id: string;
-  name: string;
-  photoURL?: string;
-  specialties?: string[];
-  experiencia?: any;
-  phone?: string;
-  email?: string;
-}
+import { Teacher, Schedule } from '@/types/Teachers';
+
 const teacher = ref<Teacher | null>(null)
-// Definir una interfaz para el schedule para mejorar el tipado
-interface Schedule {
-  totalClasses: number;
-  weeklyHours: number;
-  hasConflicts?: boolean;
-  schedule: Array<{
-    dayOfWeek: string;
-    className: string;
-    startTime: string;
-    endTime: string;
-    classId?: string;
-    room?: string;
-    studentCount?: number;
-  }>;
-}
 const schedule = ref<Schedule | null>(null)
 const teacherClasses = ref<any[]>([])
 
@@ -137,6 +114,8 @@ const loadData = async () => {
 
 onMounted(async () => {
   await loadData()
+  // mostrar la consulta a firebase desde el store
+  console.log('Teacher Classes:', getTeacherClasses(teacherId.value))
 })
 
 const formatHours = (hours: number): string => {
@@ -195,8 +174,15 @@ const getCurrentFormattedDate = (): string => {
 }
 
 const getTeacherClasses = (teacherId: string) => {
+  //
   if (!teacherId) return []
   return teacherClasses.value.length > 0 ? teacherClasses.value : classesStore.classes.filter(class_ => class_.teacherId === teacherId)
+}
+// obtener clases por dias
+const getClassesByDay = (day: string) => {
+  const res = classesStore.getClassScheduleByTeacher(teacherId.value, day)
+  if (!res) return []
+  return res
 }
 </script>
 
@@ -334,7 +320,7 @@ const getTeacherClasses = (teacherId: string) => {
             </div>
             
             <!-- Integración del componente TeacherWeeklySchedule -->
-            <TeacherWeeklySchedule :teacherId="teacherId" :classes="getTeacherClasses(teacher.id)" />
+            <TeacherWeeklySchedule :teacherId="teacherId" />
           </div>
           <div v-else class="text-center py-4 text-gray-500">
             No hay clases asignadas

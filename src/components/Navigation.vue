@@ -24,6 +24,20 @@ const visibleMenuItems = computed(() => {
 })
 const canAccessNavigation = ref(false)
 
+// Lista de rutas públicas donde no se debe mostrar la navegación
+const publicRoutes = ['/login', '/register', '/reset-password', '/forgot-password']
+
+// Computed para determinar si la navegación debe mostrarse
+const shouldShowNavigation = computed(() => {
+  // No mostrar si el usuario no está autenticado
+  if (!canAccessNavigation.value) return false
+  
+  // No mostrar en rutas públicas
+  if (publicRoutes.includes(route.path)) return false
+  
+  return true
+})
+
 // Initialize auth store only after component is mounted
 onMounted(async () => {
   // Dynamic import of the auth store to ensure Pinia is initialized first
@@ -42,19 +56,18 @@ onMounted(async () => {
   } else {
     // Menú básico para usuarios sin rol específico
     menuItems.value = [
-      { name: 'Inicio', icon: 'HomeIcon', to: '/', ariaLabel: 'Inicio' },
-      { name: 'Perfil', icon: 'UserCircleIcon', to: '/profile', ariaLabel: 'Mi perfil' }
+      { name: 'Inicio', icon: HomeIcon, to: '/', ariaLabel: 'Inicio' }
     ]
   }
   
-  canAccessNavigation.value = authStore.isAuthenticated && authStore.isApproved
+  canAccessNavigation.value = authStore.isLoggedIn
 })
 
 // Función mejorada para determinar si una ruta está activa
 const isActive = (path: string) => {
   // Caso especial para la ruta raíz
-  if (path === '/') {
-    return route.path === '/';
+  if (path === '/' && route.path === '/') {
+    return true;
   }
   
   // Exact match for paths
@@ -81,7 +94,7 @@ const isActive = (path: string) => {
 
 <template>
   <nav 
-    v-if="canAccessNavigation"
+    v-if="shouldShowNavigation"
     class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-50"
     aria-label="Navegación principal"
   >
@@ -89,7 +102,7 @@ const isActive = (path: string) => {
       <div class="flex justify-around py-1">
         <router-link
           v-for="item in visibleMenuItems"
-          :key="item.name"
+          :key="item.to"
           :to="item.to"
           :aria-label="item.ariaLabel"
           :aria-current="isActive(item.to) ? 'page' : undefined"

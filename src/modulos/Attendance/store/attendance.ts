@@ -242,43 +242,23 @@ export const useAttendanceStore = defineStore('attendance', {
         const classesStore = useClassesStore();
         const classData = classesStore.classes.find(c => c.name === className || c.id === className);
         
-        if (!classData) {
-          console.warn(`Class not found: ${className}`);
+        if (!classData?.studentIds?.length) {
           return [];
         }
 
-        // Check if schedule exists
         if (!classData.schedule) {
-          console.warn(`No schedule found for class: ${className}`);
           return [];
         }
 
-        // Parse schedule depending on its type
         if (typeof classData.schedule === 'string') {
           const schedule = String(classData.schedule).toLowerCase();
           const days = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
           return days.filter(day => schedule.includes(day));
-        } else if (classData.schedule && typeof classData.schedule === 'object') {
-          if ('days' in classData.schedule && Array.isArray(classData.schedule.days)) {
-            return classData.schedule.days;
-          } else if ('slots' in classData.schedule && Array.isArray(classData.schedule.slots)) {
-            // Extract days from slots array
-            const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-            const result: string[] = [];
-            
-            classData.schedule.slots.forEach((slot: any) => {
-              if (typeof slot.day === 'number' && slot.day >= 0 && slot.day < 7) {
-                result.push(days[slot.day]);
-              } else if (typeof slot.day === 'string') {
-                result.push(slot.day.toLowerCase());
-              }
-            });
-            
-            return result;
-          }
+        } else if (classData.schedule && typeof classData.schedule === 'object' && classData.schedule.slots) {
+          return classData.schedule.slots
+            .filter(slot => slot.day && classData.studentIds?.length > 0)
+            .map(slot => slot.day);
         }
-        
-        console.warn(`Could not parse schedule for class: ${className}`, classData.schedule);
         return [];
       }
     },
@@ -818,6 +798,7 @@ export const useAttendanceStore = defineStore('attendance', {
               case 'Justificado':
                 existingDoc.data.tarde.push(record.studentId);
                 
+                
                 // Añadir justificación si es necesario
                 if (record.justification) {
                   const justIndex = existingDoc.data.justificacion?.findIndex(j => j.id === record.studentId);
@@ -933,6 +914,24 @@ export const useAttendanceStore = defineStore('attendance', {
           absentStudents: [],
           byClass: {}
         };
+        
+        // Asegurarse de que los datos estén cargados
+        if (this.attendanceDocuments.length === 0) {
+          console.log('⚠️ No hay documentos de asistencia cargados, intentando cargar...');
+          await this.fetchAttendanceDocuments();
+        }
+        
+        // También asegurar que los registros antiguos estén disponibles para compatibilidad
+        if (this.records.length === 0) {
+          console.log('⚠️ No hay registros antiguos de asistencia cargados, intentando cargar...');
+          await this.fetchAttendance();
+        }else{
+          totalClasses: 0;
+          totalStudents: 0;
+          averageAttendance: 0;
+          absentStudents: [];
+          byClass: {};
+        }
         
         // Asegurarse de que los datos estén cargados
         if (this.attendanceDocuments.length === 0) {
@@ -1235,11 +1234,10 @@ export const useAttendanceStore = defineStore('attendance', {
         // Guardar las fechas en el estado del store
         this.datesWithRecords = Array.from(datesWithRecords).sort();
         
-        console.log(`Fechas con registros cargadas: ${this.datesWithRecords.length}`);
+        console.log(`✅ Fechas con registros cargadas: ${this.datesWithRecords.length}`);
         return this.datesWithRecords;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`Error al cargar fechas con registros: ${errorMessage}`);
+        console.error('Error al cargar fechas con registros:', error);
         throw error;
       }
     },

@@ -61,7 +61,7 @@ export const useAuthStore = defineStore('auth', {
       const roleModules = {
         'Maestro': ['home', 'attendance', 'schedule', 'profile'],
         'Director': ['home', 'attendance', 'schedule', 'students', 'classes', 'reports', 'teachers', 'profile'],
-        'Admin': ['home', 'profile']
+        'Admin': ['home', 'attendance', 'students', 'profile']
       }
       return state.user?.role && roleModules[state.user.role as keyof typeof roleModules]?.includes(moduleName)
     }

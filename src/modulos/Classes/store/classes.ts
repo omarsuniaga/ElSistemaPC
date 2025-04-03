@@ -8,6 +8,8 @@ import {
   getClassByIdFirestore
 } from "../service/classes";
 import type { ClassData, ClassCreate } from "../types/class";
+import { useAttendanceStore } from "../../Attendance/store/attendance";
+import { useQualificationStore } from "../../Qualifications/store/qualification";
 
 export const useClassesStore = defineStore('classes', {
   state: () => ({
@@ -31,7 +33,14 @@ export const useClassesStore = defineStore('classes', {
     // Retorna clases que tienen definido un horario
     getScheduledClasses: (state) => state.classes.filter(classItem => classItem.schedule),
     // Retorna clases sin horario definido
-    getUnscheduledClasses: (state) => state.classes.filter(classItem => !classItem.schedule)
+    getUnscheduledClasses: (state) => state.classes.filter(classItem => !classItem.schedule), 
+    // obtener clases por dias de la semana
+    getClassByDaysAndTeacher: (state) => (teacherId: string, day: string) => {
+      return state.classes.filter(classItem => 
+        classItem.teacherId === teacherId && 
+        classItem.schedule?.slots.some(slot => slot.day === day)
+      );
+    }
   },
 
   actions: {
@@ -233,6 +242,21 @@ export const useClassesStore = defineStore('classes', {
     },
     
     /**
+     * Obtiene el horario de una clase por Dias y Maestro.
+     */
+    async getClassByDayAndTeacher(
+      day: string,teacherId: string
+  )
+    {
+      return await this.withLoading(async () => {
+        const classData = this.classes.filter(classItem => 
+          classItem.schedule?.slots.some(slot => slot.day === day) && 
+          classItem.teacherId === teacherId
+        );
+        return classData;
+      });
+    },
+    /**
      * Agrega un nuevo slot de horario a una clase existente
      */
     async addScheduleSlot(
@@ -310,6 +334,85 @@ export const useClassesStore = defineStore('classes', {
           throw error;
         }
       });
+    },
+
+    /**
+     * Check if a student meets criteria to advance to next level
+     */
+    async checkStudentProgression(studentId: string, classId: string) {
+      const classData = this.getClassById(classId);
+      if (!classData) throw new Error('Clase no encontrada');
+
+      // Get attendance rate from attendance store
+      const attendanceStore = useAttendanceStore();
+      const attendanceRate = attendanceStore.getStudentAttendanceRate(studentId, classId);
+
+      // Get performance metrics
+      const qualificationStore = useQualificationStore();
+      const qualifications = await qualificationStore.fetchQualifications(classId);
+      const studentQualifications = qualifications.filter(q => q.studentId === studentId);
+      const averageScore = studentQualifications.reduce((acc, q) => acc + q.score, 0) / studentQualifications.length;
+
+      // Criteria for advancement:
+      // - Attendance rate >= 85%
+      // - Average score >= 80%
+      // - Minimum number of classes attended
+      const meetsAttendanceCriteria = attendanceRate >= 85;
+      const meetsPerformanceCriteria = averageScore >= 80;
+      const hasMinimumClasses = studentQualifications.length >= 20;
+
+      return {
+        canAdvance: meetsAttendanceCriteria && meetsPerformanceCriteria && hasMinimumClasses,
+        metrics: {
+          attendanceRate,
+          averageScore,
+          classesAttended: studentQualifications.length
+        }
+      };
+    },
+
+    /**
+     * Promote a student to the next level class
+     */
+    async promoteStudent(studentId: string, currentClassId: string) {
+      const currentClass = this.getClassById(currentClassId);
+      if (!currentClass) throw new Error('Clase actual no encontrada');
+
+      // Find next level class
+      const nextLevel = this.getNextLevel(currentClass.level);
+      const nextLevelClasses = this.classes.filter(c => 
+        c.level === nextLevel && 
+        c.instrument === currentClass.instrument
+      );
+
+      if (nextLevelClasses.length === 0) {
+        throw new Error('No hay clases disponibles del siguiente nivel');
+      }
+
+      // Select the class with fewest students
+      const targetClass = nextLevelClasses.reduce((a, b) => 
+        (a.studentIds?.length || 0) <= (b.studentIds?.length || 0) ? a : b
+      );
+
+      // Remove from current class
+      await this.removeStudent(currentClassId, studentId);
+
+      // Add to new class
+      await this.assignStudent(targetClass.id, studentId);
+
+      return targetClass;
+    },
+
+    /**
+     * Get the next level based on current level
+     */
+    getNextLevel(currentLevel: string): string {
+      const levels = ['Principiante', 'Intermedio', 'Avanzado'];
+      const currentIndex = levels.indexOf(currentLevel);
+      if (currentIndex === -1 || currentIndex === levels.length - 1) {
+        throw new Error('No hay siguiente nivel disponible');
+      }
+      return levels[currentIndex + 1];
     }
   }
 });

@@ -2,7 +2,7 @@
 // src/modulos/Teachers/view/TeacherEditView.vue
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useTeachersStore } from '../stores/teachers'
+import { useTeachersStore } from '../store/teachers'
 import TeacherForm from '../components/TeacherForm.vue'
 import type { Teacher } from '../types'
 

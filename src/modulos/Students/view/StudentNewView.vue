@@ -2,19 +2,22 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStudentsStore } from '../stores/students'
+import { PlusCircleIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const studentsStore = useStudentsStore()
 
-const formData = ref({
+const newStudent = ref({
   nombre: '',
   apellido: '',
-  edad: '',
-  nac: '',
-  sexo: 'Masculino',
   instrumento: '',
+  edad: '',
   tlf: '',
   email: '',
+  direccion: '',
+  observaciones: '',
+  nac: '',
+  sexo: 'Masculino',
   madre: '',
   padre: '',
   tlf_madre: '',
@@ -69,16 +72,8 @@ const handleCancel = () => {
 </script>
 
 <template>
-  <div class="py-6">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Nuevo Alumno</h1>
-      <button
-        @click="handleCancel"
-        class="btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
-      >
-        Cancelar
-      </button>
-    </div>
+  <div class="max-w-2xl mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-6">Nuevo Alumno</h1>
 
     <form @submit.prevent="handleSubmit" class="space-y-6">
       <!-- Información Personal -->
@@ -87,12 +82,12 @@ const handleCancel = () => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium mb-1">Nombre</label>
-            <input
-              v-model="formData.nombre"
-              type="text"
-              class="input"
-              required
-            />
+            <input 
+            v-model="newStudent.nombre" 
+            type="text" 
+            required
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 py-2 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white"
+          />
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Apellido</label>

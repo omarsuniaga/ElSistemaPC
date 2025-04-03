@@ -1,26 +1,22 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { useTeachersStore } from '../../store/teachers';
 import { useClassesStore } from '../../../Classes/store/classes';
-import { useScheduleStore } from '../../../../modulos/Schedules/store/schedule';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import TeacherWeeklySchedule from '../../components/TeacherWeeklySchedule.vue';
+import WeeklySchedulePrint from '../../components/WeeklySchedulePrint.vue';
 import html2pdf from 'html2pdf.js';
-import type { SVGAttributes } from 'vue';
 import { getAuth } from 'firebase/auth';
 import { 
   CalendarIcon, 
   DocumentArrowDownIcon, 
   ShareIcon, 
-  UserIcon,
-  AcademicCapIcon,
-  BriefcaseIcon,
-  ClockIcon
+  UserIcon
 } from '@heroicons/vue/24/outline';
 
-// Tipos para mejorar el tipado de maestro y schedule
+// Tipos para mejorar el tipado de maestro
 interface Teacher {
   id: string;
   name: string;
@@ -31,31 +27,10 @@ interface Teacher {
   email?: string;
 }
 
-interface TeacherExperience {
-  institution: string;
-  role: string;
-  startDate: string;
-  endDate: string;
-  description: string;
-}
-
-interface Schedule {
-  totalClasses: number;
-  weeklyHours: number;
-  hasConflicts?: boolean;
-  schedule: Array<{
-    dayOfWeek: string;
-    className: string;
-    startTime: string;
-    endTime: string;
-  }>;
-}
-
 const route = useRoute();
 const auth = getAuth();
 const teachersStore = useTeachersStore();
 const classesStore = useClassesStore();
-const scheduleStore = useScheduleStore();
 
 const isLoading = ref(true);
 const error = ref<string | null>(null);
@@ -68,25 +43,36 @@ const teacherId = computed(() => {
 // Propiedad para almacenar la información del maestro
 const teacher = ref<Teacher | null>(null);
 
-// Propiedad para almacenar el schedule global (puede contener totales, etc.)
-const scheduleSummary = ref<Schedule | null>(null);
-
 // Computed para obtener las clases del maestro a partir del store de clases
 const teacherClasses = computed(() => {
   if (!teacherId.value) return [];
   return classesStore.classes.filter(classItem => classItem.teacherId === teacherId.value);
 });
 
-// Computed para obtener los schedules del maestro desde el store de schedules
-const teacherSchedules = computed(() => {
-  if (!teacherId.value) return [];
-  // Se asume que cada schedule tiene scheduleDay con teacherId
-  return scheduleStore.schedules.filter(s => s.scheduleDay.teacherId === teacherId.value);
+const viewMode = ref<'interactive' | 'print'>('interactive');
+
+// Computed para calcular las horas semanales
+const getWeeklyHours = computed(() => {
+  let total = 0;
+  const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  
+  weekDays.forEach(day => {
+    const dayClasses = classesStore.getClassByDaysAndTeacher(teacherId.value, day);
+    dayClasses.forEach(classItem => {
+      const scheduleForDay = classItem.schedule?.slots.find(slot => slot.day === day);
+      if (scheduleForDay) {
+        const [startHour, startMinute] = scheduleForDay.startTime.split(':').map(Number);
+        const [endHour, endMinute] = scheduleForDay.endTime.split(':').map(Number);
+        const duration = (endHour - startHour) + (endMinute - startMinute) / 60;
+        total += duration;
+      }
+    });
+  });
+  
+  return total;
 });
 
 // PDF y compartir (sin cambios significativos)
-const { toast } = useToast();
-
 const downloadPDF = (): void => {
   const element = document.getElementById('schedule-pdf');
   if (!element || !teacher.value) return;
@@ -141,48 +127,17 @@ const formatHours = (hours: number): string => {
   return `${Math.floor(hours)} h ${Math.round((hours % 1) * 60)} min`;
 };
 
-const parseExperience = (experienceStr: string | undefined): TeacherExperience[] => {
-  if (!experienceStr) return [];
-  try {
-    return JSON.parse(experienceStr);
-  } catch (e) {
-    console.error('Error parsing experience:', e);
-    return [];
-  }
-};
-
-const formatDate = (dateStr: string): string => {
-  try {
-    return format(parseISO(dateStr), 'MMM yyyy', { locale: es });
-  } catch (e) {
-    return dateStr;
-  }
-};
-
-const getWorkPeriod = (startDate: string, endDate: string): string => {
-  const start = formatDate(startDate);
-  const end = (endDate === 'present' || endDate === 'actual') ? 'Actual' : formatDate(endDate);
-  return `${start} - ${end}`;
-};
-
-// Handler para ver detalles de la clase (puede abrir un modal, etc.)
-const handleViewClass = (classId: string): void => {
-  // Aquí podrías abrir un modal o navegar a una vista de detalles
-  console.log("Ver detalles de clase:", classId);
-};
-
 // Cargar datos del maestro, clases y schedules
 const loadData = async () => {
   try {
     isLoading.value = true;
     error.value = null;
-    // Cargar maestros, clases y schedules
+
     await Promise.all([
       teachersStore.fetchTeachers(),
-      classesStore.fetchClasses(),
-      scheduleStore.fetchAllSchedules()
+      classesStore.fetchClasses()
     ]);
-    // Obtener el maestro actual
+
     const fetchedTeacher = teachersStore.getTeacherById(teacherId.value);
     if (fetchedTeacher) {
       teacher.value = {
@@ -198,9 +153,6 @@ const loadData = async () => {
       teacher.value = null;
       throw new Error('Maestro no encontrado');
     }
-    // Opcional: obtener resumen de schedule (si el método existe en teachersStore o scheduleStore)
-    // Por ejemplo, si teachersStore.getTeacherSchedule está implementado:
-    // scheduleSummary.value = await teachersStore.getTeacherSchedule(teacher.value.id);
   } catch (err: any) {
     console.error('Error cargando datos:', err);
     error.value = err.message || 'Error cargando datos';
@@ -217,6 +169,14 @@ onMounted(async () => {
 watch(teacherId, async () => {
   await loadData();
 });
+
+const printSchedule = () => {
+  viewMode.value = 'print';
+  nextTick(() => {
+    window.print();
+    viewMode.value = 'interactive';
+  });
+};
 </script>
 
 <template>
@@ -247,6 +207,13 @@ watch(teacherId, async () => {
           <ShareIcon class="w-5 h-5" />
           Compartir
         </button>
+        <button
+          @click="printSchedule"
+          class="btn btn-secondary flex items-center gap-2 transition-all hover:scale-105"
+        >
+          <i class="fas fa-print"></i>
+          Imprimir
+        </button>
       </div>
     </div>
     
@@ -269,7 +236,7 @@ watch(teacherId, async () => {
       <!-- Encabezado del PDF -->
       <div class="flex justify-between items-start border-b-2 border-gray-300 pb-4 mb-6">
         <div class="flex items-center gap-2">
-          <img src="../assets/ElSistemaPCLogo.jpeg" alt="Logo Academia" class="h-12 w-auto" />
+          <img src="@/assets/ElSistemaPCLogo.jpeg" alt="Logo Academia" class="h-12 w-auto" />
           <div>
             <h1 class="text-2xl font-bold text-primary-700">Academia de Música</h1>
             <p class="text-gray-600">Horario de Clases - Maestro</p>
@@ -328,6 +295,7 @@ watch(teacherId, async () => {
         </div>
         <div class="bg-gray-50 p-4 rounded-b-lg shadow-sm">
           <div v-if="teacherClasses.length > 0" class="space-y-4">
+            <!-- Stats summary -->
             <div class="grid grid-cols-2 gap-4">
               <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
                 <div class="text-sm text-gray-500">Clases Asignadas</div>
@@ -335,14 +303,20 @@ watch(teacherId, async () => {
               </div>
               <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
                 <div class="text-sm text-gray-500">Horas Semanales</div>
-                <div class="text-xl font-semibold">{{ formatHours(schedule?.weeklyHours || 0) }}</div>
+                <div class="text-xl font-semibold">{{ formatHours(getWeeklyHours) }}</div>
               </div>
             </div>
-            <div v-if="schedule?.hasConflicts" class="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 p-3 rounded-lg text-sm">
-              ⚠️ Hay conflictos en el horario
+
+            <!-- Schedule display -->
+            <div class="print:hidden">
+              <TeacherWeeklySchedule 
+                v-if="viewMode === 'interactive'"
+                :teacherId="teacherId" 
+              />
             </div>
-            <!-- Aquí se integra el componente TeacherWeeklySchedule -->
-            <TeacherWeeklySchedule :classes="teacherClasses" :schedules="teacherSchedules" @view-class="handleViewClass" />
+            <div >
+              <WeeklySchedulePrint :teacherId="teacherId" />
+            </div>
           </div>
           <div v-else class="text-center py-4 text-gray-500">
             No hay clases asignadas
@@ -369,20 +343,26 @@ watch(teacherId, async () => {
   body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    color-adjust: exact !important;
+    forced-color-adjust: none !important;
   }
   #schedule-pdf {
     margin: 0;
     padding: 15mm;
     box-shadow: none;
   }
+  .no-print {
+    display: none !important;
+  }
 }
+
 .btn {
   transition: all 0.3s ease;
 }
+
 #schedule-pdf [class*="bg-"] {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
 #schedule-pdf [class*="bg-"]:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
