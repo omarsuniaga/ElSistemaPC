@@ -52,13 +52,23 @@ const shouldShowNavigation = computed(() => {
 
 // Determinar si una ruta está activa (para resaltarla)
 const isRouteActive = (path: string) => {
-  // Caso especial para la ruta raíz
-  if (path === '/' && route.path === '/') {
-    return true
+  // Para la ruta raíz, solo activarla si estamos exactamente en / o /dashboard
+  // y no en ninguna otra ruta
+  if (path === '/') {
+    return route.path === '/' || route.path === '/dashboard';
   }
   
-  // Para otras rutas, verificar si la ruta actual comienza con el path del item del menú
-  return route.path.startsWith(path) && path !== '/'
+  // Para otras rutas, verificar coincidencia exacta de primer nivel de ruta
+  if (path !== '/') {
+    // Extraer primer segmento de la ruta actual (ej: /students/1 -> students)
+    const currentFirstSegment = route.path.split('/')[1];
+    // Extraer primer segmento de la ruta del item (ej: /students -> students)
+    const itemFirstSegment = path.split('/')[1];
+    
+    return currentFirstSegment === itemFirstSegment && itemFirstSegment !== '';
+  }
+  
+  return false;
 }
 
 // Items de navegación basados en el rol del usuario - usando las mismas constantes que Navigation.vue

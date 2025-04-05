@@ -5,6 +5,7 @@ import { useClassesStore } from '../modulos/Classes/store/classes'
 import { useTeachersStore } from '../modulos/Teachers/store/teachers'
 import { useStudentsStore } from '../modulos/Students/store/students'
 import { useInstrumentoStore } from '../modulos/Instruments/store/instrumento'
+import { useEmergencyClassStore } from '../modulos/Attendance/store/emergencyClass'
 import type { Student } from '../modulos/Students/types/student'
 import Modal from '../components/shared/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
@@ -12,6 +13,7 @@ import ClassForm from '../modulos/Classes/components/ClassForm.vue'
 import StudentManagement from '../modulos/Students/components/StudentManagement.vue'
 import StudentSelector from '../modulos/Students/components/StudentSelector.vue'
 import ClassDetail from '../modulos/Classes/components/ClassDetail.vue'
+import EmergencyClassModal from '../modulos/Attendance/components/EmergencyClassModal.vue'
 import { PlusCircleIcon, InformationCircleIcon, UserGroupIcon, TrashIcon, BookOpenIcon, EllipsisVerticalIcon, ArrowLeftIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 interface ClassData {
@@ -33,6 +35,7 @@ const classesStore = useClassesStore()
 const teachersStore = useTeachersStore()
 const studentsStore = useStudentsStore()
 const instrumentoStore = useInstrumentoStore()
+const emergencyClassStore = useEmergencyClassStore()
 
 // UI state
 const showAddModal = ref(false)
@@ -42,6 +45,7 @@ const showStudentsModal = ref(false)
 const showAddStudentModal = ref(false)
 const showInfoModal = ref(false)
 const showClassDrawer = ref(false)
+const showEmergencyClassModal = ref(false) // Modal para clases emergentes
 const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
@@ -394,6 +398,20 @@ const clearMessages = () => {
 }
 
 watch([successMessage, errorMessage], clearMessages)
+
+// Función para manejar la respuesta del modal de clase emergente
+const handleEmergencyClassSubmitted = async (success: boolean) => {
+  if (success) {
+    successMessage.value = 'Clase emergente registrada correctamente. Pendiente de aprobación.';
+    // Si se seleccionó una clase, actualizar la vista
+    if (selectedClass.value) {
+      // Recargar datos después de registrar la clase emergente
+      await classesStore.fetchClasses();
+    }
+  } else {
+    errorMessage.value = 'Error al registrar la clase emergente';
+  }
+};
 </script>
 
 <template>
@@ -677,6 +695,18 @@ watch([successMessage, errorMessage], clearMessages)
     >
       <PlusIcon class="w-8 h-8" />
     </button>
+    
+    <!-- Botón para registrar clase emergente -->
+    <button
+      @click="showEmergencyClassModal = true"
+      class="fixed bottom-16 right-20 bg-orange-600 hover:bg-orange-700 text-white shadow-lg flex items-center justify-center z-10 transition-all duration-200 hover:scale-105 rounded-full px-3 py-2"
+      title="Registrar Clase Emergente"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span class="ml-1 hidden sm:inline">Clase Emergente</span>
+    </button>
     <!-- Drawer para detalles de clase -->
     <!-- <ClassesDrawer
       :show="showClassDrawer"
@@ -686,5 +716,16 @@ watch([successMessage, errorMessage], clearMessages)
       @delete="handleDelete"
       @manage-students="showStudentList"
     /> -->
+    
+    <!-- Modal para registrar clase emergente -->
+    <EmergencyClassModal 
+      v-if="showEmergencyClassModal"
+      v-model="showEmergencyClassModal"
+      :classId="selectedClass?.id"
+      :className="selectedClass?.name"
+      :date="new Date().toISOString().split('T')[0]"
+      @submitted="handleEmergencyClassSubmitted"
+      @cancel="showEmergencyClassModal = false"
+    />
   </div>
 </template>

@@ -11,7 +11,8 @@ import {
   UserGroupIcon,
   PlusIcon,
   PencilIcon,
-  ChartBarSquareIcon
+  ChartBarSquareIcon,
+  Bars3Icon // Agregamos icono para menú móvil
 } from '@heroicons/vue/24/outline';
 import { useToast } from '../../../../components/ui/toast/use-toast';
 import { Dialog, DialogPanel, DialogOverlay, TransitionRoot, TransitionChild } from '@headlessui/vue';
@@ -60,9 +61,43 @@ const showForm = ref(false);
 const showStudentManager = ref(false);
 const isEditing = ref(false);
 
+// Configuración para navegación móvil
+const showMobileMenu = ref(false);
+const toggleMobileMenu = () => {
+  showMobileMenu.value = !showMobileMenu.value;
+};
+
+// Estructura de navegación para footer móvil
+const navigationItems = computed(() => [
+  {
+    id: 'classes',
+    name: 'Clases',
+    icon: BookOpenIcon,
+    active: activeTab.value === 'classes'
+  },
+  {
+    id: 'overview',
+    name: 'Panel',
+    icon: ChartBarSquareIcon,
+    active: activeTab.value === 'overview'
+  },
+  {
+    id: 'schedule',
+    name: 'Horario',
+    icon: CalendarIcon,
+    active: activeTab.value === 'schedule'
+  },
+  {
+    id: 'upcoming',
+    name: 'Próximas',
+    icon: ClockIcon,
+    active: activeTab.value === 'upcoming'
+  }
+]);
+
 // Computar el ID del maestro actual desde el sistema de autenticación
 // En un sistema real, esto vendría del usuario autenticado
-const currentTeacherId = computed(() => authStore.user?.uid);
+const currentTeacherId = computed(() => authStore.user?.uid || '');
 
 // Computar clases del maestro actual
 const teacherClasses = computed(() => {
@@ -492,8 +527,73 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
 </script>
 
 <template>
-  <div class="teacher-dashboard">
-    <header class="dashboard-header bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
+  <div class="teacher-dashboard pb-16 md:pb-0">
+    <!-- Navegación para dispositivos móviles (visible solo en móviles) -->
+    <div class="md:hidden fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 z-40 shadow-md p-3">
+      <div class="flex justify-between items-center">
+        <h1 class="text-lg font-semibold text-gray-900 dark:text-white truncate">
+          {{ activeTab === 'classes' ? 'Mis Clases' : 
+             activeTab === 'overview' ? 'Panel General' : 
+             activeTab === 'schedule' ? 'Horario Semanal' : 
+             activeTab === 'upcoming' ? 'Próximas Clases' : 'Panel de Maestros' }}
+        </h1>
+        <button @click="toggleMobileMenu" class="p-1 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <Bars3Icon class="w-6 h-6" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile menu overlay -->
+    <div v-if="showMobileMenu" 
+         class="fixed inset-0 bg-black bg-opacity-50 z-50 md:hidden"
+         @click="showMobileMenu = false"></div>
+
+    <!-- Mobile side menu -->
+    <div v-if="showMobileMenu"
+         class="fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 z-50 transform shadow-lg md:hidden p-4 overflow-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold">Menú</h2>
+        <button @click="showMobileMenu = false" class="p-1 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <div class="space-y-2">
+        <button @click="setActiveTab('classes'); showMobileMenu = false" 
+                class="w-full text-left p-2 rounded-md flex items-center gap-2"
+                :class="activeTab === 'classes' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : ''">
+          <BookOpenIcon class="h-5 w-5" />
+          Mis Clases
+        </button>
+        <button @click="setActiveTab('overview'); showMobileMenu = false" 
+                class="w-full text-left p-2 rounded-md flex items-center gap-2"
+                :class="activeTab === 'overview' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : ''">
+          <ChartBarSquareIcon class="h-5 w-5" />
+          Panel General
+        </button>
+        <button @click="setActiveTab('schedule'); showMobileMenu = false" 
+                class="w-full text-left p-2 rounded-md flex items-center gap-2"
+                :class="activeTab === 'schedule' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : ''">
+          <CalendarIcon class="h-5 w-5" />
+          Horario Semanal
+        </button>
+        <button @click="setActiveTab('upcoming'); showMobileMenu = false" 
+                class="w-full text-left p-2 rounded-md flex items-center gap-2"
+                :class="activeTab === 'upcoming' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : ''">
+          <ClockIcon class="h-5 w-5" />
+          Próximas Clases
+        </button>
+      </div>
+      
+      <div class="mt-6 pt-4 border-t">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Panel de Maestros v1.0</p>
+      </div>
+    </div>
+
+    <!-- Header (oculto en móviles) -->
+    <header class="dashboard-header bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6 hidden md:block">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Panel de Control de Maestros</h1>
       <p class="text-gray-600 dark:text-gray-400">Aquí puedes gestionar y visualizar información relevante sobre tus clases y estudiantes.</p>
       
@@ -630,6 +730,7 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         <!-- Componente de horario semanal -->
         <TeacherWeeklySchedule 
           :classes="teacherClasses"
+          :teacherId="currentTeacherId"
           @view-class="handleViewClass"
         />
       </div>
@@ -648,7 +749,7 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         </h2>
         
         <!-- Grid de Card de clases -->
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
           <template v-if="teacherClasses.length > 0">
             <TeacherClassesCard
               v-for="classItem in teacherClasses"
@@ -661,10 +762,10 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
             />
           </template>
           
-          <div v-else class="col-span-full py-12 text-center text-gray-500 dark:text-gray-400">
+          <div v-else class="col-span-full py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
             No tienes clases asignadas actualmente.
-            <button @click="handleAddClass" class="ml-2 text-blue-500 hover:underline">
-              Crear una nueva clase
+            <button @click="handleAddClass" class="ml-1 text-blue-500 hover:underline">
+              Crear una nueva
             </button>
           </div>
         </div>
@@ -806,6 +907,29 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         </div>
       </Dialog>
     </TransitionRoot>
+    
+    <!-- Footer Navigation para móviles -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 md:hidden shadow-lg z-40">
+      <div class="flex justify-around items-center">
+        <button 
+          v-for="item in navigationItems" 
+          :key="item.id"
+          @click="setActiveTab(item.id)"
+          class="flex flex-col items-center py-2 px-2 flex-1"
+          :class="item.active ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'"
+        >
+          <component :is="item.icon" class="h-6 w-6" />
+          <span class="text-xs mt-1">{{ item.name }}</span>
+        </button>
+        <button 
+          @click="toggleMobileMenu"
+          class="flex flex-col items-center py-2 px-2 flex-1 text-gray-500 dark:text-gray-400"
+        >
+          <Bars3Icon class="h-6 w-6" />
+          <span class="text-xs mt-1">Menú</span>
+        </button>
+      </div>
+    </div>
   </div>    
 </template>
 
@@ -813,6 +937,14 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
 .teacher-dashboard {
   max-width: 1200px;
   margin: 0 auto;
+  /* Añadir padding en la parte inferior para compensar el footer en móviles */
+  padding-top: 3.5rem; /* Compensar el header fijo */
+}
+
+@media (min-width: 768px) {
+  .teacher-dashboard {
+    padding-top: 0;
+  }
 }
 
 .dashboard-header {

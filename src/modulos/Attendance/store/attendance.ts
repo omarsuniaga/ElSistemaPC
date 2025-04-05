@@ -925,38 +925,40 @@ export const useAttendanceStore = defineStore('attendance', {
         if (this.records.length === 0) {
           console.log('⚠️ No hay registros antiguos de asistencia cargados, intentando cargar...');
           await this.fetchAttendance();
-        }else{
-          totalClasses: 0;
-          totalStudents: 0;
-          averageAttendance: 0;
-          absentStudents: [];
-          byClass: {};
-        }
-        
-        // Asegurarse de que los datos estén cargados
-        if (this.attendanceDocuments.length === 0) {
-          console.log('⚠️ No hay documentos de asistencia cargados, intentando cargar...');
-          await this.fetchAttendanceDocuments();
-        }
-        
-        // También asegurar que los registros antiguos estén disponibles para compatibilidad
-        if (this.records.length === 0) {
-          console.log('⚠️ No hay registros antiguos de asistencia cargados, intentando cargar...');
-          await this.fetchAttendance();
         }
         
         // Obtener clases únicas de los documentos
         const classesSet = new Set<string>();
         const studentsSet = new Set<string>();
         
+        // Obtener el store de clases para acceder a la información de las clases
+        const classesStore = useClassesStore();
+        
+        // Crear un mapa de ID a nombre de clase
+        const classNameMap = new Map<string, string>();
+        
+        // Si no hay clases cargadas en el store, cargarlas
+        if (!classesStore.classes.length) {
+          console.log('⚠️ No hay clases cargadas en el store, intentando cargar...');
+          await classesStore.fetchClasses();
+        }
+        
+        // Crear el mapa de ID a nombre de clase
+        classesStore.classes.forEach(classItem => {
+          classNameMap.set(classItem.id, classItem.name);
+        });
+        
         // Primero analizar datos de la nueva estructura de documentos
         this.attendanceDocuments.forEach(doc => {
           // Añadir la clase a las clases únicas
           classesSet.add(doc.classId);
           
+          // Obtener el nombre de la clase (o usar el ID si no se encuentra)
+          const className = classNameMap.get(doc.classId) || doc.classId;
+          
           // Inicializar analytics para esta clase si no existe
-          if (!analytics.byClass[doc.classId]) {
-            analytics.byClass[doc.classId] = {
+          if (!analytics.byClass[className]) {
+            analytics.byClass[className] = {
               present: 0,
               absent: 0,
               delayed: 0,
@@ -968,15 +970,15 @@ export const useAttendanceStore = defineStore('attendance', {
           // Procesar presentes
           doc.data.presentes.forEach(studentId => {
             studentsSet.add(studentId);
-            analytics.byClass[doc.classId].present++;
-            analytics.byClass[doc.classId].total++;
+            analytics.byClass[className].present++;
+            analytics.byClass[className].total++;
           });
           
           // Procesar ausentes
           doc.data.ausentes.forEach(studentId => {
             studentsSet.add(studentId);
-            analytics.byClass[doc.classId].absent++;
-            analytics.byClass[doc.classId].total++;
+            analytics.byClass[className].absent++;
+            analytics.byClass[className].total++;
           });
           
           // Procesar tarde y justificados
@@ -987,12 +989,12 @@ export const useAttendanceStore = defineStore('attendance', {
             const isJustified = doc.data.justificacion?.some(j => j.id === studentId);
             
             if (isJustified) {
-              analytics.byClass[doc.classId].justified++;
+              analytics.byClass[className].justified++;
             } else {
-              analytics.byClass[doc.classId].delayed++;
+              analytics.byClass[className].delayed++;
             }
             
-            analytics.byClass[doc.classId].total++;
+            analytics.byClass[className].total++;
           });
         });
         
@@ -1002,9 +1004,12 @@ export const useAttendanceStore = defineStore('attendance', {
           classesSet.add(record.classId);
           studentsSet.add(record.studentId);
           
+          // Obtener el nombre de la clase (o usar el ID si no se encuentra)
+          const className = classNameMap.get(record.classId) || record.classId;
+          
           // Si la clase no está en el análisis (posible si solo hay registros antiguos)
-          if (!analytics.byClass[record.classId]) {
-            analytics.byClass[record.classId] = {
+          if (!analytics.byClass[className]) {
+            analytics.byClass[className] = {
               present: 0,
               absent: 0,
               delayed: 0,
@@ -1024,20 +1029,20 @@ export const useAttendanceStore = defineStore('attendance', {
           
           // Solo contabilizar si no ha sido contado
           if (!isAlreadyCounted) {
-            analytics.byClass[record.classId].total++;
+            analytics.byClass[className].total++;
             
             switch (record.status) {
               case 'Presente':
-                analytics.byClass[record.classId].present++;
+                analytics.byClass[className].present++;
                 break;
               case 'Ausente':
-                analytics.byClass[record.classId].absent++;
+                analytics.byClass[className].absent++;
                 break;
               case 'Tardanza':
-                analytics.byClass[record.classId].delayed++;
+                analytics.byClass[className].delayed++;
                 break;
               case 'Justificado':
-                analytics.byClass[record.classId].justified++;
+                analytics.byClass[className].justified++;
                 break;
             }
           }

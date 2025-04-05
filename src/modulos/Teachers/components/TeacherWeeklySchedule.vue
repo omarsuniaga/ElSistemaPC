@@ -1,6 +1,6 @@
 <template>
   <div class="teacher-weekly-schedule">
-    <div class="space-y-8">
+    <div class="sm;space-y-1">
       <template v-for="day in weekDays" :key="day">
         <div v-if="classesStore.getClassByDaysAndTeacher(props.teacherId, day).length > 0" class="day-section">
           <div class="day-header">
@@ -49,53 +49,7 @@
           </div>
         </div>
       </template>
-    </div>
-
-    <!-- Detalle de clase seleccionada -->
-    <div v-if="selectedClass" class="selected-class-detail">
-      <div class="selected-class-header">
-        <h3 class="selected-class-title">{{ selectedClass.name }}</h3>
-        <button @click="selectedClass = null" class="close-button">
-          <XMarkIcon class="h-5 w-5" />
-        </button>
-      </div>
-
-      <div class="selected-class-info">
-        <div class="info-item">
-          <div class="info-label">Horario</div>
-          <div class="info-value">{{ formatClassSchedule(selectedClass) }}</div>
-        </div>
-        <div class="info-item">
-          <div class="info-label">Duración</div>
-          <div class="info-value">
-            {{ selectedClass?.schedule?.slots?.[0] ? 
-               formatClassDuration(selectedClass.schedule.slots[0].startTime, selectedClass.schedule.slots[0].endTime) : 
-               'No disponible' }}
-          </div>
-        </div>
-        <div class="info-item">
-          <div class="info-label">Aula</div>
-          <div class="info-value">{{ selectedClass.classroom || 'Sin asignar' }}</div>
-        </div>
-        <div class="info-item">
-          <div class="info-label">Instrumento</div>
-          <div class="info-value">{{ selectedClass.instrument || 'No especificado' }}</div>
-        </div>
-        <div class="info-item">
-          <div class="info-label">Estudiantes</div>
-          <div class="info-value">{{ selectedClass.studentIds?.length || 0 }} estudiantes</div>
-        </div>
-      </div>
-
-      <div class="selected-class-actions">
-        <router-link
-          :to="`/teacher/attendance/${getCurrentDate()}/${selectedClass.id}`"
-          class="attendance-button"
-        >
-          Tomar asistencia
-        </router-link>
-      </div>
-    </div>
+    </div>    
   </div>
 </template>
 
@@ -195,27 +149,24 @@ const formatClassDuration = (startTime: string, endTime: string): string => {
 .teacher-weekly-schedule {
   max-width: 100%;
   margin: 0 auto;
-  padding: 1rem;
-}
-
-.day-section {
-  margin-bottom: 2rem;
 }
 
 .day-header {
-  padding: 0.75rem 0;
-  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
   border-bottom: 2px solid #e5e7eb;
-}
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);}
 
 .class-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .class-item {
-  padding: 1rem;
+  padding: 0.5rem;
   border-radius: 0.5rem;
   background-color: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -231,25 +182,27 @@ const formatClassDuration = (startTime: string, endTime: string): string => {
 .class-item-content {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.2rem;
 }
 
 .class-name {
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 0.8rem;
 }
 
 .class-details {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
-  font-size: 0.875rem;
+  gap: 0.5rem;
+  font-size: 0.8rem;
   color: #4b5563;
 }
 
 .class-time, .class-location, .class-instrument, .class-students {
   display: flex;
   align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
 }
 
 .selected-class-detail {
@@ -334,6 +287,7 @@ const formatClassDuration = (startTime: string, endTime: string): string => {
   
   .class-details {
     color: #9ca3af;
+    background-color: #111827;
   }
   
   .selected-class-detail {

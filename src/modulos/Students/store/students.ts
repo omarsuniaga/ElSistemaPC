@@ -57,20 +57,60 @@ export const useStudentsStore = defineStore('students', {
     getStudentsByClass: (state) => (classId: string) => {
       if (!classId) return [];
       
+      console.log(`[DEBUG] getStudentsByClass called with classId: ${classId}`);
+      console.log(`[DEBUG] Total students in store: ${state.students.length}`);
+      
       // Primero buscar por studentIds en las clases
       const classesStore = useClassesStore();
       const classData = classesStore.classes.find(c => c.id === classId || c.name === classId);
       
+      console.log(`[DEBUG] Class found:`, classData);
+      
       if (classData?.studentIds?.length) {
-        return state.students.filter(student => classData.studentIds.includes(student.id));
+        console.log(`[DEBUG] StudentIds in class:`, classData.studentIds);
+        
+        // Asegurar que todas las IDs sean strings para la comparación
+        const normalizedStudentIds = classData.studentIds.map(id => String(id));
+        
+        // Buscar estudiantes usando IDs normalizados
+        const matchedStudents = state.students.filter(student => 
+          normalizedStudentIds.includes(String(student.id))
+        );
+        
+        console.log(`[DEBUG] Matched students count:`, matchedStudents.length);
+        
+        // Si encontramos estudiantes, retornarlos
+        if (matchedStudents.length > 0) {
+          return matchedStudents;
+        }
       }
       
-      // Si no se encuentra por studentIds, buscar en las propiedades del estudiante
-      return state.students.filter(student => {
+      // Si no se encuentra por studentIds o no se encontraron estudiantes, buscar en las propiedades del estudiante
+      console.log(`[DEBUG] Falling back to clase/grupo properties search`);
+      
+      const fallbackStudents = state.students.filter(student => {
+        // Verificar si el estudiante tiene la clase asignada en el campo 'clase'
         if (student.clase === classId) return true;
-        if (Array.isArray(student.grupo) && student.grupo.includes(classId)) return true;
+        
+        // Verificar en el campo 'grupo' que puede ser un array o un string
+        if (student.grupo) {
+          if (Array.isArray(student.grupo)) {
+            return student.grupo.includes(classId);
+          } else if (typeof student.grupo === 'string') {
+            return student.grupo === classId;
+          }
+        }
+        
+        // Verificar si existe classes y es un array que incluye el classId
+        if (student.classes && Array.isArray(student.classes)) {
+          return student.classes.includes(classId);
+        }
+        
         return false;
       });
+      
+      console.log(`[DEBUG] Fallback students found:`, fallbackStudents.length);
+      return fallbackStudents;
     },
 
     getActiveStudents: (state) => {

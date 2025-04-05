@@ -190,9 +190,12 @@ const loadStudentsForClass = async (classId: string) => {
     if (classObj.studentIds && Array.isArray(classObj.studentIds)) {
       console.log('IDs de estudiantes encontrados en la clase:', classObj.studentIds);
       
+      // Almacenar los IDs en una variable local para que TypeScript sepa que está definido
+      const studentIds = classObj.studentIds;
+      
       // Obtener los estudiantes correspondientes a los IDs
       const studentsForClass = studentsStore.students.filter(student =>
-        classObj.studentIds.includes(student.id)
+        studentIds.includes(student.id)
       );
       
       students.value = studentsForClass;
@@ -212,25 +215,27 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
 </script>
 <template>
   <div class="space-y-4">
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
       <div class="flex items-center space-x-2">
         <!-- Indicador de observaciones de clase -->
         <ClassObservationBadge 
           :observations="attendanceStore.getObservations"
           @click="handleOpenObservation"
+          class="sm:text-base text-sm"
         />
       </div>
       
-      <div class="flex justify-end gap-1 sm:gap-2">
+      <div class="flex flex-wrap justify-end gap-1 sm:gap-2 w-full sm:w-auto">
         <button 
           @click="$router.push('/workspace')"
-          class="btn btn-primary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+          class="btn btn-primary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none"
         >
-          <ViewColumnsIcon class="w-5 h-5" />
-          Area de Trabajo
+          <ViewColumnsIcon class="w-4 h-4 sm:w-5 sm:h-5" />
+          <span class="hidden xs:inline">Area de Trabajo</span>
+          <span class="xs:hidden">Área</span>
         </button>
         <button 
-          class="btn btn-primary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm" 
+          class="btn btn-primary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none" 
           @click="handleUpdateAttendance('all', 'save')"
           :disabled="isDisabled || !hasPendingChanges"
           :class="{'opacity-50': !hasPendingChanges}"
@@ -239,13 +244,13 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
           <span class="hidden xs:inline">Guardar{{hasPendingChanges ? ' (' + pendingChanges.size + ')' : ''}}</span>
           <span class="xs:hidden">G{{hasPendingChanges ? ' (' + pendingChanges.size + ')' : ''}}</span>
         </button>
-        <button class="btn btn-secondary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm" @click="emit('open-export')">
+        <button class="btn btn-secondary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none" @click="emit('open-export')">
           <ArrowDownTrayIcon class="w-3 h-3 sm:w-4 sm:h-4" />
           <span class="hidden xs:inline">Exportar</span>
           <span class="xs:hidden">E</span>
         </button>
         <button 
-          class="btn btn-info btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm" 
+          class="btn btn-info btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none" 
           @click="emit('open-observation', null)"
           :disabled="isDisabled"
         >
@@ -263,13 +268,13 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
     </div>
 
     <div v-else class="w-full overflow-x-auto rounded-lg">
-      <table class="w-full min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <table class="w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-800">
           <tr>
             <th class="px-1 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/2 sm:w-auto">
               Estudiante
             </th>
-            <th class="px-1 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/4 sm:w-auto">
+            <th class="px-1 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/4 sm:w-auto">
               Acciones
             </th>
           </tr>
@@ -287,18 +292,18 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
                   </div>
                 </div>
                 <div class="ml-2 sm:ml-4">
-                  <div class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <div class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2">
                     {{ student.nombre }} {{ student.apellido }}
                   </div>
                 </div>
               </div>
             </td>
-            <td class="px-1 sm:px-4 py-2 sm:py-3 text-sm font-medium">
-              <div class="flex no-wrap gap-2 justify-end">
+            <td class="px-1 sm:px-4 py-2 sm:py-3">
+              <div class="flex flex-wrap gap-1 sm:gap-2 justify-center">
                 <button 
                   @click="handleUpdateAttendance(student.id, 'Presente')"
                   :class="[
-                    'btn btn-icon btn-sm sm:btn-sm',
+                    'btn btn-icon btn-xs sm:btn-sm p-1 sm:p-1.5',
                     (localAttendanceRecords[student.id] || 'Ausente') === 'Presente' ? 'btn-success-active' : 'btn-success'
                   ]"
                   :disabled="isDisabled"
@@ -309,7 +314,7 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
                 <button 
                   @click="handleUpdateAttendance(student.id, 'Ausente')"
                   :class="[
-                    'btn btn-icon btn-sm sm:btn-sm',
+                    'btn btn-icon btn-xs sm:btn-sm p-1 sm:p-1.5',
                     (localAttendanceRecords[student.id] || 'Ausente') === 'Ausente' ? 'btn-danger-active' : 'btn-danger'
                   ]"
                   :disabled="isDisabled"
@@ -320,7 +325,7 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
                 <button 
                   @click="handleUpdateAttendance(student.id, 'Tardanza')"
                   :class="[
-                    'btn btn-icon btn-sm sm:btn-sm',
+                    'btn btn-icon btn-xs sm:btn-sm p-1 sm:p-1.5',
                     (localAttendanceRecords[student.id] || 'Ausente') === 'Tardanza' ? 'btn-warning-active' : 'btn-warning'
                   ]"
                   :disabled="isDisabled"
@@ -331,7 +336,7 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
                 <button
                   @click="handleOpenJustification(student)"
                   :class="[
-                    'btn btn-icon btn-sm sm:btn-sm',
+                    'btn btn-icon btn-xs sm:btn-sm p-1 sm:p-1.5',
                     (localAttendanceRecords[student.id] || 'Ausente') === 'Justificado' ? 'btn-info-active' : 'btn-info'
                   ]"
                   :disabled="isDisabled"
@@ -367,11 +372,13 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
 .btn-xs {
   padding: 0.15rem 0.3rem;
   font-size: 0.7rem;
+  line-height: 1.2;
 }
 
 .btn-sm {
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
+  line-height: 1.3;
 }
 
 /* Add overflow handling for tables */
@@ -385,6 +392,25 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
   .min-w-full {
     min-width: 100%;
   }
+  
+  /* Make table more compact on mobile */
+  table {
+    table-layout: fixed;
+  }
+  
+  /* Adjust button spacing in tight layouts */
+  .btn-icon {
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+  }
+  
+  /* Improve text overflow handling */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }
 
 /* Estilos especiales para el estado Justificado */
@@ -394,5 +420,30 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
 
 .btn-info {
   @apply bg-blue-200 hover:bg-blue-300 text-blue-700 !important;
+}
+
+/* Estilos para estados activos */
+.btn-success-active {
+  @apply bg-green-700 text-white ring-2 ring-green-300 dark:ring-green-700 !important;
+}
+
+.btn-success {
+  @apply bg-green-200 hover:bg-green-300 text-green-700 !important;
+}
+
+.btn-danger-active {
+  @apply bg-red-700 text-white ring-2 ring-red-300 dark:ring-red-700 !important;
+}
+
+.btn-danger {
+  @apply bg-red-200 hover:bg-red-300 text-red-700 !important;
+}
+
+.btn-warning-active {
+  @apply bg-yellow-700 text-white ring-2 ring-yellow-300 dark:ring-yellow-700 !important;
+}
+
+.btn-warning {
+  @apply bg-yellow-200 hover:bg-yellow-300 text-yellow-700 !important;
 }
 </style>

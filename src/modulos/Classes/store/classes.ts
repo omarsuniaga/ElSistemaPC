@@ -35,6 +35,17 @@ export const useClassesStore = defineStore('classes', {
     // Retorna clases sin horario definido
     getUnscheduledClasses: (state) => state.classes.filter(classItem => !classItem.schedule), 
     // obtener clases por dias de la semana
+    getClassesByDay: (state) => (day: string) => {
+      return state.classes.filter(classItem => 
+        classItem.schedule?.slots && Array.isArray(classItem.schedule.slots) && 
+        classItem.schedule.slots.some(slot => 
+          typeof slot.day === 'string' 
+            ? slot.day.toLowerCase() === day.toLowerCase() 
+            : false
+        )
+      );
+    },
+    // obtener clases por dias de la semana
     getClassByDaysAndTeacher: (state) => (teacherId: string, day: string) => {
       return state.classes.filter(classItem => 
         classItem.teacherId === teacherId && 
@@ -350,8 +361,14 @@ export const useClassesStore = defineStore('classes', {
       // Get performance metrics
       const qualificationStore = useQualificationStore();
       const qualifications = await qualificationStore.fetchQualifications(classId);
-      const studentQualifications = qualifications.filter(q => q.studentId === studentId);
-      const averageScore = studentQualifications.reduce((acc, q) => acc + q.score, 0) / studentQualifications.length;
+      const studentQualifications = qualifications.filter(q => q.group.includes(studentId));
+      const averageScore = studentQualifications.reduce((acc, q) => {
+        // Calculate average score for this qualification's indicators
+        const qualificationScore = q.indicators.length > 0 
+          ? q.indicators.reduce((iAcc, indicator) => iAcc + indicator.score, 0) / q.indicators.length 
+          : 0;
+        return acc + qualificationScore;
+      }, 0) / (studentQualifications.length || 1); // Avoid division by zero
 
       // Criteria for advancement:
       // - Attendance rate >= 85%
@@ -377,6 +394,7 @@ export const useClassesStore = defineStore('classes', {
     async promoteStudent(studentId: string, currentClassId: string) {
       const currentClass = this.getClassById(currentClassId);
       if (!currentClass) throw new Error('Clase actual no encontrada');
+      if (!currentClass.level) throw new Error('La clase actual no tiene un nivel definido');
 
       // Find next level class
       const nextLevel = this.getNextLevel(currentClass.level);

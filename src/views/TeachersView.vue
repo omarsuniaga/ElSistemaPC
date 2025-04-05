@@ -60,7 +60,7 @@
           </li>
         </ul>
       </div>
-    </div>
+    </nav>
     
     <!-- Contenido de la pestaña activa -->
     <div class="tab-content px-2 sm:px-0" role="tabpanel">
@@ -83,7 +83,7 @@
 import { ref, onMounted, reactive } from 'vue';
 import { useTeachersStore } from '../stores/teachers';
 import { useClassesStore } from '../stores/classes';
-import { useStudentsStore } from '../stores/students';
+import { useStudentsStore } from '../modulos/Students/store/students';
 import TeacherDashboard from '../components/teachers/TeacherDashboard.vue';
 import TeacherSchedule from '../components/teachers/TeacherSchedule.vue';
 import TeacherClasses from '../components/teachers/TeacherClasses.vue';
@@ -112,9 +112,17 @@ const teachersStore = useTeachersStore();
 const classesStore = useClassesStore();
 const studentsStore = useStudentsStore();
 
+// Definir la interfaz para el tipo Teacher
+interface Teacher {
+  id: string;
+  name?: string;
+  photoURL?: string;
+  specialties?: string[];
+}
+
 // Datos del profesor (simulando que obtenemos el ID del profesor autenticado)
 const teacherId = ref('1'); // En un caso real, se obtendría del usuario autenticado
-const teacher = ref(null);
+const teacher = ref<Teacher | null>(null);
 
 // Estadísticas del profesor
 const teacherStats = reactive({
@@ -139,7 +147,7 @@ onMounted(async () => {
     }
     
     // Calcular estadísticas
-    const teacherClasses = classesStore.classes.filter(c => c.teacherId === teacherId.value);
+    const teacherClasses = classesStore.classes.filter(c => c.profesor === teacherId.value);
     teacherStats.classesCount = teacherClasses.length;
     
     // Obtener alumnos únicos de todas las clases del profesor
@@ -151,9 +159,34 @@ onMounted(async () => {
     
     // Ordenar próximas clases
     const now = new Date();
+    const dayMap = { 'domingo': 0, 'lunes': 1, 'martes': 2, 'miércoles': 3, 'jueves': 4, 'viernes': 5, 'sábado': 6 };
+    
     const upcomingClasses = teacherClasses
-      .filter(c => new Date(c.nextDate) > now)
-      .sort((a, b) => new Date(a.nextDate).getTime() - new Date(b.nextDate).getTime());
+      .map(c => {
+        // Calcular próxima fecha de clase basado en el horario
+        const today = now.getDay(); // 0 = domingo, 1 = lunes, ...
+        const classDay = dayMap[c.horario.dia.toLowerCase()] || 0;
+        const [hours, minutes] = c.horario.horaInicio.split(':').map(Number);
+        
+        // Calcular días hasta la próxima clase
+        let daysUntilClass = (classDay - today + 7) % 7;
+        if (daysUntilClass === 0) {
+          // Si es hoy, verificar si ya pasó
+          const currentTime = now.getHours() * 60 + now.getMinutes();
+          const classTime = hours * 60 + minutes;
+          if (classTime <= currentTime) {
+            daysUntilClass = 7; // Mover a la próxima semana
+          }
+        }
+        
+        const nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + daysUntilClass);
+        nextDate.setHours(hours, minutes, 0, 0);
+        
+        return { ...c, computedNextDate: nextDate };
+      })
+      .filter(c => c.computedNextDate > now)
+      .sort((a, b) => a.computedNextDate.getTime() - b.computedNextDate.getTime());
     
     if (upcomingClasses.length > 0) {
       teacherStats.nextClass = upcomingClasses[0];

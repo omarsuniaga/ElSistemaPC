@@ -2,7 +2,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStudentsStore } from '../store/students'
-import { PlusCircleIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const studentsStore = useStudentsStore()
@@ -15,7 +14,10 @@ const newStudent = ref({
   tlf: '',
   email: '',
   direccion: '',
-  observaciones: ''
+  observaciones: '',
+  activo: true,
+  createdAt: new Date(),
+  updatedAt: new Date()
 })
 
 const isLoading = ref(false)
@@ -26,7 +28,7 @@ const handleSubmit = async () => {
     isLoading.value = true
     error.value = null
     
-    await studentsStore.createStudent(newStudent.value)
+    await studentsStore.addStudent(newStudent.value)
     router.push({ name: 'Students' })
   } catch (err: any) {
     error.value = err.message || 'Error al crear el alumno'

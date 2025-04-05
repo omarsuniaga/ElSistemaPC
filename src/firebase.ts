@@ -7,7 +7,7 @@ import {
   persistentLocalCache, 
   persistentMultipleTabManager 
 } from 'firebase/firestore';
-import { getStorage, connectStorageEmulator } from 'firebase/storage';
+import { getStorage, connectStorageEmulator, FirebaseStorage, uploadBytesResumable, getDownloadURL, ref } from 'firebase/storage';
 
 // Configuración de Firebase
 const firebaseConfig = {
@@ -93,3 +93,4 @@ export const uploadFile = async (file: File, path: string, type: string) => {
     throw error;
   }
 };
+

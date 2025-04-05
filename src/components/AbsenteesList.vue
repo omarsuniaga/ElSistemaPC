@@ -2,7 +2,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useStudentsStore } from "../modulos/Students/store/students"
 import { useAttendanceStore } from '../modulos/Attendance/store/attendance'
@@ -54,7 +54,7 @@ const getAttendanceRateClass = (rate: number) => {
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
             <img
-              :src="getStudent(student.studentId)?.avatar"
+              :src="getStudent(student.studentId)?.avatar || '/assets/default-avatar.png'"
               :alt="getStudent(student.studentId)?.nombre"
               class="w-10 h-10 rounded-full"
             />

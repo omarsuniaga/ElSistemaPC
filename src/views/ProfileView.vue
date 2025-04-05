@@ -7,6 +7,8 @@ import { useColorMode } from '@vueuse/core'
 import FileUpload from '../components/FileUpload.vue'
 import ReportGenerator from '../modulos/Analytics/components/ReportGenerator.vue'
 import AccessRequests from '../components/AccessRequests.vue'
+import EmergencyClassRequests from '../components/EmergencyClassRequests.vue'
+import { useEmergencyClassStore } from '../modulos/Attendance/store/emergencyClass'
 // import { clearLocalStorage } from '../utils/localStorageUtils'
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, onSnapshot } from 'firebase/firestore'
 import { getApp } from 'firebase/app'
@@ -39,6 +41,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const profileStore = useProfileStore()
 const colorMode = useColorMode()
+const emergencyClassStore = useEmergencyClassStore()
 
 // Variables de estado
 const isLoading = ref(false)
@@ -49,6 +52,10 @@ const isUploading = ref(false)
 const uploadProgress = ref(0)
 const profileActivityLog = ref<Array<{ activity: string; timestamp: string }>>([])
 const showSecuritySettings = ref(false)
+
+// Nuevo estado para las solicitudes de clases emergentes
+const showEmergencyClassRequests = ref(false)
+const pendingEmergencyClasses = ref(0)
 
 // Get current user UID
 const currentUserUid = computed(() => authStore.user?.uid || '')
@@ -310,6 +317,7 @@ const toggleAccessRequests = () => {
   showReports.value = false;
   isEditing.value = false;
   showSecuritySettings.value = false;
+  showEmergencyClassRequests.value = false;
 };
 
 // Alternar la vista de configuración de seguridad
@@ -318,12 +326,37 @@ const toggleSecuritySettings = () => {
   showReports.value = false;
   isEditing.value = false;
   showAccessRequests.value = false;
+  showEmergencyClassRequests.value = false;
+};
+
+// Alternar la vista de solicitudes de clases emergentes
+const toggleEmergencyClassRequests = () => {
+  showEmergencyClassRequests.value = !showEmergencyClassRequests.value;
+  showReports.value = false;
+  isEditing.value = false;
+  showAccessRequests.value = false;
+  showSecuritySettings.value = false;
+  
+  if (showEmergencyClassRequests.value) {
+    loadPendingEmergencyClasses();
+  }
+};
+
+// Cargar las solicitudes pendientes de clases emergentes
+const loadPendingEmergencyClasses = async () => {
+  try {
+    await emergencyClassStore.fetchEmergencyClasses('Pendiente');
+    pendingEmergencyClasses.value = emergencyClassStore.getPendingEmergencyClasses.length;
+  } catch (error) {
+    console.error('Error al cargar clases emergentes pendientes:', error);
+  }
 };
 
 // Observar cambios en el rol de usuario para iniciar/detener suscripciones apropiadamente
 watch(() => authStore.user?.role, (newRole) => {
   if (['Director', 'Administrador'].includes(newRole || '')) {
     startWatchingPendingRequests();
+    loadPendingEmergencyClasses();
   } else {
     stopWatchingPendingRequests();
   }
@@ -425,6 +458,23 @@ onUnmounted(() => {
           <span class="hidden sm:inline">{{ showSecuritySettings ? 'Ver Perfil' : 'Seguridad' }}</span>
         </button>
         
+        <!-- Botón para solicitudes de clases emergentes (solo para admin/director) -->
+        <button 
+          v-if="['Director', 'Administrador'].includes(authStore.user?.role || '') && !isEditing"
+          @click="toggleEmergencyClassRequests"
+          class="btn bg-orange-600 text-white hover:bg-orange-700 flex items-center gap-2 relative"
+          title="Solicitudes de Clases Emergentes">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span class="hidden sm:inline">{{ showEmergencyClassRequests ? 'Ver Perfil' : 'Clases Emergentes' }}</span>
+          <!-- Indicador de clases emergentes pendientes -->
+          <span v-if="pendingEmergencyClasses > 0 && !showEmergencyClassRequests" 
+                class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+            {{ pendingEmergencyClasses > 9 ? '9+' : pendingEmergencyClasses }}
+          </span>
+        </button>
+        
         <!-- Botón de solicitudes de acceso (solo para admin/director) -->
         <button 
           v-if="['Director', 'Administrador'].includes(authStore.user?.role || '') && !isEditing"
@@ -441,7 +491,7 @@ onUnmounted(() => {
         </button>
         
         <button 
-          v-if="!isEditing && !showReports && !showAccessRequests && !showSecuritySettings"
+          v-if="!isEditing && !showReports && !showAccessRequests && !showSecuritySettings && !showEmergencyClassRequests"
           @click="showReports = !showReports"
           class="btn bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
           title="Informes">
@@ -450,7 +500,7 @@ onUnmounted(() => {
         </button>
         
         <button 
-          v-if="!isEditing && !showReports && !showAccessRequests && !showSecuritySettings"
+          v-if="!isEditing && !showReports && !showAccessRequests && !showSecuritySettings && !showEmergencyClassRequests"
           @click="startEditing"
           class="btn bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
           title="Editar Perfil">
@@ -488,6 +538,12 @@ onUnmounted(() => {
 
     <!-- Vista de Solicitudes de Acceso -->
     <AccessRequests v-else-if="showAccessRequests" @request-processed="pendingRequests--" />
+
+    <!-- Vista de Solicitudes de Clases Emergentes -->
+    <EmergencyClassRequests 
+      v-else-if="showEmergencyClassRequests" 
+      @request-processed="pendingEmergencyClasses--"
+    />
 
     <!-- Vista de Reportes -->
     <ReportGenerator v-else-if="showReports" />

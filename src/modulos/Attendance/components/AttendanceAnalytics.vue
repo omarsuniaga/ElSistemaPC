@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAttendanceStore } from '../store/attendance'
@@ -85,7 +84,7 @@ watch(() => attendanceStore.records.length, updateAnalytics)
       <!-- Attendance by Class -->
       <div class="card">
         <h3 class="text-lg font-semibold mb-4">Asistencia por Clase</h3>
-        <div class="space-y-4">
+        <div class="space-y-1">
           <div
             v-for="(stats, className) in analytics?.byClass"
             :key="className"

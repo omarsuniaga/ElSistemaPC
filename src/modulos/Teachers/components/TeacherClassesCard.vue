@@ -195,11 +195,11 @@ onMounted(async () => {
 <template>
   <div 
     @click="handleView" 
-    class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+    class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer overflow-hidden text-sm"
   >
     <!-- Cabecera con color según nivel -->
     <div 
-      class="h-2"
+      class="h-1"
       :class="{
         'bg-green-500': classData.level === 'Básico',
         'bg-blue-500': classData.level === 'Intermedio',
@@ -208,86 +208,102 @@ onMounted(async () => {
       }"
     ></div>
     
-    <div class="p-4">
+    <div class="p-2 sm:p-3">
       <!-- Nombre y nivel -->
-      <div class="flex justify-between items-start mb-3">
+      <div class="flex justify-between items-start mb-1.5">
         <div>
-          <h3 class="font-medium text-gray-900 dark:text-white">{{ classData.name }}</h3>
-          <span class="text-sm text-gray-600 dark:text-gray-400 block">
+          <h3 class="font-medium text-gray-900 dark:text-white text-sm">{{ classData.name }}</h3>
+          <span class="text-xs text-gray-600 dark:text-gray-400 block leading-tight">
             {{ classData.level }}
             <span v-if="classData.instrument"> - {{ classData.instrument }}</span>
           </span>
         </div>
-        <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs font-medium px-2 py-1 rounded-full">
-          {{ hasStudentIds ? classData.studentIds.length : 0 }} estudiantes
+        <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs font-medium px-1.5 py-0.5 rounded-full">
+          {{ hasStudentIds ? classData.studentIds.length : 0 }}
         </span>
       </div>
       
       <!-- Información adicional -->
-      <div class="space-y-2 mb-4">
-        <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
-          <CalendarIcon class="h-4 w-4 mr-2" />
-          <span>{{ formatSchedule }}</span>
+      <div class="space-y-1 mb-2">
+        <div class="flex items-center text-xs text-gray-600 dark:text-gray-400 leading-tight">
+          <CalendarIcon class="h-3 w-3 mr-1 flex-shrink-0" />
+          <span class="truncate">{{ formatSchedule }}</span>
         </div>
-        <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
-          <MapPinIcon class="h-4 w-4 mr-2" />
-          <span>{{ classData.classroom || 'Sin aula asignada' }}</span>
+        <div class="flex items-center text-xs text-gray-600 dark:text-gray-400 leading-tight">
+          <MapPinIcon class="h-3 w-3 mr-1 flex-shrink-0" />
+          <span class="truncate">{{ classData.classroom || 'Sin aula' }}</span>
         </div>
       </div>
 
       <!-- Lista de estudiantes -->
-      <div class="mb-3">
-        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Estudiantes:</div>
-        <div v-if="hasStudentIds" class="space-y-1">
+      <div class="mb-2">
+        <div class="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Estudiantes:</div>
+        <div v-if="hasStudentIds" class="space-y-0">
           <div 
             v-for="(student, index) in topStudents" 
             :key="index" 
-            class="flex items-center text-sm text-gray-700 dark:text-gray-300"
+            class="flex items-center text-xs text-gray-700 dark:text-gray-300 leading-tight py-0.5"
           >
-            <UserGroupIcon class="h-3 w-3 mr-2 text-gray-500" />
+            <UserGroupIcon class="h-2.5 w-2.5 mr-1 text-gray-500 flex-shrink-0" />
             <span class="truncate">{{ student }}</span>
           </div>
-          <div v-if="additionalStudents > 0" class="text-xs text-gray-500 dark:text-gray-400">
-            Y {{ additionalStudents }} estudiante(s) más...
+          <div v-if="additionalStudents > 0" class="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+            +{{ additionalStudents }} más...
           </div>
         </div>
-        <div v-else class="text-sm text-gray-500 dark:text-gray-400">
+        <div v-else class="text-xs text-gray-500 dark:text-gray-400">
           No hay estudiantes inscritos
         </div>
       </div>
 
       <!-- Botones de acción -->
-      <div class="flex justify-end space-x-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex justify-end space-x-1 pt-1 border-t border-gray-200 dark:border-gray-700">
         <button 
           @click="handleAttendance" 
-          class="p-1 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/20 rounded-md"
+          class="p-0.5 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/20 rounded-md"
           title="Tomar asistencia"
         >
-          <ClipboardDocumentCheckIcon class="h-5 w-5" />
+          <ClipboardDocumentCheckIcon class="h-4 w-4" />
         </button>
         <button 
           @click="handleManageStudents" 
-          class="p-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/20 rounded-md"
+          class="p-0.5 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/20 rounded-md"
           title="Gestionar estudiantes"
         >
-          <UserPlusIcon class="h-5 w-5" />
+          <UserPlusIcon class="h-4 w-4" />
         </button>
         <button 
           @click="handleEdit" 
-          class="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-md"
+          class="p-0.5 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-md"
           title="Editar clase"
         >
-          <PencilIcon class="h-5 w-5" />
+          <PencilIcon class="h-4 w-4" />
         </button>
 
         <button 
           @click="handleDelete" 
-          class="p-1 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-md"
+          class="p-0.5 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-md"
           title="Eliminar clase"
         >
-          <TrashIcon class="h-5 w-5" />
+          <TrashIcon class="h-4 w-4" />
         </button>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Añadir estilos para condensar más el componente */
+.leading-tight {
+  line-height: 1.2;
+}
+
+/* Ajustar tamaño del texto para condensar mejor la información */
+.text-xs {
+  font-size: 0.7rem;
+}
+
+.text-sm {
+  font-size: 0.8rem;
+}
+</style>

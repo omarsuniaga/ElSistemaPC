@@ -75,15 +75,6 @@ const errorMessage = ref('')
 const warningMessage = ref('')
 const selectedClassName = ref('')
 
-// Computed property para obtener profesores
-const teachers = computed<TeacherData[]>(() => {
-  return studentsStore.students
-    .filter(student => student.grupo?.includes('teacher')) // Assuming 'teacher' is a group identifier
-    .map(teacher => ({
-      id: teacher.id,
-      name: `${teacher.nombre} ${teacher.apellido}`
-    }))
-})
 
 // Filtros para informes
 const reportFilters = ref<AttendanceFiltersType>({
@@ -156,7 +147,7 @@ const navigateToAttendanceDetailUrl = (date: string, classId: string) => {
 const handleMonthChange = (newMonth: Date) => {
   currentMonth.value = newMonth
   // Cargar los registros de asistencia para el nuevo mes
-  attendanceStore.fetchMonthlyAttendanceRecords(format(newMonth, 'yyyy-MM'))
+  attendanceStore.fetchAttendanceRecords(format(newMonth, 'yyyy-MM'))
 }
 
 // Añadir función para depurar el StudentsStore al inicio
@@ -169,7 +160,9 @@ const debugStudentsStore = () => {
     console.log('Estructura del primer estudiante:', sample);
     
     // Verificar si hay clases asignadas a estudiantes
-    const studentsWithClasses = studentsStore.students.filter(s => s.classes && s.classes.length > 0);
+    const studentsWithClasses = studentsStore.students.filter(s => 
+      s.clase && (typeof s.clase === 'string' || (Array.isArray(s.clase) && (s.clase as string[]).length > 0))
+    );
     console.log('Estudiantes con clases asignadas:', studentsWithClasses.length);
     
     if (studentsWithClasses.length > 0) {
@@ -310,7 +303,32 @@ const selectClass = async (className: string) => {
 const mounted = async () => {
   isLoading.value = true;
   try {
-    await attendanceStore.fetchAllAttendanceDates();
+    loadingMessage.value = 'Cargando datos iniciales...';
+    
+    // Primero cargar los datos básicos necesarios (clase, estudiantes) en paralelo
+    await Promise.all([
+      classesStore.fetchClasses(),
+      studentsStore.fetchStudents(),
+      attendanceStore.fetchAllAttendanceDates()
+    ]);
+    
+    console.log(`📊 Total de estudiantes cargados: ${studentsStore.students.length}`);
+    console.log(`📚 Total de clases cargadas: ${classesStore.classes.length}`);
+    console.log(`📅 Total de fechas con registros: ${attendanceStore.datesWithRecords.length}`);
+    
+    // Verificar si tenemos fecha y clase en la URL para cargar datos específicos
+    if (props.date && props.classId) {
+      const dateStr = props.date;
+      const formattedDate = dateStr.length === 8
+        ? `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`
+        : dateStr;
+      
+      selectedDate.value = formattedDate;
+      selectedClass.value = props.classId;
+      
+      // Asegurarse de que los datos estén cargados antes de seleccionar la clase
+      await selectClass(props.classId);
+    }
   } catch (error) {
     console.error('Error al cargar las fechas de asistencia:', error);
   } finally {
@@ -400,21 +418,28 @@ const saveAllAttendanceChanges = async () => {
     // Verificar si la fecha está fuera del horario programado
     const isRegularSchedule = isDateInClassSchedule(selectedDate.value, selectedClass.value);
     
-    // Si no es horario regular, mostrar el modal de clase emergente
+    // Solo mostrar el modal de clase emergente si es una clase nueva que está fuera del horario programado
+    // y no existe registro previo de asistencia para esa fecha/clase
     if (!isRegularSchedule) {
-      // Obtener el nombre de la clase
-      const classObj = classesStore.classes.find(c => c.id === selectedClass.value);
-      const className = classObj?.name || selectedClass.value;
+      // Verificar si ya existe un registro de asistencia para esta fecha y clase
+      const hasExistingAttendance = await checkExistingAttendance(selectedDate.value, selectedClass.value);
       
-      // Mostrar modal de clase emergente solo una vez por sesión y clase/fecha
-      const sessionKey = `emergency_shown_${selectedDate.value}_${selectedClass.value}`;
-      const alreadyShown = sessionStorage.getItem(sessionKey);
-      
-      if (!alreadyShown) {
-        // Mostrar el modal de clase emergente
-        showEmergencyClassModal.value = true;
-        sessionStorage.setItem(sessionKey, 'true');
-        return false;
+      // Si no existe registro previo, entonces sí es una clase emergente y requiere permiso
+      if (!hasExistingAttendance) {
+        // Obtener el nombre de la clase
+        const classObj = classesStore.classes.find(c => c.id === selectedClass.value);
+        const className = classObj?.name || selectedClass.value;
+        
+        // Mostrar modal de clase emergente solo una vez por sesión y clase/fecha
+        const sessionKey = `emergency_shown_${selectedDate.value}_${selectedClass.value}`;
+        const alreadyShown = sessionStorage.getItem(sessionKey);
+        
+        if (!alreadyShown) {
+          // Mostrar el modal de clase emergente
+          showEmergencyClassModal.value = true;
+          sessionStorage.setItem(sessionKey, 'true');
+          return false;
+        }
       }
     }
     
@@ -715,7 +740,7 @@ const formattedSelectedDate = computed(() => {
 });
 
 // Modificar el manejo de la fecha seleccionada para evitar bucles infinitos
-const handleSelectedDateUpdate = (date) => {
+const handleSelectedDateUpdate = (date ) => {
   // Evitar actualizar si ya estamos en un ciclo de actualización
   if (isUpdating.value) return;
   
@@ -768,16 +793,44 @@ const handleEmergencyClassSubmitted = async (success: boolean) => {
 
 // Manejar la cancelación de la clase emergente
 const handleEmergencyClassCancelled = () => {
-  showToast('Registro de clase emergente cancelado', 'info');
+  showToast('Registro de clase emergente cancelado', 'success');
 };
-</script>
 
+// Función para verificar si ya existe un registro de asistencia para una fecha y clase
+const checkExistingAttendance = async (date: string, classId: string): Promise<boolean> => {
+  try {
+    // Verificar primero en la lista de documentos de asistencia cargados
+    const existingInMemory = attendanceStore.attendanceDocuments.some(
+      doc => doc.fecha === date && doc.classId === classId
+    );
+    
+    if (existingInMemory) {
+      return true;
+    }
+    
+    // Si no está en memoria, intentar cargarlo específicamente
+    const docResult = await attendanceStore.fetchAttendanceDocument(date, classId);
+    
+    // Si se cargó un documento existente, habrá datos en él
+    const hasExistingData = docResult && 
+      (docResult.data.presentes.length > 0 || 
+       docResult.data.ausentes.length > 0 || 
+       docResult.data.tarde.length > 0);
+    
+    return !!hasExistingData;
+  } catch (error) {
+    console.error('Error al verificar registros de asistencia existentes:', error);
+    return false;
+  }
+};
+
+</script>
 <template>
-  <div class="p-2 sm:p-4 md:p-6 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+  <div class="p-2 sm:p-4 md:p-6 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 max-w-full overflow-x-hidden">
     <!-- Toast Messages -->
     <div 
       v-if="showMessage"
-      class="fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg text-white transition-all duration-300"
+      class="fixed top-4 right-4 z-50 p-3 sm:p-4 rounded-lg shadow-lg text-white transition-all duration-300 text-sm sm:text-base max-w-[90vw] sm:max-w-md"
       :class="messageType === 'success' ? 'bg-green-500' : 'bg-red-500'"
     >
       {{ message }}
@@ -794,73 +847,86 @@ const handleEmergencyClassCancelled = () => {
       @open-report-modal="openReportModal" 
       @open-export-modal="openExportModal"
       @create-new-attendance="createNewAttendance"
-      class="mb-4"
+      class="mb-3 sm:mb-4"
     />
 
     <!-- Botones adicionales -->
-    <div class="flex flex-wrap gap-2 mb-4">
+    <div class="flex flex-wrap gap-2 mb-4 justify-center sm:justify-start">
       <button 
         @click="toggleAnalytics" 
-        class="btn" 
+        class="btn text-xs sm:text-sm" 
         :class="showAnalytics ? 'btn-primary' : 'btn-secondary'"
       >
-        <i class="fas fa-chart-pie mr-2"></i>
-        Análisis
+        <i class="fas fa-chart-pie mr-1 sm:mr-2"></i>
+        <span class="hidden xs:inline">Análisis</span>
+        <span class="xs:hidden">A</span>
       </button>
       <button 
         @click="toggleTrends" 
-        class="btn" 
+        class="btn text-xs sm:text-sm" 
         :class="showTrends ? 'btn-primary' : 'btn-secondary'"
       >
-        <i class="fas fa-chart-line mr-2"></i>
-        Tendencias
+        <i class="fas fa-chart-line mr-1 sm:mr-2"></i>
+        <span class="hidden xs:inline">Tendencias</span>
+        <span class="xs:hidden">T</span>
       </button>
-      <button @click="openReportModal" class="btn btn-secondary">
-        <i class="fas fa-file-alt mr-2"></i>
-        Informe
+      <button @click="openReportModal" class="btn btn-secondary text-xs sm:text-sm">
+        <i class="fas fa-file-alt mr-1 sm:mr-2"></i>
+        <span class="hidden xs:inline">Informe</span>
+        <span class="xs:hidden">I</span>
       </button>
-      <button @click="openExportModal" class="btn btn-secondary">
-        <i class="fas fa-file-export mr-2"></i>
-        Exportar
+      <button @click="openExportModal" class="btn btn-secondary text-xs sm:text-sm">
+        <i class="fas fa-file-export mr-1 sm:mr-2"></i>
+        <span class="hidden xs:inline">Exportar</span>
+        <span class="xs:hidden">E</span>
       </button>
     </div>
 
     <!-- Loading State -->
-    <div v-if="isLoading" class="flex justify-center items-center py-8 sm:py-12">
-      <div class="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-primary-600"></div>
-      <span v-if="loadingMessage" class="ml-3 text-sm sm:text-base">{{ loadingMessage }}</span>
+    <div v-if="isLoading" class="flex flex-col justify-center items-center py-6 sm:py-10 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+      <div class="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-primary-600"></div>
+      <span v-if="loadingMessage" class="mt-3 text-sm sm:text-base text-center">{{ loadingMessage }}</span>
     </div>
 
     <!-- Error State -->
     <div v-else-if="error" class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-3 sm:p-4 rounded-lg mb-4 text-sm sm:text-base">
-      {{ error }}
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          {{ error }}
+        </div>
+        <button @click="mounted" class="btn btn-sm btn-error">Reintentar</button>
+      </div>
     </div>
 
     <!-- Main Content -->
-    <div v-else class="space-y-4 sm:space-y-6">
+    <div v-else class="space-y-3 sm:space-y-5">
       <!-- Panel de Analytics -->
-      <AttendanceAnalytics v-if="showAnalytics" class="mb-4" />
+      <AttendanceAnalytics v-if="showAnalytics" class="mb-3 sm:mb-4" />
       
       <!-- Panel de Tendencias -->
-      <AttendanceTrends v-if="showTrends" class="mb-4" />
+      <AttendanceTrends v-if="showTrends" class="mb-3 sm:mb-4" />
 
       <!-- Vista principal según el estado -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 sm:p-4 md:p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 sm:p-4 md:p-6 overflow-hidden">
         <!-- Vista de Calendario -->
         <div v-if="view === 'calendar'" class="max-w-3xl mx-auto">
-          <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-4">Seleccionar Fecha</h2>
+          <h2 class="text-lg font-semibold mb-3 text-center sm:text-left">Seleccionar Fecha</h2>
           <Calendar 
             :selected-date="selectedDate" 
             :current-month="currentMonth"
             :marked-dates="attendanceStore.getDatesWithRecords" 
             @select="selectDate"
             @month-change="handleMonthChange"
+            class="max-w-full overflow-x-auto"
           />
         </div>
 
         <!-- Vista de Selección de Clase -->
         <div v-else-if="view === 'class-select'" class="max-w-3xl mx-auto">
-          <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-4">Seleccionar Clase</h2>
+          <h2 class="text-lg font-semibold mb-3 text-center sm:text-left">Seleccionar Clase</h2>
           <DateClassSelector 
             v-model="selectedClass" 
             v-model:selectedDate="selectedDate" 
@@ -869,34 +935,35 @@ const handleEmergencyClassCancelled = () => {
             :isLoading="isLoading"
             @date-change="handleDateChange"
             @update:selectedDate="handleSelectedDateUpdate"
+            class="max-w-full"
           />
         </div>
 
         <!-- Vista de Lista de Asistencia -->
-        <div v-else-if="view === 'attendance-form'" class="space-y-4 sm:space-y-6">
-          <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-4">
-            Lista de Asistencia {{ formattedSelectedDate }}
+        <div v-else-if="view === 'attendance-form'" class="space-y-3 sm:space-y-4">
+          <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-center sm:text-left">
+            Lista de Asistencia <span class="block sm:inline">{{ formattedSelectedDate }}</span>
           </h2>
           
           <!-- Sección de información y acciones -->
-          <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
+          <div class="flex flex-col sm:flex-row flex-wrap justify-between items-center gap-2 mb-3 sm:mb-4">
             <!-- Botón para cambiar fecha -->
             <button 
               @click="showCalendarModal = true" 
-              class="btn btn-secondary inline-flex items-center"
+              class="btn btn-secondary inline-flex items-center w-full sm:w-auto"
             >
-              <CalendarDaysIcon class="w-5 h-5 mr-2" />
+              <CalendarDaysIcon class="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
               Cambiar Fecha
             </button>
             
             <!-- Indicador de observaciones en la clase actual si hay -->
-            <div v-if="attendanceStore.getObservations" class="flex items-center">
-              <span class="text-sm text-gray-600 dark:text-gray-400 italic mr-2">
+            <div v-if="attendanceStore.getObservations" class="flex items-center justify-center sm:justify-start w-full sm:w-auto mt-2 sm:mt-0">
+              <span class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 italic mr-2">
                 Esta clase tiene observaciones
               </span>
               <button 
                 @click="handleOpenObservation(null)" 
-                class="btn btn-sm btn-info"
+                class="btn btn-xs sm:btn-sm btn-info"
               >
                 Ver/Editar
               </button>
@@ -904,12 +971,12 @@ const handleEmergencyClassCancelled = () => {
           </div>
           
           <!-- Mensaje de advertencia para fechas futuras -->
-          <div v-if="!isDateEditable" class="bg-yellow-100 dark:bg-yellow-800 p-4 rounded-lg mb-4">
-            <div class="flex items-center">
-              <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <div v-if="!isDateEditable" class="bg-yellow-100 dark:bg-yellow-800 p-3 rounded-lg mb-3 sm:mb-4">
+            <div class="flex flex-wrap items-center">
+              <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
               </svg>
-              <span class="text-yellow-800 dark:text-yellow-300">
+              <span class="text-xs sm:text-sm text-yellow-800 dark:text-yellow-300">
                 {{ warningMessage || "No se puede registrar asistencia para fechas futuras" }}
               </span>
             </div>
@@ -929,6 +996,7 @@ const handleEmergencyClassCancelled = () => {
             @open-export="handleOpenExport"
             @class-changed="selectClass"
             @date-changed="handleDateChange"
+            class="overflow-x-auto"
           />
         </div>
       </div>

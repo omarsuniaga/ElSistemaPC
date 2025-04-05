@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-6" :class="customClass">
     <!-- Información de fecha seleccionada -->
     <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
       <div class="flex items-center justify-between">
@@ -21,14 +21,14 @@
     </div>
     
     <!-- Búsqueda -->
-    <div class="relative">
+    <!-- <div class="relative">
       <input
         v-model="searchQuery"
         type="text"
         placeholder="Buscar por nombre, instrumento o nivel..."
         class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
       />
-    </div>
+    </div> -->
     
     <!-- Estado de carga -->
     <div v-if="loading || isLoading" class="flex justify-center py-4">
@@ -90,7 +90,7 @@
       </div>
       
       <!-- Botón continuar -->
-      <div class="mt-6 flex justify-end">
+      <!-- <div class="mt-6 flex justify-end">
         <button
           @click="handleContinue"
           :disabled="!modelValue || loading || isLoading"
@@ -103,7 +103,7 @@
         >
           Continuar
         </button>
-      </div>
+      </div> -->
     </div>
     
     <!-- Estado vacío -->
@@ -158,10 +158,17 @@ const props = defineProps({
   isLoading: {
     type: Boolean,
     default: false
+  },
+  // Añadir una prop para recibir las clases CSS personalizadas
+  class: {
+    type: [String, Object, Array],
+    default: ''
   }
 })
 
-// Definir emits correctamente para evitar advertencias
+// Crear una computed para manejar las clases personalizadas
+const customClass = computed(() => props.class)
+
 const emit = defineEmits([
   'update:modelValue',
   'update:selectedDate',
@@ -314,6 +321,27 @@ const formatDate = (date: string) => {
 // Seleccionar una clase
 const selectClass = (classItem: any) => {
   emit('update:modelValue', classItem.id)
+  
+  // Navegar automáticamente al seleccionar una clase, sin esperar el botón continuar
+  if (classItem.id && props.selectedDate) {
+    // Formatear la fecha para la URL (remover los guiones)
+    const formattedDate = props.selectedDate.replace(/-/g, '');
+    
+    // Usar router.push para navegar a la vista de asistencia
+    router.push({
+      name: 'attendance',
+      params: {
+        date: formattedDate,
+        classId: classItem.id
+      },
+      replace: true // Reemplazar la entrada actual en el historial
+    }).then(() => {
+      // Emitir evento para notificar que se continuó al siguiente paso
+      emit('continue');
+    }).catch(error => {
+      console.error('Error navigating to attendance page:', error);
+    });
+  }
 }
 
 // Abrir el modal de calendario
