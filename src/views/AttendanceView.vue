@@ -921,6 +921,7 @@ const checkExistingAttendance = async (date: string, classId: string): Promise<b
             @select="selectDate"
             @month-change="handleMonthChange"
             class="max-w-full overflow-x-auto"
+            key="calendar-component"
           />
         </div>
 

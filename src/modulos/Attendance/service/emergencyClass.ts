@@ -48,24 +48,52 @@ export const registerEmergencyClassFirebase = async (emergencyClass: Omit<Emerge
  */
 export const getEmergencyClassesFirebase = async (status?: EmergencyClassStatus): Promise<EmergencyClass[]> => {
   try {
-    let q = collection(db, EMERGENCY_CLASSES_COLLECTION);
+    let q;
     
-    // Aplicar filtros si se especificó un estado
-    if (status) {
-      q = query(q, where('status', '==', status));
+    // Intenta primero con la consulta óptima (con índice compuesto)
+    try {
+      q = collection(db, EMERGENCY_CLASSES_COLLECTION);
+      
+      // Aplicar filtros si se especificó un estado
+      if (status) {
+        q = query(q, where('status', '==', status));
+      }
+      
+      // Ordenar por fecha de creación (más reciente primero)
+      q = query(q, orderBy('createdAt', 'desc'));
+      
+      const snapshot = await getDocs(q);
+      const emergencyClasses: EmergencyClass[] = [];
+      
+      snapshot.forEach(doc => {
+        emergencyClasses.push(doc.data() as EmergencyClass);
+      });
+      
+      return emergencyClasses;
+    } catch (indexError) {
+      // Si hay un error de índice, intentar con una consulta más simple
+      console.warn('Error de índice en Firestore, usando consulta alternativa:', indexError);
+      
+      // Consulta sin ordenamiento (no requiere índice compuesto)
+      q = collection(db, EMERGENCY_CLASSES_COLLECTION);
+      
+      if (status) {
+        q = query(q, where('status', '==', status));
+      }
+      
+      const snapshot = await getDocs(q);
+      const emergencyClasses: EmergencyClass[] = [];
+      
+      snapshot.forEach(doc => {
+        emergencyClasses.push(doc.data() as EmergencyClass);
+      });
+      
+      // Ordenar en memoria en lugar de en la base de datos
+      return emergencyClasses.sort((a, b) => {
+        // Ordenar por fecha de creación (más reciente primero)
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
     }
-    
-    // Ordenar por fecha de creación (más reciente primero)
-    q = query(q, orderBy('createdAt', 'desc'));
-    
-    const snapshot = await getDocs(q);
-    const emergencyClasses: EmergencyClass[] = [];
-    
-    snapshot.forEach(doc => {
-      emergencyClasses.push(doc.data() as EmergencyClass);
-    });
-    
-    return emergencyClasses;
   } catch (error) {
     console.error('Error al obtener clases emergentes:', error);
     throw error;
@@ -119,20 +147,45 @@ export const updateEmergencyClassStatusFirebase = async (
  */
 export const getEmergencyClassesByTeacherFirebase = async (teacherId: string): Promise<EmergencyClass[]> => {
   try {
-    const q = query(
-      collection(db, EMERGENCY_CLASSES_COLLECTION), 
-      where('teacherId', '==', teacherId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const snapshot = await getDocs(q);
-    const emergencyClasses: EmergencyClass[] = [];
-    
-    snapshot.forEach(doc => {
-      emergencyClasses.push(doc.data() as EmergencyClass);
-    });
-    
-    return emergencyClasses;
+    // Intenta primero con la consulta óptima (con índice compuesto)
+    try {
+      const q = query(
+        collection(db, EMERGENCY_CLASSES_COLLECTION), 
+        where('teacherId', '==', teacherId),
+        orderBy('createdAt', 'desc')
+      );
+      
+      const snapshot = await getDocs(q);
+      const emergencyClasses: EmergencyClass[] = [];
+      
+      snapshot.forEach(doc => {
+        emergencyClasses.push(doc.data() as EmergencyClass);
+      });
+      
+      return emergencyClasses;
+    } catch (indexError) {
+      // Si hay un error de índice, intentar con una consulta más simple
+      console.warn('Error de índice en Firestore, usando consulta alternativa para clases del profesor:', indexError);
+      
+      // Consulta sin ordenamiento (no requiere índice compuesto)
+      const q = query(
+        collection(db, EMERGENCY_CLASSES_COLLECTION), 
+        where('teacherId', '==', teacherId)
+      );
+      
+      const snapshot = await getDocs(q);
+      const emergencyClasses: EmergencyClass[] = [];
+      
+      snapshot.forEach(doc => {
+        emergencyClasses.push(doc.data() as EmergencyClass);
+      });
+      
+      // Ordenar en memoria en lugar de en la base de datos
+      return emergencyClasses.sort((a, b) => {
+        // Ordenar por fecha de creación (más reciente primero)
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+    }
   } catch (error) {
     console.error('Error al obtener clases emergentes del profesor:', error);
     throw error;
