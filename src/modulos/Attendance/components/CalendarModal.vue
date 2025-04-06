@@ -11,9 +11,10 @@
       <div class="p-4">
         <Calendar 
           :selected-date="selectedDate" 
-          :marked-dates="markedDates" 
+          :markeDates="markedDates" 
           @select="handleSelect"
         />
+
       </div>
       <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
         <button @click="close" class="btn btn-secondary mr-2">
@@ -31,6 +32,7 @@
 import { ref, watch } from 'vue';
 import { XMarkIcon } from '@heroicons/vue/24/outline';
 import Calendar from '../../../components/Calendar.vue';
+
 
 const props = defineProps<{
   modelValue: boolean;

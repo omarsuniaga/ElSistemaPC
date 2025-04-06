@@ -31,14 +31,16 @@ export interface AttendanceDocument {
   data: {
     presentes: string[]; // Lista de IDs de alumnos presentes
     ausentes: string[]; // Lista de IDs de alumnos ausentes
-    tarde: string[]; // Lista de IDs de alumnos con tardanza
+    tarde: string[]; // Lista de IDs de alumnos con tardanza o justificados
     justificacion: JustificationData[]; // Datos de justificaciones
     observations: string; // Observaciones o criterios de la clase
   };
+  createdAt?: any; // Timestamp de creación
+  updatedAt?: any; // Timestamp de última actualización
 }
 
 /**
- * Nueva interfaz para las observaciones de clase con historial
+ * Estructura para observaciones de clase con historial
  */
 export interface ClassObservation {
   id: string;
@@ -46,10 +48,12 @@ export interface ClassObservation {
   date: string;
   text: string;
   timestamp: number;
-  author: string; // ID o nombre del profesor
+  author: string;
 }
 
-// Mantenemos algunas interfaces anteriores por compatibilidad
+/**
+ * Interface para compatibilidad con el sistema anterior
+ */
 export interface AttendanceRecord {
   id?: string;
   studentId: string;
@@ -60,7 +64,7 @@ export interface AttendanceRecord {
     reason?: string;
     documentUrl?: string;
     timestamp?: Date;
-  };
+  } | string;
   documentUrl?: string;
   timestamp?: string;
   createdAt?: string;
@@ -117,6 +121,13 @@ export interface StatusChange {
   oldStatus: AttendanceStatus | null;
   newStatus: AttendanceStatus;
   timestamp: string;
+}
+
+export interface FetchAttendanceRecordsParams {
+  classId?: string;
+  startDate: string | Date;
+  endDate?: string | Date;
+  studentId?: string;
 }
 
 export type EmergencyClassStatus = 'Pendiente' | 'Aceptada' | 'Rechazada' | 'Ignorada';

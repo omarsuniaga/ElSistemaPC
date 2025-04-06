@@ -14,92 +14,79 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../firebase';
-import type { AttendanceDocument, JustificationData, AttendanceRecord, ClassObservation } from '../../Attendance/types/attendance';
+import type { 
+  AttendanceDocument, 
+  JustificationData, 
+  AttendanceRecord, 
+  ClassObservation 
+} from '../types/attendance';
+
+// Constantes
+const COLLECTION_ATTENDANCE = 'ASISTENCIAS';
+const COLLECTION_OBSERVATIONS = 'OBSERVACIONES_CLASE';
+
+/**
+ * Genera un ID de documento consistente para documentos de asistencia
+ */
+const getAttendanceDocId = (fecha: string, classId: string): string => `${fecha}_${classId}`;
 
 /**
  * Obtiene un documento de asistencia por fecha y clase
- * @param fecha - La fecha de asistencia en formato YYYY-MM-DD
- * @param classId - El ID de la clase
- * @returns El documento de asistencia o null si no existe
  */
 export const getAttendanceDocumentFirebase = async (
   fecha: string,
   classId: string
 ): Promise<AttendanceDocument | null> => {
   try {
-    console.log(`🔍 Buscando documento de asistencia para fecha ${fecha} y clase ${classId}`);
-    
-    // Crear un ID de documento combinando fecha y classId
-    const docId = `${fecha}_${classId}`;
-    
-    // Obtener el documento
-    const docRef = doc(db, 'ASISTENCIAS', docId);
+    const docId = getAttendanceDocId(fecha, classId);
+    const docRef = doc(db, COLLECTION_ATTENDANCE, docId);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      console.log('📄 Documento encontrado');
-      const data = docSnap.data() as AttendanceDocument;
-      return data;
-    } else {
-      console.log('❓ No se encontró documento de asistencia');
-      return null;
+      return docSnap.data() as AttendanceDocument;
     }
+    
+    return null;
   } catch (error) {
-    console.error('❌ Error al obtener documento de asistencia:', error);
+    console.error('Error al obtener documento de asistencia:', error);
     throw error;
   }
 };
 
 /**
  * Crea o actualiza un documento de asistencia
- * @param attendanceDoc - El documento de asistencia a guardar
- * @returns El ID del documento
  */
 export const saveAttendanceDocumentFirebase = async (
   attendanceDoc: AttendanceDocument
 ): Promise<string> => {
   try {
-    console.log('💾 Guardando documento de asistencia:', attendanceDoc);
-    
-    // Crear un ID de documento combinando fecha y classId
-    const docId = `${attendanceDoc.fecha}_${attendanceDoc.classId}`;
-    
-    // Referencia al documento
-    const docRef = doc(db, 'ASISTENCIAS', docId);
-    
-    // Verificar si el documento ya existe
+    const docId = getAttendanceDocId(attendanceDoc.fecha, attendanceDoc.classId);
+    const docRef = doc(db, COLLECTION_ATTENDANCE, docId);
     const docSnap = await getDoc(docRef);
     
+    const updates = {
+      ...attendanceDoc,
+      updatedAt: serverTimestamp()
+    };
+    
     if (docSnap.exists()) {
-      console.log('🔄 Actualizando documento existente');
-      await updateDoc(docRef, {
-        ...attendanceDoc,
-        updatedAt: serverTimestamp()
-      });
+      await updateDoc(docRef, updates);
     } else {
-      console.log('➕ Creando nuevo documento');
       await setDoc(docRef, {
-        ...attendanceDoc,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        ...updates,
+        createdAt: serverTimestamp()
       });
     }
     
-    console.log('✅ Documento guardado con éxito');
     return docId;
   } catch (error) {
-    console.error('❌ Error al guardar documento de asistencia:', error);
+    console.error('Error al guardar documento de asistencia:', error);
     throw error;
   }
 };
 
 /**
- * Añade una justificación a un documento de asistencia
- * @param fecha - La fecha del documento
- * @param classId - El ID de la clase
- * @param justification - Los datos de justificación
- * @param file - Un archivo adjunto opcional
- * @returns El ID del documento actualizado
+ * Añade o actualiza una justificación en un documento de asistencia
  */
 export const addJustificationToAttendanceFirebase = async (
   fecha: string,
@@ -108,25 +95,23 @@ export const addJustificationToAttendanceFirebase = async (
   file: File | null
 ): Promise<string> => {
   try {
-    console.log('📝 Añadiendo justificación para estudiante:', justification.id);
-    
     // Si hay un archivo, subirlo primero
     if (file) {
-      const storageRef = ref(storage, `justifications/${fecha}_${justification.id}_${classId}_${file.name}`);
+      const storageRef = ref(storage, `justificaciones/${fecha}_${classId}_${justification.id}`);
       await uploadBytes(storageRef, file);
       justification.documentURL = await getDownloadURL(storageRef);
     }
-    
-    // Obtener el documento existente
-    const docId = `${fecha}_${classId}`;
-    const docRef = doc(db, 'ASISTENCIAS', docId);
+
+    // Obtener o crear el documento
+    const docId = getAttendanceDocId(fecha, classId);
+    const docRef = doc(db, COLLECTION_ATTENDANCE, docId);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      // Documento existe, actualizar el array de justificaciones
+      // Actualizar documento existente
       const data = docSnap.data() as AttendanceDocument;
       
-      // Asegurar que existe la estructura de datos
+      // Asegurar que la estructura de datos exista
       if (!data.data) {
         data.data = {
           presentes: [],
@@ -137,33 +122,27 @@ export const addJustificationToAttendanceFirebase = async (
         };
       }
       
+      // Preparar los arrays
       if (!data.data.justificacion) {
         data.data.justificacion = [];
       }
       
-      // Buscar si ya existe una justificación para este estudiante
+      // Actualizar o añadir justificación
       const justIndex = data.data.justificacion.findIndex(j => j.id === justification.id);
-      
       if (justIndex !== -1) {
-        // Actualizar la justificación existente
         data.data.justificacion[justIndex] = justification;
       } else {
-        // Añadir nueva justificación
         data.data.justificacion.push(justification);
       }
       
-      // Asegurarse de que el estudiante está en el array de ausentes justificados
-      // Y quitarlo de ausentes si está ahí
+      // Asegurarse de que el estudiante está en el array tarde y no en ausentes/presentes
       if (!data.data.presentes.includes(justification.id) && 
           !data.data.tarde.includes(justification.id)) {
         
         // Quitar de ausentes si está ahí
-        const ausenteIndex = data.data.ausentes.indexOf(justification.id);
-        if (ausenteIndex !== -1) {
-          data.data.ausentes.splice(ausenteIndex, 1);
-        }
+        data.data.ausentes = data.data.ausentes.filter(id => id !== justification.id);
         
-        // Asegurarse de que está en el array de tardanza (asumiendo que es la categoría para justificados)
+        // Añadir a tarde si no está ya
         if (!data.data.tarde.includes(justification.id)) {
           data.data.tarde.push(justification.id);
         }
@@ -174,17 +153,15 @@ export const addJustificationToAttendanceFirebase = async (
         data: data.data,
         updatedAt: serverTimestamp()
       });
-      
-      console.log('✅ Justificación añadida con éxito');
     } else {
-      // No existe el documento, crearlo primero
+      // Crear nuevo documento
       const newDoc: AttendanceDocument = {
         fecha,
         classId,
         data: {
           presentes: [],
           ausentes: [],
-          tarde: [justification.id], // Poner al estudiante como tarde (justificado)
+          tarde: [justification.id],
           justificacion: [justification],
           observations: ''
         }
@@ -195,23 +172,17 @@ export const addJustificationToAttendanceFirebase = async (
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
-      
-      console.log('✅ Documento creado con justificación');
     }
     
     return docId;
   } catch (error) {
-    console.error('❌ Error al añadir justificación:', error);
+    console.error('Error al añadir justificación:', error);
     throw error;
   }
 };
 
 /**
  * Actualiza las observaciones de un documento de asistencia
- * @param fecha - La fecha del documento
- * @param classId - El ID de la clase
- * @param observations - Las observaciones a guardar
- * @returns El ID del documento actualizado
  */
 export const updateObservationsFirebase = async (
   fecha: string,
@@ -219,38 +190,33 @@ export const updateObservationsFirebase = async (
   observations: string
 ): Promise<string> => {
   try {
-    console.log('📝 Actualizando observaciones de clase');
-    
-    const docId = `${fecha}_${classId}`;
-    const docRef = doc(db, 'ASISTENCIAS', docId);
+    const docId = getAttendanceDocId(fecha, classId);
+    const docRef = doc(db, COLLECTION_ATTENDANCE, docId);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      // Documento existe, actualizar observaciones
+      // Actualizar documento existente
       const data = docSnap.data() as AttendanceDocument;
       
-      // Asegurar que existe la estructura de datos
+      // Asegurar que la estructura de datos exista
       if (!data.data) {
         data.data = {
           presentes: [],
           ausentes: [],
           tarde: [],
           justificacion: [],
-          observations: observations
+          observations
         };
       } else {
         data.data.observations = observations;
       }
       
-      // Actualizar el documento
       await updateDoc(docRef, {
         data: data.data,
         updatedAt: serverTimestamp()
       });
-      
-      console.log('✅ Observaciones actualizadas con éxito');
     } else {
-      // No existe el documento, crearlo primero
+      // Crear nuevo documento
       const newDoc: AttendanceDocument = {
         fecha,
         classId,
@@ -259,7 +225,7 @@ export const updateObservationsFirebase = async (
           ausentes: [],
           tarde: [],
           justificacion: [],
-          observations: observations
+          observations
         }
       };
       
@@ -268,52 +234,37 @@ export const updateObservationsFirebase = async (
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
-      
-      console.log('✅ Documento creado con observaciones');
     }
     
     return docId;
   } catch (error) {
-    console.error('❌ Error al actualizar observaciones:', error);
+    console.error('Error al actualizar observaciones:', error);
     throw error;
   }
 };
 
 /**
- * Obtiene todos los documentos de asistencia para análisis
- * @returns Lista de documentos de asistencia
+ * Obtiene todos los documentos de asistencia
  */
 export const getAllAttendanceDocumentsFirebase = async (): Promise<AttendanceDocument[]> => {
   try {
-    console.log('🔍 Obteniendo todos los documentos de asistencia');
-    
-    const attendanceCollection = collection(db, 'ASISTENCIAS');
+    const attendanceCollection = collection(db, COLLECTION_ATTENDANCE);
     const querySnapshot = await getDocs(attendanceCollection);
     
-    const documents: AttendanceDocument[] = [];
-    
-    querySnapshot.forEach((doc) => {
-      const data = doc.data() as AttendanceDocument;
-      documents.push(data);
-    });
-    
-    console.log(`✅ Se encontraron ${documents.length} documentos de asistencia`);
-    return documents;
+    return querySnapshot.docs.map(doc => doc.data() as AttendanceDocument);
   } catch (error) {
-    console.error('❌ Error al obtener documentos de asistencia:', error);
+    console.error('Error al obtener documentos de asistencia:', error);
     throw error;
   }
 };
 
 /**
- * Convierte documentos al formato anterior para compatibilidad
- * @param document - El documento en nuevo formato
- * @returns Array de registros en formato antiguo
+ * Convierte documentos al formato antiguo para compatibilidad
  */
 export const convertDocumentToRecords = (document: AttendanceDocument): AttendanceRecord[] => {
   const records: AttendanceRecord[] = [];
   
-  // Convertir presentes
+  // Mapear estudiantes presentes
   document.data.presentes.forEach(studentId => {
     records.push({
       studentId,
@@ -323,7 +274,7 @@ export const convertDocumentToRecords = (document: AttendanceDocument): Attendan
     });
   });
   
-  // Convertir ausentes
+  // Mapear estudiantes ausentes
   document.data.ausentes.forEach(studentId => {
     records.push({
       studentId,
@@ -333,18 +284,21 @@ export const convertDocumentToRecords = (document: AttendanceDocument): Attendan
     });
   });
   
-  // Convertir tarde
+  // Mapear estudiantes con tardanza/justificados
   document.data.tarde.forEach(studentId => {
-    const isJustified = document.data.justificacion?.some(j => j.id === studentId);
+    const justification = document.data.justificacion?.find(j => j.id === studentId);
+    const isJustified = !!justification;
+    
     records.push({
       studentId,
       classId: document.classId,
       Fecha: document.fecha,
       status: isJustified ? 'Justificado' : 'Tardanza',
-      justification: isJustified ? 
-        { reason: document.data.justificacion.find(j => j.id === studentId)?.reason } : undefined,
-      documentUrl: isJustified ?
-        document.data.justificacion.find(j => j.id === studentId)?.documentURL : undefined
+      justification: isJustified ? {
+        reason: justification.reason,
+        documentUrl: justification.documentURL
+      } : undefined,
+      documentUrl: justification?.documentURL
     });
   });
   
@@ -352,12 +306,7 @@ export const convertDocumentToRecords = (document: AttendanceDocument): Attendan
 };
 
 /**
- * Añade una nueva observación al historial de una clase
- * @param classId - El ID de la clase
- * @param date - La fecha de la clase (YYYY-MM-DD)
- * @param text - El texto de la observación
- * @param author - El nombre o ID del profesor que añade la observación
- * @returns El ID de la nueva observación
+ * Añade una observación al historial de una clase
  */
 export const addClassObservationFirebase = async (
   classId: string,
@@ -366,13 +315,10 @@ export const addClassObservationFirebase = async (
   author: string
 ): Promise<string> => {
   try {
-    console.log('📝 Añadiendo nueva observación de clase');
-    
-    // Crear documento en la colección de observaciones
-    const observationsCollection = collection(db, 'OBSERVACIONES_CLASE');
+    const observationsCollection = collection(db, COLLECTION_OBSERVATIONS);
     
     const newObservation: ClassObservation = {
-      id: '', // Se asignará después
+      id: '',
       classId,
       date,
       text,
@@ -380,79 +326,57 @@ export const addClassObservationFirebase = async (
       author
     };
     
-    // Añadir el documento y obtener su ID
     const docRef = await addDoc(observationsCollection, {
       ...newObservation,
       createdAt: serverTimestamp()
     });
     
-    // Actualizar el ID con el generado por Firestore
     await updateDoc(docRef, {
       id: docRef.id
     });
     
-    console.log('✅ Observación añadida con éxito:', docRef.id);
-    
-    // También actualizar la observación actual en el documento de asistencia por compatibilidad
+    // Actualizar también la observación actual en el documento de asistencia
     await updateObservationsFirebase(date, classId, text);
     
     return docRef.id;
   } catch (error) {
-    console.error('❌ Error al añadir observación:', error);
+    console.error('Error al añadir observación:', error);
     throw error;
   }
 };
 
 /**
  * Obtiene el historial de observaciones para una clase
- * @param classId - El ID de la clase
- * @returns Lista de observaciones ordenadas por fecha (la más reciente primero)
  */
 export const getClassObservationsHistoryFirebase = async (
   classId: string
 ): Promise<ClassObservation[]> => {
   try {
-    console.log('🔍 Obteniendo historial de observaciones para la clase:', classId);
-    
-    const observationsCollection = collection(db, 'OBSERVACIONES_CLASE');
     const q = query(
-      observationsCollection,
+      collection(db, COLLECTION_OBSERVATIONS),
       where('classId', '==', classId),
       orderBy('timestamp', 'desc')
     );
     
     const querySnapshot = await getDocs(q);
     
-    const observations: ClassObservation[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data() as ClassObservation;
-      observations.push(data);
-    });
-    
-    console.log(`✅ Se encontraron ${observations.length} observaciones para la clase`);
-    return observations;
+    return querySnapshot.docs.map(doc => doc.data() as ClassObservation);
   } catch (error) {
-    console.error('❌ Error al obtener historial de observaciones:', error);
+    console.error('Error al obtener historial de observaciones:', error);
     throw error;
   }
 };
 
 /**
- * Obtiene el historial de observaciones para una fecha y clase específicas
- * @param classId - El ID de la clase
- * @param date - La fecha de la clase (YYYY-MM-DD)
- * @returns Lista de observaciones ordenadas por fecha (la más reciente primero)
+ * Obtiene observaciones para una clase en una fecha específica
  */
 export const getClassObservationsByDateFirebase = async (
   classId: string,
   date: string
 ): Promise<ClassObservation[]> => {
   try {
-    console.log(`🔍 Obteniendo observaciones para clase ${classId} en fecha ${date}`);
-    
-    const observationsCollection = collection(db, 'OBSERVACIONES_CLASE');
     const q = query(
-      observationsCollection,
+      collection(db, COLLECTION_OBSERVATIONS),
       where('classId', '==', classId),
       where('date', '==', date),
       orderBy('timestamp', 'desc')
@@ -460,40 +384,33 @@ export const getClassObservationsByDateFirebase = async (
     
     const querySnapshot = await getDocs(q);
     
-    const observations: ClassObservation[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data() as ClassObservation;
-      observations.push(data);
-    });
-    
-    console.log(`✅ Se encontraron ${observations.length} observaciones para la fecha y clase`);
-    return observations;
+    return querySnapshot.docs.map(doc => doc.data() as ClassObservation);
   } catch (error) {
-    console.error('❌ Error al obtener observaciones por fecha:', error);
+    console.error('Error al obtener observaciones por fecha:', error);
     throw error;
   }
 };
 
 // Métodos de compatibilidad con el sistema anterior
 
+/**
+ * Obtiene todos los registros de asistencia
+ */
 export const getAttendancesFirebase = async (): Promise<AttendanceRecord[]> => {
   try {
     const documents = await getAllAttendanceDocumentsFirebase();
     
     // Convertir todos los documentos a registros
-    let allRecords: AttendanceRecord[] = [];
-    documents.forEach(doc => {
-      const records = convertDocumentToRecords(doc);
-      allRecords = [...allRecords, ...records];
-    });
-    
-    return allRecords;
+    return documents.flatMap(doc => convertDocumentToRecords(doc));
   } catch (error) {
-    console.error('Error fetching attendance records:', error);
+    console.error('Error al obtener registros de asistencia:', error);
     throw error;
   }
 };
 
+/**
+ * Obtiene registros de asistencia por fecha y clase
+ */
 export const getAttendanceByDateAndClassFirebase = async (
   fecha?: string, 
   classId?: string
@@ -511,16 +428,19 @@ export const getAttendanceByDateAndClassFirebase = async (
     
     return convertDocumentToRecords(document);
   } catch (error) {
-    console.error('Error fetching attendance by date and class:', error);
+    console.error('Error al obtener asistencia por fecha y clase:', error);
     throw error;
   }
 };
 
+/**
+ * Actualiza un registro de asistencia
+ */
 export const updateAttendanceFirebase = async (attendanceData: AttendanceRecord): Promise<string> => {
   try {
-    // Obtener el documento existente o crear uno nuevo
-    const docId = `${attendanceData.Fecha}_${attendanceData.classId}`;
-    const docRef = doc(db, 'ASISTENCIAS', docId);
+    // Obtener o crear el documento
+    const docId = getAttendanceDocId(attendanceData.Fecha, attendanceData.classId);
+    const docRef = doc(db, COLLECTION_ATTENDANCE, docId);
     const docSnap = await getDoc(docRef);
     
     let document: AttendanceDocument;
@@ -541,12 +461,12 @@ export const updateAttendanceFirebase = async (attendanceData: AttendanceRecord)
       };
     }
     
-    // Remover el estudiante de todos los arrays primero
+    // Remover el estudiante de todos los arrays
     document.data.presentes = document.data.presentes.filter(id => id !== attendanceData.studentId);
     document.data.ausentes = document.data.ausentes.filter(id => id !== attendanceData.studentId);
     document.data.tarde = document.data.tarde.filter(id => id !== attendanceData.studentId);
     
-    // Añadir el estudiante al array correspondiente según su estado
+    // Añadir el estudiante al array correspondiente
     switch (attendanceData.status) {
       case 'Presente':
         document.data.presentes.push(attendanceData.studentId);
@@ -560,45 +480,44 @@ export const updateAttendanceFirebase = async (attendanceData: AttendanceRecord)
         break;
     }
     
-    // Si el estado es justificado, actualizar o añadir justificación
+    // Manejar justificación si es necesario
     if (attendanceData.status === 'Justificado' && attendanceData.justification) {
+      if (!document.data.justificacion) {
+        document.data.justificacion = [];
+      }
+      
       const justIndex = document.data.justificacion.findIndex(j => j.id === attendanceData.studentId);
+      const justificationReason = typeof attendanceData.justification === 'string' 
+        ? attendanceData.justification 
+        : attendanceData.justification.reason || '';
       
       if (justIndex !== -1) {
-        document.data.justificacion[justIndex].reason = attendanceData.justification.reason ?? "";
+        document.data.justificacion[justIndex].reason = justificationReason;
         if (attendanceData.documentUrl) {
           document.data.justificacion[justIndex].documentURL = attendanceData.documentUrl;
         }
       } else {
         document.data.justificacion.push({
           id: attendanceData.studentId,
-          reason: attendanceData.justification.reason || "",
+          reason: justificationReason,
           documentURL: attendanceData.documentUrl
         });
       }
     }
     
     // Guardar el documento
-    if (docSnap.exists()) {
-      await updateDoc(docRef, {
-        data: document.data,
-        updatedAt: serverTimestamp()
-      });
-    } else {
-      await setDoc(docRef, {
-        ...document,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-    }
+    await saveAttendanceDocumentFirebase(document);
     
     return docId;
   } catch (error) {
-    console.error('Error updating attendance:', error);
+    console.error('Error al actualizar asistencia:', error);
     throw error;
   }
 };
 
+/**
+ * Añade una justificación a un registro
+ */
 export const updateAttendanceWithJustificationFirebase = async (
   studentId: string,
   date: string,
@@ -608,30 +527,33 @@ export const updateAttendanceWithJustificationFirebase = async (
 ): Promise<string> => {
   const justification: JustificationData = {
     id: studentId,
-    reason: reason
+    reason
   };
   
   return addJustificationToAttendanceFirebase(date, classId, justification, file);
 };
 
+/**
+ * Registra un nuevo registro de asistencia
+ */
 export const registerAttendanceFirebase = async (attendanceData: AttendanceRecord): Promise<string> => {
-  // Usar el método updateAttendance para mantener la compatibilidad
+  // Usar el método updateAttendance para mantener consistencia
   return updateAttendanceFirebase(attendanceData);
 };
 
+/**
+ * Obtiene un reporte completo de asistencia
+ */
 export const getAttendanceReport = async () => {
   try {
-    console.log('🔄 Consultando reporte de asistencias...')
-    const q = query(collection(db, 'ASISTENCIAS'))
-    const snapshot = await getDocs(q)
-    console.log(`✅ Asistencias recuperadas: ${snapshot.size}`)
+    const querySnapshot = await getDocs(collection(db, COLLECTION_ATTENDANCE));
     
-    return snapshot.docs.map(doc => ({
+    return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    }))
+    }));
   } catch (error) {
-    console.error('❌ Error al obtener reporte de asistencias:', error)
-    throw new Error('Error al obtener el reporte de asistencias')
+    console.error('Error al obtener reporte de asistencias:', error);
+    throw new Error('Error al obtener el reporte de asistencias');
   }
 }

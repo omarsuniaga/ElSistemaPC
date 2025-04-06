@@ -114,7 +114,10 @@ const selectedGroupStudents = computed(() => {
           clase: (s as any).clase || '',
           propiedadExtra1: (s as any).propiedadExtra1 || '',
           propiedadExtra2: (s as any).propiedadExtra2 || '',
-          propiedadExtra3: (s as any).propiedadExtra3 || ''
+          propiedadExtra3: (s as any).propiedadExtra3 || '',
+          activo: s.activo ?? true,
+          createdAt: s.createdAt || new Date(),
+          updatedAt: s.updatedAt || new Date()
         }))
     : []
 })
@@ -125,7 +128,26 @@ const students = computed(() => {
     return fullName.includes(searchQuery.value.toLowerCase())
   })
 })
+// Interfaces for better type checking
+interface TeacherDisplay {
+  id: string;
+  name: string;
+}
 
+const instrumentOptions = computed<string[]>(() => {
+  return instrumentoStore.instruments.map((i) => i.name)
+})
+
+// Helper function types
+const getClassLevelClass = (level: string): string => {
+  const levelClasses: Record<string, string> = {
+    'Iniciación': 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300',
+    'Básico': 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
+    'Intermedio': 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300',
+    'Avanzado': 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
+  }
+  return levelClasses[level] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300'
+}
 const availableStudents = computed(() => {
   return students.value.map((s): Student => ({
     id: s.id,
@@ -147,7 +169,10 @@ const availableStudents = computed(() => {
     clase: s.clase || '',
     propiedadExtra1: (s as any).propiedadExtra1 || '',
     propiedadExtra2: (s as any).propiedadExtra2 || '',
-    propiedadExtra3: (s as any).propiedadExtra3 || ''
+    propiedadExtra3: (s as any).propiedadExtra3 || '',
+    activo: s.activo ?? true,
+    createdAt: s.createdAt || new Date(),
+    updatedAt: s.updatedAt || new Date()
   }))
 })
 
@@ -198,18 +223,28 @@ async function handleSubmit(formData: any) {
   errorMessage.value = ''
   
   try {
+    // Transform schedule format to include slots as required by ClassData type
+    const scheduleSlots = Array.isArray(formData.schedule?.days) 
+      ? formData.schedule.days.map(day => ({
+          day,
+          startTime: typeof formData.schedule?.startTime === 'string' ? formData.schedule.startTime : '',
+          endTime: typeof formData.schedule?.endTime === 'string' ? formData.schedule.endTime : ''
+        }))
+      : [];
+    
+    // Create a copy of formData without the schedule property to avoid conflicts
+    const { schedule, ...formDataWithoutSchedule } = formData;
+    
     const classData: ClassData = {
-      ...formData,
-      level: formData.level || 'Iniciación',
-      teacherId: formData.teacherId,
-      studentIds: formData.studentIds || [],
-      schedule: {
-        days: Array.isArray(formData.schedule?.days) ? formData.schedule.days : [],
-        startTime: typeof formData.schedule?.startTime === 'string' ? formData.schedule.startTime : '',
-        endTime: typeof formData.schedule?.endTime === 'string' ? formData.schedule.endTime : ''
-      },
-      updatedAt: new Date().toISOString()
-    }
+          ...formDataWithoutSchedule,
+          level: formData.level || 'Iniciación',
+          teacherId: formData.teacherId,
+          studentIds: formData.studentIds || [],
+          schedule: {
+            slots: scheduleSlots
+          },
+          updatedAt: new Date().toISOString()
+        }
 
     if (showEditModal.value) {
       if (!formData.id) {

@@ -1,10 +1,16 @@
-//src/stores/attendance.ts
+// src/stores/attendance.ts
 import { defineStore } from 'pinia'
-import { format, parseISO, eachDayOfInterval, isValid } from 'date-fns' // Añadido isValid para validaciones
-import { collection, getDocs, query, where } from 'firebase/firestore' // Añadidos métodos de consulta
+import { format, parseISO, eachDayOfInterval, isValid } from 'date-fns'
+import { collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '../../../firebase'
-import type { AttendanceRecord, AttendanceStatus, AttendanceAnalytics, AttendanceDocument, ClassObservation } from '../types/attendance'
-// Importar directamente desde firestore
+import type { 
+  AttendanceRecord, 
+  AttendanceStatus, 
+  AttendanceAnalytics, 
+  AttendanceDocument, 
+  ClassObservation,
+  JustificationData
+} from '../types/attendance'
 import { 
   getAttendancesFirebase, 
   getAttendanceByDateAndClassFirebase, 
@@ -309,6 +315,15 @@ export const useAttendanceStore = defineStore('attendance', {
     // Getter para obtener fechas con registros
     getDatesWithRecordsArray: (state): string[] => {
       return state.datesWithRecords || [];
+    },
+
+    // Getter para formatear las fechas para el calendario de manera optimizada
+    getFormattedDatesForCalendar: (state): string[] => {
+      // Filtrar fechas inválidas y convertir a formato entendible por el calendario
+      return state.datesWithRecords.filter(dateStr => {
+        const parsedDate = parseISO(dateStr);
+        return isValid(parsedDate);
+      });
     }
   },
   
@@ -625,14 +640,13 @@ export const useAttendanceStore = defineStore('attendance', {
         
         // Obtener historial de Firebase
         const observations = await getClassObservationsHistoryFirebase(classId);
-        
         // Actualizar el state
         this.observationsHistory = observations;
         
         return observations;
       } catch (error) {
         this.error = 'Error al cargar historial de observaciones';
-        console.error('Error al cargar historial:', error);
+        console.error('Error al cargar historial de observaciones:', error);
         return [];
       } finally {
         this.isLoading = false;
@@ -1234,6 +1248,17 @@ export const useAttendanceStore = defineStore('attendance', {
               datesWithRecords.add(data.fecha);
             }
           }
+          console.log('Fecha encontrada:', data.fecha);
+        });
+        
+        // También extraer fechas de los registros antiguos para compatibilidad
+        this.records.forEach(record => {
+          if (record.Fecha) {
+            const parsedDate = parseISO(record.Fecha);
+            if (isValid(parsedDate)) {
+              datesWithRecords.add(record.Fecha);
+            }
+          }
         });
         
         // Guardar las fechas en el estado del store
@@ -1247,13 +1272,110 @@ export const useAttendanceStore = defineStore('attendance', {
       }
     },
 
-    async fetchAttendanceRecords({ classId, startDate, endDate }: FetchAttendanceRecordsParams) {
+    /**
+     * Obtiene y agrupa todas las fechas con registros de asistencia por mes (YYYY-MM)
+     * Útil para estadísticas, reportes y optimización del calendario
+     */
+    async fetchAndGroupAttendanceDates() {
+      try {
+        // Primero cargar todas las fechas con registros
+        await this.fetchAllAttendanceDates();
+        
+        // Agrupar las fechas por mes (YYYY-MM)
+        const groupedDates = this.datesWithRecords.reduce((acc, date) => {
+          // Extraer el año y mes (YYYY-MM) de la fecha completa (YYYY-MM-DD)
+          const yearMonth = date.substring(0, 7);
+          
+          if (!acc[yearMonth]) {
+            acc[yearMonth] = [];
+          }
+          
+          // Añadir la fecha al grupo correspondiente
+          acc[yearMonth].push(date);
+          
+          return acc;
+        }, {} as Record<string, string[]>);
+        
+        // Ordenar las fechas dentro de cada grupo
+        Object.keys(groupedDates).forEach(yearMonth => {
+          groupedDates[yearMonth].sort();
+        });
+        
+        console.log('✅ Fechas agrupadas por mes:', Object.keys(groupedDates).length, 'meses');
+        
+        return groupedDates;
+      } catch (error) {
+        console.error('❌ Error al agrupar fechas de asistencia:', error);
+        this.error = 'Error al agrupar fechas de asistencia';
+        throw error;
+      }
+    },
+
+    async fetchAttendanceRecords(params: FetchAttendanceRecordsParams | string) {
       this.isLoading = true;
       this.error = null;
       try {
-        // Usar el método existente fetchAttendanceByClassAndDate
-        await this.fetchAttendanceByClassAndDate(classId, format(startDate, 'yyyy-MM-dd'));
-        return this.attendanceRecords;
+        // Si recibimos solo un string (forma antigua de llamar a la función), manejarlo como formato 'yyyy-MM'
+        if (typeof params === 'string') {
+          console.log('fetchAttendanceRecords recibido como string:', params);
+          // Si solo tenemos un string 'yyyy-MM', convertirlo a objeto de parámetros
+          return this.fetchAttendanceRecords({
+            classId: this.selectedClass || 'all',
+            startDate: `${params}-01`, // Añadir día 01 para formar una fecha válida
+            endDate: new Date()
+          });
+        }
+        
+        // Manejo de objeto params
+        const { classId, startDate } = params;
+        
+        // Si no tenemos classId, utilizar el classId seleccionado actualmente o 'all'
+        const effectiveClassId = classId || this.selectedClass || 'all';
+        
+        // Si startDate es undefined o nulo, usar la fecha actual
+        if (!startDate) {
+          console.warn('startDate es undefined, usando fecha actual');
+          const today = new Date();
+          const formattedDate = format(today, 'yyyy-MM-dd');
+          await this.fetchAttendanceByClassAndDate(effectiveClassId, formattedDate);
+          return this.attendanceRecords;
+        }
+
+        // Si startDate es un string, necesitamos procesarlo
+        if (typeof startDate === 'string') {
+          let parsedDate;
+          
+          // Detectar si es formato 'yyyy-MM' o 'yyyy-MM-dd'
+          if (startDate.match(/^\d{4}-\d{2}$/)) {
+            // Formato año-mes, añadir día 01
+            parsedDate = parseISO(`${startDate}-01`);
+          } else {
+            // Asumir que es formato completo yyyy-MM-dd
+            parsedDate = parseISO(startDate);
+          }
+          
+          if (!isValid(parsedDate)) {
+            throw new Error(`Formato de fecha inválido: ${startDate}`);
+          }
+          
+          const formattedDate = format(parsedDate, 'yyyy-MM-dd');
+          await this.fetchAttendanceByClassAndDate(effectiveClassId, formattedDate);
+          return this.attendanceRecords;
+        } 
+        
+        // Si startDate es un objeto Date
+        if (startDate instanceof Date) {
+          if (!isValid(startDate)) {
+            throw new Error(`Objeto de fecha inválido: ${startDate}`);
+          }
+          
+          const formattedDate = format(startDate, 'yyyy-MM-dd');
+          await this.fetchAttendanceByClassAndDate(effectiveClassId, formattedDate);
+          return this.attendanceRecords;
+        }
+        
+        throw new Error(`Tipo de fecha no soportado: ${typeof startDate}`);
+        
       } catch (error) {
         this.error = 'Error al cargar los registros de asistencia';
         console.error('Error loading attendance records:', error);
