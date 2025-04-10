@@ -8,6 +8,7 @@ const COLLECTION_NAME = 'CLASES'
 interface Clase {
   id: string
   nombre: string
+  teacherId: string
   horario: {
     dia: string
     horaInicio: string

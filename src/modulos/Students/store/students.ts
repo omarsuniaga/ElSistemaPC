@@ -101,9 +101,9 @@ export const useStudentsStore = defineStore('students', {
           }
         }
         
-        // Verificar si existe classes y es un array que incluye el classId
-        if (student.classes && Array.isArray(student.classes)) {
-          return student.classes.includes(classId);
+        // Verificar si existe clase y coincide con el classId
+        if (student.clase) {
+          return student.clase === classId;
         }
         
         return false;

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
-import {UserSession} from "../types/user"
-
+import { UserSession } from "../types/user"
+import { doc, collection, addDoc, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore'
+import { db } from '../../../firebase'
 
 export const useUserSessionsStore = defineStore('userSessions', {
   state: () => ({
@@ -16,6 +17,11 @@ export const useUserSessionsStore = defineStore('userSessions', {
     // Obtener sesiones de un usuario específico
     getUserSessionsById: (state) => (userId: string) => {
       return state.sessions.filter(session => session.userId === userId)
+    },
+
+    // Obtener sesiones activas
+    getActiveSessions: (state) => {
+      return state.sessions.filter(session => !session.endTime)
     }
   },
   
@@ -25,12 +31,26 @@ export const useUserSessionsStore = defineStore('userSessions', {
       this.loading = true
       
       try {
-        // En una implementación real, aquí se haría la llamada a Firebase
-        // Por ahora, simplemente devolvemos las sesiones filtradas del estado
-        const userSessions = this.sessions.filter(session => session.userId === userId)
+        // Consultar sesiones del usuario en Firestore
+        const sessionsRef = collection(db, 'USER_SESSIONS')
+        const q = query(sessionsRef, where("userId", "==", userId))
+        const snapshot = await getDocs(q)
         
-        // Si no hay sesiones en el estado, devolvemos un array vacío
-        // En una implementación real, aquí se consultaría a Firebase
+        // Actualizar el estado con las sesiones obtenidas
+        const userSessions: UserSession[] = []
+        snapshot.forEach(doc => {
+          const data = doc.data() as Omit<UserSession, 'id'>
+          userSessions.push({
+            id: doc.id,
+            ...data,
+          })
+        })
+        
+        // Actualizar el estado local
+        this.sessions = this.sessions
+          .filter(session => session.userId !== userId) // Eliminar sesiones antiguas
+          .concat(userSessions) // Agregar nuevas sesiones
+          
         return userSessions
       } catch (error: any) {
         console.error('Error al obtener sesiones de usuario:', error)
@@ -46,19 +66,28 @@ export const useUserSessionsStore = defineStore('userSessions', {
       this.loading = true
       
       try {
-        // Crear un ID único para la sesión
-        const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        // Guardar la sesión en Firestore
+        const sessionsRef = collection(db, 'USER_SESSIONS')
+        const docRef = await addDoc(sessionsRef, {
+          ...session,
+          startTime: new Date(),
+        })
         
         // Crear el objeto de sesión completo
         const newSession: UserSession = {
-          id: sessionId,
+          id: docRef.id,
           ...session,
-          startTime: session.startTime || new Date()
+          startTime: new Date()
         }
         
-        // En una implementación real, aquí se guardaría en Firebase
-        // Por ahora, solo lo añadimos al estado
+        // Actualizar el estado local
         this.sessions.push(newSession)
+        
+        // Actualizar también la última conexión en el perfil del usuario
+        const userDocRef = doc(db, 'USERS', session.userId)
+        await updateDoc(userDocRef, {
+          lastLogin: new Date()
+        })
         
         return newSession
       } catch (error: any) {
@@ -75,17 +104,20 @@ export const useUserSessionsStore = defineStore('userSessions', {
       this.loading = true
       
       try {
-        // Buscar la sesión en el estado
+        // Actualizar la sesión en Firestore
+        const sessionRef = doc(db, 'USER_SESSIONS', sessionId)
+        await updateDoc(sessionRef, {
+          endTime: new Date()
+        })
+        
+        // Actualizar el estado local
         const sessionIndex = this.sessions.findIndex(s => s.id === sessionId)
         
         if (sessionIndex >= 0) {
-          // Actualizar el tiempo de finalización
           this.sessions[sessionIndex] = {
             ...this.sessions[sessionIndex],
             endTime: new Date()
           }
-          
-          // En una implementación real, aquí se actualizaría en Firebase
           return this.sessions[sessionIndex]
         } else {
           throw new Error('Sesión no encontrada')
@@ -97,6 +129,45 @@ export const useUserSessionsStore = defineStore('userSessions', {
       } finally {
         this.loading = false
       }
+    },
+    
+    // Registrar una acción en una sesión activa
+    async recordAction(sessionId: string, action: string) {
+      try {
+        // Buscar la sesión en Firestore
+        const sessionRef = doc(db, 'USER_SESSIONS', sessionId)
+        const sessionDoc = await getDoc(sessionRef)
+        
+        if (sessionDoc.exists()) {
+          const sessionData = sessionDoc.data()
+          const actions = sessionData.actions || []
+          
+          // Actualizar las acciones
+          await updateDoc(sessionRef, {
+            actions: [...actions, action]
+          })
+          
+          // Actualizar el estado local
+          const sessionIndex = this.sessions.findIndex(s => s.id === sessionId)
+          if (sessionIndex >= 0) {
+            const currentActions = this.sessions[sessionIndex].actions || []
+            this.sessions[sessionIndex].actions = [...currentActions, action]
+          }
+          
+          return true
+        } else {
+          throw new Error('Sesión no encontrada')
+        }
+      } catch (error: any) {
+        console.error('Error al registrar acción:', error)
+        this.error = error.message
+        return false
+      }
+    },
+    
+    // Limpiar datos de sesiones
+    clearSessions() {
+      this.sessions = []
     }
   }
 })

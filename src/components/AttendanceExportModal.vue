@@ -165,15 +165,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useAttendanceStore } from '../store/attendance'
-import { useStudentsStore } from '../../Students/store/students'
-import { useClassesStore } from '../../Classes/store/classes'
+import { useAttendanceStore } from '../store/attendances'
+import { useStudentsStore } from '../../modulos/Students/store/students'
+import { exportToExcel } from '@/utils/exportToExcel' 
+import { useClassesStore } from '../../modulos/Classes/store/classes'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import ExcelJS from 'exceljs'
-import jspdf from 'jspdf'
+import { jsPDF } from 'jspdf'
 import 'jspdf-autotable'
-import html2pdf from 'html2pdf.js'
 
 const props = defineProps({
   modelValue: {
@@ -190,7 +189,6 @@ const close = () => {
 }
 
 // Stores
-
 const attendanceStore = useAttendanceStore()
 const studentsStore = useStudentsStore()
 const classesStore = useClassesStore()
@@ -234,7 +232,7 @@ const filteredStudents = computed(() => {
   
   return students.value.filter(student => {
     const foundClass = classesStore.classes.find(c => c.name === filters.value.class)
-    return foundClass && foundClass.studentIds && foundClass.studentIds.includes(Number(student.id))
+    return foundClass && foundClass.studentIds.includes(Number(student.id))
   })
 })
 
@@ -341,7 +339,7 @@ const exportData = async () => {
 const exportToPdf = (data, title) => {
   try {
     // Crear documento PDF
-    const doc = new jspdf();
+    const doc = new jsPDF();
     
     // Añadir título
     doc.setFontSize(18);
@@ -376,7 +374,7 @@ const exportToPdf = (data, title) => {
         ['Tasa de asistencia', `${stats.value.attendanceRate}%`]
       ];
       
-      (doc as any).autoTable({
+      doc.autoTable({
         startY: yPosition += 5,
         head: [statsData[0]],
         body: statsData.slice(1),
@@ -384,14 +382,14 @@ const exportToPdf = (data, title) => {
         headStyles: { fillColor: [41, 128, 185], textColor: 255 }
       });
       
-      yPosition = (doc as any).lastAutoTable.finalY + 15;
+      yPosition = doc.lastAutoTable.finalY + 15;
     }
     
     // Añadir tabla principal
     doc.setFontSize(14);
     doc.text('Registros de Asistencia', 14, yPosition);
     
-    (doc as any).autoTable({
+    doc.autoTable({
       startY: yPosition + 5,
       head: [['Estudiante', 'Clase', 'Fecha', 'Estado', 'Justificación', 'Observaciones']],
       body: data.map(row => [
@@ -416,7 +414,7 @@ const exportToPdf = (data, title) => {
         studentGroups[record.studentId].push(record);
       });
       
-      let currentY = (doc as any).lastAutoTable.finalY + 15;
+      let currentY = doc.lastAutoTable.finalY + 15;
       
       doc.setFontSize(14);
       doc.text('Observaciones por Estudiante', 14, currentY);
@@ -431,7 +429,7 @@ const exportToPdf = (data, title) => {
           doc.text(studentName, 14, currentY);
           currentY += 5;
           
-          (doc as any).autoTable({
+          doc.autoTable({
             startY: currentY,
             head: [['Fecha', 'Estado', 'Observaciones']],
             body: observations.map(r => [
@@ -443,7 +441,7 @@ const exportToPdf = (data, title) => {
             headStyles: { fillColor: [41, 128, 185], textColor: 255 }
           });
           
-          currentY = (doc as any).lastAutoTable.finalY + 10;
+          currentY = doc.lastAutoTable.finalY + 10;
         }
       });
     }
@@ -458,7 +456,7 @@ const exportToPdf = (data, title) => {
         classGroups[record.classId].push(record);
       });
       
-      let currentY = (doc as any).lastAutoTable.finalY + 15;
+      let currentY = doc.lastAutoTable.finalY + 15;
       
       doc.setFontSize(14);
       doc.text('Registros por Clase', 14, currentY);
@@ -482,7 +480,7 @@ const exportToPdf = (data, title) => {
           justified: records.filter(r => r.status === 'Justificado').length
         };
         
-        (doc as any).autoTable({
+        doc.autoTable({
           startY: currentY,
           head: [['Total', 'Presentes', 'Ausentes', 'Tardanzas', 'Justificados']],
           body: [[
@@ -496,7 +494,7 @@ const exportToPdf = (data, title) => {
           headStyles: { fillColor: [41, 128, 185], textColor: 255 }
         });
         
-        currentY = (doc as any).lastAutoTable.finalY + 10;
+        currentY = doc.lastAutoTable.finalY + 10;
       });
     }
     
@@ -514,32 +512,14 @@ const exportToPdf = (data, title) => {
 const exportToExcel = (data, title) => {
   try {
     // Crear workbook y worksheet
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Asistencias');
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(data);
     
-    // Añadir encabezados
-    worksheet.columns = [
-      { header: 'Estudiante', key: 'Estudiante', width: 30 },
-      { header: 'Clase', key: 'Clase', width: 20 },
-      { header: 'Fecha', key: 'Fecha', width: 15 },
-      { header: 'Estado', key: 'Estado', width: 15 },
-      { header: 'Justificacion', key: 'Justificacion', width: 30 },
-      { header: 'Observaciones', key: 'Observaciones', width: 30 }
-    ];
-    
-    // Añadir datos
-    data.forEach(row => {
-      worksheet.addRow(row);
-    });
+    // Añadir worksheet al workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Asistencias');
     
     // Si se incluyen estadísticas, agregar hoja de estadísticas
     if (includeStats.value) {
-      const statsWorksheet = workbook.addWorksheet('Estadísticas');
-      statsWorksheet.columns = [
-        { header: 'Métrica', key: 'Métrica', width: 30 },
-        { header: 'Valor', key: 'Valor', width: 15 }
-      ];
-      
       const statsData = [
         { Métrica: 'Total de registros', Valor: stats.value.total },
         { Métrica: 'Presentes', Valor: stats.value.present },
@@ -549,9 +529,8 @@ const exportToExcel = (data, title) => {
         { Métrica: 'Tasa de asistencia', Valor: `${stats.value.attendanceRate}%` }
       ];
       
-      statsData.forEach(row => {
-        statsWorksheet.addRow(row);
-      });
+      const statsWorksheet = XLSX.utils.json_to_sheet(statsData);
+      XLSX.utils.book_append_sheet(workbook, statsWorksheet, 'Estadísticas');
     }
     
     // Si agrupamos por clase, agregar hojas por clase
@@ -565,24 +544,16 @@ const exportToExcel = (data, title) => {
       });
       
       Object.entries(classGroups).forEach(([className, records]) => {
-        const classSheet = workbook.addWorksheet(className.substring(0, 30)); // Excel tiene límite de longitud para nombres de hoja
-        classSheet.columns = [
-          { header: 'Estudiante', key: 'Estudiante', width: 30 },
-          { header: 'Fecha', key: 'Fecha', width: 15 },
-          { header: 'Estado', key: 'Estado', width: 15 },
-          { header: 'Justificacion', key: 'Justificacion', width: 30 },
-          { header: 'Observaciones', key: 'Observaciones', width: 30 }
-        ];
+        const classData = records.map(record => ({
+          Estudiante: getStudentName(record.studentId),
+          Fecha: formatDate(record.Fecha),
+          Estado: record.status,
+          Justificacion: record.justification || '-',
+          Observaciones: record.observaciones || '-'
+        }));
         
-        records.forEach(record => {
-          classSheet.addRow({
-            Estudiante: getStudentName(record.studentId),
-            Fecha: formatDate(record.Fecha),
-            Estado: record.status,
-            Justificacion: record.justification || '-',
-            Observaciones: record.observaciones || '-'
-          });
-        });
+        const classSheet = XLSX.utils.json_to_sheet(classData);
+        XLSX.utils.book_append_sheet(workbook, classSheet, className.substring(0, 30)); // Excel tiene límite de longitud para nombres de hoja
       });
     }
     
@@ -598,35 +569,21 @@ const exportToExcel = (data, title) => {
       
       Object.entries(studentGroups).forEach(([studentId, records]) => {
         const studentName = getStudentName(studentId).substring(0, 30);
-        const studentSheet = workbook.addWorksheet(studentName);
-        studentSheet.columns = [
-          { header: 'Clase', key: 'Clase', width: 20 },
-          { header: 'Fecha', key: 'Fecha', width: 15 },
-          { header: 'Estado', key: 'Estado', width: 15 },
-          { header: 'Justificacion', key: 'Justificacion', width: 30 },
-          { header: 'Observaciones', key: 'Observaciones', width: 30 }
-        ];
+        const studentData = records.map(record => ({
+          Clase: record.classId,
+          Fecha: formatDate(record.Fecha),
+          Estado: record.status,
+          Justificacion: record.justification || '-',
+          Observaciones: record.observaciones || '-'
+        }));
         
-        records.forEach(record => {
-          studentSheet.addRow({
-            Clase: record.classId,
-            Fecha: formatDate(record.Fecha),
-            Estado: record.status,
-            Justificacion: record.justification || '-',
-            Observaciones: record.observaciones || '-'
-          });
-        });
+        const studentSheet = XLSX.utils.json_to_sheet(studentData);
+        XLSX.utils.book_append_sheet(workbook, studentSheet, studentName);
       });
     }
     
     // Guardar archivo
-    workbook.xlsx.writeBuffer().then(buffer => {
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `${title.replace(/\s+/g, '_')}.xlsx`;
-      link.click();
-    });
+    XLSX.writeFile(workbook, `${title.replace(/\s+/g, '_')}.xlsx`);
     
     return true;
   } catch (error) {
@@ -638,46 +595,12 @@ const exportToExcel = (data, title) => {
 // Exportar a CSV
 const exportToCsv = (data, title) => {
   try {
-    // Crear workbook solo con una hoja
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Asistencias');
-    
-    // Añadir encabezados
-    const headers = Object.keys(data[0]);
-    worksheet.columns = headers.map(header => ({
-      header,
-      key: header,
-      width: 20
-    }));
-    
-    // Añadir datos
-    data.forEach(row => {
-      worksheet.addRow(row);
-    });
-    
-    // Crear CSV desde el workbook
-    const csvData = [];
-    
-    // Agregar cabeceras
-    csvData.push(headers.join(','));
-    
-    // Agregar filas de datos
-    data.forEach(row => {
-      const rowData = headers.map(header => {
-        // Escapar comas y comillas
-        const cell = row[header] || '';
-        if (typeof cell === 'string' && (cell.includes(',') || cell.includes('"'))) {
-          return `"${cell.replace(/"/g, '""')}"`;
-        }
-        return cell;
-      });
-      csvData.push(rowData.join(','));
-    });
-    
-    const csvString = csvData.join('\n');
+    // Convertir datos a CSV
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
     
     // Crear blob
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvOutput], { type: 'text/csv;charset=utf-8;' });
     
     // Crear link para descarga
     const link = document.createElement('a');

@@ -444,31 +444,28 @@ const setActiveTab = (tab: string): void => {
 onMounted(async () => {
   loading.value = true;
   try {
-    // mostrar el usuario activo
-    console.log("Usuario activo:", authStore.user);
-
     // Asegurarnos de que los métodos existen antes de llamarlos
     const promises: Promise<any>[] = [];
     
     if (typeof classesStore.forceSync === 'function') {
-      console.log('📚 Forzando sincronización de clases desde Firebase...');
+      // console.log('📚 Forzando sincronización de clases desde Firebase...');
       promises.push(classesStore.forceSync());
     } else if (typeof classesStore.fetchClasses === 'function') {
-      console.log('📚 Cargando clases...');
+      // console.log('📚 Cargando clases...');
       promises.push(classesStore.fetchClasses());
     } else {
       console.warn('⚠️ El método fetchClasses no está disponible en classesStore');
     }
     
     if (typeof teachersStore.fetchTeachers === 'function') {
-      console.log('👨‍🏫 Cargando profesores...');
+      // console.log('👨‍🏫 Cargando profesores...');
       promises.push(teachersStore.fetchTeachers());
     } else {
       console.warn('⚠️ El método fetchTeachers no está disponible en teachersStore');
     }
     
     if (typeof studentsStore.fetchStudents === 'function') {
-      console.log('👨‍🎓 Cargando estudiantes...');
+      // console.log('👨‍🎓 Cargando estudiantes...');
       promises.push(studentsStore.fetchStudents());
     } else {
       console.warn('⚠️ El método fetchStudents no está disponible en studentsStore');
@@ -478,23 +475,23 @@ onMounted(async () => {
     await Promise.all(promises);
     // Si no hay clases, intentar nuevamente para asegurarnos
     if (classesStore.classes.length === 0) {
-      console.log('⚠️ No se encontraron clases, intentando nuevamente...');
+      // console.log('⚠️ No se encontraron clases, intentando nuevamente...');
       if (typeof classesStore.forceSync === 'function') {
         await classesStore.forceSync();
-        console.log(`   - Clases (reintento): ${classesStore.classes.length}`);
+        // console.log(`   - Clases (reintento): ${classesStore.classes.length}`);
       }
     }
     
     // Mostrar estructura de una clase (si hay alguna) para debug
     if (classesStore.classes.length > 0) {
-      console.log('🔍 Estructura de ejemplo de una clase:');
       const sampleClass = classesStore.classes[0];
-      console.log({
-        id: sampleClass.id,
-        name: sampleClass.name,
-        schedule: sampleClass.schedule,
-        teacherId: sampleClass.teacherId
-      });
+      console.log('🔍 Estructura de ejemplo de una clase:', sampleClass)
+      // console.log({
+        // id: sampleClass.id,r
+        // name: sampleClass.name,
+        // schedule: sampleClass.schedule,
+        // teacherId: sampleClass.teacherId
+      // });
     }
   } catch (error) {
     console.error('❌ Error cargando datos:', error);
@@ -511,13 +508,13 @@ onMounted(async () => {
 // Observar cambios en el ID del profesor o en las clases para recargar datos si es necesario
 watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherId, classesCount], [oldTeacherId, oldClassesCount]) => {
   if (newTeacherId !== oldTeacherId || (classesCount === 0 && oldClassesCount === 0)) {
-    console.log('🔄 Detectado cambio en el profesor o en las clases. Actualizando datos...');
+    // console.log('🔄 Detectado cambio en el profesor o en las clases. Actualizando datos...');
     
     try {
       // Si cambia el ID del profesor o no hay clases, recargamos las clases
       if (typeof classesStore.forceSync === 'function') {
         const classes = await classesStore.forceSync();
-        console.log(`✅ Clases actualizadas: ${classes.length} total, ${teacherClasses.value.length} del profesor`);
+        // console.log(`✅ Clases actualizadas: ${classes.length} total, ${teacherClasses.value.length} del profesor`);
       }
     } catch (error) {
       console.error('❌ Error al actualizar clases:', error);

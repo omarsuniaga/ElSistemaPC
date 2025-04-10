@@ -54,6 +54,21 @@ const isDateMarked = (dateStr: string): boolean => {
   return props.markedDates.includes(dateStr)
 }
 
+// Add logic to mark dates with attendance records
+const isMarkedDate = (date) => {
+  return props.markedDates?.includes(format(date, 'yyyy-MM-dd')) || false;
+};
+interface CalendarDay {
+  date: string;
+  dayOfMonth: number;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  isMarked: boolean;
+  dayName: string;
+}
+
+
+type DayClickEvent = CalendarDay;
 // Función para generar la grilla del calendario (42 días para cubrir 6 semanas)
 const generateCalendar = () => {
   const firstDayOfMonth = startOfMonth(displayedMonth.value)
@@ -102,7 +117,7 @@ watchEffect(() => {
   generateCalendar()
 })
 watch(() => [props.currentMonth, props.markedDates], ([newMonth]) => {
-  if (newMonth) displayedMonth.value = newMonth
+  if (newMonth instanceof Date) displayedMonth.value = newMonth
   generateCalendar()
 }, { deep: true })
 

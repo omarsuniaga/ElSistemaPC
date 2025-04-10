@@ -1,6 +1,6 @@
 // src/modulos/Classes/store/classes.ts
 import { defineStore } from 'pinia';
-import { 
+import {
   fetchClassesFirestore,
   addClassFirestore,
   updateClassFirestore,
@@ -33,24 +33,64 @@ export const useClassesStore = defineStore('classes', {
     // Retorna clases que tienen definido un horario
     getScheduledClasses: (state) => state.classes.filter(classItem => classItem.schedule),
     // Retorna clases sin horario definido
-    getUnscheduledClasses: (state) => state.classes.filter(classItem => !classItem.schedule), 
+    getUnscheduledClasses: (state) => state.classes.filter(classItem => !classItem.schedule),
     // obtener clases por dias de la semana
     getClassesByDay: (state) => (day: string) => {
-      return state.classes.filter(classItem => 
-        classItem.schedule?.slots && Array.isArray(classItem.schedule.slots) && 
-        classItem.schedule.slots.some(slot => 
-          typeof slot.day === 'string' 
-            ? slot.day.toLowerCase() === day.toLowerCase() 
+      return state.classes.filter(classItem =>
+        classItem.schedule?.slots && Array.isArray(classItem.schedule.slots) &&
+        classItem.schedule.slots.some(slot =>
+          typeof slot.day === 'string'
+            ? slot.day.toLowerCase() === day.toLowerCase()
             : false
         )
       );
     },
     // obtener clases por dias de la semana
     getClassByDaysAndTeacher: (state) => (teacherId: string, day: string) => {
-      return state.classes.filter(classItem => 
-        classItem.teacherId === teacherId && 
+      return state.classes.filter(classItem =>
+        classItem.teacherId === teacherId &&
         classItem.schedule?.slots.some(slot => slot.day === day)
       );
+    },
+    // Clases filtradas por ID de maestro
+    getClassesByTeacherId: (state) => (teacherId: string) => {
+      if (!teacherId) return [];
+      return state.classes.filter(c => c.teacherId === teacherId);
+    },
+
+    // Clases programadas filtradas por ID de maestro
+    getScheduledClassesByTeacherId: (state) => (teacherId: string) => {
+      if (!teacherId) return [];
+      return state.classes.filter(c =>
+        c.teacherId === teacherId &&
+        c.schedule &&
+        c.schedule.slots &&
+        c.schedule.slots.length > 0
+      );
+    },
+
+    // Clases por día de la semana filtradas por ID de maestro
+    getClassesByDayAndTeacherId: (state) => (day: string, teacherId: string) => {
+      const dayIndex = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'].indexOf(day.toLowerCase());
+
+      if (!teacherId) return [];
+
+      return state.classes.filter(c => {
+        // Verificar que la clase pertenece al maestro
+        if (c.teacherId !== teacherId) return false;
+
+        // Verificar que la clase está programada para ese día
+        if (!c.schedule?.slots || !Array.isArray(c.schedule.slots)) return false;
+
+        return c.schedule.slots.some(slot => {
+          if (typeof slot.day === 'number') {
+            return slot.day === dayIndex;
+          } else if (typeof slot.day === 'string') {
+            return slot.day.toLowerCase() === day.toLowerCase();
+          }
+          return false;
+        });
+      });
     }
   },
 
@@ -63,20 +103,20 @@ export const useClassesStore = defineStore('classes', {
         ...classItem,
         id: String(classItem.id),
         // Normalizar studentIds para garantizar que siempre sea un array
-        studentIds: Array.isArray(classItem.studentIds) 
-          ? classItem.studentIds 
+        studentIds: Array.isArray(classItem.studentIds)
+          ? classItem.studentIds
           : (classItem.studentIds ? [classItem.studentIds] : []),
         schedule: (classItem.schedule && classItem.schedule.slots && Array.isArray(classItem.schedule.slots))
           ? classItem.schedule
           : {
-              slots: classItem.schedule
-                ? [{
-                    day: classItem.schedule.days || '',
-                    startTime: classItem.schedule.startTime || '',
-                    endTime: classItem.schedule.endTime || ''
-                  }]
-                : []
-            },
+            slots: classItem.schedule
+              ? [{
+                day: classItem.schedule.days || '',
+                startTime: classItem.schedule.startTime || '',
+                endTime: classItem.schedule.endTime || ''
+              }]
+              : []
+          },
       };
     },
 
@@ -221,7 +261,7 @@ export const useClassesStore = defineStore('classes', {
      * El horario debe tener la estructura adecuada según la interfaz ClassData.
      */
     async scheduleClass(
-      classId: string, 
+      classId: string,
       scheduleData: {
         day: string,
         startTime: string,
@@ -230,20 +270,20 @@ export const useClassesStore = defineStore('classes', {
         day: string,
         startTime: string,
         endTime: string
-      }[], 
+      }[],
       classroom?: string
     ) {
       return await this.withLoading(async () => {
         const classData = this.getClassById(classId);
         if (!classData) throw new Error('Clase no encontrada');
-        
+
         // Normalizar el formato del horario según la interfaz ClassData
         const normalizedSchedule = {
-          slots: Array.isArray(scheduleData) 
-            ? scheduleData 
+          slots: Array.isArray(scheduleData)
+            ? scheduleData
             : [scheduleData]
         };
-        
+
         return await this.updateClass({
           ...classData,
           schedule: normalizedSchedule,
@@ -251,17 +291,16 @@ export const useClassesStore = defineStore('classes', {
         });
       });
     },
-    
+
     /**
      * Obtiene el horario de una clase por Dias y Maestro.
      */
     async getClassByDayAndTeacher(
-      day: string,teacherId: string
-  )
-    {
+      day: string, teacherId: string
+    ) {
       return await this.withLoading(async () => {
-        const classData = this.classes.filter(classItem => 
-          classItem.schedule?.slots.some(slot => slot.day === day) && 
+        const classData = this.classes.filter(classItem =>
+          classItem.schedule?.slots.some(slot => slot.day === day) &&
           classItem.teacherId === teacherId
         );
         return classData;
@@ -281,19 +320,19 @@ export const useClassesStore = defineStore('classes', {
       return await this.withLoading(async () => {
         const classData = this.getClassById(classId);
         if (!classData) throw new Error('Clase no encontrada');
-        
+
         const currentSchedule = classData.schedule || { slots: [] };
         const updatedSchedule = {
           slots: [...currentSchedule.slots, slot]
         };
-        
+
         return await this.updateClass({
           ...classData,
           schedule: updatedSchedule
         });
       });
     },
-    
+
     /**
      * Elimina un slot de horario de una clase existente
      */
@@ -307,14 +346,14 @@ export const useClassesStore = defineStore('classes', {
         if (!classData.schedule || !classData.schedule.slots) {
           throw new Error('La clase no tiene horarios definidos');
         }
-        
+
         const updatedSlots = [...classData.schedule.slots];
         if (slotIndex < 0 || slotIndex >= updatedSlots.length) {
           throw new Error('Índice de horario inválido');
         }
-        
+
         updatedSlots.splice(slotIndex, 1);
-        
+
         return await this.updateClass({
           ...classData,
           schedule: { slots: updatedSlots }
@@ -333,12 +372,12 @@ export const useClassesStore = defineStore('classes', {
           if (process.env.NODE_ENV === 'development') {
             localStorage.removeItem('classes');
           }
-          
+
           // Cargar datos frescos desde Firebase
           const classes = await fetchClassesFirestore();
           this.classes = classes.map((classItem: any) => this.normalizeClassData(classItem));
           this.lastSync = new Date();
-          
+
           return this.classes;
         } catch (error) {
           console.error('❌ Error forzando sincronización:', error);
@@ -364,8 +403,8 @@ export const useClassesStore = defineStore('classes', {
       const studentQualifications = qualifications.filter(q => q.group.includes(studentId));
       const averageScore = studentQualifications.reduce((acc, q) => {
         // Calculate average score for this qualification's indicators
-        const qualificationScore = q.indicators.length > 0 
-          ? q.indicators.reduce((iAcc, indicator) => iAcc + indicator.score, 0) / q.indicators.length 
+        const qualificationScore = q.indicators.length > 0
+          ? q.indicators.reduce((iAcc, indicator) => iAcc + indicator.score, 0) / q.indicators.length
           : 0;
         return acc + qualificationScore;
       }, 0) / (studentQualifications.length || 1); // Avoid division by zero
@@ -398,8 +437,8 @@ export const useClassesStore = defineStore('classes', {
 
       // Find next level class
       const nextLevel = this.getNextLevel(currentClass.level);
-      const nextLevelClasses = this.classes.filter(c => 
-        c.level === nextLevel && 
+      const nextLevelClasses = this.classes.filter(c =>
+        c.level === nextLevel &&
         c.instrument === currentClass.instrument
       );
 
@@ -408,7 +447,7 @@ export const useClassesStore = defineStore('classes', {
       }
 
       // Select the class with fewest students
-      const targetClass = nextLevelClasses.reduce((a, b) => 
+      const targetClass = nextLevelClasses.reduce((a, b) =>
         (a.studentIds?.length || 0) <= (b.studentIds?.length || 0) ? a : b
       );
 

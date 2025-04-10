@@ -6,11 +6,13 @@ import {
   updateDoc, 
   setDoc,
   getDoc,
+  query, 
+  where,  
   serverTimestamp,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../firebase';
-import type { AttendanceDocument, JustificationData, AttendanceRecord } from '../../types/attendance';
+import type { AttendanceDocument, JustificationData, AttendanceRecord } from '../../modulos/Attendance/types/attendance';
 
 /**
  * Obtiene un documento de asistencia por fecha y clase
@@ -439,14 +441,14 @@ export const updateAttendanceFirebase = async (attendanceData: AttendanceRecord)
       const justIndex = document.data.justificacion.findIndex(j => j.id === attendanceData.studentId);
       
       if (justIndex !== -1) {
-        document.data.justificacion[justIndex].reason = attendanceData.justification;
+        document.data.justificacion[justIndex].reason = typeof attendanceData.justification === 'string' ? attendanceData.justification : (attendanceData.justification as string);
         if (attendanceData.documentUrl) {
           document.data.justificacion[justIndex].documentURL = attendanceData.documentUrl;
         }
       } else {
         document.data.justificacion.push({
           id: attendanceData.studentId,
-          reason: attendanceData.justification,
+          reason: typeof attendanceData.justification === 'string' ? attendanceData.justification : (attendanceData.justification.reason || ''),
           documentURL: attendanceData.documentUrl
         });
       }
@@ -491,4 +493,136 @@ export const updateAttendanceWithJustificationFirebase = async (
 export const registerAttendanceFirebase = async (attendanceData: AttendanceRecord): Promise<string> => {
   // Usar el método updateAttendance para mantener la compatibilidad
   return updateAttendanceFirebase(attendanceData);
+};
+
+/**
+ * Fetches attendance records within a date range
+ */
+export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endDate: string): Promise<AttendanceRecord[]> => {
+  try {
+    const attendanceRef = collection(db, 'ASISTENCIAS');
+    
+    // Query using the fecha field between the start and end dates
+    const q = query(
+      attendanceRef,
+      where("fecha", ">=", startDate),
+      where("fecha", "<=", endDate)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const records: AttendanceRecord[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      // Process according to Firestore structure
+      if (data && data.fecha && data.classId && data.data) {
+        // Process present students
+        if (data.data.presentes && Array.isArray(data.data.presentes)) {
+          data.data.presentes.forEach(studentId => {
+            records.push({
+              id: doc.id,
+              studentId,
+              classId: data.classId,
+              Fecha: data.fecha,
+              status: 'Presente',
+            });
+          });
+        }
+        
+        // Process absent students
+        if (data.data.ausentes && Array.isArray(data.data.ausentes)) {
+          data.data.ausentes.forEach(studentId => {
+            records.push({
+              id: doc.id,
+              studentId,
+              classId: data.classId,
+              Fecha: data.fecha,
+              status: 'Ausente',
+            });
+          });
+        }
+        
+        // Process late students and justifications
+        if (data.data.tarde && Array.isArray(data.data.tarde)) {
+          data.data.tarde.forEach(studentId => {
+            // Check if student has a justification
+            const hasJustification = data.data.justificacion?.some(j => j.id === studentId);
+            
+            records.push({
+              id: doc.id,
+              studentId,
+              classId: data.classId,
+              Fecha: data.fecha,
+              status: hasJustification ? 'Justificado' : 'Tardanza',
+              justification: hasJustification ? 
+                { 
+                  reason: data.data.justificacion.find(j => j.id === studentId)?.reason || '',
+                  documentUrl: data.data.justificacion.find(j => j.id === studentId)?.documentURL
+                } : 
+                undefined
+            });
+          });
+        }
+      }
+    });
+    
+    return records;
+  } catch (error) {
+    console.error('Error fetching attendance by date range:', error);
+    throw error;
+  }
+};
+
+/**
+ * Gets the attendance status for a specific student on a specific date
+ */
+export const getAttendanceStatusFirebase = async (studentId: string, date: string, classId?: string): Promise<string> => {
+  try {
+    // Query the attendance collection for the specific date
+    const attendanceRef = collection(db, 'ASISTENCIAS');
+    let q;
+    
+    if (classId) {
+      q = query(
+        attendanceRef,
+        where("fecha", "==", date),
+        where("classId", "==", classId)
+      );
+    } else {
+      q = query(
+        attendanceRef,
+        where("fecha", "==", date)
+      );
+    }
+    
+    const querySnapshot = await getDocs(q);
+    
+    for (const doc of querySnapshot.docs) {
+      const data = doc.data();
+      if (data && data.data) {
+        // Check if student is in presentes array
+        if (data.data.presentes?.includes(studentId)) {
+          return 'Presente';
+        }
+        
+        // Check if student is in ausentes array
+        if (data.data.ausentes?.includes(studentId)) {
+          return 'Ausente';
+        }
+        
+        // Check if student is in tarde array
+        if (data.data.tarde?.includes(studentId)) {
+          // Check if student has justification
+          const hasJustification = data.data.justificacion?.some(j => j.id === studentId);
+          return hasJustification ? 'Justificado' : 'Tardanza';
+        }
+      }
+    }
+    
+    // Default if not found
+    return 'Ausente';
+  } catch (error) {
+    console.error('Error fetching student attendance status:', error);
+    throw error;
+  }
 };

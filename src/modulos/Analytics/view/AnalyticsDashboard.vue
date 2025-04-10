@@ -9,13 +9,23 @@ import { useClassesStore } from '../../Classes/store/classes'
 import { useAttendanceStore } from '../../Attendance/store/attendance'
 import { useContentsStore } from '../../Contents/store/contents'
 import { useInstrumentoStore } from '../../Instruments/store/instrumento'
+
+// Componentes generales
 import PerformanceKpi from '../components/PerformanceKpi.vue'
 import ChartContainer from '../components/ChartContainer.vue'
+
+// Componentes de análisis específicos
+import StudentAnalytics from '../components/StudentAnalytics.vue'
+import TeacherAnalytics from '../components/TeacherAnalytics.vue'
+import AttendanceAnalytics from '../components/AttendanceAnalytics.vue'
 import AnalysisPanel from '../components/AnalysisPanel.vue'
 import ReportGenerator from '../components/ReportGenerator.vue'
-import { UserIcon, UsersIcon, UserPlusIcon } from '@heroicons/vue/24/outline'
+
+// Íconos
+import { UserIcon, UsersIcon, UserPlusIcon, ChartBarIcon, CalendarIcon, AcademicCapIcon } from '@heroicons/vue/24/outline'
 import { Line, Doughnut } from 'vue-chartjs'
 
+// Stores
 const analyticsStore = useAnalyticsStore();
 const studentsStore = useStudentsStore();
 const teachersStore = useTeachersStore();
@@ -28,36 +38,34 @@ const instrumentsStore = useInstrumentoStore();
 const isLoading = ref(true);
 const error = ref('');
 const activeTab = ref('overview')
+
 // Lista de pestañas disponibles
 const tabs = [
   { id: 'overview', label: 'Resumen' },
+  { id: 'students', label: 'Alumnos' },
+  { id: 'teachers', label: 'Maestros' },
   { id: 'attendance', label: 'Asistencias' },
-  { id: 'performance', label: 'Rendimiento' },
   { id: 'academic', label: 'Contenidos y Evaluaciones' },
-  { id: 'teachers', label: 'Profesores' }
+  { id: 'reports', label: 'Informes' }
 ]
 
-// Ejemplo de computed agregando datos cruzados
-const aggregatedData = computed(() => {
-  return {
-    // Puede procesar aquí métricas combinadas a partir de cada store
-    totalStudents: dashboardData.value.totalStudents,
-    totalTeachers: dashboardData.value.totalTeachers,
-    totalClasses: dashboardData.value.totalClasses,
-    averageAttendance: dashboardData.value.averageAttendance,
-    averagePerformance: dashboardData.value.averagePerformance
-  }
-})
-
-// Filter state
-const filters = ref({
-  teacherId: '',
-  classId: '',
-  instrument: '',
-  level: ''
+// Filtros de tiempo
+const timeRange = ref({
+  startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+  endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+  selectedRange: 'currentMonth'
 });
 
-// Dashboard data
+// Opciones de rango de tiempo
+const timeRangeOptions = [
+  { value: 'last3Months', label: 'Últimos 3 meses' },
+  { value: 'last6Months', label: 'Últimos 6 meses' },
+  { value: 'lastYear', label: 'Último año' },
+  { value: 'currentMonth', label: 'Mes actual' },
+  { value: 'custom', label: 'Personalizado' }
+];
+
+// Ejemplo de computed agregando datos cruzados
 const dashboardData = ref({
   totalStudents: 0,
   totalTeachers: 0,
@@ -103,15 +111,27 @@ const dashboardData = ref({
   }
 });
 
-// Time range options
-const timeRangeOptions = [
-  { value: 'last3Months', label: 'Últimos 3 meses' },
-  { value: 'last6Months', label: 'Últimos 6 meses' },
-  { value: 'lastYear', label: 'Último año' },
-  { value: 'custom', label: 'Personalizado' }
-];
+// Computed que agrega datos cruzados
+const aggregatedData = computed(() => {
+  return {
+    totalStudents: dashboardData.value.totalStudents,
+    totalTeachers: dashboardData.value.totalTeachers,
+    totalClasses: dashboardData.value.totalClasses,
+    averageAttendance: dashboardData.value.averageAttendance,
+    averagePerformance: dashboardData.value.averagePerformance,
+    studentsGrowth: dashboardData.value.studentsGrowth
+  }
+})
 
-// Load dashboard data
+// Filter state
+const filters = ref({
+  teacherId: '',
+  classId: '',
+  instrument: '',
+  level: ''
+});
+
+// Cargar datos del dashboard
 const loadDashboardData = async () => {
   isLoading.value = true;
   error.value = '';
@@ -127,10 +147,34 @@ const loadDashboardData = async () => {
       analyticsStore.fetchAnalytics()
     ]);
     
+    // Datos básicos
     dashboardData.value.totalStudents = studentsStore.students.length;
     dashboardData.value.totalTeachers = teachersStore.teachers.length;
     dashboardData.value.totalClasses = classesStore.classes.length;
     dashboardData.value.totalInstruments = instrumentsStore.instruments.length;
+    
+    // Datos de asistencia
+    dashboardData.value.averageAttendance = analyticsStore.attendanceMetrics.averageRate || 0;
+    
+    // Datos de rendimiento
+    dashboardData.value.averagePerformance = analyticsStore.studentMetrics.averagePerformance || 0;
+    
+    // Crecimiento de estudiantes (simulado)
+    dashboardData.value.studentsGrowth = analyticsStore.studentMetrics.growth || 5.2;
+    
+    // Distribución de rendimiento
+    dashboardData.value.performance.distribution = analyticsStore.studentMetrics.performanceDistribution || {
+      excellent: 25,
+      good: 45,
+      average: 20,
+      needsImprovement: 10
+    };
+    
+    // Datos para gráficos de asistencia
+    if (analyticsStore.attendanceMetrics.weekdayAttendance) {
+      // Si existen datos reales, usarlos
+    }
+    
   } catch (err) {
     console.error('Error loading dashboard data:', err);
     error.value = 'Error cargando datos del dashboard';
@@ -139,13 +183,37 @@ const loadDashboardData = async () => {
   }
 };
 
-onMounted(async () => {
-  await loadDashboardData();
-});
 // Método para cambiar de pestaña
 const changeTab = (tabId: string) => {
   activeTab.value = tabId
 }
+
+// Método para aplicar filtros de fecha
+const applyTimeFilter = () => {
+  if (timeRange.value.selectedRange === 'currentMonth') {
+    timeRange.value.startDate = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+    timeRange.value.endDate = format(endOfMonth(new Date()), 'yyyy-MM-dd');
+  } else if (timeRange.value.selectedRange === 'last3Months') {
+    timeRange.value.startDate = format(startOfMonth(subMonths(new Date(), 3)), 'yyyy-MM-dd');
+    timeRange.value.endDate = format(new Date(), 'yyyy-MM-dd');
+  } else if (timeRange.value.selectedRange === 'last6Months') {
+    timeRange.value.startDate = format(startOfMonth(subMonths(new Date(), 6)), 'yyyy-MM-dd');
+    timeRange.value.endDate = format(new Date(), 'yyyy-MM-dd');
+  } else if (timeRange.value.selectedRange === 'lastYear') {
+    timeRange.value.startDate = format(startOfMonth(subMonths(new Date(), 12)), 'yyyy-MM-dd');
+    timeRange.value.endDate = format(new Date(), 'yyyy-MM-dd');
+  }
+  
+  // Vuelve a cargar datos con el nuevo filtro
+  loadDashboardData();
+}
+
+// Observar cambios en el filtro de tiempo
+watch(() => timeRange.value.selectedRange, (newValue) => {
+  if (newValue !== 'custom') {
+    applyTimeFilter();
+  }
+});
 
 // Chart configuration options
 const commonChartOptions = ref({
@@ -197,23 +265,94 @@ const performanceDistributionChart = computed(() => {
     }]
   };
 });
+
+// Datos para el panel de análisis en la pestaña académica
+const attendanceByDayOfWeek = computed(() => {
+  return {
+    labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+    datasets: [{
+      label: 'Tasa de Asistencia (%)',
+      data: [90, 87, 90, 88, 86, 91, 85],
+      backgroundColor: 'rgba(99, 102, 241, 0.5)',
+      borderColor: 'rgb(99, 102, 241)',
+      borderWidth: 1
+    }]
+  };
+});
+
+const studentPerformance = computed(() => performanceDistributionChart.value);
+
+const atRiskStudents = computed(() => [
+  { id: '1', name: 'Juan Pérez', instrument: 'Guitarra', performance: 62 },
+  { id: '2', name: 'María Gómez', instrument: 'Piano', performance: 58 },
+  { id: '3', name: 'Carlos López', instrument: 'Violín', performance: 65 }
+]);
+
+const bestAttendanceClasses = computed(() => [
+  { id: '1', name: 'Guitarra Nivel 3', total: 30, attendanceRate: 95 },
+  { id: '2', name: 'Piano Avanzado', total: 25, attendanceRate: 92 },
+  { id: '3', name: 'Teoría Musical', total: 40, attendanceRate: 88 }
+]);
+
+const lowestPerformanceIndicators = computed(() => [
+  { name: 'Lectura a primera vista', subject: 'Piano', score: 67 },
+  { name: 'Técnicas avanzadas', subject: 'Guitarra', score: 65 },
+  { name: 'Armonización', subject: 'Teoría', score: 70 }
+]);
+
+onMounted(async () => {
+  await loadDashboardData();
+});
 </script>
 
 <template>
   <div class="analytics-dashboard p-4 space-y-6">
-    <header class="flex justify-between items-center">
+    <header class="flex justify-between items-center flex-wrap gap-4">
       <h1 class="text-2xl font-bold">Dashboard de Análisis</h1>
-      <!-- Ejemplo: botones para cambiar formato de visualización -->
+      
+      <!-- Filtros de tiempo -->
       <div class="flex items-center space-x-2">
-        <!-- ...botones de filtros y fechas... -->
+        <label class="text-sm text-gray-600">Periodo:</label>
+        <select
+          v-model="timeRange.selectedRange"
+          class="px-3 py-2 border rounded-md text-sm"
+        >
+          <option
+            v-for="option in timeRangeOptions"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.label }}
+          </option>
+        </select>
+        
+        <div v-if="timeRange.selectedRange === 'custom'" class="flex space-x-2">
+          <input
+            v-model="timeRange.startDate"
+            type="date"
+            class="px-2 py-1 border rounded-md text-sm"
+          />
+          <input
+            v-model="timeRange.endDate"
+            type="date"
+            class="px-2 py-1 border rounded-md text-sm"
+          />
+          <button
+            @click="applyTimeFilter"
+            class="px-3 py-1 bg-blue-600 text-white rounded-md text-sm"
+          >
+            Aplicar
+          </button>
+        </div>
       </div>
     </header>
     
-    <!-- Loading and error states remain unchanged -->
+    <!-- Loading and error states -->
     <div v-if="isLoading" class="flex justify-center items-center py-12">
       <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
       <span class="ml-3">Cargando estadísticas...</span>
     </div>
+    
     <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-600 rounded-md p-4">
       {{ error }}
       <button @click="loadDashboardData" class="ml-2 underline">Reintentar</button>
@@ -222,7 +361,7 @@ const performanceDistributionChart = computed(() => {
     <div v-else>
       <!-- Tabs Navigation -->
       <div class="mb-6 border-b border-gray-200">
-        <nav class="-mb-px flex space-x-4">
+        <nav class="-mb-px flex space-x-4 overflow-x-auto">
           <button 
             v-for="tab in tabs" 
             :key="tab.id" 
@@ -240,37 +379,68 @@ const performanceDistributionChart = computed(() => {
       <!-- Pestañas de contenido -->
       <div v-if="activeTab === 'overview'">
         <!-- Ejemplo de KPI Cards con datos agregados -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <PerformanceKpi title="Total Estudiantes" :value="aggregatedData.totalStudents" :trend="5.2" icon="UserIcon" metricType="default" />
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <PerformanceKpi title="Total Estudiantes" :value="aggregatedData.totalStudents" :trend="aggregatedData.studentsGrowth" icon="UserIcon" metricType="default" />
           <PerformanceKpi title="Total Profesores" :value="aggregatedData.totalTeachers" :trend="3.1" icon="UsersIcon" metricType="default" />
           <PerformanceKpi title="Total Clases" :value="aggregatedData.totalClasses" :trend="2.8" icon="AcademicCapIcon" metricType="default" />
           <PerformanceKpi title="Asistencia Promedio" :value="aggregatedData.averageAttendance" :trend="3" icon="CalendarIcon" metricType="percentage" />
           <PerformanceKpi title="Rendimiento Promedio" :value="aggregatedData.averagePerformance" :trend="1.5" icon="ChartBarIcon" metricType="percentage" />
+          <PerformanceKpi title="Instrumentos" :value="dashboardData.totalInstruments" :trend="0" icon="ChartBarIcon" metricType="default" />
         </div>
+        
+        <!-- Resumen visual -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <ChartContainer title="Asistencia por Día" icon="ChartBarIcon">
+            <Line :data="attendanceByDayChart" :options="commonChartOptions"/>
+          </ChartContainer>
+          
+          <ChartContainer title="Distribución de Rendimiento" icon="ChartBarIcon">
+            <Doughnut :data="performanceDistributionChart" :options="commonChartOptions"/>
+          </ChartContainer>
+        </div>
+        
+        <!-- Análisis general -->
+        <AnalysisPanel
+          :attendanceByDayOfWeek="attendanceByDayOfWeek"
+          :studentPerformance="studentPerformance"
+          :chartOptions="commonChartOptions"
+          :doughnutOptions="commonChartOptions"
+          :atRiskStudents="atRiskStudents"
+          :bestAttendanceClasses="bestAttendanceClasses"
+          :lowestPerformanceIndicators="lowestPerformanceIndicators"
+        />
       </div>
       
-      <div v-else-if="activeTab === 'attendance'">
-        <!-- Sección de asistencias -->
-        <ChartContainer title="Asistencia por Día" icon="ChartBarIcon">
-          <!-- Suponiendo que attendanceByDayChart ya esté definido en computed -->
-          <Line :data="attendanceByDayChart" :options="commonChartOptions"/>
-        </ChartContainer>
+      <!-- Panel de Alumnos -->
+      <div v-else-if="activeTab === 'students'">
+        <StudentAnalytics />
       </div>
       
-      <div v-else-if="activeTab === 'performance'">
-        <!-- Sección de rendimiento -->
-        <ChartContainer title="Distribución de Rendimiento" icon="ChartBarIcon">
-          <Doughnut :data="performanceDistributionChart" :options="commonChartOptions"/>
-        </ChartContainer>
-      </div>
-      
-      <div v-else-if="activeTab === 'academic'">
-        <!-- Sección de Evaluaciones y Contenidos -->
-        <AnalysisPanel />
-      </div>
-      
+      <!-- Panel de Maestros -->
       <div v-else-if="activeTab === 'teachers'">
-        <!-- Sección de Reportes específicos de profesores -->
+        <TeacherAnalytics />
+      </div>
+      
+      <!-- Panel de Asistencias -->
+      <div v-else-if="activeTab === 'attendance'">
+        <AttendanceAnalytics />
+      </div>
+      
+      <!-- Panel de Contenidos y Evaluaciones -->
+      <div v-else-if="activeTab === 'academic'">
+        <AnalysisPanel
+          :attendanceByDayOfWeek="attendanceByDayOfWeek"
+          :studentPerformance="studentPerformance"
+          :chartOptions="commonChartOptions"
+          :doughnutOptions="commonChartOptions"
+          :atRiskStudents="atRiskStudents"
+          :bestAttendanceClasses="bestAttendanceClasses"
+          :lowestPerformanceIndicators="lowestPerformanceIndicators"
+        />
+      </div>
+      
+      <!-- Panel de Informes -->
+      <div v-else-if="activeTab === 'reports'">
         <ReportGenerator />
       </div>
     </div>

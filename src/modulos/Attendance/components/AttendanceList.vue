@@ -11,7 +11,6 @@ import {
   ChatBubbleLeftRightIcon,
   ArrowDownOnSquareIcon,
   ArrowDownTrayIcon,
-  PaperClipIcon
 } from '@heroicons/vue/24/outline'
 import './AttendanceList.css'
 import { useClassesStore } from '../../Classes/store/classes'
@@ -19,6 +18,7 @@ import { useStudentsStore } from '../../Students/store/students'
 import { useAttendanceStore } from '../store/attendance'
 import { useRoute } from 'vue-router'
 import ClassObservationBadge from './ClassObservationBadge.vue'
+import Toast from '../../../components/Toast.vue'
 
 // Props y emits
 const props = defineProps<{
@@ -50,6 +50,11 @@ const pendingChanges = ref<Set<string>>(new Set()); // Registro de IDs de estudi
 const localAttendanceRecords = ref<Record<string, string>>({}); // Estado local para gestionar cambios antes de guardar
 const selectedStudentForJustification = ref<{ id: string; nombre: string; apellido: string } | null>(null);
 
+// Estado para el toast
+const showToast = ref(false);
+const toastMessage = ref('');
+const toastType = ref<'success' | 'error' | 'warning' | 'info'>('success');
+
 // Watch para inicializar el estado local cuando cambian los attendanceRecords
 watch(() => props.attendanceRecords, (newRecords) => {
   localAttendanceRecords.value = { ...newRecords };
@@ -70,31 +75,92 @@ const getJustificationDocument = (studentId: string): string | undefined => {
   return justification?.documentURL;
 };
 
-// Event handlers para botones de acción de asistencia
-const handleUpdateAttendance = (studentId: string, status: AttendanceStatus | 'save') => {
-  console.log('Actualizando estado localmente:', studentId, status);
-  
-  if (status === 'save') {
-    emit('update-status', 'all', 'save');
+// Función para mostrar el toast
+const displayToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+  toastMessage.value = message;
+  toastType.value = type;
+  showToast.value = true;
+};
+
+// Manejar actualización de estado de asistencia
+const handleUpdateStatus = (studentId: string, status: string) => {
+  // Si es una operación de guardar todos los cambios pendientes
+  if (studentId === 'all' && status === 'save') {
+    saveAllPendingChanges();
     return;
   }
   
-  // Verificar si cambia desde "Justificado" a otro estado
-  const wasJustified = localAttendanceRecords.value[studentId] === 'Justificado';
-  const isLeavingJustified = wasJustified && status !== 'Justificado';
+  // Asegúrate de que el ID del estudiante y el estado sean válidos
+  if (!studentId || !status) return;
   
-  // Actualizar estado local
-  localAttendanceRecords.value[studentId] = status;
+  // Actualizar el registro local
+  localAttendanceRecords.value[studentId] = status as AttendanceStatus;
   
-  // Marcar este estudiante como pendiente de guardar
+  // Registrar este cambio como pendiente
   pendingChanges.value.add(studentId);
   
-  // Emitir evento al componente padre con información adicional
-  if (isLeavingJustified) {
-    console.log(`El estudiante ${studentId} ha cambiado de Justificado a ${status}, se eliminará su justificación`);
-  }
+  // Mostrar toast indicando el cambio
+  const studentName = students.value.find(s => s.id === studentId)?.nombre || 'Estudiante';
+  displayToast(`${studentName}: ${status}`, 'info');
   
-  emit('update-status', studentId, status);
+  console.log("Estado actualizado:", studentId, status, "pendiente de guardar");
+};
+
+// Función para guardar todos los cambios pendientes
+const saveAllPendingChanges = async () => {
+  if (pendingChanges.value.size === 0) return;
+  
+  try {
+    // Preparar el documento de asistencia con la estructura correcta
+    const attendanceDoc = {
+      fecha: attendanceStore.selectedDate || new Date().toISOString().split('T')[0],
+      classId: selectedClass.value,
+      data: {
+        presentes: [] as string[],
+        ausentes: [] as string[],
+        tarde: [] as string[],
+        justificacion: attendanceStore.currentAttendanceDoc?.data.justificacion || [],
+        observations: attendanceStore.currentAttendanceDoc?.data.observations || ''
+      }
+    };
+    
+    // Agrupar estudiantes por estado
+    Object.entries(localAttendanceRecords.value).forEach(([studentId, status]) => {
+      if (status === 'Presente') {
+        attendanceDoc.data.presentes.push(studentId);
+      } else if (status === 'Ausente') {
+        attendanceDoc.data.ausentes.push(studentId);
+      } else if (status === 'Tardanza') {
+        attendanceDoc.data.tarde.push(studentId);
+      } else if (status === 'Justificado') {
+        // Los justificados deben estar en la lista de tarde
+        attendanceDoc.data.tarde.push(studentId);
+        
+        // Si ya existe una justificación, se mantiene, si no, se crea una básica
+        if (!attendanceDoc.data.justificacion.some(j => j.id === studentId)) {
+          attendanceDoc.data.justificacion.push({
+            id: studentId,
+            reason: 'Justificación pendiente de detalles'
+          });
+        }
+      }
+    });
+    
+    // Guardar en Firestore usando el método del store
+    await attendanceStore.saveAttendanceDocument(attendanceDoc);
+    
+    // Mostrar toast de éxito
+    displayToast(`¡Asistencia guardada! ${pendingChanges.value.size} registro(s) actualizados.`, 'success');
+    
+    // Limpiar los cambios pendientes después de guardar
+    pendingChanges.value.clear();
+    
+    console.log("Todos los cambios de asistencia guardados con éxito en Firestore");
+  } catch (error) {
+    // Mostrar toast de error
+    displayToast('Error al guardar los cambios de asistencia', 'error');
+    console.error("Error al guardar los cambios de asistencia:", error);
+  }
 };
 
 // Event handlers para abrir modales
@@ -118,6 +184,11 @@ const handleOpenJustification = (student: any) => {
   selectedStudentForJustification.value = student ? 
     { id: student.id, nombre: student.nombre, apellido: student.apellido } : null;
   emit('open-justification', student);
+
+  // Mostrar toast
+  if (student && !props.isDisabled) {
+    displayToast(`Añadiendo justificación para ${student.nombre}`, 'info');
+  }
 };
 
 const handleOpenObservation = () => {
@@ -215,6 +286,15 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
 </script>
 <template>
   <div class="space-y-4">
+    <!-- Toast component -->
+    <Toast
+      v-model:show="showToast"
+      :message="toastMessage"
+      :type="toastType"
+      position="top-right"
+      :duration="3000"
+    />
+
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
       <div class="flex items-center space-x-2">
         <!-- Indicador de observaciones de clase -->
@@ -236,7 +316,7 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
         </button>
         <button 
           class="btn btn-primary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none" 
-          @click="handleUpdateAttendance('all', 'save')"
+          @click="handleUpdateStatus('all', 'save')"
           :disabled="isDisabled || !hasPendingChanges"
           :class="{'opacity-50': !hasPendingChanges}"
         >
@@ -301,7 +381,7 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
             <td class="px-1 sm:px-4 py-2 sm:py-3">
               <div class="flex flex-wrap gap-1 sm:gap-2 justify-center">
                 <button 
-                  @click="handleUpdateAttendance(student.id, 'Presente')"
+                  @click="handleUpdateStatus(student.id, 'Presente')"
                   :class="[
                     'btn btn-icon btn-xs sm:btn-sm p-1 sm:p-1.5',
                     (localAttendanceRecords[student.id] || 'Ausente') === 'Presente' ? 'btn-success-active' : 'btn-success'
@@ -312,7 +392,7 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
                   <CheckCircleIcon class="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
                 <button 
-                  @click="handleUpdateAttendance(student.id, 'Ausente')"
+                  @click="handleUpdateStatus(student.id, 'Ausente')"
                   :class="[
                     'btn btn-icon btn-xs sm:btn-sm p-1 sm:p-1.5',
                     (localAttendanceRecords[student.id] || 'Ausente') === 'Ausente' ? 'btn-danger-active' : 'btn-danger'
@@ -323,7 +403,7 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
                   <XCircleIcon class="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
                 <button 
-                  @click="handleUpdateAttendance(student.id, 'Tardanza')"
+                  @click="handleUpdateStatus(student.id, 'Tardanza')"
                   :class="[
                     'btn btn-icon btn-xs sm:btn-sm p-1 sm:p-1.5',
                     (localAttendanceRecords[student.id] || 'Ausente') === 'Tardanza' ? 'btn-warning-active' : 'btn-warning'

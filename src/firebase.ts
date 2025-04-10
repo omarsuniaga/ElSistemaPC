@@ -21,16 +21,6 @@ const firebaseConfig = {
   databaseURL: import.meta.env.VITE_APP_DATABASE_URL
 };
 
-// Add environment variable validation
-console.log('Firebase config:', {
-  apiKey: !!import.meta.env.VITE_APP_API_KEY ? '[KEY SET]' : '[MISSING]',
-  authDomain: !!import.meta.env.VITE_APP_AUTH_DOMAIN ? '[SET]' : '[MISSING]',
-  projectId: !!import.meta.env.VITE_APP_PROJECT_ID ? '[SET]' : '[MISSING]',
-  storageBucket: !!import.meta.env.VITE_APP_STORAGE_BUCKET ? '[SET]' : '[MISSING]',
-  messagingSenderId: !!import.meta.env.VITE_APP_MESSAGING_SENDER_ID ? '[SET]' : '[MISSING]',
-  appId: !!import.meta.env.VITE_APP_APP_ID ? '[SET]' : '[MISSING]'
-});
-
 // Inicializar Firebase (solo una vez)
 const app = initializeApp(firebaseConfig);
 

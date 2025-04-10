@@ -75,52 +75,8 @@
     <!-- Panel de Clases del Día -->
     <TodayClassesPanel ref="todayClassesPanel" class="mb-8" />
 
-    <!-- Detalle de asistencia de estudiantes -->
-    <div class="bg-white rounded-lg shadow p-6 mb-8">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">Estudiantes presentes hoy</h2>
-        <div v-if="isLoading" class="text-blue-500">
-          <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        </div>
-      </div>
+    <AttendanceWeeklyTable class="mb-8" />
       
-      <div v-if="error" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
-        {{ error }}
-      </div>
-      
-      <div class="overflow-x-auto">
-        <table class="w-full table-auto">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estudiante</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clase</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="(student, index) in presentStudentsList" :key="index" class="hover:bg-gray-50">
-              <td class="px-6 py-4 whitespace-nowrap">{{ student.name }}</td>
-              <td class="px-6 py-4 whitespace-nowrap">{{ student.className }}</td>
-              <td class="px-6 py-4 whitespace-nowrap">{{ student.time }}</td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                  Presente
-                </span>
-              </td>
-            </tr>
-            <tr v-if="presentStudentsList.length === 0 && !isLoading">
-              <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
-                No hay datos de asistencia para mostrar
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -133,7 +89,7 @@ import { useStudentsStore } from '../../../Students/store/students'
 import { useClassesStore } from '../../../Classes/store/classes'
 import { useTeachersStore } from '../../store/teachers'
 import TodayClassesPanel from '../../../../components/TodayClassesPanel.vue'
-
+import AttendanceWeeklyTable from '../../../../components/AttendanceWeeklyTable.vue'
 // Estado reactivo
 const attendanceStore = useAttendanceStore()
 const studentsStore = useStudentsStore()
@@ -266,10 +222,11 @@ async function loadTeachersData() {
 // Función para actualizar las estadísticas de clases desde el componente TodayClassesPanel
 function updateClassesStatistics() {
   if (todayClassesPanel.value) {
-    // Obtenemos las cifras directamente del componente
-    activeClasses.value = todayClassesPanel.value.totalClassesToday
-    regularClasses.value = todayClassesPanel.value.totalRegularClasses
-    emergentClasses.value = todayClassesPanel.value.totalEmergentClasses
+    // Accedemos a los datos a través de métodos expuestos o con type assertion
+    const panelInstance = todayClassesPanel.value as any;
+    activeClasses.value = panelInstance.totalClassesToday || 0;
+    regularClasses.value = panelInstance.totalRegularClasses || 0;
+    emergentClasses.value = panelInstance.totalEmergentClasses || 0;
     
     // Calcular porcentaje de clases emergentes del total
     if (activeClasses.value > 0) {

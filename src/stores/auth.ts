@@ -11,6 +11,7 @@ import { useStudentsStore } from '../modulos/Students/store/students'
 import { useTeachersStore } from '../modulos/Teachers/store/teachers'
 import { useClassesStore } from '../modulos/Classes/store/classes'
 import { useAttendanceStore } from '../modulos/Attendance/store/attendance'
+import { getThemePreference } from '../modulos/Users/service/userPreferences'
 
 // Interfaz para el objeto de usuario
 interface User {
@@ -21,6 +22,7 @@ interface User {
   createdAt?: string
   updatedAt?: string
   userRoles?: string[];
+  isDark?: boolean;
   // Agrega otros campos si es necesario
 }
 
@@ -89,7 +91,8 @@ export const useAuthStore = defineStore('auth', {
               role: 'Director',
               status: 'aprobado',
               createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
+              updatedAt: new Date().toISOString(),
+              isDark: false // Tema claro por defecto
             }
             await setDoc(userDocRef, directorData)
             this.user = directorData
@@ -186,7 +189,8 @@ export const useAuthStore = defineStore('auth', {
           status: 'pendiente',
           profileCompleted: false,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          isDark: false // Tema claro por defecto
         })
         return {
           message: 'Registro exitoso. Por favor completa tu perfil para continuar.',
@@ -227,6 +231,23 @@ export const useAuthStore = defineStore('auth', {
                 if (userData.status === 'aprobado') {
                   this.user = { uid: user.uid, email: user.email, ...userData } as User
                   console.log('🔐 Usuario aprobado, sesión establecida')
+                  
+                  // Cargar preferencia de tema del usuario
+                  try {
+                    const themePreference = await getThemePreference(user.uid);
+                    if (themePreference !== null) {
+                      // Si existe una preferencia explícita, actualizar el usuario con ella
+                      this.user.isDark = themePreference;
+                    } else if (this.user.isDark === undefined) {
+                      // Si no hay preferencia explícita ni en el perfil, usar claro por defecto
+                      this.user.isDark = false;
+                      // Actualizar el perfil con el valor predeterminado
+                      await setDoc(doc(db, 'USERS', user.uid), { isDark: false }, { merge: true });
+                    }
+                  } catch (error) {
+                    console.error('Error al cargar preferencia de tema:', error);
+                  }
+                  
                 } else {
                   console.log('🔐 Usuario no aprobado, cerrando sesión')
                   await this.signOut()
@@ -239,7 +260,8 @@ export const useAuthStore = defineStore('auth', {
                   role: 'Director',
                   status: 'aprobado',
                   createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString()
+                  updatedAt: new Date().toISOString(),
+                  isDark: false // Tema claro por defecto
                 }
                 console.log('🔐 Creando perfil de director')
                 await setDoc(doc(db, 'USERS', user.uid), directorData)

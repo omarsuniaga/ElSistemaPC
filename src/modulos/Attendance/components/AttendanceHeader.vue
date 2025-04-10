@@ -1,22 +1,11 @@
 <template>
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
     <div class="flex items-center gap-4">
-      <button 
-        v-if="view !== 'calendar'"
-        @click="navigateToCalendar"
-        class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        title="Volver al calendario"
-      >
-        <ArrowLeftIcon class="w-5 h-5" />
-      </button>
-      
-      <div>
         <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Asistencias</h1>
         <p v-if="selectedDate || selectedClass" class="text-sm text-gray-600 dark:text-gray-400">
           {{ displayedDate }}
           {{ selectedClass ? `- ${selectedClass}` : '' }}
         </p>
-      </div>
     </div>
 
     <div class="flex flex-wrap gap-3">
@@ -85,15 +74,13 @@ const emit = defineEmits<{
   (e: 'create-new-attendance'): void
 }>()
 
-// Función para navegar al calendario
+// Función corregida para navegar correctamente al calendario
 const navigateToCalendar = () => {
-  // Emitir el evento para cambiar la vista
-  emit('change-view', 'calendar')
+  // Emit the event to change the view
+  emit('change-view', 'calendar');
   
-  // Como respaldo, también navegamos a la ruta de asistencias
-  if (props.view !== 'calendar') {
-    router.push('/attendance')
-  }
+  // Navigate to the AttendanceView route
+  router.push('/attendance');
 }
 
 const displayedDate = computed(() => {

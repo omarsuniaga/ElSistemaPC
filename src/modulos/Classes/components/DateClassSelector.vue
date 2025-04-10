@@ -41,83 +41,59 @@
     </div>
     
     <!-- Lista de clases filtradas -->
-    <div v-else-if="filteredClasses.length > 0" class="space-y-3">
-      <div class="text-sm text-gray-500 dark:text-gray-400">
-        {{ filteredClasses.length }} clases disponibles para {{ formatDate(selectedDate) }}
-      </div>
-      
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden divide-y divide-gray-200 dark:divide-gray-700">
-        <div 
-          v-for="class_ in filteredClasses" 
-          :key="class_.id"
-          class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-          @click="selectClass(class_)"
-          :class="{'bg-blue-50 dark:bg-blue-900/20': modelValue === class_.id}"
-        >
-          <div class="flex justify-between items-center">
-            <div class="flex-1">
-              <h3 class="text-base font-medium text-gray-900 dark:text-white truncate">
-                {{ class_.name }}
-              </h3>
-              <div class="flex flex-wrap items-center mt-1 gap-2">
-                <span 
-                  v-if="class_.instrument" 
-                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
-                >
-                  {{ class_.instrument }}
-                </span>
-                <span 
-                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
-                >
-                  {{ class_.level }}
-                </span>
-                <span 
-                  v-if="class_.schedule && class_.schedule.startTime && class_.schedule.endTime" 
-                  class="text-xs text-gray-500 dark:text-gray-400"
-                >
-                  {{ class_.schedule.startTime }} - {{ class_.schedule.endTime }}
-                </span>
-              </div>
-            </div>
-            <div class="flex items-center">
-              <div v-if="isClassScheduledForDay(class_)" class="mr-3 text-xs px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded-full">
-                Programada
-              </div>
-              <ChevronRightIcon class="h-5 w-5 text-gray-400" />
-            </div>
+    <!-- Dentro del template, en la sección del listado de clases -->
+<div v-else-if="filteredClasses.length > 0" class="space-y-3">
+  <div class="text-sm text-gray-500 dark:text-gray-400">
+    {{ filteredClasses.length }} clases disponibles para {{ formatDate(selectedDate) }}
+  </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden divide-y divide-gray-200 dark:divide-gray-700">
+    <div 
+      v-for="class_ in filteredClasses" 
+      :key="class_.id"
+      class="p-4 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-200"
+      :class="{'bg-blue-50 dark:bg-blue-900/20': modelValue === class_.id}"
+      @click="selectClass(class_)"
+    >
+      <div class="flex justify-between items-center">
+        <div class="flex-1">
+          <h3 class="text-base font-medium text-gray-900 dark:text-gray-100">{{ class_.name }}</h3>
+          <div class="flex gap-2 flex-wrap text-xs text-gray-500 dark:text-gray-400">
+            <span v-if="class_.instrument">{{ class_.instrument }}</span>
+            <span v-if="class_.level">· {{ class_.level }}</span>
+            <span v-if="class_.schedule?.startTime && class_.schedule?.endTime">
+              · {{ class_.schedule.startTime }} - {{ class_.schedule.endTime }}
+            </span>
           </div>
         </div>
+        
+        <!-- Indicador "Registrada" para clases con asistencia registrada -->
+        <div class="flex items-center space-x-2">
+          <div v-if="hasAttendanceRecord(class_.id)" class="mr-3 text-xs px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-full flex items-center">
+            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+            </svg>
+            Registrada
+          </div>
+          <ChevronRightIcon class="h-5 w-5 text-gray-400" />
+        </div>
       </div>
-      
-      <!-- Botón continuar -->
-      <!-- <div class="mt-6 flex justify-end">
-        <button
-          @click="handleContinue"
-          :disabled="!modelValue || loading || isLoading"
-          :class="[
-            'px-4 py-2 rounded-lg font-medium transition-colors',
-            modelValue 
-              ? 'bg-blue-600 text-white hover:bg-blue-700' 
-              : 'bg-gray-300 text-gray-500 dark:bg-gray-700 dark:text-gray-400 cursor-not-allowed'
-          ]"
-        >
-          Continuar
-        </button>
-      </div> -->
     </div>
-    
-    <!-- Estado vacío -->
-    <div v-else class="text-center py-6">
-      <div class="text-gray-400 dark:text-gray-500 mb-2">
-        <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-        </svg>
-      </div>
-      <h3 class="text-base font-medium text-gray-900 dark:text-gray-100">No hay clases disponibles</h3>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        No se encontraron clases para el día seleccionado o con los filtros aplicados.
-      </p>
-    </div>
+  </div>
+</div>
+  
+   <!-- Estado vacío -->
+<div v-else class="text-center py-6">
+  <div class="text-gray-400 dark:text-gray-500 mb-2">
+    <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+    </svg>
+  </div>
+  <h3 class="text-base font-medium text-gray-900 dark:text-gray-100">No tienes clases asignadas</h3>
+  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+    No se encontraron clases asignadas a ti para {{ formatDate(selectedDate) }}.
+  </p>
+</div>
   </div>
   
   <!-- Modal de calendario para seleccionar fecha -->
@@ -132,6 +108,31 @@
   </div>
 </template>
 
+  <!-- Added TypeScript interfaces -->
+  <script lang="ts">
+  // These interfaces are defined outside the component for reuse
+  export interface ClassScheduleSlot {
+    day: number | string;
+    startTime?: string;
+    endTime?: string;
+  }
+
+  export interface ClassSchedule {
+    startTime?: string; // Format: "HH:MM" (24-hour format)
+    endTime?: string; // Format: "HH:MM" (24-hour format)
+    slots?: ClassScheduleSlot[]; // Array of scheduled time slots for the class
+  }
+
+  export interface Class {
+    id: string;
+    name: string;
+    instrument?: string;
+    level: string;
+    teacherId?: string;
+    schedule?: ClassSchedule;
+  }
+  </script>
+
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useClassesStore } from '../store/classes'
@@ -140,7 +141,7 @@ import { es } from 'date-fns/locale'
 import { ChevronRightIcon, CalendarDaysIcon } from '@heroicons/vue/24/outline'
 import Calendar from '../../../components/Calendar.vue'
 import { useRouter } from 'vue-router'
-
+import { useAuthStore } from '../../../stores/auth' // Ajusta la ruta según tu estructura
 // Definir props correctamente para evitar advertencias de props extraños
 const props = defineProps({
   modelValue: {
@@ -163,8 +164,14 @@ const props = defineProps({
   class: {
     type: [String, Object, Array],
     default: ''
+  },
+  // Nueva prop para identificar clases con registros
+  classesWithRecords: {
+    type: Array as () => string[],
+    default: () => []
   }
 })
+const authStore = useAuthStore()
 
 // Crear una computed para manejar las clases personalizadas
 const customClass = computed(() => props.class)
@@ -216,14 +223,23 @@ const availableClassDates = computed(() => {
 })
 
 // Filtrar clases según el día seleccionado
+
+// Filtrar clases según el día seleccionado y el maestro actual
 const filterClassesByDay = (date: string) => {
   try {
     const localDate = new Date(date + 'T00:00:00');
     const dayName = format(localDate, 'EEEE', { locale: es }).toLowerCase();
     const dayIndex = getDayIndex(dayName);
     
-    // Filtrar clases que tienen actividad en el día seleccionado
+    // Obtener ID del maestro autenticado
+    const currentTeacherId = authStore.user?.uid
+    
+    // Filtrar clases que tienen actividad en el día seleccionado Y que pertenecen al maestro actual
     const classesForDay = classesStore.classes.filter(c => {
+      // Primero verificar si la clase pertenece al maestro actual
+      if (c.teacherId !== currentTeacherId) return false;
+      
+      // Luego verificar si está programada para este día
       if (!c.schedule?.slots || !Array.isArray(c.schedule.slots)) return false;
       
       return c.schedule.slots.some(slot => {
@@ -236,10 +252,9 @@ const filterClassesByDay = (date: string) => {
       });
     });
 
-    // Solo retornar las clases si hay actividad ese día
     return classesForDay;
   } catch (err) {
-    console.error('Error al filtrar clases por día:', err);
+    console.error('Error al filtrar clases por día y maestro:', err);
     return [];
   }
 }
@@ -267,6 +282,12 @@ const isClassScheduledForDay = (classItem: any) => {
     console.error('Error al verificar si la clase está programada:', err)
     return false
   }
+}
+
+// Verificar si una clase ya tiene un registro de asistencia
+const hasAttendanceRecord = (classId: string) => {
+  // Asegurarse de que props.classesWithRecords es un array antes de llamar a includes()
+  return Array.isArray(props.classesWithRecords) && props.classesWithRecords.includes(classId);
 }
 
 // Función helper para convertir nombre de día a índice
@@ -354,32 +375,6 @@ const handleCalendarSelect = (date: string) => {
   showCalendarModal.value = false
   emit('update:selectedDate', date)
   emit('date-change', date)
-}
-
-// Continuar al siguiente paso
-const handleContinue = async () => {
-  try {
-    if (!props.modelValue || !props.selectedDate) {
-      return;
-    }
-    
-    // Formatear la fecha para la URL (remover los guiones)
-    const formattedDate = props.selectedDate.replace(/-/g, '');
-    
-    // Usar router.push con replace: true para evitar que el usuario regrese a la selección
-    await router.push({
-      name: 'attendance',
-      params: {
-        date: formattedDate,
-        classId: props.modelValue
-      },
-      replace: true // Esto reemplazará la entrada actual en el historial
-    });
-    
-    emit('continue');
-  } catch (error) {
-    console.error('Error navigating to attendance page:', error);
-  }
 }
 
 // Observar cambios en fecha y filtro

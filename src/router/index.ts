@@ -214,6 +214,14 @@ const routes: Array<RouteRecordRaw> = [
     }
   },
   {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('../views/SettingsView.vue'),
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
     path: '/students/new',
     name: 'NewStudent',
     component: () => import('../modulos/Students/view/NewStudentView.vue'),

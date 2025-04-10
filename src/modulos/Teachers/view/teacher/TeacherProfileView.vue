@@ -25,7 +25,6 @@ const teachersStore = useTeachersStore();
 const classesStore = useClassesStore();
 const scheduleStore = useScheduleStore();
 onMounted(async () => {
-  console.log("Aqui")
   await notificationsStore.fetchNotifications()
 })
 const dismissNotification = async (id: string) => {
@@ -118,7 +117,7 @@ const downloadSchedule = async () => {
   // Nombre del profesor y fecha
   doc.setFont("helvetica", "normal");
   doc.setFontSize(14);
-  doc.text(`${teacher.value?.nombre} ${teacher.value?.apellido}`, doc.internal.pageSize.width/2, 30, { align: "center" });
+  doc.text(`${teacher.value?.name}`, doc.internal.pageSize.width/2, 30, { align: "center" });
   doc.text(format(new Date(), 'MMMM yyyy', { locale: es }), doc.internal.pageSize.width/2, 40, { align: "center" });
   
   // Preparar datos para la tabla
@@ -141,7 +140,7 @@ const downloadSchedule = async () => {
   });
 
   // Guardar el PDF
-  doc.save(`${teacher.value?.nombre}_${format(new Date(), 'MMMM_yyyy', { locale: es })}.pdf`);
+  doc.save(`${teacher.value?.name}_${format(new Date(), 'MMMM_yyyy', { locale: es })}.pdf`);
 };
 </script>
 
@@ -153,8 +152,8 @@ const downloadSchedule = async () => {
       <img :src="teacher.photoURL || `https://ui-avatars.com/api/?name=${teacher.nombre}`" alt="teacher photo"
         class="w-24 h-24 rounded-full shadow-lg border-4 border-white object-cover">
       <div>
-        <h1 class="text-2xl font-bold">{{ teacher.nombre }} {{ teacher.apellido }}</h1>
-        <p class="text-indigo-100">{{ teacher.titulo || 'Profesor de Música' }}</p>
+        <h1 class="text-2xl font-bold">{{ teacher.name }} </h1>
+        <p class="text-indigo-100">{{ teacher.instruments || 'Profesor de Música' }}</p>
         <p class="text-sm">{{ formattedDate }}</p>
       </div>
       <button @click="toggleDarkMode" class="ml-auto p-2 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30">

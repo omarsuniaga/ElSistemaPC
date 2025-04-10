@@ -17,7 +17,7 @@ const auth = getAuth();
 
 auth.onAuthStateChanged((user) => {
   if (user) {
-    console.log('Usuario actual:', user);
+    // console.log('Usuario actual:', user);
   } else {
     console.log('No hay usuario autenticado');
   }

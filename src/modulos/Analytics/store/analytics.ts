@@ -34,7 +34,11 @@ export const useAnalyticsStore = defineStore('analytics', {
       averageRate: 0,
       topAbsentStudents: [] as Array<{ id: string; name: string; absences: number; attendanceRate: number }>,
       bestAttendanceClasses: [] as Array<{ id: string; name: string; attendanceRate: number; total: number }>,
-      attendanceByDayOfWeek: [] as Array<{ day: string; rate: number }>
+      attendanceByDayOfWeek: [] as Array<{ day: string; rate: number }>,
+      // Nuevas métricas temporales
+      dailyAttendance: [] as Array<{ date: string; present: number; absent: number; total: number; rate: number }>,
+      weeklyAttendance: [] as Array<{ week: string; present: number; absent: number; total: number; rate: number }>,
+      monthlyAttendance: [] as Array<{ month: string; present: number; absent: number; total: number; rate: number }>
     },
     studentMetrics: {
       averagePerformance: 0,
@@ -45,7 +49,11 @@ export const useAnalyticsStore = defineStore('analytics', {
         good: 0,
         average: 0,
         needsImprovement: 0
-      }
+      },
+      // Nuevo: crecimiento y tendencias de estudiantes
+      growth: 0,
+      enrollmentTrends: [] as Array<{ date: string; totalStudents: number; newStudents: number; retentionRate: number }>,
+      enrollmentByInstrument: [] as Array<{ instrument: string; count: number; percentage: number }>
     },
     academicMetrics: {
       lowestPerformanceIndicators: [] as Array<{ name: string; score: number; subject: string }>,
@@ -55,12 +63,25 @@ export const useAnalyticsStore = defineStore('analytics', {
     teacherMetrics: {
       classAttendanceRates: [] as { id: string; name: string; attendanceRate: number; classesTaught: number }[],
       teachingHours: {} as Record<string, number>,
-      evaluationRatings: {} as Record<string, number>
+      evaluationRatings: {} as Record<string, number>,
+      // Nuevo: métricas de clases por maestro
+      weeklyClassLoad: [] as Array<{ teacherId: string; name: string; week: string; scheduledClasses: number; attendedClasses: number; rate: number }>,
+      teacherPerformanceTrends: [] as Array<{ teacherId: string; name: string; month: string; performance: number }>
     },
     profileMetrics: {
       lastLogin: '',
       recentActivities: [] as Array<{ action: string; date: string; details: string }>,
       achievements: [] as Array<any>
+    },
+    // Nuevas métricas para análisis temporal
+    timeAnalytics: {
+      dateRanges: {
+        lastWeek: { start: new Date(), end: new Date() },
+        lastMonth: { start: new Date(), end: new Date() },
+        currentMonth: { start: new Date(), end: new Date() },
+        customRange: { start: new Date(), end: new Date() }
+      },
+      activeRange: 'currentMonth'
     },
     error: null as string | null
   }),
@@ -93,7 +114,8 @@ export const useAnalyticsStore = defineStore('analytics', {
           this.fetchStudentMetrics(),
           this.fetchAcademicMetrics(),
           this.fetchTeacherMetrics(),
-          this.fetchProfileMetrics()
+          this.fetchProfileMetrics(),
+          this.updateTimeRanges() // Nuevo método para actualizar rangos de tiempo
         ]);
       } catch (error: any) {
         this.error = error.message;
@@ -101,6 +123,25 @@ export const useAnalyticsStore = defineStore('analytics', {
       } finally {
         this.loading = false;
       }
+    },
+
+    // Nuevo método para actualizar los rangos de fecha para análisis
+    updateTimeRanges() {
+      const today = new Date();
+      const lastWeekStart = new Date();
+      lastWeekStart.setDate(today.getDate() - 7);
+      
+      const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      
+      const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+      
+      this.timeAnalytics.dateRanges = {
+        lastWeek: { start: lastWeekStart, end: today },
+        lastMonth: { start: lastMonthStart, end: lastMonthEnd },
+        currentMonth: { start: currentMonthStart, end: today },
+        customRange: this.timeAnalytics.dateRanges.customRange
+      };
     },
 
     // 🟢 Métricas de Asistencia
@@ -174,10 +215,101 @@ export const useAnalyticsStore = defineStore('analytics', {
           { day: 'Domingo', rate: 82 }
         ];
         
+        // Nuevo: Generar métricas temporales de asistencia
+        this.generateTemporalAttendanceMetrics();
+        
         return this.attendanceMetrics;
       } catch (error) {
         console.error('Error cargando métricas de asistencia:', error);
         throw error;
+      }
+    },
+
+    // Nuevo método para generar asistencia por periodos de tiempo
+    async generateTemporalAttendanceMetrics() {
+      try {
+        const attendanceStore = useAttendanceStore();
+        
+        // Verificar si hay datos de asistencia disponibles
+        if (!attendanceStore.records || attendanceStore.records.length === 0) {
+          await attendanceStore.fetchAttendance();
+        }
+        
+        // Simulación de datos para vista previa - se debe reemplazar con datos reales
+        const today = new Date();
+        
+        // Asistencia diaria (últimos 7 días)
+        const dailyAttendance = [];
+        for (let i = 6; i >= 0; i--) {
+          const currentDate = new Date();
+          currentDate.setDate(today.getDate() - i);
+          const formattedDate = format(currentDate, 'yyyy-MM-dd');
+          
+          // En una implementación real, filtrar registros por esta fecha
+          const present = Math.floor(Math.random() * 20) + 15; // 15-35 presentes
+          const absent = Math.floor(Math.random() * 10) + 1;   // 1-10 ausentes
+          const total = present + absent;
+          
+          dailyAttendance.push({
+            date: formattedDate,
+            present,
+            absent,
+            total,
+            rate: Math.round((present / total) * 100)
+          });
+        }
+        this.attendanceMetrics.dailyAttendance = dailyAttendance;
+        
+        // Asistencia semanal (últimas 4 semanas)
+        const weeklyAttendance = [];
+        for (let i = 3; i >= 0; i--) {
+          const weekStart = new Date();
+          weekStart.setDate(today.getDate() - (i * 7) - 6);
+          const weekEnd = new Date();
+          weekEnd.setDate(today.getDate() - (i * 7));
+          
+          const weekLabel = `${format(weekStart, 'dd/MM')} - ${format(weekEnd, 'dd/MM')}`;
+          
+          // En una implementación real, filtrar registros por este rango de fechas
+          const present = Math.floor(Math.random() * 100) + 80;  // 80-180 presentes por semana
+          const absent = Math.floor(Math.random() * 40) + 5;     // 5-45 ausentes por semana
+          const total = present + absent;
+          
+          weeklyAttendance.push({
+            week: weekLabel,
+            present,
+            absent,
+            total,
+            rate: Math.round((present / total) * 100)
+          });
+        }
+        this.attendanceMetrics.weeklyAttendance = weeklyAttendance;
+        
+        // Asistencia mensual (últimos 6 meses)
+        const monthlyAttendance = [];
+        for (let i = 5; i >= 0; i--) {
+          const currentMonth = new Date();
+          currentMonth.setMonth(today.getMonth() - i);
+          
+          const monthLabel = format(currentMonth, 'MMMM yyyy', { locale: es });
+          
+          // En una implementación real, filtrar registros por este mes
+          const present = Math.floor(Math.random() * 400) + 300;  // 300-700 presentes por mes
+          const absent = Math.floor(Math.random() * 120) + 30;    // 30-150 ausentes por mes
+          const total = present + absent;
+          
+          monthlyAttendance.push({
+            month: monthLabel,
+            present,
+            absent,
+            total,
+            rate: Math.round((present / total) * 100)
+          });
+        }
+        this.attendanceMetrics.monthlyAttendance = monthlyAttendance;
+        
+      } catch (error) {
+        console.error('Error generando métricas temporales de asistencia:', error);
       }
     },
 
@@ -249,10 +381,75 @@ export const useAnalyticsStore = defineStore('analytics', {
           needsImprovement: Math.round((needsImprovement / total) * 100)
         };
         
+        // Nuevo: Generar métricas de crecimiento y tendencias de estudiantes
+        await this.generateStudentEnrollmentTrends();
+        
         return this.studentMetrics;
       } catch (error) {
         console.error('Error cargando métricas de estudiantes:', error);
         throw error;
+      }
+    },
+    
+    // Nuevo método para analizar tendencias de inscripción de estudiantes
+    async generateStudentEnrollmentTrends() {
+      try {
+        const studentsStore = useStudentsStore();
+        
+        // Verificar si hay datos de estudiantes disponibles
+        if (!studentsStore.items || studentsStore.items.length === 0) {
+          await studentsStore.fetchStudents();
+        }
+        
+        // Calcular crecimiento (en una implementación real, comparar con periodos anteriores)
+        // Simulando un crecimiento de -10% a +20%
+        this.studentMetrics.growth = Math.floor(Math.random() * 30) - 10;
+        
+        // Generar tendencias de inscripción por mes (últimos 6 meses)
+        const enrollmentTrends = [];
+        const today = new Date();
+        
+        for (let i = 5; i >= 0; i--) {
+          const currentMonth = new Date();
+          currentMonth.setMonth(today.getMonth() - i);
+          
+          // En una implementación real, filtrar estudiantes inscritos en este mes
+          // Simular datos para visualización
+          const lastMonth = i === 0 ? studentsStore.items.length : Math.floor(Math.random() * 10) + studentsStore.items.length - 10;
+          const currentTotal = i === 0 ? studentsStore.items.length : Math.max(0, lastMonth + Math.floor(Math.random() * 11) - 5);
+          const newStudents = Math.max(0, currentTotal - lastMonth);
+          const retentionRate = lastMonth > 0 ? Math.round(((lastMonth - Math.floor(Math.random() * 6)) / lastMonth) * 100) : 100;
+          
+          enrollmentTrends.push({
+            date: format(currentMonth, 'MMMM yyyy', { locale: es }),
+            totalStudents: currentTotal,
+            newStudents: newStudents,
+            retentionRate: Math.min(100, retentionRate)
+          });
+        }
+        
+        this.studentMetrics.enrollmentTrends = enrollmentTrends;
+        
+        // Calcular distribución por instrumento
+        if (studentsStore.items && studentsStore.items.length > 0) {
+          const instrumentCounts: Record<string, number> = {};
+          
+          studentsStore.items.forEach(student => {
+            const instrument = student.instrumento || student.instrument || 'No especificado';
+            instrumentCounts[instrument] = (instrumentCounts[instrument] || 0) + 1;
+          });
+          
+          const totalStudents = studentsStore.items.length;
+          
+          this.studentMetrics.enrollmentByInstrument = Object.keys(instrumentCounts).map(instrument => ({
+            instrument,
+            count: instrumentCounts[instrument],
+            percentage: Math.round((instrumentCounts[instrument] / totalStudents) * 100)
+          })).sort((a, b) => b.count - a.count);
+        }
+        
+      } catch (error) {
+        console.error('Error generando métricas de tendencias de estudiantes:', error);
       }
     },
     
@@ -348,6 +545,9 @@ export const useAnalyticsStore = defineStore('analytics', {
           }
         }
         
+        // Nuevo: Generar métricas de carga de trabajo semanal por profesor
+        await this.generateTeacherWorkloadMetrics();
+        
         return this.teacherMetrics;
       } catch (error) {
         console.error('Error cargando métricas de profesores:', error);
@@ -355,6 +555,85 @@ export const useAnalyticsStore = defineStore('analytics', {
       }
     },
     
+    // Nuevo método para analizar la carga de trabajo de los profesores
+    async generateTeacherWorkloadMetrics() {
+      try {
+        const teachersStore = useTeachersStore();
+        const classesStore = useClassesStore();
+        
+        // Verificar si hay datos de profesores disponibles
+        if (!teachersStore.items || teachersStore.items.length === 0) {
+          await teachersStore.fetchTeachers();
+        }
+        
+        // Carga de trabajo semanal (últimas 4 semanas)
+        const weeklyClassLoad = [];
+        const today = new Date();
+        
+        // Para cada profesor, calcular métricas por semana
+        if (teachersStore.items && teachersStore.items.length > 0) {
+          for (const teacher of teachersStore.items) {
+            for (let i = 3; i >= 0; i--) {
+              const weekStart = new Date();
+              weekStart.setDate(today.getDate() - (i * 7) - 6);
+              const weekEnd = new Date();
+              weekEnd.setDate(today.getDate() - (i * 7));
+              
+              const weekLabel = `${format(weekStart, 'dd/MM')} - ${format(weekEnd, 'dd/MM')}`;
+              
+              // En una implementación real, obtener datos de clases programadas y asistidas para este profesor
+              // en este rango de fechas
+              
+              // Generamos datos simulados para visualización
+              const scheduledClasses = Math.floor(Math.random() * 10) + 5; // 5-15 clases programadas
+              const attendedClasses = scheduledClasses - Math.floor(Math.random() * 3); // 0-2 ausencias
+              const rate = Math.round((attendedClasses / scheduledClasses) * 100);
+              
+              weeklyClassLoad.push({
+                teacherId: teacher.id,
+                name: teacher.nombre || teacher.name || 'Profesor',
+                week: weekLabel,
+                scheduledClasses,
+                attendedClasses,
+                rate
+              });
+            }
+          }
+        }
+        
+        this.teacherMetrics.weeklyClassLoad = weeklyClassLoad;
+        
+        // Tendencia de rendimiento mensual (últimos 6 meses)
+        const teacherPerformanceTrends = [];
+        
+        if (teachersStore.items && teachersStore.items.length > 0) {
+          for (const teacher of teachersStore.items) {
+            for (let i = 5; i >= 0; i--) {
+              const currentMonth = new Date();
+              currentMonth.setMonth(today.getMonth() - i);
+              
+              const monthLabel = format(currentMonth, 'MMM yyyy', { locale: es });
+              
+              // En una implementación real, calcular el rendimiento de este profesor para este mes
+              const performance = Math.floor(Math.random() * 20) + 75; // 75-95% de rendimiento
+              
+              teacherPerformanceTrends.push({
+                teacherId: teacher.id,
+                name: teacher.nombre || teacher.name || 'Profesor',
+                month: monthLabel,
+                performance
+              });
+            }
+          }
+        }
+        
+        this.teacherMetrics.teacherPerformanceTrends = teacherPerformanceTrends;
+        
+      } catch (error) {
+        console.error('Error generando métricas de carga de trabajo de profesores:', error);
+      }
+    },
+
     // 🟢 Métricas y Registros del Perfil del Usuario
     async fetchProfileMetrics() {
       try {
@@ -599,5 +878,194 @@ export const useAnalyticsStore = defineStore('analytics', {
     },
 
     // Obtener a los mejores estudiantes
+
+    // Nuevo método para obtener análisis de asistencia por rango de fechas
+    async getAttendanceByDateRange(startDate: Date, endDate: Date) {
+      try {
+        const attendanceStore = useAttendanceStore();
+        
+        // Verificar si hay datos de asistencia disponibles
+        if (!attendanceStore.records || attendanceStore.records.length === 0) {
+          await attendanceStore.fetchAttendance();
+        }
+        
+        // Filtrar registros por rango de fechas
+        const filteredRecords = attendanceStore.records.filter((record: any) => {
+          const recordDate = new Date(record.Fecha || record.fecha || record.date);
+          return recordDate >= startDate && recordDate <= endDate;
+        });
+        
+        // Calcular métricas
+        const total = filteredRecords.length;
+        let present = 0;
+        let absent = 0;
+        let delayed = 0;
+        let justified = 0;
+        
+        filteredRecords.forEach((record: any) => {
+          const status = record.status || record.Status || '';
+          
+          if (status === 'presente' || status === 'PRESENT') present++;
+          else if (status === 'ausente' || status === 'ABSENT') absent++;
+          else if (status === 'demorado' || status === 'DELAYED') delayed++;
+          else if (status === 'justificado' || status === 'JUSTIFIED') justified++;
+        });
+        
+        // Análisis por día de la semana
+        const byDayOfWeek: Record<string, { total: number, present: number, absent: number, rate: number }> = {
+          'Lunes': { total: 0, present: 0, absent: 0, rate: 0 },
+          'Martes': { total: 0, present: 0, absent: 0, rate: 0 },
+          'Miércoles': { total: 0, present: 0, absent: 0, rate: 0 },
+          'Jueves': { total: 0, present: 0, absent: 0, rate: 0 },
+          'Viernes': { total: 0, present: 0, absent: 0, rate: 0 },
+          'Sábado': { total: 0, present: 0, absent: 0, rate: 0 },
+          'Domingo': { total: 0, present: 0, absent: 0, rate: 0 }
+        };
+        
+        const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        
+        filteredRecords.forEach((record: any) => {
+          const recordDate = new Date(record.Fecha || record.fecha || record.date);
+          const dayName = dayNames[recordDate.getDay()];
+          const status = record.status || record.Status || '';
+          
+          byDayOfWeek[dayName].total++;
+          if (status === 'presente' || status === 'PRESENT') byDayOfWeek[dayName].present++;
+          if (status === 'ausente' || status === 'ABSENT') byDayOfWeek[dayName].absent++;
+        });
+        
+        // Calcular tasas de asistencia por día
+        Object.keys(byDayOfWeek).forEach(day => {
+          const dayData = byDayOfWeek[day];
+          if (dayData.total > 0) {
+            dayData.rate = Math.round((dayData.present / dayData.total) * 100);
+          }
+        });
+        
+        return {
+          total,
+          present,
+          absent,
+          delayed,
+          justified,
+          attendanceRate: total > 0 ? Math.round(((present + justified) / total) * 100) : 0,
+          byDayOfWeek
+        };
+        
+      } catch (error) {
+        console.error('Error obteniendo asistencia por rango de fechas:', error);
+        throw error;
+      }
+    },
+    
+    // Nuevo método para obtener estadísticas de estudiantes por rango de fechas
+    async getStudentStatsByDateRange(startDate: Date, endDate: Date) {
+      try {
+        const studentsStore = useStudentsStore();
+        
+        // Verificar si hay datos de estudiantes disponibles
+        if (!studentsStore.items || studentsStore.items.length === 0) {
+          await studentsStore.fetchStudents();
+        }
+        
+        // En una implementación real, filtrar estudiantes inscritos en este rango de fechas
+        const studentsInRange = [...studentsStore.items].filter(student => {
+          // Aquí deberíamos filtrar por fecha de inscripción, pero por ahora usamos todos
+          return true;
+        });
+        
+        // Calcular distribución por instrumento
+        const byInstrument: Record<string, number> = {};
+        studentsInRange.forEach(student => {
+          const instrument = student.instrumento || student.instrument || 'No especificado';
+          byInstrument[instrument] = (byInstrument[instrument] || 0) + 1;
+        });
+        
+        // Calcular distribución por nivel
+        const byLevel: Record<string, number> = {};
+        studentsInRange.forEach(student => {
+          const level = student.nivel || student.level || 'No especificado';
+          byLevel[level] = (byLevel[level] || 0) + 1;
+        });
+        
+        return {
+          totalStudents: studentsInRange.length,
+          byInstrument,
+          byLevel
+        };
+        
+      } catch (error) {
+        console.error('Error obteniendo estadísticas de estudiantes por rango de fechas:', error);
+        throw error;
+      }
+    },
+    
+    // Nuevo método para obtener estadísticas de profesores por rango de fechas
+    async getTeacherStatsByDateRange(startDate: Date, endDate: Date) {
+      try {
+        const teachersStore = useTeachersStore();
+        const attendanceStore = useAttendanceStore();
+        
+        // Verificar si hay datos de profesores disponibles
+        if (!teachersStore.items || teachersStore.items.length === 0) {
+          await teachersStore.fetchTeachers();
+        }
+        
+        // Para cada profesor, obtener sus métricas de asistencia en el rango de fechas
+        const teacherStats = [];
+        
+        for (const teacher of teachersStore.items) {
+          // En una implementación real, obtener las clases y asistencias de este profesor
+          // en el rango de fechas especificado
+          const teacherId = teacher.id;
+          
+          // Obtener horas trabajadas para este profesor en el rango de fechas
+          const workHours = await this.getTeacherWorkedHours(teacherId, startDate, endDate);
+          
+          teacherStats.push({
+            teacherId,
+            name: teacher.nombre || teacher.name || 'Profesor',
+            scheduledHours: workHours.scheduledHours,
+            workedHours: workHours.workedHours,
+            attendanceRate: workHours.attendanceRate,
+            // En una implementación real, obtener estos datos de las clases del profesor
+            totalClasses: Math.floor(Math.random() * 10) + 5,
+            totalStudents: Math.floor(Math.random() * 30) + 10
+          });
+        }
+        
+        return teacherStats;
+        
+      } catch (error) {
+        console.error('Error obteniendo estadísticas de profesores por rango de fechas:', error);
+        throw error;
+      }
+    },
+    
+    // ... resto de métodos existentes ...
+
+    // Método para obtener análisis completo por rango de fechas
+    async getAnalyticsByDateRange(startDate: Date, endDate: Date) {
+      this.loading = true;
+      try {
+        const [attendanceStats, studentStats, teacherStats] = await Promise.all([
+          this.getAttendanceByDateRange(startDate, endDate),
+          this.getStudentStatsByDateRange(startDate, endDate),
+          this.getTeacherStatsByDateRange(startDate, endDate)
+        ]);
+        
+        return {
+          attendance: attendanceStats,
+          students: studentStats,
+          teachers: teacherStats,
+          dateRange: { start: startDate, end: endDate }
+        };
+      } catch (error) {
+        console.error('Error obteniendo análisis por rango de fechas:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    }
   }
 })

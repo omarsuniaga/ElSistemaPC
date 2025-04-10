@@ -1,15 +1,9 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import '@vuepic/vue-datepicker/dist/main.css'
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { 
-  eachDayOfInterval, 
-  addMonths, 
-  isSameDay, 
   parseISO, 
   format, 
-  startOfToday, 
-  startOfMonth 
 } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -41,7 +35,28 @@ import { useEmergencyClassStore } from '../modulos/Attendance/store/emergencyCla
 import { getCurrentDate } from '../utils/dateUtils'
 import type { SelectedStudent } from '../modulos/Students/types/student'
 import type { AttendanceFiltersType } from '../modulos/Attendance/types/attendance'
+// Agregar importación del store de auth
+import { useAuthStore } from '../stores/auth'
 
+// Agregar esto después de las otras declaraciones de stores
+const authStore = useAuthStore()
+
+  // Modificar la función de verificación para fechas disponibles
+const availableClassDates = computed(() => {
+  if (!selectedClass.value) return []
+  
+  // Obtener el ID del maestro actual
+  const currentTeacherId = authStore.user?.uid
+  
+  // Solo obtener días programados para clases
+  const scheduledDays = attendanceStore.getClassScheduleDays(selectedClass.value)
+  
+  // Filtrar días por maestro actual
+  return scheduledDays.filter(day => {
+    const classesForDay = classesStore.getClassesByDayAndTeacherId(day, currentTeacherId || '')
+    return classesForDay && classesForDay.length > 0
+  })
+})
 // Props para recibir fecha y clase desde la URL
 const props = defineProps({
   date: String,
@@ -104,16 +119,7 @@ const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
   setTimeout(() => { showMessage.value = false }, 3000)
 }
 
-// Computed para obtener fechas disponibles (por ejemplo, los días programados de la clase)
-const availableClassDates = computed(() => {
-  if (!selectedClass.value) return []
-  const scheduledDays = attendanceStore.getClassScheduleDays(selectedClass.value)
-  // Se asume que classesStore.getClassesByDay existe y filtra las clases según el día
-  return scheduledDays.filter(day => {
-    const classesForDay = classesStore.getClassesByDay(day)
-    return classesForDay && classesForDay.length > 0
-  })
-})
+// Este computed ya está definido arriba con filtrado por maestro
 
 // Computed para contar observaciones (si existen)
 const getObservationsCount = computed(() => {
@@ -199,9 +205,9 @@ const handleSelectedDateUpdate = (date: string) => {
   }, 0)
 }
 
-// Cambiar la vista (calendar, class-select o attendance-form)
+// Corregido para usar los mismos valores que AttendanceHeader.vue
 const updateView = (newView: 'calendar' | 'class-select' | 'attendance-form') => {
-  view.value = newView
+  view.value = newView;
 }
 
 // Cargar datos de asistencia para una clase
@@ -280,11 +286,16 @@ const saveAllAttendanceChanges = async () => {
         }
       }
     }
+    
     isLoading.value = true
     loadingMessage.value = 'Guardando asistencia...'
+    
+    // Crear documento de asistencia con la estructura correcta
     const attendanceDoc = {
       fecha: selectedDate.value,
       classId: selectedClass.value,
+      teacherId: authStore.user?.uid, // Agregar ID del maestro para facilitar consultas
+      timestamp: new Date().toISOString(), // Añadir timestamp para ordenación
       data: {
         presentes: [] as string[],
         ausentes: [] as string[],
@@ -295,6 +306,8 @@ const saveAllAttendanceChanges = async () => {
         observations: attendanceStore.currentAttendanceDoc?.data.observations || ''
       }
     }
+    
+    // Procesar cada estudiante según su estado
     Object.entries(attendanceStore.attendanceRecords).forEach(([studentId, status]) => {
       if (status === 'Presente') {
         attendanceDoc.data.presentes.push(studentId)
@@ -303,15 +316,27 @@ const saveAllAttendanceChanges = async () => {
       } else if (status === 'Tardanza') {
         attendanceDoc.data.tarde.push(studentId)
       } else if (status === 'Justificado') {
-        attendanceDoc.data.tarde.push(studentId)
+        // Los justificados deben estar tanto en tarde como en justificación
+        if (!attendanceDoc.data.tarde.includes(studentId)) {
+          attendanceDoc.data.tarde.push(studentId)
+        }
+        
         const existingJust = attendanceDoc.data.justificacion.find(j => j.id === studentId)
         if (!existingJust) {
           attendanceDoc.data.justificacion.push({ id: studentId, reason: 'Justificación pendiente de detalles' })
         }
       }
     })
+    
+    // Guardar el documento y asegurarnos de que se actualiza la caché local
     await attendanceStore.saveAttendanceDocument(attendanceDoc)
+    
+    // Actualizar la lista de fechas con registros para que el calendario se actualice
+    await attendanceStore.fetchAllAttendanceDates()
+    
+    // Actualizar analíticas
     await attendanceStore.updateAnalytics()
+    
     showToast('Asistencia guardada correctamente', 'success')
     return true
   } catch (err) {
@@ -424,8 +449,10 @@ const handleEmergencyClassCancelled = () => { showToast('Registro de clase emerg
 
 // Manejar actualización de estado de asistencia
 const handleUpdateStatus = (studentId: string, status: string) => {
+  // Asegúrate de que el ID del estudiante y el estado sean válidos
   if (!studentId || !status) return;
-  attendanceStore.attendanceRecords[studentId] = status as any; // Cast to AttendanceStatus type
+  attendanceStore.attendanceRecords[studentId] = status as any; // Asegúrate de que el tipo sea correcto
+  console.log("Estado actualizado:", studentId, status)
 }
 
 const checkExistingAttendance = async (date: string, classId: string): Promise<boolean> => {
@@ -598,8 +625,9 @@ watch(() => [route.params.date, route.params.classId], async ([newDate, newClass
             v-model="selectedClass" 
             v-model:selectedDate="selectedDate" 
             :dayFilter="true"
-            @continue="() => selectClass(selectedClass)"
             :isLoading="isLoading"
+            :classesWithRecords="attendanceStore.classesWithRecords"
+            @continue="() => selectClass(selectedClass)"
             @date-change="handleDateChange"
             @update:selectedDate="handleSelectedDateUpdate"
             class="max-w-full"
@@ -653,6 +681,16 @@ watch(() => [route.params.date, route.params.classId], async ([newDate, newClass
       @close="showReportModal = false"
       @generate-report="handleGenerateReport"
     />
+    <AttendanceExportModal 
+      v-if="showExportModal" 
+      :modelValue="showExportModal"
+      :date="selectedDate"
+      :className="selectedClass"
+      :students="studentsStore.getStudentsByClass(selectedClass)"
+      :attendanceRecords="attendanceStore.attendanceRecords"
+      @update:modelValue="showExportModal = $event"
+      @close="showExportModal = false"
+    />
     <AttendanceObservation 
       v-if="showObservationsModal" 
       :modelValue="showObservationsModal"
@@ -671,16 +709,7 @@ watch(() => [route.params.date, route.params.classId], async ([newDate, newClass
       @close="showJustifiedAbsenceModal = false"
       @save="handleJustificationSave"
     />
-    <AttendanceExportModal 
-      v-if="showExportModal" 
-      :modelValue="showExportModal"
-      :date="selectedDate"
-      :className="selectedClass"
-      :students="studentsStore.getStudentsByClass(selectedClass)"
-      :attendanceRecords="attendanceStore.attendanceRecords"
-      @update:modelValue="showExportModal = $event"
-      @close="showExportModal = false"
-    />
+    
     <CalendarModal
       v-model="showCalendarModal"
       :initial-date="selectedDate"
