@@ -7,14 +7,14 @@
         <button @click="close" class="text-gray-500 hover:text-gray-700">
           <XMarkIcon class="w-5 h-5" />
         </button>
-      </div>
-      <div class="p-4">
+      </div>      <div class="p-4">
         <Calendar 
-          :selected-date="selectedDate" 
-          :markeDates="markedDates" 
+          :selected-date="selectedDate"
+          :current-month="currentMonth"
+          :markedDates="markedDates" 
           @select="handleSelect"
+          @month-change="handleMonthChange"
         />
-
       </div>
       <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
         <button @click="close" class="btn btn-secondary mr-2">
@@ -34,29 +34,56 @@ import { XMarkIcon } from '@heroicons/vue/24/outline';
 import Calendar from '../../../components/Calendar.vue';
 
 
+import { useAttendanceStore } from '../store/attendance';
+
+const attendanceStore = useAttendanceStore();
+
 const props = defineProps<{
   modelValue: boolean;
   initialDate: string;
   markedDates?: string[];
+  classId?: string;
 }>();
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
   (e: 'select', date: string): void;
+  (e: 'month-change', month: Date): void;
 }>();
 
 const selectedDate = ref(props.initialDate);
+const currentMonth = ref(new Date());
 
 // Actualizar selectedDate si cambia initialDate
 watch(() => props.initialDate, (newDate) => {
   selectedDate.value = newDate;
 });
 
+// Manejar selección de fecha en el calendario
 const handleSelect = (date: any) => {
   if (typeof date === 'string') {
     selectedDate.value = date;
   } else if (date && date.date) {
     selectedDate.value = date.date;
+  }
+};
+
+// Manejar cambio de mes en el calendario
+const handleMonthChange = (newMonth: Date) => {
+  currentMonth.value = newMonth;
+  emit('month-change', newMonth);
+  // Cargar registros de asistencia para el nuevo mes
+  if (props.classId) {
+    attendanceStore.fetchAttendanceRecords({
+      classId: props.classId,
+      startDate: newMonth,
+      endDate: new Date(newMonth.getFullYear(), newMonth.getMonth() + 1, 0)
+    });
+  } else {
+    attendanceStore.fetchAllAttendanceDates(
+      new Date(newMonth.getFullYear(), newMonth.getMonth(), 1),
+      new Date(newMonth.getFullYear(), newMonth.getMonth() + 1, 0)
+    );
   }
 };
 

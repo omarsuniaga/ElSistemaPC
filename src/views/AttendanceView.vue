@@ -1,4 +1,12 @@
 <script setup lang="ts">
+// Augment the Window interface for jsPDF and jspdf (if loaded via CDN)
+declare global {
+  interface Window {
+    jsPDF: any; // You might want to install @types/jspdf for better typing
+    jspdf: any; // For jspdf-autotable plugin
+  }
+}
+
 import '@vuepic/vue-datepicker/dist/main.css'
 import { ref, computed, onMounted, watch } from 'vue'
 import { 
@@ -16,11 +24,13 @@ import AttendanceAnalytics from '../modulos/Attendance/components/AttendanceAnal
 import AttendanceTrends from '../modulos/Attendance/components/AttendanceTrends.vue'
 import AttendanceExportModal from '../modulos/Attendance/components/AttendanceExportModal.vue'
 import Calendar from '../components/Calendar.vue'
-import CalendarModal from '../modulos/Attendance/components/CalendarModal.vue'
 import DateClassSelector from '../modulos/Classes/components/DateClassSelector.vue'
 import JustifiedAbsenceModal from '../components/JustifiedAbsenceModal.vue'
 import { CalendarDaysIcon } from '@heroicons/vue/24/outline'
 import EmergencyClassModal from '../modulos/Attendance/components/EmergencyClassModal.vue'
+import type { Student } from '../modulos/Students/types/student'
+import { generateAttendancePDF } from '../utils/pdfExport' 
+import { sendWebhook } from '../utils/webhook'
 
 // Router
 import { useRouter, useRoute } from 'vue-router'
@@ -40,6 +50,11 @@ import { useAuthStore } from '../stores/auth'
 
 // Agregar esto después de las otras declaraciones de stores
 const authStore = useAuthStore()
+
+// Define an interface for the attendance records structure
+interface AttendanceRecord {
+  [studentId: string]: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado' | string;
+}
 
   // Modificar la función de verificación para fechas disponibles
 const availableClassDates = computed(() => {
@@ -162,7 +177,17 @@ const selectDate = async (date: string | { date: string }) => {
 
 // Manejo de la selección desde el modal del calendario
 const handleCalendarSelect = (date: string) => {
-  selectDate(date)
+  if (typeof date === 'string') {
+    selectedDate.value = date
+  } else if (date && date.date) {
+    selectedDate.value = date.date
+  }
+  // No cerramos el modal automáticamente para permitir al usuario confirmar
+}
+
+// Función para confirmar la fecha seleccionada en el modal
+const confirmDateSelection = () => {
+  selectDate(selectedDate.value)
   showCalendarModal.value = false
 }
 
@@ -402,40 +427,320 @@ const handleJustificationSave = async (data: { reason: string, documentUrl?: str
   }
 }
 
-// Generar informe
-const handleGenerateReport = async (filters: AttendanceFiltersType) => {
+// Función para generar el template HTML de asistencia
+const generateAttendanceHTML = (
+  students: Student[],
+  records: Record<string, string>,
+  observations: string = 'Sin observaciones.',
+  className: string,
+  date: string
+): string => {
+  const formattedDate = format(new Date(date), "d 'de' MMMM yyyy", { locale: es });
+  
+  // Generar filas de estudiantes
+  let studentRows = '';
+  students.forEach((student, index) => {
+    // Aplicar color según estado de asistencia
+    let statusClass = '';
+    const status = records[student.id] || 'No registrado';
+    
+    switch(status) {
+      case 'Presente':
+        statusClass = 'color: #10b981;'; // Verde
+        break;
+      case 'Ausente':
+        statusClass = 'color: #ef4444;'; // Rojo
+        break;
+      case 'Tardanza':
+        statusClass = 'color: #f59e0b;'; // Amarillo
+        break;
+      case 'Justificado':
+        statusClass = 'color: #3b82f6;'; // Azul
+        break;
+      default:
+        statusClass = 'color: #6b7280;'; // Gris
+    }
+    
+    studentRows += `
+      <tr>
+        <td style="border: 1px solid #ddd; padding: 8px;">${index + 1}</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">${student.nombre} ${student.apellido}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold; ${statusClass}">${status}</td>
+      </tr>
+    `;
+  });
+
+  // Generar el HTML completo
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Reporte de Asistencia - ${className}</title>
+      <style>
+        body { 
+          font-family: Arial, sans-serif; 
+          line-height: 1.6;
+          color: #333;
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+        }
+        .header h1 {
+          color: #16a34a;
+          margin-bottom: 5px;
+        }
+        .header h2 {
+          color: #4b5563;
+          font-size: 18px;
+          font-weight: normal;
+        }
+        table { 
+          width: 100%; 
+          border-collapse: collapse; 
+          margin: 25px 0;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        th { 
+          background-color: #16a34a; 
+          color: white;
+          text-align: left; 
+          border: 1px solid #ddd; 
+          padding: 12px; 
+        }
+        td {
+          border: 1px solid #ddd; 
+          padding: 12px 8px;
+        }
+        tr:nth-child(even) {
+          background-color: #f2f2f2;
+        }
+        .observations {
+          background-color: #f8fafc;
+          border-left: 4px solid #16a34a;
+          padding: 15px;
+          margin: 20px 0;
+        }
+        .footer {
+          text-align: center;
+          font-size: 14px;
+          color: #6b7280;
+          margin-top: 40px;
+          border-top: 1px solid #e5e7eb;
+          padding-top: 20px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>Reporte de Asistencia</h1>
+        <h2>Clase: ${className}</h2>
+        <h2>Fecha: ${formattedDate}</h2>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Alumno</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${studentRows}
+        </tbody>
+      </table>
+
+      <div class="observations">
+        <h3>Observaciones del Maestro:</h3>
+        <p>${observations}</p>
+      </div>
+      
+      <div class="footer">
+        Este reporte fue generado automáticamente desde El Sistema PC.
+      </div>
+    </body>
+    </html>
+  `;
+};
+
+// Función para enviar el reporte de asistencia por correo electrónico
+const sendAttendanceEmail = async () => {
+  if (!selectedClass.value || !selectedDate.value) {
+    showToast('Seleccione una clase y fecha para enviar el correo.', 'error');
+    return;
+  }
+  
+  if (!authStore.user || !authStore.user.email) {
+    showToast('No se pudo obtener el correo del usuario para enviar el reporte.', 'error');
+    return;
+  }
+
+  isLoading.value = true;
+  loadingMessage.value = 'Enviando correo...';
+
   try {
-    isLoading.value = true
-    loadingMessage.value = 'Generando informe...'
-    reportFilters.value = { ...filters }
-    showReportModal.value = false
-    showAnalytics.value = true
-    await attendanceStore.updateAnalytics()
-  } catch (err) {
-    error.value = 'Error al generar el informe'
-    console.error('Error generando informe:', err)
+    const students = studentsStore.getStudentsByClass(selectedClass.value);
+    const records = attendanceStore.attendanceRecords;
+    const observations = attendanceStore.currentAttendanceDoc?.data.observations || 'Sin observaciones.';
+    const className = selectedClassName.value;
+    const date = selectedDate.value;
+
+    // Generar contenido HTML para el correo
+    const htmlContent = generateAttendanceHTML(students, records, observations, className, date);
+
+    // Preparar payload para el webhook
+    // Importante: Para la estructura del webhook, incluimos los datos directamente en el objeto data
+    // const payload = {
+    //   date: date,
+    //   class: className,
+    //   data: {
+    //     recipient: authStore.user.email,
+    //     classId: selectedClass.value,
+    //     date: date,
+    //     className: className,
+    //     observations: observations,
+    //     teacherId: authStore.user.uid || '',
+    //     teacherName: authStore.user.displayName || '',
+    //     teacherEmail: authStore.user.email || '',
+    //     studentsCount: students.length,
+    //     // Incluimos un resumen de estadísticas para el correo
+    //     summary: {
+    //       total: students.length,
+    //       presentes: Object.values(records).filter(status => status === 'Presente').length,
+    //       ausentes: Object.values(records).filter(status => status === 'Ausente').length,
+    //       tardanzas: Object.values(records).filter(status => status === 'Tardanza').length,
+    //       justificados: Object.values(records).filter(status => status === 'Justificado').length
+    //     }
+    //   }
+    // };
+    
+    // Enviar al webhook usando directamente el objeto payload completo
+    // para que sendWebhook no intente reestructurarlo
+    await sendWebhook('attendance_report', {
+      subject: `Reporte de Asistencia - ${className} - ${format(new Date(date), 'yyyy-MM-dd')}`,
+      format: 'email',
+      type: 'email_notification',
+      action: 'send_attendance_email',
+      htmlBody: htmlContent,
+      date: selectedDate.value,
+      class: selectedClass.value,
+      className: selectedClassName.value,
+      students: studentsStore.getStudentsByClass(selectedClass.value),
+      attendanceRecords: attendanceStore.attendanceRecords,
+      observations: attendanceStore.currentAttendanceDoc?.data.observations,
+      teacherId: authStore.user?.uid,
+      teacherName: authStore.user?.email || 'Profesor Desconocido', // Use email as fallback name
+      teacherEmail: authStore.user?.email
+    });
+
+    showToast('Correo de asistencia enviado correctamente.', 'success');
+  } catch (err: any) {
+    console.error("Error enviando correo de asistencia:", err);
+    showToast(`Error al enviar el correo: ${err.message || 'Error desconocido'}`, 'error');
+    error.value = 'No se pudo enviar el correo.';
+  } finally {
+    isLoading.value = false;
+    loadingMessage.value = '';
+  }
+};
+
+// Función para exportar la asistencia actual a PDF
+const exportCurrentClassAttendanceToPDF = async (): Promise<void> => {
+  if (!selectedClass.value || !selectedDate.value) {
+    showToast('Seleccione una clase y fecha para exportar.', 'error');
+    return;
+  }
+
+  isLoading.value = true
+  loadingMessage.value = 'Generando PDF...'
+
+  try {
+    // Obtener datos necesarios
+    const students = studentsStore.getStudentsByClass(selectedClass.value)
+    const records = attendanceStore.attendanceRecords
+    const observations = attendanceStore.currentAttendanceDoc?.data.observations || 'Sin observaciones.'
+    const className = selectedClassName.value
+    const date = selectedDate.value // Fecha para nombre de archivo
+
+    // Llamar a la función de utilidad para generar el PDF
+    await generateAttendancePDF(
+      students,
+      records,
+      observations,
+      className,
+      date
+    );
+
+    showToast('PDF generado correctamente.', 'success')
+  } catch (err: any) {
+    console.error("Error generando PDF:", err)
+    showToast('Error al generar el PDF. Intente de nuevo más tarde.', 'error')
+    error.value = 'No se pudo generar el PDF.'
   } finally {
     isLoading.value = false
     loadingMessage.value = ''
   }
 }
 
+// Funciones para modales
 const toggleAnalytics = () => {
-  showAnalytics.value = !showAnalytics.value
-  if (showAnalytics.value) showTrends.value = false
-}
+  showAnalytics.value = !showAnalytics.value;
+  if (showAnalytics.value && showTrends.value) {
+    showTrends.value = false;
+  }
+};
+
 const toggleTrends = () => {
-  showTrends.value = !showTrends.value
-  if (showTrends.value) showAnalytics.value = false
-}
-const openReportModal = () => { showReportModal.value = true }
-const openExportModal = () => { showExportModal.value = true }
+  showTrends.value = !showTrends.value;
+  if (showTrends.value && showAnalytics.value) {
+    showAnalytics.value = false;
+  }
+};
+
+const openReportModal = () => { 
+  showReportModal.value = true;
+};
+
+const handleGenerateReport = async (filters: AttendanceFiltersType) => {
+  try {
+    isLoading.value = true;
+    loadingMessage.value = 'Generando informe...';
+    reportFilters.value = filters;
+    await attendanceStore.generateReport(filters);
+    showToast('Informe generado correctamente', 'success');
+    showReportModal.value = false;
+  } catch (err) {
+    error.value = 'Error al generar el informe';
+    console.error('Error generando informe:', err);
+    showToast('Error al generar el informe', 'error');
+  } finally {
+    isLoading.value = false;
+    loadingMessage.value = '';
+  }
+};
+
+const openExportModal = () => { showExportModal.value = true}
 const createNewAttendance = () => { selectedDate.value = getCurrentDate(); view.value = 'class-select' }
 const handleOpenJustification = (student: any) => {
   selectedStudentForJustification.value = student ? { id: student.id, nombre: student.nombre, apellido: student.apellido } : null
   showJustifiedAbsenceModal.value = true
 }
-const handleOpenExport = () => { showExportModal.value = true }
+// Función modificada para manejar diferentes opciones de exportación
+const handleOpenExport = (fromAttendanceList = false) => {
+  console.log("Exportar asistencia a PDF")
+  // Si la exportación es desde la lista de asistencia, generamos el PDF directamente
+  if (fromAttendanceList) {
+    exportCurrentClassAttendanceToPDF()
+  } else {
+    // Si es desde el botón general, abrimos el modal de configuración
+    showExportModal.value = true 
+  }
+}
 
 const handleEmergencyClassSubmitted = async (success: boolean) => {
   if (success) {
@@ -475,17 +780,43 @@ const checkExistingAttendance = async (date: string, classId: string): Promise<b
   }
 }
 
+// Función para cerrar todos los modales
+const closeAllModals = () => {
+  showAnalytics.value = false
+  showTrends.value = false
+  showReportModal.value = false
+  showExportModal.value = false
+  showObservationsModal.value = false
+  showJustifiedAbsenceModal.value = false
+  showCalendarModal.value = false
+  showEmergencyClassModal.value = false
+}
+
 // Carga inicial de datos
 const fetchInitialData = async () => {
   try {
     isLoading.value = true
     loadingMessage.value = 'Cargando datos iniciales...'
+    
+    // Cerrar todos los modales para asegurar una experiencia limpia
+    closeAllModals()
+    
     await Promise.all([
       classesStore.fetchClasses(),
       studentsStore.fetchStudents(),
       attendanceStore.fetchAllAttendanceDates()
     ])
-    if (props.date && props.classId) {
+    
+    // Verificar si estamos navegando desde el menú principal de asistencia
+    // Las rutas /attendance/calendar o /teacher/attendance/calendar indican navegación desde el menú
+    if (route.path.endsWith('/attendance/calendar')) {
+      // Si viene desde el menú principal, siempre mostrar el calendario
+      view.value = 'calendar'
+      selectedDate.value = getCurrentDate()
+      selectedClass.value = ''
+    }
+    // Si hay parámetros específicos en la URL, cargar el detalle de asistencia
+    else if (props.date && props.classId) {
       const dateStr = props.date
       const formattedDate = dateStr.length === 8
         ? `${dateStr.substring(0,4)}-${dateStr.substring(4,6)}-${dateStr.substring(6,8)}`
@@ -515,8 +846,19 @@ onMounted(async () => {
   await fetchInitialData()
 })
 
-// Actualizar datos si cambian los parámetros de la URL
-watch(() => [route.params.date, route.params.classId], async ([newDate, newClassId]) => {
+// Actualizar datos si cambian los parámetros de la URL o la ruta completa
+watch(() => [route.params.date, route.params.classId, route.path], async ([newDate, newClassId, path]) => {
+  // Si la ruta termina con /calendar, siempre mostrar la vista de calendario
+  // Asegurarse de que path es un string antes de usar endsWith
+  if (typeof path === 'string' && (path.endsWith('/attendance/calendar') || path.endsWith('/teacher/attendance/calendar'))) {
+    view.value = 'calendar'
+    selectedDate.value = getCurrentDate()
+    selectedClass.value = ''
+    closeAllModals()
+    return
+  }
+  
+  // Si hay parámetros de URL específicos, cargar el detalle de asistencia
   if (newDate && newClassId) {
     const dateStr = newDate as string
     const formattedDate = dateStr.length === 8
@@ -531,10 +873,9 @@ watch(() => [route.params.date, route.params.classId], async ([newDate, newClass
 })
 </script>
 
-<template>
-  <div class="p-2 sm:p-4 md:p-6 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 max-w-full overflow-x-hidden">
+<template>  <div class="p-2 sm:p-4 md:p-6 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 max-w-full overflow-x-hidden">
     <!-- Toast Messages -->
-    <div v-if="showMessage" class="fixed top-4 right-4 z-50 p-3 sm:p-4 rounded-lg shadow-lg text-white transition-all duration-300 text-sm sm:text-base max-w-[90vw] sm:max-w-md" :class="messageType === 'success' ? 'bg-green-500' : 'bg-red-500'">
+    <div v-if="showMessage" class="fixed top-4 right-20 z-50 p-3 sm:p-4 rounded-lg shadow-lg text-white transition-all duration-300 text-sm sm:text-base max-w-[90vw] sm:max-w-md" :class="messageType === 'success' ? 'bg-green-500' : 'bg-red-500'">
       {{ message }}
     </div>
 
@@ -549,6 +890,11 @@ watch(() => [route.params.date, route.params.classId], async ([newDate, newClass
       @open-report-modal="openReportModal" 
       @open-export-modal="openExportModal"
       @create-new-attendance="createNewAttendance"
+      @open-calendar-modal="showCalendarModal = true"
+      @open-emergency-class-modal="showEmergencyClassModal = true"
+      @open-justified-absence-modal="showJustifiedAbsenceModal = true"
+      @open-observation-modal="showObservationsModal = true"
+      @open-justification-modal="handleOpenJustification"
       class="mb-3 sm:mb-4"
     />
 
@@ -568,11 +914,20 @@ watch(() => [route.params.date, route.params.classId], async ([newDate, newClass
         <i class="fas fa-file-alt mr-1 sm:mr-2"></i>
         <span class="hidden xs:inline">Informe</span>
         <span class="xs:hidden">I</span>
-      </button>
-      <button @click="openExportModal" class="btn btn-secondary text-xs sm:text-sm">
+      </button>      <button @click="openExportModal" class="btn btn-secondary text-xs sm:text-sm">
         <i class="fas fa-file-export mr-1 sm:mr-2"></i>
         <span class="hidden xs:inline">Exportar</span>
         <span class="xs:hidden">E</span>
+      </button>
+      <button @click="exportCurrentClassAttendanceToPDF" class="btn btn-secondary text-xs sm:text-sm">
+        <i class="fas fa-file-pdf mr-1 sm:mr-2"></i>
+        <span class="hidden xs:inline">Exportar PDF</span>
+        <span class="xs:hidden">PDF</span>
+      </button>
+      <button @click="sendAttendanceEmail" class="btn btn-secondary text-xs sm:text-sm">
+        <i class="fas fa-envelope mr-1 sm:mr-2"></i>
+        <span class="hidden xs:inline">Enviar Correo</span>
+        <span class="xs:hidden">Mail</span>
       </button>
     </div>
 
@@ -638,11 +993,10 @@ watch(() => [route.params.date, route.params.classId], async ([newDate, newClass
         <div v-else-if="view === 'attendance-form'" class="space-y-3 sm:space-y-4">
           <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-center sm:text-left">
             Lista de Asistencia <span class="block sm:inline">{{ formattedSelectedDate }}</span>
-          </h2>
-          <div class="flex flex-col sm:flex-row flex-wrap justify-between items-center gap-2 mb-3 sm:mb-4">
-            <button @click="showCalendarModal = true" class="btn btn-secondary inline-flex items-center w-full sm:w-auto">
+          </h2>          <div class="flex flex-col sm:flex-row flex-wrap justify-between items-center gap-2 mb-3 sm:mb-4">
+            <button @click="view = 'calendar'" class="btn btn-secondary inline-flex items-center w-full sm:w-auto">
               <CalendarDaysIcon class="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
-              Cambiar Fecha
+              Volver al Calendario
             </button>
             <div v-if="attendanceStore.getObservations" class="flex items-center justify-center sm:justify-start w-full sm:w-auto mt-2 sm:mt-0">
               <span class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 italic mr-2">
@@ -653,6 +1007,8 @@ watch(() => [route.params.date, route.params.classId], async ([newDate, newClass
               </button>
             </div>
           </div>
+
+          
           <AttendanceList 
             :students="studentsStore.getStudentsByClass(selectedClass)" 
             :attendanceRecords="attendanceStore.attendanceRecords"
@@ -661,10 +1017,9 @@ watch(() => [route.params.date, route.params.classId], async ([newDate, newClass
             :currentDate="selectedDate"
             :availableDates="availableClassDates"
             :observationsCount="getObservationsCount"
-            @update-status="handleUpdateStatus"
-            @open-justification="handleOpenJustification"
+            @update-status="handleUpdateStatus"            @open-justification="handleOpenJustification"
             @open-observation="handleOpenObservation"
-            @open-export="handleOpenExport"
+            @open-export="() => handleOpenExport(true)"
             @class-changed="selectClass"
             @date-changed="handleDateChange"
             class="overflow-x-auto"
@@ -708,14 +1063,37 @@ watch(() => [route.params.date, route.params.classId], async ([newDate, newClass
       :student="selectedStudentForJustification"
       @close="showJustifiedAbsenceModal = false"
       @save="handleJustificationSave"
-    />
-    
-    <CalendarModal
-      v-model="showCalendarModal"
-      :initial-date="selectedDate"
-      :marked-dates="attendanceStore.getDatesWithRecords"
-      @select="handleCalendarSelect"
-    />
+    />    <!-- Modal de calendario personalizado que usa directamente Calendar.vue -->
+    <div v-if="showCalendarModal" class="fixed inset-0 flex items-center justify-center z-50">
+      <div class="absolute inset-0 bg-black/50" @click="showCalendarModal = false"></div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md z-10">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Seleccionar Fecha</h3>
+          <button @click="showCalendarModal = false" class="text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="p-4">
+          <Calendar 
+            :selected-date="selectedDate" 
+            :current-month="currentMonth"
+            :markedDates="attendanceStore.datesWithRecords" 
+            @select="handleCalendarSelect"
+            @month-change="handleMonthChange"
+          />
+        </div>
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+          <button @click="showCalendarModal = false" class="btn btn-secondary mr-2">
+            Cancelar
+          </button>
+          <button @click="confirmDateSelection" class="btn btn-primary">
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
     <EmergencyClassModal
       v-if="showEmergencyClassModal"
       v-model="showEmergencyClassModal"

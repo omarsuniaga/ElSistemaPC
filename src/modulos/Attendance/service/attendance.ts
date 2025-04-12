@@ -9,7 +9,6 @@ import {
   serverTimestamp,
   query,
   where,
-  orderBy,
   addDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -368,7 +367,7 @@ export async function getClassObservationsHistoryFirebase(classId: string): Prom
         date: data.date,
         text: data.text || '',
         author: data.author || 'Sistema',
-        timestamp: data.timestamp || new Date().toISOString()
+        timestamp: typeof data.timestamp === 'string' ? new Date(data.timestamp).getTime() : data.timestamp || Date.now()
       };
     });
     
@@ -414,14 +413,16 @@ export async function getClassObservationsByDateFirebase(classId: string, date: 
         date: data.date,
         text: data.text || '',
         author: data.author || 'Sistema',
-        timestamp: data.timestamp || new Date().toISOString()
+        timestamp: typeof data.timestamp === 'string' ? new Date(data.timestamp).getTime() : data.timestamp || Date.now()
       };
     });
     
     // Ordenamos por timestamp (descendente)
-    return observations.sort((a, b) => 
-      b.timestamp.localeCompare(a.timestamp)
-    );
+    return observations.sort((a, b) => {
+      const timestampA = typeof a.timestamp === 'number' ? a.timestamp : 0;
+      const timestampB = typeof b.timestamp === 'number' ? b.timestamp : 0;
+      return timestampB - timestampA;
+    });
     
   } catch (error) {
     console.error('Error al obtener observaciones por fecha:', error);
@@ -621,7 +622,7 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
       if (data && data.fecha && data.classId && data.data) {
         // Process present students
         if (data.data.presentes && Array.isArray(data.data.presentes)) {
-          data.data.presentes.forEach(studentId => {
+          data.data.presentes.forEach((studentId: string) => {
             records.push({
               id: doc.id,
               studentId,
@@ -634,7 +635,7 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
         
         // Process absent students
         if (data.data.ausentes && Array.isArray(data.data.ausentes)) {
-          data.data.ausentes.forEach(studentId => {
+          data.data.ausentes.forEach((studentId: string) => {
             records.push({
               id: doc.id,
               studentId,
@@ -647,9 +648,9 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
         
         // Process late students and justifications
         if (data.data.tarde && Array.isArray(data.data.tarde)) {
-          data.data.tarde.forEach(studentId => {
+          data.data.tarde.forEach((studentId: string) => {
             // Check if student has a justification
-            const hasJustification = data.data.justificacion?.some(j => j.id === studentId);
+            const hasJustification = data.data.justificacion?.some((j: JustificationData) => j.id === studentId);
             
             records.push({
               id: doc.id,
@@ -659,8 +660,8 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
               status: hasJustification ? 'Justificado' : 'Tardanza',
               justification: hasJustification ? 
                 { 
-                  reason: data.data.justificacion.find(j => j.id === studentId)?.reason || '',
-                  documentUrl: data.data.justificacion.find(j => j.id === studentId)?.documentURL
+                  reason: data.data.justificacion.find((j: JustificationData) => j.id === studentId)?.reason || '',
+                  documentUrl: data.data.justificacion.find((j: JustificationData) => j.id === studentId)?.documentURL
                 } : 
                 undefined
             });
@@ -716,7 +717,7 @@ export const getAttendanceStatusFirebase = async (studentId: string, date: strin
         // Check if student is in tarde array
         if (data.data.tarde?.includes(studentId)) {
           // Check if student has justification
-          const hasJustification = data.data.justificacion?.some(j => j.id === studentId);
+          const hasJustification = data.data.justificacion?.some((j: JustificationData) => j.id === studentId);
           return hasJustification ? 'Justificado' : 'Tardanza';
         }
       }

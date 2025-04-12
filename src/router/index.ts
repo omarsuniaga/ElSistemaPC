@@ -52,11 +52,19 @@ const routes: Array<RouteRecordRaw> = [
       requiresAuth: true,
       allowedRoles: ['Maestro']
     }
+  },  {
+    path: '/teacher/attendance',
+    redirect: '/teacher/attendance/calendar',
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Maestro']
+    }
   },
   {
-    path: '/teacher/attendance',
-    name: 'TeacherAttendance',
+    path: '/teacher/attendance/calendar',
+    name: 'TeacherAttendanceCalendar',
     component: () => import('../views/AttendanceView.vue'),
+    props: { mode: 'calendar' },
     meta: { 
       requiresAuth: true,
       allowedRoles: ['Maestro']
@@ -64,7 +72,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/teacher/attendance/:date?/:classId?',
-    name: 'TeacherAttendance',
+    name: 'TeacherAttendanceDetail',
     component: () => import('../views/AttendanceView.vue'),
     props: true,
     meta: { 
@@ -156,7 +164,7 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/StudentsView.vue'),
     meta: { 
       requiresAuth: true,
-      allowedRoles: ['Director', 'Admin']
+      allowedRoles: ['Director', 'Admin', 'Maestro']
     }
   },
   {

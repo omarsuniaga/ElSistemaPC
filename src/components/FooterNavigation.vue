@@ -3,15 +3,16 @@
     v-if="shouldShowNavigation"
     class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700 z-40">
     <div class="grid" :class="[navigationItems.length === 5 ? 'grid-cols-5' : 'grid-cols-4']">
-      <!-- Renderizamos dinámicamente los elementos de navegación según el rol -->
-      <router-link 
+      <!-- Renderizamos dinámicamente los elementos de navegación según el rol -->      <router-link 
         v-for="item in navigationItems" 
         :key="item.to" 
         :to="item.to" 
-        class="flex flex-col items-center justify-center text-xs space-y-1 py-3"
+        class="flex flex-col items-center justify-center text-xs space-y-1 py-3 touch-action-manipulation"
         :class="[isRouteActive(item.to) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']"
         active-class="text-primary-600 dark:text-primary-400"
         :aria-label="item.ariaLabel"
+        role="button"
+        :aria-current="isRouteActive(item.to) ? 'page' : undefined"
       >
         <component 
           :is="item.icon" 
@@ -52,20 +53,49 @@ const shouldShowNavigation = computed(() => {
 
 // Determinar si una ruta está activa (para resaltarla)
 const isRouteActive = (path: string) => {
-  // Para la ruta raíz, solo activarla si estamos exactamente en / o /dashboard
-  // y no en ninguna otra ruta
+  // Caso especial para la ruta raíz
   if (path === '/') {
     return route.path === '/' || route.path === '/dashboard';
   }
   
-  // Para otras rutas, verificar coincidencia exacta de primer nivel de ruta
+  // Comparación más precisa para evitar activación múltiple
   if (path !== '/') {
-    // Extraer primer segmento de la ruta actual (ej: /students/1 -> students)
-    const currentFirstSegment = route.path.split('/')[1];
-    // Extraer primer segmento de la ruta del item (ej: /students -> students)
-    const itemFirstSegment = path.split('/')[1];
+    // Extraer componentes de las rutas
+    const routeParts = route.path.split('/').filter(Boolean);
+    const itemParts = path.split('/').filter(Boolean);
     
-    return currentFirstSegment === itemFirstSegment && itemFirstSegment !== '';
+    // Si la ruta del menú es exactamente igual a la ruta actual
+    if (route.path === path) {
+      return true;
+    }
+    
+    // Si no es exacta, verificar que la ruta actual comience con la ruta del elemento del menú
+    // y que sea el menú más específico para esta ruta
+    if (routeParts.length >= itemParts.length && 
+        itemParts.every((part, index) => part === routeParts[index])) {
+      
+      // Verificar que no exista un ítem de menú más específico que coincida mejor
+      const menuItems = [...teacherMenuItems, ...adminMenuItems];
+      const hasBetterMatch = menuItems.some(menuItem => {
+        // Convertir la ruta del menú en componentes
+        const menuItemParts = menuItem.to.split('/').filter(Boolean);
+        
+        // Un menú es mejor coincidencia si:
+        // 1. No es el mismo ítem que estamos evaluando
+        // 2. Tiene más componentes de ruta que coinciden con la ruta actual
+        // 3. Todos sus componentes coinciden con la ruta actual
+        return menuItem.to !== path && 
+               menuItemParts.length > itemParts.length &&
+               menuItemParts.every((part, idx) => part === routeParts[idx]);
+      });
+      
+      return !hasBetterMatch;
+    }
+    
+    // Caso especial para la sección de asistencia
+    if (path.includes('/attendance') && route.path.includes('/attendance')) {
+      return !route.path.includes('/teacher') || path.includes('/teacher');
+    }
   }
   
   return false;
@@ -85,25 +115,6 @@ const navigationItems = computed(() => {
     return teacherMenuItems.slice(0, 5);
   }
   
-  // // Para otros roles autenticados (estudiantes, etc.)
-  // else if (authStore.isLoggedIn) {
-  //   return [
-  //     {
-  //       name: 'Inicio',
-  //       icon: HomeIcon,
-  //       to: '/',
-  //       ariaLabel: 'Inicio'
-  //     },
-  //     {
-  //       name: 'Perfil',
-  //       icon: UserIcon,
-  //       to: '/profile',
-  //       ariaLabel: 'Mi perfil'
-  //     }
-  //   ];
-  // }
-  
-  // Para usuarios no autenticados (no debería llegar aquí debido a shouldShowNavigation)
   return [];
 })
 </script>

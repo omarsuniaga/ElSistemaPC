@@ -303,15 +303,14 @@
   </template>
   
   <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, startOfMonth, endOfMonth, addWeeks, subWeeks, addMonths, subMonths } from 'date-fns';
+import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
 import { es } from 'date-fns/locale';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useClassesStore } from '../modulos/Classes/store/classes';
 import { useStudentsStore } from '../modulos/Students/store/students';
 import { useAttendanceStore } from '../modulos/Attendance/store/attendance';
-// Importación corregida de jsPDF
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, startOfMonth, endOfMonth, addWeeks, subWeeks, addMonths, subMonths, parseISO, isValid } from 'date-fns';
 
 interface AutoTableOptions {
   startY: number;
@@ -709,17 +708,16 @@ function setFillColorForCell(doc: jsPDF, color: [number, number, number]) {
     }
   }
   
-  // Cargar datos de asistencia para el período actual
   async function loadAttendanceData() {
   isLoading.value = true;
   error.value = null;
   
   try {
-    // Obtener rango de fechas actual
+    // Get the current date range
     const startDate = format(visibleDays.value[0], 'yyyy-MM-dd');
     const endDate = format(visibleDays.value[visibleDays.value.length - 1], 'yyyy-MM-dd');
     
-    // Filtrar estudiantes por clase seleccionada si es necesario
+    // Filter students by selected class if needed
     if (selectedClass.value) {
       students.value = allStudents.value.filter(student => 
         student.classIds?.includes(selectedClass.value)
@@ -728,78 +726,64 @@ function setFillColorForCell(doc: jsPDF, color: [number, number, number]) {
       students.value = [...allStudents.value];
     }
     
-    // Cargar datos de asistencia desde el store
+    // Load attendance data from the store
     await attendanceStore.fetchAttendanceByDateRange(startDate, endDate);
     
-    // Mapear los registros del store al formato que necesitamos
+    // Map the records from the store to the format we need
     const attendanceRecords: AttendanceRecord[] = [];
     
-    // Utilizar los registros del store de asistencia
+    // Get records from the store
     const records = attendanceStore.records;
     
-    // Depuración
+    // Debug information
     console.log('Registros obtenidos:', records.length);
     
     for (const record of records) {
-      // Verificar qué campo de fecha está disponible
-      const dateField = record.Fecha || (record.date ? (typeof record.date === 'string' ? record.date : format(record.date, 'yyyy-MM-dd')) : null);
-      
-      if (!dateField || !record.studentId) {
-        console.warn('Registro sin fecha o ID de estudiante:', record);
+      // Skip records without a date or student ID
+      if (!record.Fecha || !record.studentId) {
         continue;
       }
       
-      // Solo incluir registros para los estudiantes filtrados
+      // Only include records for the filtered students
       const isStudentInFilteredList = students.value.some(s => s.id === record.studentId);
       if (!isStudentInFilteredList) continue;
 
-      // Solo incluir registros para la clase seleccionada si hay una
-      if (selectedClass.value && record.classId && record.classId !== selectedClass.value) continue;
+      // Only include records for the selected class if one is selected
+      if (selectedClass.value && record.classId !== selectedClass.value) continue;
       
-      // Asegúrate de que la fecha esté en formato yyyy-MM-dd
-      let formattedDate: string;
-      try {
-        // Si es string, parsearlo a Date y luego formatearlo
-        if (typeof dateField === 'string') {
-          formattedDate = format(parseISO(dateField), 'yyyy-MM-dd');
-        } else {
-          // Si es Date, solo formatearlo
-          formattedDate = format(dateField, 'yyyy-MM-dd');
-        }
-      } catch (err) {
-        console.warn(`Error al formatear fecha ${dateField}:`, err);
-        formattedDate = typeof dateField === 'string' ? dateField : format(new Date(), 'yyyy-MM-dd');
-      }
-      
-      // Mapear el estado correctamente
+      // Convert attendance status to display format
       let status: AttendanceStatusType;
       
-      if (record.status === 'Presente' || record.status === 'PRESENT') {
-        status = 'P';
-      } else if (record.status === 'Ausente' || record.status === 'ABSENT') {
-        status = 'A';
-      } else if (record.status === 'Tardanza' || record.status === 'LATE') {
-        status = 'T';
-      } else if (record.status === 'Justificado' || record.status === 'JUSTIFIED') {
-        status = 'J';
-      } else {
-        // Si hay un valor no reconocido, usar mapeo existente o valor vacío
-        status = mapStoreStatusToComponent(record.status as AttendanceStatus) || '';
+      switch (record.status) {
+        case 'Presente': 
+          status = 'P'; 
+          break;
+        case 'Ausente': 
+          status = 'A'; 
+          break;
+        case 'Tardanza': 
+          status = 'T'; 
+          break;
+        case 'Justificado': 
+          status = 'J'; 
+          break;
+        default:
+          status = '';
       }
       
       attendanceRecords.push({
         studentId: record.studentId,
-        date: formattedDate,
+        date: record.Fecha,
         status
       });
     }
     
     console.log('Registros procesados:', attendanceRecords.length);
     
-    // Actualizar el estado local con los registros obtenidos
+    // Update the local state with the processed records
     attendance.value = attendanceRecords;
     
-    // Cargar horarios de clase para mostrar las celdas grises
+    // Load class schedules to show the gray cells
     await loadClassSchedules();
     
   } catch (err: any) {

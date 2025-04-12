@@ -390,7 +390,7 @@ getJustification: (state) => {
         }
         
         // Si no hay caché o estamos en producción, obtener de Firestore
-        const documents = await getAttendancesFirebase();
+        const documents = await getAttendancesFirebase() as any;
         
         // Guardar en localStorage si estamos en desarrollo
         if (process.env.NODE_ENV === 'development') {
@@ -948,8 +948,6 @@ getJustification: (state) => {
 
     async updateAnalytics() {
       try {
-        // console.log('📊 Actualizando analíticas de asistencia...');
-        
         // Inicializar objeto de analíticas
         const analytics: AttendanceAnalytics = {
           totalClasses: 0,
@@ -961,13 +959,10 @@ getJustification: (state) => {
         
         // Asegurarse de que los datos estén cargados
         if (this.attendanceDocuments.length === 0) {
-          // console.log('⚠️ No hay documentos de asistencia cargados, intentando cargar...');
           await this.fetchAttendanceDocuments();
         }
         
-        // También asegurar que los registros antiguos estén disponibles para compatibilidad
         if (this.records.length === 0) {
-          // console.log('⚠️ No hay registros antiguos de asistencia cargados, intentando cargar...');
           await this.fetchAttendance();
         }
         
@@ -983,7 +978,6 @@ getJustification: (state) => {
         
         // Si no hay clases cargadas en el store, cargarlas
         if (!classesStore.classes.length) {
-          // console.log('⚠️ No hay clases cargadas en el store, intentando cargar...');
           await classesStore.fetchClasses();
         }
         
@@ -992,8 +986,23 @@ getJustification: (state) => {
           classNameMap.set(classItem.id, classItem.name);
         });
         
+        // IMPORTANTE: Verificar que cada elemento en attendanceDocuments sea realmente un documento
+        // y no un registro individual
+        this.attendanceDocuments = this.attendanceDocuments.filter(doc => {
+          // Un documento válido debe tener classId, fecha, y data con arrays
+          return doc && doc.classId && doc.fecha && doc.data &&
+                 (Array.isArray(doc.data.presentes) || 
+                  Array.isArray(doc.data.ausentes) || 
+                  Array.isArray(doc.data.tarde));
+        });
+        
         // Primero analizar datos de la nueva estructura de documentos
         this.attendanceDocuments.forEach(doc => {
+          if (!doc || !doc.classId || !doc.data) {
+            console.warn('Documento de asistencia inválido o incompleto:', doc);
+            return; // Skip this document
+          }
+          
           // Añadir la clase a las clases únicas
           classesSet.add(doc.classId);
           
@@ -1011,26 +1020,35 @@ getJustification: (state) => {
             };
           }
           
+          // Garantizar que todas las propiedades existan
+          const presentes = doc.data.presentes || [];
+          const ausentes = doc.data.ausentes || [];
+          const tarde = doc.data.tarde || [];
+          const justificacion = doc.data.justificacion || [];
+          
           // Procesar presentes
-          doc.data.presentes.forEach(studentId => {
+          presentes.forEach(studentId => {
+            if (!studentId) return;
             studentsSet.add(studentId);
             analytics.byClass[className].present++;
             analytics.byClass[className].total++;
           });
           
           // Procesar ausentes
-          doc.data.ausentes.forEach(studentId => {
+          ausentes.forEach(studentId => {
+            if (!studentId) return;
             studentsSet.add(studentId);
             analytics.byClass[className].absent++;
             analytics.byClass[className].total++;
           });
           
           // Procesar tarde y justificados
-          doc.data.tarde.forEach(studentId => {
+          tarde.forEach(studentId => {
+            if (!studentId) return;
             studentsSet.add(studentId);
             
             // Verificar si tiene justificación
-            const isJustified = doc.data.justificacion?.some(j => j.id === studentId);
+            const isJustified = justificacion.some(j => j && j.id === studentId);
             
             if (isJustified) {
               analytics.byClass[className].justified++;
@@ -1042,88 +1060,18 @@ getJustification: (state) => {
           });
         });
         
-        // Completar con datos de registros antiguos para compatibilidad
-        this.records.forEach(record => {
-          // Añadir a los sets
-          classesSet.add(record.classId);
-          studentsSet.add(record.studentId);
-          
-          // Obtener el nombre de la clase (o usar el ID si no se encuentra)
-          const className = classNameMap.get(record.classId) || record.classId;
-          
-          // Si la clase no está en el análisis (posible si solo hay registros antiguos)
-          if (!analytics.byClass[className]) {
-            analytics.byClass[className] = {
-              present: 0,
-              absent: 0,
-              delayed: 0,
-              justified: 0,
-              total: 0
-            };
-          }
-          
-          // Verificar si este registro ya fue contabilizado en la nueva estructura
-          const isAlreadyCounted = this.attendanceDocuments.some(doc => 
-            doc.fecha === record.Fecha && 
-            doc.classId === record.classId && 
-            (doc.data.presentes.includes(record.studentId) || 
-             doc.data.ausentes.includes(record.studentId) || 
-             doc.data.tarde.includes(record.studentId))
-          );
-          
-          // Solo contabilizar si no ha sido contado
-          if (!isAlreadyCounted) {
-            analytics.byClass[className].total++;
-            
-            switch (record.status) {
-              case 'Presente':
-                analytics.byClass[className].present++;
-                break;
-              case 'Ausente':
-                analytics.byClass[className].absent++;
-                break;
-              case 'Tardanza':
-                analytics.byClass[className].delayed++;
-                break;
-              case 'Justificado':
-                analytics.byClass[className].justified++;
-                break;
-            }
-          }
-        });
+        // Procesar registros antiguos que no están presentes en la nueva estructura
+        const processedClasses = new Set<string>();
+        const processedStudents = new Map<string, Set<string>>();
         
-        // Calcular estudiantes con más ausencias
-        const absentStudents = this.calculateAbsentStudents();
-        analytics.absentStudents = absentStudents;
-        
-        // Calcular totales
-        analytics.totalClasses = classesSet.size;
-        analytics.totalStudents = studentsSet.size;
-        
-        // Calcular asistencia promedio
-        let totalPresent = 0;
-        let totalRecords = 0;
-        
-        Object.values(analytics.byClass).forEach(classStats => {
-          totalPresent += classStats.present + classStats.justified;
-          totalRecords += classStats.total;
-        });
-        
-        analytics.averageAttendance = totalRecords > 0 
-          ? (totalPresent / totalRecords) * 100 
-          : 0;
-        
-        // Actualizar el estado
-        this.analytics = analytics;
-        // console.log('✅ Analíticas actualizadas:', analytics);
-        
-        return analytics;
-      } catch (error) {
-        console.error('❌ Error al actualizar analíticas:', error);
+      }catch (error) {
+        this.error = 'Error al actualizar analíticas de asistencia';
+        console.error('Error al actualizar analíticas:', error);
         throw error;
+      } finally {
+        this.isLoading = false;
       }
-    },
-
+      },
     // Método para calcular los estudiantes con más ausencias
     calculateAbsentStudents(limit: number = 10) {
       const absencesMap: Record<string, { 
@@ -1133,10 +1081,30 @@ getJustification: (state) => {
         totalAttendance: number 
       }> = {};
       
+      // Filtrar documentos inválidos antes de procesar
+      const validDocuments = this.attendanceDocuments.filter(doc => {
+        return doc && doc.classId && doc.fecha && doc.data &&
+               (Array.isArray(doc.data.presentes) || 
+                Array.isArray(doc.data.ausentes) || 
+                Array.isArray(doc.data.tarde));
+      });
+      
       // Primero analizar los documentos nuevos
-      this.attendanceDocuments.forEach(doc => {
+      validDocuments.forEach(doc => {
+        // Verificar que el documento tenga la estructura de datos esperada
+        if (!doc || !doc.data) {
+          return; // Skip this document
+        }
+        
+        // Asegurarnos de que todas las propiedades necesarias existan
+        const ausentes = doc.data.ausentes || [];
+        const presentes = doc.data.presentes || [];
+        const tarde = doc.data.tarde || [];
+        
         // Procesar ausentes
-        doc.data.ausentes.forEach(studentId => {
+        ausentes.forEach(studentId => {
+          if (!studentId) return; // Ignorar IDs inválidos
+          
           if (!absencesMap[studentId]) {
             absencesMap[studentId] = {
               absences: 0,
@@ -1156,7 +1124,9 @@ getJustification: (state) => {
         });
         
         // Procesar presentes y tarde para contabilidad total
-        [...doc.data.presentes, ...doc.data.tarde].forEach(studentId => {
+        [...presentes, ...tarde].forEach(studentId => {
+          if (!studentId) return; // Ignorar IDs inválidos
+          
           if (!absencesMap[studentId]) {
             absencesMap[studentId] = {
               absences: 0,
@@ -1173,40 +1143,6 @@ getJustification: (state) => {
             absencesMap[studentId].lastAttendance = doc.fecha;
           }
         });
-      });
-      
-      // Complementar con registros antiguos
-      this.records.forEach(record => {
-        // Verificar si este registro ya fue contabilizado en la nueva estructura
-        const isAlreadyCounted = this.attendanceDocuments.some(doc => 
-          doc.fecha === record.Fecha && 
-          doc.classId === record.classId && 
-          (doc.data.presentes.includes(record.studentId) || 
-           doc.data.ausentes.includes(record.studentId) || 
-           doc.data.tarde.includes(record.studentId))
-        );
-        
-        if (!isAlreadyCounted) {
-          if (!absencesMap[record.studentId]) {
-            absencesMap[record.studentId] = {
-              absences: 0,
-              lastAttendance: record.Fecha,
-              attendanceRate: 0,
-              totalAttendance: 0
-            };
-          }
-          
-          absencesMap[record.studentId].totalAttendance++;
-          
-          if (record.status === 'Ausente') {
-            absencesMap[record.studentId].absences++;
-          }
-          
-          // Actualizar última fecha solo si es más reciente
-          if (record.Fecha > absencesMap[record.studentId].lastAttendance) {
-            absencesMap[record.studentId].lastAttendance = record.Fecha;
-          }
-        }
       });
       
       // Calcular tasas de asistencia

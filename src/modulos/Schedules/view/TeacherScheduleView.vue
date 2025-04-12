@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useTeachersStore } from '@/modulos/Teachers/store/teachers'
-import { useClassesStore } from '@/modulos/Classes/store/classes'
-import { useScheduleStore } from '@/modulos/Schedules/store/schedule'
+import { useTeachersStore } from '../../../modulos/Teachers/store/teachers'
+import { useClassesStore } from '../../../modulos/Classes/store/classes'
+import { useScheduleStore } from '../../../modulos/Schedules/store/schedule'
+import { useUserSessionsStore as useUserStore } from '../../../modulos/Users/store/userSessions'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import TeacherWeeklySchedule from '../../Teachers/components/TeacherWeeklySchedule.vue'
@@ -77,10 +78,11 @@ const auth = getAuth()
 
 // Agregar tipos explícitos para mejorar la seguridad de tipos
 const teacherId = computed(() => {
-  // Primero intentar obtener el ID del usuario autenticado
-  if (auth.currentUser) return auth.currentUser.uid
-  // Si no hay usuario autenticado, usar el ID de la ruta
-  return route.params.id as string
+  // Usar primero el ID de la ruta si existe
+  if (route.params.id) return route.params.id as string
+  
+  // Si no hay ID en la ruta, intentar usar el ID del usuario autenticado
+  return auth.currentUser?.uid || ''
 })
 const isLoading = ref(true)
 const error = ref<string | null>(null)
@@ -94,24 +96,226 @@ const loadData = async () => {
   try {
     isLoading.value = true
     error.value = null
-    // Cargar maestros si aún no se han cargado
-    await teachersStore.fetchTeachers()
-    teacher.value = teachersStore.getTeacherById(teacherId.value)
+    
+    // Verificar que tengamos un teacherId válido de la ruta o del usuario actual
+    if (!teacherId.value) {
+      // Si estamos autenticados pero no tenemos ID de maestro, intentar buscar por usuario
+      if (auth.currentUser) {
+        console.log('Usuario autenticado pero sin ID de maestro, buscando por userId:', auth.currentUser.uid)
+        // Intentar cargar un maestro basado en el ID de usuario
+        try {
+          // Asegurarnos que los maestros estén cargados
+          await teachersStore.fetchTeachers()
+          
+          // Buscar un maestro que tenga el userId correspondiente al usuario actual
+          const teacherByUserId = teachersStore.teachers.find(t => t.uid === auth.currentUser?.uid)
+          
+          if (teacherByUserId) {
+            console.log('Maestro encontrado mediante userId:', teacherByUserId.id)
+            teacher.value = {
+              ...teacherByUserId,
+              experiencia: typeof teacherByUserId.experiencia === 'string' 
+                ? { institution: teacherByUserId.experiencia } 
+                : teacherByUserId.experiencia
+            }
+            return // Continuar con el maestro encontrado
+          }
+        } catch (e) {
+          console.warn('Error al buscar maestro por userId:', e)
+        }
+      }
+      
+      throw new Error('No se puede determinar el ID del maestro. Por favor inicie sesión o verifique la URL.')
+    }
+
+    // MÉTODO 3.5: Buscar explícitamente por authUid
+    if (!teacher.value && auth.currentUser && teachersStore.fetchTeacherByAuthUid) {
+      console.log('Buscando maestro por authUid en Firebase:', auth.currentUser.uid)
+      try {
+        const teacherByAuthUid = await teachersStore.fetchTeacherByAuthUid(auth.currentUser.uid)
+        if (teacherByAuthUid) {
+          console.log('Maestro encontrado por authUid:', teacherByAuthUid.id)
+          teacher.value = {
+            ...teacherByAuthUid,
+            experiencia: typeof teacherByAuthUid.experiencia === 'string' 
+              ? { institution: teacherByAuthUid.experiencia } 
+              : teacherByAuthUid.experiencia
+          }
+        }
+      } catch (e) {
+        console.warn('Error al buscar maestro por authUid:', e)
+      }
+    }
+    
+    console.log('Buscando maestro con ID:', teacherId.value)
+    
+    // MÉTODO 1: Intentar usando getTeacherById directamente (puede funcionar si ya está en caché)
+    if (teachersStore.getTeacherById) {
+      const fetchedTeacher = teachersStore.getTeacherById(teacherId.value)
+      if (fetchedTeacher) {
+        teacher.value = {
+          ...fetchedTeacher,
+          experiencia: typeof fetchedTeacher.experiencia === 'string'
+            ? { institution: fetchedTeacher.experiencia }
+            : fetchedTeacher.experiencia
+        }
+        console.log('Maestro encontrado en caché:', teacher.value.name)
+      }
+    }
+    
+    // MÉTODO 2: Si no lo encontramos, cargar todos los maestros y volver a intentar
     if (!teacher.value) {
+      console.log('Maestro no encontrado en caché, cargando todos los maestros...')
+      await teachersStore.fetchTeachers()
+      
+      if (teachersStore.getTeacherById) {
+        const fetchedTeacher = teachersStore.getTeacherById(teacherId.value)
+        if (fetchedTeacher) {
+          teacher.value = {
+            ...fetchedTeacher,
+            experiencia: typeof fetchedTeacher.experiencia === 'string'
+              ? { institution: fetchedTeacher.experiencia }
+              : fetchedTeacher.experiencia
+          }
+        } else {
+          teacher.value = null
+        }
+      } else {
+        // Búsqueda manual si getTeacherById no existe
+        const foundTeacher = teachersStore.teachers.find(t => t.id === teacherId.value)
+        if (foundTeacher) {
+          teacher.value = {
+            ...foundTeacher,
+            experiencia: typeof foundTeacher.experiencia === 'string' 
+              ? { institution: foundTeacher.experiencia } 
+              : foundTeacher.experiencia
+          }
+        } else {
+          teacher.value = null
+        }
+      }
+      
+      if (teacher.value) {
+        console.log('Maestro encontrado después de cargar todos:', teacher.value.name)
+      }
+    }
+    
+    // MÉTODO 3: Buscar al maestro por userId
+    if (!teacher.value && teachersStore.teachers) {
+      console.log('Intentando buscar maestro por userId...')
+      const foundTeacher = teachersStore.teachers.find(t => t.uid === teacherId.value)
+      
+      if (foundTeacher) {
+        teacher.value = {
+          ...foundTeacher,
+          experiencia: typeof foundTeacher.experiencia === 'string'
+            ? { institution: foundTeacher.experiencia }
+            : foundTeacher.experiencia
+        }
+        console.log('Maestro encontrado por userId:', teacher.value.name)
+      } else {
+        teacher.value = null
+      }
+    }
+    
+    // MÉTODO 4: Último recurso - actualizar datos desde Firebase y buscar nuevamente
+    if (!teacher.value) {
+      console.log('Último intento: actualizar datos desde Firebase y buscar nuevamente')
+      try {
+        // Recargar todos los maestros desde Firebase
+        await teachersStore.fetchTeachers()
+        
+        // Intentar obtener el maestro con los datos actualizados
+        const fetchedTeacher = teachersStore.getTeacherById(teacherId.value)
+        if (fetchedTeacher) {
+          teacher.value = {
+            ...fetchedTeacher,
+            experiencia: typeof fetchedTeacher.experiencia === 'string'
+              ? { institution: fetchedTeacher.experiencia }
+              : fetchedTeacher.experiencia
+          }
+          console.log('Maestro encontrado después de actualizar datos:', teacher.value.name)
+        }
+      } catch (e) {
+        console.error('Error al actualizar y buscar maestro en Firebase:', e)
+      }
+    }
+        // Handle the case where user is not a teacher
+    if (!teacher.value && auth.currentUser) {
+      try {
+        // Intentar obtener información del usuario actual
+        const userStore = useUserStore()
+        
+        // Obtener la información del usuario actual o sus sesiones
+        const currentUser = auth.currentUser;
+        
+        // ID tokens contain the claims, not the User object directly
+        let userRole = 'unknown';
+        
+        // Get role directly from Firebase auth token
+        if (currentUser) {
+          try {
+            const idTokenResult = await currentUser.getIdTokenResult();
+            // Check if role exists and is a string
+            userRole = typeof idTokenResult.claims.role === 'string' 
+              ? idTokenResult.claims.role 
+              : 'unknown';
+          } catch (tokenErr) {
+            console.warn("Couldn't get user role from token:", tokenErr);
+          }
+        }
+        
+        // Alternatively, could get token claims if needed:
+        // if (currentUser) {
+        //   const idTokenResult = await currentUser.getIdTokenResult();
+        //   userRole = idTokenResult.claims.role || 'unknown';
+        // }
+        
+        // Si el usuario tiene un rol diferente a 'teacher', mostrar mensaje adecuado
+        if (userRole !== 'teacher') {
+          console.warn('El usuario actual no tiene rol de maestro:', userRole);
+          error.value = 'No tienes acceso a esta página. Esta vista está disponible solo para maestros.';
+          isLoading.value = false;
+          return; // Exit early with a meaningful error
+        }
+      } catch(e) {
+        console.warn('Error al verificar rol de usuario:', e)
+      }
+      
+      console.error('No se encontró maestro con ID:', teacherId.value)
       throw new Error('No se encontró información del maestro. Por favor verifique que el ID sea correcto o contacte al administrador.')
     }
     
     // Cargar horarios desde el store de schedules
     await scheduleStore.fetchAllSchedules()
-    const teacherSchedules = scheduleStore.getSchedulesByTeacher(teacher.value.id)
+    const teacherSchedules = teacher.value ? scheduleStore.getSchedulesByTeacher(teacher.value.id) : []
     
     // Procesar los horarios para obtener la información necesaria
     if (teacherSchedules && teacherSchedules.length > 0) {
       // Obtener clases para el componente TeacherWeeklySchedule
       await classesStore.fetchClasses()
-      teacherClasses.value = teacherSchedules.map(scheduleItem => {
-        const classInfo = classesStore.getClassById(scheduleItem.scheduleDay.classId)
-        return {
+      // Define interfaces outside the map function
+      interface ClassSchedule {
+        day: string;
+        startTime: string;
+        endTime: string;
+      }
+
+      interface ClassItem {
+        id: string;
+        name: string;
+        teacherId: string;
+        instrument: string;
+        classroom: string;
+        studentIds: string[];
+        schedule: ClassSchedule[];
+      }
+
+      // Type the map function and its parameters
+      teacherClasses.value = teacherSchedules.map((scheduleItem: ScheduleItem): ClassItem => {
+        const classInfo: any = classesStore.getClassById(scheduleItem.scheduleDay.classId)
+        
+        const classItem: ClassItem = {
           id: scheduleItem.scheduleDay.classId,
           name: classInfo?.name || 'Clase sin nombre',
           teacherId: scheduleItem.scheduleDay.teacherId,
@@ -119,11 +323,12 @@ const loadData = async () => {
           classroom: scheduleItem.scheduleDay.roomId,
           studentIds: scheduleItem.scheduleDay.studentIds,
           schedule: [{
-            day: scheduleItem.scheduleDay.dayOfWeek,
-            startTime: scheduleItem.scheduleDay.timeSlot.startTime,
-            endTime: scheduleItem.scheduleDay.timeSlot.endTime
+        day: scheduleItem.scheduleDay.dayOfWeek,
+        startTime: scheduleItem.scheduleDay.timeSlot.startTime,
+        endTime: scheduleItem.scheduleDay.timeSlot.endTime
           }]
         }
+        return classItem
       })
       
       // Calcular métricas para mostrar en la vista
@@ -131,12 +336,23 @@ const loadData = async () => {
         return total + (s.scheduleDay.timeSlot.duration / 60)
       }, 0)
       
+      // Define a type for a schedule entry (each item in the schedule array)
+      interface ScheduleEntry {
+        dayOfWeek: string;
+        className: string;
+        startTime: string;
+        endTime: string;
+        classId: string;
+        room: string;
+        studentCount: number;
+      }
+
       // Crear objeto de horario para la vista
       schedule.value = {
         totalClasses: teacherSchedules.length,
         weeklyHours: weeklyHours,
         hasConflicts: false, // Podría implementarse detección de conflictos
-        schedule: teacherSchedules.map(s => ({
+        schedule: teacherSchedules.map((s: ScheduleItem): ScheduleEntry => ({
           dayOfWeek: s.scheduleDay.dayOfWeek,
           className: classesStore.getClassById(s.scheduleDay.classId)?.name || 'Clase sin nombre',
           startTime: s.scheduleDay.timeSlot.startTime,
@@ -148,7 +364,36 @@ const loadData = async () => {
       }
     } else {
       // Si no hay horarios en el store de schedules, intentar con el método del store de teachers
-      schedule.value = await teachersStore.getTeacherSchedule(teacher.value.id)
+      if (teacher.value) {
+        const teacherScheduleData = await teachersStore.getTeacherSchedule(teacher.value.id)
+        // Transformar TeacherScheduleSummary al formato esperado por Schedule
+        if (teacherScheduleData) {
+          const transformedSchedule = {
+            totalClasses: teacherScheduleData.totalClasses,
+            weeklyHours: teacherScheduleData.weeklyHours,
+            hasConflicts: teacherScheduleData.hasConflicts,
+            schedule: Array.isArray(teacherScheduleData.schedule) 
+              ? teacherScheduleData.schedule 
+              : Object.entries(teacherScheduleData.schedule || {}).flatMap(([day, slots]) => 
+                  Array.isArray(slots) ? slots.map(slot => ({
+                    dayOfWeek: day,
+                    className: slot.className || 'Clase sin nombre',
+                    startTime: slot.startTime,
+                    endTime: slot.endTime,
+                    classId: slot.classId || '',
+                    room: slot.room || '',
+                    studentCount: slot.studentCount || 0
+                  })) : []
+                )
+          }
+          schedule.value = transformedSchedule
+        } else {
+          schedule.value = null
+        }
+      } else {
+        console.error('No teacher found to get schedule')
+        schedule.value = null
+      }
     }
   } catch (err: any) {
     console.error('Error cargando datos:', err)
@@ -158,10 +403,19 @@ const loadData = async () => {
   }
 }
 
+// Fix the onMounted function to properly handle errors
 onMounted(async () => {
-  await loadData()
-  // mostrar la consulta a firebase desde el store
-  console.log('Teacher Classes:', getTeacherClasses(teacherId.value))
+  try {
+    await loadData()
+    
+    // Only try to display classes if we successfully loaded the teacher
+    if (teacher.value) {
+      console.log('Teacher Classes:', getTeacherClasses(teacher.value.id))
+    }
+  } catch (e) {
+    // Error already handled by loadData function
+    console.log('Could not load teacher data, skipping class fetch')
+  }
 })
 
 const formatHours = (hours: number): string => {
@@ -219,10 +473,18 @@ const getCurrentFormattedDate = (): string => {
   return format(new Date(), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })
 }
 
+// Improve the getTeacherClasses function
 const getTeacherClasses = (teacherId: string) => {
-  if (!teacherId) return []
-  return teacherClasses.value.length > 0 ? teacherClasses.value : classesStore.classes.filter(class_ => class_.teacherId === teacherId)
+  if (!teacherId || !teacher.value) return []
+  
+  // Always use the successfully fetched teacher's ID, not the route parameter
+  const effectiveTeacherId = teacher.value.id
+  
+  return teacherClasses.value.length > 0 
+    ? teacherClasses.value 
+    : classesStore.classes.filter(class_ => class_.teacherId === effectiveTeacherId)
 }
+
 </script>
 
 <template>

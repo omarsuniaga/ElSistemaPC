@@ -1,24 +1,5 @@
 <template>
   <div class="space-y-6" :class="customClass">
-    <!-- Información de fecha seleccionada -->
-    <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
-      <div class="flex items-center justify-between">
-        <div>
-          <h3 class="text-base font-medium text-blue-800 dark:text-blue-300">
-            Fecha seleccionada
-          </h3>
-          <p class="text-sm text-blue-600 dark:text-blue-400">
-            {{ formatDate(selectedDate) }}
-          </p>
-        </div>
-        <button 
-          @click="openCalendar"
-          class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-        >
-          <CalendarDaysIcon class="h-6 w-6" />
-        </button>
-      </div>
-    </div>
     
     <!-- Búsqueda -->
     <!-- <div class="relative">
@@ -260,24 +241,24 @@ const filterClassesByDay = (date: string) => {
 }
 
 // Verificar si una clase está programada para el día de la fecha seleccionada
-const isClassScheduledForDay = (classItem: any) => {
+const isClassScheduledForDay = (classItem: Class): boolean => {
   try {
     // Force date to be parsed as local midnight to prevent timezone issues
     const localDate = new Date(props.selectedDate + 'T00:00:00');
     const dayName = format(localDate, 'EEEE', { locale: es }).toLowerCase();
     const dayIndex = getDayIndex(dayName);
     
-    return classItem.schedule && 
+  return !!(classItem.schedule && 
            classItem.schedule.slots && 
            Array.isArray(classItem.schedule.slots) &&
-           classItem.schedule.slots.some(slot => {
+           classItem.schedule.slots.some((slot: ClassScheduleSlot) => {
              if (typeof slot.day === 'number') {
                return slot.day === dayIndex
              } else if (typeof slot.day === 'string') {
                return slot.day.toLowerCase() === dayName
              }
              return false
-           })
+           }))
   } catch (err) {
     console.error('Error al verificar si la clase está programada:', err)
     return false

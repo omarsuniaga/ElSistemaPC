@@ -2,7 +2,8 @@ import type { Student, Teacher, Class, Content } from '../types'
 
 // Webhook configuration
 const WEBHOOK_URLS = {
-  attendance: 'https://hook.us2.make.com/t2ockuc1vne58yqc68rjqp94njv1i3uo',
+  // La URL de attendance ahora apunta a nuestra Cloud Function de Firebase
+  attendance: 'https://us-central1-orquestapuntacana.cloudfunctions.net/emailWebhookHandler',
   students: 'https://hook.us2.make.com/students-webhook',
   teachers: 'https://hook.us2.make.com/teachers-webhook',
   classes: 'https://hook.us2.make.com/classes-webhook',

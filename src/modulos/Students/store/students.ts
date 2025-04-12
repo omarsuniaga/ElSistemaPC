@@ -57,17 +57,11 @@ export const useStudentsStore = defineStore('students', {
     getStudentsByClass: (state) => (classId: string) => {
       if (!classId) return [];
       
-      console.log(`[DEBUG] getStudentsByClass called with classId: ${classId}`);
-      console.log(`[DEBUG] Total students in store: ${state.students.length}`);
-      
       // Primero buscar por studentIds en las clases
       const classesStore = useClassesStore();
       const classData = classesStore.classes.find(c => c.id === classId || c.name === classId);
       
-      console.log(`[DEBUG] Class found:`, classData);
-      
       if (classData?.studentIds?.length) {
-        console.log(`[DEBUG] StudentIds in class:`, classData.studentIds);
         
         // Asegurar que todas las IDs sean strings para la comparación
         const normalizedStudentIds = classData.studentIds.map(id => String(id));
@@ -77,8 +71,6 @@ export const useStudentsStore = defineStore('students', {
           normalizedStudentIds.includes(String(student.id))
         );
         
-        console.log(`[DEBUG] Matched students count:`, matchedStudents.length);
-        
         // Si encontramos estudiantes, retornarlos
         if (matchedStudents.length > 0) {
           return matchedStudents;
@@ -86,8 +78,6 @@ export const useStudentsStore = defineStore('students', {
       }
       
       // Si no se encuentra por studentIds o no se encontraron estudiantes, buscar en las propiedades del estudiante
-      console.log(`[DEBUG] Falling back to clase/grupo properties search`);
-      
       const fallbackStudents = state.students.filter(student => {
         // Verificar si el estudiante tiene la clase asignada en el campo 'clase'
         if (student.clase === classId) return true;
@@ -109,7 +99,6 @@ export const useStudentsStore = defineStore('students', {
         return false;
       });
       
-      console.log(`[DEBUG] Fallback students found:`, fallbackStudents.length);
       return fallbackStudents;
     },
 

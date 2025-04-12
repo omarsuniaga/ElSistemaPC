@@ -60,20 +60,8 @@ watch(() => props.attendanceRecords, (newRecords) => {
   localAttendanceRecords.value = { ...newRecords };
 }, { immediate: true, deep: true });
 
-// Funciones para obtener información de justificación
-const hasJustification = (studentId: string): boolean => {
-  return attendanceStore.hasJustification(studentId);
-};
-
-const getJustificationReason = (studentId: string): string => {
-  const justification = attendanceStore.getJustification(studentId);
-  return justification?.reason || 'Sin detalle de justificación';
-};
-
-const getJustificationDocument = (studentId: string): string | undefined => {
-  const justification = attendanceStore.getJustification(studentId);
-  return justification?.documentURL;
-};
+// Removidas funciones no utilizadas para obtener información de justificación
+// Si se necesitan en el futuro, pueden ser reintroducidas
 
 // Función para mostrar el toast
 const displayToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
@@ -103,7 +91,6 @@ const handleUpdateStatus = (studentId: string, status: string) => {
   const studentName = students.value.find(s => s.id === studentId)?.nombre || 'Estudiante';
   displayToast(`${studentName}: ${status}`, 'info');
   
-  console.log("Estado actualizado:", studentId, status, "pendiente de guardar");
 };
 
 // Función para guardar todos los cambios pendientes
@@ -155,7 +142,6 @@ const saveAllPendingChanges = async () => {
     // Limpiar los cambios pendientes después de guardar
     pendingChanges.value.clear();
     
-    console.log("Todos los cambios de asistencia guardados con éxito en Firestore");
   } catch (error) {
     // Mostrar toast de error
     displayToast('Error al guardar los cambios de asistencia', 'error');
@@ -209,15 +195,7 @@ const getAvatarColor = (name: string) => {
   return colors[hash % colors.length]
 }
 
-const getStatusClass = (status: string) => {
-  const classes = {
-    'Presente': 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
-    'Ausente': 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200',
-    'Tardanza': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200',
-    'Justificado': 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700'
-  }
-  return classes[status as keyof typeof classes] || 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200'
-}
+// Función getStatusClass removida porque no se utiliza
 
 // Cargar las clases si no están ya cargadas
 onMounted(async () => {
@@ -255,11 +233,9 @@ const loadStudentsForClass = async (classId: string) => {
       return;
     }
     
-    console.log('Clase encontrada:', classObj);
     
     // Verificar si la clase tiene studentIds
     if (classObj.studentIds && Array.isArray(classObj.studentIds)) {
-      console.log('IDs de estudiantes encontrados en la clase:', classObj.studentIds);
       
       // Almacenar los IDs en una variable local para que TypeScript sepa que está definido
       const studentIds = classObj.studentIds;
@@ -270,7 +246,6 @@ const loadStudentsForClass = async (classId: string) => {
       );
       
       students.value = studentsForClass;
-      console.log('Estudiantes cargados para la clase:', studentsForClass);
     } else {
       console.warn('No se encontraron IDs de estudiantes en la clase:', classObj);
       students.value = [];
@@ -327,7 +302,7 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
         <button class="btn btn-secondary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none" @click="emit('open-export')">
           <ArrowDownTrayIcon class="w-3 h-3 sm:w-4 sm:h-4" />
           <span class="hidden xs:inline">Exportar</span>
-          <span class="xs:hidden">E</span>
+          <span class="xs:hidden">Export</span>
         </button>
         <button 
           class="btn btn-info btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none" 
@@ -438,6 +413,8 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
 </template>
 
 <style>
+/* stylelint-disable */
+/* postcss-css-variables: true */
 /* Add a custom breakpoint for extra small screens */
 @media (min-width: 480px) {
   .xs\:inline {

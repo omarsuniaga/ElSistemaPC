@@ -375,14 +375,48 @@ const exportToPdf = (data, title) => {
         ['Justificados', stats.value.justified.toString()],
         ['Tasa de asistencia', `${stats.value.attendanceRate}%`]
       ];
-      
-      (doc as any).autoTable({
-        startY: yPosition += 5,
-        head: [statsData[0]],
-        body: statsData.slice(1),
-        theme: 'grid',
-        headStyles: { fillColor: [41, 128, 185], textColor: 255 }
-      });
+        // Comprobamos si tenemos acceso a autoTable a través del objeto global window
+      if (window.jspdf && window.jspdf.autoTable) {
+        window.jspdf.autoTable(doc, {
+          startY: yPosition += 5,
+          head: [statsData[0]],
+          body: statsData.slice(1),
+          theme: 'grid',
+          headStyles: { fillColor: [41, 128, 185], textColor: 255 }
+        });
+      } else if ((doc as any).autoTable) {
+        // Intento alternativo si está disponible como método del documento
+        (doc as any).autoTable({
+          startY: yPosition += 5,
+          head: [statsData[0]],
+          body: statsData.slice(1),
+          theme: 'grid',
+          headStyles: { fillColor: [41, 128, 185], textColor: 255 }
+        });
+      } else {
+        // Fallback simple si autoTable no está disponible
+        let y = yPosition += 5;
+        
+        // Dibujar encabezado
+        doc.setFillColor(41, 128, 185);
+        doc.rect(20, y, 170, 10, 'F');
+        doc.setTextColor(255);
+        doc.text(statsData[0][0], 25, y + 7);
+        doc.text(statsData[0][1], 120, y + 7);
+        
+        // Dibujar cuerpo
+        doc.setTextColor(0);
+        for (let i = 1; i < statsData.length; i++) {
+          y += 10;
+          doc.setFillColor(i % 2 === 0 ? 240 : 255);
+          doc.rect(20, y, 170, 10, 'F');
+          doc.text(statsData[i][0], 25, y + 7);
+          doc.text(statsData[i][1], 120, y + 7);
+        }
+        
+        yPosition = y + 15;
+        return;
+      }
       
       yPosition = (doc as any).lastAutoTable.finalY + 15;
     }

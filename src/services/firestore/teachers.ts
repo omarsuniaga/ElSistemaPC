@@ -20,6 +20,21 @@ export const fetchTeachersFromFirebase = async (): Promise<Teacher[]> => {
   }
 }
 
+export const fetchTeacherByAuthUidFirebase = async (authUiId: string): Promise<Teacher | null> => {
+  try {
+    const querySnapshot = await getDocs(collection(db, COLLECTION_NAME))
+    const teacherDoc = querySnapshot.docs.find(doc => doc.data().authUid === authUiId)
+    if (teacherDoc) {
+      return { id: teacherDoc.id, ...teacherDoc.data() } as Teacher
+    }
+    return null
+  }
+  catch (error) {
+    console.error('Error fetching teacher by auth UID from Firestore:', error)
+    throw new Error('Failed to fetch teacher by auth UID')
+  }
+}
+
 /**
  * Adds a new teacher to Firestore.
  */

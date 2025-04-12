@@ -22,11 +22,10 @@ export const teacherMenuItems = [
     icon: HomeIcon, 
     to: '/teacher', 
     ariaLabel: 'Panel de control del maestro'
-  },
-  { 
+  },  { 
     name: 'Asistencias', 
     icon: ClipboardDocumentCheckIcon, 
-    to: '/teacher/attendance', 
+    to: '/teacher/attendance/calendar', 
     ariaLabel: 'Gestionar asistencias'
   },
   { 
@@ -36,11 +35,11 @@ export const teacherMenuItems = [
     ariaLabel: 'Ver horarios'
   },
   { 
-    name: 'Perfil', 
-    icon: UserCircleIcon, 
-    to: '/teacher/profile', 
-    ariaLabel: 'Mi perfil'
-  }
+    name: 'Alumnos', 
+    icon: UserGroupIcon, 
+    to: '/students', 
+    ariaLabel: 'Gestionar alumnos'
+  },
 ]
 
 // Menú para directores/administradores: rutas que coinciden con las definidas en el router
@@ -74,11 +73,10 @@ export const adminMenuItems = [
     icon: ChartBarIcon, 
     to: '/analytics', 
     ariaLabel: 'Ver análisis'
-  },
-  { 
+  },  { 
     name: 'Asistencias', 
     icon: ClipboardDocumentCheckIcon, 
-    to: '/attendance', 
+    to: '/attendance/calendar',
     ariaLabel: 'Gestionar asistencias'
   },
   { 

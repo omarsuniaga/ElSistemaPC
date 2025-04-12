@@ -2,6 +2,7 @@
 import { AttendanceRecord } from '../../Attendance/types/attendance'
 import type { WorkspaceElement } from '../../Workspace/types/workspace'
 
+
 /**
  * Tipo principal que usaremos en el store.
  * Representa la información normalizada de una clase.
@@ -40,6 +41,8 @@ export interface GradeRecord {
   createdAt: string;
   updatedAt?: string;
 }
+
+
 
 /**
  * Representa registros asociados a la asistencia, calificaciones y demás datos de la clase.

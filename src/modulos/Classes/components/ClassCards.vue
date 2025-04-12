@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import ClassCard from './ClassCard.vue'
-import type { Class } from '../types/class'
+import type { Class as ClassType } from '../types/class'
+
 
 const props = defineProps<{
-  classes: Class[];
+  classes: ClassType[];
   studentCounts: Record<string, number>;
   topStudents: Record<string, Array<{id: string, nombre: string, apellido: string}>>;
 }>()

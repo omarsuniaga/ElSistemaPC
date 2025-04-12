@@ -13,6 +13,16 @@ export interface BaseRecord {
   updatedAt?: Date | any;
 }
 
+export interface WeeklySchedule {
+  dayOfWeek: string; // Día de la semana (e.g. "Monday")
+  startTime: string; // Hora de inicio (e.g. "09:00")
+  endTime: string;   // Hora de fin (e.g. "10:00")
+  className?: string; // Nombre de la clase (opcional)
+  classId?: string;   // ID de la clase (opcional)
+  room?: string;      // Aula (opcional)
+}
+
+
 // Información básica del maestro, unificada y sin duplicidad
 export interface Teacher extends BaseRecord {
   uid: string;       // Firebase UID
@@ -106,21 +116,6 @@ export interface TeacherData {
 
 
 /**
- * Tipo para definir la estructura de un horario semanal.
- */
-type WeeklySchedule = Array<{
-  dayOfWeek: string;
-  startTime: string;
-  endTime: string;
-  className?: string;
-  classId?: string;
-  room?: string;
-  studentCount?: number;
-  students?: any[];
-}>;
-
-
-/**
  * Interfaz para resumir el horario de un profesor.
  */
 export interface TeacherScheduleSummary {
@@ -129,3 +124,4 @@ export interface TeacherScheduleSummary {
   schedule: WeeklySchedule;
   hasConflicts: boolean;
 }
+

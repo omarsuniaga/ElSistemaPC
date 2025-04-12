@@ -3,20 +3,15 @@ import {
   addTeacherToFirebase, 
   updateTeacherInFirebase, 
   deleteTeacherFromFirebase, 
-  fetchTeachersFromFirebase 
+  fetchTeachersFromFirebase,
 } from '../services/teachers'
 import type { Teacher, TeacherData } from '../types/teachers'
+import { TeacherStatus } from '../types/teachers'
 import { useClassesStore } from '../../Classes/store/classes'
 import { useScheduleStore } from '../../Schedules/store/schedule'
+import { useAuthStore } from '../../../stores/auth'
 import { getFirestore, getDoc, doc, query, collection, where, getDocs } from 'firebase/firestore'
-
-export enum TeacherStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  ON_LEAVE = 'ON_LEAVE'
-}
-
-
+import type { WeeklySchedule, TeacherScheduleSummary } from '../types/teachers'
 /**
  * Función para normalizar los datos que vienen de Firebase
  * y convertirlos al formato TeacherData.
@@ -127,8 +122,8 @@ export const useTeachersStore = defineStore('teacher', {
           name: teacher.name,
           email: teacher.email || '',
           phone: teacher.phone,
-          photo: teacher.photoURL,
-          bio: teacher.biography,
+          photoURL: teacher.photoURL,
+          biography: teacher.biography,
           specialties: teacher.specialties || [],
           status: teacher.status === 'activo' ? TeacherStatus.ACTIVE :
                   teacher.status === 'inactivo' ? TeacherStatus.INACTIVE : TeacherStatus.ON_LEAVE,
@@ -165,10 +160,10 @@ export const useTeachersStore = defineStore('teacher', {
         if (updates.name) teacherUpdates.name = updates.name
         if (updates.email) teacherUpdates.email = updates.email
         if (updates.phone) teacherUpdates.phone = updates.phone
-        if (updates.photoURL) teacherUpdates.photo = updates.photoURL
-        if (updates.biography) teacherUpdates.bio = updates.biography
+        if (updates.photoURL) teacherUpdates.photoURL = updates.photoURL
+        if (updates.biography) teacherUpdates.biography = updates.biography
         if (updates.specialties) teacherUpdates.specialties = updates.specialties
-        if (updates.avatar) teacherUpdates.avatar = updates.avatar
+        if (updates.photoURL) teacherUpdates.photoURL = updates.photoURL
         if (updates.experiencia) teacherUpdates.experience = updates.experiencia
         if (updates.address) teacherUpdates.address = updates.address
         if (updates.status) {
@@ -238,9 +233,9 @@ export const useTeachersStore = defineStore('teacher', {
       try {
         const classes = await this.getTeacherClasses(teacherId)
         if (!classes || classes.length === 0) {
-          return { weeklyHours: 0, totalClasses: 0, schedule: [], hasConflicts: false }
+          return { weeklyHours: 0, totalClasses: 0, schedule: { dayOfWeek: '', startTime: '', endTime: '' }, hasConflicts: false }
         }
-        const schedule: WeeklySchedule = []
+        const schedule: WeeklySchedule[] = []
         let totalHours = 0
         const timeSlots = new Map<string, string[]>()
 
@@ -282,7 +277,7 @@ export const useTeachersStore = defineStore('teacher', {
           if (dayDiff !== 0) return dayDiff
           return a.startTime.localeCompare(b.startTime)
         })
-        return { weeklyHours: totalHours, totalClasses: classes.length, schedule: sortedSchedule, hasConflicts }
+        return { weeklyHours: totalHours, totalClasses: classes.length, schedule: sortedSchedule.length > 0 ? sortedSchedule[0] : { dayOfWeek: '', startTime: '', endTime: '' }, hasConflicts }
       } catch (error: any) {
         console.error('❌ Error al obtener horario del profesor:', error)
         throw error
@@ -325,6 +320,40 @@ export const useTeachersStore = defineStore('teacher', {
      */
     async forceSync() {
       return this.fetchTeachers()
-    }
+    },
+
+    /**
+     * Busca un maestro basado en su ID de autenticación (auth UID)
+     */
+    async fetchTeacherByAuthUid(authUid: string) {
+      try {
+        console.log('Buscando maestro con auth UID:', authUid)
+        // Intentar primero buscar en la memoria caché
+        const cachedTeacher = this.teachers.find(t => t.uid === authUid)
+        if (cachedTeacher) {
+          console.log('Maestro encontrado en caché por authUid:', cachedTeacher.id)
+          return cachedTeacher
+        }
+        
+        // Si no está en caché, buscar en Firebase
+        const db = getFirestore()
+        const teachersCollection = collection(db, 'MAESTROS')
+        const q = query(teachersCollection, where("uid", "==", authUid))
+        const querySnapshot = await getDocs(q)
+        
+        if (!querySnapshot.empty) {
+          const teacherDoc = querySnapshot.docs[0]
+          const teacherData = { id: teacherDoc.id, ...teacherDoc.data() }
+          console.log('Maestro encontrado en Firebase por authUid:', teacherData.id)
+          return normalizeTeacherData(teacherData)
+        }
+        
+        console.log('No se encontró maestro con authUid:', authUid)
+        return null
+      } catch (error) {
+        console.error('Error al buscar maestro por auth UID:', error)
+        return null
+      }
+    },
   }
 })

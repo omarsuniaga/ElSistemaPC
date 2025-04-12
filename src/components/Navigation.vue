@@ -1,11 +1,13 @@
 <!-- /src/components/Navigation.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { HomeIcon } from '@heroicons/vue/24/outline' // Import HomeIcon
 import { teacherMenuItems, adminMenuItems } from '../modulos/Teachers/constants/menuItems'
 
 // Use refs to store data that will be populated after component is mounted
 const route = useRoute()
+const router = useRouter()
 const isTeacher = ref(false)
 const isAdminOrDirector = ref(false)
 import { FunctionalComponent, HTMLAttributes, VNodeProps } from 'vue';
@@ -92,21 +94,35 @@ const isActive = (path: string) => {
 }
 </script>
 
-<template>
+<template>  <!-- Botón "Atrás" que aparece en todas las páginas excepto la principal -->
+  <div
+    v-if="shouldShowNavigation && route.path !== '/' && route.path !== '/dashboard'"
+    class="fixed top-16 left-2 z-50"
+  >
+    <button
+      @click="router.back()"
+      class="flex items-center justify-center p-2 bg-white dark:bg-gray-800 rounded-full shadow-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+      aria-label="Volver atrás"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+  </div>
+
   <nav 
     v-if="shouldShowNavigation"
     class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-50"
     aria-label="Navegación principal"
   >
     <div class="container mx-auto px-2">
-      <div class="flex justify-around py-1">
-        <router-link
+      <div class="flex justify-around py-1">        <router-link
           v-for="item in visibleMenuItems"
           :key="item.to"
           :to="item.to"
           :aria-label="item.ariaLabel"
           :aria-current="isActive(item.to) ? 'page' : undefined"
-          class="flex flex-col items-center p-2 rounded-md transition-all duration-200 relative"
+          class="flex flex-col items-center p-2 rounded-md transition-all duration-200 relative touch-action-manipulation"
           :class="isActive(item.to)
             ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
             : 'text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700/30'"

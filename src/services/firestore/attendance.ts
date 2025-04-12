@@ -528,7 +528,7 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
             });
           });
         }
-        
+        // Atlantica Segu
         // Process absent students
         if (data.data.ausentes && Array.isArray(data.data.ausentes)) {
           data.data.ausentes.forEach(studentId => {
@@ -546,7 +546,7 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
         if (data.data.tarde && Array.isArray(data.data.tarde)) {
           data.data.tarde.forEach(studentId => {
             // Check if student has a justification
-            const hasJustification = data.data.justificacion?.some(j => j.id === studentId);
+            const hasJustification = data.data.justificacion?.some((j: JustificationData) => j.id === studentId);
             
             records.push({
               id: doc.id,
@@ -556,8 +556,8 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
               status: hasJustification ? 'Justificado' : 'Tardanza',
               justification: hasJustification ? 
                 { 
-                  reason: data.data.justificacion.find(j => j.id === studentId)?.reason || '',
-                  documentUrl: data.data.justificacion.find(j => j.id === studentId)?.documentURL
+                  reason: data.data.justificacion.find((j: JustificationData) => j.id === studentId)?.reason || '',
+                  documentUrl: data.data.justificacion.find((j: JustificationData) => j.id === studentId)?.documentURL
                 } : 
                 undefined
             });
@@ -613,7 +613,7 @@ export const getAttendanceStatusFirebase = async (studentId: string, date: strin
         // Check if student is in tarde array
         if (data.data.tarde?.includes(studentId)) {
           // Check if student has justification
-          const hasJustification = data.data.justificacion?.some(j => j.id === studentId);
+          const hasJustification = data.data.justificacion?.some((j: JustificationData) => j.id === studentId);
           return hasJustification ? 'Justificado' : 'Tardanza';
         }
       }
