@@ -163,6 +163,7 @@ const navigateToAttendanceDetailUrl = (date: string, classId: string) => {
 const selectDate = async (date: string | { date: string }) => {
   if (isUpdating.value) return
   isUpdating.value = true
+  console.log("Selected date:", date)
   try {
     if (typeof date === 'string') {
       selectedDate.value = date
@@ -240,6 +241,13 @@ const handleSelectedDateUpdate = (date: string) => {
 // Corregido para usar los mismos valores que AttendanceHeader.vue
 const updateView = (newView: 'calendar' | 'class-select' | 'attendance-form') => {
   view.value = newView;
+  if (newView === 'calendar') {
+    showCalendarModal.value = false
+  } else if (newView === 'class-select') {
+    showCalendarModal.value = true
+  } else if (newView === 'attendance-form') {
+    showCalendarModal.value = false
+  }
 }
 
 // Cargar datos de asistencia para una clase

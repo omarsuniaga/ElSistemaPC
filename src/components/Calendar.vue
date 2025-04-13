@@ -13,12 +13,27 @@ import {
 } from 'date-fns'
 import { es } from 'date-fns/locale'
 
-// Props: se reciben la fecha actual (currentMonth), las fechas marcadas (markedDates)
-// y la fecha seleccionada (selectedDate)
+// Interfaz para la estructura de una fecha marcada
+interface MarkedDateInfo {
+  date: string; // Formato 'yyyy-MM-dd'
+  userId: number | string; // ID del usuario que registró la actividad
+  // Se pueden añadir más campos si es necesario: activityType, description, etc.
+}
+
+// Interfaz para la información del usuario actual
+interface UserInfo {
+  id: number | string;
+  role: string; // 'Admin', 'Director', 'Teacher' u otros roles del sistema
+}
+
+// Props: se reciben la fecha actual, las fechas marcadas (pueden ser strings o MarkedDateInfo),
+// la fecha seleccionada, y la información del usuario actual
 const props = defineProps<{
   currentMonth?: Date,
-  markedDates?: string[],
-  selectedDate?: string
+  markedDates?: (string | MarkedDateInfo)[],
+  selectedDate?: string,
+  currentUser?: UserInfo,
+  highlightedDates?: string[] // Mantenemos compatibilidad con otras props existentes
 }>()
 
 const emit = defineEmits<{
@@ -48,16 +63,47 @@ const currentMonthLabel = computed(() => {
   return format(displayedMonth.value, 'MMMM yyyy', { locale: es })
 })
 
-// Función que determina si una fecha está marcada (se compara con el array de markedDates)
+// Función que determina si una fecha está marcada según el rol del usuario
 const isDateMarked = (dateStr: string): boolean => {
-  if (!props.markedDates || props.markedDates.length === 0) return false
-  return props.markedDates.includes(dateStr)
+  // Si no hay fechas marcadas, no se marca nada
+  if (!props.markedDates || props.markedDates.length === 0) return false;
+
+  // Primero verificamos el formato de markedDates para hacer el componente compatible con ambas versiones
+  // Si el primer elemento es una cadena, asumimos que es el formato antiguo (array de strings)
+  const isLegacyFormat = typeof props.markedDates[0] === 'string';
+
+  // Caso 1: Formato antiguo (array de strings)
+  if (isLegacyFormat) {
+    return (props.markedDates as string[]).includes(dateStr);
+  }
+  
+  // Caso 2: Nuevo formato (array de objetos) con filtrado basado en rol
+  // Si no hay usuario actual, mostramos todas las fechas marcadas
+  if (!props.currentUser) {
+    return (props.markedDates as MarkedDateInfo[]).some(item => item.date === dateStr);
+  }
+
+  // Verifica si el usuario tiene rol de administrador o director
+  const isAdminOrDirector = ['Admin', 'Director', 'Administrador'].includes(props.currentUser.role);
+  
+  // Filtra las fechas según el rol:
+  return (props.markedDates as MarkedDateInfo[]).some(markedDate => {
+    // Si la fecha no coincide, retorna falso directamente
+    if (markedDate.date !== dateStr) {
+      return false;
+    }
+    
+    // Si es admin o director, muestra todas las fechas marcadas
+    if (isAdminOrDirector) {
+      return true;
+    }
+    
+    // Si es maestro u otro rol, solo muestra sus propias fechas marcadas
+    return markedDate.userId === props.currentUser.id;
+  });
 }
 
-// Add logic to mark dates with attendance records
-const isMarkedDate = (date) => {
-  return props.markedDates?.includes(format(date, 'yyyy-MM-dd')) || false;
-};
+// Interfaz para los días del calendario
 interface CalendarDay {
   date: string;
   dayOfMonth: number;
@@ -74,7 +120,7 @@ const generateCalendar = () => {
   const firstDayOfMonth = startOfMonth(displayedMonth.value)
   // Empezamos la semana en lunes (weekStartsOn: 1)
   const startDate = startOfWeek(firstDayOfMonth, { weekStartsOn: 1 })
-  const days = []
+  const days: CalendarDay[] = []
 
   for (let i = 0; i < 42; i++) {
     const date = addDays(startDate, i)
@@ -84,7 +130,7 @@ const generateCalendar = () => {
       dayOfMonth: getDate(date),
       isCurrentMonth: isSameMonth(date, displayedMonth.value),
       isToday: isToday(date),
-      isMarked: isDateMarked(dateStr),
+      isMarked: isDateMarked(dateStr), // Ahora usa la lógica de filtrado por usuario
       dayName: format(date, 'EEEE', { locale: es })
     })
   }
