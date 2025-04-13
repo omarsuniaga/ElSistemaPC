@@ -30,7 +30,8 @@ import { CalendarDaysIcon } from '@heroicons/vue/24/outline'
 import EmergencyClassModal from '../modulos/Attendance/components/EmergencyClassModal.vue'
 import type { Student } from '../modulos/Students/types/student'
 import { generateAttendancePDF } from '../utils/pdfExport' 
-import { sendWebhook } from '../utils/webhook'
+import { sendWebhook, sendToMake } from '../utils/webhook'
+import { useConfigStore } from '../stores/config'
 
 // Router
 import { useRouter, useRoute } from 'vue-router'
@@ -50,6 +51,7 @@ import { useAuthStore } from '../stores/auth'
 
 // Agregar esto después de las otras declaraciones de stores
 const authStore = useAuthStore()
+const configStore = useConfigStore()
 
 // Define an interface for the attendance records structure
 interface AttendanceRecord {
@@ -99,6 +101,9 @@ const isLoading = ref(true)
 const error = ref<string | null>(null)
 const loadingMessage = ref<string>('')
 
+// Referencia para el correo del destinatario
+const recipientEmail = ref(authStore.user?.email || '')
+
 // Estados para modales y mensajes
 const showAnalytics = ref(false)
 const showTrends = ref(false)
@@ -117,7 +122,9 @@ const errorMessage = ref('')
 const reportFilters = ref<AttendanceFiltersType>({
   instrument: '',
   level: '',
-  teacherId: ''
+  teacherId: '',
+  startDate: '', // Add default value
+  endDate: ''    // Add default value
 })
 
 // Control para evitar bucles reactivos
@@ -437,12 +444,57 @@ const generateAttendanceHTML = (
 ): string => {
   const formattedDate = format(new Date(date), "d 'de' MMMM yyyy", { locale: es });
   
+  // Prepara el nombre del maestro
+  const teacherName = authStore.user?.displayName || authStore.user?.email || 'Profesor Desconocido';
+  
+  // Calcular el sumario de asistencia
+  const presentCount = Object.values(records).filter(status => status === 'Presente').length;
+  const lateCount = Object.values(records).filter(status => status === 'Tardanza').length;
+  const justifiedCount = Object.values(records).filter(status => status === 'Justificado').length;
+  const absentCount = Object.values(records).filter(status => status === 'Ausente').length;
+  const totalCount = students.length;
+  
+  // Ordenar estudiantes: primero alfabéticamente
+  const sortedStudents = [...students].sort((a, b) => {
+    const nameA = `${a.nombre} ${a.apellido}`.toLowerCase();
+    const nameB = `${b.nombre} ${b.apellido}`.toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+  
+  // Luego agrupar por estado de asistencia (presentes, tardes, justificados, ausentes)
+  const presentStudents = sortedStudents.filter(student => records[student.id] === 'Presente');
+  const lateStudents = sortedStudents.filter(student => records[student.id] === 'Tardanza');
+  const justifiedStudents = sortedStudents.filter(student => records[student.id] === 'Justificado');
+  const absentStudents = sortedStudents.filter(student => records[student.id] === 'Ausente');
+  const otherStudents = sortedStudents.filter(student => 
+    !['Presente', 'Tardanza', 'Justificado', 'Ausente'].includes(records[student.id] || '')
+  );
+  
+  // Combinar en el orden deseado
+  const orderedStudents = [
+    ...presentStudents,
+    ...lateStudents,
+    ...justifiedStudents,
+    ...absentStudents,
+    ...otherStudents
+  ];
+  
   // Generar filas de estudiantes
   let studentRows = '';
-  students.forEach((student, index) => {
+  orderedStudents.forEach((student, index) => {
     // Aplicar color según estado de asistencia
     let statusClass = '';
     const status = records[student.id] || 'No registrado';
+    
+    // Obtener la justificación si el estado es "Justificado"
+    let studentObservation = '';
+    if (status === 'Justificado' && attendanceStore.currentAttendanceDoc?.data?.justificacion) {
+      // Buscar la justificación correspondiente al estudiante
+      const justification = attendanceStore.currentAttendanceDoc.data.justificacion.find(j => j.id === student.id);
+      if (justification && justification.reason) {
+        studentObservation = justification.reason;
+      }
+    }
     
     switch(status) {
       case 'Presente':
@@ -466,10 +518,10 @@ const generateAttendanceHTML = (
         <td style="border: 1px solid #ddd; padding: 8px;">${index + 1}</td>
         <td style="border: 1px solid #ddd; padding: 8px;">${student.nombre} ${student.apellido}</td>
         <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold; ${statusClass}">${status}</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">${status === 'Justificado' ? `${studentObservation || 'No especificada'}` : ''}</td>
       </tr>
     `;
   });
-
   // Generar el HTML completo
   return `
     <!DOCTYPE html>
@@ -479,59 +531,111 @@ const generateAttendanceHTML = (
       <title>Reporte de Asistencia - ${className}</title>
       <style>
         body { 
-          font-family: Arial, sans-serif; 
+          font-family: 'Segoe UI', Arial, sans-serif; 
           line-height: 1.6;
           color: #333;
           max-width: 800px;
           margin: 0 auto;
           padding: 20px;
+          background-color: #f9fafb;
         }
         .header {
           text-align: center;
           margin-bottom: 30px;
+          background-color: #ffffff;
+          border-radius: 8px;
+          padding: 20px;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
         .header h1 {
           color: #16a34a;
           margin-bottom: 5px;
+          font-size: 28px;
         }
         .header h2 {
           color: #4b5563;
           font-size: 18px;
           font-weight: normal;
+          margin: 5px 0;
         }
+        .summary-container {
+          display: flex;
+          justify-content: space-between;
+          margin: 20px 0;
+          flex-wrap: wrap;
+        }
+        .summary-box {
+          background-color: white;
+          border-radius: 8px;
+          padding: 15px;
+          margin: 10px 0;
+          flex-basis: calc(25% - 15px);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+          text-align: center;
+        }
+        .summary-box h3 {
+          margin: 0;
+          font-size: 14px;
+          color: #6b7280;
+        }
+        .summary-box p {
+          margin: 10px 0 0;
+          font-size: 24px;
+          font-weight: bold;
+        }
+        .presente { color: #10b981; }
+        .tarde { color: #f59e0b; }
+        .justificado { color: #3b82f6; }
+        .ausente { color: #ef4444; }
+        
         table { 
           width: 100%; 
           border-collapse: collapse; 
           margin: 25px 0;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+          background-color: white;
+          border-radius: 8px;
+          overflow: hidden;
         }
         th { 
           background-color: #16a34a; 
           color: white;
           text-align: left; 
-          border: 1px solid #ddd; 
           padding: 12px; 
+          font-weight: 600;
         }
         td {
-          border: 1px solid #ddd; 
+          border-bottom: 1px solid #f2f2f2; 
           padding: 12px 8px;
         }
-        tr:nth-child(even) {
-          background-color: #f2f2f2;
+        tr:last-child td {
+          border-bottom: none;
         }
+        tr:hover {
+          background-color: #f9fafb;
+        }
+        
         .observations {
-          background-color: #f8fafc;
-          border-left: 4px solid #16a34a;
-          padding: 15px;
+          background-color: white;
+          border-radius: 8px;
+          padding: 20px;
           margin: 20px 0;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
+        .observations h3 {
+          color: #16a34a;
+          margin-top: 0;
+          border-bottom: 2px solid #e5e7eb;
+          padding-bottom: 10px;
+        }
+        
         .footer {
           text-align: center;
           font-size: 14px;
           color: #6b7280;
           margin-top: 40px;
-          border-top: 1px solid #e5e7eb;
           padding-top: 20px;
+          border-top: 1px solid #e5e7eb;
         }
       </style>
     </head>
@@ -540,6 +644,26 @@ const generateAttendanceHTML = (
         <h1>Reporte de Asistencia</h1>
         <h2>Clase: ${className}</h2>
         <h2>Fecha: ${formattedDate}</h2>
+        <h2>Maestro: ${teacherName}</h2>
+      </div>
+      
+      <div class="summary-container">
+        <div class="summary-box">
+          <h3>Presentes</h3>
+          <p class="presente">${presentCount}</p>
+        </div>
+        <div class="summary-box">
+          <h3>Tardes</h3>
+          <p class="tarde">${lateCount}</p>
+        </div>
+        <div class="summary-box">
+          <h3>Justificados</h3>
+          <p class="justificado">${justifiedCount}</p>
+        </div>
+        <div class="summary-box">
+          <h3>Ausentes</h3>
+          <p class="ausente">${absentCount}</p>
+        </div>
       </div>
 
       <table>
@@ -548,6 +672,7 @@ const generateAttendanceHTML = (
             <th>#</th>
             <th>Alumno</th>
             <th>Estado</th>
+            <th>Justificación</th>
           </tr>
         </thead>
         <tbody>
@@ -561,7 +686,7 @@ const generateAttendanceHTML = (
       </div>
       
       <div class="footer">
-        Este reporte fue generado automáticamente desde El Sistema PC.
+        Este reporte fue generado automáticamente desde El Sistema PC - ${new Date().toLocaleDateString()}
       </div>
     </body>
     </html>
@@ -617,32 +742,112 @@ const sendAttendanceEmail = async () => {
     //       justificados: Object.values(records).filter(status => status === 'Justificado').length
     //     }
     //   }
-    // };
+    // };    // Validar que se haya ingresado un correo destinatario
+    if (!recipientEmail.value) {
+      showToast('Por favor ingrese un correo electrónico de destinatario', 'error');
+      return;
+    }
+      // Usar la URL del webhook desde la configuración en Firestore
+    const makeWebhookUrl = configStore.attendanceWebhookUrl || 'https://hook.us2.make.com/t2ockuc1vne58yqc68rjqp94njv1i3uo'      // Preparar un array formateado de estudiantes para Google Sheets, agrupados por estado
+    // Primero dividimos los estudiantes en categorías según su estado de asistencia
+    const presentStudents = [];
+    const lateStudents = [];
+    const justifiedStudents = [];
+    const absentStudents = [];
+    const otherStudents = [];
     
-    // Enviar al webhook usando directamente el objeto payload completo
-    // para que sendWebhook no intente reestructurarlo
-    await sendWebhook('attendance_report', {
+    students.forEach(student => {      const attendanceStatus = records[student.id] || 'No registrado';
+      // Obtener justificación si está disponible
+      let justificationReason = '';
+      
+      // Si el estado es Justificado, buscar la razón en el array de justificaciones
+      if (attendanceStatus === 'Justificado' && attendanceStore.currentAttendanceDoc?.data?.justificacion) {
+        // Buscar la justificación correspondiente al estudiante
+        const justification = attendanceStore.currentAttendanceDoc.data.justificacion.find(j => j.id === student.id);
+        if (justification && justification.reason) {
+          justificationReason = `Justificación: ${justification.reason}`;
+        }
+      }
+      
+      const studentData = {
+        Num: 0, // Se asignará después
+        Nombre: student.nombre || '',
+        Apellido: student.apellido || '',
+        Estado: attendanceStatus,
+        Observaciones: attendanceStatus === 'Justificado' ? justificationReason : observations,
+        Maestro: authStore.user?.displayName || authStore.user?.email || 'Profesor Desconocido',
+        Fecha: format(new Date(date), 'yyyy-MM-dd'),
+        Clase: className
+      };
+      
+      // Agrupar por estado
+      switch (attendanceStatus) {
+        case 'Presente':
+          presentStudents.push(studentData);
+          break;
+        case 'Tardanza':
+          lateStudents.push(studentData);
+          break;
+        case 'Justificado':
+          justifiedStudents.push(studentData);
+          break;
+        case 'Ausente':
+          absentStudents.push(studentData);
+          break;
+        default:
+          otherStudents.push(studentData);
+      }
+    });
+    
+    // Combinar los arrays en el orden deseado: Presentes, Tardanzas, Justificados, Ausentes, Otros
+    const formattedStudents = [
+      ...presentStudents,
+      ...lateStudents,
+      ...justifiedStudents,
+      ...absentStudents,
+      ...otherStudents
+    ].map((student, index) => {
+      // Asignar el número secuencial después de ordenar
+      student.Num = index + 1;
+      return student;
+    });
+
+    // Preparar payload para Make.com
+    const makePayload = {
       subject: `Reporte de Asistencia - ${className} - ${format(new Date(date), 'yyyy-MM-dd')}`,
       format: 'email',
-      type: 'email_notification',
+      type: 'attendance_report',
       action: 'send_attendance_email',
       htmlBody: htmlContent,
       date: selectedDate.value,
       class: selectedClass.value,
       className: selectedClassName.value,
       students: studentsStore.getStudentsByClass(selectedClass.value),
+      // Añadir el array formateado para Google Sheets
+      formattedStudents: formattedStudents,
       attendanceRecords: attendanceStore.attendanceRecords,
       observations: attendanceStore.currentAttendanceDoc?.data.observations,
       teacherId: authStore.user?.uid,
-      teacherName: authStore.user?.email || 'Profesor Desconocido', // Use email as fallback name
-      teacherEmail: authStore.user?.email
-    });
+      teacherName: authStore.user?.email || 'Profesor Desconocido',
+      teacherEmail: authStore.user?.email,
+      recipient: recipientEmail.value,
+      // Incluimos un resumen de estadísticas para el correo
+      summary: {
+        total: students.length,
+        presentes: Object.values(records).filter(status => status === 'Presente').length,
+        ausentes: Object.values(records).filter(status => status === 'Ausente').length,
+        tardanza: Object.values(records).filter(status => status === 'Tardanza').length,
+        justificados: Object.values(records).filter(status => status === 'Justificado').length
+      }
+    };
+      // Enviar los datos a Make.com
+    await sendToMake(makeWebhookUrl, makePayload);
 
-    showToast('Correo de asistencia enviado correctamente.', 'success');
+    showToast('Datos enviados a Make.com correctamente. Se procesará el envío del correo.', 'success');
   } catch (err: any) {
-    console.error("Error enviando correo de asistencia:", err);
-    showToast(`Error al enviar el correo: ${err.message || 'Error desconocido'}`, 'error');
-    error.value = 'No se pudo enviar el correo.';
+    console.error("Error enviando datos a Make.com:", err);
+    showToast(`Error al enviar datos a Make.com: ${err.message || 'Error desconocido'}`, 'error');
+    error.value = 'No se pudieron enviar los datos a Make.com.';
   } finally {
     isLoading.value = false;
     loadingMessage.value = '';
@@ -843,6 +1048,9 @@ const fetchInitialData = async () => {
 }
 
 onMounted(async () => {
+  // Cargar configuraciones de la aplicación
+  await configStore.fetchConfigs()
+  
   await fetchInitialData()
 })
 
@@ -924,11 +1132,27 @@ watch(() => [route.params.date, route.params.classId, route.path], async ([newDa
         <span class="hidden xs:inline">Exportar PDF</span>
         <span class="xs:hidden">PDF</span>
       </button>
-      <button @click="sendAttendanceEmail" class="btn btn-secondary text-xs sm:text-sm">
-        <i class="fas fa-envelope mr-1 sm:mr-2"></i>
-        <span class="hidden xs:inline">Enviar Correo</span>
-        <span class="xs:hidden">Mail</span>
-      </button>
+    </div>
+    
+    <!-- Campo para ingresar el correo del destinatario -->
+    <div class="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+      <h3 class="font-semibold text-sm sm:text-base mb-2">Enviar reporte por correo electrónico</h3>
+      <div class="flex flex-col sm:flex-row gap-3 items-center">
+        <div class="w-full sm:w-2/3">
+          <label for="recipientEmail" class="block text-sm font-medium mb-1">Correo del destinatario:</label>
+          <input 
+            id="recipientEmail" 
+            v-model="recipientEmail" 
+            type="email" 
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-900"
+            placeholder="Ingrese el correo electrónico"
+          />
+        </div>
+        <button @click="sendAttendanceEmail" class="btn btn-primary text-xs sm:text-sm mt-2 sm:mt-5 w-full sm:w-auto">
+          <i class="fas fa-envelope mr-1 sm:mr-2"></i>
+          <span>Enviar Reporte</span>
+        </button>
+      </div>
     </div>
 
     <!-- Loading State -->

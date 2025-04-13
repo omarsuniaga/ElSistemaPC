@@ -63,6 +63,17 @@ const DAY_MAP: DayMap = {
   'domingo': 0 
 };
 
+// Helper function to fetch attendance items with optional filtering
+interface FetchItemsOptions {
+  classId?: string;
+  studentId?: string;
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+  status?: AttendanceStatus;
+  refresh?: boolean;
+}
+
 export const useAttendanceStore = defineStore('attendance', {
   state: () => ({
     records: [] as AttendanceRecord[],
@@ -178,8 +189,8 @@ export const useAttendanceStore = defineStore('attendance', {
     },
 
     // Check if a student has a justification
-hasJustification: (state) => {
-  return (studentId: string): boolean => {
+    hasJustification: (state) => {
+      return (studentId: string): boolean => {
     if (!state.currentAttendanceDoc) return false;
     
     return state.currentAttendanceDoc.data.justificacion?.some(
@@ -215,7 +226,7 @@ getJustification: (state) => {
         );
         
         if (!studentRecords.length) return 0;
-
+        
         const presentCount = studentRecords.filter(r => 
           r.status === 'Presente' || r.status === 'Justificado'
         ).length;
@@ -371,10 +382,72 @@ getJustification: (state) => {
   },
   
   actions: {
+    // Cargar registros de asistencia desde Firebase
     setSelectedClass(classId: string): void {
       this.selectedClass = classId;
     },
 
+    setSelectedDate(date: string): void {
+      this.selectedDate = date;
+    },
+
+    async fetchItems(options: FetchItemsOptions = {}): Promise<AttendanceRecord[]> {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        // If refresh requested or no records loaded, fetch records first
+        if (options.refresh || this.records.length === 0) {
+          await this.fetchAttendance();
+        }
+        
+        // If we need documents by date range, fetch them
+        if (options.startDate && options.endDate) {
+          await this.fetchAttendanceByDateRange(options.startDate, options.endDate);
+        }
+        // If we need a specific date and class, fetch that document
+        else if (options.date && options.classId) {
+          await this.fetchAttendanceByClassAndDate(options.classId, options.date);
+        }
+        
+        // Filter records based on provided options
+        let filteredRecords = this.records;
+        
+        if (options.classId) {
+          filteredRecords = filteredRecords.filter(record => record.classId === options.classId);
+        }
+        
+        if (options.studentId) {
+          filteredRecords = filteredRecords.filter(record => record.studentId === options.studentId);
+        }
+        
+        if (options.date) {
+          filteredRecords = filteredRecords.filter(record => record.Fecha === options.date);
+        }
+        
+        if (options.startDate && !options.endDate) {
+          const startDate = options.startDate; // Capture in a local variable to satisfy TypeScript
+          filteredRecords = filteredRecords.filter(record => record.Fecha >= startDate);
+        }
+        
+        if (options.endDate && !options.startDate) {
+          const endDate = options.endDate; // Capture in a local variable to satisfy TypeScript
+          filteredRecords = filteredRecords.filter(record => record.Fecha <= endDate);
+        }
+        
+        if (options.status) {
+          filteredRecords = filteredRecords.filter(record => record.status === options.status);
+        }
+        
+        return filteredRecords;
+      } catch (error) {
+        this.error = 'Error al obtener los registros de asistencia';
+        console.error('Error fetching attendance items:', error);
+        throw error;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    
     async fetchAttendanceDocuments(): Promise<AttendanceDocument[]> {
       // Cargar documentos de asistencia (nueva estructura)
       this.isLoading = true;
@@ -1072,6 +1145,83 @@ getJustification: (state) => {
         this.isLoading = false;
       }
       },
+
+// Fetch attendance records for multiple classes, students, or both
+async fetchRecordsForMultipleEntities({ 
+  classIds = [], 
+  studentIds = [], 
+  startDate, 
+  endDate, 
+  refresh = false 
+}: { 
+  classIds?: string[]; 
+  studentIds?: string[]; 
+  startDate: string; 
+  endDate?: string; 
+  refresh?: boolean 
+}): Promise<AttendanceRecord[]> {
+  this.isLoading = true;
+  this.error = null;
+  
+  try {
+    // If refresh requested or no records loaded, fetch records first
+    if (refresh || this.records.length === 0) {
+      await this.fetchAttendance();
+    }
+    
+    // If we need documents by date range, fetch them
+    if (startDate && endDate) {
+      await this.fetchAttendanceByDateRange(startDate, endDate);
+    }
+    
+    // Filter records based on provided parameters
+    let filteredRecords = this.records;
+    
+    // Filter by date range
+    if (startDate) {
+      filteredRecords = filteredRecords.filter(record => record.Fecha >= startDate);
+    }
+    
+    if (endDate) {
+      filteredRecords = filteredRecords.filter(record => record.Fecha <= endDate);
+    }
+    
+    // Filter by multiple class IDs if provided
+    if (classIds.length > 0) {
+      filteredRecords = filteredRecords.filter(record => classIds.includes(record.classId));
+    }
+    
+    // Filter by multiple student IDs if provided
+    if (studentIds.length > 0) {
+      filteredRecords = filteredRecords.filter(record => studentIds.includes(record.studentId));
+    }
+    
+    // Ensure we have all necessary attendance documents for these records
+    const uniqueCombinations = new Set<string>();
+    filteredRecords.forEach(record => {
+      uniqueCombinations.add(`${record.Fecha}_${record.classId}`);
+    });
+    
+    // Fetch any missing attendance documents
+    const fetchPromises = Array.from(uniqueCombinations).map(async combo => {
+      const [fecha, classId] = combo.split('_');
+      if (!this.attendanceDocuments.some(doc => doc.fecha === fecha && doc.classId === classId)) {
+        await this.fetchAttendanceDocument(fecha, classId);
+      }
+    });
+    
+    await Promise.all(fetchPromises);
+    
+    return filteredRecords;
+  } catch (error) {
+    this.error = 'Error al obtener los registros de asistencia para múltiples entidades';
+    console.error('Error fetching attendance records for multiple entities:', error);
+    throw error;
+  } finally {
+    this.isLoading = false;
+  }
+},
+
     // Método para calcular los estudiantes con más ausencias
     calculateAbsentStudents(limit: number = 10) {
       const absencesMap: Record<string, { 
@@ -1189,6 +1339,170 @@ getJustification: (state) => {
       }
       
       return dateIsValid;
+    },
+
+    /**
+     * Generates an attendance report based on provided criteria.
+     * @param params - Report parameters including date range, optional classId, optional studentId.
+     * @returns A structured report object or throws an error.
+     */
+    async generateReport(params: { 
+      classId?: string; 
+      studentId?: string; 
+      startDate: string; 
+      endDate: string 
+    }): Promise<any> { // Consider defining a specific Report interface later
+      this.isLoading = true;
+      this.error = null;
+      
+      try {
+      const { classId, studentId, startDate, endDate } = params;
+      
+      // 1. Fetch relevant attendance data & related info
+      // Ensure attendance documents are loaded. A more robust implementation 
+      // might fetch specifically for the date range if data isn't guaranteed locally.
+      if (this.attendanceDocuments.length === 0) {
+        await this.fetchAttendanceDocuments(); 
+      }
+      
+      // Fetch class details for names
+      const classesStore = useClassesStore();
+      if (!classesStore.classes.length) {
+        await classesStore.fetchClasses();
+      }
+      const classNameMap = new Map(classesStore.classes.map(c => [c.id, c.name]));
+      
+      // Placeholder for student names - requires integrating useStudentsStore
+      // const studentsStore = useStudentsStore(); 
+      // if (!studentsStore.students.length) { 
+      //   await studentsStore.fetchStudents(); 
+      // }
+      // const studentNameMap = new Map(studentsStore.students.map(s => [s.id, s.name]));
+
+      // 2. Filter documents based on parameters
+      const start = parseISO(startDate);
+      const end = parseISO(endDate);
+
+      if (!isValid(start) || !isValid(end)) {
+        throw new Error('Invalid start or end date provided for the report.');
+      }
+
+      const filteredDocs = this.attendanceDocuments.filter(doc => {
+        const docDate = parseISO(doc.fecha);
+        if (!isValid(docDate)) return false; // Skip invalid document dates
+        
+        const isWithinDateRange = docDate >= start && docDate <= end;
+        const matchesClass = !classId || doc.classId === classId;
+        
+        return isWithinDateRange && matchesClass;
+      });
+
+      // 3. Process filtered data to build the report details
+      const reportDetails: Array<{ 
+        date: string; 
+        studentId: string; 
+        studentName?: string; // Placeholder
+        classId: string; 
+        className?: string; 
+        status: AttendanceStatus; 
+        justification?: string 
+      }> = [];
+      
+      let presentCount = 0;
+      let absentCount = 0;
+      let tardyCount = 0; // Non-justified tardiness
+      let justifiedCount = 0; // Justified tardiness counts as attended but tracked separately
+      const uniqueClassDays = new Set<string>(); // Track unique class instances within the scope
+
+      filteredDocs.forEach(doc => {
+         uniqueClassDays.add(`${doc.fecha}-${doc.classId}`); // Count each class held on a specific day
+         const className = classNameMap.get(doc.classId) || doc.classId;
+
+         // Helper to process each student status within the document
+         const processStudent = (sId: string, status: AttendanceStatus, justification?: { reason?: string }) => {
+         // Filter by studentId if provided
+         if (!studentId || sId === studentId) {
+          // Replace placeholder when student store is available
+          // const studentName = studentNameMap.get(sId) || `Unknown (${sId.substring(0,5)})`; 
+          const studentName = `Student (${sId.substring(0, 5)}...)`; // Placeholder name
+
+          reportDetails.push({
+            date: doc.fecha,
+            studentId: sId,
+            studentName: studentName, 
+            classId: doc.classId,
+            className: className,
+            status: status,
+            justification: justification?.reason
+          });
+
+          // Increment summary counts
+          switch (status) {
+            case 'Presente': presentCount++; break;
+            case 'Ausente': absentCount++; break;
+            case 'Tardanza': tardyCount++; break; // Non-justified
+            case 'Justificado': justifiedCount++; break; // Justified
+          }
+         }
+         };
+
+         // Iterate through student lists in the document data
+         doc.data.presentes?.forEach(sId => processStudent(sId, 'Presente'));
+         doc.data.ausentes?.forEach(sId => processStudent(sId, 'Ausente'));
+         doc.data.tarde?.forEach(sId => {
+         const just = doc.data.justificacion?.find(j => j.id === sId);
+         if (just) {
+           processStudent(sId, 'Justificado', just); // Process as Justified
+         } else {
+           processStudent(sId, 'Tardanza'); // Process as Tardy (non-justified)
+         }
+         });
+      });
+
+      // 4. Calculate summary statistics
+      const totalRecordsProcessed = reportDetails.length; // Total entries matching criteria
+      // Attendance rate considers Presente + Justificado as attended for rate calculation
+      const attendedCount = presentCount + justifiedCount; 
+      // Avoid division by zero if no relevant records found
+      const attendanceRate = totalRecordsProcessed > 0 ? (attendedCount / totalRecordsProcessed) * 100 : 0;
+
+      // 5. Structure the final report object
+      const report = {
+        parameters: { 
+        startDate, 
+        endDate, 
+        classId: classId || 'All', 
+        className: classId ? (classNameMap.get(classId) || classId) : 'All Classes',
+        studentId: studentId || 'All',
+        // studentName: studentId ? studentNameMap.get(studentId) : 'All Students' // Add when available
+        },
+        summary: {
+        totalClassInstancesInScope: uniqueClassDays.size, // Number of unique class sessions in the date range/filter
+        totalAttendanceRecords: totalRecordsProcessed, // Total individual student records in the report
+        presentCount: presentCount,
+        absentCount: absentCount,
+        tardyCount: tardyCount, // Non-justified tardiness
+        justifiedTardyCount: justifiedCount, // Justified tardiness
+        overallAttendanceRate: parseFloat(attendanceRate.toFixed(2)), // Percentage
+        },
+        // Sort details for readability
+        details: reportDetails.sort((a, b) => { 
+         if (a.date !== b.date) return a.date.localeCompare(b.date);
+         if (a.className !== b.className) return (a.className || '').localeCompare(b.className || '');
+         return (a.studentName || '').localeCompare(b.studentName || '');
+        }),
+      };
+
+      console.log('Generated Report:', report);
+      return report;
+
+      } catch (error) {
+      console.error('Error generating attendance report:', error);
+      this.error = `Failed to generate report: ${error instanceof Error ? error.message : String(error)}`;
+      throw error; // Re-throw the error for the calling component to handle
+      } finally {
+      this.isLoading = false;
+      }
     },
 
     /**

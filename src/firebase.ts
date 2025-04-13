@@ -7,16 +7,16 @@ import {
   persistentLocalCache, 
   persistentMultipleTabManager 
 } from 'firebase/firestore';
-import { getStorage, connectStorageEmulator, FirebaseStorage, uploadBytesResumable, getDownloadURL, ref } from 'firebase/storage';
+import { getStorage, connectStorageEmulator, uploadBytesResumable, getDownloadURL, ref } from 'firebase/storage';
 
 // Configuración de Firebase
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_APP_API_KEY || "AIzaSyBE1HyKoIf-FW2H5K5l-Z9qIK9nOBw5LTI",
-  authDomain: import.meta.env.VITE_APP_AUTH_DOMAIN || "elsistemapc-e1bfd.firebaseapp.com",
-  projectId: import.meta.env.VITE_APP_PROJECT_ID || "elsistemapc-e1bfd",
-  storageBucket: import.meta.env.VITE_APP_STORAGE_BUCKET || "elsistemapc-e1bfd.appspot.com",
-  messagingSenderId: import.meta.env.VITE_APP_MESSAGING_SENDER_ID || "956760690764",
-  appId: import.meta.env.VITE_APP_APP_ID || "1:956760690764:web:c8cc82518bf7b6608db565",
+  apiKey: import.meta.env.VITE_APP_API_KEY,
+  authDomain: import.meta.env.VITE_APP_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_APP_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_APP_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_APP_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_APP_APP_ID,
   measurementId: import.meta.env.VITE_APP_MEASUREMENT_ID,
   databaseURL: import.meta.env.VITE_APP_DATABASE_URL
 };

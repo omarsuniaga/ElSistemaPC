@@ -2,6 +2,73 @@
 const WEBHOOK_URL = 'https://us-central1-orquestapuntacana.cloudfunctions.net/emailWebhookHandler'
 const TIMEOUT = 10000 // 10 segundos
 
+// Función específica para enviar datos a Make.com
+export async function sendToMake(webhookUrl: string, payload: any) {
+  if (!webhookUrl) {
+    throw new Error('URL del webhook no especificada')
+  }
+
+  // Log de la petición
+  console.log('Enviando datos al webhook de Make.com:', {
+    url: webhookUrl,
+    method: 'POST',
+    payload
+  })
+
+  // Configurar la petición con timeout
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT)
+  
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Error en respuesta del webhook de Make.com:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      })
+      throw new Error(`Error del servidor Make.com: ${response.status}`)
+    }
+
+    // Intentar parsear como JSON, si falla retornar el texto
+    let responseData
+    const contentType = response.headers.get('content-type')
+    const responseText = await response.text()
+    
+    if (contentType && contentType.includes('application/json') && responseText) {
+      try {
+        responseData = JSON.parse(responseText)
+      } catch (e) {
+        responseData = responseText
+      }
+    } else {
+      responseData = responseText
+    }
+
+    return responseData
+  } catch (error: any) {
+    clearTimeout(timeoutId)
+    if (error.name === 'AbortError') {
+      console.error('La petición al webhook de Make.com excedió el tiempo límite')
+      throw new Error('Tiempo de espera agotado')
+    }
+    console.error('Error al enviar webhook a Make.com:', error)
+    throw error
+  }
+}
+
 interface WebhookPayload {
   type: string
   data: {

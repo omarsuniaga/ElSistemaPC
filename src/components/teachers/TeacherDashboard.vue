@@ -12,7 +12,7 @@
             {{ nextClassTime ? formatDateTime(nextClassTime) : 'No hay clases programadas' }}
           </span>
         </div>
-        
+
         <div v-if="nextClass" class="p-4">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -27,14 +27,14 @@
                 </span>
               </div>
             </div>
-            
+
             <div class="flex flex-row md:flex-col justify-between md:items-end">
               <div class="text-center md:text-right">
                 <p class="text-gray-600 dark:text-gray-400">Estudiantes</p>
                 <p class="font-bold text-lg">{{ nextClass.studentIds?.length || 0 }}</p>
               </div>
-              
-              <router-link 
+
+              <router-link
                 :to="`/classes/${nextClass.id}`"
                 class="btn btn-primary text-sm"
               >
@@ -43,13 +43,13 @@
             </div>
           </div>
         </div>
-        
+
         <div v-else class="p-4 text-center text-gray-500 dark:text-gray-400">
           <ClockIcon class="h-12 w-12 mx-auto mb-2 opacity-50" />
           <p>No tienes clases programadas próximamente</p>
         </div>
       </div>
-      
+
       <!-- Resumen de Asistencia -->
       <div class="card bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
         <div class="bg-green-50 dark:bg-green-900/30 px-4 py-3">
@@ -58,12 +58,12 @@
             Resumen de Asistencia
           </h3>
         </div>
-        
+
         <div class="p-4">
           <div class="flex items-center justify-center h-48">
             <canvas ref="attendanceChartRef"></canvas>
           </div>
-          
+
           <div class="grid grid-cols-2 gap-4 mt-4 text-center">
             <div>
               <p class="text-sm text-gray-600 dark:text-gray-400">Total Asistencias</p>
@@ -77,41 +77,21 @@
         </div>
       </div>
     </div>
+
     
-    <!-- Estudiantes Destacados -->
+    <!-- Alertas de Inasistencias -->
     <div class="card bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden mb-6">
-      <div class="bg-yellow-50 dark:bg-yellow-900/30 px-4 py-3">
-        <h3 class="font-semibold text-yellow-700 dark:text-yellow-300 flex items-center">
-          <StarIcon class="h-5 w-5 mr-2" />
-          Estudiantes Destacados
+      <div class="bg-red-50 dark:bg-red-900/30 px-4 py-3">
+        <h3 class="font-semibold text-red-700 dark:text-red-300 flex items-center">
+          <ExclamationTriangleIcon class="h-5 w-5 mr-2" />
+          Control de Inasistencias
         </h3>
       </div>
-      
-      <div class="p-4" v-if="students.length > 0">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div 
-            v-for="student in students.slice(0, 3)" 
-            :key="student.id" 
-            class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 flex items-center"
-          >
-            <div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center mr-3 overflow-hidden">
-              <img v-if="student.photoURL" :src="student.photoURL" alt="Foto de estudiante" class="w-full h-full object-cover" />
-              <UserIcon v-else class="h-6 w-6 text-gray-400 dark:text-gray-500" />
-            </div>
-            <div>
-              <h4 class="font-medium">{{ student.nombre }} {{ student.apellido }}</h4>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ student.instrumento }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div v-else class="p-4 text-center text-gray-500 dark:text-gray-400">
-        <UserIcon class="h-12 w-12 mx-auto mb-2 opacity-50" />
-        <p>No hay estudiantes asignados a tus clases</p>
+      <div class="p-4">
+        <AbsenceAlertList />
       </div>
     </div>
-    
+
     <!-- Actividades Recientes -->
     <div class="card bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       <div class="bg-purple-50 dark:bg-purple-900/30 px-4 py-3">
@@ -120,15 +100,15 @@
           Actividades Recientes
         </h3>
       </div>
-      
+
       <div class="p-4">
         <div class="space-y-4" v-if="recentActivities.length > 0">
-          <div 
-            v-for="(activity, index) in recentActivities" 
+          <div
+            v-for="(activity, index) in recentActivities"
             :key="index"
             class="flex items-start gap-3 pb-4 border-b border-gray-100 dark:border-gray-700 last:border-0"
           >
-            <div 
+            <div
               class="w-10 h-10 rounded-full flex items-center justify-center"
               :class="getActivityIconClass(activity.type)"
             >
@@ -141,7 +121,7 @@
             </div>
           </div>
         </div>
-        
+
         <div v-else class="text-center text-gray-500 dark:text-gray-400">
           <ClipboardDocumentListIcon class="h-12 w-12 mx-auto mb-2 opacity-50" />
           <p>No hay actividades recientes registradas</p>
@@ -156,9 +136,10 @@ import { ref, onMounted, reactive } from 'vue';
 import { format, formatDistance } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Chart from 'chart.js/auto';
-import { useTeachersStore } from '../../stores/teachers';
-import { useClassesStore } from '../../stores/classes';
-import { useStudentsStore } from '../../stores/students';
+import { useTeachersStore } from '../../modulos/Teachers/store/teachers';
+import { useClassesStore } from '../../modulos/Classes/store/classes';
+import { useStudentsStore } from '../../modulos/Students/store/students';
+import AbsenceAlertList from '../AbsenceAlertList.vue'; // Updated import path
 import {
   ClockIcon, 
   ChartBarIcon,
@@ -167,7 +148,8 @@ import {
   ClipboardDocumentListIcon,
   ClipboardDocumentCheckIcon,
   PencilSquareIcon,
-  ChatBubbleLeftEllipsisIcon
+  ChatBubbleLeftEllipsisIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/vue/24/outline';
 
 // Refs
@@ -192,19 +174,18 @@ interface ClassType {
   studentIds?: string[];
   teacherId: string;
   nextDate: string;
-}
+};
 
 interface Student {
-const nextClassTime = ref(null);
-const students = ref<Student[]>([]);
-const attendanceStats = reactive({
-  total: 0,
-  present: 0,
+  id: string;
+  nombre: string;
+  apellido: string;
+  instrumento?: string;
+  photoURL?: string;
 }
 
-const nextClass = ref<ClassType | null>(null);
-const nextClassTime = ref(null);
-const students = ref([]);
+const nextClassTime = ref<Date | null>(null);
+const students = ref<Student[]>([]);
 const attendanceStats = reactive({
   total: 0,
   present: 0,
@@ -212,6 +193,7 @@ const attendanceStats = reactive({
   justified: 0,
   rate: 0
 });
+const nextClass = ref<ClassType | null>(null);
 
 // Actividades recientes (simuladas)
 const recentActivities = [
@@ -273,6 +255,8 @@ const getActivityIconClass = (type) => {
 
 // Inicializar la gráfica de asistencia
 const initAttendanceChart = () => {
+  if (!attendanceChartRef.value) return;
+  
   const ctx = attendanceChartRef.value.getContext('2d');
   
   attendanceChart = new Chart(ctx, {
@@ -323,7 +307,9 @@ onMounted(async () => {
     
     if (upcomingClasses.length > 0) {
       nextClass.value = upcomingClasses[0];
-      nextClassTime.value = new Date(nextClass.value.nextDate);
+      if (nextClass.value) {
+        nextClassTime.value = new Date(nextClass.value.nextDate);
+      }
     }
     
     // Cargar estudiantes

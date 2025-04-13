@@ -20,6 +20,8 @@ import TeacherWeeklySchedule from '../../components/TeacherWeeklySchedule.vue';
 import TeacherClassesCard from '../../components/TeacherClassesCard.vue';
 import ClassForm from '@/modulos/Classes/components/ClassForm.vue';
 import ClassStudentManager from '@/modulos/Classes/components/ClassStudentManager.vue';
+import TeacherDashboard from '../../../../components/teachers/TeacherDashboard.vue';
+import AbsenceAlertList from '../../../../components/AbsenceAlertList.vue';
 
 // Types
 interface ClassScheduleSlot {
@@ -67,6 +69,17 @@ const toggleMobileMenu = () => {
   showMobileMenu.value = !showMobileMenu.value;
 };
 
+// En el script del componente
+const DAYS_ORDER = {
+  'Lun': 1,
+  'Mar': 2,
+  'Mié': 3,
+  'Jue': 4,
+  'Vie': 5,
+  'Sáb': 6,
+  'Dom': 7
+}
+
 // Estructura de navegación para footer móvil
 const navigationItems = computed(() => [
   {
@@ -110,6 +123,12 @@ const selectedClass = computed(() => {
   return classesStore.getClassById(selectedClassId.value);
 });
 
+// Ordenar clases por día y hora de inicio
+const sortedClasses = computed(() => {
+  const sorted = sortClasses(teacherClasses.value)
+  console.log('Clases ordenadas:', sorted)
+  return sorted
+})
 // Métricas para el dashboard
 const dashboardMetrics = computed(() => {
   const classes = teacherClasses.value;
@@ -156,6 +175,32 @@ const dashboardMetrics = computed(() => {
     }
   ];
 });
+
+const sortClasses = (classes) => {
+  return classes.sort((a, b) => {
+    // Obtener el primer slot de cada clase (asumiendo que cada clase tiene un solo slot)
+    const slotA = a.schedule?.slots?.[0] || {};
+    const slotB = b.schedule?.slots?.[0] || {};
+    
+    // Obtener el día en español y convertirlo al formato abreviado
+    const dayA = slotA.day?.slice(0, 3) || ''; // "Sábado" -> "Sáb"
+    const dayB = slotB.day?.slice(0, 3) || '';
+    
+    // Ordenar por día usando DAYS_ORDER
+    const dayOrderA = DAYS_ORDER[dayA] || 0;
+    const dayOrderB = DAYS_ORDER[dayB] || 0;
+    
+    if (dayOrderA !== dayOrderB) {
+      return dayOrderA - dayOrderB;
+    }
+    
+    // Si el día es el mismo, ordenar por hora de inicio
+    const timeA = new Date(`1970-01-01T${slotA.startTime}`).getTime();
+    const timeB = new Date(`1970-01-01T${slotB.startTime}`).getTime();
+    
+    return timeA - timeB;
+  });
+}
 
 // Próximas clases del maestro (próximas 24 horas)
 const upcomingClasses = computed(() => {
@@ -440,8 +485,139 @@ const setActiveTab = (tab: string): void => {
     activeTab.value = tab;
 };
 
-// Cargar datos iniciales
+// Referencia al componente AbsenceAlertList
+const absenceAlertListRef = ref(null);
+
+// Nuevas funciones para analizar ausencias
+const analyzeStudentAbsences = () => {
+  if (!absenceAlertListRef.value) return;
+  
+  console.log("Información de fecha:", absenceAlertListRef.value.debugDateInfo);
+  
+  // Trigger the analysis in AbsenceAlertList component
+  absenceAlertListRef.value.analyzeWeeklyAbsences();
+  absenceAlertListRef.value.analyzeMonthlyAbsences();
+  
+  // Get results from the component
+  const weeklyAbsences = absenceAlertListRef.value.getWeeklyAbsences();
+  const monthlyAbsences = absenceAlertListRef.value.getMonthlyAbsences();
+  
+  console.log('===== ANÁLISIS DE AUSENCIAS =====');
+  
+  // Analizar ausencias por semana
+  console.log('\n1. Alumnos con más de 1 inasistencia por semana:');
+  if (weeklyAbsences.length === 0) {
+    console.log('No hay alumnos con más de 1 inasistencia en la última semana.');
+  } else {
+    const studentsWithInstruments = [];
+    const studentsWithoutInstruments = [];
+    
+    weeklyAbsences.forEach(report => {
+      const student = report.student;
+      const classes = classesStore.getClassesByStudentId(student.id);
+      
+      // Verificar si el estudiante tiene clases que indican que tiene instrumentos
+      const hasInstrumentClass = classes.some(classItem => 
+        ['Ensayo General', 'Ensayo Seccional', 'Taller', 'Talleres', 'Coro'].some(keyword => 
+          classItem.name.toLowerCase().includes(keyword.toLowerCase())
+        )
+      );
+      
+      // Verificar si el estudiante está en clases de preparatoria o iniciación
+      const isInPreparatoryClass = classes.some(classItem => 
+        ['preparatoria', 'iniciacion'].some(keyword => 
+          classItem.name.toLowerCase().includes(keyword.toLowerCase())
+        )
+      );
+      
+      const studentInfo = {
+        id: student.id,
+        nombre: `${student.nombre} ${student.apellido}`,
+        instrumento: student.instrumento || 'No especificado',
+        ausencias: report.absences,
+        clases: classes.map(c => c.name),
+        fechas: report.absenceDates?.map(date => new Date(date).toLocaleDateString('es-ES')),
+        telefono: student.parentPhone || 'No registrado'
+      };
+      
+      if (hasInstrumentClass) {
+        studentsWithInstruments.push(studentInfo);
+      } else if (isInPreparatoryClass) {
+        studentsWithoutInstruments.push(studentInfo);
+      } else {
+        // Si no podemos determinar, asumimos que tiene instrumento para ser más cautelosos
+        studentsWithInstruments.push({
+          ...studentInfo,
+          nota: 'No se pudo determinar con certeza si tiene instrumento asignado'
+        });
+      }
+    });
+    
+    console.log('Alumnos CON instrumentos (casos más graves):');
+    console.table(studentsWithInstruments);
+    
+    console.log('Alumnos SIN instrumentos (casos menos graves):');
+    console.table(studentsWithoutInstruments);
+  }
+  
+  // Analizar ausencias por mes
+  console.log('\n2. Alumnos con más de 1 inasistencia por mes:');
+  if (monthlyAbsences.length === 0) {
+    console.log('No hay alumnos con más de 1 inasistencia en el último mes.');
+  } else {
+    // Similar logic as weekly absences
+    const studentsWithInstruments = [];
+    const studentsWithoutInstruments = [];
+    
+    monthlyAbsences.forEach(report => {
+      const student = report.student;
+      const classes = classesStore.getClassesByStudentId(student.id);
+      
+      const hasInstrumentClass = classes.some(classItem => 
+        ['Ensayo General', 'Ensayo Seccional', 'Taller', 'Talleres', 'Coro'].some(keyword => 
+          classItem.name.toLowerCase().includes(keyword.toLowerCase())
+        )
+      );
+      
+      const isInPreparatoryClass = classes.some(classItem => 
+        ['preparatoria', 'iniciacion'].some(keyword => 
+          classItem.name.toLowerCase().includes(keyword.toLowerCase())
+        )
+      );
+      
+      const studentInfo = {
+        id: student.id,
+        nombre: `${student.nombre} ${student.apellido}`,
+        instrumento: student.instrumento || 'No especificado',
+        ausencias: report.absences,
+        clases: classes.map(c => c.name),
+        fechasMuestra: report.absenceDates?.slice(0, 3).map(date => new Date(date).toLocaleDateString('es-ES')),
+        telefono: student.parentPhone || 'No registrado'
+      };
+      
+      if (hasInstrumentClass) {
+        studentsWithInstruments.push(studentInfo);
+      } else if (isInPreparatoryClass) {
+        studentsWithoutInstruments.push(studentInfo);
+      } else {
+        studentsWithInstruments.push({
+          ...studentInfo,
+          nota: 'No se pudo determinar con certeza si tiene instrumento asignado'
+        });
+      }
+    });
+    
+    console.log('Alumnos CON instrumentos (casos más graves):');
+    console.table(studentsWithInstruments);
+    
+    console.log('Alumnos SIN instrumentos (casos menos graves):');
+    console.table(studentsWithoutInstruments);
+  }
+};
+
+// Extender la función onMounted para analizar ausencias
 onMounted(async () => {
+  // Mantener la funcionalidad original
   loading.value = true;
   try {
     // Asegurarnos de que los métodos existen antes de llamarlos
@@ -493,6 +669,11 @@ onMounted(async () => {
         // teacherId: sampleClass.teacherId
       // });
     }
+
+    // Después de cargar todos los datos, analizar ausencias
+    setTimeout(() => {
+      analyzeStudentAbsences();
+    }, 2000); // Dar tiempo para que todo se cargue
   } catch (error) {
     console.error('❌ Error cargando datos:', error);
     toast({
@@ -589,73 +770,69 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
       </div>
     </div>
 
-    <!-- Header (oculto en móviles) -->
-    <header class="dashboard-header bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6 hidden md:block">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Panel de Control de Maestros</h1>
-      <p class="text-gray-600 dark:text-gray-400">Aquí puedes gestionar y visualizar información relevante sobre tus clases y estudiantes.</p>
-      
-      <!-- Tabs de navegación -->
-      <div class="flex mt-6 border-b border-gray-200 dark:border-gray-700">
-        <button 
-          @click="setActiveTab('classes')" 
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
-          :class="{
-            'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'classes',
-            'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'classes'
-          }"
-        >
-          <div class="flex items-center gap-1">
-            <BookOpenIcon class="h-4 w-4" />
-            Mis Clases
-          </div>
-        </button>
-        <button 
-          @click="setActiveTab('overview')" 
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
-          :class="{
-            'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'overview',
-            'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'overview'
-          }"
-        >
-          <div class="flex items-center gap-1">
-            <ChartBarSquareIcon class="h-4 w-4" />
-            Panel General
-          </div>
-        </button>
-        
-        <button 
-          @click="setActiveTab('schedule')" 
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
-          :class="{
-            'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'schedule',
-            'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'schedule'
-          }"
-        >
-          <div class="flex items-center gap-1">
-            <CalendarIcon class="h-4 w-4" />
-            Horario Semanal
-          </div>
-        </button>
-        
-        
-        <button 
-          @click="setActiveTab('upcoming')" 
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
-          :class="{
-            'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'upcoming',
-            'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'upcoming'
-          }"
-        >
-          <div class="flex items-center gap-1">
-            <ClockIcon class="h-4 w-4" />
-            Próximas Clases
-          </div>
-        </button>
-      </div>
-    </header>
+    <!-- Header -->
+    <header class="dashboard-header bg-white dark:bg-gray-800 p-2 sm:p-4 rounded-lg shadow mb-4">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full">
+    <div class="flex-1">
+      <h1 class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-0">
+        Panel de Control
+      </h1>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="flex flex-col sm:flex-row w-full sm:w-auto">
+      <button 
+        @click="setActiveTab('classes')" 
+        class="flex-1 sm:flex-none px-2 sm:px-4 py-1 sm:py-2 text-sm font-medium flex items-center justify-center gap-1 focus:outline-none"
+        :class="{
+          'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'classes',
+          'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'classes'
+        }"
+      >
+        <BookOpenIcon class="h-4 w-4" />
+        <span class="hidden sm:inline">Mis Clases</span>
+      </button>
+
+      <button 
+        @click="setActiveTab('overview')" 
+        class="flex-1 sm:flex-none px-2 sm:px-4 py-1 sm:py-2 text-sm font-medium flex items-center justify-center gap-1 focus:outline-none"
+        :class="{
+          'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'overview',
+          'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'overview'
+        }"
+      >
+        <ChartBarSquareIcon class="h-4 w-4" />
+        <span class="hidden sm:inline">Panel General</span>
+      </button>
+
+      <button 
+        @click="setActiveTab('schedule')" 
+        class="flex-1 sm:flex-none px-2 sm:px-4 py-1 sm:py-2 text-sm font-medium flex items-center justify-center gap-1 focus:outline-none"
+        :class="{
+          'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'schedule',
+          'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'schedule'
+        }"
+      >
+        <CalendarIcon class="h-4 w-4" />
+        <span class="hidden sm:inline">Horario Semanal</span>
+      </button>
+
+      <button 
+        @click="setActiveTab('upcoming')" 
+        class="flex-1 sm:flex-none px-2 sm:px-4 py-1 sm:py-2 text-sm font-medium flex items-center justify-center gap-1 focus:outline-none"
+        :class="{
+          'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'upcoming',
+          'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'upcoming'
+        }"
+      >
+        <ClockIcon class="h-4 w-4" />
+        <span class="hidden sm:inline">Próximas Clases</span>
+      </button>
+    </div>
+  </div>
+</header>
     
   
-    
     <!-- Estado de carga -->
     <div v-if="loading" class="flex justify-center items-center py-12">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -747,9 +924,9 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         
         <!-- Grid de Card de clases -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-          <template v-if="teacherClasses.length > 0">
+          <template v-if="sortedClasses.length > 0">
             <TeacherClassesCard
-              v-for="classItem in teacherClasses"
+              v-for="classItem in sortedClasses"
               :key="classItem.id"
               :class-data="classItem"
               @view="handleViewClass"
@@ -783,7 +960,7 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
                 <div>
                   <h3 class="font-medium text-lg">{{ classItem.name }}</h3>
                   <p class="text-gray-600 dark:text-gray-400">
-                    {{ classItem.level }} - {{ classItem.instrument || 'Sin instrumento' }}
+                    {{ classItem.level }} - {{ classItem.instrumento || 'Sin instrumento' }}
                   </p>
                   
                   <div class="mt-2 flex items-center text-sm">
@@ -821,6 +998,7 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         </div>
       </div>
     </section>
+    <TeacherDashboard />
     
     <!-- CREA UN NUEVO COMPONENTE PARA: Modal para el formulario de clase -->
     <TransitionRoot appear :show="showForm">
@@ -927,6 +1105,9 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         </button>
       </div>
     </div>
+    
+    <!-- Añadir ref al componente AbsenceAlertList -->
+    <AbsenceAlertList ref="absenceAlertListRef" class="hidden" />
   </div>    
 </template>
 
@@ -945,9 +1126,17 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
 }
 
 .dashboard-header {
-  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
 }
 
+@media (min-width: 640px) {
+  .dashboard-header {
+    flex-direction: row;
+  }
+}
 .dashboard-content {
   display: flex;
   flex-direction: column;

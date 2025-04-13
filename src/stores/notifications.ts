@@ -15,7 +15,7 @@ import {
 import { db } from '../firebase';
 import { useAuthStore } from './auth';
 
-interface Notification {
+export interface Notification {
   id?: string;
   title: string;
   message: string;
@@ -26,6 +26,7 @@ interface Notification {
   recipientRoles?: string[];  // User roles who should receive this notification
   link?: string;  // Optional link to navigate to when clicking the notification
   expires?: string;  // Optional expiration date
+  details?: any;  // Additional details for the notification
 }
 
 export const useNotificationsStore = defineStore('notifications', {
@@ -155,6 +156,24 @@ export const useNotificationsStore = defineStore('notifications', {
         };
 
         const docRef = await addDoc(collection(db, 'NOTIFICATIONS'), newNotification);
+        
+        // If current user has a matching role, add to local notifications
+        const authStore = useAuthStore();
+        if (authStore.user && authStore.user.userRoles) {
+          const userRoles = authStore.user.userRoles as string[] || [];
+          const shouldReceiveNotification = notification.recipientRoles?.some(role => 
+            userRoles.includes(role)
+          ) || notification.recipientIds?.includes(authStore.user.uid);
+          
+          if (shouldReceiveNotification) {
+            this.notifications.unshift({
+              id: docRef.id,
+              ...newNotification,
+              createdAt: new Date().toISOString()
+            });
+            this.unreadCount++;
+          }
+        }
         
         return docRef.id;
       } catch (error) {

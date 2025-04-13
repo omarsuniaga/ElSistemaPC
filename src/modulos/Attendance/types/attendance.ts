@@ -90,6 +90,13 @@ export interface AttendanceFiltersType {
   level?: string;
   teacherId?: string;
   studentId?: string;
+  classId?: string;
+  status?: AttendanceStatus;
+  // Define el tipo para los filtros de asistencia
+  startDate?: string; // Fecha de inicio para el rango de reporte
+  endDate?: string;   // Fecha de fin para el rango de reporte
+
+// Define el tipo para un documento de asistencia individual
 }
 
 export interface AttendanceAnalytics {

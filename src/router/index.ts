@@ -235,7 +235,7 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../modulos/Students/view/NewStudentView.vue'),
     meta: {
       requiresAuth: true,
-      allowedRoles: ['Director', 'Admin']
+      allowedRoles: ['Director', 'Admin', 'Maestro']
     }
   },
 

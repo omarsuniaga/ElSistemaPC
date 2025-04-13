@@ -190,6 +190,11 @@ onMounted(async () => {
     debugInfo.value.error = error.message;
   }
 });
+const getDayAbbr = (day) => {
+  if (!day) return '';
+  return day.slice(0, 3); // "Sábado" -> "Sáb"
+}
+
 </script>
 
 <template>
@@ -197,16 +202,19 @@ onMounted(async () => {
     @click="handleView" 
     class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer overflow-hidden text-sm"
   >
-    <!-- Cabecera con color según nivel -->
-    <div 
-      class="h-1"
-      :class="{
-        'bg-green-500': classData.level === 'Básico',
-        'bg-blue-500': classData.level === 'Intermedio',
-        'bg-purple-500': classData.level === 'Avanzado',
-        'bg-gray-500': !classData.level
-      }"
-    ></div>
+    <!-- Cabecera con color según día de la semana -->
+<div 
+  class="h-1"
+  :class="{
+    'bg-red-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Lun',
+    'bg-orange-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Mar',
+    'bg-yellow-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Mié',
+    'bg-green-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Jue',
+    'bg-blue-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Vie',
+    'bg-purple-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Sáb',
+    'bg-pink-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Dom'
+  }"
+></div>
     
     <div class="p-2 sm:p-3">
       <!-- Nombre y nivel -->
