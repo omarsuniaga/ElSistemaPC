@@ -45,6 +45,11 @@ export const useClassesStore = defineStore('classes', {
         )
       );
     },
+    getClassesByStudentId: (state) => (studentId: string) => {
+      if (!studentId) return [];
+      return state.classes.filter(c => c.studentIds && c.studentIds.includes(studentId));
+    },
+    
     // obtener clases por dias de la semana
     getClassByDaysAndTeacher: (state) => (teacherId: string, day: string) => {
       return state.classes.filter(classItem =>
@@ -242,6 +247,14 @@ export const useClassesStore = defineStore('classes', {
         if (!studentIds.includes(studentId)) studentIds.push(studentId);
         return await this.updateClass({ ...classData, studentIds });
       });
+    },
+    async deleteClass(classId: string) {
+      return await this.withLoading(async () => {
+        const classData = this.getClassById(classId);
+        if (!classData) throw new Error('Clase no encontrada');
+        return await this.removeClass(classId);
+      }
+      );
     },
 
     /**

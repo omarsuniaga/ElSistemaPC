@@ -50,7 +50,7 @@ async function withLoading<T>(store: any, action: () => Promise<T>): Promise<T> 
   } finally {
     store.loading = false
   }
-}
+};
 
 export const useTeachersStore = defineStore('teacher', {
   state: () => ({
@@ -87,6 +87,33 @@ export const useTeachersStore = defineStore('teacher', {
   },
 
   actions: {
+
+    async currentTeacher() {
+      const authStore = useAuthStore()
+      const currentTeacherUid = authStore.user?.uid || null
+      if (!currentTeacherUid) {
+        console.error('No hay usuario autenticado')
+        return null
+      }
+      const teacher = this.teachers.find((teacher: TeacherData) => teacher.uid === currentTeacherUid)
+      if (teacher) {
+        console.log('Maestro encontrado en caché:', teacher.name)
+        return teacher
+      }
+      console.log('Buscando maestro en Firebase...')
+      const db = getFirestore()
+      const teachersCollection = collection(db, 'MAESTROS')
+      const q = query(teachersCollection, where("uid", "==", currentTeacherUid))
+      const querySnapshot = await getDocs(q)
+      if (!querySnapshot.empty) {
+        const teacherDoc = querySnapshot.docs[0]
+        const teacherData = { id: teacherDoc.id, ...teacherDoc.data() }
+        return normalizeTeacherData(teacherData)
+      } else {
+        console.log('No se encontró maestro en Firebase')
+        return null
+      }
+  },
     /* === CRUD BASICO === */
 
     /**

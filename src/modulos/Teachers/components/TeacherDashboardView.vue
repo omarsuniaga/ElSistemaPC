@@ -13,8 +13,10 @@ import {
   UserGroupIcon,
   PlusIcon,
   PencilIcon,
-  TrashIcon,
-  ChartBarSquareIcon
+  Squares2X2Icon, 
+  ChartBarIcon,
+  ChartBarSquareIcon,
+  BellIcon,
 } from '@heroicons/vue/24/outline';
 import { useToast } from '@/components/ui/toast/use-toast';
 import { Dialog, DialogPanel, DialogOverlay, TransitionRoot, TransitionChild } from '@headlessui/vue';
@@ -22,42 +24,7 @@ import TeacherWeeklySchedule from './TeacherWeeklySchedule.vue';
 import TeacherClassesCard from './TeacherClassesCard.vue';
 import ClassForm from '@/modulos/Classes/components/ClassForm.vue'; // Componente existente
 import ClassStudentManager from '@/modulos/Classes/components/ClassStudentManager.vue'; // Componente existente
-
-/**
- * ANÁLISIS DE REQUISITOS
- * 
- * Este componente debe cubrir las siguientes funcionalidades:
- * 
- * 1. Visualización de horario semanal del maestro
- *    - Vista tipo calendario con días de la semana
- *    - Visualización por horas de las clases programadas
- *    - Identificación visual clara de cada clase (colores, etiquetas)
- * 
- * 2. Listado de clases asignadas al maestro
- *    - Mostrar todas las clases que imparte el maestro
- *    - Incluir detalles como: nombre de la clase, nivel, instrumento, aula, horarios
- *    - Mostrar cantidad de estudiantes por clase
- * 
- * 3. Vista de próximas clases en las siguientes 24 horas
- *    - Mostrar clases programadas para hoy/mañana
- *    - Ordenar por proximidad temporal
- *    - Incluir detalles como aula y hora exacta
- * 
- * 4. Capacidad para crear, modificar y eliminar clases
- *    - Formulario para crear nuevas clases
- *    - Opciones para editar detalles de clases existentes
- *    - Confirmación para eliminar clases
- * 
- * 5. Gestión de estudiantes dentro de cada clase
- *    - Agregar/eliminar estudiantes de las clases
- *    - Visualizar lista de estudiantes por clase
- *    - Buscar estudiantes para agregar a clases
- * 
- * 6. Estadísticas relevantes para el maestro
- *    - Total de horas de clase semanal
- *    - Total de estudiantes
- *    - Distribución de clases por niveles/instrumentos
- */
+import { Student } from '../../../types';
 
 // Stores
 const classesStore = useClassesStore();
@@ -76,7 +43,7 @@ const isEditing = ref(false);
 
 // Computar el ID del maestro actual desde el sistema de autenticación
 // En un sistema real, esto vendría del usuario autenticado
-const currentTeacherId = computed(() => authStore.userId || '1'); // Default para desarrollo
+const currentTeacherId = computed(() => authStore.user?.id || '1'); // Default para desarrollo
 
 // Computar clases del maestro actual
 const teacherClasses = computed(() => {
@@ -159,27 +126,6 @@ const upcomingClasses = computed(() => {
       return aNextSession.getTime() - bNextSession.getTime();
     });
 });
-
-// Notificaciones de prueba
-const notifications = ref([
-  {
-    id: 1,
-    title: 'Nueva clase asignada',
-    message: 'Se te ha asignado la clase de Piano Intermedio',
-    date: new Date(),
-    read: false,
-    type: 'info'
-  },
-  {
-    id: 2,
-    title: 'Recordatorio',
-    message: 'Recuerda actualizar la lista de asistencia',
-    date: new Date(Date.now() - 86400000),
-    read: true,
-    type: 'reminder'
-  }
-]);
-
 // Funciones auxiliares
 function getNextClassDate(day, time) {
   const today = new Date();
@@ -199,7 +145,6 @@ function getNextClassDate(day, time) {
   
   return classDate;
 }
-
 function getNextSession(classItem) {
   const now = new Date();
   let closestDate = new Date();
@@ -216,7 +161,6 @@ function getNextSession(classItem) {
   
   return closestDate;
 }
-
 // Función helper para limpiar el objeto y eliminar propiedades vacías
 function cleanData(obj) {
   const cleaned = {};
@@ -236,38 +180,74 @@ function cleanData(obj) {
   });
   return cleaned;
 }
+interface ToastOptions {
+  title: string;
+  description: string;
+  variant?: 'default' | 'destructive';
+}
+// Interfaces
+interface Class {
+  id: string;
+  name: string;
+  description?: string;
+  level: string;
+  teacherId: string;
+  classroom?: string;
+  instrument?: string;
+  schedule?: {
+    slots: ScheduleSlot[];
+  };
+  studentIds?: string[];
+}
 
-// Métodos para acciones del panel
-const addTeacher = () => {
-  handleAddClass();
-};
+interface ScheduleSlot {
+  day: number;
+  startTime: string;
+  endTime: string;
+}
 
-const filterTeachers = () => {
+interface DashboardMetric {
+  title: string;
+  value: number;
+  icon: any; // HeroIcon component type
+  color: string;
+}
+
+interface ClassData {
+  id?: string;
+  name: string;
+  description?: string;
+  level: string;
+  teacherId?: string;
+  classroom?: string;
+  instrument?: string;
+  schedule?: {
+    slots: ScheduleSlot[];
+  };
+  studentIds?: string[];
+}
+const filterTeachers = (): void => {
   toast({
     title: 'Gestionar Estudiantes',
     description: 'Por favor, seleccione una clase primero para gestionar sus estudiantes'
   });
 };
-
 // Manejadores de eventos para clases
 const handleAddClass = () => {
   isEditing.value = false;
   selectedClassId.value = '';
   showForm.value = true;
 };
-
-const handleViewClass = (classId) => {
+const handleViewClass = (classId: string): void => {
   selectedClassId.value = classId;
   activeTab.value = 'classes'; // Cambiar a la pestaña de clases para ver detalles
 };
-
-const handleEditClass = (classId) => {
+const handleEditClass = (classId: string): void => {
   selectedClassId.value = classId;
   isEditing.value = true;
   showForm.value = true;
 };
-
-const handleDeleteClass = async (classId) => {
+const handleDeleteClass = (classId: string): void=> {
   if (confirm('¿Estás seguro de que deseas eliminar esta clase?')) {
     try {
       await classesStore.deleteClass(classId);
@@ -289,13 +269,11 @@ const handleDeleteClass = async (classId) => {
     }
   }
 };
-
-const handleManageStudents = (classId) => {
+const handleManageStudents = (classId: string): void => {
   selectedClassId.value = classId;
   showStudentManager.value = true;
 };
-
-const handleSaveClass = async (classData) => {
+const handleSaveClass = async (classData: ClassData): Promise<void> => {
   try {
     // Validación mínima
     if (!classData.name || !classData.level) {
@@ -311,7 +289,7 @@ const handleSaveClass = async (classData) => {
     classData.teacherId = currentTeacherId.value;
 
     // Preparar datos y limpiar propiedades vacías
-    const preparedData = cleanData({
+    const preparedData: Omit<Class, 'id'> = cleanData({
       name: classData.name.trim(),
       description: classData.description?.trim(),
       level: classData.level,
@@ -340,7 +318,7 @@ const handleSaveClass = async (classData) => {
       });
     } else {
       // Crear nueva clase
-      const newClass = await classesStore.addClass(preparedData);
+      const newClass: Class = await classesStore.addClass(preparedData);
       toast({
         title: "Clase Creada",
         description: `La clase "${preparedData.name}" ha sido creada exitosamente.`
@@ -348,7 +326,7 @@ const handleSaveClass = async (classData) => {
       selectedClassId.value = newClass.id;
     }
     showForm.value = false;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error al guardar la clase:', error);
     toast({
       title: "Error",
@@ -357,8 +335,7 @@ const handleSaveClass = async (classData) => {
     });
   }
 };
-
-const handleStudentChange = async (studentIds) => {
+const handleStudentChange = async (studentIds: Student) => {
   try {
     await classesStore.updateClass({
       id: selectedClassId.value,
@@ -378,9 +355,8 @@ const handleStudentChange = async (studentIds) => {
     });
   }
 };
-
 // Formatear fecha para mostrar
-const formatDateTime = (date) => {
+const formatDateTime = (date: Date) => {
   return date.toLocaleString('es-ES', {
     weekday: 'long',
     day: '2-digit',
@@ -389,12 +365,12 @@ const formatDateTime = (date) => {
     minute: '2-digit'
   });
 };
-
 // Cambiar de tab
-const setActiveTab = (tab) => {
+type TabType = 'notificaciones' | 'analitica' | 'classes' | 'dashboard';
+
+const setActiveTab = (tab: TabType): void => {
   activeTab.value = tab;
 };
-
 // Cargar datos iniciales
 onMounted(async () => {
   loading.value = true;
@@ -438,7 +414,7 @@ onMounted(async () => {
       <!-- Tabs de navegación -->
       <div class="flex mt-6 border-b border-gray-200 dark:border-gray-700">
         <button 
-          @click="setActiveTab('overview')" 
+          @click="setActiveTab('notificaciones')" 
           class="px-4 py-2 font-medium text-sm focus:outline-none"
           :class="{
             'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'overview',
@@ -446,13 +422,13 @@ onMounted(async () => {
           }"
         >
           <div class="flex items-center gap-1">
-            <ChartBarSquareIcon class="h-4 w-4" />
-            Panel General
+            <BellIcon class="h-4 w-4" />
+            Notificaciones
           </div>
         </button>
         
         <button 
-          @click="setActiveTab('schedule')" 
+          @click="setActiveTab('analitica')" 
           class="px-4 py-2 font-medium text-sm focus:outline-none"
           :class="{
             'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'schedule',
@@ -460,8 +436,8 @@ onMounted(async () => {
           }"
         >
           <div class="flex items-center gap-1">
-            <CalendarIcon class="h-4 w-4" />
-            Horario Semanal
+            <ChartBarIcon class="h-4 w-4" />
+            Analitica
           </div>
         </button>
         
@@ -480,7 +456,7 @@ onMounted(async () => {
         </button>
         
         <button 
-          @click="setActiveTab('upcoming')" 
+          @click="setActiveTab('dashboard')" 
           class="px-4 py-2 font-medium text-sm focus:outline-none"
           :class="{
             'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'upcoming',
@@ -488,8 +464,8 @@ onMounted(async () => {
           }"
         >
           <div class="flex items-center gap-1">
-            <ClockIcon class="h-4 w-4" />
-            Próximas Clases
+            <Squares2X2Icon class="h-4 w-4" />
+            Dashboard
           </div>
         </button>
       </div>
@@ -522,30 +498,6 @@ onMounted(async () => {
           </div>
         </div>
         
-        <!-- Componente de notificaciones -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <h2 class="text-lg font-semibold mb-3">Notificaciones</h2>
-          <div v-if="notifications.length > 0" class="space-y-3">
-            <div 
-              v-for="notification in notifications" 
-              :key="notification.id"
-              class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
-              :class="{
-                'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500': notification.type === 'info' && !notification.read,
-                'bg-amber-50 dark:bg-amber-900/20 border-l-4 border-l-amber-500': notification.type === 'reminder' && !notification.read
-              }"
-            >
-              <div class="flex justify-between">
-                <h3 class="font-medium">{{ notification.title }}</h3>
-                <span class="text-xs text-gray-500">
-                  {{ new Intl.DateTimeFormat('es-ES', { dateStyle: 'short' }).format(notification.date) }}
-                </span>
-              </div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ notification.message }}</p>
-            </div>
-          </div>
-          <p v-else class="text-center text-gray-500 dark:text-gray-400 py-3">No hay notificaciones.</p>
-        </div>
         
         <!-- Botones de acción rápida -->
         <div class="flex flex-wrap gap-3">
@@ -578,11 +530,6 @@ onMounted(async () => {
           </button>
         </h2>
         
-        <!-- Componente de horario semanal -->
-        <TeacherWeeklySchedule 
-          :classes="teacherClasses"
-          @view-class="handleViewClass"
-        />
       </div>
       
       <!-- Vista de listado de clases -->

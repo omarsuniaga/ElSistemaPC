@@ -1,929 +1,440 @@
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useStudentsStore } from '../modulos/Students/store/students';
+import { useAttendanceStore } from '../modulos/Attendance/store/attendance';
+import { useClassesStore } from '../modulos/Classes/store/classes';
+// import { useToast } from '../components/ui/toast/use-toast'; // Descomentar si se usa toast
+import type { Student } from '../modulos/Students/types/student';
+import type { AttendanceDocument } from '../modulos/Attendance/types/attendance'; // Importar tipo
+import { formatISO, isValid, parseISO } from 'date-fns'; // Asegúrate de importar isValid
+
+// Stores
+const studentsStore = useStudentsStore();
+const attendanceStore = useAttendanceStore();
+const classesStore = useClassesStore();
+// const { toast } = useToast(); // Descomentar si se usa toast
+
+// Estado del componente
+const startDate = ref('');
+const endDate = ref('');
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+const results = ref<AbsenceResult[]>([]);
+const searchPerformed = ref(false); // Para saber si se realizó una búsqueda
+const weeklyAbsences = ref<any[]>([]);
+const monthlyAbsences = ref<any[]>([]);
+
+// Interfaces para manejar los datos
+interface AbsenceResult {
+  student: Student;
+  absenceCount: number;
+  absenceDates: string[];
+  missedClassIds: Set<string>;
+  missedClassNames: string[];
+}
+
+// Normalizar formato de fecha para comparaciones
+const normalizeDate = (dateStr: string | Date): Date => {
+  if (!dateStr) return new Date(0); // Fecha inválida si no hay string/Date
+  
+  if (dateStr instanceof Date) {
+    // Si ya es Date, asegurarse que es válido
+    return isValid(dateStr) ? dateStr : new Date(0);
+  }
+  
+  if (typeof dateStr === 'string') {
+    // 1. Intentar parsear con parseISO (para YYYY-MM-DD, ISO 8601)
+    const isoDate = parseISO(dateStr);
+    if (isValid(isoDate)) {
+      return isoDate;
+    }
+    
+    // 2. Intentar parsear formato DD/MM/YYYY
+    const ddmmyyyyPattern = /^(\\d{1,2})[/.-](\\d{1,2})[/.-](\\d{4})$/;
+    const ddmmyyyyMatch = dateStr.match(ddmmyyyyPattern);
+    
+    if (ddmmyyyyMatch) {
+      const [_, day, month, year] = ddmmyyyyMatch;
+      const constructedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      if (isValid(constructedDate)) {
+        return constructedDate;
+      }
+    }
+    
+    // 3. Como último recurso, intentar crear una fecha directamente
+    // Esto puede ser menos fiable dependiendo del navegador/entorno
+    const directDate = new Date(dateStr);
+    if (isValid(directDate)) {
+      return directDate;
+    }
+  }
+  
+  console.warn("Formato de fecha no reconocido o inválido:", dateStr);
+  return new Date(0); // Devolver fecha inválida si todo falla
+};
+
+
+// --- Función Principal de Búsqueda ---
+async function searchAbsences() {
+  // Validación básica de fechas
+  if (!startDate.value || !endDate.value) {
+    error.value = "Por favor, seleccione fecha de inicio y fin.";
+    return;
+  }
+  
+  // Normalizar las fechas del rango ANTES de usarlas
+  const rangeStartDate = normalizeDate(startDate.value);
+  const rangeEndDate = normalizeDate(endDate.value);
+  
+  // Validar las fechas normalizadas
+  if (!isValid(rangeStartDate) || rangeStartDate.getTime() === 0 || 
+      !isValid(rangeEndDate) || rangeEndDate.getTime() === 0 || 
+      rangeEndDate < rangeStartDate) {
+    error.value = "Rango de fechas inválido. Verifique las fechas seleccionadas.";
+    console.error("Fechas normalizadas inválidas:", { 
+        startInput: startDate.value, startNormalized: rangeStartDate, 
+        endInput: endDate.value, endNormalized: rangeEndDate 
+    });
+    return;
+  }
+  
+  // Ajustar la hora final para incluir todo el día
+  rangeEndDate.setHours(23, 59, 59, 999);
+
+  console.log("Buscando ausencias desde:", rangeStartDate.toISOString(), "hasta:", rangeEndDate.toISOString());
+
+  isLoading.value = true;
+  error.value = null;
+  results.value = [];
+  searchPerformed.value = true; // Marcar que se intentó una búsqueda
+
+  try {
+    // 1. Asegurar que estudiantes y clases estén cargados
+    if (studentsStore.students.length === 0) await studentsStore.fetchStudents();
+    if (classesStore.classes.length === 0) await classesStore.fetchClasses();
+
+    // 2. Obtener los documentos de asistencia del store en el rango de fechas
+    //    **¡¡IMPORTANTE!! Esta acción DEBE existir en useAttendanceStore y usar fechas en formato YYYY-MM-DD**
+    //    El store debería manejar la lógica de fetch, aquí solo pedimos los datos.
+    //    Si fetchDocumentsByDateRange no existe, hay que crearlo o adaptar el fetch general.
+    //    Asumiremos que tenemos todos los documentos y filtramos aquí por ahora.
+    //    Idealmente, el fetch ya debería filtrar por rango en Firebase si es posible.
+    
+    // Obtener TODOS los documentos (o idealmente, usar un fetch por rango si existe)
+    if (attendanceStore.attendanceDocuments.length === 0) {
+        await attendanceStore.fetchAttendanceDocuments(); // Asegura que los documentos estén cargados
+    }
+    const allDocuments = attendanceStore.attendanceDocuments;
+
+    console.log(`Total documentos en store: ${allDocuments.length}`);
+
+    // 3. Procesar los documentos para agregar ausencias DENTRO DEL RANGO
+    const absencesMap = new Map<string, { count: number, classIds: Set<string>, dates: string[] }>();
+
+    allDocuments.forEach(doc => {
+      if (!doc.fecha || !doc.data?.ausentes || !Array.isArray(doc.data.ausentes)) {
+        // console.log("Documento omitido (sin fecha o ausentes):", doc.id || doc.fecha);
+        return; // Omitir documentos sin fecha o sin array de ausentes
+      }
+
+      // Normalizar la fecha del documento
+      const docDate = normalizeDate(doc.fecha);
+
+      // Verificar si la fecha normalizada es válida y está dentro del rango
+      if (isValid(docDate) && docDate.getTime() !== 0 && docDate >= rangeStartDate && docDate <= rangeEndDate) {
+        // console.log(`Documento ${doc.id || doc.fecha} EN RANGO (${docDate.toISOString()})`);
+        
+        doc.data.ausentes.forEach((studentId: string) => {
+          if (!studentId) return; // Ignorar IDs vacíos
+
+          const currentData = absencesMap.get(studentId) || { count: 0, classIds: new Set<string>(), dates: [] };
+          currentData.count += 1;
+          if (doc.classId) {
+            currentData.classIds.add(doc.classId);
+          }
+          currentData.dates.push(doc.fecha); // Guardar la fecha original del registro
+          absencesMap.set(studentId, currentData);
+        });
+      } else {
+         console.log(`Documento ${doc.id || doc.fecha} FUERA DE RANGO (${docDate.toISOString()})`);
+      }
+    });
+
+    console.log(`Estudiantes con ausencias encontradas en el rango: ${absencesMap.size}`);
+
+    // 4. Enriquecer con datos de estudiante y clase
+    const finalResults: AbsenceResult[] = [];
+    for (const [studentId, data] of absencesMap.entries()) {
+      const student = studentsStore.getStudentById(studentId); // Usar getter del store
+
+      if (student) { // Solo incluir si encontramos al estudiante
+        const missedClassNames = Array.from(data.classIds)
+          .map(classId => classesStore.getClassById(classId)?.name) // Usar getter del store
+          .filter((name): name is string => !!name); // Filtrar clases no encontradas y asegurar tipo string
+
+        finalResults.push({
+          student: student, // Guardar el objeto estudiante completo
+          absenceCount: data.count,
+          missedClassIds: data.classIds, // Añadir los IDs de clases perdidas
+          missedClassNames: missedClassNames.length > 0 ? missedClassNames : ['Clase no especificada'],
+          // Añadir las fechas específicas de ausencia al resultado
+          absenceDates: data.dates 
+        });
+      } else {
+        console.warn(`Estudiante con ID ${studentId} ausente pero no encontrado en el store.`);
+      }
+    }
+
+    // Ordenar resultados (opcional, por ejemplo por número de ausencias)
+    results.value = finalResults.sort((a, b) => b.absenceCount - a.absenceCount);
+    
+    if (results.value.length === 0) {
+        console.log("No se encontraron resultados de ausencias para el rango especificado.");
+    } else {
+        console.log("Resultados encontrados:", results.value);
+    }
+
+  } catch (err: any) {
+    console.error("Error durante la búsqueda de ausencias:", err);
+    error.value = "Ocurrió un error al buscar las ausencias. Intente de nuevo.";
+    // toast({ title: "Error", description: error.value, variant: "destructive" }); // Descomentar si se usa toast
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// --- Funciones Helper ---
+const getInitials = (name: string, surname: string) => {
+  if (!name || !surname) return '';
+  return `${name.charAt(0)}${surname.charAt(0)}`.toUpperCase();
+};
+
+const contactStudent = (student: Student) => {
+  console.log("Contactar estudiante:", student);
+  // Implementar lógica de contacto
+};
+
+const viewAttendance = (student: Student) => {
+  console.log("Ver asistencia de:", student);
+  // Implementar navegación a detalle de asistencia
+};
+
+
+// These methods are required by TeachersHomeView.vue
+const analyzeWeeklyAbsences = async () => {
+  console.log("AbsenceAlertList: Analizando ausencias semanales...");
+  
+  // Obtener rango de la semana actual
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)); // Iniciar semana en lunes
+  weekStart.setHours(0, 0, 0, 0);
+  
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+  
+  // Establecer fechas para la búsqueda
+  startDate.value = formatISO(weekStart, { representation: 'date' });
+  endDate.value = formatISO(weekEnd, { representation: 'date' });
+  
+  // Buscar ausencias
+  await searchAbsences();
+  
+  // Convertir resultados al formato esperado por TeachersHomeView
+  weeklyAbsences.value = results.value.map(result => ({
+    student: result.student,
+    absences: result.absenceCount,
+    absenceDates: result.absenceDates,
+    classNames: result.missedClassNames
+  }));
+  
+  return weeklyAbsences.value;
+};
+
+const analyzeMonthlyAbsences = async () => {
+  console.log("AbsenceAlertList: Analizando ausencias mensuales...");
+  
+  // Obtener rango del mes actual
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  monthEnd.setHours(23, 59, 59, 999);
+  
+  // Establecer fechas para la búsqueda
+  startDate.value = formatISO(monthStart, { representation: 'date' });
+  endDate.value = formatISO(monthEnd, { representation: 'date' });
+  
+  // Buscar ausencias
+  await searchAbsences();
+  
+  // Convertir resultados al formato esperado
+  monthlyAbsences.value = results.value.map(result => ({
+    student: result.student,
+    absences: result.absenceCount,
+    absenceDates: result.absenceDates,
+    classNames: result.missedClassNames
+  }));
+  
+  return monthlyAbsences.value;
+};
+
+const getWeeklyAbsences = () => {
+  return weeklyAbsences.value;
+};
+
+const getMonthlyAbsences = () => {
+  return monthlyAbsences.value;
+};
+
+// Create a computed property for date ranges debug information
+const dateRanges = computed(() => ({
+  startDate: startDate.value,
+  endDate: endDate.value,
+  normalized: {
+    start: startDate.value ? normalizeDate(startDate.value) : null,
+    end: endDate.value ? normalizeDate(endDate.value) : null
+  }
+}));
+
+// Expose methods required by TeachersHomeView
+defineExpose({
+  analyzeWeeklyAbsences,
+  analyzeMonthlyAbsences,
+  getWeeklyAbsences,
+  getMonthlyAbsences,
+  debugDateInfo: dateRanges
+});
+
+// Inicializar búsqueda al montar el componente
+onMounted(async () => {
+  if (!startDate.value || !endDate.value) {
+    // Si no hay fechas seleccionadas, usar por defecto la semana actual
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)); // Iniciar semana en lunes
+    weekStart.setHours(0, 0, 0, 0);
+    
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+    
+    startDate.value = formatISO(weekStart, { representation: 'date' });
+    endDate.value = formatISO(weekEnd, { representation: 'date' });
+  }
+});
+</script>
+
 <template>
-  <div class="absence-alert-list">
-    <div v-if="loading" class="loading">
-      <div class="spinner"></div>
-      <p>Analizando datos de asistencia...</p>
+  <div class="absence-alert-list p-4">
+    <h2 class="text-xl font-bold mb-4">Alertas de Inasistencias</h2>
+    
+    <!-- Selector de fecha -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-6">
+      <div class="flex-1">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
+        <input
+          v-model="startDate"
+          type="date"
+          class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+      <div class="flex-1">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
+        <input
+          v-model="endDate"
+          type="date"
+          class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+      <div class="flex items-end">
+        <button
+          @click="searchAbsences"
+          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          :disabled="isLoading"
+        >
+          {{ isLoading ? 'Buscando...' : 'Buscar' }}
+        </button>
+      </div>
     </div>
-
-    <div v-else class="alert-container">
-      <div class="tabs mb-4">
-        <button 
-          @click="activeTab = 'all'" 
-          :class="{'active-tab': activeTab === 'all'}" 
-          class="tab-button">
-          Todas las alertas
+    
+    <!-- Estado de carga -->
+    <div v-if="isLoading" class="flex justify-center items-center py-8">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <span class="ml-2">Cargando datos de asistencia...</span>
+    </div>
+    
+    <!-- Error -->
+    <div v-else-if="error" class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-md mb-6">
+      {{ error }}
+    </div>
+    
+    <!-- Resultados -->
+    <div v-if="!isLoading && results.length > 0" class="results-list space-y-4">
+     <h3 class="text-xl font-semibold mb-4 text-gray-700">Resultados de la Búsqueda ({{ results.length }} estudiantes)</h3>
+    <div
+      v-for="result in results"
+      :key="result.student.id"
+      class="bg-white shadow rounded-lg p-4 flex flex-col md:flex-row gap-4 items-start hover:shadow-md transition"
+    >
+      <div class="flex-grow text-sm text-gray-700 space-y-1 w-full md:w-auto">
+        <h4 class="font-semibold text-gray-900">
+          {{ result.student.nombre }} {{ result.student.apellido }}
+        </h4>
+        <p class="text-sm text-gray-500">{{ result.absenceCount }} inasistencias</p>
+        <div class="mt-1">
+          <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded mr-1 inline-block mb-1"
+            v-for="(className, index) in result.missedClassNames" :key="index">
+            {{ className }}
+          </span>
+        </div>
+        <!-- Mostrar fechas normalizadas -->
+        <div v-if="result.absenceDates && result.absenceDates.length > 0">
+           <span class="font-medium">Fechas Ausente:</span>
+           <ul class="list-disc list-inside ml-1 text-xs">
+               <li v-for="(dateStr, index) in result.absenceDates.slice(0, 5)" :key="index">
+                   {{ new Date(normalizeDate(dateStr)).toLocaleDateString('es-ES') }} 
+                   <!-- Mostrar fecha original si la normalización falla -->
+                   <span v-if="!isValid(normalizeDate(dateStr)) || normalizeDate(dateStr).getTime() === 0" class="text-red-500 text-xs">(Fecha original: {{ dateStr }})</span>
+               </li>
+               <li v-if="result.absenceDates.length > 5" class="italic">... y {{ result.absenceDates.length - 5 }} más</li>
+           </ul>
+        </div>
+      </div>
+      <div class="flex space-x-2">
+        <button
+          @click="() => contactStudent(result.student)"
+          class="p-1 text-blue-600 hover:text-blue-800"
+          title="Contactar"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+          </svg>
         </button>
-        <button 
-          @click="activeTab = 'weekly'" 
-          :class="{'active-tab': activeTab === 'weekly'}" 
-          class="tab-button">
-          Ausentes por semana
-        </button>
-        <button 
-          @click="activeTab = 'monthly'" 
-          :class="{'active-tab': activeTab === 'monthly'}" 
-          class="tab-button">
-          Ausentes por mes
+        <button
+          @click="() => viewAttendance(result.student)"
+          class="p-1 text-gray-600 hover:text-gray-800"
+          title="Ver detalles"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+          </svg>
         </button>
       </div>
-
-      <!-- Debug info panel -->
-      <!-- <div class="debug-panel bg-gray-100 p-3 mb-4 rounded text-xs font-mono">
-        <p>Semana actual: {{ debugDateInfo.week.start }} - {{ debugDateInfo.week.end }}</p>
-        <p>Mes actual: {{ debugDateInfo.month.start }} - {{ debugDateInfo.month.end }}</p>
-        <p>Total registros: {{ debugDateInfo.totalAttendanceRecords }}, Ausencias: {{ debugDateInfo.absentRecords }}</p>
-      </div> -->
-
-      <h3 class="section-title">
-        {{ activeTab === 'all' ? 'Alertas de Ausencias' : 
-           activeTab === 'weekly' ? 'Ausentes por Semana' : 'Ausentes por Mes' }}
-      </h3>
-      
-      <!-- Vista de todas las alertas (original) -->
-      <div v-if="activeTab === 'all'">
-        <div v-if="absenceReport.length === 0" class="empty-state">
-          <p>No hay alertas de ausencias que mostrar</p>
-        </div>
-
-        <div v-else class="alerts-list">
-          <div 
-            v-for="report in absenceReport" 
-            :key="report.student.id"
-            class="alert-card"
-            :class="{'high-risk': report.consecutiveAbsences >= 3}"
-          >
-            <div class="student-info">
-              <img 
-                v-if="report.student.photoURL" 
-                :src="report.student.photoURL" 
-                :alt="`Foto de ${report.student.nombre}`" 
-                class="student-photo"
-              />
-              <div v-else class="photo-placeholder">
-                {{ getInitials(report.student.nombre, report.student.apellido) }}
-              </div>
-              
-              <div class="student-details">
-                <h4>{{ report.student.nombre }} {{ report.student.apellido }}</h4>
-                <div class="tags">
-                  <span v-if="report.student.instrumento" class="tag instrument">
-                    {{ report.student.instrumento }}
-                  </span>
-                  <span v-if="report.student.clase" class="tag class">
-                    {{ report.student.clase }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div class="absence-stats">
-              <div class="stat">
-                <span class="value">{{ report.consecutiveAbsences }}</span>
-                <span class="label">Ausencias consecutivas</span>
-              </div>
-              <div class="stat">
-                <span class="value">{{ report.totalAbsences }}</span>
-                <span class="label">Total ausencias</span>
-              </div>
-              <div v-if="report.lastAbsenceDate" class="last-date">
-                <span class="label">Última ausencia:</span>
-                <span class="value">{{ formatDate(report.lastAbsenceDate) }}</span>
-              </div>
-            </div>
-
-            <div class="actions">
-              <button class="btn contact-btn" @click="contactStudent(report.student)">
-                Contactar
-              </button>
-              <button class="btn view-btn" @click="viewAttendance(report.student)">
-                Ver asistencia
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Vista de ausencias por semana -->
-      <div v-if="activeTab === 'weekly'">
-        <div v-if="weeklyAbsences.length === 0" class="empty-state">
-          <p>No hay alumnos con inasistencias en la semana actual ({{ debugDateInfo.week.start }} - {{ debugDateInfo.week.end }})</p>
-        </div>
-
-        <div v-else class="alerts-list">
-          <div 
-            v-for="report in weeklyAbsences" 
-            :key="report.student.id"
-            class="alert-card"
-            :class="{
-              'high-risk': hasInstrumentClass(report.student.id) && report.absences > 2
-            }"
-          >
-            <div class="student-info">
-              <img 
-                v-if="report.student.photoURL" 
-                :src="report.student.photoURL" 
-                :alt="`Foto de ${report.student.nombre}`" 
-                class="student-photo"
-              />
-              <div v-else class="photo-placeholder">
-                {{ getInitials(report.student.nombre, report.student.apellido) }}
-              </div>
-              
-              <div class="student-details">
-                <h4>{{ report.student.nombre }} {{ report.student.apellido }}</h4>
-                <div class="tags">
-                  <span v-if="report.student.instrumento" class="tag instrument">
-                    {{ report.student.instrumento }}
-                  </span>
-                  <span v-if="hasInstrumentClass(report.student.id)" class="tag class">
-                    Con instrumento
-                  </span>
-                  <span v-if="isInPreparatoryClass(report.student.id)" class="tag class">
-                    Preparatoria/Iniciación
-                  </span>
-                </div>
-                <div class="class-list mt-1">
-                  <p class="text-xs text-gray-600">
-                    <span class="font-semibold">Clases:</span> {{ report.classNames?.join(', ') || 'No asignadas' }}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div class="absence-stats">
-              <div class="stat">
-                <span class="value">{{ report.absences }}</span>
-                <span class="label">Ausencias esta semana</span>
-              </div>
-              <div class="absence-dates">
-                <span class="label">Fechas:</span>
-                <span class="dates">
-                  {{ report.absenceDates.map(date => new Date(date).toLocaleDateString('es-ES')).join(', ') }}
-                </span>
-              </div>
-              <div class="stat phone mt-2">
-                <span class="label">Teléfono:</span>
-                <span class="value phone-number">{{ report.parentPhone }}</span>
-              </div>
-            </div>
-
-            <div class="actions">
-              <button class="btn contact-btn" @click="contactStudent(report.student)">
-                Contactar
-              </button>
-              <button class="btn view-btn" @click="viewAttendance(report.student)">
-                Ver asistencia
-              </button>
-              <button class="btn notify-btn" @click="notifyAbsence(report.student)">
-                Notificar
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Vista de ausencias por mes -->
-      <div v-if="activeTab === 'monthly'">
-        <div v-if="monthlyAbsences.length === 0" class="empty-state">
-          <p>No hay alumnos con inasistencias en el mes actual ({{ debugDateInfo.month.start }} - {{ debugDateInfo.month.end }})</p>
-        </div>
-
-        <div v-else class="alerts-list">
-          <div 
-            v-for="report in monthlyAbsences" 
-            :key="report.student.id"
-            class="alert-card"
-            :class="{
-              'high-risk': hasInstrumentClass(report.student.id) && report.absences > 2
-            }"
-          >
-            <div class="student-info">
-              <img 
-                v-if="report.student.photoURL" 
-                :src="report.student.photoURL" 
-                :alt="`Foto de ${report.student.nombre}`" 
-                class="student-photo"
-              />
-              <div v-else class="photo-placeholder">
-                {{ getInitials(report.student.nombre, report.student.apellido) }}
-              </div>
-              
-              <div class="student-details">
-                <h4>{{ report.student.nombre }} {{ report.student.apellido }}</h4>
-                <div class="tags">
-                  <span v-if="report.student.instrumento" class="tag instrument">
-                    {{ report.student.instrumento }}
-                  </span>
-                  <span v-if="hasInstrumentClass(report.student.id)" class="tag class">
-                    Con instrumento
-                  </span>
-                  <span v-if="isInPreparatoryClass(report.student.id)" class="tag class">
-                    Preparatoria/Iniciación
-                  </span>
-                </div>
-                <div class="class-list mt-1">
-                  <p class="text-xs text-gray-600">
-                    <span class="font-semibold">Clases:</span> {{ report.classNames?.join(', ') || 'No asignadas' }}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div class="absence-stats">
-              <div class="stat">
-                <span class="value">{{ report.absences }}</span>
-                <span class="label">Ausencias este mes</span>
-              </div>
-              <div class="absence-dates">
-                <span class="label">Fechas (últimas 3):</span>
-                <span class="dates">
-                  {{ report.absenceDates.slice(0, 3).map(date => new Date(date).toLocaleDateString('es-ES')).join(', ') }}
-                  <span v-if="report.absenceDates.length > 3">...</span>
-                </span>
-              </div>
-              <div class="stat phone mt-2">
-                <span class="label">Teléfono:</span>
-                <span class="value phone-number">{{ report.parentPhone }}</span>
-              </div>
-            </div>
-
-            <div class="actions">
-              <button class="btn contact-btn" @click="contactStudent(report.student)">
-                Contactar
-              </button>
-              <button class="btn view-btn" @click="viewAttendance(report.student)">
-                Ver asistencia
-              </button>
-              <button class="btn notify-btn" @click="notifyAbsence(report.student)">
-                Notificar
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+    </div>
+  </div>
+    
+    <!-- Sin resultados -->
+    <div v-else-if="startDate && endDate && !isLoading" class="py-8 text-center text-gray-500">
+      No se encontraron inasistencias en el rango de fechas seleccionado.
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, defineExpose, computed } from 'vue';
-import { useStudentsStore } from '../modulos/Students/store/students';
-import { useAttendanceStore } from '../modulos/Attendance/store/attendance';
-import { useClassesStore } from '../modulos/Classes/store/classes';
-import { useNotificationsStore } from '../stores/notifications';
-import { useToast } from '../components/ui/toast/use-toast';
-import type { Student } from '../modulos/Students/types/student';
-
-const studentsStore = useStudentsStore();
-const attendanceStore = useAttendanceStore();
-const classesStore = useClassesStore();
-const notificationsStore = useNotificationsStore();
-const { toast } = useToast();
-
-// Interfaces
-interface AbsenceAnalysis {
-  consecutiveAbsences: number;
-  totalAbsences: number;
-  lastAbsenceDate: Date | null;
-}
-
-interface StudentAbsenceReport {
-  student: Student;
-  consecutiveAbsences: number;
-  totalAbsences: number;
-  lastAbsenceDate: Date | null;
-}
-
-interface WeeklyAbsenceReport {
-  student: Student;
-  absences: number;
-  records: any[];
-  absenceDates: string[];
-  parentPhone?: string;
-  classNames?: string[];
-}
-
-// Estados
-const absenceReport = ref<StudentAbsenceReport[]>([]);
-const weeklyAbsences = ref<WeeklyAbsenceReport[]>([]);
-const monthlyAbsences = ref<WeeklyAbsenceReport[]>([]);
-const loading = ref(true);
-const activeTab = ref('all');
-
-// Funciones para obtener rangos de fecha
-const getCurrentWeekDateRange = () => {
-  const today = new Date();
-  const day = today.getDay(); // 0 es domingo, 1 es lunes...
-  
-  // Calcular la fecha del lunes de esta semana
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-  monday.setHours(0, 0, 0, 0);
-  
-  // Calcular la fecha del sábado de esta semana
-  const saturday = new Date(monday);
-  saturday.setDate(monday.getDate() + 5);
-  saturday.setHours(23, 59, 59, 999);
-  
-  return { startDate: monday, endDate: saturday };
-};
-
-const getCurrentMonthDateRange = () => {
-  const today = new Date();
-  
-  // Primer día del mes actual
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-  firstDay.setHours(0, 0, 0, 0);
-  
-  // Último día del mes actual
-  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  lastDay.setHours(23, 59, 59, 999);
-  
-  return { startDate: firstDay, endDate: lastDay };
-};
-
-// Debug de fechas para verificar el funcionamiento
-const debugDateInfo = computed(() => {
-  const weekRange = getCurrentWeekDateRange();
-  const monthRange = getCurrentMonthDateRange();
-  
-  return {
-    week: {
-      start: weekRange.startDate.toLocaleDateString('es-ES'),
-      end: weekRange.endDate.toLocaleDateString('es-ES')
-    },
-    month: {
-      start: monthRange.startDate.toLocaleDateString('es-ES'),
-      end: monthRange.endDate.toLocaleDateString('es-ES')
-    },
-    totalAttendanceRecords: attendanceStore.records.length,
-    absentRecords: attendanceStore.records.filter(r => r.status === 'ausente').length
-  };
-});
-
-// Función para analizar ausencias de todos los estudiantes activos
-const analyzeAbsences = () => {
-  console.log("Analizando ausencias generales...");
-  loading.value = true;
-  
-  // First, get students with absences
-  const students = studentsStore.getActiveStudents;
-  
-  // Then analyze each student's absences
-  absenceReport.value = students
-    .map(student => {
-      const analysis = analyzeStudentAbsences(student.id, attendanceStore.records);
-      return {
-        student,
-        ...analysis
-      };
-    })
-    .filter(report => report.consecutiveAbsences >= 2 || report.totalAbsences >= 3)
-    .sort((a, b) => b.consecutiveAbsences - a.consecutiveAbsences);
-  
-  loading.value = false;
-  console.log(`Encontrados ${absenceReport.value.length} estudiantes con alertas de ausencias generales`);
-};
-
-// Analizador de ausencias por semana
-const analyzeWeeklyAbsences = () => {
-  console.log("Analizando ausencias por semana...");
-  console.log("Información de rango de fechas:", debugDateInfo.value);
-  
-  const { startDate, endDate } = getCurrentWeekDateRange();
-  const students = studentsStore.getActiveStudents;
-  
-  // Crear un mapa para contar ausencias por estudiante
-  const absentCountByStudent = new Map();
-  const absentDatesByStudent = new Map();
-  
-  // Iterar a través de todos los registros de asistencia
-  attendanceStore.records.forEach(record => {
-    const recordDate = new Date(record.date);
-    
-    // Verificar si el registro está en el rango de fecha y es una ausencia
-    if (recordDate >= startDate && 
-        recordDate <= endDate && 
-        record.status === 'ausente') {
-      
-      // Incrementar contador para este estudiante
-      const currentCount = absentCountByStudent.get(record.studentId) || 0;
-      absentCountByStudent.set(record.studentId, currentCount + 1);
-      
-      // Guardar las fechas de ausencia
-      const dates = absentDatesByStudent.get(record.studentId) || [];
-      dates.push(record.date);
-      absentDatesByStudent.set(record.studentId, dates);
-    }
-  });
-  
-  console.log("Mapa de ausencias por estudiante:", Object.fromEntries(absentCountByStudent));
-  
-  // Generar reportes para estudiantes con más de 2 ausencias
-  weeklyAbsences.value = Array.from(absentCountByStudent.entries())
-    .filter(([_, count]) => count > 1) // Cambié a > 1 para detectar más estudiantes
-    .map(([studentId, absences]) => {
-      const student = students.find(s => s.id === studentId);
-      if (!student) return null;
-      
-      // Obtener clases del estudiante
-      const studentClasses = classesStore.getClassesByStudentId(studentId);
-      const classNames = studentClasses.map(c => c.name);
-      
-      // Obtener registros de ausencia específicos
-      const records = attendanceStore.records.filter(
-        r => r.studentId === studentId && 
-             r.status === 'ausente' &&
-             new Date(r.date) >= startDate &&
-             new Date(r.date) <= endDate
-      );
-      
-      return {
-        student,
-        absences,
-        records,
-        absenceDates: absentDatesByStudent.get(studentId) || [],
-        parentPhone: student.parentPhone || 'No registrado',
-        classNames
-      };
-    })
-    .filter(Boolean) // Eliminar valores nulos
-    .sort((a, b) => b.absences - a.absences); // Ordenar por cantidad de ausencias
-    
-  console.log(`Encontrados ${weeklyAbsences.value.length} estudiantes con más de 1 ausencia esta semana`);
-  if (weeklyAbsences.value.length > 0) {
-    console.log("Primer estudiante con ausencias:", weeklyAbsences.value[0]);
-  }
-};
-
-// Analizador de ausencias por mes
-const analyzeMonthlyAbsences = () => {
-  console.log("Analizando ausencias por mes...");
-  
-  const { startDate, endDate } = getCurrentMonthDateRange();
-  const students = studentsStore.getActiveStudents;
-  
-  // Crear un mapa para contar ausencias por estudiante
-  const absentCountByStudent = new Map();
-  const absentDatesByStudent = new Map();
-  
-  // Iterar a través de todos los registros de asistencia
-  attendanceStore.records.forEach(record => {
-    const recordDate = new Date(record.date);
-    
-    // Verificar si el registro está en el rango de fecha y es una ausencia
-    if (recordDate >= startDate && 
-        recordDate <= endDate && 
-        record.status === 'ausente') {
-      
-      // Incrementar contador para este estudiante
-      const currentCount = absentCountByStudent.get(record.studentId) || 0;
-      absentCountByStudent.set(record.studentId, currentCount + 1);
-      
-      // Guardar las fechas de ausencia
-      const dates = absentDatesByStudent.get(record.studentId) || [];
-      dates.push(record.date);
-      absentDatesByStudent.set(record.studentId, dates);
-    }
-  });
-  
-  // Generar reportes para estudiantes con más de 2 ausencias
-  monthlyAbsences.value = Array.from(absentCountByStudent.entries())
-    .filter(([_, count]) => count > 1) // Cambié a > 1 para detectar más estudiantes
-    .map(([studentId, absences]) => {
-      const student = students.find(s => s.id === studentId);
-      if (!student) return null;
-      
-      // Obtener clases del estudiante
-      const studentClasses = classesStore.getClassesByStudentId(studentId);
-      const classNames = studentClasses.map(c => c.name);
-      
-      // Obtener registros de ausencia específicos
-      const records = attendanceStore.records.filter(
-        r => r.studentId === studentId && 
-             r.status === 'ausente' &&
-             new Date(r.date) >= startDate &&
-             new Date(r.date) <= endDate
-      );
-      
-      return {
-        student,
-        absences,
-        records,
-        absenceDates: absentDatesByStudent.get(studentId) || [],
-        parentPhone: student.parentPhone || 'No registrado',
-        classNames
-      };
-    })
-    .filter(Boolean) // Eliminar valores nulos
-    .sort((a, b) => b.absences - a.absences); // Ordenar por cantidad de ausencias
-    
-  console.log(`Encontrados ${monthlyAbsences.value.length} estudiantes con más de 1 ausencia este mes`);
-};
-
-onMounted(async () => {
-  console.log("Componente AbsenceAlertList montado, cargando datos...");
-  loading.value = true;
-  
-  try {
-    await studentsStore.fetchStudents();
-    console.log(`Cargados ${studentsStore.students.length} estudiantes`);
-    
-    // Calculate a date 30 days ago to use as startDate for attendance records
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const startDate = thirtyDaysAgo.toISOString().split('T')[0];
-    
-    await attendanceStore.fetchRecordsForMultipleEntities({ startDate });
-    console.log(`Cargados ${attendanceStore.records.length} registros de asistencia`);
-    
-    analyzeAbsences(); // Now this function will be properly defined
-    analyzeWeeklyAbsences();
-    analyzeMonthlyAbsences();
-  } catch (error) {
-    console.error("Error al cargar datos de asistencia:", error);
-  } finally {
-    loading.value = false;
-  }
-});
-
-// Función para verificar si un estudiante tiene clases con instrumentos
-const hasInstrumentClass = (studentId: string): boolean => {
-  const classes = classesStore.getClassesByStudentId(studentId);
-  return classes.some(classItem => 
-    ['Ensayo General', 'Ensayo Seccional', 'Taller', 'Talleres', 'Coro'].some(keyword => 
-      classItem.name.toLowerCase().includes(keyword.toLowerCase())
-    )
-  );
-};
-
-// Adding the missing analyzeStudentAbsences function
-const analyzeStudentAbsences = (studentId: string, attendanceRecords: any[]): any => {
-  // Filter records for this student
-  const studentRecords = attendanceRecords.filter(record => record.studentId === studentId);
-  
-  // Calculate absences
-  const absences = studentRecords.filter(record => record.status === 'absent' && !record.justified);
-  const justifiedAbsences = studentRecords.filter(record => record.status === 'absent' && record.justified);
-  
-  // Find dates of absences
-  const absenceDates = absences.map(record => record.date);
-  
-  // Count consecutive absences (simplified logic)
-  let maxConsecutive = 0;
-  let currentConsecutive = 0;
-  
-  // Sort dates first
-  const sortedDates = [...absenceDates].sort();
-  
-  // Check for consecutive dates (simplified, doesn't account for class schedule)
-  for (let i = 0; i < sortedDates.length; i++) {
-    if (i > 0) {
-      const prevDate = new Date(sortedDates[i-1]);
-      const currentDate = new Date(sortedDates[i]);
-      const diffDays = Math.round((currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
-      
-      if (diffDays <= 7) { // Within a week considered consecutive
-        currentConsecutive++;
-      } else {
-        currentConsecutive = 1;
-      }
-    } else {
-      currentConsecutive = 1;
-    }
-    
-    maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
-  }
-  
-  return {
-    totalAbsences: absences.length,
-    justifiedAbsences: justifiedAbsences.length,
-    consecutiveAbsences: maxConsecutive,
-    absenceDates: absenceDates,
-    lastAbsenceDate: absenceDates.length > 0 ? 
-      new Date(Math.max(...absenceDates.map(d => new Date(d).getTime()))) : null
-  };
-};
-
-// Función para notificar ausencia
-const notifyAbsence = async (student: Student) => {
-  try {
-    // Determinar la severidad basada en si el estudiante tiene instrumento o no
-    const hasInstrument = hasInstrumentClass(student.id);
-    const isPreparatory = isInPreparatoryClass(student.id);
-    
-    const severity = hasInstrument ? 'alta' : isPreparatory ? 'media' : 'baja';
-    const absenceType = activeTab.value === 'weekly' ? 'semanal' : 'mensual';
-    
-    // Crear la notificación para administradores y directores
-    const notificationId = await notificationsStore.sendNotification({
-      title: `⚠️ Alerta de Inasistencias - ${severity.toUpperCase()}`,
-      message: `${student.nombre} ${student.apellido} tiene inasistencias excesivas (${absenceType}). ${hasInstrument ? 'Estudiante con instrumento asignado.' : ''}`,
-      type: hasInstrument ? 'error' : 'warning',
-      recipientRoles: ['admin', 'director'],
-      link: `/students/${student.id}`,
-      details: {
-        studentId: student.id,
-        studentName: `${student.nombre} ${student.apellido}`,
-        instrument: student.instrumento || 'No asignado',
-        severity: severity,
-        absenceType: absenceType,
-        absenceCount: activeTab.value === 'weekly' ? 
-          weeklyAbsences.value.find(report => report.student.id === student.id)?.absences : 
-          monthlyAbsences.value.find(report => report.student.id === student.id)?.absences,
-        parentPhone: student.parentPhone || 'No registrado'
-      }
-    });
-
-    console.log('Notificación enviada con ID:', notificationId);
-    
-    toast({
-      title: "Notificación enviada",
-      description: `Se ha enviado una notificación a los administradores sobre las ausencias de ${student.nombre} ${student.apellido}`
-    });
-  } catch (error) {
-    console.error('Error al enviar notificación de ausencia:', error);
-    toast({
-      title: "Error",
-      description: "No se pudo enviar la notificación. Por favor, intente de nuevo.",
-      variant: "destructive"
-    });
-  }
-};
-
-// Exponemos las funciones para que puedan ser utilizadas por componentes padres
-defineExpose({
-  absenceReport,
-  weeklyAbsences,
-  monthlyAbsences,
-  getWeeklyAbsences: () => weeklyAbsences.value,
-  getMonthlyAbsences: () => monthlyAbsences.value,
-  analyzeAbsences,
-  analyzeWeeklyAbsences,
-  analyzeMonthlyAbsences,
-  debugDateInfo
-});
-</script>
-
 <style scoped>
-.absence-alert-list {
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 1rem;
-}
-
-.section-title {
-  font-size: 1.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid #f0f0f0;
-  padding-bottom: 0.5rem;
-}
-
-.loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-radius: 50%;
-  border-top-color: #3498db;
-  animation: spin 1s ease-in-out infinite;
-  margin-bottom: 1rem;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.tabs {
-  display: flex;
-  gap: 1rem;
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 0.5rem;
-  margin-bottom: 1.5rem;
-  overflow-x: auto;
-}
-
-.tab-button {
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  background-color: transparent;
-  color: #6b7280;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.tab-button:hover {
-  background-color: #f3f4f6;
-}
-
-.active-tab {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.alert-card {
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 1rem;
-  margin-bottom: 1rem;
-  display: grid;
-  grid-template-columns: minmax(200px, 1fr) minmax(200px, 1fr) 180px;
-  gap: 1rem;
-  transition: all 0.2s ease;
-}
-
-.alert-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
-.alert-card.high-risk {
-  border-left: 4px solid #e74c3c;
-}
-
-.student-info {
-  display: flex;
-  align-items: center;
-}
-
-.student-photo, .photo-placeholder {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  margin-right: 1rem;
-  object-fit: cover;
-}
-
-.photo-placeholder {
-  background-color: #3498db;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-}
-
-.student-details h4 {
-  margin: 0 0 0.5rem;
-  font-size: 1.1rem;
-}
-
-.tags {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.tag {
-  font-size: 0.8rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-}
-
-.tag.instrument {
-  background-color: #e3f2fd;
-  color: #1565c0;
-}
-
-.tag.class {
-  background-color: #f1f8e9;
-  color: #558b2f;
-}
-
-.absence-stats {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.stat {
-  margin-bottom: 0.5rem;
-  display: flex;
-  flex-direction: column;
-}
-
-.stat .value {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #e74c3c;
-}
-
-.stat .label {
-  font-size: 0.8rem;
-  color: #7f8c8d;
-}
-
-.severity .value .severity-high {
-  color: #e74c3c;
-}
-
-.severity .value .severity-medium {
-  color: #f39c12;
-}
-
-.last-date {
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-}
-
-.last-date .label {
-  margin-right: 0.5rem;
-  color: #7f8c8d;
-}
-
-.actions {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.2s;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.contact-btn {
-  background-color: #3498db;
-  color: white;
-}
-
-.contact-btn:hover {
-  background-color: #2980b9;
-}
-
-.view-btn {
-  background-color: #f8f9fa;
-  color: #495057;
-  border: 1px solid #dee2e6;
-}
-
-.view-btn:hover {
-  background-color: #e9ecef;
-}
-
-.notify-btn {
-  background-color: #f3a046;
-  color: white;
-}
-
-.notify-btn:hover {
-  background-color: #e67e22;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 2rem;
-  color: #7f8c8d;
-}
-
-.absence-dates {
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.absence-dates .label {
-  color: #7f8c8d;
-  font-weight: 500;
-}
-
-.absence-dates .dates {
-  display: inline-block;
-  margin-left: 0.25rem;
-  color: #4b5563;
-}
-
-.phone-number {
-  font-family: monospace;
-  letter-spacing: 0.5px;
-}
-
-.class-list {
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-@media (max-width: 768px) {
-  .alert-card {
-    grid-template-columns: 1fr;
-  }
+.results-list {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
 }
 </style>

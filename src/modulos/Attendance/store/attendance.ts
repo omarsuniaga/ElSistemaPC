@@ -1,7 +1,7 @@
 // src/stores/attendance.ts
 import { defineStore } from 'pinia'
-import { format, parseISO, eachDayOfInterval, isValid } from 'date-fns'
-import { collection, getDocs, query, where } from 'firebase/firestore'
+import { format, parseISO, isValid } from 'date-fns'
+import { collection, getDocs, query } from 'firebase/firestore'
 import { db } from '../../../firebase'
 import type { 
   AttendanceRecord, 
@@ -10,6 +10,15 @@ import type {
   AttendanceDocument, 
   ClassObservation
 } from '../types/attendance'
+import { 
+  normalizeDate, 
+  validateAttendanceDate, 
+  calculateAbsentStudents, 
+  generateAttendanceReport,
+  cleanData,
+  analyzeWeeklyAbsences,
+  convertDocumentsToRecords
+} from '../utils/attendanceAnalytics'
 
 // Interface for fetching attendance records
 interface FetchAttendanceRecordsParams {

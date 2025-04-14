@@ -4,49 +4,36 @@ import { useClassesStore } from '../../../../modulos/Classes/store/classes';
 import { useTeachersStore } from '../../store/teachers';
 import { useStudentsStore } from '../../../../modulos/Students/store/students';
 import { useAuthStore } from '../../../../stores/auth';
-import { 
-  CalendarIcon, 
-  BookOpenIcon, 
-  ClockIcon, 
+import {
+  CalendarIcon,
+  BookOpenIcon,
+  ClockIcon,
   UserGroupIcon,
-  PlusIcon,
-  PencilIcon,
   ChartBarSquareIcon,
-  Bars3Icon // Agregamos icono para menú móvil
+  Squares2X2Icon // Add this new icon for dashboard
 } from '@heroicons/vue/24/outline';
 import { useToast } from '../../../../components/ui/toast/use-toast';
-import { Dialog, DialogPanel, DialogOverlay, TransitionRoot, TransitionChild } from '@headlessui/vue';
-import TeacherWeeklySchedule from '../../components/TeacherWeeklySchedule.vue';
-import TeacherClassesCard from '../../components/TeacherClassesCard.vue';
-import ClassForm from '@/modulos/Classes/components/ClassForm.vue';
-import ClassStudentManager from '@/modulos/Classes/components/ClassStudentManager.vue';
-import TeacherDashboard from '../../../../components/teachers/TeacherDashboard.vue';
+import { useRouter } from 'vue-router'; // Add router import if it's not already there
+
+// Import new components
+import TeacherMobileHeader from '../../components/TeacherMobileHeader.vue';
+import TeacherMobileSideMenu from '../../components/TeacherMobileSideMenu.vue';
+import TeacherDesktopHeader from '../../components/TeacherDesktopHeader.vue';
+import TeacherNotificationsTab from '../../components/TeacherNotificationsTab.vue';
+import TeacherScheduleTab from '../../components/TeacherScheduleTab.vue';
+import TeacherClassesTab from '../../components/TeacherClassesTab.vue';
+import TeacherUpcomingTab from '../../components/TeacherUpcomingTab.vue';
+import TeacherClassFormModal from '../../components/TeacherClassFormModal.vue';
+import TeacherStudentManagerModal from '../../components/TeacherStudentManagerModal.vue';
 import AbsenceAlertList from '../../../../components/AbsenceAlertList.vue';
 
-// Types
-interface ClassScheduleSlot {
-  day: string;
-  startTime: string;
-  endTime: string;
-}
-
-// Update ClassData interface to make more fields optional
-interface ClassData {
-  id: string;
-  name: string;
-  description?: string;
-  level?: string;  // Make level optional
-  teacherId?: string;  // Make teacherId optional
-  studentIds?: string[];  // Make studentIds optional
-  schedule?: {
-    slots: ClassScheduleSlot[];
-  };
-  classroom?: string;
-  instrument?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-  status?: string;
-}
+// Import types
+import type {
+  ClassData,
+  ClassScheduleSlot,
+  AbsenceAlertListExposed,
+  Notification // Import Notification type
+} from '../../types/teacherTypes';
 
 // Stores
 const classesStore = useClassesStore();
@@ -55,91 +42,73 @@ const studentsStore = useStudentsStore();
 const authStore = useAuthStore();
 const { toast } = useToast();
 
+// Add router
+const router = useRouter();
+
 // Estados
 const loading = ref(true);
-const activeTab = ref('classes'); // 'overview', 'schedule', 'classes', 'upcoming', 'statistics'
+const activeTab = ref('classes'); // Default tab
 const selectedClassId = ref('');
 const showForm = ref(false);
 const showStudentManager = ref(false);
 const isEditing = ref(false);
+const showMobileMenu = ref(false);
 
 // Configuración para navegación móvil
-const showMobileMenu = ref(false);
 const toggleMobileMenu = () => {
   showMobileMenu.value = !showMobileMenu.value;
 };
 
-// En el script del componente
-const DAYS_ORDER = {
-  'Lun': 1,
-  'Mar': 2,
-  'Mié': 3,
-  'Jue': 4,
-  'Vie': 5,
-  'Sáb': 6,
-  'Dom': 7
-}
+// Order of days
+const DAYS_ORDER = { 'Lun': 1, 'Mar': 2, 'Mié': 3, 'Jue': 4, 'Vie': 5, 'Sáb': 6, 'Dom': 7 };
 
 // Estructura de navegación para footer móvil
 const navigationItems = computed(() => [
-  {
-    id: 'classes',
-    name: 'Clases',
-    icon: BookOpenIcon,
-    active: activeTab.value === 'classes'
-  },
-  {
-    id: 'overview',
-    name: 'Panel',
-    icon: ChartBarSquareIcon,
-    active: activeTab.value === 'overview'
-  },
-  {
-    id: 'schedule',
-    name: 'Horario',
-    icon: CalendarIcon,
-    active: activeTab.value === 'schedule'
-  },
-  {
-    id: 'upcoming',
-    name: 'Próximas',
-    icon: ClockIcon,
-    active: activeTab.value === 'upcoming'
-  }
+  { id: 'classes', name: 'Clases', icon: BookOpenIcon, active: activeTab.value === 'classes' },
+  { id: 'overview', name: 'Panel', icon: ChartBarSquareIcon, active: activeTab.value === 'overview' },
+  { id: 'schedule', name: 'Horario', icon: CalendarIcon, active: activeTab.value === 'schedule' },
+  { id: 'upcoming', name: 'Próximas', icon: ClockIcon, active: activeTab.value === 'upcoming' },
+  { id: 'dashboard', name: 'Dashboard', icon: Squares2X2Icon, active: activeTab.value === 'dashboard' }
 ]);
 
-// Computar el ID del maestro actual desde el sistema de autenticación
-// En un sistema real, esto vendría del usuario autenticado
 const currentTeacherId = computed(() => authStore.user?.uid || '');
 
-// Computar clases del maestro actual
 const teacherClasses = computed(() => {
   return classesStore.classes.filter(classItem => classItem.teacherId === currentTeacherId.value);
 });
 
-// Clase seleccionada
 const selectedClass = computed(() => {
   if (!selectedClassId.value) return null;
-  return classesStore.getClassById(selectedClassId.value);
+  const foundClass = classesStore.getClassById(selectedClassId.value);
+  return foundClass || null; // Convert undefined to null if class not found
 });
 
-// Ordenar clases por día y hora de inicio
-const sortedClasses = computed(() => {
-  const sorted = sortClasses(teacherClasses.value)
-  console.log('Clases ordenadas:', sorted)
-  return sorted
-})
+// Sort classes function
+const sortClasses = (classes: ClassData[]): ClassData[] => {
+  return [...classes].sort((a: ClassData, b: ClassData) => {
+    const slotA = a.schedule?.slots?.[0] || {} as ClassScheduleSlot;
+    const slotB = b.schedule?.slots?.[0] || {} as ClassScheduleSlot;
+    const dayA = (slotA.day?.slice(0, 3) || '') as keyof typeof DAYS_ORDER;
+    const dayB = (slotB.day?.slice(0, 3) || '') as keyof typeof DAYS_ORDER;
+    const dayOrderA = DAYS_ORDER[dayA] || 0;
+    const dayOrderB = DAYS_ORDER[dayB] || 0;
+    if (dayOrderA !== dayOrderB) return dayOrderA - dayOrderB;
+    const timeA = new Date(`1970-01-01T${slotA.startTime || '00:00'}`).getTime();
+    const timeB = new Date(`1970-01-01T${slotB.startTime || '00:00'}`).getTime();
+    return timeA - timeB;
+  });
+}
+
+const sortedClasses = computed(() => sortClasses(teacherClasses.value));
+
 // Métricas para el dashboard
 const dashboardMetrics = computed(() => {
   const classes = teacherClasses.value;
-  const totalStudents = classes.reduce((acc, curr) => {
-    return acc + (curr.studentIds?.length || 0);
-  }, 0);
-  
+  const totalStudents = classes.reduce((acc, curr) => acc + (curr.studentIds?.length || 0), 0);
   const totalHours = classes.reduce((acc, curr) => {
-    if (!curr.schedule || !curr.schedule.slots) return acc;
-    
+    if (!curr.schedule?.slots) return acc;
     return acc + curr.schedule.slots.reduce((slotAcc, slot) => {
+      if (!slot.startTime || !slot.endTime) return slotAcc;
       const startTime = slot.startTime.split(':').map(Number);
       const endTime = slot.endTime.split(':').map(Number);
       const hours = endTime[0] - startTime[0];
@@ -147,188 +116,140 @@ const dashboardMetrics = computed(() => {
       return slotAcc + hours + (minutes / 60);
     }, 0);
   }, 0);
-  
+  const classesToday = upcomingClasses.value.filter(c => {
+        const nextSession = getNextSession(c);
+        const today = new Date();
+        return nextSession.getDate() === today.getDate() &&
+               nextSession.getMonth() === today.getMonth() &&
+               nextSession.getFullYear() === today.getFullYear();
+    }).length;
+
   return [
-    { 
-      title: 'Clases Asignadas', 
-      value: classes.length, 
-      icon: BookOpenIcon,
-      color: 'bg-blue-100 text-blue-800'
-    },
-    { 
-      title: 'Total Estudiantes', 
-      value: totalStudents, 
-      icon: UserGroupIcon,
-      color: 'bg-purple-100 text-purple-800'
-    },
-    { 
-      title: 'Horas Semanales', 
-      value: Math.round(totalHours * 10) / 10, 
-      icon: ClockIcon,
-      color: 'bg-green-100 text-green-800'
-    },
-    { 
-      title: 'Clases Hoy', 
-      value: upcomingClasses.value.length, 
-      icon: CalendarIcon,
-      color: 'bg-amber-100 text-amber-800'
-    }
+    { title: 'Clases Asignadas', value: classes.length, icon: BookOpenIcon, color: 'bg-blue-100 text-blue-800' },
+    { title: 'Total Estudiantes', value: totalStudents, icon: UserGroupIcon, color: 'bg-purple-100 text-purple-800' },
+    { title: 'Horas Semanales', value: Math.round(totalHours * 10) / 10, icon: ClockIcon, color: 'bg-green-100 text-green-800' },
+    { title: 'Clases Hoy', value: classesToday, icon: CalendarIcon, color: 'bg-amber-100 text-amber-800' }
   ];
 });
 
-const sortClasses = (classes) => {
-  return classes.sort((a, b) => {
-    // Obtener el primer slot de cada clase (asumiendo que cada clase tiene un solo slot)
-    const slotA = a.schedule?.slots?.[0] || {};
-    const slotB = b.schedule?.slots?.[0] || {};
-    
-    // Obtener el día en español y convertirlo al formato abreviado
-    const dayA = slotA.day?.slice(0, 3) || ''; // "Sábado" -> "Sáb"
-    const dayB = slotB.day?.slice(0, 3) || '';
-    
-    // Ordenar por día usando DAYS_ORDER
-    const dayOrderA = DAYS_ORDER[dayA] || 0;
-    const dayOrderB = DAYS_ORDER[dayB] || 0;
-    
-    if (dayOrderA !== dayOrderB) {
-      return dayOrderA - dayOrderB;
-    }
-    
-    // Si el día es el mismo, ordenar por hora de inicio
-    const timeA = new Date(`1970-01-01T${slotA.startTime}`).getTime();
-    const timeB = new Date(`1970-01-01T${slotB.startTime}`).getTime();
-    
-    return timeA - timeB;
-  });
+// Funciones auxiliares de fecha
+function getNumericDay(dayName: string): number {
+    const daysMap: { [key: string]: number } = {
+        'Dom': 0, 'Lun': 1, 'Mar': 2, 'Mié': 3, 'Jue': 4, 'Vie': 5, 'Sáb': 6
+    };
+    // Handle full names or abbreviations
+    const key = dayName?.slice(0, 3) as keyof typeof daysMap;
+    return daysMap[key] !== undefined ? daysMap[key] : -1; // Return -1 if day is invalid
 }
 
-// Próximas clases del maestro (próximas 24 horas)
-const upcomingClasses = computed(() => {
-  const now = new Date();
-  const tomorrow = new Date();
-  tomorrow.setHours(now.getHours() + 24);
-  
-  return teacherClasses.value
-    .filter(classItem => {
-      if (!classItem.schedule?.slots) return false;
-      
-      return classItem.schedule.slots.some(slot => {
-        const slotDate = getNextClassDate(slot.day, slot.startTime);
-        return slotDate >= now && slotDate <= tomorrow;
-      });
-    })
-    .map(classItem => ({
-      ...classItem,
-      id: classItem.id,
-      name: classItem.name,
-      level: classItem.level || 'No especificado',
-      teacherId: classItem.teacherId || '',
-      studentIds: classItem.studentIds || []
-    }))
-    .sort((a, b) => {
-      const aNextSession = getNextSession(a);
-      const bNextSession = getNextSession(b);
-      return aNextSession.getTime() - bNextSession.getTime();
-    });
-});
+function getNextClassDate(day: string | undefined, time: string | undefined): Date {
+  const targetDay = getNumericDay(day || '');
+  const timeStr = time || '00:00';
 
-// Notificaciones de prueba
-const notifications = ref([
-  {
-    id: 1,
-    title: 'Nueva clase asignada',
-    message: 'Se te ha asignado la clase de Piano Intermedio',
-    date: new Date(),
-    read: false,
-    type: 'info'
-  },
-  {
-    id: 2,
-    title: 'Recordatorio',
-    message: 'Recuerda actualizar la lista de asistencia',
-    date: new Date(Date.now() - 86400000),
-    read: true,
-    type: 'reminder'
+  if (targetDay === -1) {
+      // Handle invalid day - return a date far in the future or throw an error
+      const futureDate = new Date();
+      futureDate.setFullYear(futureDate.getFullYear() + 10);
+      return futureDate;
   }
-]);
 
-// Funciones auxiliares
-function getNextClassDate(day: string, time: string): Date {
   const today = new Date();
-  const currentDay = today.getDay();
-  const targetDay = parseInt(day, 10);
-  const daysUntilClass = (7 + targetDay - currentDay) % 7;
-  
+  const currentDay = today.getDay(); // 0 (Sun) to 6 (Sat)
+  let daysUntilClass = (targetDay - currentDay + 7) % 7;
+
   const classDate = new Date(today);
   classDate.setDate(today.getDate() + daysUntilClass);
-  
-  const [hours, minutes] = time.split(':').map(Number);
+
+  const [hours, minutes] = timeStr.split(':').map(Number);
   classDate.setHours(hours, minutes, 0, 0);
-  
-  // Si la clase es hoy pero ya pasó, añadimos 7 días
+
+  // If the class is today but the time has already passed, calculate for next week
   if (daysUntilClass === 0 && classDate < today) {
     classDate.setDate(classDate.getDate() + 7);
   }
-  
+
   return classDate;
 }
 
 function getNextSession(classItem: ClassData): Date {
   const now = new Date();
-  let closestDate = new Date();
-  closestDate.setDate(closestDate.getDate() + 8); // Inicializar con una fecha futura lejana
-  
+  let closestDate = new Date(8640000000000000); // Max Date far in the future
+
   if (classItem.schedule?.slots) {
     classItem.schedule.slots.forEach((slot: ClassScheduleSlot) => {
       const slotDate = getNextClassDate(slot.day, slot.startTime);
-      if (slotDate >= now && slotDate < closestDate) {
-        closestDate = slotDate;
-      }
+      // Check if slotDate is valid before comparison
+       if (slotDate.getFullYear() < 2100 && slotDate >= now && slotDate < closestDate) {
+           closestDate = slotDate;
+       }
     });
   }
-  
-  return closestDate;
+  // If no valid future slot found, return the far future date
+  return closestDate.getFullYear() > 2100 ? closestDate : closestDate;
 }
 
-// Función helper para limpiar el objeto y eliminar propiedades vacías
+
+// Próximas clases (próximas 7 días)
+const upcomingClasses = computed(() => {
+    const now = new Date();
+    const nextWeek = new Date(now);
+    nextWeek.setDate(now.getDate() + 7);
+
+    return teacherClasses.value
+        .map(classItem => ({
+            ...classItem,
+            nextSession: getNextSession(classItem)
+        }))
+        .filter(classItem => {
+             // Filter out classes with invalid nextSession date (far future date)
+             return classItem.nextSession.getFullYear() < 2100 &&
+                    classItem.nextSession >= now &&
+                    classItem.nextSession <= nextWeek;
+         })
+        .sort((a, b) => a.nextSession.getTime() - b.nextSession.getTime());
+});
+
+
+// Notificaciones (mantenido como ejemplo)
+const notifications = ref<Notification[]>([
+  { id: '1', title: 'Nueva clase asignada', message: 'Se te ha asignado la clase de Piano Intermedio', date: new Date(), read: false, type: 'info' },
+  { id: '2', title: 'Recordatorio', message: 'Recuerda actualizar la lista de asistencia', date: new Date(Date.now() - 86400000), read: true, type: 'reminder' }
+]);
+
+
 function cleanData(obj: Record<string, any>): Record<string, any> {
-  const cleaned: Record<string, any> = {};
-  Object.keys(obj).forEach(key => {
-    const value = obj[key];
-    if (value === null || value === undefined) return;
-    if (typeof value === 'string' && value.trim() === '') return;
-    if (Array.isArray(value) && value.length === 0) return;
-    if (typeof value === 'object' && !Array.isArray(value)) {
-      const cleanedValue = cleanData(value);
-      if (Object.keys(cleanedValue).length > 0) {
-        cleaned[key] = cleanedValue;
-      }
-      return;
-    }
-    cleaned[key] = value;
-  });
-  return cleaned;
+    const cleaned: Record<string, any> = {};
+    Object.keys(obj).forEach(key => {
+        const value = obj[key];
+        if (value === null || value === undefined) return;
+        if (typeof value === 'string' && value.trim() === '') return;
+        // Keep empty arrays if the key indicates it should be an array (like studentIds)
+        if (Array.isArray(value) && value.length === 0 && !key.toLowerCase().includes('ids')) return;
+        if (typeof value === 'object' && !Array.isArray(value)) {
+            const cleanedValue = cleanData(value);
+            if (Object.keys(cleanedValue).length > 0) {
+                cleaned[key] = cleanedValue;
+            }
+            return;
+        }
+        cleaned[key] = value;
+    });
+    return cleaned;
 }
 
-// Métodos para acciones del panel
-const filterTeachers = (): void => {
-  toast({
-    title: 'Gestionar Estudiantes',
-    description: 'Por favor, seleccione una clase primero para gestionar sus estudiantes'
-  });
-};
-
-// Manejadores de eventos para clases
+// Métodos para acciones
 const handleAddClass = (): void => {
   isEditing.value = false;
-  selectedClassId.value = '';
+  selectedClassId.value = ''; // Asegura que no haya ID seleccionado
   showForm.value = true;
 };
 
 const handleViewClass = (classId: string): void => {
-  selectedClassId.value = classId;
-  activeTab.value = 'classes'; // Cambiar a la pestaña de clases para ver detalles
+    console.warn("handleViewClass debe ser implementado o eliminado si no se usa.");
+    // selectedClassId.value = classId;
+    // activeTab.value = 'classes'; // O a una pestaña de detalle si existe
 };
+
 
 const handleEditClass = (classId: string): void => {
   selectedClassId.value = classId;
@@ -340,806 +261,396 @@ const handleDeleteClass = async (classId: string): Promise<void> => {
   if (confirm('¿Estás seguro de que deseas eliminar esta clase?')) {
     try {
       await classesStore.removeClass(classId);
-      toast({
-        title: "Clase Eliminada",
-        description: "La clase ha sido eliminada exitosamente."
-      });
-      
-      if (selectedClassId.value === classId) {
-        selectedClassId.value = '';
-      }
+      toast({ title: "Clase Eliminada", description: "La clase ha sido eliminada." });
+      if (selectedClassId.value === classId) selectedClassId.value = '';
     } catch (error) {
       console.error('Error al eliminar la clase:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar la clase. Intente nuevamente.",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "No se pudo eliminar la clase.", variant: "destructive" });
     }
   }
 };
 
 const handleManageStudents = (classId: string): void => {
-  // Aquí puedes abrir el modal o la vista para gestionar estudiantes
   selectedClassId.value = classId;
   showStudentManager.value = true;
 };
 
 const handleSaveClass = async (classData: Partial<ClassData>): Promise<void> => {
-  // Validación de datos
   try {
-    // Validación mínima
     if (!classData.name || !classData.level) {
-      toast({
-        title: "Error",
-        description: "El nombre y nivel son obligatorios",
-        variant: "destructive"
-      });
-      return;
+        toast({ title: "Error", description: "Nombre y nivel son obligatorios", variant: "destructive" });
+        return;
+    }
+    const teacherId = currentTeacherId.value;
+    if (!teacherId) {
+         toast({ title: "Error", description: "No se pudo identificar al profesor.", variant: "destructive" });
+         return;
     }
 
-    // Añadir automáticamente el ID del maestro actual
-    classData.teacherId = currentTeacherId.value || '';
+    // Ensure schedule and slots are initialized if provided
+    const schedule = classData.schedule?.slots ? {
+        slots: classData.schedule.slots.map(slot => cleanData({
+            day: slot.day,
+            startTime: slot.startTime,
+            endTime: slot.endTime
+        })).filter(slot => slot.day && slot.startTime && slot.endTime) // Filter out incomplete slots
+    } : undefined; // Set to undefined if no valid slots
 
-    // Preparar datos y limpiar propiedades vacías
+
     const preparedData = cleanData({
-      name: classData.name.trim(),
-      description: classData.description?.trim(),
-      level: classData.level,
-      teacherId: classData.teacherId,
-      classroom: classData.classroom?.trim(),
-      instrument: classData.instrument?.trim(),
-      schedule: {
-        slots: (classData.schedule?.slots || []).map((slot: ClassScheduleSlot) => cleanData({
-          day: slot.day,
-          startTime: slot.startTime,
-          endTime: slot.endTime
-        }))
-      },
-      studentIds: classData.studentIds
-    }) as { name: string; [key: string]: any };
-    if (isEditing.value) {
-      // Actualizar clase existente
-      await classesStore.updateClass({
-        ...preparedData,
-        id: selectedClassId.value
-      });
-      toast({
-        title: "Clase Actualizada",
-        description: `La clase "${preparedData.name}" ha sido actualizada exitosamente.`
-      });
+        name: classData.name?.trim(),
+        description: classData.description?.trim(),
+        level: classData.level,
+        teacherId: teacherId, // Use validated teacherId
+        classroom: classData.classroom?.trim(),
+        instrument: classData.instrument?.trim(),
+        schedule: schedule, // Use cleaned schedule
+        studentIds: classData.studentIds || [] // Default to empty array if null/undefined
+    }) as { name: string; level: string; teacherId: string; [key: string]: any };
+
+    if (isEditing.value && selectedClassId.value) {
+        await classesStore.updateClass({ ...preparedData, id: selectedClassId.value });
+        toast({ title: "Clase Actualizada", description: `Clase "${preparedData.name}" actualizada.` });
     } else {
-      // Crear nueva clase
-      const newClass = await classesStore.addClass(preparedData);
-      toast({
-        title: "Clase Creada",
-        description: `La clase "${preparedData.name}" ha sido creada exitosamente.`
-      });
-      selectedClassId.value = newClass.id;
+        const newClass = await classesStore.addClass(preparedData);
+        toast({ title: "Clase Creada", description: `Clase "${preparedData.name}" creada.` });
+        selectedClassId.value = newClass.id; // Update selected ID if needed
     }
     showForm.value = false;
   } catch (error) {
     console.error('Error al guardar la clase:', error);
-    toast({
-      title: "Error",
-      description: "No se pudo guardar la clase. Intente nuevamente.",
-      variant: "destructive"
-    });
+    toast({ title: "Error", description: "No se pudo guardar la clase.", variant: "destructive" });
   }
 };
 
-const handleStudentChange = async (studentIds: string[]): Promise<void> => {
-  try {
-    // Debugging: mostrar información sobre los datos recibidos
-    console.log('handleStudentChange recibido:', {
-      tipo: typeof studentIds,
-      esArray: Array.isArray(studentIds),
-      valor: studentIds
-    });
-    
-    // Convertir a array si no lo es
-    const validStudentIds = Array.isArray(studentIds) ? [...studentIds] : [];
-    
-    console.log('Actualizando clase:', selectedClassId.value);
-    console.log('Lista de estudiantes (normalizada):', validStudentIds);
-    
-    // Buscar la clase actual para comparación
-    const currentClass = classesStore.getClassById(selectedClassId.value);
-    console.log('Clase actual antes de actualizar:', currentClass);
-    
-    // Actualizar la clase con los nuevos estudiantes
-    await classesStore.updateClass({
-      id: selectedClassId.value,
-      studentIds: validStudentIds // Siempre será un array
-    });
-    
-    toast({
-      title: "Estudiantes Actualizados",
-      description: "La lista de estudiantes ha sido actualizada exitosamente."
-    });
-    
-    showStudentManager.value = false;
-  } catch (error) {
-    console.error('Error al actualizar estudiantes:', error);
-    toast({
-      title: "Error",
-      description: "No se pudieron actualizar los estudiantes. Intente nuevamente.",
-      variant: "destructive"
-    });
-  }
+
+const handleStudentChange = async (studentIds: string[] | null | undefined): Promise<void> => {
+    if (!selectedClassId.value) {
+        toast({ title: "Error", description: "No hay clase seleccionada.", variant: "destructive" });
+        return;
+    }
+
+    // Ensure studentIds is always an array, defaulting to empty if null/undefined
+    const validStudentIds = Array.isArray(studentIds) ? studentIds : [];
+
+    try {
+        await classesStore.updateClass({
+            id: selectedClassId.value,
+            studentIds: validStudentIds
+        });
+        toast({ title: "Estudiantes Actualizados", description: "Lista de estudiantes actualizada." });
+        showStudentManager.value = false;
+    } catch (error) {
+        console.error('Error al actualizar estudiantes:', error);
+        toast({ title: "Error", description: "No se pudieron actualizar los estudiantes.", variant: "destructive" });
+    }
 };
 
-// Formatear fecha para mostrar
-const formatDateTime = (date: Date): string => {
-  return date.toLocaleString('es-ES', {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+const formatDateTime = (date: Date | undefined | null): string => {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+        return 'Fecha inválida';
+    }
+    // Return date in a specific format
+    return date.toLocaleString('es-ES', {
+        weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true
+    });
 };
+
 
 // Cambiar de tab
 const setActiveTab = (tab: string): void => {
-    activeTab.value = tab;
+  // Handle navigation for specific tabs that redirect to separate views
+  if (tab === 'dashboard') {
+    navigateToView('/teachers/dashboard', 'dashboard');
+    return;
+  } else if (tab === 'notifications') {
+    navigateToView('/notifications', 'notifications');
+    return;
+  } else if (tab === 'analytics') {
+    navigateToView('/teachers/analytics', 'analytics');
+    return;
+  }
+    
+  // For other tabs, just update the active tab
+  activeTab.value = tab;
+  showMobileMenu.value = false; // Close mobile menu on tab change
 };
 
-// Referencia al componente AbsenceAlertList
-const absenceAlertListRef = ref(null);
+// Generic navigation method for external views
+const navigateToView = (path: string, tabId: string) => {
+  // Navigate to the specific view using router
+  router.push(path);
+  
+  // Update active tab for highlighting in the menu
+  activeTab.value = tabId;
+  
+  // Close mobile menu if open
+  showMobileMenu.value = false;
+}
 
-// Nuevas funciones para analizar ausencias
+const absenceAlertListRef = ref<AbsenceAlertListExposed | null>(null);
+
+// analyzeStudentAbsences function remains the same as provided before
 const analyzeStudentAbsences = () => {
-  if (!absenceAlertListRef.value) return;
-  
-  console.log("Información de fecha:", absenceAlertListRef.value.debugDateInfo);
-  
-  // Trigger the analysis in AbsenceAlertList component
-  absenceAlertListRef.value.analyzeWeeklyAbsences();
-  absenceAlertListRef.value.analyzeMonthlyAbsences();
-  
-  // Get results from the component
-  const weeklyAbsences = absenceAlertListRef.value.getWeeklyAbsences();
-  const monthlyAbsences = absenceAlertListRef.value.getMonthlyAbsences();
-  
-  console.log('===== ANÁLISIS DE AUSENCIAS =====');
-  
-  // Analizar ausencias por semana
-  console.log('\n1. Alumnos con más de 1 inasistencia por semana:');
-  if (weeklyAbsences.length === 0) {
-    console.log('No hay alumnos con más de 1 inasistencia en la última semana.');
-  } else {
-    const studentsWithInstruments = [];
-    const studentsWithoutInstruments = [];
-    
-    weeklyAbsences.forEach(report => {
-      const student = report.student;
-      const classes = classesStore.getClassesByStudentId(student.id);
-      
-      // Verificar si el estudiante tiene clases que indican que tiene instrumentos
-      const hasInstrumentClass = classes.some(classItem => 
-        ['Ensayo General', 'Ensayo Seccional', 'Taller', 'Talleres', 'Coro'].some(keyword => 
-          classItem.name.toLowerCase().includes(keyword.toLowerCase())
-        )
-      );
-      
-      // Verificar si el estudiante está en clases de preparatoria o iniciación
-      const isInPreparatoryClass = classes.some(classItem => 
-        ['preparatoria', 'iniciacion'].some(keyword => 
-          classItem.name.toLowerCase().includes(keyword.toLowerCase())
-        )
-      );
-      
-      const studentInfo = {
-        id: student.id,
-        nombre: `${student.nombre} ${student.apellido}`,
-        instrumento: student.instrumento || 'No especificado',
-        ausencias: report.absences,
-        clases: classes.map(c => c.name),
-        fechas: report.absenceDates?.map(date => new Date(date).toLocaleDateString('es-ES')),
-        telefono: student.parentPhone || 'No registrado'
-      };
-      
-      if (hasInstrumentClass) {
-        studentsWithInstruments.push(studentInfo);
-      } else if (isInPreparatoryClass) {
-        studentsWithoutInstruments.push(studentInfo);
-      } else {
-        // Si no podemos determinar, asumimos que tiene instrumento para ser más cautelosos
-        studentsWithInstruments.push({
-          ...studentInfo,
-          nota: 'No se pudo determinar con certeza si tiene instrumento asignado'
+    if (!absenceAlertListRef.value) {
+        console.warn("AbsenceAlertList component ref not available yet.");
+        return;
+    }
+    console.log("Iniciando análisis de ausencias...");
+    if (absenceAlertListRef.value.debugDateInfo) {
+         console.log("Información de fecha:", absenceAlertListRef.value.debugDateInfo);
+    }
+
+    // Trigger analysis
+    absenceAlertListRef.value.analyzeWeeklyAbsences();
+    absenceAlertListRef.value.analyzeMonthlyAbsences();
+
+    // Get results
+    const weeklyAbsences = absenceAlertListRef.value.getWeeklyAbsences();
+    const monthlyAbsences = absenceAlertListRef.value.getMonthlyAbsences();
+
+    console.log('===== ANÁLISIS DE AUSENCIAS =====');
+
+    // Process Weekly Absences
+    console.log('\n1. Alumnos con más de 1 inasistencia (Semana):');
+    if (weeklyAbsences.length === 0) {
+        console.log('   No hay alumnos con >1 inasistencia esta semana.');
+    } else {
+        const reportData = weeklyAbsences.map(report => {
+             const student = report.student;
+             const classes = classesStore.getClassesByStudent(student.id);
+             return {
+                Nombre: `${student.nombre} ${student.apellido}`,
+                Ausencias: report.absences,
+                "Fechas (max 3)": report.absenceDates?.slice(0, 3).map(d => new Date(d).toLocaleDateString('es-ES')) || [],
+                "Clases": classes.map((c: ClassData) => c.name).join(', '),
+                Teléfono: student.parentPhone || 'N/A'
+             };
         });
-      }
-    });
-    
-    console.log('Alumnos CON instrumentos (casos más graves):');
-    console.table(studentsWithInstruments);
-    
-    console.log('Alumnos SIN instrumentos (casos menos graves):');
-    console.table(studentsWithoutInstruments);
-  }
-  
-  // Analizar ausencias por mes
-  console.log('\n2. Alumnos con más de 1 inasistencia por mes:');
-  if (monthlyAbsences.length === 0) {
-    console.log('No hay alumnos con más de 1 inasistencia en el último mes.');
-  } else {
-    // Similar logic as weekly absences
-    const studentsWithInstruments = [];
-    const studentsWithoutInstruments = [];
-    
-    monthlyAbsences.forEach(report => {
-      const student = report.student;
-      const classes = classesStore.getClassesByStudentId(student.id);
-      
-      const hasInstrumentClass = classes.some(classItem => 
-        ['Ensayo General', 'Ensayo Seccional', 'Taller', 'Talleres', 'Coro'].some(keyword => 
-          classItem.name.toLowerCase().includes(keyword.toLowerCase())
-        )
-      );
-      
-      const isInPreparatoryClass = classes.some(classItem => 
-        ['preparatoria', 'iniciacion'].some(keyword => 
-          classItem.name.toLowerCase().includes(keyword.toLowerCase())
-        )
-      );
-      
-      const studentInfo = {
-        id: student.id,
-        nombre: `${student.nombre} ${student.apellido}`,
-        instrumento: student.instrumento || 'No especificado',
-        ausencias: report.absences,
-        clases: classes.map(c => c.name),
-        fechasMuestra: report.absenceDates?.slice(0, 3).map(date => new Date(date).toLocaleDateString('es-ES')),
-        telefono: student.parentPhone || 'No registrado'
-      };
-      
-      if (hasInstrumentClass) {
-        studentsWithInstruments.push(studentInfo);
-      } else if (isInPreparatoryClass) {
-        studentsWithoutInstruments.push(studentInfo);
-      } else {
-        studentsWithInstruments.push({
-          ...studentInfo,
-          nota: 'No se pudo determinar con certeza si tiene instrumento asignado'
-        });
-      }
-    });
-    
-    console.log('Alumnos CON instrumentos (casos más graves):');
-    console.table(studentsWithInstruments);
-    
-    console.log('Alumnos SIN instrumentos (casos menos graves):');
-    console.table(studentsWithoutInstruments);
-  }
+        console.table(reportData);
+    }
+
+    // Process Monthly Absences
+    console.log('\n2. Alumnos con más de 1 inasistencia (Mes):');
+     if (monthlyAbsences.length === 0) {
+         console.log('   No hay alumnos con >1 inasistencia este mes.');
+     } else {
+         const reportData = monthlyAbsences.map(report => {
+             const student = report.student;
+             const classes = classesStore.getClassesByStudent(student.id);
+             return {
+                 Nombre: `${student.nombre} ${student.apellido}`,
+                 Ausencias: report.absences,
+                 "Fechas (max 3)": report.absenceDates?.slice(0, 3).map(d => new Date(d).toLocaleDateString('es-ES')) || [],
+                 "Clases": classes.map((c: ClassData) => c.name).join(', '),
+                 Teléfono: student.parentPhone || 'N/A'
+             };
+         });
+         console.table(reportData);
+     }
+     console.log('================================');
 };
 
-// Extender la función onMounted para analizar ausencias
+// onMounted and watch remain largely the same, ensure analyzeStudentAbsences is called appropriately
 onMounted(async () => {
-  // Mantener la funcionalidad original
   loading.value = true;
   try {
-    // Asegurarnos de que los métodos existen antes de llamarlos
     const promises: Promise<any>[] = [];
-    
-    if (typeof classesStore.forceSync === 'function') {
-      // console.log('📚 Forzando sincronización de clases desde Firebase...');
-      promises.push(classesStore.forceSync());
-    } else if (typeof classesStore.fetchClasses === 'function') {
-      // console.log('📚 Cargando clases...');
-      promises.push(classesStore.fetchClasses());
-    } else {
-      console.warn('⚠️ El método fetchClasses no está disponible en classesStore');
-    }
-    
-    if (typeof teachersStore.fetchTeachers === 'function') {
-      // console.log('👨‍🏫 Cargando profesores...');
-      promises.push(teachersStore.fetchTeachers());
-    } else {
-      console.warn('⚠️ El método fetchTeachers no está disponible en teachersStore');
-    }
-    
-    if (typeof studentsStore.fetchStudents === 'function') {
-      // console.log('👨‍🎓 Cargando estudiantes...');
-      promises.push(studentsStore.fetchStudents());
-    } else {
-      console.warn('⚠️ El método fetchStudents no está disponible en studentsStore');
-    }
-    
-    // Esperar a que todas las promesas se resuelvan
+    if (typeof classesStore.forceSync === 'function') promises.push(classesStore.forceSync());
+    if (typeof teachersStore.fetchTeachers === 'function') promises.push(teachersStore.fetchTeachers());
+    if (typeof studentsStore.fetchStudents === 'function') promises.push(studentsStore.fetchStudents());
     await Promise.all(promises);
-    // Si no hay clases, intentar nuevamente para asegurarnos
-    if (classesStore.classes.length === 0) {
-      // console.log('⚠️ No se encontraron clases, intentando nuevamente...');
-      if (typeof classesStore.forceSync === 'function') {
-        await classesStore.forceSync();
-        // console.log(`   - Clases (reintento): ${classesStore.classes.length}`);
-      }
-    }
-    
-    // Mostrar estructura de una clase (si hay alguna) para debug
-    if (classesStore.classes.length > 0) {
-      const sampleClass = classesStore.classes[0];
-      console.log('🔍 Estructura de ejemplo de una clase:', sampleClass)
-      // console.log({
-        // id: sampleClass.id,r
-        // name: sampleClass.name,
-        // schedule: sampleClass.schedule,
-        // teacherId: sampleClass.teacherId
-      // });
-    }
 
-    // Después de cargar todos los datos, analizar ausencias
-    setTimeout(() => {
-      analyzeStudentAbsences();
-    }, 2000); // Dar tiempo para que todo se cargue
+     // Analyze absences after data is potentially loaded and component is mounted
+     setTimeout(() => {
+         // Ensure the ref is available before calling
+         if (absenceAlertListRef.value) {
+             analyzeStudentAbsences();
+         } else {
+             console.warn("AbsenceAlertList ref not ready on mount, will try again on watch.");
+         }
+     }, 500); // Slight delay to ensure ref is bound
+
   } catch (error) {
-    console.error('❌ Error cargando datos:', error);
-    toast({
-      title: "Error",
-      description: "No se pudieron cargar los datos. Por favor, intente nuevamente.",
-      variant: "destructive"
-    });
+    console.error('Error loading data:', error);
+    toast({ title: "Error", description: "Could not load initial data.", variant: "destructive" });
   } finally {
     loading.value = false;
   }
 });
 
-// Observar cambios en el ID del profesor o en las clases para recargar datos si es necesario
-watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherId, classesCount], [oldTeacherId, oldClassesCount]) => {
-  if (newTeacherId !== oldTeacherId || (classesCount === 0 && oldClassesCount === 0)) {
-    // console.log('🔄 Detectado cambio en el profesor o en las clases. Actualizando datos...');
-    
+watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherId]) => {
+    if (!newTeacherId) return; // Don't run if teacher ID is not set
+    loading.value = true; // Indicate loading state during potential re-fetch
     try {
-      // Si cambia el ID del profesor o no hay clases, recargamos las clases
-      if (typeof classesStore.forceSync === 'function') {
-        const classes = await classesStore.forceSync();
-        // console.log(`✅ Clases actualizadas: ${classes.length} total, ${teacherClasses.value.length} del profesor`);
-      }
+        // Optionally re-fetch classes if teacher ID changes or classes are empty
+        // This depends on whether classes are filtered server-side or client-side
+        console.log(`Watcher triggered: Teacher ID ${newTeacherId}, Classes count: ${classesStore.classes.length}`);
+         if (typeof classesStore.forceSync === 'function') {
+              // Re-sync may be needed if data is teacher-specific server-side
+              // await classesStore.forceSync();
+         }
+         // Analyze absences again after data might have changed
+          setTimeout(() => {
+             if (absenceAlertListRef.value) {
+                 analyzeStudentAbsences();
+             } else {
+                 console.warn("AbsenceAlertList ref not ready on watch.");
+             }
+          }, 500);
     } catch (error) {
-      console.error('❌ Error al actualizar clases:', error);
+        console.error('Error during watch update:', error);
+        toast({ title: "Error", description: "Failed to update data on change.", variant: "destructive"});
+    } finally {
+        loading.value = false;
     }
-  }
-});
+}, { immediate: false }); // immediate: false to avoid running on initial mount if onMounted handles it
+
+
 </script>
 
 <template>
-  <div class="teacher-dashboard pb-16 md:pb-0">
-    <!-- Navegación para dispositivos móviles (visible solo en móviles) -->
-    <div class="md:hidden fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 z-40 shadow-md p-3">
-      <div class="flex justify-between items-center">
-        <h1 class="text-lg font-semibold text-gray-900 dark:text-white truncate">
-          {{ activeTab === 'classes' ? 'Mis Clases' : 
-             activeTab === 'overview' ? 'Panel General' : 
-             activeTab === 'schedule' ? 'Horario Semanal' : 
-             activeTab === 'upcoming' ? 'Próximas Clases' : 'Panel de Maestros' }}
-        </h1>
-        <button @click="toggleMobileMenu" class="p-1 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
-          <Bars3Icon class="w-6 h-6" />
-        </button>
+  <div class="teacher-dashboard flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900">
+
+    <!-- Mobile Header (Visible only on small screens) -->
+    <TeacherMobileHeader
+      class="md:hidden sticky top-0 z-40"
+      :active-tab="activeTab"
+      @toggle-menu="toggleMobileMenu"
+    />
+
+    <!-- Mobile Side Menu (Conditionally rendered, hidden on medium+ screens) -->
+    <TeacherMobileSideMenu
+      v-if="showMobileMenu"
+      class="md:hidden"
+      :active-tab="activeTab"
+      @set-active-tab="setActiveTab"
+      @close-menu="showMobileMenu = false"
+    />
+
+    <!-- Desktop Header (Visible only on medium+ screens) -->
+    <TeacherDesktopHeader
+      class="hidden md:flex sticky top-0 z-40"
+      :active-tab="activeTab"
+      @set-active-tab="setActiveTab"
+    />
+
+    <!-- Main Content Area -->
+    <main class="flex-grow container mx-auto px-4 py-6 md:py-8">
+      <!-- Loading State -->
+      <div v-if="loading" class="flex justify-center items-center h-64">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
-    </div>
 
-    <!-- Mobile menu overlay -->
-    <div v-if="showMobileMenu" 
-         class="fixed inset-0 bg-black bg-opacity-50 z-50 md:hidden"
-         @click="showMobileMenu = false"></div>
-
-    <!-- Mobile side menu -->
-    <div v-if="showMobileMenu"
-         class="fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 z-50 transform shadow-lg md:hidden p-4 overflow-auto">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-bold">Menú</h2>
-        <button @click="showMobileMenu = false" class="p-1 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      
-      <div class="space-y-2">
-        <button @click="setActiveTab('classes'); showMobileMenu = false" 
-                class="w-full text-left p-2 rounded-md flex items-center gap-2"
-                :class="activeTab === 'classes' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : ''">
-          <BookOpenIcon class="h-5 w-5" />
-          Mis Clases
-        </button>
-        <button @click="setActiveTab('overview'); showMobileMenu = false" 
-                class="w-full text-left p-2 rounded-md flex items-center gap-2"
-                :class="activeTab === 'overview' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : ''">
-          <ChartBarSquareIcon class="h-5 w-5" />
-          Panel General
-        </button>
-        <button @click="setActiveTab('schedule'); showMobileMenu = false" 
-                class="w-full text-left p-2 rounded-md flex items-center gap-2"
-                :class="activeTab === 'schedule' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : ''">
-          <CalendarIcon class="h-5 w-5" />
-          Horario Semanal
-        </button>
-        <button @click="setActiveTab('upcoming'); showMobileMenu = false" 
-                class="w-full text-left p-2 rounded-md flex items-center gap-2"
-                :class="activeTab === 'upcoming' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : ''">
-          <ClockIcon class="h-5 w-5" />
-          Próximas Clases
-        </button>
-      </div>
-      
-      <div class="mt-6 pt-4 border-t">
-        <p class="text-sm text-gray-500 dark:text-gray-400">Panel de Maestros v1.0</p>
-      </div>
-    </div>
-
-    <!-- Header -->
-    <header class="dashboard-header bg-white dark:bg-gray-800 p-2 sm:p-4 rounded-lg shadow mb-4">
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full">
-    <div class="flex-1">
-      <h1 class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-0">
-        Panel de Control
-      </h1>
-    </div>
-    
-    <!-- Tabs -->
-    <div class="flex flex-col sm:flex-row w-full sm:w-auto">
-      <button 
-        @click="setActiveTab('classes')" 
-        class="flex-1 sm:flex-none px-2 sm:px-4 py-1 sm:py-2 text-sm font-medium flex items-center justify-center gap-1 focus:outline-none"
-        :class="{
-          'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'classes',
-          'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'classes'
-        }"
-      >
-        <BookOpenIcon class="h-4 w-4" />
-        <span class="hidden sm:inline">Mis Clases</span>
-      </button>
-
-      <button 
-        @click="setActiveTab('overview')" 
-        class="flex-1 sm:flex-none px-2 sm:px-4 py-1 sm:py-2 text-sm font-medium flex items-center justify-center gap-1 focus:outline-none"
-        :class="{
-          'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'overview',
-          'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'overview'
-        }"
-      >
-        <ChartBarSquareIcon class="h-4 w-4" />
-        <span class="hidden sm:inline">Panel General</span>
-      </button>
-
-      <button 
-        @click="setActiveTab('schedule')" 
-        class="flex-1 sm:flex-none px-2 sm:px-4 py-1 sm:py-2 text-sm font-medium flex items-center justify-center gap-1 focus:outline-none"
-        :class="{
-          'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'schedule',
-          'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'schedule'
-        }"
-      >
-        <CalendarIcon class="h-4 w-4" />
-        <span class="hidden sm:inline">Horario Semanal</span>
-      </button>
-
-      <button 
-        @click="setActiveTab('upcoming')" 
-        class="flex-1 sm:flex-none px-2 sm:px-4 py-1 sm:py-2 text-sm font-medium flex items-center justify-center gap-1 focus:outline-none"
-        :class="{
-          'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'upcoming',
-          'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'upcoming'
-        }"
-      >
-        <ClockIcon class="h-4 w-4" />
-        <span class="hidden sm:inline">Próximas Clases</span>
-      </button>
-    </div>
-  </div>
-</header>
-    
-  
-    <!-- Estado de carga -->
-    <div v-if="loading" class="flex justify-center items-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-    </div>
-    
-    <section v-else class="dashboard-content space-y-6">
-      <!-- Vista general (Overview) -->
-      <div v-if="activeTab === 'overview'" class="space-y-6">
-        <!-- Componente de métricas del panel -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div 
-            v-for="metric in dashboardMetrics" 
-            :key="metric.title"
-            class="bg-white dark:bg-gray-800 rounded-lg shadow p-4"
-          >
-            <div class="flex items-center">
-              <div :class="`${metric.color} p-3 rounded-lg`">
-                <component :is="metric.icon" class="h-6 w-6" />
-              </div>
-              <div class="ml-4">
-                <p class="text-sm text-gray-500 dark:text-gray-400">{{ metric.title }}</p>
-                <p class="text-xl font-bold">{{ metric.value }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Componente de notificaciones -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <h2 class="text-lg font-semibold mb-3">Notificaciones</h2>
-          <div v-if="notifications.length > 0" class="space-y-3">
-            <div 
-              v-for="notification in notifications" 
-              :key="notification.id"
-              class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
-              :class="{
-                'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500': notification.type === 'info' && !notification.read,
-                'bg-amber-50 dark:bg-amber-900/20 border-l-4 border-l-amber-500': notification.type === 'reminder' && !notification.read
-              }"
-            >
-              <div class="flex justify-between">
-                <h3 class="font-medium">{{ notification.title }}</h3>
-                <span class="text-xs text-gray-500">
-                  {{ new Intl.DateTimeFormat('es-ES', { dateStyle: 'short' }).format(notification.date) }}
-                </span>
-              </div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ notification.message }}</p>
-            </div>
-          </div>
-          <p v-else class="text-center text-gray-500 dark:text-gray-400 py-3">No hay notificaciones.</p>
-        </div>
-        
-       
-      </div>
-      
-      <!-- Vista del horario semanal -->
-      <div v-if="activeTab === 'schedule'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-4 flex justify-between items-center">
-          <span>Horario Semanal</span>
-          <button 
-            @click="handleAddClass"
-            class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700"
-          >
-            <PlusIcon class="w-4 h-4" />
-            Nueva Clase
-          </button>
-        </h2>
-        
-        <!-- Componente de horario semanal -->
-        <TeacherWeeklySchedule 
-          :classes="teacherClasses"
-          :teacherId="currentTeacherId"
+      <!-- Content Tabs -->
+      <section v-else class="space-y-6">
+        <TeacherNotificationsTab
+          v-if="activeTab === 'notifications'"
+          :notifications="notifications"
+        />
+        <TeacherScheduleTab
+          v-if="activeTab === 'schedule'"
+          :teacher-classes="teacherClasses"
+          :current-teacher-id="currentTeacherId"
+          @add-class="handleAddClass"
           @view-class="handleViewClass"
         />
-      </div>
-      
-      <!-- Vista de listado de clases -->
-      <div v-if="activeTab === 'classes'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-1 flex justify-between items-center">
-          <span>Mis Clases</span>
-          <button 
-            @click="handleAddClass"
-            class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700"
-          >
-            <PlusIcon class="w-4 h-4" />
-            Nueva Clase
-          </button>
-        </h2>
+        <TeacherClassesTab
+          v-if="activeTab === 'classes'"
+          :sorted-classes="sortedClasses"
+          @add-class="handleAddClass"
+          @view-class="handleViewClass"
+          @edit-class="handleEditClass"
+          @delete-class="handleDeleteClass"
+          @manage-students="handleManageStudents"
+        />
+        <TeacherUpcomingTab
+          v-if="activeTab === 'upcoming'"
+          :upcoming-classes="upcomingClasses"
+          :get-next-session="getNextSession"
+          :format-date-time="formatDateTime"
+          @edit-class="handleEditClass"
+          @manage-students="handleManageStudents"
+        />
         
-        <!-- Grid de Card de clases -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-          <template v-if="sortedClasses.length > 0">
-            <TeacherClassesCard
-              v-for="classItem in sortedClasses"
-              :key="classItem.id"
-              :class-data="classItem"
-              @view="handleViewClass"
-              @edit="handleEditClass"
-              @delete="handleDeleteClass"
-              @manage-students="handleManageStudents"
-            />
-          </template>
-          
-          <div v-else class="col-span-full py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
-            No tienes clases asignadas actualmente.
-            <button @click="handleAddClass" class="ml-1 text-blue-500 hover:underline">
-              Crear una nueva
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- CREA UN NUEVO COMPONENTE PARA: Vista de próximas clases -->
-      <div v-if="activeTab === 'upcoming'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-4">Próximas Clases (24h)</h2>
-        
-        <div class="space-y-4">
-          <template v-if="upcomingClasses.length > 0">
-            <div 
-              v-for="classItem in upcomingClasses" 
-              :key="classItem.id"
-              class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow p-4 border-l-4 border-blue-500"
-            >
-              <div class="flex justify-between items-start">
-                <div>
-                  <h3 class="font-medium text-lg">{{ classItem.name }}</h3>
-                  <p class="text-gray-600 dark:text-gray-400">
-                    {{ classItem.level }} - {{ classItem.instrumento || 'Sin instrumento' }}
-                  </p>
-                  
-                  <div class="mt-2 flex items-center text-sm">
-                    <span class="font-medium mr-2">Próxima sesión:</span>
-                    <span>{{ formatDateTime(getNextSession(classItem)) }}</span>
-                  </div>
-                  
-                  <p class="mt-1 text-sm text-gray-500">Aula: {{ classItem.classroom || 'Sin asignar' }}</p>
-                  <p class="text-sm text-gray-500">Estudiantes: {{ classItem.studentIds?.length || 0 }}</p>
-                </div>
-                
-                <div class="flex space-x-2">
-                  <button 
-                    @click="handleEditClass(classItem.id)" 
-                    class="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-md"
-                    title="Editar clase"
-                  >
-                    <PencilIcon class="h-5 w-5" />
-                  </button>
-                  <button 
-                    @click="handleManageStudents(classItem.id)" 
-                    class="p-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/20 rounded-md"
-                    title="Gestionar estudiantes"
-                  >
-                    <UserGroupIcon class="h-5 w-5" />
-                  </button>
-                </div>
+        <!-- Overview/Dashboard tab -->
+        <div v-if="activeTab === 'overview'" class="space-y-6">
+          <h2 class="text-2xl font-bold mb-4">Panel de Información</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div v-for="metric in dashboardMetrics" :key="metric.title" 
+                 class="p-4 rounded-lg shadow-md" :class="metric.color">
+              <div class="flex items-center mb-2">
+                <component :is="metric.icon" class="w-6 h-6 mr-2" />
+                <h3 class="font-semibold">{{ metric.title }}</h3>
               </div>
+              <p class="text-3xl font-bold">{{ metric.value }}</p>
             </div>
-          </template>
-          
-          <div v-else class="py-12 text-center text-gray-500 dark:text-gray-400">
-            No tienes clases programadas para las próximas 24 horas.
           </div>
         </div>
-      </div>
-    </section>
-    <TeacherDashboard />
-    
-    <!-- CREA UN NUEVO COMPONENTE PARA: Modal para el formulario de clase -->
-    <TransitionRoot appear :show="showForm">
-      <Dialog as="div" class="fixed inset-0 z-50 overflow-y-auto" @close="showForm = false">
-        <div class="min-h-screen px-4 text-center">
-          <TransitionChild
-            as="template"
-            enter="ease-out duration-300"
-            enter-from="opacity-0"
-            enter-to="opacity-100"
-            leave="ease-in duration-200"
-            leave-from="opacity-100"
-            leave-to="opacity-0"
-          >
-            <DialogOverlay class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
-          </TransitionChild>
+        <!-- Add other tabs here if needed -->
+      </section>
+    </main>
 
-          <!-- This element is to trick the browser into centering the modal contents. -->
-          <span class="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
-          
-          <TransitionChild
-            as="template"
-            enter="ease-out duration-300"
-            enter-from="opacity-0 scale-95"
-            enter-to="opacity-100 scale-100"
-            leave="ease-in duration-200"
-            leave-from="opacity-100 scale-100"
-            leave-to="opacity-0 scale-95"
-          >
-            <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
-              <h2 class="text-xl font-semibold mb-4">{{ isEditing ? 'Editar Clase' : 'Nueva Clase' }}</h2>
-              <ClassForm 
-                :class-data="isEditing ? selectedClass : null"
-                @save="handleSaveClass"
-                @cancel="showForm = false"
-              />
-            </DialogPanel>
-          </TransitionChild>
-        </div>
-      </Dialog>
-    </TransitionRoot>
-    
-    <!-- CREA UN NUEVO COMPONENTE PARA: Modal para gestión de estudiantes -->
-    <TransitionRoot appear :show="showStudentManager && selectedClass !== null">
-      <Dialog as="div" class="fixed inset-0 z-50 overflow-y-auto" @close="showStudentManager = false">
-        <div class="min-h-screen px-4 text-center">
-          <TransitionChild
-            as="template"
-            enter="ease-out duration-300"
-            enter-from="opacity-0"
-            enter-to="opacity-100"
-            leave="ease-in duration-200"
-            leave-from="opacity-100"
-            leave-to="opacity-0"
-          >
-            <DialogOverlay class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
-          </TransitionChild>
 
-          <!-- This element is to trick the browser into centering the modal contents. -->
-          <span class="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
-          
-          <TransitionChild
-            as="template"
-            enter="ease-out duration-300"
-            enter-from="opacity-0 scale-95"
-            enter-to="opacity-100 scale-100"
-            leave="ease-in duration-200"
-            leave-from="opacity-100 scale-100"
-            leave-to="opacity-0 scale-95"
-          >
-            <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
-              <h2 class="text-xl font-semibold mb-4">Gestionar Estudiantes - {{ selectedClass?.name }}</h2>
-              <ClassStudentManager 
-                :class-id="selectedClass?.id"
-                :student-ids="Array.isArray(selectedClass?.studentIds) ? selectedClass?.studentIds : []"
-                @update="handleStudentChange"
-                @close="showStudentManager = false"
-              />
-            </DialogPanel>
-          </TransitionChild>
-        </div>
-      </Dialog>
-    </TransitionRoot>
+    <!-- Modals (Rendered outside main flow, visibility controlled by state) -->
+    <TeacherClassFormModal
+      :show="showForm"
+      :is-editing="isEditing"
+      :class-data="isEditing ? (selectedClass || null) : null"
+      @update:show="showForm = $event"
+      @save="handleSaveClass"
+      @cancel="showForm = false"
+    />
+
+    <TeacherStudentManagerModal
+      :show="showStudentManager"
+      :selected-class="selectedClass"
+      @update:show="showStudentManager = $event"
+      @update="handleStudentChange"
+      @close="showStudentManager = false"
+    />
+
+    <!-- Hidden component for logic -->
+    <AbsenceAlertList ref="absenceAlertListRef" class="hidden" />
+
+    <!-- Keep TeacherDashboard if it's a separate global component/overlay -->
+    <!-- <TeacherDashboard /> -->
     
-    <!-- Footer Navigation para móviles -->
-    <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 md:hidden shadow-lg z-40">
-      <div class="flex justify-around items-center">
-        <button 
-          v-for="item in navigationItems" 
+    <!-- Mobile Footer Navigation (Visible only on small screens) -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg z-30">
+      <nav class="flex justify-around">
+        <button
+          v-for="item in navigationItems"
           :key="item.id"
           @click="setActiveTab(item.id)"
-          class="flex flex-col items-center py-2 px-2 flex-1"
-          :class="item.active ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'"
+          class="flex flex-col items-center py-2 px-4"
+          :class="{ 'text-blue-600 dark:text-blue-400': item.active, 'text-gray-600 dark:text-gray-400': !item.active }"
         >
-          <component :is="item.icon" class="h-6 w-6" />
-          <span class="text-xs mt-1">{{ item.name }}</span>
+          <component :is="item.icon" class="w-6 h-6" />
+          <span class="text-xs">{{ item.name }}</span>
         </button>
-        <button 
-          @click="toggleMobileMenu"
-          class="flex flex-col items-center py-2 px-2 flex-1 text-gray-500 dark:text-gray-400"
-        >
-          <Bars3Icon class="h-6 w-6" />
-          <span class="text-xs mt-1">Menú</span>
-        </button>
-      </div>
+      </nav>
     </div>
-    
-    <!-- Añadir ref al componente AbsenceAlertList -->
-    <AbsenceAlertList ref="absenceAlertListRef" class="hidden" />
-  </div>    
+  </div>
 </template>
 
 <style scoped>
-.teacher-dashboard {
-  max-width: 1200px;
-  margin: 0 auto;
-  /* Añadir padding en la parte inferior para compensar el footer en móviles */
-  padding-top: 3.5rem; /* Compensar el header fijo */
-}
+/* Scoped styles can remain if needed, but responsiveness is mainly handled by Tailwind */
+/* Note: Base styles for teacher-dashboard are handled by Tailwind classes */
 
-@media (min-width: 768px) {
-  .teacher-dashboard {
-    padding-top: 0;
+/* Add padding to the bottom of the main content area on mobile
+   to prevent overlap with the fixed footer navigation */
+main {
+   padding-bottom: 80px; /* Adjust height based on footer nav height */
+}
+@media (min-width: 768px) { /* md breakpoint */
+  main {
+    padding-bottom: 2rem; /* Reset padding for desktop */
   }
 }
 
-.dashboard-header {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-}
-
-@media (min-width: 640px) {
-  .dashboard-header {
-    flex-direction: row;
-  }
-}
-.dashboard-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+/* Ensure container takes full width */
+.container {
+    width: 100%;
 }
 </style>

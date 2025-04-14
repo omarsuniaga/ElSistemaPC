@@ -28,7 +28,7 @@ const debugInfo = ref({
   loaded: false,
   studentsCount: 0,
   foundStudents: 0,
-  error: null
+  error: null as null | string
 });
 
 // Uso del store de estudiantes para obtener nombres
@@ -112,15 +112,15 @@ const formatSchedule = computed(() => {
       
       // Verificar si está en nuestro mapeo
       if (normalizedDay in dayMapping) {
-        dayIndex = dayMapping[normalizedDay];
+        dayIndex = dayMapping[normalizedDay as keyof typeof dayMapping];
       } else {
         // Intentar convertir a número como fallback
-        const dayNum = parseInt(normalizedDay, 10);
+        const dayNum: number = parseInt(normalizedDay, 10);
         if (!isNaN(dayNum) && dayNum >= 0 && dayNum <= 6) {
           dayIndex = dayNum;
         } else {
           // Si no podemos determinar el día, registrar el problema
-          console.warn(`Día de clase no reconocido: ${slot.day}`);
+          console.warn(`Día de clase no reconocido: ${slot.day as string | number}`);
           dayIndex = 0; // Default a domingo si no se puede determinar
         }
       }
@@ -187,7 +187,7 @@ onMounted(async () => {
     
   } catch (error) {
     console.error('Error cargando estudiantes:', error);
-    debugInfo.value.error = error.message;
+    debugInfo.value.error = error instanceof Error ? error.message : String(error);
   }
 });
 const getDayAbbr = (day) => {
@@ -200,100 +200,102 @@ const getDayAbbr = (day) => {
 <template>
   <div 
     @click="handleView" 
-    class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer overflow-hidden text-sm"
+    class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer overflow-hidden text-sm h-full flex flex-col"
   >
     <!-- Cabecera con color según día de la semana -->
-<div 
-  class="h-1"
-  :class="{
-    'bg-red-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Lun',
-    'bg-orange-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Mar',
-    'bg-yellow-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Mié',
-    'bg-green-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Jue',
-    'bg-blue-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Vie',
-    'bg-purple-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Sáb',
-    'bg-pink-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Dom'
-  }"
-></div>
+    <div 
+      class="h-2" 
+      :class="{
+        'bg-red-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Lun',
+        'bg-orange-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Mar',
+        'bg-yellow-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Mié',
+        'bg-green-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Jue',
+        'bg-blue-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Vie',
+        'bg-purple-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Sáb',
+        'bg-pink-500': getDayAbbr(classData.schedule?.slots?.[0]?.day) === 'Dom'
+      }"
+    ></div>
     
-    <div class="p-2 sm:p-3">
+    <div class="p-2.5 sm:p-3 flex-grow flex flex-col"> <!-- Added flex-grow and flex-col to fill height -->
       <!-- Nombre y nivel -->
       <div class="flex justify-between items-start mb-1.5">
         <div>
-          <h3 class="font-medium text-gray-900 dark:text-white text-sm">{{ classData.name }}</h3>
-          <span class="text-xs text-gray-600 dark:text-gray-400 block leading-tight">
+          <h3 class="font-medium text-gray-900 dark:text-white text-base sm:text-sm leading-tight"> <!-- Larger on mobile -->
+            {{ classData.name }}
+          </h3>
+          <span class="text-sm sm:text-xs text-gray-600 dark:text-gray-400 block leading-tight">
             {{ classData.level }}
             <span v-if="classData.instrument"> - {{ classData.instrument }}</span>
           </span>
         </div>
-        <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs font-medium px-1.5 py-0.5 rounded-full">
+        <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs font-medium px-2 py-1 sm:px-1.5 sm:py-0.5 rounded-full">
           {{ hasStudentIds ? classData.studentIds.length : 0 }}
         </span>
       </div>
       
       <!-- Información adicional -->
-      <div class="space-y-1 mb-2">
-        <div class="flex items-center text-xs text-gray-600 dark:text-gray-400 leading-tight">
-          <CalendarIcon class="h-3 w-3 mr-1 flex-shrink-0" />
+      <div class="space-y-1.5 sm:space-y-1 mb-2"> <!-- More spacing on mobile -->
+        <div class="flex items-center text-sm sm:text-xs text-gray-600 dark:text-gray-400 leading-tight">
+          <CalendarIcon class="h-3.5 w-3.5 sm:h-3 sm:w-3 mr-1.5 sm:mr-1 flex-shrink-0" /> <!-- Larger icons on mobile -->
           <span class="truncate">{{ formatSchedule }}</span>
         </div>
-        <div class="flex items-center text-xs text-gray-600 dark:text-gray-400 leading-tight">
-          <MapPinIcon class="h-3 w-3 mr-1 flex-shrink-0" />
+        <div class="flex items-center text-sm sm:text-xs text-gray-600 dark:text-gray-400 leading-tight">
+          <MapPinIcon class="h-3.5 w-3.5 sm:h-3 sm:w-3 mr-1.5 sm:mr-1 flex-shrink-0" /> <!-- Larger icons on mobile -->
           <span class="truncate">{{ classData.classroom || 'Sin aula' }}</span>
         </div>
       </div>
 
       <!-- Lista de estudiantes -->
-      <div class="mb-2">
-        <div class="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Estudiantes:</div>
-        <div v-if="hasStudentIds" class="space-y-0">
+      <div class="mb-3 sm:mb-2 flex-grow"> <!-- More spacing on mobile, flex-grow to push buttons to bottom -->
+        <div class="text-sm sm:text-xs text-gray-500 dark:text-gray-400 mb-1 sm:mb-0.5 font-medium">Estudiantes:</div>
+        <div v-if="hasStudentIds" class="space-y-1 sm:space-y-0">
           <div 
             v-for="(student, index) in topStudents" 
             :key="index" 
-            class="flex items-center text-xs text-gray-700 dark:text-gray-300 leading-tight py-0.5"
+            class="flex items-center text-sm sm:text-xs text-gray-700 dark:text-gray-300 leading-tight py-0.5"
           >
-            <UserGroupIcon class="h-2.5 w-2.5 mr-1 text-gray-500 flex-shrink-0" />
+            <UserGroupIcon class="h-3 w-3 sm:h-2.5 sm:w-2.5 mr-1.5 sm:mr-1 text-gray-500 flex-shrink-0" />
             <span class="truncate">{{ student }}</span>
           </div>
-          <div v-if="additionalStudents > 0" class="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+          <div v-if="additionalStudents > 0" class="text-sm sm:text-xs text-gray-500 dark:text-gray-400 leading-tight">
             +{{ additionalStudents }} más...
           </div>
         </div>
-        <div v-else class="text-xs text-gray-500 dark:text-gray-400">
+        <div v-else class="text-sm sm:text-xs text-gray-500 dark:text-gray-400">
           No hay estudiantes inscritos
         </div>
       </div>
 
       <!-- Botones de acción -->
-      <div class="flex justify-end space-x-1 pt-1 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex justify-end space-x-2 sm:space-x-1 pt-1.5 sm:pt-1 border-t border-gray-200 dark:border-gray-700 mt-auto"> <!-- More spacing between buttons on mobile -->
         <button 
           @click="handleAttendance" 
-          class="p-0.5 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/20 rounded-md"
+          class="p-1.5 sm:p-0.5 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/20 rounded-md" 
           title="Tomar asistencia"
         >
-          <ClipboardDocumentCheckIcon class="h-4 w-4" />
+          <ClipboardDocumentCheckIcon class="h-5 w-5 sm:h-4 sm:w-4" /> <!-- Larger on mobile -->
         </button>
         <button 
           @click="handleManageStudents" 
-          class="p-0.5 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/20 rounded-md"
+          class="p-1.5 sm:p-0.5 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/20 rounded-md" 
           title="Gestionar estudiantes"
         >
-          <UserPlusIcon class="h-4 w-4" />
+          <UserPlusIcon class="h-5 w-5 sm:h-4 sm:w-4" /> <!-- Larger on mobile -->
         </button>
         <button 
           @click="handleEdit" 
-          class="p-0.5 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-md"
+          class="p-1.5 sm:p-0.5 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-md" 
           title="Editar clase"
         >
-          <PencilIcon class="h-4 w-4" />
+          <PencilIcon class="h-5 w-5 sm:h-4 sm:w-4" /> <!-- Larger on mobile -->
         </button>
 
         <button 
           @click="handleDelete" 
-          class="p-0.5 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-md"
+          class="p-1.5 sm:p-0.5 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-md" 
           title="Eliminar clase"
         >
-          <TrashIcon class="h-4 w-4" />
+          <TrashIcon class="h-5 w-5 sm:h-4 sm:w-4" /> <!-- Larger on mobile -->
         </button>
       </div>
     </div>
@@ -303,15 +305,25 @@ const getDayAbbr = (day) => {
 <style scoped>
 /* Añadir estilos para condensar más el componente */
 .leading-tight {
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
-/* Ajustar tamaño del texto para condensar mejor la información */
-.text-xs {
-  font-size: 0.7rem;
+/* Tamaños adaptados para móvil y desktop */
+@media (max-width: 640px) {
+  .text-sm {
+    font-size: 0.8125rem; /* Slightly larger for mobile */
+  }
+  .text-xs {
+    font-size: 0.75rem; /* Slightly larger for mobile */
+  }
 }
 
-.text-sm {
-  font-size: 0.8rem;
+@media (min-width: 641px) {
+  .text-xs {
+    font-size: 0.7rem;
+  }
+  .text-sm {
+    font-size: 0.8rem;
+  }
 }
 </style>
