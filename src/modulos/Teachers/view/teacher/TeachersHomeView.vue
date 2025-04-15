@@ -526,16 +526,16 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
 </script>
 
 <template>
-  <div class="teacher-dashboard">
-    <header class="dashboard-header bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Panel de Control de Maestros</h1>
-      <p class="text-gray-600 dark:text-gray-400">Aquí puedes gestionar y visualizar información relevante sobre tus clases y estudiantes.</p>
+  <div class="teacher-dashboard p-2 sm:p-4"> <!-- Add padding for small screens -->
+    <header class="dashboard-header bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow mb-4 sm:mb-6"> <!-- Adjust padding -->
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Panel de Control</h1> <!-- Adjust text size -->
+      <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">Gestiona tus clases y estudiantes.</p> <!-- Adjust text size and margin -->
       
-      <!-- Tabs de navegación -->
-      <div class="flex mt-6 border-b border-gray-200 dark:border-gray-700">
+      <!-- Tabs de navegación - Make scrollable on small screens -->
+      <div class="mt-4 sm:mt-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto whitespace-nowrap">
         <button 
           @click="setActiveTab('classes')" 
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
+          class="px-3 sm:px-4 py-2 font-medium text-xs sm:text-sm focus:outline-none inline-block" 
           :class="{
             'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'classes',
             'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'classes'
@@ -548,7 +548,7 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         </button>
         <button 
           @click="setActiveTab('overview')" 
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
+          class="px-3 sm:px-4 py-2 font-medium text-xs sm:text-sm focus:outline-none inline-block" 
           :class="{
             'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'overview',
             'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'overview'
@@ -562,7 +562,7 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         
         <button 
           @click="setActiveTab('schedule')" 
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
+          class="px-3 sm:px-4 py-2 font-medium text-xs sm:text-sm focus:outline-none inline-block" 
           :class="{
             'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'schedule',
             'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'schedule'
@@ -570,14 +570,14 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         >
           <div class="flex items-center gap-1">
             <CalendarIcon class="h-4 w-4" />
-            Horario Semanal
+            Horario
           </div>
         </button>
         
         
         <button 
           @click="setActiveTab('upcoming')" 
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
+          class="px-3 sm:px-4 py-2 font-medium text-xs sm:text-sm focus:outline-none inline-block" 
           :class="{
             'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'upcoming',
             'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'upcoming'
@@ -585,77 +585,79 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         >
           <div class="flex items-center gap-1">
             <ClockIcon class="h-4 w-4" />
-            Próximas Clases
+            Próximas
           </div>
         </button>
       </div>
     </header>
     
-    <ClassCards />
+    <!-- ClassCards component might need internal adjustments too -->
+    <ClassCards /> 
+    
     <!-- Estado de carga -->
     <div v-if="loading" class="flex justify-center items-center py-12">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
     </div>
     
-    <section v-else class="dashboard-content space-y-6">
+    <section v-else class="dashboard-content space-y-4 sm:space-y-6"> <!-- Adjust spacing -->
       <!-- Vista general (Overview) -->
-      <div v-if="activeTab === 'overview'" class="space-y-6">
+      <div v-if="activeTab === 'overview'" class="space-y-4 sm:space-y-6"> <!-- Adjust spacing -->
         <!-- Componente de métricas del panel -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"> <!-- Responsive grid -->
           <div 
             v-for="metric in dashboardMetrics" 
             :key="metric.title"
-            class="bg-white dark:bg-gray-800 rounded-lg shadow p-4"
+            class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4" 
           >
             <div class="flex items-center">
-              <div :class="`${metric.color} p-3 rounded-lg`">
-                <component :is="metric.icon" class="h-6 w-6" />
+              <div :class="`${metric.color} p-2 sm:p-3 rounded-lg`"> <!-- Adjust padding -->
+                <component :is="metric.icon" class="h-5 w-5 sm:h-6 sm:w-6" /> <!-- Adjust icon size -->
               </div>
-              <div class="ml-4">
-                <p class="text-sm text-gray-500 dark:text-gray-400">{{ metric.title }}</p>
-                <p class="text-xl font-bold">{{ metric.value }}</p>
+              <div class="ml-3 sm:ml-4"> <!-- Adjust margin -->
+                <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{{ metric.title }}</p> <!-- Adjust text size -->
+                <p class="text-lg sm:text-xl font-bold">{{ metric.value }}</p> <!-- Adjust text size -->
               </div>
             </div>
           </div>
         </div>
         
         <!-- Componente de notificaciones -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <h2 class="text-lg font-semibold mb-3">Notificaciones</h2>
-          <div v-if="notifications.length > 0" class="space-y-3">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4"> <!-- Adjust padding -->
+          <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-3">Notificaciones</h2> <!-- Adjust text size and margin -->
+          <div v-if="notifications.length > 0" class="space-y-2 sm:space-y-3"> <!-- Adjust spacing -->
             <div 
               v-for="notification in notifications" 
               :key="notification.id"
-              class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
+              class="p-2 sm:p-3 border border-gray-200 dark:border-gray-700 rounded-lg" 
               :class="{
                 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500': notification.type === 'info' && !notification.read,
                 'bg-amber-50 dark:bg-amber-900/20 border-l-4 border-l-amber-500': notification.type === 'reminder' && !notification.read
               }"
             >
-              <div class="flex justify-between">
-                <h3 class="font-medium">{{ notification.title }}</h3>
-                <span class="text-xs text-gray-500">
+              <div class="flex justify-between items-start"> <!-- Align items start for wrapping -->
+                <h3 class="font-medium text-sm sm:text-base">{{ notification.title }}</h3> <!-- Adjust text size -->
+                <span class="text-xs text-gray-500 flex-shrink-0 ml-2"> <!-- Prevent shrinking, add margin -->
                   {{ new Intl.DateTimeFormat('es-ES', { dateStyle: 'short' }).format(notification.date) }}
                 </span>
               </div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ notification.message }}</p>
+              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">{{ notification.message }}</p> <!-- Adjust text size and margin -->
             </div>
           </div>
-          <p v-else class="text-center text-gray-500 dark:text-gray-400 py-3">No hay notificaciones.</p>
+          <p v-else class="text-center text-sm sm:text-base text-gray-500 dark:text-gray-400 py-3">No hay notificaciones.</p> <!-- Adjust text size -->
         </div>
         
         <!-- Botones de acción rápida -->
-        <div class="flex flex-wrap gap-3">
+        <div class="flex flex-wrap gap-2 sm:gap-3"> <!-- Allow wrapping, adjust gap -->
           <button 
             @click="handleAddClass" 
-            class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            class="flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-xs sm:text-sm"
           >
-            <PlusIcon class="w-5 h-5" />
+            <PlusIcon class="w-4 h-4 sm:w-5 sm:h-5" /> <!-- Adjust icon size -->
             <span>Agregar Clase</span>
           </button>
           <button 
             @click="filterTeachers" 
-            class="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
+            class="flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 text-xs sm:text-sm" 
           >
             <span>Gestionar Estudiantes</span>
           </button>
@@ -663,14 +665,14 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
       </div>
       
       <!-- Vista del horario semanal -->
-      <div v-if="activeTab === 'schedule'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-4 flex justify-between items-center">
+      <div v-if="activeTab === 'schedule'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4"> <!-- Adjust padding -->
+        <h2 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex justify-between items-center"> <!-- Adjust text size and margin -->
           <span>Horario Semanal</span>
           <button 
             @click="handleAddClass"
-            class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700"
+            class="flex items-center gap-1 text-xs sm:text-sm bg-blue-600 text-white px-2 py-1 sm:px-3 sm:py-1 rounded-md hover:bg-blue-700" 
           >
-            <PlusIcon class="w-4 h-4" />
+            <PlusIcon class="w-3 h-3 sm:w-4 sm:h-4" /> <!-- Adjust icon size -->
             Nueva Clase
           </button>
         </h2>
@@ -683,20 +685,20 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
       </div>
       
       <!-- Vista de listado de clases -->
-      <div v-if="activeTab === 'classes'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-1 flex justify-between items-center">
+      <div v-if="activeTab === 'classes'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4"> <!-- Adjust padding -->
+        <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-3 flex justify-between items-center"> <!-- Adjust text size and margin -->
           <span>Mis Clases</span>
           <button 
             @click="handleAddClass"
-            class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700"
+            class="flex items-center gap-1 text-xs sm:text-sm bg-blue-600 text-white px-2 py-1 sm:px-3 sm:py-1 rounded-md hover:bg-blue-700" 
           >
-            <PlusIcon class="w-4 h-4" />
+            <PlusIcon class="w-3 h-3 sm:w-4 sm:h-4" /> <!-- Adjust icon size -->
             Nueva Clase
           </button>
         </h2>
         
         <!-- Grid de Card de clases -->
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"> <!-- Responsive grid -->
           <template v-if="teacherClasses.length > 0">
             <TeacherClassesCard
               v-for="classItem in teacherClasses"
@@ -709,9 +711,9 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
             />
           </template>
           
-          <div v-else class="col-span-full py-12 text-center text-gray-500 dark:text-gray-400">
+          <div v-else class="col-span-full py-8 sm:py-12 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400"> <!-- Adjust padding and text size -->
             No tienes clases asignadas actualmente.
-            <button @click="handleAddClass" class="ml-2 text-blue-500 hover:underline">
+            <button @click="handleAddClass" class="ml-1 sm:ml-2 text-blue-500 hover:underline">
               Crear una nueva clase
             </button>
           </div>
@@ -719,53 +721,53 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
       </div>
       
       <!-- Vista de próximas clases -->
-      <div v-if="activeTab === 'upcoming'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-4">Próximas Clases (24h)</h2>
+      <div v-if="activeTab === 'upcoming'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4"> <!-- Adjust padding -->
+        <h2 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Próximas Clases (24h)</h2> <!-- Adjust text size and margin -->
         
-        <div class="space-y-4">
+        <div class="space-y-3 sm:space-y-4"> <!-- Adjust spacing -->
           <template v-if="upcomingClasses.length > 0">
             <div 
               v-for="classItem in upcomingClasses" 
               :key="classItem.id"
-              class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow p-4 border-l-4 border-blue-500"
+              class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow p-3 sm:p-4 border-l-4 border-blue-500" 
             >
               <div class="flex justify-between items-start">
-                <div>
-                  <h3 class="font-medium text-lg">{{ classItem.name }}</h3>
-                  <p class="text-gray-600 dark:text-gray-400">
+                <div class="flex-1 mr-2"> <!-- Allow shrinking and add margin -->
+                  <h3 class="font-medium text-base sm:text-lg">{{ classItem.name }}</h3> <!-- Adjust text size -->
+                  <p class="text-sm text-gray-600 dark:text-gray-400">
                     {{ classItem.level }} - {{ classItem.instrument || 'Sin instrumento' }}
                   </p>
                   
-                  <div class="mt-2 flex items-center text-sm">
-                    <span class="font-medium mr-2">Próxima sesión:</span>
+                  <div class="mt-1 sm:mt-2 flex items-center text-xs sm:text-sm flex-wrap"> <!-- Allow wrapping -->
+                    <span class="font-medium mr-1 sm:mr-2">Próxima:</span>
                     <span>{{ formatDateTime(getNextSession(classItem)) }}</span>
                   </div>
                   
-                  <p class="mt-1 text-sm text-gray-500">Aula: {{ classItem.classroom || 'Sin asignar' }}</p>
-                  <p class="text-sm text-gray-500">Estudiantes: {{ classItem.studentIds?.length || 0 }}</p>
+                  <p class="mt-1 text-xs sm:text-sm text-gray-500">Aula: {{ classItem.classroom || 'Sin asignar' }}</p> <!-- Adjust text size -->
+                  <p class="text-xs sm:text-sm text-gray-500">Estudiantes: {{ classItem.studentIds?.length || 0 }}</p> <!-- Adjust text size -->
                 </div>
                 
-                <div class="flex space-x-2">
+                <div class="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-1 flex-shrink-0"> <!-- Stack vertically on small, row on larger -->
                   <button 
                     @click="handleEditClass(classItem.id)" 
                     class="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-md"
                     title="Editar clase"
                   >
-                    <PencilIcon class="h-5 w-5" />
+                    <PencilIcon class="h-4 w-4 sm:h-5 sm:w-5" /> <!-- Adjust icon size -->
                   </button>
                   <button 
                     @click="handleManageStudents(classItem.id)" 
                     class="p-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/20 rounded-md"
                     title="Gestionar estudiantes"
                   >
-                    <UserGroupIcon class="h-5 w-5" />
+                    <UserGroupIcon class="h-4 w-4 sm:h-5 sm:w-5" /> <!-- Adjust icon size -->
                   </button>
                 </div>
               </div>
             </div>
           </template>
           
-          <div v-else class="py-12 text-center text-gray-500 dark:text-gray-400">
+          <div v-else class="py-8 sm:py-12 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400"> <!-- Adjust padding and text size -->
             No tienes clases programadas para las próximas 24 horas.
           </div>
         </div>
@@ -775,7 +777,7 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
     <!-- Modal para el formulario de clase -->
     <TransitionRoot appear :show="showForm">
       <Dialog as="div" class="fixed inset-0 z-50 overflow-y-auto" @close="showForm = false">
-        <div class="min-h-screen px-4 text-center">
+        <div class="min-h-screen px-2 sm:px-4 text-center"> <!-- Adjust padding -->
           <TransitionChild
             as="template"
             enter="ease-out duration-300"
@@ -800,8 +802,9 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95"
           >
-            <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
-              <h2 class="text-xl font-semibold mb-4">{{ isEditing ? 'Editar Clase' : 'Nueva Clase' }}</h2>
+            <!-- Responsive max-width for modal -->
+            <DialogPanel class="inline-block w-full max-w-md sm:max-w-lg md:max-w-2xl p-4 sm:p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg"> 
+              <h2 class="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">{{ isEditing ? 'Editar Clase' : 'Nueva Clase' }}</h2> <!-- Adjust text size and margin -->
               <ClassForm 
                 :class-data="isEditing ? selectedClass : null"
                 @save="handleSaveClass"
@@ -816,7 +819,7 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
     <!-- Modal para gestión de estudiantes -->
     <TransitionRoot appear :show="showStudentManager && selectedClass !== null">
       <Dialog as="div" class="fixed inset-0 z-50 overflow-y-auto" @close="showStudentManager = false">
-        <div class="min-h-screen px-4 text-center">
+        <div class="min-h-screen px-2 sm:px-4 text-center"> <!-- Adjust padding -->
           <TransitionChild
             as="template"
             enter="ease-out duration-300"
@@ -841,8 +844,9 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95"
           >
-            <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
-              <h2 class="text-xl font-semibold mb-4">Gestionar Estudiantes - {{ selectedClass?.name }}</h2>
+             <!-- Responsive max-width for modal -->
+            <DialogPanel class="inline-block w-full max-w-md sm:max-w-lg md:max-w-2xl p-4 sm:p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
+              <h2 class="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Gestionar Estudiantes - {{ selectedClass?.name }}</h2> <!-- Adjust text size and margin -->
               <ClassStudentManager 
                 :class-id="selectedClass?.id"
                 :student-ids="Array.isArray(selectedClass?.studentIds) ? selectedClass?.studentIds : []"
@@ -859,17 +863,17 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
 
 <style scoped>
 .teacher-dashboard {
-  max-width: 1200px;
+  /* max-width: 1200px; */ /* Remove fixed max-width for better responsiveness */
   margin: 0 auto;
+  width: 100%; /* Ensure it takes full width */
 }
 
-.dashboard-header {
-  margin-bottom: 2rem;
+/* Ensure horizontal scrolling works for tabs on small screens */
+.overflow-x-auto::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Chrome, Safari, Opera */
 }
-
-.dashboard-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+.overflow-x-auto {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 </style>
