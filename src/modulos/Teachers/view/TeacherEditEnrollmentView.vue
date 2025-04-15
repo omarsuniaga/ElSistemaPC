@@ -2,17 +2,16 @@
 // src/modulos/Teachers/view/TeacherEditEnrollmentView.vue
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useTeachersStore } from '../../stores/teachers'
+import { useTeachersStore } from '../store/teachers' // Corrected path
 import TeacherForm from '../components/TeacherForm.vue'
-import type { Teacher } from '../types'
+import type { Teacher } from '../types/teachers' // Corrected path
 
 const route = useRoute()
 const router = useRouter()
 const teachersStore = useTeachersStore()
 
 const teacherId = route.params.id as string
-const teacher = computed(() => teachersStore.teachers.find(t => t.id === teacherId))
-
+const teacher = computed(() => teachersStore.teachers.find((t: Teacher) => t.id === teacherId)) // Added type Teacher to 't'
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 
