@@ -1,308 +1,90 @@
 <template>
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-      <!-- Filtros y opciones -->
-      <div class="flex flex-wrap justify-between items-center mb-6 gap-y-4">
-        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Historial de Asistencia</h2>
-        
-        <div class="flex flex-wrap items-center gap-4">
-          <!-- Selector de clase -->
-          <div class="min-w-[200px]">
-            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Clase</label>
-            <select
-              v-model="selectedClass"
-              @change="handleClassChange"
-              class="form-select w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-800 dark:text-gray-200"
-            >
-              <option value="">Todas las clases</option>
-              <option v-for="classItem in classes" :key="classItem.id" :value="classItem.id">
-                {{ classItem.name }}
-              </option>
-            </select>
-          </div>
-          
-          <!-- Selector de vista -->
-          <div>
-            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Ver por</label>
-            <select
-              v-model="viewMode"
-              @change="changeViewMode"
-              class="form-select w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-800 dark:text-gray-200"
-            >
-              <option value="week">Semana</option>
-              <option value="biweek">Quincena</option>
-              <option value="month">Mes</option>
-            </select>
-          </div>
-          
-          <!-- Botón exportar PDF -->
-          <button
-            @click="exportToPdf"
-            class="btn-primary flex items-center gap-2 self-end"
-            :disabled="isLoading || students.length === 0"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span>Exportar PDF</span>
-          </button>
-        </div>
-      </div>
-      
-      <!-- Navegación entre fechas -->
-      <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 py-2 px-4 rounded-lg mb-4">
-        <button
-          @click="navigatePrevious"
-          class="btn-icon"
-          title="Periodo anterior"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-          </svg>
+  <div class="bg-white dark:bg-gray-900 rounded-xl shadow p-4 md:p-6 max-w-full w-full mx-auto transition-colors duration-300">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+      <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100 tracking-tight">Asistencia</h2>
+      <div class="flex flex-wrap gap-2 items-center">
+        <select v-model="selectedClass" @change="handleClassChange" class="min-w-[120px] px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-400">
+          <option value="">Todas</option>
+          <option v-for="classItem in classes" :key="classItem.id" :value="classItem.id">{{ classItem.name }}</option>
+        </select>
+        <select v-model="viewMode" @change="changeViewMode" class="min-w-[90px] px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-400">
+          <option value="week">Semana</option>
+          <option value="biweek">Quincena</option>
+          <option value="month">Mes</option>
+        </select>
+        <button @click="exportToPdf" :disabled="isLoading || students.length === 0" class="flex items-center gap-1 px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-xs font-medium transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+          <span class="hidden sm:inline">PDF</span>
         </button>
-        
-        <div class="font-medium text-gray-700 dark:text-gray-300">
-          {{ dateRangeText }}
-        </div>
-        
-        <button
-          @click="navigateNext"
-          class="btn-icon"
-          title="Periodo siguiente"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-          </svg>
-        </button>
-      </div>
-      
-      <!-- Estados de carga y errores -->
-      <div v-if="isLoading" class="flex items-center justify-center my-12">
-        <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-        <span class="ml-3 text-gray-600 dark:text-gray-400">Cargando datos...</span>
-      </div>
-      
-      <div v-else-if="error" class="bg-red-100 dark:bg-red-900/20 border-l-4 border-red-500 text-red-700 dark:text-red-400 p-4 mb-4">
-        <p>{{ error }}</p>
-        <button 
-          @click="loadAttendanceData" 
-          class="text-sm underline hover:no-underline mt-2"
-        >
-          Reintentar
-        </button>
-      </div>
-      
-      <!-- Tabla de asistencia -->
-      <div v-else-if="students.length > 0" class="overflow-x-auto">
-        <div id="attendance-table-container" class="relative">
-          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed border-collapse">
-            <thead class="bg-gray-50 dark:bg-gray-800/60">
-              <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-64 sticky left-0 bg-gray-50 dark:bg-gray-800/60 shadow-sm z-10">
-                  Estudiante
-                </th>
-                <template v-for="day in visibleDays" :key="day.getTime()">
-                  <th 
-                    scope="col" 
-                    class="px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16"
-                  >
-                    <div>{{ formatDayName(day) }}</div>
-                    <div class="font-bold">{{ formatDayNumber(day) }}</div>
-                  </th>
-                </template>
-              </tr>
-            </thead>
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              <tr v-for="student in paginatedStudents" :key="student.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                <td class="px-6 py-4 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800 shadow-sm z-10">
-                  <div class="flex items-center">
-                    <div class="h-8 w-8 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 mr-3">
-                      <img
-                        v-if="student.photoURL"
-                        :src="student.photoURL"
-                        :alt="student.name"
-                        class="h-full w-full object-cover"
-                      >
-                      <div v-else class="h-full w-full flex items-center justify-center bg-blue-500 text-white text-sm">
-                        {{ getInitials(student.name) }}
-                      </div>
-                    </div>
-                    <div>
-                      <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {{ student.name }}
-                      </div>
-                      <!-- <div class="text-xs text-gray-500 dark:text-gray-400">
-                        {{ student.classInfo || 'Sin clase asignada' }}
-                      </div> -->
-                    </div>
-                  </div>
-                </td>
-                
-                <template v-for="day in visibleDays" :key="day.getTime()">
-                  <td 
-                    class="px-2 py-4 text-center"
-                  >
-                    <div 
-                      class="attendance-cell" 
-                      :class="getAttendanceClass(student.id, day)"
-                    >
-                      {{ getAttendanceStatus(student.id, day) }}
-                    </div>
-                  </td>
-                </template>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        <!-- Paginación -->
-        <div v-if="totalPages > 1" class="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 sm:px-6 mt-4">
-          <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-            <div>
-              <p class="text-sm text-gray-700 dark:text-gray-300">
-                Mostrando
-                <span class="font-medium">{{ (currentPage - 1) * pageSize + 1 }}</span>
-                a
-                <span class="font-medium">{{ Math.min(currentPage * pageSize, filteredStudents.length) }}</span>
-                de
-                <span class="font-medium">{{ filteredStudents.length }}</span>
-                estudiantes
-              </p>
-            </div>
-            <div>
-              <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                <button
-                  @click="changePage(1)"
-                  :disabled="currentPage === 1"
-                  :class="{'opacity-50 cursor-not-allowed': currentPage === 1}"
-                  class="pagination-btn rounded-l-md"
-                >
-                  <span class="sr-only">Primera</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 010 1.414zm-6 0a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 011.414 1.414L5.414 10l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
-                  </svg>
-                </button>
-                
-                <button
-                  @click="changePage(currentPage - 1)"
-                  :disabled="currentPage === 1"
-                  :class="{'opacity-50 cursor-not-allowed': currentPage === 1}"
-                  class="pagination-btn"
-                >
-                  <span class="sr-only">Anterior</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                  </svg>
-                </button>
-                
-                <template v-for="page in paginationRange" :key="page">
-                  <button
-                    v-if="page !== '...'"
-                    @click="changePage(page)"
-                    :class="{'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-600 dark:text-blue-400': page === currentPage}"
-                    class="pagination-number"
-                  >
-                    {{ page }}
-                  </button>
-                  <span 
-                    v-else
-                    class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    ...
-                  </span>
-                </template>
-                
-                <button
-                  @click="changePage(currentPage + 1)"
-                  :disabled="currentPage === totalPages"
-                  :class="{'opacity-50 cursor-not-allowed': currentPage === totalPages}"
-                  class="pagination-btn"
-                >
-                  <span class="sr-only">Siguiente</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                  </svg>
-                </button>
-                
-                <button
-                  @click="changePage(totalPages)"
-                  :disabled="currentPage === totalPages"
-                  :class="{'opacity-50 cursor-not-allowed': currentPage === totalPages}"
-                  class="pagination-btn rounded-r-md"
-                >
-                  <span class="sr-only">Última</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                    <path fill-rule="evenodd" d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                  </svg>
-                </button>
-              </nav>
-            </div>
-          </div>
-          
-          <!-- Paginación móvil simplificada -->
-          <div class="flex items-center justify-between w-full sm:hidden">
-            <button
-              @click="changePage(currentPage - 1)"
-              :disabled="currentPage === 1"
-              :class="{'opacity-50 cursor-not-allowed': currentPage === 1}"
-              class="pagination-btn"
-            >
-              Anterior
-            </button>
-            
-            <span class="text-sm text-gray-700 dark:text-gray-300">
-              Página {{ currentPage }} de {{ totalPages }}
-            </span>
-            
-            <button
-              @click="changePage(currentPage + 1)"
-              :disabled="currentPage === totalPages"
-              :class="{'opacity-50 cursor-not-allowed': currentPage === totalPages}"
-              class="pagination-btn"
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div v-else-if="!isLoading" class="text-center py-10">
-        <div class="inline-block p-4 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-        </div>
-        <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">No hay datos para mostrar</h3>
-        <p class="mt-1 text-gray-500 dark:text-gray-400">{{ selectedClass ? 'No hay estudiantes en esta clase' : 'Selecciona una clase para ver sus registros de asistencia' }}</p>
-      </div>
-      
-      <!-- Leyenda -->
-      <div class="mt-6 flex flex-wrap gap-4 text-xs border-t border-gray-200 dark:border-gray-700 pt-4">
-        <div class="flex items-center">
-          <div class="attendance-cell bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 border-green-200 dark:border-green-800">P</div>
-          <span class="ml-1 text-gray-600 dark:text-gray-400">Presente</span>
-        </div>
-        <div class="flex items-center">
-          <div class="attendance-cell bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 border-red-200 dark:border-red-800">A</div>
-          <span class="ml-1 text-gray-600 dark:text-gray-400">Ausente</span>
-        </div>
-        <div class="flex items-center">
-          <div class="attendance-cell bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400 border-purple-200 dark:border-purple-800">T</div>
-          <span class="ml-1 text-gray-600 dark:text-gray-400">Tarde</span>
-        </div>
-        <div class="flex items-center">
-          <div class="attendance-cell bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 border-blue-200 dark:border-blue-800">J</div>
-          <span class="ml-1 text-gray-600 dark:text-gray-400">Justificado</span>
-        </div>
-        <div class="flex items-center">
-          <div class="attendance-cell bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-600"></div>
-          <span class="ml-1 text-gray-600 dark:text-gray-400">Sin clase</span>
-        </div>
       </div>
     </div>
-  </template>
-  
-  <script setup lang="ts">
+
+    <!-- Date navigation -->
+    <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg px-2 py-1 mb-2">
+      <button @click="navigatePrevious" class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="Anterior">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+      </button>
+      <span class="text-xs text-gray-600 dark:text-gray-300 font-medium">{{ dateRangeText }}</span>
+      <button @click="navigateNext" class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="Siguiente">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div v-if="isLoading" class="flex justify-center items-center py-8">
+      <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+    <div v-else-if="error" class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded p-2 text-xs flex items-center gap-2">
+      <span>{{ error }}</span>
+      <button @click="loadAttendanceData" class="ml-auto underline text-blue-600 dark:text-blue-400">Reintentar</button>
+    </div>
+    <div v-else-if="students.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">
+      <span>No hay datos para mostrar</span>
+    </div>
+    <div v-else class="overflow-x-auto">
+      <table class="min-w-full text-xs border-separate border-spacing-y-1">
+        <thead>
+          <tr>
+            <th class="sticky left-0 z-10 bg-white dark:bg-gray-900 px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-200 rounded-l-lg">Estudiante</th>
+            <th v-for="day in visibleDays" :key="day.getTime()" class="px-2 py-2 text-center font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ formatDayName(day) }}<br><span class="font-bold">{{ formatDayNumber(day) }}</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="student in sortedStudents" :key="student.id" class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            <td class="sticky left-0 z-10 bg-white dark:bg-gray-900 px-2 py-2 flex items-center gap-2 rounded-l-lg">
+              <div class="h-7 w-7 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xs">
+                <span>{{ getInitials(student.name) }}</span>
+              </div>
+              <span class="truncate max-w-[100px]">{{ student.name }}</span>
+            </td>
+            <td v-for="day in visibleDays" :key="day.getTime()" class="px-2 py-2 text-center">
+              <span :class="getAttendanceClass(student.id, day) + ' rounded-full px-2 py-1 min-w-[1.5rem] inline-block font-semibold'">
+                {{ getAttendanceStatus(student.id, day) }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <!-- Pagination -->
+      <div v-if="totalPages > 1" class="flex justify-center items-center gap-1 mt-3">
+        <button @click="changePage(currentPage - 1)" :disabled="currentPage === 1" class="px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 disabled:opacity-50">&lt;</button>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Página {{ currentPage }} de {{ totalPages }}</span>
+        <button @click="changePage(currentPage + 1)" :disabled="currentPage === totalPages" class="px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 disabled:opacity-50">&gt;</button>
+      </div>
+    </div>
+    <!-- Legend -->
+    <div class="flex flex-wrap gap-3 mt-4 text-xs justify-center">
+      <div class="flex items-center gap-1"><span class="inline-block w-4 h-4 rounded-full bg-green-200 dark:bg-green-800"></span>Presente</div>
+      <div class="flex items-center gap-1"><span class="inline-block w-4 h-4 rounded-full bg-red-200 dark:bg-red-800"></span>Ausente</div>
+      <div class="flex items-center gap-1"><span class="inline-block w-4 h-4 rounded-full bg-purple-200 dark:bg-purple-800"></span>Tarde</div>
+      <div class="flex items-center gap-1"><span class="inline-block w-4 h-4 rounded-full bg-blue-200 dark:bg-blue-800"></span>Justificado</div>
+      <div class="flex items-center gap-1"><span class="inline-block w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700"></span>Sin clase</div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
 import 'jspdf-autotable';
 import { jsPDF } from 'jspdf';
 import { es } from 'date-fns/locale';
@@ -322,7 +104,7 @@ interface AutoTableOptions {
     cellPadding: number;
   };
   headStyles: {
-    fillColor: number[];
+    fillColor: number[][];
     textColor: number;
     fontStyle: string;
   };
@@ -395,7 +177,7 @@ function setFillColorForCell(doc: jsPDF, color: [number, number, number]) {
     name: string;
     photoURL?: string;
     classInfo?: string;
-    classIds?: string[];
+    classIds?: string[]; 
   }
   
   interface Class {
@@ -584,13 +366,13 @@ function setFillColorForCell(doc: jsPDF, color: [number, number, number]) {
     
     switch (record.status) {
       case 'P':
-        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 border-green-200 dark:border-green-800';
+        return 'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800';
       case 'A':
-        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 border-red-200 dark:border-red-800';
+        return 'bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800';
       case 'T':
-        return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400 border-purple-200 dark:border-purple-800';
+        return 'bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-800';
       case 'J':
-        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 border-blue-200 dark:border-blue-800';
+        return 'bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800';
       default:
         return '';
     }
@@ -987,135 +769,28 @@ onMounted(() => {
 watch(selectedClass, () => {
   handleClassChange();
 });
+
+// Agrupar estudiantes por prioridad de asistencia: P > T > J > A > resto
+const attendancePriority = { P: 1, T: 2, J: 3, A: 4, '': 5 };
+
+const sortedStudents = computed(() => {
+  // Para cada estudiante, buscamos su primer estado de asistencia en el rango visible
+  return paginatedStudents.value.slice().sort((a, b) => {
+    // Buscar el primer estado relevante en el rango visible
+    const getFirstStatus = (student: any) => {
+      for (const day of visibleDays.value) {
+        const status = getAttendanceStatus(student.id, day);
+        if (status && status !== '-') return status;
+      }
+      return '';
+    };
+    const statusA = getFirstStatus(a);
+    const statusB = getFirstStatus(b);
+    return attendancePriority[statusA] - attendancePriority[statusB];
+  });
+});
 </script>
-  
-  <style scoped>
-/* Remove @apply and use the full class names directly in the template */
-.attendance-cell {
-  width: 2.5rem;
-  height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.375rem;
-  border-width: 1px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin-left: auto;
-  margin-right: auto;
-}
 
-.form-select {
-  border-radius: 0.375rem;
-  padding-top: 0.375rem;
-  padding-bottom: 0.375rem;
-  padding-left: 0.75rem;
-  padding-right: 2rem;
-  font-size: 0.875rem;
-}
-
-.form-select:focus {
-  border-color: rgb(59, 130, 246);
-  outline: 2px solid rgb(59, 130, 246);
-  outline-offset: 2px;
-}
-
-.btn-primary {
-  padding: 0.5rem 1rem;
-  background-color: rgb(37, 99, 235);
-  color: white;
-  border-radius: 0.375rem;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  transition-property: background-color;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
-
-.btn-primary:hover {
-  background-color: rgb(29, 78, 216);
-}
-
-.btn-icon {
-  padding: 0.5rem;
-  border-radius: 0.375rem;
-  color: rgb(107, 114, 128);
-  transition-property: background-color;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
-
-.dark .btn-icon {
-  color: rgb(156, 163, 175);
-}
-
-.btn-icon:hover {
-  background-color: rgb(243, 244, 246);
-}
-
-.dark .btn-icon:hover {
-  background-color: rgb(75, 85, 99);
-}
-
-.pagination-btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  padding: 0.5rem;
-  border-width: 1px;
-  border-color: rgb(209, 213, 219);
-  background-color: white;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: rgb(107, 114, 128);
-}
-
-.dark .pagination-btn {
-  border-color: rgb(75, 85, 99);
-  background-color: rgb(31, 41, 55);
-  color: rgb(156, 163, 175);
-}
-
-.pagination-number {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  border-width: 1px;
-  border-color: rgb(209, 213, 219);
-  background-color: white;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: rgb(55, 65, 81);
-}
-
-.dark .pagination-number {
-  border-color: rgb(75, 85, 99);
-  background-color: rgb(31, 41, 55);
-  color: rgb(209, 213, 219);
-}
-
-.pagination-number:hover {
-  background-color: rgb(243, 244, 246);
-}
-
-.dark .pagination-number:hover {
-  background-color: rgb(55, 65, 81);
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-
-@media (max-width: 768px) {
-  .attendance-cell {
-    width: 2rem;
-    height: 2rem;
-    font-size: 0.75rem;
-  }
-}
+<style scoped>
+/* Minimal custom styles, rely on Tailwind */
 </style>

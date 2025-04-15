@@ -1,20 +1,51 @@
 <script setup lang="ts">
 // src/modulos/Teachers/view/TeacherEditView.vue
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTeachersStore } from '../store/teachers'
 import TeacherForm from '../components/TeacherForm.vue'
-import type { Teacher } from '../types'
+import type { Teacher } from '../types/teachers'
 
 const route = useRoute()
 const router = useRouter()
 const teachersStore = useTeachersStore()
 
 const teacherId = route.params.id as string
-const teacher = computed(() => teachersStore.teachers.find(t => t.id === teacherId))
+const teacher = computed(() => {
+  // Buscar por id (Firestore) o por uid (auth)
+  return teachersStore.getTeacherById(teacherId) ||
+         teachersStore.teachers.find(t => t.uid === teacherId)
+})
 
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+
+// Cargar maestros si la lista está vacía
+onMounted(async () => {
+  if (!teachersStore.teachers.length) {
+    isLoading.value = true
+    try {
+      await teachersStore.fetchTeachers()
+    } catch (err: any) {
+      error.value = err.message || 'Error al cargar maestros'
+    } finally {
+      isLoading.value = false
+    }
+  }
+})
+
+// Si el maestro no se encuentra tras cargar, mostrar error
+watch(
+  () => teacher.value,
+  (val) => {
+    if (!val && !isLoading.value && teachersStore.teachers.length) {
+      error.value = 'Maestro no encontrado'
+    } else {
+      error.value = null
+    }
+  },
+  { immediate: true }
+)
 
 const handleSubmit = async (data: Partial<Teacher>) => {
   if (!teacher.value) return
@@ -31,7 +62,7 @@ const handleSubmit = async (data: Partial<Teacher>) => {
     isLoading.value = false
   }
 }
-
+console.log("TEacher Edit", teacher.value)
 const handleCancel = () => {
   router.push(`/teachers/${teacherId}`)
 }
@@ -51,7 +82,10 @@ const handleCancel = () => {
       {{ error }}
     </div>
 
-    <div v-if="teacher" class="card">
+    <div v-if="isLoading" class="text-center py-12 text-gray-500 dark:text-gray-400">
+      Cargando datos del maestro...
+    </div>
+    <div v-else-if="teacher" class="card">
       <TeacherForm
         :initial-data="teacher"
         :is-loading="isLoading"

@@ -247,7 +247,7 @@ const handleEditClass = (classId: string): void => {
   isEditing.value = true;
   showForm.value = true;
 };
-const handleDeleteClass = (classId: string): void=> {
+const handleDeleteClass = async (classId: string): Promise<void> => {
   if (confirm('¿Estás seguro de que deseas eliminar esta clase?')) {
     try {
       await classesStore.deleteClass(classId);
@@ -366,7 +366,7 @@ const formatDateTime = (date: Date) => {
   });
 };
 // Cambiar de tab
-type TabType = 'notificaciones' | 'analitica' | 'classes' | 'dashboard';
+type TabType = 'overview' | 'schedule' | 'classes' | 'upcoming' | 'notificaciones' | 'analitica' | 'dashboard';
 
 const setActiveTab = (tab: TabType): void => {
   activeTab.value = tab;
@@ -410,7 +410,26 @@ onMounted(async () => {
           <span>Editar Perfil</span>
         </button>
       </div>
-      
+      <!-- Información del maestro -->
+      <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="flex items-center gap-4">
+          <div v-if="teachersStore.currentTeacher" class="text-gray-700 dark:text-gray-300">
+            <div class="text-sm">
+              <span class="font-semibold">Nombre:</span> {{ teachersStore.currentTeacher.fullName }}
+            </div>
+            <div class="text-sm">
+              <span class="font-semibold">Especialidad:</span> 
+              {{ teachersStore.currentTeacher.specialization || 'No especificada' }}
+            </div>
+            <div class="text-sm">
+              <span class="font-semibold">Email:</span> {{ teachersStore.currentTeacher.email }}
+            </div>
+          </div>
+          <div v-else class="text-gray-500 dark:text-gray-400 text-sm">
+            Cargando información del maestro...
+          </div>
+        </div>
+      </div>
       <!-- Tabs de navegación -->
       <div class="flex mt-6 border-b border-gray-200 dark:border-gray-700">
         <button 
@@ -471,14 +490,14 @@ onMounted(async () => {
       </div>
     </header>
     
-    <!-- Estado de carga -->
+  <!-- Estado de carga -->
     <div v-if="loading" class="flex justify-center items-center py-12">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
     </div>
     
     <section v-else class="dashboard-content space-y-6">
-      <!-- Vista general (Overview) -->
-      <div v-if="activeTab === 'overview'" class="space-y-6">
+      <!-- Vista general (Overview) notificaciones -->
+      <div v-if="activeTab === 'notificaciones'" class="space-y-6">
         <!-- Componente de métricas del panel -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div 

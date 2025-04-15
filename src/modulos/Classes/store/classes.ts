@@ -35,16 +35,7 @@ export const useClassesStore = defineStore('classes', {
     // Retorna clases sin horario definido
     getUnscheduledClasses: (state) => state.classes.filter(classItem => !classItem.schedule),
     // obtener clases por dias de la semana
-    getClassesByDay: (state) => (day: string) => {
-      return state.classes.filter(classItem =>
-        classItem.schedule?.slots && Array.isArray(classItem.schedule.slots) &&
-        classItem.schedule.slots.some(slot =>
-          typeof slot.day === 'string'
-            ? slot.day.toLowerCase() === day.toLowerCase()
-            : false
-        )
-      );
-    },
+    
     getClassesByStudentId: (state) => (studentId: string) => {
       if (!studentId) return [];
       return state.classes.filter(c => c.studentIds && c.studentIds.includes(studentId));
@@ -483,6 +474,40 @@ export const useClassesStore = defineStore('classes', {
         throw new Error('No hay siguiente nivel disponible');
       }
       return levels[currentIndex + 1];
-    }
+    },
+
+    /**
+     * Acción para obtener clases por día de la semana (igual que el getter, pero como método).
+     */
+    getClassesByDay(day: string | number) {
+      const daysEs = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+      const daysEn = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      let dayIndex: number | null = null;
+      let dayLower = '';
+      if (typeof day === 'number') {
+        dayIndex = day;
+        dayLower = daysEs[day] || daysEn[day] || '';
+      } else if (typeof day === 'string') {
+        dayLower = day.toLowerCase();
+        dayIndex = daysEs.indexOf(dayLower);
+        if (dayIndex === -1) dayIndex = daysEn.indexOf(dayLower);
+      }
+      return this.classes.filter(classItem =>
+        classItem.schedule?.slots && Array.isArray(classItem.schedule.slots) &&
+        classItem.schedule.slots.some(slot => {
+          if (typeof slot.day === 'string') {
+            const slotDayLower = slot.day.toLowerCase();
+            return (
+              slotDayLower === dayLower ||
+              daysEs.indexOf(slotDayLower) === dayIndex ||
+              daysEn.indexOf(slotDayLower) === dayIndex
+            );
+          } else if (typeof slot.day === 'number') {
+            return slot.day === dayIndex;
+          }
+          return false;
+        })
+      );
+    },
   }
 });

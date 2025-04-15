@@ -10,7 +10,7 @@ import { useContentsStore } from '../../Contents/store/contents'
 import { useQualificationStore } from '../../Qualifications/store/qualification'
 import { useProfileStore } from '../../Profile/store/profile';
 import { useUserSessionsStore } from '../../Users/store/userSessions'
-
+import { getAuth } from 'firebase/auth';
 interface TeacherReport {
   teacherId: string
   reportDate: Date
@@ -350,7 +350,22 @@ export const useAnalyticsStore = defineStore('analytics', {
         
         // Convertir los mapas a arrays ordenados por fecha
         this.attendanceMetrics.dailyAttendance = Array.from(dailyMap.entries())
-          .sort(([dateA], [dateB]) => parseISO(dateA).getTime() - parseISO(dateB).getTime())
+          .sort(([dateA], [dateB]) => {
+            try {
+              // Make sure the dates are valid before parsing
+              const parsedDateA = parseISO(dateA);
+              const parsedDateB = parseISO(dateB);
+              
+              if (!isValid(parsedDateA) || !isValid(parsedDateB)) {
+                return 0; // Skip invalid dates in sorting
+              }
+              
+              return parsedDateA.getTime() - parsedDateB.getTime();
+            } catch (error) {
+              console.warn('Error sorting dates:', dateA, dateB, error);
+              return 0;
+            }
+          })
           .slice(-7) // Últimos 7 días
           .map(([date, stats]) => ({
             date,
@@ -897,120 +912,87 @@ export const useAnalyticsStore = defineStore('analytics', {
       } catch (error) {
         console.error('Error generando métricas de carga de trabajo de profesores:', error);
       }
-    },
-
-    // Método para generar métricas de carga de trabajo de profesores con datos reales
-    async generateRealTeacherWorkloadMetrics() {
-      try {
-        const teachersStore = useTeachersStore();
-        const classesStore = useClassesStore();
-        const attendanceStore = useAttendanceStore();
+    },    // Método para generar métricas de carga de trabajo de profesores con datos reales
+    generateRealTeacherWorkloadMetrics(teacherId: string, classes: Class[] | undefined): TeacherWorkloadMetrics {
+      // Check if classes array exists before filtering
+      const teacherClasses = classes && Array.isArray(classes) 
+        ? classes.filter(c => c.teacherId === teacherId)
+        : [];
+      
+      // Inicializar métricas
+      const metrics: TeacherWorkloadMetrics = {
+        totalClasses: teacherClasses.length,
+        totalStudents: 0,
+        hoursPerWeek: 0,
+        classesByDay: {
+          'Lunes': 0,
+          'Martes': 0,
+          'Miércoles': 0, 
+          'Jueves': 0,
+          'Viernes': 0,
+          'Sábado': 0,
+          'Domingo': 0
+        },
+        classesByInstrument: {},
+        classesByLevel: {}
+      };
+      
+      // Procesar cada clase
+      teacherClasses.forEach(classItem => {
+        // Contar estudiantes
+        metrics.totalStudents += classItem.studentIds?.length || 0;
         
-        // Verificar si hay datos disponibles
-        if (teachersStore.items.length === 0) {
-          await teachersStore.fetchTeachers();
-        }
+        // Contar clases por instrumento
+        const instrument = classItem.instrument || 'Sin instrumento';
+        metrics.classesByInstrument[instrument] = (metrics.classesByInstrument[instrument] || 0) + 1;
         
-        // Crear mapa de clases por profesor
-        const classesByTeacher: Record<string, any[]> = {};
-        classesStore.classes.forEach(classItem => {
-          if (classItem.teacherId) {
-            if (!classesByTeacher[classItem.teacherId]) {
-              classesByTeacher[classItem.teacherId] = [];
-            }
-            classesByTeacher[classItem.teacherId].push(classItem);
-          }
-        });
+        // Contar clases por nivel
+        const level = classItem.level || 'Sin nivel';
+        metrics.classesByLevel[level] = (metrics.classesByLevel[level] || 0) + 1;
         
-        // Generar datos de carga de trabajo semanal
-        const weeklyClassLoad = [];
-        const today = new Date();
-        
-        // Obtener registros de asistencia si no están cargados
-        if (attendanceStore.records.length === 0) {
-          await attendanceStore.fetchAttendance();
-        }
-        
-        // Para cada profesor, analizar últimas 4 semanas
-        for (const teacher of teachersStore.items) {
-          const teacherClasses = classesByTeacher[teacher.id] || [];
-          
-          for (let i = 3; i >= 0; i--) {
-            // Calcular fechas para esta semana
-            const weekStart = new Date();
-            weekStart.setDate(today.getDate() - (i * 7) - 6);
-            const weekEnd = new Date();
-            weekEnd.setDate(today.getDate() - (i * 7));
-            
-            const weekLabel = `${format(weekStart, 'dd/MM')} - ${format(weekEnd, 'dd/MM')}`;
-            
-            // Contar clases programadas para esta semana
-            let scheduledClasses = 0;
-            teacherClasses.forEach(classItem => {
-              if (classItem.schedule) {
-                classItem.schedule.forEach((schedule: any) => {
-                  const scheduleDate = parseISO(schedule.date || schedule.fecha || '');
-                  if (isValid(scheduleDate) && 
-                      scheduleDate >= weekStart && 
-                      scheduleDate <= weekEnd) {
-                    scheduledClasses++;
-                  }
-                });
+        // Calcular horas por semana y clases por día
+        if (classItem.schedule) {
+          // Verificar si schedule tiene la propiedad slots o days
+          if (Array.isArray(classItem.schedule.slots)) {
+            // Usar slots si está disponible
+            classItem.schedule.slots.forEach(slot => {
+              // Incrementar contador para el día
+              if (slot.day && metrics.classesByDay[slot.day]) {
+                metrics.classesByDay[slot.day]++;
+              }
+              
+              // Calcular duración de la clase
+              if (slot.startTime && slot.endTime) {
+                const duration = this.calculateDuration(slot.startTime, slot.endTime);
+                metrics.hoursPerWeek += duration;
+              }
+            });
+          } else if (Array.isArray(classItem.schedule.days)) {
+            // Usar days como fallback
+            classItem.schedule.days.forEach(day => {
+              if (metrics.classesByDay[day]) {
+                metrics.classesByDay[day]++;
               }
             });
             
-            // Contar clases asistidas (donde hubo registro de asistencia)
-            let attendedClasses = 0;
-            
-            // Obtener todos los IDs de clase de este profesor
-            const teacherClassIds = teacherClasses.map(c => c.id);
-            
-            // Contar registros de asistencia para estas clases en este rango
-            attendanceStore.records.forEach(record => {
-              if (teacherClassIds.includes(record.classId)) {
-                const recordDate = parseISO(record.Fecha);
-                if (isValid(recordDate) && 
-                    recordDate >= weekStart && 
-                    recordDate <= weekEnd) {
-                  attendedClasses++;
-                }
-              }
-            });
-            
-            // Si no hay clases programadas, establecer valor predeterminado
-            if (scheduledClasses === 0) {
-              scheduledClasses = Math.max(1, Math.floor(Math.random() * 5) + 1); // 1-5 clases como mínimo
+            // Calcular duración con startTime y endTime generales
+            if (classItem.schedule.startTime && classItem.schedule.endTime) {
+              const duration = this.calculateDuration(
+                classItem.schedule.startTime, 
+                classItem.schedule.endTime
+              );
+              metrics.hoursPerWeek += duration * (classItem.schedule.days.length || 1);
             }
-            
-            // Si no hay clases asistidas, establecer un valor predeterminado cercano pero menor al programado
-            if (attendedClasses === 0) {
-              attendedClasses = Math.max(0, scheduledClasses - Math.floor(Math.random() * 2)); // 0-1 ausencias
-            }
-            
-            // Calcular tasa de asistencia
-            const rate = scheduledClasses > 0 ? 
-              Math.round((attendedClasses / scheduledClasses) * 100) : 0;
-            
-            weeklyClassLoad.push({
-              teacherId: teacher.id,
-              name: teacher.name || `Profesor ${teacher.id}`,
-              week: weekLabel,
-              scheduledClasses,
-              attendedClasses,
-              rate
-            });
+          } else {
+            // Si no hay estructura de schedule reconocible, registrar en consola
+            console.warn('Formato de horario no reconocido para la clase:', classItem.id);
           }
         }
-        
-        this.teacherMetrics.weeklyClassLoad = weeklyClassLoad;
-        
-        // Generar tendencias de rendimiento mensual
-        await this.generateMonthlyTeacherPerformance();
-        
-      } catch (error) {
-        console.error('Error generando métricas de carga de trabajo de profesores:', error);
-      }
+      });
+      
+      return metrics;
     },
+    
 
     // Método para generar tendencias mensuales de rendimiento de profesores
     async generateMonthlyTeacherPerformance() {
@@ -1106,55 +1088,93 @@ export const useAnalyticsStore = defineStore('analytics', {
         console.error('Error generando tendencias mensuales de rendimiento de profesores:', error);
       }
     },    // 🟢 Métricas y Registros del Perfil del Usuario
+    // Método para obtener métricas de perfil sin parámetros (usa usuario actual)
     async fetchProfileMetrics() {
       try {
-        const profileStore = useProfileStore();
-        const sessionsStore = useUserSessionsStore();
+        const auth = getAuth();
+        const userId = auth.currentUser?.uid;
         
-        if (auth.currentUser) {
-          // Último acceso real desde Firebase Auth
-          this.profileMetrics.lastLogin = auth.currentUser.metadata.lastSignInTime || 
-            format(new Date(), 'dd/MM/yyyy HH:mm', { locale: es });
-          
-          // Actividades recientes desde sesiones reales
-          const userSessions = await sessionsStore.getUserSessions(auth.currentUser.uid);
-          
-          // Convertir sesiones a actividades recientes
-          this.profileMetrics.recentActivities = userSessions
-            .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
-            .slice(0, 5)
-            .map(session => {
-              const sessionDate = session.startTime 
-                ? format(new Date(session.startTime), 'dd/MM/yyyy HH:mm', { locale: es })
-                : format(new Date(), 'dd/MM/yyyy HH:mm', { locale: es });
-                
-              return {
-                action: 'Inicio de sesión',
-                date: sessionDate,
-                details: session.device || 'Dispositivo desconocido'
-              };
-            });
-          
-          // Usar logros reales del perfil o mantener ejemplos si no existen
-          if (profileStore.profile?.achievements && profileStore.profile.achievements.length > 0) {
-            this.profileMetrics.achievements = profileStore.profile.achievements;
-          } else {
-            // Mantener algunos logros de ejemplo pero con fechas más realistas
-            this.profileMetrics.achievements = [
-              { 
-                id: '1', 
-                title: 'Experto en asistencia', 
-                description: '100% de registros completados a tiempo', 
-                icon: '🏆', 
-                earnedAt: format(new Date(), 'dd/MM/yyyy', { locale: es }), 
-                points: 100, 
-                category: 'teaching' 
-              }
-            ];
-          }
+        if (!userId) {
+          console.warn('No hay usuario autenticado para obtener métricas de perfil');
+          return null;
         }
         
-        return this.profileMetrics;
+        return await this.fetchUserProfileMetrics(userId);
+      } catch (error) {
+        console.error('Error cargando métricas de usuario:', error);
+        throw error;
+      }
+    },
+    
+    // Método para obtener métricas de perfil de un usuario específico
+    async fetchUserProfileMetrics(userId: string) {
+      try {
+        // Get user profile data
+        const profileStore = useProfileStore();
+        // Usar fetchProfile en lugar de fetchUserProfile que no existe
+        const profileData = await profileStore.fetchProfile();
+        
+        // Map attendance history with proper date validation
+        if (profileData.attendanceHistory) {
+          profileData.attendanceHistory = profileData.attendanceHistory.map(record => {            // Validate date before parsing - improved validation logic
+            let formattedDate;
+            try {
+              // Handle different date formats safely
+              if (typeof record.date === 'string') {
+                // Try to ensure the string is properly formatted before parsing
+                let dateStr = record.date.trim();
+                
+                // Check if it's an ISO format or contains any invalid characters
+                if (dateStr && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(dateStr) || /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                  // Try to parse using parseISO for better compatibility
+                  const parsedDate = parseISO(dateStr);
+                  
+                  // Verify the date is valid
+                  if (isValid(parsedDate)) {
+                    formattedDate = parsedDate;
+                  } else {
+                    console.warn(`Invalid ISO date format: ${dateStr}, using current date`);
+                    formattedDate = new Date(); // Fallback to current date
+                  }
+                } else {
+                  // For non-ISO format strings, try regular Date constructor with extra validation
+                  const parsedDate = new Date(dateStr);
+                  
+                  // Check if the parsed date is valid and not in the distant past or future
+                  const year = parsedDate.getFullYear();
+                  if (!isNaN(parsedDate.getTime()) && year > 1970 && year < 2100) {
+                    formattedDate = parsedDate;
+                  } else {
+                    console.warn(`Invalid date string format: ${dateStr}, using current date`);
+                    formattedDate = new Date(); // Fallback to current date
+                  }
+                }
+              } else if (record.date instanceof Date) {
+                // If it's already a Date object, verify it's valid before using it
+                if (!isNaN(record.date.getTime())) {
+                  formattedDate = record.date;
+                } else {
+                  console.warn(`Invalid Date object, using current date`);
+                  formattedDate = new Date();
+                }
+              } else {
+                // For any other type, use current date
+                console.warn(`Unexpected date format: ${typeof record.date}, using current date`);
+                formattedDate = new Date();
+              }
+            } catch (e) {
+              console.warn(`Error processing date: ${record.date}`, e);
+              formattedDate = new Date(); // Fallback to current date
+            }
+            
+            return {
+              ...record,
+              date: formattedDate
+            };
+          });
+        }
+        
+        return profileData;
       } catch (error) {
         console.error('Error cargando métricas de usuario:', error);
         throw error;
@@ -1227,7 +1247,7 @@ export const useAnalyticsStore = defineStore('analytics', {
         throw error
       }
     },
-
+    // Método para calcular horas trabajadas y tasa de asistencia de un profesor
     async getTeacherWorkedHours(teacherId: string, startDate: Date, endDate: Date): Promise<{ scheduledHours: number, workedHours: number, attendanceRate: number }> {
       try {
         const teacherStore = useTeachersStore()
@@ -1265,7 +1285,7 @@ export const useAnalyticsStore = defineStore('analytics', {
         throw error
       }
     },
-
+    // Método para analizar el uso de la app por parte de un profesor
     async analyzeTeacherAppUsage(teacherId: string, startDate: Date, endDate: Date) {
       try {
         const teacherStore = useTeachersStore()
@@ -1317,7 +1337,7 @@ export const useAnalyticsStore = defineStore('analytics', {
         throw error
       }
     },
-
+// Método para generar un reporte de profesor
     async generateTeacherReport(teacherId: string, startDate: Date, endDate: Date) {
       try {
         const teacherStore = useTeachersStore()
@@ -1369,13 +1389,6 @@ export const useAnalyticsStore = defineStore('analytics', {
         throw error
       }
     },
-    // Puede agregar nuevas funciones que cruzen los datos, por ejemplo:
-    calculateStudentsGrowth() {
-      // Ejemplo: crecimiento simulado de estudiantes
-      this.studentMetrics.growth = Math.floor(Math.random() * 30) - 10;
-    },
-
-    // Obtener a los mejores estudiantes
 
     // Nuevo método para obtener análisis de asistencia por rango de fechas
     async getAttendanceByDateRange(startDate: Date, endDate: Date) {

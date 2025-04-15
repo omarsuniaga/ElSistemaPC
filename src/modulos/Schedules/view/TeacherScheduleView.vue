@@ -252,27 +252,76 @@ const loadData = async () => {
         // ID tokens contain the claims, not the User object directly
         let userRole = 'unknown';
         
-        // Get role directly from Firebase auth token
+        // Get role from multiple sources to ensure we find it
         if (currentUser) {
           try {
-            const idTokenResult = await currentUser.getIdTokenResult();
-            // Check if role exists and is a string
-            userRole = typeof idTokenResult.claims.role === 'string' 
-              ? idTokenResult.claims.role 
-              : 'unknown';
+            // Method 1: Get role from token claims
+            const idTokenResult = await currentUser.getIdTokenResult(true); // Force token refresh
+            
+            console.log('Token claims:', idTokenResult.claims); // Debug log
+            
+            // Check if role exists in claims
+            if (idTokenResult.claims.role) {
+              userRole = idTokenResult.claims.role;
+              console.log('Role found in token claims:', userRole);
+            } else if (idTokenResult.claims.custom_claims && idTokenResult.claims.custom_claims.role) {
+              // Some implementations nest custom claims
+              userRole = idTokenResult.claims.custom_claims.role;
+              console.log('Role found in nested custom claims:', userRole);
+            }
+            
+            // Method 2: Try to get role from user store if available
+            if (userRole === 'unknown' && userStore.currentUser && userStore.currentUser.role) {
+              userRole = userStore.currentUser.role;
+              console.log('Role found in user store:', userRole);
+            }
+            
+            // Method 3: Check if user email matches any teacher email
+            if (userRole === 'unknown' && currentUser.email) {
+              const teacherWithEmail = teachersStore.teachers.find(t => 
+                t.email && t.email.toLowerCase() === currentUser.email.toLowerCase()
+              );
+              
+              if (teacherWithEmail) {
+                userRole = 'teacher'; // If email matches a teacher, assume role is teacher
+                console.log('User email matches a teacher email, assuming role is teacher');
+                
+                // Set the teacher value since we found a match
+                teacher.value = {
+                  ...teacherWithEmail,
+                  experiencia: typeof teacherWithEmail.experiencia === 'string'
+                    ? { institution: teacherWithEmail.experiencia }
+                    : teacherWithEmail.experiencia
+                };
+              }
+            }
+            
+            // Method 4: Check if user UID matches any teacher UID
+            if (userRole === 'unknown') {
+              const teacherWithUid = teachersStore.teachers.find(t => 
+                t.uid === currentUser.uid || t.userId === currentUser.uid
+              );
+              
+              if (teacherWithUid) {
+                userRole = 'teacher'; // If UID matches a teacher, assume role is teacher
+                console.log('User UID matches a teacher UID, assuming role is teacher');
+                
+                // Set the teacher value since we found a match
+                teacher.value = {
+                  ...teacherWithUid,
+                  experiencia: typeof teacherWithUid.experiencia === 'string'
+                    ? { institution: teacherWithUid.experiencia }
+                    : teacherWithUid.experiencia
+                };
+              }
+            }
           } catch (tokenErr) {
             console.warn("Couldn't get user role from token:", tokenErr);
           }
         }
         
-        // Alternatively, could get token claims if needed:
-        // if (currentUser) {
-        //   const idTokenResult = await currentUser.getIdTokenResult();
-        //   userRole = idTokenResult.claims.role || 'unknown';
-        // }
-        
         // Si el usuario tiene un rol diferente a 'teacher', mostrar mensaje adecuado
-        if (userRole !== 'teacher') {
+        if (userRole !== 'teacher' && !teacher.value) {
           console.warn('El usuario actual no tiene rol de maestro:', userRole);
           error.value = 'No tienes acceso a esta página. Esta vista está disponible solo para maestros.';
           isLoading.value = false;
@@ -282,8 +331,11 @@ const loadData = async () => {
         console.warn('Error al verificar rol de usuario:', e)
       }
       
-      console.error('No se encontró maestro con ID:', teacherId.value)
-      throw new Error('No se encontró información del maestro. Por favor verifique que el ID sea correcto o contacte al administrador.')
+      // Only show error if we still don't have a teacher value
+      if (!teacher.value) {
+        console.error('No se encontró maestro con ID:', teacherId.value)
+        throw new Error('No se encontró información del maestro. Por favor verifique que el ID sea correcto o contacte al administrador.')
+      }
     }
     
     // Cargar horarios desde el store de schedules

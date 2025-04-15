@@ -74,6 +74,15 @@ const displayToast = (message: string, type: 'success' | 'error' | 'warning' | '
 const handleUpdateStatus = (studentId: string, status: string) => {
   // Si es una operación de guardar todos los cambios pendientes
   if (studentId === 'all' && status === 'save') {
+    classesStore.getClassesByDay(todayIndex.value).forEach((classObj) => {
+      // Guardar cambios pendientes para cada clase
+      const classId = classObj.id;
+      const attendanceDoc = attendanceStore.attendanceDocuments.find(doc => doc.classId === classId && doc.fecha === attendanceStore.selectedDate);
+      if (attendanceDoc) {
+        attendanceStore.saveAttendanceDocument(attendanceDoc);
+      }
+    });
+    // Guardar todos los cambios pendientes
     saveAllPendingChanges();
     return;
   }
@@ -96,7 +105,6 @@ const handleUpdateStatus = (studentId: string, status: string) => {
 // Función para guardar todos los cambios pendientes
 const saveAllPendingChanges = async () => {
   if (pendingChanges.value.size === 0) return;
-  
   try {
     // Preparar el documento de asistencia con la estructura correcta
     const attendanceDoc = {
@@ -135,7 +143,9 @@ const saveAllPendingChanges = async () => {
     
     // Guardar en Firestore usando el método del store
     await attendanceStore.saveAttendanceDocument(attendanceDoc);
-    
+    await attendanceStore.fetchAttendanceDocuments();
+    // Emitir evento global para actualizar monitoreo
+    window.dispatchEvent(new Event('attendance-updated'));
     // Mostrar toast de éxito
     displayToast(`¡Asistencia guardada! ${pendingChanges.value.size} registro(s) actualizados.`, 'success');
     
@@ -258,6 +268,11 @@ const loadStudentsForClass = async (classId: string) => {
 // Verificar si hay cambios sin guardar
 const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
 
+// Obtener el índice del día actual (0 para domingo, 1 para lunes, etc.)
+const todayIndex = computed(() => {
+  return new Date().getDay();
+});
+
 </script>
 <template>
   <div class="space-y-4">
@@ -297,7 +312,7 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
         >
           <ArrowDownOnSquareIcon class="w-3 h-3 sm:w-4 sm:h-4" />
           <span class="hidden xs:inline">Guardar{{hasPendingChanges ? ' (' + pendingChanges.size + ')' : ''}}</span>
-          <span class="xs:hidden">G{{hasPendingChanges ? ' (' + pendingChanges.size + ')' : ''}}</span>
+          <span class="xs:hidden">Guardar{{hasPendingChanges ? ' (' + pendingChanges.size + ')' : ''}}</span>
         </button>
         <button class="btn btn-secondary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none" @click="emit('open-export')">
           <ArrowDownTrayIcon class="w-3 h-3 sm:w-4 sm:h-4" />
@@ -336,7 +351,7 @@ const hasPendingChanges = computed(() => pendingChanges.value.size > 0);
         </thead>
         <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
           <tr v-for="student in students" :key="student.id" class="hover:bg-gray-50 dark:hover:bg-gray-800">
-            <td class="px-1 sm:px-4 py-2 sm:py-3">
+            <td class="px-1 sm:px-2 py-2 sm:py-3">
               <div class="flex items-center">
                 <div class="flex-shrink-0 h-7 w-7 sm:h-10 sm:w-10">
                   <div :class="[

@@ -4,6 +4,7 @@ import {
   updateTeacherInFirebase, 
   deleteTeacherFromFirebase, 
   fetchTeachersFromFirebase,
+  fetchTeacherByIdFromFirebase,
 } from '../services/teachers'
 import type { Teacher, TeacherData } from '../types/teachers'
 import { TeacherStatus } from '../types/teachers'

@@ -208,6 +208,25 @@ const applyTimeFilter = () => {
   loadDashboardData();
 }
 
+// Manejador para el cambio de periodo desde AnalysisPanel
+const handlePeriodChange = (data: { period: string, dateRange: { startDate: string, endDate: string } | null }) => {
+  // Mapear el periodId a los rangos de tiempo correspondientes
+  if (data.period === 'current') {
+    timeRange.value.selectedRange = 'currentMonth';
+  } else if (data.period === 'last') {
+    timeRange.value.selectedRange = 'last3Months';
+  } else if (data.period === 'custom') {
+    timeRange.value.selectedRange = 'custom';
+    // Si hay un rango de fechas personalizado, actualizarlo
+    if (data.dateRange) {
+      timeRange.value.startDate = data.dateRange.startDate;
+      timeRange.value.endDate = data.dateRange.endDate;
+    }
+  }
+  
+  applyTimeFilter();
+}
+
 // Observar cambios en el filtro de tiempo
 watch(() => timeRange.value.selectedRange, (newValue) => {
   if (newValue !== 'custom') {
@@ -380,21 +399,21 @@ onMounted(async () => {
       <div v-if="activeTab === 'overview'">
         <!-- Ejemplo de KPI Cards con datos agregados -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <PerformanceKpi title="Total Estudiantes" :value="aggregatedData.totalStudents" :trend="aggregatedData.studentsGrowth" icon="UserIcon" metricType="default" />
-          <PerformanceKpi title="Total Profesores" :value="aggregatedData.totalTeachers" :trend="3.1" icon="UsersIcon" metricType="default" />
-          <PerformanceKpi title="Total Clases" :value="aggregatedData.totalClasses" :trend="2.8" icon="AcademicCapIcon" metricType="default" />
-          <PerformanceKpi title="Asistencia Promedio" :value="aggregatedData.averageAttendance" :trend="3" icon="CalendarIcon" metricType="percentage" />
-          <PerformanceKpi title="Rendimiento Promedio" :value="aggregatedData.averagePerformance" :trend="1.5" icon="ChartBarIcon" metricType="percentage" />
-          <PerformanceKpi title="Instrumentos" :value="dashboardData.totalInstruments" :trend="0" icon="ChartBarIcon" metricType="default" />
+          <PerformanceKpi title="Total Estudiantes" :value="aggregatedData.totalStudents" :trend="aggregatedData.studentsGrowth" :icon="UserIcon" metricType="default" />
+          <PerformanceKpi title="Total Profesores" :value="aggregatedData.totalTeachers" :trend="3.1" :icon="UsersIcon" metricType="default" />
+          <PerformanceKpi title="Total Clases" :value="aggregatedData.totalClasses" :trend="2.8" :icon="AcademicCapIcon" metricType="default" />
+          <PerformanceKpi title="Asistencia Promedio" :value="aggregatedData.averageAttendance" :trend="3" :icon="CalendarIcon" metricType="percentage" />
+          <PerformanceKpi title="Rendimiento Promedio" :value="aggregatedData.averagePerformance" :trend="1.5" :icon="ChartBarIcon" metricType="percentage" />
+          <PerformanceKpi title="Instrumentos" :value="dashboardData.totalInstruments" :trend="0" :icon="ChartBarIcon" metricType="default" />
         </div>
         
         <!-- Resumen visual -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <ChartContainer title="Asistencia por Día" icon="ChartBarIcon">
+          <ChartContainer title="Asistencia por Día" :icon="ChartBarIcon">
             <Line :data="attendanceByDayChart" :options="commonChartOptions"/>
           </ChartContainer>
           
-          <ChartContainer title="Distribución de Rendimiento" icon="ChartBarIcon">
+          <ChartContainer title="Distribución de Rendimiento" :icon="ChartBarIcon">
             <Doughnut :data="performanceDistributionChart" :options="commonChartOptions"/>
           </ChartContainer>
         </div>
@@ -408,6 +427,103 @@ onMounted(async () => {
           :atRiskStudents="atRiskStudents"
           :bestAttendanceClasses="bestAttendanceClasses"
           :lowestPerformanceIndicators="lowestPerformanceIndicators"
+          :studentsAnalytics="{
+            daily: 25,
+            weekly: 120,
+            monthly: 480,
+            periodTotal: 1200
+          }"
+          :studentAttendanceTrend="{
+            labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+            datasets: [{
+              label: 'Asistencia',
+              data: [85, 87, 90, 88, 92, 91],
+              backgroundColor: 'rgba(99, 102, 241, 0.5)',
+              borderColor: 'rgb(99, 102, 241)',
+              borderWidth: 1
+            }]
+          }"
+          :trendChartOptions="commonChartOptions"
+          :instrumentPerformance="[
+            { id: '1', name: 'Piano', students: 45, attendance: 92, performance: 88 },
+            { id: '2', name: 'Guitarra', students: 38, attendance: 88, performance: 85 },
+            { id: '3', name: 'Violín', students: 25, attendance: 90, performance: 87 }
+          ]"
+          :teachersAnalytics="{
+            active: 12,
+            avgAttendance: 95,
+            weeklyClasses: 48,
+            hoursWorked: 96
+          }"
+          :teacherAttendanceData="{
+            labels: ['Profesor A', 'Profesor B', 'Profesor C', 'Profesor D', 'Profesor E'],
+            datasets: [{
+              label: 'Asistencia (%)',
+              data: [95, 92, 97, 90, 94],
+              backgroundColor: 'rgba(16, 185, 129, 0.5)',
+              borderColor: 'rgb(16, 185, 129)',
+              borderWidth: 1
+            }]
+          }"
+          :barChartOptions="commonChartOptions"
+          :teacherAttendanceBalance="[
+            { id: '1', name: 'Profesor A', scheduledClasses: 20, attendedClasses: 19, balanceRate: 95 },
+            { id: '2', name: 'Profesor B', scheduledClasses: 18, attendedClasses: 17, balanceRate: 94 },
+            { id: '3', name: 'Profesor C', scheduledClasses: 15, attendedClasses: 15, balanceRate: 100 }
+          ]"
+          :dailyAttendanceData="{
+            labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+            datasets: [{
+              label: 'Asistencia',
+              data: [45, 38, 42, 40, 35, 30, 10],
+              backgroundColor: 'rgba(139, 92, 246, 0.5)',
+              borderColor: 'rgb(139, 92, 246)',
+              borderWidth: 1
+            }]
+          }"
+          :lineChartOptions="commonChartOptions"
+          :attendanceAnalytics="{
+            dailyAverage: 35,
+            peakDay: 'Lunes (45)',
+            weeklyTotal: 240,
+            bestDay: 'Lunes',
+            monthlyTotal: 960,
+            weeklyAverage: 240,
+            growthRate: 3.5
+          }"
+          :weeklyAttendanceData="{
+            labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'],
+            datasets: [{
+              label: 'Asistencia',
+              data: [230, 245, 238, 252],
+              backgroundColor: 'rgba(139, 92, 246, 0.5)',
+              borderColor: 'rgb(139, 92, 246)',
+              borderWidth: 1
+            }]
+          }"
+          :monthlyAttendanceTrend="{
+            labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+            datasets: [{
+              label: 'Asistencia',
+              data: [920, 950, 980, 960, 990, 1020],
+              backgroundColor: 'rgba(139, 92, 246, 0.5)',
+              borderColor: 'rgb(139, 92, 246)',
+              borderWidth: 1
+            }]
+          }"
+          :periods="[
+            { id: 'current', name: 'Periodo Actual' },
+            { id: 'last', name: 'Periodo Anterior' },
+            { id: 'custom', name: 'Personalizado' }
+          ]"
+          :tabs="[
+            { id: 'general', name: 'General' },
+            { id: 'students', name: 'Alumnos' },
+            { id: 'teachers', name: 'Maestros' },
+            { id: 'attendance', name: 'Asistencias' }
+          ]"
+          @period-changed="handlePeriodChange"
+          @refresh-data="loadDashboardData"
         />
       </div>
       
@@ -436,6 +552,8 @@ onMounted(async () => {
           :atRiskStudents="atRiskStudents"
           :bestAttendanceClasses="bestAttendanceClasses"
           :lowestPerformanceIndicators="lowestPerformanceIndicators"
+          @period-changed="handlePeriodChange"
+          @refresh-data="loadDashboardData"
         />
       </div>
       

@@ -149,11 +149,11 @@ const downloadSchedule = async () => {
 
     <!-- Perfil Header -->
     <div class="flex items-center gap-6 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-lg p-6 text-white">
-      <img :src="teacher.photoURL || `https://ui-avatars.com/api/?name=${teacher.nombre}`" alt="teacher photo"
+      <img :src="teacher && teacher.photoURL ? teacher.photoURL : `https://ui-avatars.com/api/?name=${teacher ? teacher.name || 'Teacher' : 'Teacher'}`" alt="teacher photo"
         class="w-24 h-24 rounded-full shadow-lg border-4 border-white object-cover">
       <div>
-        <h1 class="text-2xl font-bold">{{ teacher.name }} </h1>
-        <p class="text-indigo-100">{{ teacher.instruments || 'Profesor de Música' }}</p>
+        <h1 class="text-2xl font-bold">{{ teacher ? teacher.name : 'Profesor' }} </h1>
+        <p class="text-indigo-100">{{ teacher && teacher.instruments ? teacher.instruments : 'Profesor de Música' }}</p>
         <p class="text-sm">{{ formattedDate }}</p>
       </div>
       <button @click="toggleDarkMode" class="ml-auto p-2 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30">
@@ -183,7 +183,7 @@ const downloadSchedule = async () => {
 
       <!-- Botones de acción -->
       <NotificationSystem
-  :notifications="notificationsStore.unreadNotifications"
+  :notifications="notificationsStore.notifications"
   @dismiss="dismissNotification"
 />
     <div class="flex flex-wrap gap-4">
@@ -243,9 +243,45 @@ const downloadSchedule = async () => {
               </div>
               <div class="mt-4">
                 <NotificationSystem
-                  :notifications="notificationsStore.unreadNotifications"
+                  :notifications="notificationsStore.notifications"
                   @dismiss="dismissNotification"
                 />
+              </div>
+            </DialogPanel>
+          </TransitionChild>
+        </div>
+      </div>
+    </Dialog>
+  </TransitionRoot>
+  <!-- Eliminar el modal duplicado -->
+  <TransitionRoot :show="showNotificationsModal" as="template">
+    <Dialog as="div" class="relative z-10" @close="showNotificationsModal = false">
+      <div class="fixed inset-0 z-10 overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4 text-center">
+          <TransitionChild
+            enter="ease-out duration-300"
+            enter-from="opacity-0 scale-95"
+            enter-to="opacity-100 scale-100"
+            leave="ease-in duration-200"
+            leave-from="opacity-100 scale-100"
+            leave-to="opacity-0 scale-95"
+          >
+            <DialogPanel class="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+              <div class="absolute right-0 top-0 pr-4 pt-4">
+                <button @click="showNotificationsModal = false" class="rounded-md bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-500 focus:outline-none">
+                  <XMarkIcon class="h-6 w-6" />
+                </button>
+              </div>
+              <div class="sm:flex sm:items-start">
+                <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                  <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white">Notificaciones</h3>
+                  <div class="mt-4 max-h-[60vh] overflow-y-auto">
+                    <NotificationSystem
+                      :notifications="notificationsStore.notifications"
+                      @dismiss="dismissNotification"
+                    />
+                  </div>
+                </div>
               </div>
             </DialogPanel>
           </TransitionChild>

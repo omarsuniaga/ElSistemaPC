@@ -6,7 +6,7 @@ import { useClassesStore } from '../modulos/Classes/store/classes';
 // import { useToast } from '../components/ui/toast/use-toast'; // Descomentar si se usa toast
 import type { Student } from '../modulos/Students/types/student';
 import type { AttendanceDocument } from '../modulos/Attendance/types/attendance'; // Importar tipo
-import { formatISO, isValid, parseISO } from 'date-fns'; // Asegúrate de importar isValid
+import { formatISO, isValid, parseISO } from 'date-fns'; // Asegúrate de importar isValid y formatISO
 
 // Stores
 const studentsStore = useStudentsStore();
@@ -81,27 +81,28 @@ async function searchAbsences() {
     error.value = "Por favor, seleccione fecha de inicio y fin.";
     return;
   }
-  
+
   // Normalizar las fechas del rango ANTES de usarlas
   const rangeStartDate = normalizeDate(startDate.value);
   const rangeEndDate = normalizeDate(endDate.value);
-  
+
   // Validar las fechas normalizadas
-  if (!isValid(rangeStartDate) || rangeStartDate.getTime() === 0 || 
-      !isValid(rangeEndDate) || rangeEndDate.getTime() === 0 || 
+  if (!isValid(rangeStartDate) || rangeStartDate.getTime() === 0 ||
+      !isValid(rangeEndDate) || rangeEndDate.getTime() === 0 ||
       rangeEndDate < rangeStartDate) {
     error.value = "Rango de fechas inválido. Verifique las fechas seleccionadas.";
-    console.error("Fechas normalizadas inválidas:", { 
-        startInput: startDate.value, startNormalized: rangeStartDate, 
-        endInput: endDate.value, endNormalized: rangeEndDate 
+    console.error("Fechas normalizadas inválidas:", {
+        startInput: startDate.value, startNormalized: rangeStartDate,
+        endInput: endDate.value, endNormalized: rangeEndDate
     });
     return;
   }
-  
-  // Ajustar la hora final para incluir todo el día
-  rangeEndDate.setHours(23, 59, 59, 999);
 
-  console.log("Buscando ausencias desde:", rangeStartDate.toISOString(), "hasta:", rangeEndDate.toISOString());
+  // **MODIFICACIÓN:** Obtener solo la parte de la fecha (YYYY-MM-DD) para comparación
+  const rangeStartYYYYMMDD = formatISO(rangeStartDate, { representation: 'date' });
+  const rangeEndYYYYMMDD = formatISO(rangeEndDate, { representation: 'date' });
+
+  console.log(`Buscando ausencias desde: ${rangeStartYYYYMMDD} hasta: ${rangeEndYYYYMMDD}`); // Log con formato YYYY-MM-DD
 
   isLoading.value = true;
   error.value = null;
@@ -113,13 +114,9 @@ async function searchAbsences() {
     if (studentsStore.students.length === 0) await studentsStore.fetchStudents();
     if (classesStore.classes.length === 0) await classesStore.fetchClasses();
 
-    // 2. Obtener los documentos de asistencia del store en el rango de fechas
-    //    **¡¡IMPORTANTE!! Esta acción DEBE existir en useAttendanceStore y usar fechas en formato YYYY-MM-DD**
-    //    El store debería manejar la lógica de fetch, aquí solo pedimos los datos.
-    //    Si fetchDocumentsByDateRange no existe, hay que crearlo o adaptar el fetch general.
-    //    Asumiremos que tenemos todos los documentos y filtramos aquí por ahora.
+    // 2. Obtener los documentos de asistencia del store
     //    Idealmente, el fetch ya debería filtrar por rango en Firebase si es posible.
-    
+
     // Obtener TODOS los documentos (o idealmente, usar un fetch por rango si existe)
     if (attendanceStore.attendanceDocuments.length === 0) {
         await attendanceStore.fetchAttendanceDocuments(); // Asegura que los documentos estén cargados
@@ -140,23 +137,29 @@ async function searchAbsences() {
       // Normalizar la fecha del documento
       const docDate = normalizeDate(doc.fecha);
 
-      // Verificar si la fecha normalizada es válida y está dentro del rango
-      if (isValid(docDate) && docDate.getTime() !== 0 && docDate >= rangeStartDate && docDate <= rangeEndDate) {
-        // console.log(`Documento ${doc.id || doc.fecha} EN RANGO (${docDate.toISOString()})`);
-        
-        doc.data.ausentes.forEach((studentId: string) => {
-          if (!studentId) return; // Ignorar IDs vacíos
+      // **MODIFICACIÓN:** Verificar si la fecha normalizada es válida y está dentro del rango (comparando YYYY-MM-DD)
+      if (isValid(docDate) && docDate.getTime() !== 0) {
+        const docYYYYMMDD = formatISO(docDate, { representation: 'date' });
 
-          const currentData = absencesMap.get(studentId) || { count: 0, classIds: new Set<string>(), dates: [] };
-          currentData.count += 1;
-          if (doc.classId) {
-            currentData.classIds.add(doc.classId);
-          }
-          currentData.dates.push(doc.fecha); // Guardar la fecha original del registro
-          absencesMap.set(studentId, currentData);
-        });
+        if (docYYYYMMDD >= rangeStartYYYYMMDD && docYYYYMMDD <= rangeEndYYYYMMDD) {
+          // console.log(`Documento ${doc.id || doc.fecha} EN RANGO (${docYYYYMMDD})`);
+
+          doc.data.ausentes.forEach((studentId: string) => {
+            if (!studentId) return; // Ignorar IDs vacíos
+
+            const currentData = absencesMap.get(studentId) || { count: 0, classIds: new Set<string>(), dates: [] };
+            currentData.count += 1;
+            if (doc.classId) {
+              currentData.classIds.add(doc.classId);
+            }
+            currentData.dates.push(doc.fecha); // Guardar la fecha original del registro
+            absencesMap.set(studentId, currentData);
+          });
+        } else {
+           // console.log(`Documento ${doc.id || doc.fecha} FUERA DE RANGO (${docYYYYMMDD})`);
+        }
       } else {
-         console.log(`Documento ${doc.id || doc.fecha} FUERA DE RANGO (${docDate.toISOString()})`);
+         // console.log(`Documento ${doc.id || doc.fecha} con fecha inválida o no normalizable: ${doc.fecha}`);
       }
     });
 
@@ -175,10 +178,10 @@ async function searchAbsences() {
         finalResults.push({
           student: student, // Guardar el objeto estudiante completo
           absenceCount: data.count,
-          missedClassIds: data.classIds, // Añadir los IDs de clases perdidas
           missedClassNames: missedClassNames.length > 0 ? missedClassNames : ['Clase no especificada'],
           // Añadir las fechas específicas de ausencia al resultado
-          absenceDates: data.dates 
+          absenceDates: data.dates,
+          missedClassIds: data.classIds
         });
       } else {
         console.warn(`Estudiante con ID ${studentId} ausente pero no encontrado en el store.`);
@@ -187,7 +190,7 @@ async function searchAbsences() {
 
     // Ordenar resultados (opcional, por ejemplo por número de ausencias)
     results.value = finalResults.sort((a, b) => b.absenceCount - a.absenceCount);
-    
+
     if (results.value.length === 0) {
         console.log("No se encontraron resultados de ausencias para el rango especificado.");
     } else {
@@ -322,6 +325,7 @@ onMounted(async () => {
     startDate.value = formatISO(weekStart, { representation: 'date' });
     endDate.value = formatISO(weekEnd, { representation: 'date' });
   }
+  await attendanceStore.fetchAttendanceDocuments()
 });
 </script>
 
@@ -336,18 +340,19 @@ onMounted(async () => {
         <input
           v-model="startDate"
           type="date"
-          class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          class="w-full rounded-md border-gray-300 dark:text-black shadow-sm focus:border-blue-500 focus:ring-blue-500"
         />
       </div>
       <div class="flex-1">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
+        <label class="block text-sm font-medium dark:text-white text-gray-700 mb-1">Hasta</label>
         <input
           v-model="endDate"
           type="date"
-          class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          class="w-full rounded-md border-gray-300  dark:text-black shadow-sm focus:border-blue-500 focus:ring-blue-500"
         />
       </div>
       <div class="flex items-end">
+        
         <button
           @click="searchAbsences"
           class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -370,30 +375,24 @@ onMounted(async () => {
     </div>
     
     <!-- Resultados -->
-    <div v-if="!isLoading && results.length > 0" class="results-list space-y-4">
+    <!-- Modificación en la visualización de resultados para usar normalizeDate -->
+  <div v-if="!isLoading && results.length > 0" class="results-list space-y-4">
      <h3 class="text-xl font-semibold mb-4 text-gray-700">Resultados de la Búsqueda ({{ results.length }} estudiantes)</h3>
     <div
       v-for="result in results"
       :key="result.student.id"
       class="bg-white shadow rounded-lg p-4 flex flex-col md:flex-row gap-4 items-start hover:shadow-md transition"
     >
+      <!-- ... Resto del div del resultado ... -->
       <div class="flex-grow text-sm text-gray-700 space-y-1 w-full md:w-auto">
-        <h4 class="font-semibold text-gray-900">
-          {{ result.student.nombre }} {{ result.student.apellido }}
-        </h4>
-        <p class="text-sm text-gray-500">{{ result.absenceCount }} inasistencias</p>
-        <div class="mt-1">
-          <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded mr-1 inline-block mb-1"
-            v-for="(className, index) in result.missedClassNames" :key="index">
-            {{ className }}
-          </span>
-        </div>
+        <!-- ... Total Ausencias y Clases Ausentes ... -->
+
         <!-- Mostrar fechas normalizadas -->
         <div v-if="result.absenceDates && result.absenceDates.length > 0">
            <span class="font-medium">Fechas Ausente:</span>
            <ul class="list-disc list-inside ml-1 text-xs">
                <li v-for="(dateStr, index) in result.absenceDates.slice(0, 5)" :key="index">
-                   {{ new Date(normalizeDate(dateStr)).toLocaleDateString('es-ES') }} 
+                   {{ new Date(normalizeDate(dateStr)).toLocaleDateString('es-ES') }}
                    <!-- Mostrar fecha original si la normalización falla -->
                    <span v-if="!isValid(normalizeDate(dateStr)) || normalizeDate(dateStr).getTime() === 0" class="text-red-500 text-xs">(Fecha original: {{ dateStr }})</span>
                </li>

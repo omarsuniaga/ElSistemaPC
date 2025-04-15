@@ -480,6 +480,7 @@ getJustification: (state) => {
         }
         
         this.attendanceDocuments = documents;
+        
         return documents;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -1380,7 +1381,7 @@ async fetchRecordsForMultipleEntities({
         await classesStore.fetchClasses();
       }
       const classNameMap = new Map(classesStore.classes.map(c => [c.id, c.name]));
-      
+
       // Placeholder for student names - requires integrating useStudentsStore
       // const studentsStore = useStudentsStore(); 
       // if (!studentsStore.students.length) { 
