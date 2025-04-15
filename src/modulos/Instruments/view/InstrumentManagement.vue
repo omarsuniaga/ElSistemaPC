@@ -5,6 +5,18 @@ import { useStudentsStore } from '../../Students/store/students';
 import InstrumentForm from '../components/InstrumentForm.vue';
 import InstrumentDetails from '../components/InstrumentDetails.vue';
 import type { Instrument } from '../types/instrumentsTypes';
+import {
+  PlusIcon,
+  ArrowDownTrayIcon,
+  UserPlusIcon,
+  ClipboardDocumentCheckIcon,
+  PhotoIcon,
+  PencilIcon,
+  TrashIcon,
+  EyeIcon,
+  ClockIcon,
+  DocumentTextIcon
+} from '@heroicons/vue/24/outline';
 
 // Stores
 const instrumentStore = useInstrumentoStore();
@@ -255,7 +267,7 @@ const exportToCSV = () => {
     instrument.estado || ''
   ]);
   
-  // Crear contenido CSV
+  // Crear contenido
   const csvContent = [
     headers.join(','),
     ...data.map(row => row.join(','))
@@ -291,15 +303,21 @@ const getStatusClass = (status: string | undefined): string => {
 </script>
 
 <template>
-  <div class="instrument-management p-4 max-w-7xl mx-auto">
-    <div class="mb-6 flex justify-between items-center">
-      <h1 class="text-2xl font-bold">Gestión de Instrumentos</h1>
-      <div class="flex gap-2">
-        <button @click="createNewInstrument" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center">
-          <span class="material-icons mr-1">add</span> Nuevo Instrumento
+  <div class="instrument-management p-2 sm:p-4 max-w-7xl mx-auto">
+    <div class="mb-4 sm:mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-2 sm:gap-4">
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">Gestión de Instrumentos</h1>
+      <div class="flex flex-col sm:flex-row gap-1 sm:gap-2 w-full sm:w-auto">
+        <button @click="createNewInstrument" class="w-full sm:w-auto px-2 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center">
+          <PlusIcon class="w-5 h-5" />
+          <span class="hidden sm:inline ml-1">Nuevo Instrumento</span>
         </button>
-        <button @click="exportToCSV" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center">
-          <span class="material-icons mr-1">download</span> Exportar CSV
+        <button @click="exportToCSV" class="w-full sm:w-auto px-2 sm:px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center justify-center">
+          <ArrowDownTrayIcon class="w-5 h-5" />
+          <span class="hidden sm:inline ml-1">Exportar CSV</span>
+        </button>
+        <button @click="$router.push({ name: 'InstrumentAssign' })" class="w-full sm:w-auto px-2 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center">
+          <ClipboardDocumentCheckIcon class="w-5 h-5" />
+          <span class="hidden sm:inline ml-1">Asignar Instrumento</span>
         </button>
       </div>
     </div>
@@ -340,45 +358,42 @@ const getStatusClass = (status: string | undefined): string => {
       <!-- Panel izquierdo: Filtros y lista -->
       <div class="flex flex-col lg:w-2/3">
         <!-- Filtros -->
-        <div class="bg-white p-4 rounded-md shadow-sm mb-4">
-          <h2 class="text-lg font-semibold mb-3">Filtros</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Búsqueda</label>
-              <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span class="material-icons text-gray-400 text-sm">search</span>
-                </div>
-                <input 
-                  v-model="searchQuery" 
-                  type="text" 
-                  placeholder="Nombre, marca o serial..." 
-                  class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" 
-                />
+        <div class="bg-white p-2 sm:p-4 rounded-md shadow-sm mb-2 sm:mb-4 flex flex-col md:flex-row gap-2 sm:gap-4">
+          <div class="flex-1">
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Búsqueda</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span class="material-icons text-gray-400 text-xs sm:text-sm">search</span>
               </div>
+              <input 
+                v-model="searchQuery" 
+                type="text" 
+                placeholder="Nombre, marca o serial..." 
+                class="block w-full pl-9 pr-2 py-1.5 sm:pl-10 sm:pr-3 sm:py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm" 
+              />
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Familia</label>
-              <select 
-                v-model="filterFamily" 
-                class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">Todas las familias</option>
-                <option v-for="family in availableFamilies" :key="family" :value="family">{{ family }}</option>
-              </select>
-            </div>
+          </div>
+          <div class="flex-1">
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Familia</label>
+            <select 
+              v-model="filterFamily" 
+              class="block w-full py-1.5 sm:py-2 px-2 sm:px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm"
+            >
+              <option value="">Todas las familias</option>
+              <option v-for="family in availableFamilies" :key="family" :value="family">{{ family }}</option>
+            </select>
           </div>
         </div>
         
         <!-- Lista de instrumentos -->
-        <div class="bg-white rounded-md shadow-sm overflow-hidden">
-          <h2 class="text-lg font-semibold p-4 border-b">Inventario de Instrumentos</h2>
+        <div class="bg-white rounded-md shadow-sm overflow-x-auto">
+          <h2 class="text-base sm:text-lg font-semibold p-2 sm:p-4 border-b">Inventario de Instrumentos</h2>
           
           <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
               <thead class="bg-gray-50">
                 <tr>
-                  <th @click="changeSort('nombre')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                  <th @click="changeSort('nombre')" class="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 whitespace-nowrap">
                     <div class="flex items-center">
                       Nombre
                       <span v-if="sorting.field === 'nombre'" class="material-icons ml-1 text-xs">
@@ -386,7 +401,7 @@ const getStatusClass = (status: string | undefined): string => {
                       </span>
                     </div>
                   </th>
-                  <th @click="changeSort('marca')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                  <th @click="changeSort('marca')" class="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 whitespace-nowrap">
                     <div class="flex items-center">
                       Marca
                       <span v-if="sorting.field === 'marca'" class="material-icons ml-1 text-xs">
@@ -394,7 +409,7 @@ const getStatusClass = (status: string | undefined): string => {
                       </span>
                     </div>
                   </th>
-                  <th @click="changeSort('serial')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                  <th @click="changeSort('serial')" class="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 whitespace-nowrap">
                     <div class="flex items-center">
                       Serial
                       <span v-if="sorting.field === 'serial'" class="material-icons ml-1 text-xs">
@@ -402,7 +417,7 @@ const getStatusClass = (status: string | undefined): string => {
                       </span>
                     </div>
                   </th>
-                  <th @click="changeSort('familia')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                  <th @click="changeSort('familia')" class="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 whitespace-nowrap">
                     <div class="flex items-center">
                       Familia
                       <span v-if="sorting.field === 'familia'" class="material-icons ml-1 text-xs">
@@ -410,7 +425,7 @@ const getStatusClass = (status: string | undefined): string => {
                       </span>
                     </div>
                   </th>
-                  <th @click="changeSort('estado')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                  <th @click="changeSort('estado')" class="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 whitespace-nowrap">
                     <div class="flex items-center">
                       Estado
                       <span v-if="sorting.field === 'estado'" class="material-icons ml-1 text-xs">
@@ -418,24 +433,51 @@ const getStatusClass = (status: string | undefined): string => {
                       </span>
                     </div>
                   </th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">¿Asignado?</th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 text-center text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Acciones</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="instrument in paginatedInstruments" :key="instrument.id" 
-                    @click="viewInstrument(instrument)" 
-                    class="cursor-pointer hover:bg-gray-50 transition-colors">
-                  <td class="px-4 py-3 whitespace-nowrap">{{ instrument.nombre }}</td>
-                  <td class="px-4 py-3 whitespace-nowrap">{{ instrument.marca }}</td>
-                  <td class="px-4 py-3 whitespace-nowrap">{{ instrument.serial }}</td>
-                  <td class="px-4 py-3 whitespace-nowrap">{{ instrument.familia }}</td>
-                  <td class="px-4 py-3 whitespace-nowrap">
+                <tr v-for="instrument in paginatedInstruments" :key="instrument.id" class="hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
+                  <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ instrument.nombre }}</td>
+                  <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ instrument.marca }}</td>
+                  <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ instrument.serial }}</td>
+                  <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ instrument.familia }}</td>
+                  <td class="px-2 sm:px-4 py-2 whitespace-nowrap">
                     <span :class="[getStatusClass(instrument.estado), 'px-2 py-1 text-xs rounded-full']">
                       {{ instrument.estado }}
                     </span>
                   </td>
+                  <td class="px-2 sm:px-4 py-2 whitespace-nowrap text-center">
+                    <span :class="[instrument.isAssign ? 'bg-green-100 text-green-800' : 'bg-pink-100 text-pink-800', 'px-2 py-1 text-xs rounded-full font-semibold']">
+                      {{ instrument.isAssign ? 'Sí' : 'No' }}
+                    </span>
+                  </td>
+                  <td class="px-2 sm:px-4 py-2 whitespace-nowrap text-center flex flex-col sm:flex-row gap-1 justify-center items-center">
+                    <button @click.stop="viewInstrument(instrument)" class="p-1 sm:px-2 sm:py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs flex items-center gap-1">
+                      <EyeIcon class="w-4 h-4" />
+                      <span class="hidden sm:inline">Ver</span>
+                    </button>
+                    <button @click.stop="selectedInstrument = instrument; editInstrument()" class="p-1 sm:px-2 sm:py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs flex items-center gap-1">
+                      <PencilIcon class="w-4 h-4" />
+                      <span class="hidden sm:inline">Editar</span>
+                    </button>
+                    <button @click.stop="$router.push({ name: 'InstrumentAssign', params: { id: instrument.id } })" class="p-1 sm:px-2 sm:py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center gap-1">
+                      <ClipboardDocumentCheckIcon class="w-4 h-4" />
+                      <span class="hidden sm:inline">Asignar</span>
+                    </button>
+                    <button @click.stop="$router.push({ name: 'InstrumentDetail', params: { id: instrument.id } })" class="p-1 sm:px-2 sm:py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs flex items-center gap-1">
+                      <DocumentTextIcon class="w-4 h-4" />
+                      <span class="hidden sm:inline">Historial</span>
+                    </button>
+                    <button @click.stop="$router.push({ name: 'InstrumentGallery', params: { id: instrument.id } })" class="p-1 sm:px-2 sm:py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs flex items-center gap-1">
+                      <PhotoIcon class="w-4 h-4" />
+                      <span class="hidden sm:inline">Galería</span>
+                    </button>
+                  </td>
                 </tr>
                 <tr v-if="paginatedInstruments.length === 0">
-                  <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                  <td colspan="7" class="px-2 sm:px-4 py-8 text-center text-gray-500">
                     No se encontraron instrumentos con los filtros actuales
                   </td>
                 </tr>
@@ -502,10 +544,10 @@ const getStatusClass = (status: string | undefined): string => {
           
           <div class="flex justify-between mt-6">
             <button @click="editInstrument" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center">
-              <span class="material-icons mr-1">edit</span> Editar
+              <PencilIcon class="w-5 h-5 mr-1" /> Editar
             </button>
             <button @click="deleteInstrument" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center">
-              <span class="material-icons mr-1">delete</span> Eliminar
+              <TrashIcon class="w-5 h-5 mr-1" /> Eliminar
             </button>
           </div>
         </div>
@@ -518,7 +560,7 @@ const getStatusClass = (status: string | undefined): string => {
           <h3 class="text-lg font-medium text-gray-700 mb-2">Seleccione un instrumento</h3>
           <p class="text-gray-500 mb-4">Haga clic en un instrumento de la lista para ver sus detalles</p>
           <button @click="createNewInstrument" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center">
-            <span class="material-icons mr-1">add</span> Nuevo Instrumento
+            <PlusIcon class="w-5 h-5 mr-1" /> Nuevo Instrumento
           </button>
         </div>
       </div>
@@ -559,5 +601,18 @@ const getStatusClass = (status: string | undefined): string => {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Ajustes de tabla y botones para responsividad */
+@media (max-width: 640px) {
+  th, td {
+    font-size: 10px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+    line-height: 1.1 !important;
+  }
+  .instrument-management h1 {
+    font-size: 1.1rem !important;
+  }
 }
 </style>

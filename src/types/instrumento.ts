@@ -42,3 +42,66 @@ export interface InstrumentState {
   loading: boolean;
   error: string | null;
 }
+
+/**
+ * Representa un accesorio de un instrumento.
+ */
+export interface InstrumentAccessory {
+  nombre: string;
+  estado: string;
+  observaciones?: string;
+}
+
+/**
+ * Representa un cambio de accesorio en el historial.
+ */
+export interface AccessoryChange {
+  accesorio: string;
+  fecha: string; // AAAA-MM-DD
+  detalle: string;
+}
+
+/**
+ * Representa una asignación actual de instrumento a un alumno.
+ */
+export interface InstrumentAssignment {
+  studentId: string;
+  nombreAlumno: string;
+  fechaAsignacion: string; // AAAA-MM-DD
+  contrato?: string; // URL del contrato
+  fotosEntrega?: string[]; // URLs de fotos
+}
+
+/**
+ * Representa un registro en el historial de un instrumento.
+ */
+export interface InstrumentHistory {
+  studentId: string;
+  nombreAlumno: string;
+  periodo: {
+    from: string; // AAAA-MM-DD
+    to: string;   // AAAA-MM-DD
+  };
+  condiciones: {
+    entrega: string;
+    devolucion: string;
+  };
+  fotosEntrega?: string[];
+  fotosDevolucion?: string[];
+  contrato?: string;
+  cambiosAccesorios?: AccessoryChange[];
+  observaciones?: string;
+}
+
+/**
+ * Modelo extendido de instrumento para Firestore.
+ */
+export interface InstrumentFirestore extends Instrument {
+  accesorios?: InstrumentAccessory[];
+  fotos?: string[];
+  isAssign?: boolean;
+  asignacion?: InstrumentAssignment;
+  historial?: InstrumentHistory[];
+  fechaRegistro?: string;
+  observaciones?: string;
+}

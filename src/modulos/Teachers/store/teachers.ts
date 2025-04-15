@@ -25,14 +25,14 @@ function normalizeTeacherData(teacher: any): TeacherData {
     email: teacher.email,
     phone: teacher.phone,
     specialties: teacher.specialties || [],
-    photoURL: teacher.photo || teacher.avatar,
-    status: teacher.status === 'ACTIVE' ? 'activo' :
-            teacher.status === 'INACTIVE' ? 'inactivo' : 'pendiente',
-    biography: teacher.bio,
-    createdAt: new Date(teacher.createdAt), 
+    photoURL: teacher.photoURL || teacher.photo || teacher.avatar || '',
+    status: teacher.status === 'ACTIVE' || teacher.status === 'activo' ? 'activo' :
+            teacher.status === 'INACTIVE' || teacher.status === 'inactivo' ? 'inactivo' : 'pendiente',
+    biography: teacher.biography || teacher.bio || '',
+    createdAt: teacher.createdAt ? new Date(teacher.createdAt) : new Date(),
     updatedAt: teacher.updatedAt ? new Date(teacher.updatedAt) : undefined,
-    experiencia: teacher.experience,
-    address: teacher.address,
+    experiencia: teacher.experiencia || teacher.experience || '',
+    address: teacher.address || '',
   }
 }
 
@@ -185,16 +185,15 @@ export const useTeachersStore = defineStore('teacher', {
       return await withLoading(this, async () => {
         console.log(`📝 Actualizando maestro con ID: ${id}`)
         const teacherUpdates: Partial<Teacher> = {}
-        if (updates.name) teacherUpdates.name = updates.name
-        if (updates.email) teacherUpdates.email = updates.email
-        if (updates.phone) teacherUpdates.phone = updates.phone
-        if (updates.photoURL) teacherUpdates.photoURL = updates.photoURL
-        if (updates.biography) teacherUpdates.biography = updates.biography
-        if (updates.specialties) teacherUpdates.specialties = updates.specialties
-        if (updates.photoURL) teacherUpdates.photoURL = updates.photoURL
-        if (updates.experiencia) teacherUpdates.experience = updates.experiencia
-        if (updates.address) teacherUpdates.address = updates.address
-        if (updates.status) {
+        if (updates.name !== undefined) teacherUpdates.name = updates.name
+        if (updates.email !== undefined) teacherUpdates.email = updates.email
+        if (updates.phone !== undefined) teacherUpdates.phone = updates.phone
+        if (updates.photoURL !== undefined) teacherUpdates.photoURL = updates.photoURL
+        if (updates.biography !== undefined) teacherUpdates.biography = updates.biography
+        if (updates.specialties !== undefined) teacherUpdates.specialties = updates.specialties
+        if (updates.experiencia !== undefined) teacherUpdates.experience = updates.experiencia
+        if (updates.address !== undefined) teacherUpdates.address = updates.address
+        if (updates.status !== undefined) {
           teacherUpdates.status = updates.status === 'activo' ? TeacherStatus.ACTIVE :
                                   updates.status === 'inactivo' ? TeacherStatus.INACTIVE : TeacherStatus.ON_LEAVE
         }

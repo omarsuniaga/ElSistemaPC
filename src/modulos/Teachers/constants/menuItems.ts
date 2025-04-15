@@ -65,8 +65,8 @@ export const adminMenuItems = [
   { 
     name: 'Instrumentos', 
     icon: MusicalNoteIcon, 
-    to: '/instruments', 
-    ariaLabel: 'Gestionar instrumentos'
+    to: '/instrumentos', 
+    ariaLabel: 'Gestionar instrumentos' 
   },
   { 
     name: 'Analytics', 

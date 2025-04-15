@@ -1,6 +1,7 @@
 // src/router/index.ts
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { instrumentsRoutes } from '../modulos/Instruments/router';
 
 const routes: Array<RouteRecordRaw> = [
   // Rutas públicas (sin requerir autenticación)
@@ -168,15 +169,6 @@ const routes: Array<RouteRecordRaw> = [
     }
   },
   {
-    path: '/instruments',
-    name: 'Instruments',
-    component: () => import('../modulos/Instruments/view/InstrumentManagement.vue'),
-    meta: { 
-      requiresAuth: true,
-      allowedRoles: ['Director', 'Admin']
-    }
-  },
-  {
     path: '/analytics',
     name: 'Analytics',
     component: () => import('../modulos/Analytics/view/AnalyticsDashboard.vue'),
@@ -238,7 +230,13 @@ const routes: Array<RouteRecordRaw> = [
       allowedRoles: ['Director', 'Admin', 'Maestro']
     }
   },
-
+  {
+    path: '/alumnos/:studentId/instrumento/:instrumentId',
+    name: 'StudentInstrumentProfile',
+    component: () => import('../modulos/Students/view/StudentInstrumentProfile.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['Director', 'Admin', 'Maestro'] }
+  },
+  ...instrumentsRoutes,
   // Ruta inicial: redirige según el rol
   {
     path: '/',

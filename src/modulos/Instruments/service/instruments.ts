@@ -13,6 +13,8 @@ import {
   where
 } from 'firebase/firestore';
 import type { Instrument } from '../types/instrumentsTypes';
+// Usa el modelo extendido InstrumentFirestore para crear y actualizar
+import type { InstrumentFirestore } from '../../../types/instrumento';
 
 const COLLECTION_NAME = 'INSTRUMENTOS';
 
@@ -59,46 +61,44 @@ export const getInstrumentById = async (id: string): Promise<Instrument | null> 
 }
 
 /**
- * Crea un nuevo instrumento
+ * Crea un nuevo instrumento (modelo extendido)
  */
-export const createInstrument = async (instrument: Omit<Instrument, 'id'>): Promise<Instrument> => {
+export const createInstrument = async (instrument: Omit<InstrumentFirestore, 'id'>): Promise<InstrumentFirestore> => {
   try {
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
       ...instrument,
       activo: instrument.activo ?? true,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
-    })
-
+    });
     return {
       id: docRef.id,
       ...instrument
-    }
+    };
   } catch (error) {
-    console.error('❌ Error al crear instrumento:', error)
-    throw new Error('Error al crear el instrumento')
+    console.error('❌ Error al crear instrumento:', error);
+    throw new Error('Error al crear el instrumento');
   }
-}
+};
 
 /**
- * Actualiza un instrumento existente
+ * Actualiza un instrumento existente (modelo extendido)
  */
-export const updateInstrument = async (id: string, instrument: Partial<Instrument>): Promise<void> => {
+export const updateInstrument = async (id: string, instrument: Partial<InstrumentFirestore>): Promise<void> => {
   try {
-    const docRef = doc(db, COLLECTION_NAME, id)
+    const docRef = doc(db, COLLECTION_NAME, id);
     // Filtrar propiedades undefined
     const cleanInstrument = Object.entries(instrument).reduce((acc, [key, value]) => {
-      if (value !== undefined) acc[key] = value
-      return acc
-    }, {} as Record<string, any>)
-
+      if (value !== undefined) acc[key] = value;
+      return acc;
+    }, {} as Record<string, any>);
     await updateDoc(docRef, {
       ...cleanInstrument,
       updatedAt: serverTimestamp()
-    })
+    });
   } catch (error) {
-    console.error(`❌ Error al actualizar instrumento ${id}:`, error)
-    throw new Error('Error al actualizar los datos del instrumento')
+    console.error(`❌ Error al actualizar instrumento ${id}:`, error);
+    throw new Error('Error al actualizar los datos del instrumento');
   }
 }
 
