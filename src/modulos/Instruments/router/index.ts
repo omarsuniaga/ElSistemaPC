@@ -23,7 +23,7 @@ export const instrumentsRoutes: RouteRecordRaw[] = [
   {
     path: '/instrumentos/detalle/:id',
     name: 'InstrumentDetail',
-    component: () => import('../components/InstrumentDetails.vue'),
+    component: () => import('../view/InstrumentDetailView.vue'),
     props: true,
     meta: { requiresAuth: true, title: 'Detalle de Instrumento' }
   },
