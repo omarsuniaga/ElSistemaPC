@@ -76,7 +76,10 @@
     <TodayClassesPanel ref="todayClassesPanel" class="mb-8" />
 
     <AttendanceWeeklyTable class="mb-8" />
-      
+
+    <!-- Alumnos con Mayor Ausencia -->
+    <AbsenteesList class="mb-8" :className="null" :limit="5" />
+
   </div>
 </template>
 
@@ -90,6 +93,7 @@ import { useClassesStore } from '../../../Classes/store/classes'
 import { useTeachersStore } from '../../store/teachers'
 import TodayClassesPanel from '../../../../components/TodayClassesPanel.vue'
 import AttendanceWeeklyTable from '../../../../components/AttendanceWeeklyTable.vue'
+import AbsenteesList from '../../../../components/AbsenteesList.vue'
 // Estado reactivo
 const attendanceStore = useAttendanceStore()
 const studentsStore = useStudentsStore()

@@ -406,18 +406,6 @@ onMounted(async () => {
           <PerformanceKpi title="Rendimiento Promedio" :value="aggregatedData.averagePerformance" :trend="1.5" :icon="ChartBarIcon" metricType="percentage" />
           <PerformanceKpi title="Instrumentos" :value="dashboardData.totalInstruments" :trend="0" :icon="ChartBarIcon" metricType="default" />
         </div>
-        
-        <!-- Resumen visual -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <ChartContainer title="Asistencia por Día" :icon="ChartBarIcon">
-            <Line :data="attendanceByDayChart" :options="commonChartOptions"/>
-          </ChartContainer>
-          
-          <ChartContainer title="Distribución de Rendimiento" :icon="ChartBarIcon">
-            <Doughnut :data="performanceDistributionChart" :options="commonChartOptions"/>
-          </ChartContainer>
-        </div>
-        
         <!-- Análisis general -->
         <AnalysisPanel
           :attendanceByDayOfWeek="attendanceByDayOfWeek"
@@ -525,6 +513,18 @@ onMounted(async () => {
           @period-changed="handlePeriodChange"
           @refresh-data="loadDashboardData"
         />
+        
+        <!-- Resumen visual -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <ChartContainer title="Asistencia por Día" :icon="ChartBarIcon">
+            <Line :data="attendanceByDayChart" :options="commonChartOptions"/>
+          </ChartContainer>
+          
+          <ChartContainer title="Distribución de Rendimiento" :icon="ChartBarIcon">
+            <Doughnut :data="performanceDistributionChart" :options="commonChartOptions"/>
+          </ChartContainer>
+        </div>
+        
       </div>
       
       <!-- Panel de Alumnos -->

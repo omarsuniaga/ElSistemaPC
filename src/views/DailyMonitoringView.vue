@@ -1,4 +1,4 @@
-a<template>
+<template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 px-4 sm:px-6 lg:px-8">
     <!-- Header con título y controles principales -->
     <header class="mb-8">
@@ -24,7 +24,7 @@ a<template>
           </button>
           
           <button 
-            @click="openReportModal"
+            @click="showReportModal = true"
             class="btn bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500 flex items-center gap-2"
             aria-label="Generar reporte de monitoreo"
           >
@@ -33,7 +33,7 @@ a<template>
           </button>
           
           <button 
-            @click="openExportModal"
+            @click="showExportModal = true"
             class="btn bg-amber-600 text-white hover:bg-amber-700 focus:ring-amber-500 flex items-center gap-2"
             aria-label="Exportar datos de monitoreo"
           >
@@ -238,6 +238,9 @@ a<template>
         </div>
       </div>
     </section>
+
+    <!-- Alumnos con Mayor Ausencia -->
+    <AbsenteesList class="mb-8" :className="selectedClass" :limit="5" />
 
     <!-- Estados de carga y error -->
     <div v-if="loading" class="flex justify-center items-center py-8">
@@ -751,7 +754,7 @@ import '@vuepic/vue-datepicker/dist/main.css';
 import { useFirestoreCollection } from '../composables/useFirestoreCollection';
 import { where, QueryConstraint, Timestamp } from 'firebase/firestore';
 import Modal from '../components/ConfirmModal.vue';
-import JustifiedAbsenceModal from '../components/JustifiedAbsenceModal.vue';
+import JustifiedAbsenceModal from '../components/JustifiedAbsenceModal.vue'; // Asegúrate que tenga export default
 import {
   ChartBarIcon,
   DocumentTextIcon,
@@ -764,10 +767,10 @@ import {
   UserMinusIcon,
   ClockIcon,
   DocumentCheckIcon,
-  UserCheckIcon // Added missing icon
+  CheckIcon as UserCheckIcon
 } from '@heroicons/vue/24/outline';
-import { jsPDF } from 'jspdf';
-import ExcelJS from 'exceljs';
+import jsPDF from 'jspdf';
+import * as ExcelJS from 'exceljs';
 
 // Tipos
 interface Student {
@@ -878,7 +881,67 @@ const getStatusLabel = (status: string) => {
     justified: 'Justificado'
   };
   return labels[status] || 'Desconocido';
-};
+}
+
+// Métodos y helpers requeridos por el template
+function toggleView() {
+  isListView.value = !isListView.value;
+}
+
+function openDetails(record: AttendanceRecord) {
+  selectedRecord.value = record;
+  showDetailsModal.value = true;
+}
+
+function editStatus(record: AttendanceRecord) {
+  selectedRecord.value = record;
+  editForm.value.status = record.status;
+  editForm.value.observations = record.observations || '';
+  editForm.value.justification = record.justification || '';
+  showEditModal.value = true;
+}
+
+function justifyAbsence(record: AttendanceRecord) {
+  selectedRecord.value = record;
+  showJustificationModal.value = true;
+}
+
+function saveEditedStatus() {
+  // Implementa lógica de guardado aquí
+  showEditModal.value = false;
+}
+
+function saveJustification() {
+  // Implementa lógica de guardado aquí
+  showJustificationModal.value = false;
+}
+
+function generateReport() {
+  // Implementa lógica de generación de reporte aquí
+}
+
+function exportData() {
+  // Implementa lógica de exportación aquí
+}
+
+function formatDate(date: string | Date) {
+  try {
+    return format(typeof date === 'string' ? new Date(date) : date, dateFormat);
+  } catch {
+    return date;
+  }
+}
+
+function formatTime(date: string | Date) {
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '';
+  }
+}
+
+
 
 const getStatusClasses = (status: string) => {
   const statusClasses = {

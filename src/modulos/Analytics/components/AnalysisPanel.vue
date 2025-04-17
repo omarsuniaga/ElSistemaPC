@@ -1,4 +1,6 @@
 <template>
+  <!-- Alumnos con más ausencias en el rango seleccionado -->
+  <TopAbsenteesByRange :limit="10" class="mt-8" />
   <div class="space-y-8">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-2xl font-bold">Análisis de Rendimiento</h2>
@@ -26,6 +28,7 @@
       </div>
     </div>
     
+
     <!-- Tabs para diferentes tipos de análisis -->
     <div class="border-b border-gray-200">
       <nav class="-mb-px flex space-x-8">
@@ -89,6 +92,8 @@
             </div>
           </div>
         </div>
+        <!-- aqui topAbsenteesByRange -->
+        <TopAbsenteesByRange :limit="10" class="mt-8" />
         
         <div class="card hover:shadow-md transition-shadow duration-300 col-span-2">
           <h3 class="text-lg font-semibold mb-4 flex items-center">
@@ -129,22 +134,22 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <tr v-for="instrument in instrumentPerformance" :key="instrument.id" class="hover:bg-gray-50 dark:hover:bg-gray-800">
+              <tr v-for="instrumento in instrumentPerformance" :key="instrumento.id" class="hover:bg-gray-50 dark:hover:bg-gray-800">
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="font-medium">{{ instrument.name }}</div>
+                  <div class="font-medium">{{ instrumento.nombre }}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  {{ instrument.students }}
+                  {{ instrumento.students }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
                       :class="{
-                        'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300': instrument.attendance >= 90,
-                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300': instrument.attendance >= 75 && instrument.attendance < 90,
-                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300': instrument.attendance < 75
+                        'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300': instrumento.attendance >= 90,
+                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300': instrumento.attendance >= 75 && instrumento.attendance < 90,
+                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300': instrumento.attendance < 75
                       }">
-                      {{ instrument.attendance }}%
+                      {{ instrumento.attendance }}%
                     </span>
                   </div>
                 </td>
@@ -152,11 +157,11 @@
                   <div class="flex items-center">
                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
                       :class="{
-                        'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300': instrument.performance >= 90,
-                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300': instrument.performance >= 75 && instrument.performance < 90,
-                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300': instrument.performance < 75
+                        'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300': instrumento.rendimiento >= 90,
+                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300': instrumento.rendimiento >= 75 && instrumento.rendimiento < 90,
+                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300': instrumento.rendimiento < 75
                       }">
-                      {{ instrument.performance }}%
+                      {{ instrumento.rendimiento }}%
                     </span>
                   </div>
                 </td>
@@ -169,6 +174,32 @@
     
     <!-- Análisis de Maestros -->
     <div v-show="selectedTab === 'teachers'" class="space-y-8">
+  <!-- Lista de maestros reales -->
+  <div v-if="teachersStore.teachers && teachersStore.teachers.length">
+    <table class="min-w-full">
+  <thead class="bg-gray-50 dark:bg-gray-700">
+    <tr>
+      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Maestro</th>
+      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Especialidad</th>
+      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Clases</th>
+      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Asistencia (%)</th>
+      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Eficiencia</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr v-for="tm in teacherMetrics" :key="tm.id">
+      <td class="px-4 py-2">{{ tm.name }}</td>
+      <td class="px-4 py-2">{{ tm.specialty }}</td>
+      <td class="px-4 py-2">{{ tm.classCount }}</td>
+      <td class="px-4 py-2">{{ tm.attendanceRate.toFixed(1) }}</td>
+      <td class="px-4 py-2">{{ tm.efficiency.toFixed(1) }}</td>
+    </tr>
+  </tbody>
+</table>
+
+  </div>
+  <div v-else class="text-center py-8 text-gray-500">No hay datos de maestros.</div>
+
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="card hover:shadow-md transition-shadow duration-300">
           <h3 class="text-lg font-semibold mb-4 flex items-center">
@@ -235,6 +266,7 @@
                 </th>
               </tr>
             </thead>
+
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <tr v-for="teacher in teacherAttendanceBalance" :key="teacher.id" class="hover:bg-gray-50 dark:hover:bg-gray-800">
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -347,130 +379,13 @@
         </div>
       </div>
     </div>
-    
-    <!-- Alumnos con más ausencias en el rango seleccionado -->
-    <div class="card hover:shadow-md transition-shadow duration-300 mt-8">
-      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4 space-y-3 lg:space-y-0">
-        <h3 class="text-lg font-semibold flex items-center">
-          <ExclamationTriangleIcon class="w-5 h-5 mr-2 text-red-500" />
-          Alumnos con más ausencias
-        </h3>
-        <div class="flex flex-wrap w-full lg:w-auto gap-2 items-center">
-          <div class="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
-            <div class="flex items-center">
-              <label class="text-sm whitespace-nowrap mr-1">Desde:</label>
-              <input type="date" v-model="absenceRange.start" class="dark:text-black border rounded px-2 py-1 text-sm w-full" />
-            </div>
-            <div class="flex items-center">
-              <label class="text-sm whitespace-nowrap mr-1">Hasta:</label>
-              <input type="date" v-model="absenceRange.end" class="border dark:text-black rounded px-2 py-1 text-sm w-full" />
-            </div>
-            <button 
-              @click="filtrarAusenciasPorRango" 
-              class="col-span-2 sm:col-span-1 sm:ml-2 px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 transition-colors duration-200"
-            >
-              Filtrar
-            </button>
-          </div>
-          <div class="flex items-center w-full sm:w-auto mt-2 sm:mt-0">
-            <label class="text-sm mr-1 whitespace-nowrap">Ordenar:</label>
-            <select v-model="absenceSort" class="border dark:text-black rounded px-2 py-1 text-sm flex-grow">
-              <option value="absences">Ausencias</option>
-              <option value="attendanceRate">% Asistencia</option>
-              <option value="lastAttendance">Última Asistencia</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Contenedor principal con dos visualizaciones: tabla para desktop y tarjetas para móvil -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-        <!-- Versión de tabla para pantallas medianas y grandes -->
-        <div class="hidden md:block overflow-x-auto">
-          <table class="min-w-full table-auto">
-            <thead class="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estudiante</th>
-                <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ausencias</th>
-                <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Última Asistencia</th>
-                <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">% Asistencia</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <tr v-for="student in sortedAbsentees" :key="student.studentId" class="hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td class="px-4 py-2 text-sm">{{ studentName(student.studentId) }}</td>
-                <td class="px-4 py-2 text-center text-sm">{{ student.absences }}</td>
-                <td class="px-4 py-2 text-center text-sm">{{ formatDate(student.lastAttendance) }}</td>
-                <td class="px-4 py-2 text-center">
-                  <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
-                    :class="{
-                      'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300': student.attendanceRate >= 90,
-                      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300': student.attendanceRate >= 75 && student.attendanceRate < 90,
-                      'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300': student.attendanceRate < 75
-                    }">
-                    {{ Math.round(student.attendanceRate) }}%
-                  </span>
-                </td>
-              </tr>
-              <tr v-if="sortedAbsentees.length === 0">
-                <td colspan="4" class="px-4 py-2 text-center text-gray-500 dark:text-gray-400">
-                  No se encontraron datos de ausencias en el rango seleccionado
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        <!-- Versión de tarjetas para móvil -->
-        <div class="md:hidden">
-          <div v-if="sortedAbsentees.length === 0" class="p-4 text-center text-gray-500 dark:text-gray-400">
-            No se encontraron datos de ausencias en el rango seleccionado
-          </div>
-          <div 
-            v-else
-            v-for="student in sortedAbsentees" 
-            :key="student.studentId"
-            class="border-b border-gray-200 dark:border-gray-700 p-4 last:border-b-0"
-          >
-            <div class="flex justify-between items-start">
-              <h4 class="font-medium text-gray-900 dark:text-white">
-                {{ studentName(student.studentId) }}
-              </h4>
-              <span class="px-2 py-1 text-xs leading-5 font-semibold rounded-full"
-                :class="{
-                  'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300': student.attendanceRate >= 90,
-                  'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300': student.attendanceRate >= 75 && student.attendanceRate < 90,
-                  'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300': student.attendanceRate < 75
-                }">
-                {{ Math.round(student.attendanceRate) }}%
-              </span>
-            </div>
-            <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
-              <div class="flex items-center">
-                <span class="text-gray-500 dark:text-gray-400">Ausencias:</span>
-                <span class="ml-2 font-medium text-gray-900 dark:text-white">{{ student.absences }}</span>
-              </div>
-              <div class="flex items-center">
-                <span class="text-gray-500 dark:text-gray-400">Última:</span>
-                <span class="ml-2 font-medium text-gray-900 dark:text-white">{{ formatDate(student.lastAttendance) }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="mt-4 text-sm text-gray-500 dark:text-gray-400 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
-        <span>Mostrando {{ sortedAbsentees.length }} estudiantes</span>
-        <div v-if="bestAttendanceDay.bestDay" class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 px-3 py-1 rounded-full">
-          Día con más asistencias: <span class="font-semibold">{{ bestAttendanceDay.bestDay }}</span> ({{ bestAttendanceDay.total }} asistencias)
-        </div>
-      </div>
-    </div>
   </div>
+  
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from 'vue';
+import { ref, computed, watch,  onMounted } from 'vue';
+import TopAbsenteesByRange from '@/components/TopAbsenteesByRange.vue';
 import Chart from 'chart.js/auto';
 import { Line, Doughnut, Bar } from 'vue-chartjs';
 import { 
@@ -492,6 +407,7 @@ import { useRouter } from 'vue-router';
 import { useAttendanceStore } from '../../Attendance/store/attendance';
 import { useClassesStore } from '../../Classes/store/classes';
 import { useStudentsStore } from '../../Students/store/students';
+import { useTeachersStore } from '../../Teachers/store/teachers';
 
 const router = useRouter();
 
@@ -505,6 +421,54 @@ const showAllAtRiskStudents = () => {
 const attendanceStore = useAttendanceStore();
 const classesStore = useClassesStore();
 const studentsStore = useStudentsStore();
+const teachersStore = useTeachersStore();
+
+// --- Teacher Metrics Computed Property ---
+const teacherMetrics = computed(() => {
+  return teachersStore.teachers.map(teacher => {
+    // Specialty: take first specialty or fallback
+    const specialty = Array.isArray(teacher.specialties) && teacher.specialties.length > 0
+      ? teacher.specialties[0]
+      : (teacher.specialty || 'No especificado');
+    // Class count
+    const teacherClasses = classesStore.classes.filter(c => c.teacherId === teacher.id);
+    const classCount = teacherClasses.length;
+    // Attendance: count how many classes have attendance records for this teacher
+    const teacherClassIds = teacherClasses.map(c => c.id);
+    const teacherAttendanceDocs = attendanceStore.attendanceDocuments.filter(doc =>
+      teacherClassIds.includes(doc.classId)
+    );
+    const totalAttendance = teacherAttendanceDocs.length;
+    // Attendance rate: average attendance rate over these classes
+    let attendanceRate = 0;
+    if (totalAttendance > 0) {
+      let sum = 0;
+      teacherAttendanceDocs.forEach(doc => {
+        const presentes = Array.isArray(doc.data.presentes) ? doc.data.presentes.length : 0;
+        const tarde = Array.isArray(doc.data.tarde) ? doc.data.tarde.length : 0;
+        const total = presentes + tarde;
+        const totalStudents = (Array.isArray(doc.data.presentes) ? doc.data.presentes.length : 0)
+          + (Array.isArray(doc.data.ausentes) ? doc.data.ausentes.length : 0)
+          + (Array.isArray(doc.data.tarde) ? doc.data.tarde.length : 0);
+        sum += totalStudents > 0 ? (total / totalStudents) * 100 : 0;
+      });
+      attendanceRate = sum / totalAttendance;
+    }
+    // Efficiency: simple average of class count and attendance rate (normalize class count if needed)
+    // For demo, efficiency = (attendanceRate + (classCount * 10)) / 2
+    // Adjust this formula as needed
+    const efficiency = (attendanceRate + (classCount * 10)) / 2;
+    return {
+      id: teacher.id,
+      name: teacher.name,
+      specialty,
+      classCount,
+      attendanceRate,
+      efficiency
+    };
+  });
+});
+
 interface AbsentStudent {
   studentId: string;
   absences: number;
@@ -565,11 +529,11 @@ const props = defineProps({
   monthlyAttendanceTrend: { type: Object, default: () => ({}) },
   periods: { 
     type: Array, 
-    default: () => [{ id: 'current', name: 'Periodo Actual' }] 
+    default: () => [{ id: 'current', nombre: 'Periodo Actual' }] 
   },
   tabs: { 
     type: Array, 
-    default: () => [{ id: 'general', name: 'General' }] 
+    default: () => [{ id: 'general', nombre: 'General' }] 
   }
 });
 
@@ -598,6 +562,7 @@ watch(selectedPeriod, (newPeriod) => {
 });
 
 // --- NUEVO: Cálculo del día con más asistencias ---
+// Usar sólo datos reales de attendanceStore para este análisis.
 const bestAttendanceDay = ref({ bestDay: '', total: 0, attendanceByDay: {} });
 
 async function calcularDiaMayorAsistencia(startDate, endDate) {
@@ -625,7 +590,8 @@ async function calcularDiaMayorAsistencia(startDate, endDate) {
 }
 
 // --- NUEVO: Alumnos con más ausencias en el rango seleccionado --- 
-function studentName(studentId: string) {
+// Usar sólo datos reales de attendanceStore y studentsStore para este análisis.
+function studentNombre(studentId: string) {
   const student = studentsStore.getStudentById(studentId);
   if (student) {
     return `${student.nombre || ''} ${student.apellido || ''}`.trim();

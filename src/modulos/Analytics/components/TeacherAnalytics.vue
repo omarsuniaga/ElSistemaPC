@@ -438,36 +438,16 @@ const teachersList = computed(() => {
 
 // Datos para el horario del profesor seleccionado
 const teacherSchedule = computed(() => {
-  const timeSlots = []
-  
-  for (let i = 8; i <= 20; i++) {
-    timeSlots.push({
-      time: `${i}:00`,
-      classes: {
-        Lunes: i % 3 === 0 ? generateMockClass() : null,
-        Martes: i % 4 === 0 ? generateMockClass() : null,
-        Miércoles: i % 2 === 0 ? generateMockClass() : null,
-        Jueves: i % 3 === 1 ? generateMockClass() : null,
-        Viernes: i % 4 === 1 ? generateMockClass() : null,
-        Sábado: i >= 9 && i <= 14 && i % 2 === 0 ? generateMockClass() : null,
-        Domingo: null
-      }
-    })
+  // Suponiendo que teachersStore.selectedTeacher contiene el maestro seleccionado y tiene un arreglo de clases
+  const teacher = teachersStore.teachers?.find(t => t.id === selectedTeacher.value);
+  if (!teacher || !teacher.schedule) {
+    return [];
   }
-  
-  return timeSlots
-})
+  // teacher.schedule debe tener la estructura esperada: [{ time: '08:00', classes: { Lunes: {...}, Martes: {...}, ... } }, ...]
+  return teacher.schedule;
+});
 
-// Función para generar una clase simulada
-function generateMockClass() {
-  const names = ['Piano Básico', 'Guitarra Intermedio', 'Violín Avanzado', 'Batería', 'Teoría Musical']
-  const attendance = Math.floor(Math.random() * 31) + 70 // 70-100%
-  
-  return {
-    name: names[Math.floor(Math.random() * names.length)],
-    attendance
-  }
-}
+
 
 // Función para obtener el nombre de un profesor por su ID
 function getTeacherName(id) {
@@ -499,21 +479,17 @@ function getCellClass(timeSlot, day) {
 
 // Mejores profesores por eficiencia
 const topPerformingTeachers = computed(() => {
-  const teachers = []
-  
-  for (let i = 0; i < 5; i++) {
-    teachers.push({
-      id: `top-teacher-${i + 1}`,
-      name: `Profesor ${i + 1}`,
-      specialty: ['Piano', 'Guitarra', 'Violín', 'Batería', 'Canto'][i],
-      totalClasses: Math.floor(Math.random() * 6) + 3, // 3-8
-      attendance: Math.floor(Math.random() * 11) + 90, // 90-100%
-      efficiency: Math.floor(Math.random() * 16) + 85 // 85-100%
-    })
-  }
-  
-  return teachers.sort((a, b) => b.efficiency - a.efficiency)
-})
+  // Use real teachers from the store
+  const teachers = (teachersStore.teachers || []).map(teacher => ({
+    id: teacher.id,
+    name: teacher.nombre || teacher.name || `Profesor ${teacher.id}`,
+    specialty: teacher.specialty || 'No especificado',
+    totalClasses: teacher.totalClasses || 0,
+    attendance: teacher.attendance || 0,
+    efficiency: teacher.efficiency || 0
+  }));
+  return teachers.sort((a, b) => b.efficiency - a.efficiency).slice(0, 5);
+});
 
 // Datos para gráfico de balance de asistencias semanales
 const weeklyAttendanceBalanceChart = computed(() => {

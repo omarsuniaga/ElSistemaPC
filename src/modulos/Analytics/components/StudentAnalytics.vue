@@ -288,6 +288,8 @@ import { useStudentsStore } from '../../Students/store/students'
 import { useInstrumentoStore } from '../../Instruments/store/instrumento'
 import { useAttendanceStore } from '../../Attendance/store/attendance'
 import { Line, Bar, Doughnut } from 'vue-chartjs'
+import { Chart, Filler } from 'chart.js';
+Chart.register(Filler);
 
 // Importa la configuración de Chart.js desde el archivo separado
 import '../../../utils/chartConfig'
@@ -976,8 +978,10 @@ function calculateMonthlyActivity(): any[] {
 
 // Datos para gráfica de distribución por instrumento
 const instrumentDistributionData = computed(() => {
-  const instrumentData = metrics.value.instrumentDistribution
-  
+  const instrumentData = metrics.value.instrumentDistribution || [];
+  if (!Array.isArray(instrumentData) || instrumentData.length === 0) {
+    return { labels: [], datasets: [] };
+  }
   return {
     labels: instrumentData.map(item => item.name),
     datasets: [
@@ -994,13 +998,15 @@ const instrumentDistributionData = computed(() => {
         ]
       }
     ]
-  }
-})
+  };
+});
 
 // Datos para gráfica de distribución por nivel
 const levelDistributionChart = computed(() => {
-  const levelData = metrics.value.levelDistribution
-  
+  const levelData = metrics.value.levelDistribution || [];
+  if (!Array.isArray(levelData) || levelData.length === 0) {
+    return { labels: [], datasets: [] };
+  }
   return {
     labels: levelData.map(item => item.level),
     datasets: [
@@ -1010,13 +1016,15 @@ const levelDistributionChart = computed(() => {
         backgroundColor: 'rgba(99, 102, 241, 0.6)'
       }
     ]
-  }
-})
+  };
+});
 
 // Datos para gráfica de tendencia de asistencia detallada
 const attendanceTrendDetailChart = computed(() => {
-  const trendData = metrics.value.attendanceTrend
-  
+  const trendData = metrics.value.attendanceTrend || [];
+  if (!Array.isArray(trendData) || trendData.length === 0) {
+    return { labels: [], datasets: [] };
+  }
   return {
     labels: trendData.map(item => format(parseISO(item.date), 'dd/MM')),
     datasets: [
@@ -1029,13 +1037,16 @@ const attendanceTrendDetailChart = computed(() => {
         fill: true
       }
     ]
-  }
-})
+  };
+});
 
 // Datos para gráfica de actividad mensual detallada
+// Usar datos reales del store, no mocks
 const activityByMonthDetailChart = computed(() => {
-  const monthlyData = metrics.value.activityByMonth
-  
+  const monthlyData = metrics.value.activityByMonth || [];
+  if (!Array.isArray(monthlyData) || monthlyData.length === 0) {
+    return { labels: [], datasets: [] };
+  }
   return {
     labels: monthlyData.map(item => item.month),
     datasets: [
@@ -1045,8 +1056,8 @@ const activityByMonthDetailChart = computed(() => {
         backgroundColor: 'rgba(99, 102, 241, 0.6)'
       }
     ]
-  }
-})
+  };
+});
 
 // Alumnos con mejor rendimiento (usando datos reales)
 const topPerformingStudents = computed(() => {
@@ -1088,48 +1099,7 @@ const topPerformingStudents = computed(() => {
   return [];
 })
 
-// Generate mock at-risk students
-function generateMockAtRiskStudents() {
-  return [
-    { id: '1', name: 'Gabriel Mendez', performance: 62, instrument: 'Violín' },
-    { id: '2', name: 'Sara Linares', performance: 58, instrument: 'Piano' },
-    { id: '3', name: 'Miguel Torres', performance: 65, instrument: 'Guitarra' },
-    { id: '4', name: 'Valentina Ruiz', performance: 59, instrument: 'Flauta' }
-  ]
-}
 
-// Generate mock instrument distribution
-function generateMockInstrumentDistribution() {
-  return [
-    { name: 'Piano', count: 24, percentage: 25 },
-    { name: 'Violín', count: 20, percentage: 21 },
-    { name: 'Guitarra', count: 18, percentage: 19 },
-    { name: 'Flauta', count: 12, percentage: 13 },
-    { name: 'Otros', count: 21, percentage: 22 }
-  ]
-}
-
-// Generate mock attendance trend for the past 30 days
-function generateMockAttendanceTrend() {
-  const result = []
-  const today = new Date()
-  
-  for (let i = 30; i >= 0; i--) {
-    const date = new Date(today)
-    date.setDate(today.getDate() - i)
-    
-    // Create a semi-realistic pattern with variations
-    let rate = 85 + Math.sin(i * 0.5) * 15 + (Math.random() * 8 - 4)
-    rate = Math.min(100, Math.max(65, Math.round(rate))) // Keep between 65% and 100%
-    
-    result.push({
-      date: format(date, 'yyyy-MM-dd'),
-      rate
-    })
-  }
-  
-  return result
-}  // Alumnos en riesgo filtrados (vista detallada)
 const filteredAtRiskStudentsDetail = computed(() => {
   // Usar la función real que identifica estudiantes en riesgo
   const atRiskStudentsList = identifyAtRiskStudents();

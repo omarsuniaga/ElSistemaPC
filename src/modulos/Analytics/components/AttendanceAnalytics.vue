@@ -589,6 +589,7 @@ const dailyAttendanceChartData = computed(() => {
 })
 
 // Datos para gráfico de asistencia semanal
+// Usar sólo datos reales de metrics
 const weeklyAttendanceChartData = computed(() => {
   const weeklyData = metrics.value.weeklyAttendance || []
   
@@ -610,6 +611,7 @@ const weeklyAttendanceChartData = computed(() => {
 })
 
 // Datos para gráfico de asistencia mensual
+// Usar sólo datos reales de metrics
 const monthlyAttendanceChartData = computed(() => {
   const monthlyData = metrics.value.monthlyAttendance || []
   
@@ -631,6 +633,7 @@ const monthlyAttendanceChartData = computed(() => {
 })
 
 // Datos para gráfico por día de la semana
+// Usar sólo datos reales de metrics
 const weekdayAttendanceChartData = computed(() => {
   const weekdayData = metrics.value.weekdayAttendance || []
   

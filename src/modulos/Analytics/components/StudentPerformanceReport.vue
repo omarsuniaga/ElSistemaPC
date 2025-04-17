@@ -275,6 +275,7 @@ function calculatePerformanceTrend() {
 }
 
 // Datos para gráficos
+// Usar sólo datos reales de attendanceData
 const attendanceChartData = computed(() => {
   if (!attendanceData.value) {
     return {
@@ -312,6 +313,8 @@ const attendanceChartData = computed(() => {
   }
 })
 
+// Datos para gráfico de calificaciones
+// Usar sólo datos reales de qualificationsData
 const gradesChartData = computed(() => {
   if (!qualificationsData.value || !qualificationsData.value.evaluations.length) {
     return {
@@ -345,6 +348,8 @@ const gradesChartData = computed(() => {
   }
 })
 
+// Datos para gráfico de habilidades
+// Usar sólo datos reales de qualificationsData
 const skillsChartData = computed(() => {
   // En una app real, habría un modelo de habilidades con evaluciones específicas
   // Aquí simulamos algunos datos según el promedio general

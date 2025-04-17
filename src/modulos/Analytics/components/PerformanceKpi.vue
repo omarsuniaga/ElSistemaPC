@@ -15,8 +15,8 @@ defineProps<{
   <div class="kpi-card p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
     <div class="flex items-center justify-between">
       <div>
-        <h3 class="text-sm font-medium text-gray-500">{{ title }}</h3>
-        <p class="text-2xl font-semibold mt-1">
+        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-900">{{ title }}</h3>
+        <p class="text-2xl font-semibold mt-1 text-indigo-600">
           {{ metricType === 'currency' ? `$${value}` : value }}
           <span v-if="metricType === 'percentage'" class="text-sm">%</span>
         </p>
