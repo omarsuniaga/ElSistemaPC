@@ -139,7 +139,7 @@ import Chart from 'chart.js/auto';
 import { useTeachersStore } from '../../modulos/Teachers/store/teachers';
 import { useClassesStore } from '../../modulos/Classes/store/classes';
 import { useStudentsStore } from '../../modulos/Students/store/students';
-import AbsenceAlertList from '../AbsenceAlertList.vue'; // Updated import path
+import AbsenceAlertList from '@/components/AbsenceAlertList.vue'; 
 import {
   ClockIcon, 
   ChartBarIcon,

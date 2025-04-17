@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useStudentsStore } from '../modulos/Students/store/students';
 import { useAttendanceStore } from '../modulos/Attendance/store/attendance';
 import { useClassesStore } from '../modulos/Classes/store/classes';
-// import { useToast } from '../components/ui/toast/use-toast'; // Descomentar si se usa toast
+import { useToast } from '../components/ui/toast/use-toast'; // Descomentar si se usa toast
 import type { Student } from '../modulos/Students/types/student';
 import type { AttendanceDocument } from '../modulos/Attendance/types/attendance'; // Importar tipo
 import { formatISO, isValid, parseISO } from 'date-fns'; // Asegúrate de importar isValid y formatISO
@@ -12,7 +12,7 @@ import { formatISO, isValid, parseISO } from 'date-fns'; // Asegúrate de import
 const studentsStore = useStudentsStore();
 const attendanceStore = useAttendanceStore();
 const classesStore = useClassesStore();
-// const { toast } = useToast(); // Descomentar si se usa toast
+const { toast, triggerNotification } = useToast(); // Descomentar si se usa toast
 
 // Estado del componente
 const startDate = ref('');
@@ -195,12 +195,13 @@ async function searchAbsences() {
         console.log("No se encontraron resultados de ausencias para el rango especificado.");
     } else {
         console.log("Resultados encontrados:", results.value);
+        triggerNotification('Análisis completado: ' + results.value.length + ' inasistencias');
     }
 
   } catch (err: any) {
     console.error("Error durante la búsqueda de ausencias:", err);
     error.value = "Ocurrió un error al buscar las ausencias. Intente de nuevo.";
-    // toast({ title: "Error", description: error.value, variant: "destructive" }); // Descomentar si se usa toast
+    toast({ title: "Error", description: error.value, variant: "destructive" }); // Descomentar si se usa toast
   } finally {
     isLoading.value = false;
   }
