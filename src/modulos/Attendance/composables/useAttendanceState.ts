@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useClassesStore } from '@/modulos/Classes/store/classes'
 import { useStudentsStore } from '@/modulos/Students/store/students'
-import { useAttendanceStore } from '@/modulos/attendance/store/attendance'
+import { useAttendanceStore } from '@/modulos/Attendance/store/attendance'
 import { useToast } from '@/modulos/attendance/composables/useToast'
 
 export function useAttendanceState(role: 'admin' | 'maestro' = 'maestro') {
