@@ -116,6 +116,7 @@ const teachersStore = useTeachersStore();
 const classesStore = useClassesStore();
 const studentsStore = useStudentsStore();
 
+
 // Definir la interfaz para el tipo Teacher
 interface Teacher {
   id: string;
