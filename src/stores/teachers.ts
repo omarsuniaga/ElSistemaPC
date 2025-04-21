@@ -44,7 +44,7 @@ export const useTeachersStore = defineStore('teachers', {
         }
 
         const classesQuery = query(
-          collection(db, 'classes'),
+          collection(db, 'CLASES'),
           where('teacherId', '==', teacherId)
         )
         const classesSnapshot = await getDocs(classesQuery)

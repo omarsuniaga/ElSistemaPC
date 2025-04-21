@@ -150,13 +150,13 @@ onMounted(async () => {
     }
     
     // Calcular estadísticas
-    const teacherClasses = classesStore.classes.filter(c => c.profesor === teacherId.value);
+    const teacherClasses = classesStore.classes.filter(c => c.teacherId === teacherId.value);
     teacherStats.classesCount = teacherClasses.length;
     
     // Obtener alumnos únicos de todas las clases del profesor
     const studentIds = new Set();
     teacherClasses.forEach(c => {
-      c.studentIds?.forEach(id => studentIds.add(id));
+      c.alumnos?.forEach(id => studentIds.add(id));
     });
     teacherStats.studentsCount = studentIds.size;
     
