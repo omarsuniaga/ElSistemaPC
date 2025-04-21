@@ -24,7 +24,7 @@ const form = ref({
   teacherId: '', // This will be set with the current user's UID
   classroom: '',
   schedule: {
-    sessions: [
+    slots: [
       { day: '', startTime: '', endTime: '' } // Sesión vacía por defecto
     ]
   }
@@ -44,12 +44,12 @@ const isSubmitting = ref(false);
 
 // Función para agregar una nueva sesión de horario
 const addSession = () => {
-  form.value.schedule.sessions.push({ day: '', startTime: '', endTime: '' });
+  form.value.schedule.slots.push({ day: '', startTime: '', endTime: '' });
 };
 
 // Función para eliminar una sesión por índice
 const removeSession = (index: number) => {
-  form.value.schedule.sessions.splice(index, 1);
+  form.value.schedule.slots.splice(index, 1);
 };
 
 // Validación del formulario, incluyendo horarios
@@ -72,11 +72,11 @@ const validateForm = () => {
     isValid = false;
   }
 
-  if (form.value.schedule.sessions.length === 0) {
+  if (form.value.schedule.slots.length === 0) {
     errors.value.schedule = 'Agrega al menos un horario';
     isValid = false;
   } else {
-    form.value.schedule.sessions.forEach((session) => {
+    form.value.schedule.slots.forEach((session) => {
       if (!session.day || !session.startTime || !session.endTime) {
         errors.value.schedule = 'Completa todos los campos de cada horario';
         isValid = false;
@@ -116,9 +116,13 @@ watch(
         teacherId: newVal.teacherId || authStore.user?.uid || '', // Use existing or current user's UID
         classroom: newVal.classroom || '',
         schedule: {
-          sessions: Array.isArray(newVal.schedule?.sessions)
-            ? newVal.schedule.sessions
-            : [{ day: '', startTime: '', endTime: '' }]
+          slots: Array.isArray(newVal.schedule?.slots)
+            ? newVal.schedule.slots.map((slot) => ({
+                day: slot.day || '',
+                startTime: slot.startTime || '',
+                endTime: slot.endTime || ''
+              }))
+            : [] // Default to empty array if not valid
         }
       };
     } else {
@@ -215,9 +219,9 @@ onMounted(async () => {
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
         Horarios <span class="text-red-500">*</span>
       </label>
-      <div v-for="(session, index) in form.schedule.sessions" :key="index" class="flex items-center gap-2 mt-2">
+      <div v-for="(slots, index) in form.schedule.slots" :key="index" class="flex items-center gap-2 mt-2">
         <select 
-          v-model="session.day" 
+          v-model="slots.day" 
           class="block w-1/4 p-2 border border-gray-300 dark:border-gray-600 rounded-md"
         >
           <option value="" disabled>Seleccione un día</option>
@@ -225,13 +229,13 @@ onMounted(async () => {
         </select>
         <input 
           type="time" 
-          v-model="session.startTime" 
+          v-model="slots.startTime" 
           class="block w-1/4 p-2 border border-gray-300 dark:border-gray-600 rounded-md"
           placeholder="Inicio"
         />
         <input 
           type="time" 
-          v-model="session.endTime" 
+          v-model="slots.endTime" 
           class="block w-1/4 p-2 border border-gray-300 dark:border-gray-600 rounded-md"
           placeholder="Fin"
         />

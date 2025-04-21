@@ -2,6 +2,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { instrumentsRoutes } from '../modulos/Instruments/router';
+// import { attendanceRoutes } from '../modulos/attendance/router/attendanceRoutes'
 
 const routes: Array<RouteRecordRaw> = [
   // Rutas públicas (sin requerir autenticación)
@@ -99,15 +100,15 @@ const routes: Array<RouteRecordRaw> = [
       allowedRoles: ['Maestro']
     }
   },
-  {
-    path: '/teacher-attendance',
-    name: 'teacher-attendance',
-    component: () => import('../views/TeacherAttendanceView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresTeacher: true
-    }
-  },
+  // {
+  //   path: '/teacher-attendance',
+  //   name: 'teacher-attendance',
+  //   component: () => import('../views/TeacherAttendanceView.vue'),
+  //   meta: {
+  //     requiresAuth: true,
+  //     requiresTeacher: true
+  //   }
+  // },
   {
     path: '/attendance/:date/:classId',
     name: 'attendance',
@@ -237,6 +238,7 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true, allowedRoles: ['Director', 'Admin', 'Maestro'] }
   },
   ...instrumentsRoutes,
+  // ...attendanceRoutes,
   // Ruta inicial: redirige según el rol
   {
     path: '/',

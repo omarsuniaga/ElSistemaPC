@@ -1095,25 +1095,7 @@ watch(() => [route.params.date, route.params.classId, route.path], async ([newDa
       {{ message }}
     </div>
 
-    <!-- Header -->
-    <AttendanceHeader 
-      :selectedDate="selectedDate" 
-      :selectedClass="selectedClassName" 
-      :view="view" 
-      :showAnalytics="showAnalytics"
-      @update:view="updateView"  
-      @toggle-analytics="toggleAnalytics" 
-      @open-report-modal="openReportModal" 
-      @open-export-modal="openExportModal"
-      @create-new-attendance="createNewAttendance"
-      @open-calendar-modal="showCalendarModal = true"
-      @open-emergency-class-modal="showEmergencyClassModal = true"
-      @open-justified-absence-modal="showJustifiedAbsenceModal = true"
-      @open-observation-modal="showObservationsModal = true"
-      @open-justification-modal="handleOpenJustification"
-      class="mb-3 sm:mb-4"
-    />
-
+    
     <!-- Botones adicionales -->
     <div class="flex flex-wrap gap-2 mb-4 justify-center sm:justify-start">
       <button @click="toggleAnalytics" class="btn text-xs sm:text-sm" :class="showAnalytics ? 'btn-primary' : 'btn-secondary'">

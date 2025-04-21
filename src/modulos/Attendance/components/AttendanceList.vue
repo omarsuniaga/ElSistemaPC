@@ -17,17 +17,29 @@ import { useClassesStore } from '../../Classes/store/classes'
 import { useStudentsStore } from '../../Students/store/students'
 import { useAttendanceStore } from '../store/attendance'
 import { useRoute } from 'vue-router'
+import { useAttendanceState } from '../composables/useAttendanceState'
 import ClassObservationBadge from './ClassObservationBadge.vue'
 import Toast from '../../../components/Toast.vue'
 
 // Props y emits
 const props = defineProps<{
-  students: Student[];  // Estudiantes ya filtrados por la clase
-  attendanceRecords: Record<string, string>;
-  initialClassId?: string;
   selectedClassName?: string; // Nombre de la clase seleccionada
+  initialClassId?: string;
+  students: Student[];
+  attendanceRecords: Record<string, AttendanceStatus>;
   isDisabled?: boolean; // Para deshabilitar botones en fechas no editables
 }>()
+
+const {
+  selectedDate,
+  selectedClass,
+  view,
+  loading,
+  init,
+  setDate,
+  setClass,
+  loadCurrent
+} = useAttendanceState('maestro')
 
 const emit = defineEmits<{
   (e: 'update-status', studentId: string, status: AttendanceStatus | 'save'): void;
@@ -44,7 +56,6 @@ const attendanceStore = useAttendanceStore();
 const route = useRoute();
 
 // Estado local
-const selectedClass = ref<string>(props.initialClassId || '');
 const students = ref<Student[]>([])
 const pendingChanges = ref<Set<string>>(new Set()); // Registro de IDs de estudiantes con cambios pendientes
 const localAttendanceRecords = ref<Record<string, string>>({}); // Estado local para gestionar cambios antes de guardar

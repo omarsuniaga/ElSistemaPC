@@ -65,6 +65,7 @@ const filteredSelectedStudents = computed(() => {
 const addStudent = (studentId) => {
   if (!selectedStudentIds.value.includes(studentId)) {
     selectedStudentIds.value.push(studentId);
+    searchQuery.value = '';
   }
 };
 
@@ -85,6 +86,7 @@ const addSelectedStudents = () => {
   }
   selectedForAddition.value = [];
   multiSelectMode.value = false;
+  searchQuery.value = '';
 };
 
 const removeStudent = (studentId) => {

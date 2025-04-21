@@ -678,7 +678,7 @@ const getTeacherClasses = (teacherId: string) => {
             </div>
             
             <!-- Integración del componente TeacherWeeklySchedule -->
-            <TeacherWeeklySchedule :teacherId="teacherId" />
+            <TeacherWeeklySchedule :teacherId="teacherId" :classes="getTeacherClasses(teacherId)" />
           </div>
           <div v-else class="text-center py-3 text-gray-500 text-sm">
             No hay clases asignadas

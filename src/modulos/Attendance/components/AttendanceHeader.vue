@@ -1,103 +1,69 @@
-<template>
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-    <div class="flex items-center gap-4">
-        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Asistencias</h1>
-        <p v-if="selectedDate || selectedClass" class="text-sm text-gray-600 dark:text-gray-400">
-          {{ displayedDate }}
-          {{ selectedClass ? `- ${selectedClass}` : '' }}
-        </p>
-    </div>
-
-    <div class="flex flex-wrap gap-3">
-      <button 
-        @click="$emit('toggle-analytics')"
-        :class="[
-          'btn flex items-center gap-2 transition-colors',
-          showAnalytics 
-            ? 'bg-blue-700 text-white hover:bg-blue-800' 
-            : 'bg-blue-600 text-white hover:bg-blue-700'
-        ]"
-      >
-        <ChartBarIcon class="w-5 h-5" />
-      </button>
-
-      <button 
-        @click="$emit('open-report-modal')"
-        class="btn bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-2 transition-colors"
-      >
-        <DocumentTextIcon class="w-5 h-5" />
-      </button>
-
-      <button 
-        @click="$emit('open-export-modal')"
-        class="btn bg-amber-600 text-white hover:bg-amber-700 flex items-center gap-2 transition-colors"
-      >
-        <ArrowDownTrayIcon class="w-5 h-5" />
-      </button>
-
-      <button 
-        @click="$emit('create-new-attendance')"
-        class="btn btn-primary flex items-center gap-2 transition-colors"
-      >
-        <PlusCircleIcon class="w-5 h-5" />
-      </button>
-    </div>
-  </div>
-</template>
-
+<!-- src/modulos/attendance/components/AttendanceHeader.vue -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { useRouter } from 'vue-router'
-import {
-  ArrowLeftIcon,
-  ChartBarIcon,
-  DocumentTextIcon,
-  ArrowDownTrayIcon,
-  PlusCircleIcon,
-} from '@heroicons/vue/24/outline'
+import HeaderActions from './HeaderActions.vue'
+import { useHeaderActions } from '../composables/useHeaderActions'
 
-const router = useRouter()
+
+/** Props actualizados */
 const props = defineProps<{
-  selectedDate?: string
-  selectedClass?: string
-  view: 'calendar' | 'class-select' | 'attendance-form'
-  showAnalytics: boolean
+  selectedDate: string
+  selectedClass: string
+  role: 'admin' | 'director' | 'maestro'
 }>()
 
+/** Emitir eventos hacia la vista */
 const emit = defineEmits<{
-  (e: 'change-view', view: 'calendar' | 'class-select' | 'attendance-form'): void
-  (e: 'toggle-analytics'): void
-  (e: 'open-report-modal'): void
-  (e: 'open-export-modal'): void
-  (e: 'create-new-attendance'): void
+  (e: 'analytics'): void
+  (e: 'report'): void
+  (e: 'export'): void
+  (e: 'emergency'): void
+  (e: 'changeView', view: 'calendar' | 'class-select' | 'attendance-form'): void
 }>()
 
-// Función corregida para navegar correctamente al calendario
-const navigateToCalendar = () => {
-  // Emit the event to change the view
-  emit('change-view', 'calendar');
-  
-  // Navigate to the AttendanceView route
-  router.push('/attendance');
-}
-
-const displayedDate = computed(() => {
-  try {
-    return props.selectedDate ? formatDate(props.selectedDate) : ''
-  } catch {
-    return props.selectedDate || ''
-  }
+/** Composable centralizado de acciones */
+const { open, canExport, canCreateEmergency, userName } = useHeaderActions({
+  role: props.role
 })
 
-const formatDate = (date: string) => {
-  try {
-    // Forzar la fecha a medianoche local para evitar desfase
-    const localDate = new Date(date + "T00:00:00")
-    return format(localDate, "PPPP", { locale: es })
-  } catch {
-    return date
-  }
-}
+/** Fecha formateada bonito */
+const formattedDate = computed(() =>
+  props.selectedDate
+    ? format(parseISO(props.selectedDate), "d 'de' MMMM yyyy", { locale: es })
+    : 'Sin fecha'
+)
 </script>
+
+<template>
+  <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+    <div class="space-y-1">
+      <h1 class="text-xl font-bold text-primary-600 dark:text-primary-400">
+        {{ props.selectedClass || 'Seleccione clase' }}
+      </h1>
+      <p class="text-sm text-gray-600 dark:text-gray-400">{{ formattedDate }}</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500">{{ userName }}</p>
+    </div>
+
+    <button
+      class="btn btn-secondary w-full sm:w-auto mb-2 sm:mb-0"
+      @click="emit('changeView', 'calendar')"
+    >
+      <i class="fa-solid fa-calendar-days mr-2" /> Calendario
+    </button>
+
+    <HeaderActions
+      :role="props.role"
+      @analytics="() => emit('analytics')"
+      @report="() => emit('report')"
+      @export="() => canExport && emit('export')"
+      @emergency="() => canCreateEmergency && emit('emergency')"
+      
+    />
+  </header>
+</template>
+
+<style scoped>
+/* Usa utilidades de Tailwind o tu framework de estilos */
+</style>

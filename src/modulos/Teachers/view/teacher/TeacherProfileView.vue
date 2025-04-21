@@ -253,42 +253,6 @@ const downloadSchedule = async () => {
       </div>
     </Dialog>
   </TransitionRoot>
-  <!-- Eliminar el modal duplicado -->
-  <TransitionRoot :show="showNotificationsModal" as="template">
-    <Dialog as="div" class="relative z-10" @close="showNotificationsModal = false">
-      <div class="fixed inset-0 z-10 overflow-y-auto">
-        <div class="flex min-h-full items-center justify-center p-4 text-center">
-          <TransitionChild
-            enter="ease-out duration-300"
-            enter-from="opacity-0 scale-95"
-            enter-to="opacity-100 scale-100"
-            leave="ease-in duration-200"
-            leave-from="opacity-100 scale-100"
-            leave-to="opacity-0 scale-95"
-          >
-            <DialogPanel class="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
-              <div class="absolute right-0 top-0 pr-4 pt-4">
-                <button @click="showNotificationsModal = false" class="rounded-md bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-500 focus:outline-none">
-                  <XMarkIcon class="h-6 w-6" />
-                </button>
-              </div>
-              <div class="sm:flex sm:items-start">
-                <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-                  <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white">Notificaciones</h3>
-                  <div class="mt-4 max-h-[60vh] overflow-y-auto">
-                    <NotificationSystem
-                      :notifications="notificationsStore.notifications"
-                      @dismiss="dismissNotification"
-                    />
-                  </div>
-                </div>
-              </div>
-            </DialogPanel>
-          </TransitionChild>
-        </div>
-      </div>
-    </Dialog>
-  </TransitionRoot>
 </template>
 
 <style scoped>

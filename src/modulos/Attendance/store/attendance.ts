@@ -3,6 +3,9 @@ import { defineStore } from 'pinia'
 import { format, parseISO, isValid } from 'date-fns'
 import { collection, getDocs, query } from 'firebase/firestore'
 import { db } from '../../../firebase'
+import { useClassesStore } from '../../Classes/store/classes'
+import { useAuthStore } from '../../../stores/auth'
+
 import type { 
   AttendanceRecord, 
   AttendanceStatus, 
@@ -26,6 +29,7 @@ interface FetchAttendanceRecordsParams {
   startDate?: string | Date;
   endDate?: Date;
 }
+import { dayName } from '../utils/dateUtils' 
 import { 
   getAttendancesFirebase, 
   getAttendanceByDateAndClassFirebase, 
@@ -42,7 +46,6 @@ import {
   getClassObservationsHistoryFirebase,
   getClassObservationsByDateFirebase
 } from '../service/attendance'
-import { useClassesStore } from '../../Classes/store/classes'
 // import { useStudentsStore } from '../../Students/store/students'
 import { getFromLocalStorage, saveToLocalStorage, clearLocalStorage } from '../../../utils/localStorageUtils'
 
@@ -124,7 +127,67 @@ export const useAttendanceStore = defineStore('attendance', {
       return (className: string): AttendanceRecord[] => 
         state.records.filter(record => record.classId === className);
     },
-    
+    getClassNameByClassId: (state) => {
+      return (classId: string): string => {
+        const classesStore = useClassesStore()
+        const classItem = classesStore.classes.find(c => c.id === classId)
+        return classItem ? classItem.name : 'Clase no encontrada'
+      }
+    },
+    dateAttendanceStatuses: (state) => {
+      const auth = useAuthStore()
+      const classesStore = useClassesStore()
+      const teacherId = auth.user?.uid
+
+      // 1) Filtrar solo los docs de clases del maestro actual
+      const teacherClassIds = classesStore.classes
+        .filter(c => c.teacherId === teacherId)
+        .map(c => c.id)
+
+      // 2) Agrupar docs por fecha solo si pertenecen al maestro
+      const byDate: Record<string, string[]> = {}
+      state.attendanceDocuments.forEach(doc => {
+        if (
+          typeof doc.fecha === 'string' &&
+          doc.fecha.trim() &&
+          teacherClassIds.includes(doc.classId)
+        ) {
+          byDate[doc.fecha] = byDate[doc.fecha] || []
+          if (!byDate[doc.fecha].includes(doc.classId)) {
+            byDate[doc.fecha].push(doc.classId)
+          }
+        }
+      })
+
+      // 3) Para cada fecha, comparar clases programadas vs registradas
+      return Object.entries(byDate).map(([fecha, recordedClassIds]) => {
+        const d = new Date(`${fecha}T00:00:00`)
+        if (isNaN(d.getTime())) {
+          return { date: fecha, status: 'none' as const }
+        }
+        const dayIndex = d.getDay()
+        // Clases programadas para el maestro ese día
+        const scheduled = classesStore.classes.filter(c => {
+          if (c.teacherId !== teacherId || !c.schedule?.slots) return false
+          return c.schedule.slots.some(slot => {
+            if (typeof slot.day === 'number') {
+              return slot.day === dayIndex
+            } else if (typeof slot.day === 'string') {
+              return slot.day.toLowerCase() === ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'][dayIndex]
+            }
+            return false
+          })
+        })
+        const total = scheduled.length
+        const recorded = recordedClassIds.length
+        let status: 'registered' | 'none' | 'partial' = 'none'
+        if (recorded === 0) status = 'none'
+        else if (recorded >= total && total > 0) status = 'registered'
+        else if (recorded > 0 && recorded < total) status = 'partial'
+        return { date: fecha, status }
+      })
+    },
+
     getAttendanceByStudent: (state) => {
       // obtener asistencias por estudiante
       return (studentId: string): AttendanceRecord[] => 
@@ -740,26 +803,80 @@ getJustification: (state) => {
     },
     
     // Cargar historial de observaciones para una clase
-    async fetchObservationsHistory(classId: string) {
-      this.isLoading = true;
-      this.error = null;
-      try {
-        // console.log('Cargando historial de observaciones para la clase:', classId);
-        
-        // Obtener historial de Firebase
-        const observations = await getClassObservationsHistoryFirebase(classId);
-        // Actualizar el state
-        this.observationsHistory = observations;
-        
-        return observations;
-      } catch (error) {
-        this.error = 'Error al cargar historial de observaciones';
-        console.error('Error al cargar historial de observaciones:', error);
-        return [];
-      } finally {
-        this.isLoading = false;
+// Cargar historial de observaciones para todas las clases de un maestro
+async fetchObservationsHistory(teacherId: string) {
+  this.isLoading = true;
+  this.error = null;
+  try {
+    const classesStore = useClassesStore();
+    const observations = await getClassObservationsHistoryFirebase(teacherId);
+    if (!classesStore.classes.length) {
+      await classesStore.fetchClasses();
+    }
+    // 1. Obtener todas las clases del maestro
+    const teacherClasses = classesStore.classes.filter(c => c.teacherId === teacherId);
+    console.log("Cargando historial de observaciones para el maestro:", teacherClasses);
+
+    // 2. Para cada clase, obtener sus observaciones y armar la estructura
+    const allActivities: Array<{
+      classId: string;
+      className: string;
+      activities: Array<{
+        id: string;
+        classId: string;
+        className: string;
+        observacion: string;
+        fecha: string;
+        presentCount: number;
+        totalCount: number;
+      }>;
+    }> = [];
+
+    for (const classItem of teacherClasses) {
+      // Obtener historial de Firebase para la clase (¡corregido!)
+      const totalAlumnos = classItem?.studentIds?.length || 0;
+      const className = classItem.name || 'Clase sin nombre';
+    console.log("Clase:", classItem.name, "Total alumnos:", totalAlumnos);
+      // Procesar cada documento de observación
+      const activities = (observations || [])
+        .filter(doc => doc.classId === classItem.id || doc.classId === classItem.name)
+        .map(doc => {
+          const presentes = Array.isArray(doc.data.presentes) ? doc.data.presentes.length : 0;
+          const tarde = Array.isArray(doc.data.tarde) ? doc.data.tarde.length : 0;
+          return {
+            id: Date.now().toString() + Math.random().toString(36).slice(2),
+            classId: classItem.id,
+            className,
+            observacion: doc.data.observations || '',
+            fecha: doc.fecha || '',
+            presentCount: Number(presentes + tarde),
+            totalCount: totalAlumnos
+          };
+        });
+    
+      // Ordenar por fecha descendente
+      activities.sort((a, b) => b.fecha.localeCompare(a.fecha));
+    
+      if (activities.length > 0) {
+        allActivities.push({
+          classId: classItem.id,
+          className,
+          activities,
+        });
       }
-    },
+    }
+
+    // Ordenar clases por nombre
+    allActivities.sort((a, b) => a.className.localeCompare(b.className));
+    return allActivities;
+  } catch (error) {
+    this.error = 'Error al cargar historial de observaciones';
+    console.error('Error al cargar historial de observaciones:', error);
+    return [];
+  } finally {
+    this.isLoading = false;
+  }
+},
     
     // Cargar historial de observaciones para una clase en una fecha específica
     async fetchObservationsByDate(classId: string, date: string) {
@@ -1360,7 +1477,7 @@ async fetchRecordsForMultipleEntities({
       classId?: string; 
       studentId?: string; 
       startDate: string; 
-      endDate: string 
+      endDate: string; 
     }): Promise<any> { // Consider defining a specific Report interface later
       this.isLoading = true;
       this.error = null;

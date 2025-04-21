@@ -2,17 +2,16 @@
   <div class="teacher-weekly-schedule container mx-auto px-4 py-6 md:py-8">
     <div class="space-y-8">
       <template v-for="day in weekDays" :key="day">
-        <!-- Fix: Removed v-scope directive and :set attribute -->
         <div>
-          <!-- Store the result in a computed property or use it directly -->
-          <div v-if="classesStore.getClassByDaysAndTeacher(props.teacherId, day).length > 0" class="day-section">
+          <!-- Usar computed property para obtener clases por día -->
+          <div v-if="getClassesForDay(day).length > 0" class="day-section">
             <div class="mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
               <h3 class="text-xl md:text-2xl font-semibold text-gray-800 dark:text-white">{{ day }}</h3>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               <div
-                v-for="class_ in classesStore.getClassByDaysAndTeacher(props.teacherId, day)"
+                v-for="class_ in getClassesForDay(day)"
                 :key="class_.id"
                 class="class-item bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out transform hover:-translate-y-1 cursor-pointer overflow-hidden flex flex-col"
                 @click="selectClass(class_)"
@@ -65,7 +64,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useClassesStore } from '../../Classes/store/classes' // Adjust path if needed
+import { useClassesStore } from '../../../modulos/Classes/store/classes' // Ruta corregida
 import {
   ClockIcon,
   MapPinIcon,
@@ -73,9 +72,9 @@ import {
   MusicalNoteIcon
 } from '@heroicons/vue/24/outline'
 
-// Interfaces (assuming they are correct)
+// Interfaces
 interface ScheduleSlot {
-  day: string;
+  day: string | number;
   startTime: string;
   endTime: string;
 }
@@ -99,44 +98,100 @@ interface ClassData {
 // Props
 const props = defineProps<{
   teacherId: string;
+  classes: ClassData[];
 }>()
+
+// Emits
+const emit = defineEmits(['view-class'])
 
 // Store
 const classesStore = useClassesStore()
 
 // State
 const selectedClass = ref<ClassData | null>(null)
-const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+
+// Días de la semana con mapeo numérico
+const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+const dayToNumber = {
+  'Lunes': 1,
+  'Martes': 2,
+  'Miércoles': 3,
+  'Jueves': 4,
+  'Viernes': 5,
+  'Sábado': 6,
+  'Domingo': 0
+}
+
+// Obtener clases para un día específico
+const getClassesForDay = (day: string) => {
+  // Convertir el nombre del día a su valor numérico
+  const dayNumber = dayToNumber[day as keyof typeof dayToNumber];
+  
+  return props.classes.filter(classItem => {
+    if (!classItem.schedule?.slots || !Array.isArray(classItem.schedule.slots)) {
+      return false;
+    }
+    
+    return classItem.schedule.slots.some(slot => {
+      // Manejar tanto valores numéricos como strings
+      if (typeof slot.day === 'number') {
+        return slot.day === dayNumber;
+      } else if (typeof slot.day === 'string') {
+        // Normalizar el nombre del día
+        const normalizedDay = slot.day.toLowerCase().trim();
+        return normalizedDay === day.toLowerCase() || 
+               normalizedDay === day.slice(0, 3).toLowerCase() || 
+               parseInt(normalizedDay) === dayNumber;
+      }
+      return false;
+    });
+  });
+};
 
 // Methods
 const selectClass = (class_: ClassData) => {
   if (class_?.id) {
     console.log('Selected class:', class_.id)
     selectedClass.value = class_
-    // You might want to emit an event or navigate here
-    // emit('classSelected', class_)
+    emit('view-class', class_.id)
   }
 }
 
-// Helper to get schedule slot for a specific day
+// Helper para obtener el slot de horario para un día específico
 const getScheduleForDay = (class_: ClassData, day: string): ScheduleSlot | undefined => {
-  return class_.schedule?.slots.find(slot => slot.day === day)
+  if (!class_.schedule?.slots || !Array.isArray(class_.schedule.slots)) {
+    return undefined;
+  }
+  
+  const dayNumber = dayToNumber[day as keyof typeof dayToNumber];
+  
+  return class_.schedule.slots.find(slot => {
+    if (typeof slot.day === 'number') {
+      return slot.day === dayNumber;
+    } else if (typeof slot.day === 'string') {
+      const normalizedDay = slot.day.toLowerCase().trim();
+      return normalizedDay === day.toLowerCase() || 
+             normalizedDay === day.slice(0, 3).toLowerCase() || 
+             parseInt(normalizedDay) === dayNumber;
+    }
+    return false;
+  });
 }
 
-// Format time range for display
+// Formatear rango de tiempo para mostrar
 const formatScheduleTime = (scheduleSlot: ScheduleSlot | undefined): string => {
   if (!scheduleSlot) return 'Horario no disponible'
   return `${scheduleSlot.startTime} - ${scheduleSlot.endTime}`
 }
 
-// Format class duration
+// Formatear duración de clase
 const formatClassDuration = (startTime: string, endTime: string): string => {
   if (!startTime || !endTime) return 'N/A';
 
-  // Basic time validation (HH:MM format)
+  // Validación básica del formato de hora (HH:MM)
   const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
   if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
-    console.warn('Invalid time format for duration calculation:', startTime, endTime);
+    console.warn('Formato de hora inválido para cálculo de duración:', startTime, endTime);
     return 'Duración inválida';
   }
 
@@ -147,9 +202,9 @@ const formatClassDuration = (startTime: string, endTime: string): string => {
     const startDate = new Date(0, 0, 0, startHours, startMinutes);
     const endDate = new Date(0, 0, 0, endHours, endMinutes);
 
-    // Handle cases where end time is on the next day (e.g., 22:00 - 01:00)
+    // Manejar casos donde la hora de finalización es anterior a la de inicio
     if (endDate <= startDate) {
-      console.warn('End time is before or same as start time:', startTime, endTime);
+      console.warn('La hora de finalización es anterior o igual a la de inicio:', startTime, endTime);
       return 'Duración inválida';
     }
 
@@ -171,12 +226,42 @@ const formatClassDuration = (startTime: string, endTime: string): string => {
     return durationString || '0min';
 
   } catch (error) {
-    console.error("Error calculating duration:", error);
+    console.error("Error calculando duración:", error);
     return 'Error';
   }
 }
 </script>
 
 <style scoped>
-/* Clean up - no additional styles needed as we're using Tailwind */
+/* Estilos para mejorar la visualización */
+.day-section {
+  transition: all 0.3s ease;
+}
+
+.class-item {
+  transition: all 0.2s ease;
+  border-left: 4px solid transparent;
+}
+
+.class-item:hover {
+  border-left-color: #3b82f6; /* Azul para resaltar al pasar el mouse */
+}
+
+/* Colores para los días de la semana */
+.day-section:nth-child(1) h3 { color: #ef4444; /* Lunes - Rojo */ }
+.day-section:nth-child(2) h3 { color: #f97316; /* Martes - Naranja */ }
+.day-section:nth-child(3) h3 { color: #eab308; /* Miércoles - Amarillo */ }
+.day-section:nth-child(4) h3 { color: #22c55e; /* Jueves - Verde */ }
+.day-section:nth-child(5) h3 { color: #3b82f6; /* Viernes - Azul */ }
+.day-section:nth-child(6) h3 { color: #8b5cf6; /* Sábado - Púrpura */ }
+.day-section:nth-child(7) h3 { color: #ec4899; /* Domingo - Rosa */ }
+
+/* Modo oscuro */
+.dark .day-section:nth-child(1) h3 { color: #fca5a5; /* Lunes - Rojo claro */ }
+.dark .day-section:nth-child(2) h3 { color: #fdba74; /* Martes - Naranja claro */ }
+.dark .day-section:nth-child(3) h3 { color: #fde047; /* Miércoles - Amarillo claro */ }
+.dark .day-section:nth-child(4) h3 { color: #86efac; /* Jueves - Verde claro */ }
+.dark .day-section:nth-child(5) h3 { color: #93c5fd; /* Viernes - Azul claro */ }
+.dark .day-section:nth-child(6) h3 { color: #c4b5fd; /* Sábado - Púrpura claro */ }
+.dark .day-section:nth-child(7) h3 { color: #f9a8d4; /* Domingo - Rosa claro */ }
 </style>

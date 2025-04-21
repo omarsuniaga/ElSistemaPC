@@ -345,15 +345,13 @@ export const addClassObservationFirebase = async (
 }
 
 // Modificar la función getClassObservationsHistoryFirebase para evitar problemas de índices
-export async function getClassObservationsHistoryFirebase(classId: string): Promise<ClassObservation[]> {
+export async function getClassObservationsHistoryFirebase(uid: string): Promise<ClassObservation[]> {
   try {
-    console.log('Consultando historial de observaciones para clase:', classId);
-    
     // En lugar de usar una consulta compuesta que requiere un índice
     // primero obtenemos todas las observaciones para la clase
     const observationsQuery = query(
-      collection(db, 'classObservations'),
-      where('classId', '==', classId),
+      collection(db, 'ASISTENCIAS'),
+      where('uid', '==', uid),
     );
     
     const querySnapshot = await getDocs(observationsQuery);
@@ -361,29 +359,16 @@ export async function getClassObservationsHistoryFirebase(classId: string): Prom
     // Después ordenamos manualmente los resultados
     const observations = querySnapshot.docs.map(doc => {
       const data = doc.data() as ClassObservation;
-      return {
-        id: doc.id,
-        classId: data.classId,
-        date: data.date,
-        text: data.text || '',
-        author: data.author || 'Sistema',
-        timestamp: typeof data.timestamp === 'string' ? new Date(data.timestamp).getTime() : data.timestamp || Date.now()
-      };
+      return data;
     });
     
-    // Ordenamos primero por fecha (descendente) y luego por timestamp (descendente)
+    // ordenar por .fecha descendente
     return observations.sort((a, b) => {
-      // Primero comparamos por fecha
-      const dateComparison = b.date.localeCompare(a.date);
-      if (dateComparison !== 0) return dateComparison;
-      
-      // Si las fechas son iguales, comparamos por timestamp
-      // Convertir a string si es número o usar como está si ya es string
-      const timestampA = typeof a.timestamp === 'number' ? String(a.timestamp) : a.timestamp;
-      const timestampB = typeof b.timestamp === 'number' ? String(b.timestamp) : b.timestamp;
-      return timestampB.localeCompare(timestampA);
+      const dateA = new Date(a.fecha).getTime();
+      const dateB = new Date(b.fecha).getTime();
+      return dateB - dateA;
     });
-    
+
   } catch (error) {
     console.error('Error al obtener historial de observaciones:', error);
     throw error;
