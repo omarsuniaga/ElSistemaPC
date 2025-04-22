@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue'
-import { useStudentsStore } from '../stores/students'
-import { useAttendanceStore } from '../stores/attendance'
-import { useAnalyticsStore } from '../stores/analytics'
+import { useStudentsStore } from '../store/students'
+import { useAttendanceStore } from '../../../stores/attendance'
+import { useAnalyticsStore } from '../../Analytics/store/analytics'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { 

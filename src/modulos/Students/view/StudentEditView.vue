@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useStudentsStore } from '../stores/students'
-import { useClassesStore } from '../stores/classes'
-import { useInstrumentoStore } from '../stores/instrumento' // nuevo import
+import { useStudentsStore } from "../store/students"
+import { useClassesStore } from '../../Classes/store/classes'
+import { useInstrumentoStore } from '../../Instruments/store/instrumento' // nuevo import
 
 const route = useRoute()
 const router = useRouter()
