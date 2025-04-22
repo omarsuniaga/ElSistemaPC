@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useStudentsStore } from '../stores/students'
+import { useStudentsStore } from "../store/students"
 import ConfirmModal from '../components/ConfirmModal.vue'
 
 const route = useRoute()
