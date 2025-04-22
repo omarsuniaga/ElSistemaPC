@@ -53,6 +53,16 @@ export const useStudentsStore = defineStore('students', {
         hasConflicts: studentSchedules.some(s => s.conflicts && s.conflicts.length > 0)
       }
     },
+//  crea un getter para obtener a todos los alumnos: getStudents
+    getStudents: (state) => {
+      return state.students.map(student => ({
+        id: student.id,
+        nombre: student.nombre,
+        apellido: student.apellido,
+        instrumento: student.instrumento,
+        edad: student.edad,
+      }))
+    },
 
     getStudentsByClass: (state) => (classId: string) => {
       if (!classId) return [];

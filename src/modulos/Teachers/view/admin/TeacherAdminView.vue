@@ -328,9 +328,8 @@ const saveTeacher = async (teacherData) => {
   try {
     if (currentTeacher.value) {
       // Actualizar maestro existente
-      await teachersStore.updateTeacher({
-        ...teacherData,
-        id: currentTeacher.value.id
+      await teachersStore.updateTeacher(currentTeacher.value.id, {
+        ...teacherData
       });
       toast({
         title: 'Éxito',
@@ -392,5 +391,17 @@ const viewTeacherSchedule = (teacherId) => {
 const manageTeacherClasses = (teacher) => {
   selectedTeacher.value = teacher;
   showClassesManager.value = true;
+
+  // Asegurarse de que las clases estén cargadas
+  if (classesStore.classes.length === 0) {
+    classesStore.fetchClasses().catch(error => {
+      console.error('Error al cargar clases:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar las clases. Por favor, intenta de nuevo.',
+        variant: 'destructive'
+      });
+    });
+  }
 };
 </script>

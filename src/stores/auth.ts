@@ -11,6 +11,7 @@ import { useStudentsStore } from '../modulos/Students/store/students'
 import { useTeachersStore } from '../modulos/Teachers/store/teachers'
 import { useClassesStore } from '../modulos/Classes/store/classes'
 import { useAttendanceStore } from '../modulos/Attendance/store/attendance'
+import { useScheduleStore } from '../modulos/Schedules/store/schedule'
 import { getThemePreference } from '../modulos/Users/service/userPreferences'
 
 // Interfaz para el objeto de usuario
@@ -61,7 +62,7 @@ export const useAuthStore = defineStore('auth', {
     // Función para validar acceso a módulos específicos
     canAccessModule: (state) => (moduleName: string) => {
       const roleModules = {
-        'Maestro': ['home', 'attendance', 'schedule', 'profile'],
+        'Maestro': ['home', 'attendance', 'schedule', 'students'],
         'Director': ['home', 'attendance', 'schedule', 'students', 'classes', 'reports', 'teachers', 'profile'],
         'Admin': ['home', 'attendance', 'students', 'profile']
       }
@@ -83,27 +84,8 @@ export const useAuthStore = defineStore('auth', {
         const userDoc = await getDoc(userDocRef)
         
         if (!userDoc.exists()) {
-          // Si no existe el perfil y el correo corresponde al director, se crea el perfil
-          if (email === 'director@gmail.com') {
-            const directorData: User = {
-              uid: userCredential.user.uid,
-              email: userCredential.user.email,
-              role: 'Director',
-              status: 'aprobado',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              isDark: false // Tema claro por defecto
-            }
-            await setDoc(userDocRef, directorData)
-            this.user = directorData
-            this.notifications.push({
-              message: '¡Bienvenido Director! Has iniciado sesión exitosamente.',
-              type: 'success'
-            })
-            return { user: this.user, redirectTo: '/', showNotification: true }
-          } else {
-            throw new Error('No se encontró el perfil del usuario')
-          }
+          // Si el usuario no tiene perfil en la base de datos, no se le permite el acceso
+          throw new Error('No se encontró el perfil del usuario')
         } else {
           const userData = userDoc.data()
           // Se asigna el perfil completo al estado
@@ -209,29 +191,21 @@ export const useAuthStore = defineStore('auth', {
      * Se evita la duplicación de llamadas mediante authCheckPromise.
      */
     async checkAuth() {
-      console.log('🔐 checkAuth llamado, estado de inicialización:', this.isInitialized)
       if (authCheckPromise) {
-        console.log('🔐 Reutilizando promesa de checkAuth existente')
         return authCheckPromise
       }
       if (this.isInitialized) {
-        console.log('🔐 Auth ya inicializado, devolviendo estado actual')
         return Promise.resolve(this.user)
       }
-      console.log('🔐 Iniciando nueva verificación de autenticación')
       authCheckPromise = new Promise((resolve) => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-          console.log(`🔐 Estado de autenticación: ${user ? 'autenticado' : 'no autenticado'}`)
           if (user) {
             try {
               const userDoc = await getDoc(doc(db, 'USERS', user.uid))
-              console.log(`🔐 Perfil de usuario encontrado: ${userDoc.exists() ? 'sí' : 'no'}`)
               if (userDoc.exists()) {
                 const userData = userDoc.data()
                 if (userData.status === 'aprobado') {
-                  this.user = { uid: user.uid, email: user.email, ...userData } as User
-                  console.log('🔐 Usuario aprobado, sesión establecida')
-                  
+                  this.user = { uid: user.uid, email: user.email, ...userData } as User                  
                   // Cargar preferencia de tema del usuario
                   try {
                     const themePreference = await getThemePreference(user.uid);
@@ -247,34 +221,19 @@ export const useAuthStore = defineStore('auth', {
                   } catch (error) {
                     console.error('Error al cargar preferencia de tema:', error);
                   }
-                  
                 } else {
-                  console.log('🔐 Usuario no aprobado, cerrando sesión')
+                  console.error('🔐 Usuario no aprobado, cerrando sesión')
                   await this.signOut()
                 }
-              } else if (user.email === 'director@gmail.com') {
-                // Crear perfil de director si no existe
-                const directorData: User = {
-                  uid: user.uid,
-                  email: user.email,
-                  role: 'Director',
-                  status: 'aprobado',
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString(),
-                  isDark: false // Tema claro por defecto
-                }
-                console.log('🔐 Creando perfil de director')
-                await setDoc(doc(db, 'USERS', user.uid), directorData)
-                this.user = directorData
               } else {
-                console.log('🔐 Usuario sin perfil y no es director, cerrando sesión')
+                console.error('🔐 Usuario sin perfil y no es director, cerrando sesión')
                 await this.signOut()
               }
             } catch (error) {
               console.error('🔐 Error al obtener perfil:', error)
             }
           } else {
-            console.log('🔐 No hay usuario autenticado')
+            console.error('🔐 Debes ser miembro de el sistema punta cana, para obtener acceso')
             this.user = null
           }
           this.isInitialized = true
@@ -299,12 +258,14 @@ export const useAuthStore = defineStore('auth', {
       const teachersStore = useTeachersStore()
       const classesStore = useClassesStore()
       const attendanceStore = useAttendanceStore()
+      const scheduleStore = useScheduleStore()
       try {
         await Promise.all([
           studentsStore.fetchStudents(),
           teachersStore.fetchTeachers(),
           classesStore.fetchClasses(),
-          attendanceStore.fetchAttendance()
+          attendanceStore.fetchAttendance(),
+          scheduleStore.fetchAllSchedules()
         ])
         this.dataInitialized = true
       } catch (error) {

@@ -62,7 +62,7 @@ const handleSubmit = async (data: Partial<Teacher>) => {
     isLoading.value = false
   }
 }
-console.log("TEacher Edit", teacher.value)
+console.log("Teacher Edit", teacher.value)
 const handleCancel = () => {
   router.push(`/teachers/${teacherId}`)
 }

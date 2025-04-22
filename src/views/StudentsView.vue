@@ -112,18 +112,17 @@ const toggleMenu = (event: Event, studentId: string): void => {
   activeMenu.value = activeMenu.value === studentId ? null : studentId
 }
 
-// Función para manejar la acción de editar desde el menú
+// Function to handle edit action from dropdown menu
 const handleEditFromMenu = (event: Event, id: string): void => {
-  event.stopPropagation() // Evitar que se abra el drawer
-  handleEdit(id)
-  activeMenu.value = null
+  event.stopPropagation()
+  router.push({ name: 'StudentEdit', params: { id } })
 }
 
-// Función para manejar la acción de eliminar desde el menú
+// Function to handle delete action from dropdown menu
 const handleDeleteFromMenu = (event: Event, id: string): void => {
-  event.stopPropagation() // Evitar que se abra el drawer
-  handleDelete(id)
-  activeMenu.value = null
+  event.stopPropagation()
+  studentToDelete.value = id
+  showDeleteModal.value = true
 }
 
 onMounted(async () => {
@@ -136,9 +135,19 @@ onMounted(async () => {
   }
 })
 
-// Function to edit a student
+// Function to edit a student from drawer
 const handleEdit = (id: string): void => {
-  router.push(`/students/${id}/edit`)
+  router.push({ name: 'StudentEdit', params: { id } })
+}
+
+// Function to view student profile from drawer
+const handleViewProfile = (id: string): void => {
+  router.push({ name: 'StudentProfile', params: { id } })
+}
+
+// Function to manage student documents from drawer
+const handleManageDocuments = (id: string): void => {
+  router.push({ name: 'StudentProfile', params: { id } })
 }
 
 // Function to delete a student
@@ -378,6 +387,8 @@ watch(sortOrder, (newValue) => {
       :studentAnalytics="selectedStudentAnalytics || undefined"
       @close="showStudentDrawer = false"
       @edit="handleEdit"
+      @view-profile="handleViewProfile"
+      @manage-documents="handleManageDocuments"
     />
 
     <!-- Delete Confirmation Modal -->
@@ -394,10 +405,10 @@ watch(sortOrder, (newValue) => {
     <!-- Floating Action Button for adding new student -->
     <button
       @click="router.push({ name: 'NewStudent' })"
-      class="fixed bottom-16 right-6 w-10 h-10 rounded-full bg-primary-600 hover:bg-primary-700 text-white shadow-lg flex items-center justify-center z-10 transition-all duration-200 hover:scale-105"
+      class="fixed bottom-24 right-12 rounded-full bg-primary-600 hover:bg-primary-700 text-white shadow-lg flex items-center justify-center z-10 transition-all duration-200 hover:scale-105"
       title="Añadir Alumno"
     >
-      <PlusCircleIcon class="w-8 h-8" />
+      <PlusCircleIcon class="w-12 h-12" />
     </button>
   </div>
 </template>

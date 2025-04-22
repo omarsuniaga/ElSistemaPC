@@ -16,9 +16,9 @@ import {
   ChartBarIcon,
   CameraIcon
 } from '@heroicons/vue/24/outline'
-import { useStudentsStore } from '../stores/students'
-import { useClassesStore } from '../stores/classes'
-import { useAttendanceStore } from '../stores/attendance'
+import { useStudentsStore } from '../store/students'
+import { useClassesStore } from '../../Classes/store/classes'
+import { useAttendanceStore } from '../../Attendance/store/attendance'
 import { Line } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -30,8 +30,8 @@ import {
   Tooltip,
   Legend
 } from 'chart.js'
-import { uploadFile } from '../services/storage'
-import FileUpload from '../components/FileUpload.vue'
+import { uploadFile } from "../../../service/storage"
+import FileUpload from "../../../components/FileUpload.vue"
 
 ChartJS.register(
   CategoryScale,
@@ -51,6 +51,14 @@ const attendanceStore = useAttendanceStore()
 
 const studentId = route.params.id as string
 const student = computed(() => studentsStore.students.find(s => s.id.toString() === studentId))
+
+// Add the missing classes computed property
+const classes = computed(() => {
+  // If classesStore has a groups or classes array, use it
+  // Otherwise provide a default set of groups
+  return classesStore.groups || 
+    ['Teoría Musical', 'Ensamble', 'Coro', 'Orquesta', 'Jazz', 'Música Clásica']
+})
 
 const attendanceData = computed(() => {
   const labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun']

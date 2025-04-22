@@ -89,9 +89,9 @@ const instruments = computed(() => {
 });
 
 const availableClasses = computed(() => {
-  // Clases que no tienen maestro asignado o tienen otro maestro
+  // Clases que no tienen maestro asignado
   return classesStore.classes.filter(classItem => 
-    !classItem.teacherId || classItem.teacherId !== props.teacherId
+    !classItem.teacherId || classItem.teacherId === null || classItem.teacherId === undefined
   );
 });
 
@@ -160,7 +160,18 @@ const deleteClass = async () => {
 
 const assignClassToTeacher = async (classId) => {
   try {
-    await classesStore.assignTeacher(classId, props.teacherId);
+    // Obtener la clase antes de asignarla
+    const classData = classesStore.getClassById(classId);
+    if (!classData) {
+      throw new Error('Clase no encontrada');
+    }
+    
+    // Asignar profesor a la clase
+    await classesStore.updateClass({
+      ...classData,
+      teacherId: props.teacherId
+    });
+    
     toast({
       title: 'Éxito',
       description: 'Clase asignada correctamente',

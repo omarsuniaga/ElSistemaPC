@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import type { AttendanceRecord } from '../../Attendance/types/attendance'
@@ -224,8 +223,8 @@ const router = useRouter()
 
 // Agregar la función viewSchedule
 const viewSchedule = () => {
-  if (props.student && props.student.id) {
-    router.push(`/student-schedule/${props.student.id}`)
+  if (props.student?.id) {
+    router.push({ name: 'studentSchedule', params: { id: props.student.id } })
   } else {
     console.error('No se puede mostrar el horario: ID de estudiante no disponible')
   }

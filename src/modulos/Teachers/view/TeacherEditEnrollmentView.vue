@@ -11,12 +11,16 @@ const router = useRouter()
 const teachersStore = useTeachersStore()
 
 const teacherId = route.params.id as string
-const teacher = computed(() => teachersStore.teachers.find((t: Teacher) => t.id === teacherId)) // Added type Teacher to 't'
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+const teacher = computed(() => {
+  // Buscar por id (Firestore) o por uid (auth)
+  return teachersStore.getTeacherById(teacherId) ||
+         teachersStore.teachers.find(t => t.uid === teacherId)
+})
 
 const handleSubmit = async (data: Partial<Teacher>) => {
-  if (!teacher.value) return
+  if (!teacherId) return
   
   isLoading.value = true
   error.value = null

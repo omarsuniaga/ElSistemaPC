@@ -21,12 +21,15 @@ import HeaderApp from './components/HeaderApp.vue';
 const { isDarkMode } = provideTheme();
 
 const authStore = useAuthStore();
-
+const user = authStore.user;
+const isLoggedIn = authStore.isLoggedIn;
+const isLoading = authStore.isLoading;
 // Configurar Firebase solo después de que el componente esté montado
 onMounted(async () => {
   // Configurar persistencia después de que todo esté inicializado
   try {
     await setupPersistence();
+    console.log('Bienvenidos al Sistema Punta Cana, Debes Logearte para continuar');
   } catch (error) {
     console.warn('No se pudo habilitar la persistencia:', error);
   }

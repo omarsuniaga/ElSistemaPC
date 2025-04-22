@@ -15,14 +15,6 @@ import { getAuth } from 'firebase/auth';
 
 const auth = getAuth();
 
-auth.onAuthStateChanged((user) => {
-  if (user) {
-    // console.log('Usuario actual:', user);
-  } else {
-    console.log('No hay usuario autenticado');
-  }
-});
-
 const CLASSES_COLLECTION = 'CLASES';
 const USERS_COLLECTION = 'USERS';
 

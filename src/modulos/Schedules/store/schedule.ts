@@ -5,7 +5,6 @@ import type {
   ScheduleCreationRequest,
   ScheduleUpdateRequest,
   ScheduleState,
-  Schedule
 } from '../types/schedule'
 import * as scheduleService from '../service/schedules'
 import { useTeachersStore } from '../../Teachers/store/teachers'

@@ -545,10 +545,10 @@ const getTeacherClasses = (teacherId: string) => {
     <div class="mb-4 flex flex-col md:flex-row md:justify-between md:items-center gap-2">
       <div>
         <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-1">
-          <CalendarIcon class="h-6 w-6 text-primary-600" />
+          <CalendarIcon class="h-6 w-6 text-primary-600 dark:text-primary-400" />
           Horario de Clases
         </h1>
-        <p v-if="teacher" class="text-gray-600 dark:text-gray-400 mt-0.5 text-sm">
+        <p v-if="teacher" class="text-gray-600 dark:text-gray-300 mt-0.5 text-sm">
           {{ teacher.name }}
         </p>
       </div>
@@ -565,7 +565,7 @@ const getTeacherClasses = (teacherId: string) => {
         
         <button 
           @click="shareSchedule"
-          class="btn btn-outline flex items-center gap-1.5 py-1.5 px-3 text-sm"
+          class="btn btn-outline flex items-center gap-1.5 py-1.5 px-3 text-sm dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
           aria-label="Compartir horario"
         >
           <ShareIcon class="w-4 h-4" />
@@ -576,7 +576,7 @@ const getTeacherClasses = (teacherId: string) => {
 
     <!-- Loading / Error -->
     <div v-if="isLoading" class="flex justify-center items-center py-8">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 dark:border-primary-400"></div>
     </div>
     <div v-else-if="error" class="bg-red-100 dark:bg-red-900/30 p-3 rounded-lg text-red-700 dark:text-red-400 text-sm">
       {{ error }}
@@ -587,48 +587,48 @@ const getTeacherClasses = (teacherId: string) => {
     <div 
       v-else-if="teacher && !isLoading && !error"
       id="schedule-pdf" 
-      class="bg-white text-black p-3 sm:p-5 rounded-lg shadow mx-auto"
+      class="bg-white dark:bg-gray-800 text-black dark:text-white p-3 sm:p-5 rounded-lg shadow mx-auto print:bg-white print:text-black"
       style="min-height: auto; width: 100%; max-width: 100%;"
     >
       <!-- Encabezado -->
-      <div class="flex flex-col sm:flex-row justify-between items-start border-b border-gray-300 sm:pb-3 mb-4">
+      <div class="flex flex-col sm:flex-row justify-between items-start border-b border-gray-300 dark:border-gray-600 sm:pb-3 mb-4">
         <div>
           <div class="flex items-center gap-2">
             <!-- Puede sustituir por el logo de la Academia -->
             <img src="@/assets/ElSistemaPCLogo.jpeg" alt="Logo Academia" class="h-6 sm:h-10 w-auto" />
             <div>
-              <h1 class="text-lg sm:text-xl font-bold text-primary-700">Academia de Música</h1>
-              <p class="text-xs sm:text-sm text-gray-600">Horario de Clases - Maestro</p>
+              <h1 class="text-lg sm:text-xl font-bold text-primary-700 dark:text-primary-400">El Sistema Punta Cana</h1>
+              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Horario de Clases - Maestro</p>
             </div>
           </div>
         </div>
         <div class="text-right mt-2 sm:mt-0">
-          <p class="font-semibold text-gray-700 text-sm">{{ getCurrentFormattedDate() }}</p>
-          <p class="text-xs text-gray-500">Año Académico {{ new Date().getFullYear() }}</p>
+          <p class="font-semibold text-gray-700 dark:text-gray-300 text-sm">{{ getCurrentFormattedDate() }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Año Académico {{ new Date().getFullYear() }}</p>
         </div>
       </div>
       
       <!-- Información del maestro -->
       <div class="mb-4 sm:mb-1">
-        <div class="flex items-center gap-1.5 bg-primary-50 p-1 rounded-t-lg border-b border-primary-200">
-          <UserIcon class="h-4 w-4 text-primary-700" />
-          <h2 class="text-base font-bold text-primary-700">Información del Maestro</h2>
+        <div class="flex items-center gap-1.5 bg-primary-50 dark:bg-primary-900/40 p-1 sm:p-2 rounded-t-lg border-b border-primary-200 dark:border-primary-800">
+          <UserIcon class="h-4 w-4 text-primary-700 dark:text-primary-400" />
+          <h2 class="text-base font-bold text-primary-700 dark:text-primary-400">Información del Maestro</h2>
         </div>
         
-        <div class="bg-gray-50 p-1 rounded-b-lg shadow-sm">
+        <div class="bg-gray-50 dark:bg-gray-800/50 p-1 sm:p-2 rounded-b-lg shadow-sm">
           <div class="flex flex-row items-center gap-3">
             <img
               :src="teacher.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${teacher.name}`"
               :alt="teacher.name"
-              class="w-12 h-12 rounded-full"
+              class="w-10 h-10 sm:w-12 sm:h-12 rounded-full"
             />
             <div class="flex-1 min-w-0">
-              <h3 class="text-base font-bold truncate">{{ teacher.name }}</h3>
+              <h3 class="text-base font-bold truncate dark:text-white">{{ teacher.name }}</h3>
               <div class="flex flex-wrap gap-1 mt-0.5">
                 <span
                   v-for="specialty in teacher.specialties || []"
                   :key="specialty"
-                  class="px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full"
+                  class="px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 rounded-full"
                 >
                   {{ specialty }}
                 </span>
@@ -640,24 +640,24 @@ const getTeacherClasses = (teacherId: string) => {
           <div class="grid grid-cols-2 gap-2 text-xs mt-2">
             <div class="col-span-2 sm:col-span-1 block">
               <span class="text-gray-500 dark:text-gray-400">Experiencia:</span>
-              <span class="ml-1 font-medium">{{ teacher.experiencia?.institution || "No disponible" }}</span>
+              <span class="ml-1 font-medium dark:text-gray-200">{{ teacher.experiencia?.institution || "No disponible" }}</span>
             </div>
             <div class="col-span-2 sm:col-span-1 block">
               <span class="text-gray-500 dark:text-gray-400">Teléfono:</span>
-              <span class="ml-1 font-medium">{{ teacher.phone || "No disponible" }}</span>
+              <span class="ml-1 font-medium dark:text-gray-200">{{ teacher.phone || "No disponible" }}</span>
             </div>
             <div class="col-span-2 sm:col-span-1 block sm:hidden">
               <span class="text-gray-500 dark:text-gray-400">Email:</span>
-              <span class="ml-1 font-medium truncate ">{{ teacher.email || "No disponible" }}</span>
+              <span class="ml-1 font-medium truncate dark:text-gray-200">{{ teacher.email || "No disponible" }}</span>
             </div>
             <div class="col-span-2 flex justify-between" v-if="schedule">
               <div class="col-span-2 sm:col-span-1 block sm:hidden">
-              <span class="text-gray-500 dark:text-gray-400">Clases:</span>
-              <span class="ml-1 font-medium">{{ schedule.totalClasses }}</span>
+                <span class="text-gray-500 dark:text-gray-400">Clases:</span>
+                <span class="ml-1 font-medium dark:text-gray-200">{{ schedule.totalClasses }}</span>
               </div>
               <div class="col-span-2 sm:col-span-1 block sm:hidden" >
-              <span class="text-gray-500 dark:text-gray-400">Horas:</span>
-              <span class="ml-1 font-medium">{{ formatHours(schedule.weeklyHours) }}</span>
+                <span class="text-gray-500 dark:text-gray-400">Horas:</span>
+                <span class="ml-1 font-medium dark:text-gray-200">{{ formatHours(schedule.weeklyHours) }}</span>
               </div>
             </div>
           </div>
@@ -666,35 +666,35 @@ const getTeacherClasses = (teacherId: string) => {
       
       <!-- Horario de Clases -->
       <div class="mb-4">
-        <div class="flex items-center gap-1.5 bg-primary-50 p-2 rounded-t-lg border-b border-primary-200">
-          <CalendarIcon class="h-4 w-4 text-primary-700" />
-          <h2 class="text-base font-bold text-primary-700">Horario de Clases</h2>
+        <div class="flex items-center gap-1.5 bg-primary-50 dark:bg-primary-900/40 p-1.5 sm:p-2 rounded-t-lg border-b border-primary-200 dark:border-primary-800">
+          <CalendarIcon class="h-4 w-4 text-primary-700 dark:text-primary-400" />
+          <h2 class="text-base font-bold text-primary-700 dark:text-primary-400">Horario de Clases</h2>
         </div>
-        <div class="bg-gray-50 p-2 rounded-b-lg shadow-sm overflow-x-auto">
+        <div class="bg-gray-50 dark:bg-gray-800/50 p-1.5 sm:p-2 rounded-b-lg shadow-sm overflow-x-auto">
           <div v-if="schedule && schedule.totalClasses > 0" class="space-y-3">
    
-            <div v-if="schedule.hasConflicts" class="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 p-2 rounded-lg text-xs">
+            <div v-if="schedule.hasConflicts" class="bg-yellow-50 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 p-2 rounded-lg text-xs">
               ⚠️ Hay conflictos en el horario
             </div>
             
             <!-- Integración del componente TeacherWeeklySchedule -->
             <TeacherWeeklySchedule :teacherId="teacherId" :classes="getTeacherClasses(teacherId)" />
           </div>
-          <div v-else class="text-center py-3 text-gray-500 text-sm">
+          <div v-else class="text-center py-3 text-gray-500 dark:text-gray-400 text-sm">
             No hay clases asignadas
           </div>
         </div>
       </div>
       
       <!-- Footer -->
-      <div class="mt-4 pt-2 border-t text-center text-xs text-gray-500">
+      <div class="mt-4 pt-2 border-t border-gray-300 dark:border-gray-600 text-center text-xs text-gray-500 dark:text-gray-400">
         <p>Este horario puede estar sujeto a cambios. Para más información, contacte con la Administración.</p>
         <p class="mt-0.5">© {{ new Date().getFullYear() }} El Sistema Punta Cana</p>
       </div>
     </div>
     
     <!-- En caso de no encontrar el maestro -->
-    <div v-else class="text-center py-8 text-gray-500 text-sm">
+    <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
       No se encontró información del maestro
     </div>
   </div>
@@ -705,12 +705,16 @@ const getTeacherClasses = (teacherId: string) => {
   body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    color-adjust: exact !important; /* Agregar propiedad estándar */
   }
   #schedule-pdf {
     margin: 0;
     padding: 12mm;
     box-shadow: none;
+    background-color: white !important;
+    color: black !important;
+  }
+  #schedule-pdf * {
+    print-color-adjust: exact !important;
   }
 }
 .btn {
@@ -743,7 +747,15 @@ const getTeacherClasses = (teacherId: string) => {
   }
   
   .text-base {
-    font-size: 0.9rem;
+    font-size: 0.875rem;
+  }
+  
+  .text-sm {
+    font-size: 0.75rem;
+  }
+  
+  .text-xs {
+    font-size: 0.7rem;
   }
 }
 

@@ -1,90 +1,5 @@
-<template>
-  <div class="admin-dashboard p-6">
-    <h1 class="text-3xl font-bold mb-8">Dashboard Administrativo</h1>
-    
-    <!-- Panel de estadísticas diarias -->
-    <div class="mb-8">
-      <h2 class="text-2xl font-semibold mb-4">Actividad del día ({{ formattedCurrentDate }})</h2>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <!-- KPI de Estudiantes Presentes -->
-        <div class="bg-white rounded-lg shadow p-6">
-          <h3 class="text-lg font-medium text-gray-500">Estudiantes presentes hoy</h3>
-          <div class="flex items-center justify-between mt-2">
-            <div class="text-3xl font-bold">{{ studentsPresent }}</div>
-            <div class="text-green-500 bg-green-100 rounded-full p-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <div class="text-sm text-gray-500 mt-2">
-            {{ attendancePercentage }}% de asistencia
-          </div>
-        </div>
-
-        <!-- KPI de Clases Regulares -->
-        <div class="bg-white rounded-lg shadow p-6">
-          <h3 class="text-lg font-medium text-gray-500">Clases regulares hoy</h3>
-          <div class="flex items-center justify-between mt-2">
-            <div class="text-3xl font-bold">{{ regularClasses }}</div>
-            <div class="text-blue-500 bg-blue-100 rounded-full p-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-          </div>
-          <div class="text-sm text-gray-500 mt-2">
-            En {{ classroomsInUse }} salones
-          </div>
-        </div>
-
-        <!-- KPI de Clases Emergentes -->
-        <div class="bg-white rounded-lg shadow p-6">
-          <h3 class="text-lg font-medium text-gray-500">Clases emergentes hoy</h3>
-          <div class="flex items-center justify-between mt-2">
-            <div class="text-3xl font-bold">{{ emergentClasses }}</div>
-            <div class="text-purple-500 bg-purple-100 rounded-full p-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <div class="text-sm text-gray-500 mt-2">
-            {{ emergentClassPercentage }}% del total de clases
-          </div>
-        </div>
-
-        <!-- KPI de Profesores Presentes -->
-        <div class="bg-white rounded-lg shadow p-6">
-          <h3 class="text-lg font-medium text-gray-500">Maestros activos hoy</h3>
-          <div class="flex items-center justify-between mt-2">
-            <div class="text-3xl font-bold">{{ activeTeachers }}</div>
-            <div class="text-purple-500 bg-purple-100 rounded-full p-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-          </div>
-          <div class="text-sm text-gray-500 mt-2">
-            {{ teacherAttendancePercentage }}% de asistencia
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Panel de Clases del Día -->
-    <TodayClassesPanel ref="todayClassesPanel" class="mb-8" />
-
-    <AttendanceWeeklyTable class="mb-8" />
-
-    <!-- Alumnos con Mayor Ausencia -->
-    <AbsenteesList class="mb-8" :className="null" :limit="5" />
-
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useAttendanceStore } from '../../../Attendance/store/attendance'
@@ -94,6 +9,7 @@ import { useTeachersStore } from '../../store/teachers'
 import TodayClassesPanel from '../../../../components/TodayClassesPanel.vue'
 import AttendanceWeeklyTable from '../../../../components/AttendanceWeeklyTable.vue'
 import AbsenteesList from '../../../../components/AbsenteesList.vue'
+
 // Estado reactivo
 const attendanceStore = useAttendanceStore()
 const studentsStore = useStudentsStore()
@@ -106,13 +22,14 @@ const error = ref<string | null>(null)
 const presentStudentsList = ref<any[]>([])
 const studentsPresent = ref(0)
 const activeClasses = ref(0)
-const regularClasses = ref(0)
+const regularClasses = ref(1)
 const emergentClasses = ref(0)
 const activeTeachers = ref(0)
 const classroomsInUse = ref(0)
 const attendancePercentage = ref(0)
 const teacherAttendancePercentage = ref(0)
 const emergentClassPercentage = ref(0)
+const refreshInterval = ref<number | null>(null)
 
 // Fecha actual formateada
 const formattedCurrentDate = computed(() => {
@@ -134,11 +51,43 @@ onMounted(async () => {
     
     // Calcular estadísticas una vez que tenemos todos los datos
     calculateStatistics()
+    
+    // Configurar actualizaciones periódicas (cada 30 segundos)
+    refreshInterval.value = window.setInterval(() => {
+      fetchAttendanceData(true)
+        .then(() => calculateStatistics())
+        .catch(err => console.error('Error en actualización automática:', err))
+    }, 30000) // 30 segundos
   } catch (err: any) {
     error.value = `Error al cargar datos: ${err.message}`
     console.error('Error en AdminHomeView:', err)
   } finally {
     isLoading.value = false
+  }
+})
+
+// Limpiar el intervalo al desmontar el componente
+onUnmounted(() => {
+  if (refreshInterval.value !== null) {
+    clearInterval(refreshInterval.value)
+  }
+})
+
+// Observar cambios en el store de asistencias para actualizar en tiempo real
+watch(() => attendanceStore.attendanceDocuments.length, (newCount, oldCount) => {
+  if (newCount !== oldCount) {
+    console.log('📊 Detectado cambio en documentos de asistencia, actualizando métricas...')
+    fetchAttendanceData(true)
+      .then(() => calculateStatistics())
+      .catch(err => console.error('Error al actualizar tras cambio en documentos:', err))
+  }
+})
+
+// Observar cambios en los registros de asistencia individuales
+watch(() => attendanceStore.records.length, (newCount, oldCount) => {
+  if (newCount !== oldCount) {
+    console.log('📊 Detectado cambio en registros de asistencia, actualizando métricas...')
+    calculateStatistics()
   }
 })
 
@@ -149,14 +98,25 @@ watch(() => todayClassesPanel.value, (newVal) => {
   }
 }, { immediate: true })
 
+// Observar cambios en los datos del panel de clases
+watch(() => (todayClassesPanel.value as any)?.totalClassesToday, (newVal) => {
+  if (newVal !== undefined) {
+    updateClassesStatistics()
+  }
+})
+
 // Función para obtener datos de asistencia de hoy
-async function fetchAttendanceData() {
+async function fetchAttendanceData(skipLoadingState = false) {
   try {
+    if (!skipLoadingState) {
+      isLoading.value = true
+    }
+    
     // Obtener la fecha actual en formato YYYY-MM-DD
     const currentDate = format(new Date(), 'yyyy-MM-dd')
     
-    // Cargar los documentos de asistencia si no están ya cargados
-    if (attendanceStore.attendanceDocuments.length === 0) {
+    // Cargar los documentos de asistencia si no están ya cargados o si es una actualización forzada
+    if (attendanceStore.attendanceDocuments.length === 0 || skipLoadingState) {
       await attendanceStore.fetchAttendanceDocuments()
     }
     
@@ -192,13 +152,39 @@ async function fetchAttendanceData() {
           })
         }
       })
+
+      // También considerar estudiantes con tardanza justificada como presentes
+      if (doc.data.justificacion && Array.isArray(doc.data.justificacion)) {
+        doc.data.justificacion.forEach(justification => {
+          if (justification && justification.id) {
+            uniqueStudentIds.add(justification.id)
+            
+            const student = studentsStore.items.find(s => s.id === justification.id)
+            
+            if (student) {
+              presentStudents.push({
+                id: justification.id,
+                name: `${student.nombre} ${student.apellido || ''}`.trim(),
+                className: classInfo?.name || 'Clase sin nombre',
+                time: classInfo?.schedule || 'Horario no especificado',
+                justified: true
+              })
+            }
+          }
+        })
+      }
     }
     
     // Actualizar el estado con los datos procesados
     presentStudentsList.value = presentStudents
     studentsPresent.value = uniqueStudentIds.size
   } catch (err) {
+    console.error('Error en fetchAttendanceData:', err)
     throw new Error(`Error al obtener datos de asistencia: ${err}`)
+  } finally {
+    if (!skipLoadingState) {
+      isLoading.value = false
+    }
   }
 }
 
@@ -277,6 +263,62 @@ function calculateStatistics() {
   }
 }
 
+// Función para construir lista de estudiantes presentes
+async function buildPresentStudentsList() {
+  try {
+    const currentDate = format(new Date(), 'yyyy-MM-dd')
+    const presentStudents: any[] = []
+    
+    // Filtrar documentos de asistencia de hoy
+    const todayDocuments = attendanceStore.attendanceDocuments
+      .filter(doc => doc.fecha === currentDate)
+    
+    // Procesar cada documento para extraer estudiantes presentes
+    for (const doc of todayDocuments) {
+      const classInfo = classesStore.getClassById(doc.classId)
+      
+      if (doc.data && Array.isArray(doc.data.presentes)) {
+        // Procesar los estudiantes marcados como presentes
+        for (const studentId of doc.data.presentes) {
+          const student = studentsStore.items.find(s => s.id === studentId)
+          
+          if (student) {
+            presentStudents.push({
+              id: studentId,
+              name: `${student.nombre || ''} ${student.apellido || ''}`.trim(),
+              className: classInfo?.name || 'Clase sin nombre',
+              time: classInfo?.schedule?.slots?.[0]?.startTime || 'Horario no especificado'
+            })
+          }
+        }
+        
+        // También incluir estudiantes con tardanza justificada
+        const justifiedStudents = doc.data.justificacion || []
+        for (const justification of justifiedStudents) {
+          if (justification && justification.id) {
+            const student = studentsStore.items.find(s => s.id === justification.id)
+            
+            if (student) {
+              presentStudents.push({
+                id: justification.id,
+                name: `${student.nombre || ''} ${student.apellido || ''}`.trim(),
+                className: classInfo?.name || 'Clase sin nombre',
+                time: classInfo?.schedule?.slots?.[0]?.startTime || 'Horario no especificado',
+                justified: true
+              })
+            }
+          }
+        }
+      }
+    }
+    
+    return presentStudents
+  } catch (error) {
+    console.error('Error construyendo lista de estudiantes presentes:', error)
+    return []
+  }
+}
+
 // Función para contar estudiantes únicos presentes hoy
 function countUniquePresentStudents(): number {
   // Esta función implementa el procedimiento detallado para contar estudiantes únicos
@@ -298,9 +340,93 @@ function countUniquePresentStudents(): number {
 }
 </script>
 
+<template>
+  <div class="admin-dashboard p-6">
+    <h1 class="text-3xl font-bold mb-8">Panel Administrativo</h1>
+    <!-- Panel de estadísticas diarias -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-semibold mb-4">Actividad del día ({{ formattedCurrentDate }})</h2>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- KPI de Estudiantes Presentes -->
+        <div class="bg-gray-500 rounded-lg shadow p-6">
+          <h3 class="text-lg font-medium text-gray-900">Estudiantes presentes hoy</h3>
+          <div class="flex items-center justify-between mt-2">
+            <div class="text-3xl font-bold">{{ studentsPresent }}</div>
+            <div class="text-green-500 bg-green-100 rounded-full p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div class="text-sm text-gray-900 mt-2">
+            {{ attendancePercentage }}% de asistencia
+          </div>
+        </div>
+
+        <!-- KPI de Clases Regulares -->
+        <div v-if="regularClasses !== 0" class="bg-gray-500 rounded-lg shadow p-6">
+          <h3 class="text-lg font-medium text-gray-900">Clases regulares hoy</h3>
+          <div class="flex items-center justify-between mt-2">
+            <div class="text-3xl font-bold">{{ regularClasses }}</div>
+            <div class="text-blue-500 bg-blue-100 rounded-full p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+          </div>
+          <div class="text-sm text-gray-900 mt-2">
+            En {{ classroomsInUse }} salones
+          </div>
+        </div>
+
+        <!-- KPI de Clases Emergentes -->
+        <div v-if="emergentClasses !== 0" class="bg-gray-500 rounded-lg shadow p-6">
+          <h3 class="text-lg font-medium text-gray-900">Clases emergentes hoy</h3>
+          <div class="flex items-center justify-between mt-2">
+            <div class="text-3xl font-bold">{{ emergentClasses }}</div>
+            <div class="text-purple-500 bg-purple-100 rounded-full p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div class="text-sm text-gray-900 mt-2">
+            {{ emergentClassPercentage }}% del total de clases
+          </div>
+        </div>
+
+        <!-- KPI de Profesores Presentes -->
+        <div class="bg-gray-500 rounded-lg shadow p-6">
+          <h3 class="text-lg font-medium text-gray-900">Maestros activos hoy</h3>
+          <div class="flex items-center justify-between mt-2">
+            <div class="text-3xl font-bold">{{ activeTeachers }}</div>
+            <div class="text-purple-500 bg-purple-100 rounded-full p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+          </div>
+          <div class="text-sm text-gray-900 mt-2">
+            {{ teacherAttendancePercentage }}% de asistencia
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel de Clases del Día -->
+    <TodayClassesPanel ref="todayClassesPanel" class="mb-8" />
+
+    <AttendanceWeeklyTable class="mb-8" />
+
+    <!-- Alumnos con Mayor Ausencia -->
+    <AbsenteesList class="mb-8" :className="null" :limit="5" />
+
+  </div>
+</template>
+
 <style scoped>
 .admin-dashboard {
   min-height: 100vh;
-  background-color: #f3f4f6;
+  background-color: #394b75;
 }
 </style>

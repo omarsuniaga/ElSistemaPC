@@ -5,9 +5,9 @@ import { useStudentsStore } from '../store/students'
 import { useAttendanceStore } from '../../Attendance/store/attendance'
 import { useAnalyticsStore } from '../../Analytics/store/analytics'
 import { PlusCircleIcon, MagnifyingGlassIcon, EllipsisVerticalIcon } from '@heroicons/vue/24/outline'
-// import BaseCard from '../components/BaseCard.vue'
 import ConfirmModal from '../../../components/ConfirmModal.vue'
 import StudentDrawer from '../components/StudentDrawer.vue'
+// import BaseCard from '../../../components/BaseCard.vue'
 
 // Student interface definition
 interface Student {
@@ -103,27 +103,23 @@ const sortedStudents = computed(() => {
   return filtered;
 })
 
-// Función para abrir el drawer con los detalles del estudiante
-// This function is defined with proper typing later in the file
-
 // Función para mostrar/ocultar el menú de opciones
 const toggleMenu = (event: Event, studentId: string): void => {
   event.stopPropagation() // Evitar que se abra el drawer
   activeMenu.value = activeMenu.value === studentId ? null : studentId
 }
 
-// Función para manejar la acción de editar desde el menú
+// Function to handle edit action from dropdown menu
 const handleEditFromMenu = (event: Event, id: string): void => {
-  event.stopPropagation() // Evitar que se abra el drawer
-  handleEdit(id)
-  activeMenu.value = null
+  event.stopPropagation()
+  router.push({ name: 'StudentEdit', params: { id } })
 }
 
-// Función para manejar la acción de eliminar desde el menú
+// Function to handle delete action from dropdown menu
 const handleDeleteFromMenu = (event: Event, id: string): void => {
-  event.stopPropagation() // Evitar que se abra el drawer
-  handleDelete(id)
-  activeMenu.value = null
+  event.stopPropagation()
+  studentToDelete.value = id
+  showDeleteModal.value = true
 }
 
 onMounted(async () => {
@@ -136,9 +132,19 @@ onMounted(async () => {
   }
 })
 
-// Function to edit a student
+// Function to edit a student from drawer
 const handleEdit = (id: string): void => {
-  router.push(`/students/${id}/edit`)
+  router.push({ name: 'StudentEdit', params: { id } })
+}
+
+// Function to view student profile from drawer
+const handleViewProfile = (id: string): void => {
+  router.push({ name: 'StudentProfile', params: { id } })
+}
+
+// Function to manage student documents from drawer
+const handleManageDocuments = (id: string): void => {
+  router.push({ name: 'StudentProfile', params: { id } })
 }
 
 // Function to delete a student
@@ -300,7 +306,7 @@ watch(sortOrder, (newValue) => {
         <li 
           v-for="student in sortedStudents" 
           :key="student.id"
-          @click="openStudentDrawer(student )"
+          @click="openStudentDrawer(student)"
           class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
         >
           <div class="px-2 py-1 flex items-start space-x-1">
@@ -378,6 +384,8 @@ watch(sortOrder, (newValue) => {
       :studentAnalytics="selectedStudentAnalytics || undefined"
       @close="showStudentDrawer = false"
       @edit="handleEdit"
+      @view-profile="handleViewProfile"
+      @manage-documents="handleManageDocuments"
     />
 
     <!-- Delete Confirmation Modal -->
@@ -393,11 +401,11 @@ watch(sortOrder, (newValue) => {
 
     <!-- Floating Action Button for adding new student -->
     <button
-      @click="router.push('/students/new')"
-      class="fixed bottom-16 right-6 w-10 h-10 rounded-full bg-primary-600 hover:bg-primary-700 text-white shadow-lg flex items-center justify-center z-10 transition-all duration-200 hover:scale-105"
+      @click="router.push({ name: 'NewStudent' })"
+      class="fixed bottom-24 right-12 rounded-full bg-primary-600 hover:bg-primary-700 text-white shadow-lg flex items-center justify-center z-10 transition-all duration-200 hover:scale-105"
       title="Añadir Alumno"
     >
-      <PlusCircleIcon class="w-8 h-8" />
+      <PlusCircleIcon class="w-12 h-12" />
     </button>
   </div>
 </template>

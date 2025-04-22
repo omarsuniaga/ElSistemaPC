@@ -2,6 +2,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { instrumentsRoutes } from '../modulos/Instruments/router';
+import studentRoutes from '../modulos/Students/router';
 // import { attendanceRoutes } from '../modulos/attendance/router/attendanceRoutes'
 
 const routes: Array<RouteRecordRaw> = [
@@ -238,6 +239,7 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true, allowedRoles: ['Director', 'Admin', 'Maestro'] }
   },
   ...instrumentsRoutes,
+  ...studentRoutes,
   // ...attendanceRoutes,
   // Ruta inicial: redirige según el rol
   {

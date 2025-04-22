@@ -39,13 +39,17 @@ const showForm = ref(false);
 const showStudentManager = ref(false);
 const isEditing = ref(false);
 
-// Computar el ID del maestro actual desde el sistema de autenticación
-// En un sistema real, esto vendría del usuario autenticado
-const currentTeacherId = computed(() => authStore.user?.uid); // Default for development
+// Mantener el ID del maestro actual
+const currentTeacherId = ref('');
+const currentTeacher = ref(null);
 
 // Computar clases del maestro actual
 const teacherClasses = computed(() => {
-  return classesStore.classes.filter(classItem => classItem.teacherId === currentTeacherId.value);
+  return classesStore.classes.filter(classItem => 
+    // Usar el ID del teacherStore si está disponible, o caer al UID de auth como respaldo
+    classItem.teacherId === currentTeacherId.value || 
+    (currentTeacher.value && classItem.teacherId === currentTeacher.value.id)
+  );
 });
 
 // Clase seleccionada
@@ -378,6 +382,32 @@ onMounted(async () => {
     // Asegurarnos de que los métodos existen antes de llamarlos
     const promises: Promise<any>[] = [];
     
+    // Primero cargamos los datos de los profesores para obtener la correspondencia UID -> ID de maestro
+    if (typeof teachersStore.fetchTeachers === 'function') {
+      console.log('👨‍🏫 Cargando profesores...');
+      await teachersStore.fetchTeachers();
+      
+      // Ahora obtenemos el maestro actual basado en el UID de autenticación
+      if (authStore.user?.uid) {
+        console.log('🔍 Buscando maestro con UID de autenticación:', authStore.user.uid);
+        const teacher = await teachersStore.fetchTeacherByAuthUid(authStore.user.uid);
+        
+        if (teacher) {
+          console.log('✅ Maestro encontrado:', teacher.name, 'con ID:', teacher.id);
+          currentTeacherId.value = teacher.id;
+          currentTeacher.value = teacher;
+        } else {
+          console.warn('⚠️ No se encontró un maestro con el UID de autenticación:', authStore.user.uid);
+          // Usar el UID como respaldo si no se encuentra el maestro
+          currentTeacherId.value = authStore.user.uid;
+        }
+      } else {
+        console.warn('⚠️ No hay usuario autenticado');
+      }
+    } else {
+      console.warn('⚠️ El método fetchTeachers no está disponible en teachersStore');
+    }
+    
     if (typeof classesStore.forceSync === 'function') {
       console.log('📚 Forzando sincronización de clases desde Firebase...');
       promises.push(classesStore.forceSync());
@@ -386,13 +416,6 @@ onMounted(async () => {
       promises.push(classesStore.fetchClasses());
     } else {
       console.warn('⚠️ El método fetchClasses no está disponible en classesStore');
-    }
-    
-    if (typeof teachersStore.fetchTeachers === 'function') {
-      console.log('👨‍🏫 Cargando profesores...');
-      promises.push(teachersStore.fetchTeachers());
-    } else {
-      console.warn('⚠️ El método fetchTeachers no está disponible en teachersStore');
     }
     
     if (typeof studentsStore.fetchStudents === 'function') {
@@ -408,6 +431,7 @@ onMounted(async () => {
     // Verificar que se hayan cargado los datos
     console.log(`✅ Datos cargados correctamente:`);
     console.log(`   - Clases: ${classesStore.classes.length}`);
+    console.log(`   - ID de maestro usado para filtrar: ${currentTeacherId.value}`);
     console.log(`   - Clases del profesor: ${teacherClasses.value.length}`);
     console.log(`   - Profesores: ${teachersStore.teachers?.length || 0}`);
     console.log(`   - Estudiantes: ${studentsStore.students?.length || 0}`);
