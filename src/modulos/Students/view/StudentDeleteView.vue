@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+// Fix the import path from plural "stores" to singular "store"
 import { useStudentsStore } from "../store/students"
 import ConfirmModal from '../components/ConfirmModal.vue'
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
