@@ -2,15 +2,18 @@
 // ../modulos/Teacher/components/TeacheClassesCard.vue
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import {
-  CalendarIcon,
+import {  CalendarIcon,
   MapPinIcon,
   UserGroupIcon,
   PencilIcon,
   TrashIcon,
   UserPlusIcon,
-  ClipboardDocumentCheckIcon
+  ClipboardDocumentCheckIcon,
+  XMarkIcon,
+  EyeIcon,
+  MusicalNoteIcon
 } from '@heroicons/vue/24/outline';
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue';
 import { useStudentsStore } from '../../../modulos/Students/store/students';
 import { format } from 'date-fns';
 
@@ -30,6 +33,9 @@ const debugInfo = ref({
   foundStudents: 0,
   error: null as null | string
 });
+
+// Estado para el modal de estudiantes
+const showStudentsModal = ref(false);
 
 // Uso del store de estudiantes para obtener nombres
 const studentsStore = useStudentsStore();
@@ -80,6 +86,59 @@ const topStudents = computed(() => {
 const additionalStudents = computed(() => {
   if (!hasStudentIds.value) return 0;
   return Math.max(0, props.classData.studentIds.length - 3);
+});
+
+// Obtiene todos los estudiantes para mostrar en el modal
+const allStudents = computed(() => {
+  if (!hasStudentIds.value) {
+    return [];
+  }
+
+  const result = [];
+  
+  for (let i = 0; i < props.classData.studentIds.length; i++) {
+    try {
+      const id = props.classData.studentIds[i];
+      if (!id) continue;
+      
+      const student = studentsStore.getStudentById(id);
+      if (student) {
+        // Asegurar que se muestre nombre y apellido completos
+        if (student.nombre || student.apellido) {
+          result.push({
+            id: student.id,
+            name: `${student.nombre || ''} ${student.apellido || ''}`.trim(),
+            instrument: student.instrumento || 'No especificado',
+            age: student.edad || 'N/A'
+          });
+        } else {
+          result.push({
+            id: id,
+            name: 'Estudiante sin nombre',
+            instrument: 'No especificado',
+            age: 'N/A'
+          });
+        }
+      } else {
+        result.push({
+          id: id,
+          name: `Estudiante ID: ${id}`,
+          instrument: 'No disponible',
+          age: 'N/A'
+        });
+      }
+    } catch (error) {
+      console.error('Error procesando estudiante:', error);
+      result.push({
+        id: 'error',
+        name: 'Error al cargar estudiante',
+        instrument: 'No disponible',
+        age: 'N/A'
+      });
+    }
+  }
+  
+  return result;
 });
 
 // Formatea los horarios de clase para mostrar en la tarjeta
@@ -256,10 +315,13 @@ const getDayAbbr = (day) => {
           >
             <UserGroupIcon class="h-3 w-3 sm:h-2.5 sm:w-2.5 mr-1.5 sm:mr-1 text-gray-500 flex-shrink-0" />
             <span class="truncate">{{ student }}</span>
-          </div>
-          <div v-if="additionalStudents > 0" class="text-sm sm:text-xs text-gray-500 dark:text-gray-400 leading-tight">
-            +{{ additionalStudents }} más...
-          </div>
+          </div>          <button 
+            v-if="additionalStudents > 0" 
+            @click.stop="showStudentsModal = true"
+            class="flex items-center gap-1 px-2 py-0.5 text-sm sm:text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors">
+            <EyeIcon class="h-3 w-3 sm:h-2.5 sm:w-2.5" />
+            Ver +{{ additionalStudents }} estudiantes más
+          </button>
         </div>
         <div v-else class="text-sm sm:text-xs text-gray-500 dark:text-gray-400">
           No hay estudiantes inscritos
@@ -297,9 +359,92 @@ const getDayAbbr = (day) => {
         >
           <TrashIcon class="h-5 w-5 sm:h-4 sm:w-4" /> <!-- Larger on mobile -->
         </button>
-      </div>
-    </div>
+      </div>    </div>
   </div>
+  
+  <!-- Modal de estudiantes -->
+  <TransitionRoot appear :show="showStudentsModal" as="template">
+    <Dialog 
+      as="div" 
+      @close="showStudentsModal = false"
+      class="relative z-50"
+      @click.stop
+    >
+      <TransitionChild
+        as="template"
+        enter="duration-300 ease-out"
+        enter-from="opacity-0"
+        enter-to="opacity-100"
+        leave="duration-200 ease-in"
+        leave-from="opacity-100"
+        leave-to="opacity-0"
+      >
+        <div class="fixed inset-0 bg-black bg-opacity-50" />
+      </TransitionChild>
+
+      <div class="fixed inset-0 overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4 text-center">
+          <TransitionChild
+            as="template"
+            enter="duration-300 ease-out"
+            enter-from="opacity-0 scale-95"
+            enter-to="opacity-100 scale-100"
+            leave="duration-200 ease-in"
+            leave-from="opacity-100 scale-100"
+            leave-to="opacity-0 scale-95"
+          >
+            <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 p-4 text-left align-middle shadow-xl transition-all">
+              <div class="flex items-center justify-between mb-3">
+                <DialogTitle class="text-lg font-medium text-gray-900 dark:text-white">
+                  Estudiantes de {{ classData.name }}
+                </DialogTitle>
+                <button @click="showStudentsModal = false" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                  <XMarkIcon class="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div class="max-h-96 overflow-y-auto">
+                <!-- Lista de estudiantes -->
+                <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                  <div v-for="student in allStudents" :key="student.id" class="py-2">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white">{{ student.name }}</h4>
+                        <div class="flex items-center gap-x-4 mt-1">
+                          <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                            <CalendarIcon class="w-3 h-3 mr-1" />
+                            {{ student.age }}
+                          </span>
+                          <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                            <MusicalNoteIcon class="w-3 h-3 mr-1" />
+                            {{ student.instrument }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Mensaje cuando no hay estudiantes -->
+                <div v-if="allStudents.length === 0" class="py-8 text-center">
+                  <p class="text-gray-500 dark:text-gray-400">No hay estudiantes inscritos en esta clase</p>
+                </div>
+              </div>
+              
+              <div class="mt-4 flex justify-end">
+                <button
+                  @click="showStudentsModal = false"
+                  class="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-900/30 dark:text-blue-100 dark:hover:bg-blue-900/50"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </DialogPanel>
+          </TransitionChild>
+        </div>
+      </div>
+    </Dialog>
+  </TransitionRoot>
 </template>
 
 <style scoped>

@@ -1208,10 +1208,6 @@ watch(() => [route.params.date, route.params.classId, route.path], async ([newDa
           <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-center sm:text-left">
             Lista de Asistencia <span class="block sm:inline">{{ formattedSelectedDate }}</span>
           </h2>          <div class="flex flex-col sm:flex-row flex-wrap justify-between items-center gap-2 mb-3 sm:mb-4">
-            <button @click="view = 'calendar'" class="btn btn-secondary inline-flex items-center w-full sm:w-auto">
-              <CalendarDaysIcon class="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
-              Volver al Calendario
-            </button>
             <div v-if="attendanceStore.getObservations" class="flex items-center justify-center sm:justify-start w-full sm:w-auto mt-2 sm:mt-0">
               <span class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 italic mr-2">
                 Esta clase tiene observaciones

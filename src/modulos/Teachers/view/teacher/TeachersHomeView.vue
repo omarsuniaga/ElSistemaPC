@@ -477,64 +477,63 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
 
 <template>
   <div class="teacher-dashboard">
-    <header class="dashboard-header bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Panel de Control de Maestros</h1>
-      <p class="text-gray-600 dark:text-gray-400">Aquí puedes gestionar y visualizar información relevante sobre tus clases y estudiantes.</p>
+    <header class="dashboard-header bg-white dark:bg-gray-800 p-3 md:p-4 rounded-lg shadow mb-4 md:mb-6">
+      <h1 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Panel de Control de Maestros</h1>
+      <p class="text-sm md:text-base text-gray-600 dark:text-gray-400">Aquí puedes gestionar y visualizar información relevante sobre tus clases y estudiantes.</p>
       
       <!-- Tabs de navegación -->
-      <div class="flex mt-6 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex flex-wrap mt-4 md:mt-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
         <button 
           @click="setActiveTab('classes')" 
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
+          class="px-3 md:px-4 py-2 font-medium text-xs md:text-sm focus:outline-none whitespace-nowrap"
           :class="{
             'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'classes',
             'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'classes'
           }"
         >
           <div class="flex items-center gap-1">
-            <BookOpenIcon class="h-4 w-4" />
+            <BookOpenIcon class="h-3 w-3 md:h-4 md:w-4" />
             Mis Clases
           </div>
         </button>
         <button 
           @click="setActiveTab('overview')" 
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
+          class="px-3 md:px-4 py-2 font-medium text-xs md:text-sm focus:outline-none whitespace-nowrap"
           :class="{
             'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'overview',
             'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'overview'
           }"
         >
           <div class="flex items-center gap-1">
-            <ChartBarSquareIcon class="h-4 w-4" />
+            <ChartBarSquareIcon class="h-3 w-3 md:h-4 md:w-4" />
             Panel General
           </div>
         </button>
         
         <button 
           @click="setActiveTab('schedule')" 
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
+          class="px-3 md:px-4 py-2 font-medium text-xs md:text-sm focus:outline-none whitespace-nowrap"
           :class="{
             'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'schedule',
             'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'schedule'
           }"
         >
           <div class="flex items-center gap-1">
-            <CalendarIcon class="h-4 w-4" />
+            <CalendarIcon class="h-3 w-3 md:h-4 md:w-4" />
             Más Ausentes
           </div>
         </button>
         
-        
         <button 
           @click="setActiveTab('upcoming')" 
-          class="px-4 py-2 font-medium text-sm focus:outline-none"
+          class="px-3 md:px-4 py-2 font-medium text-xs md:text-sm focus:outline-none whitespace-nowrap"
           :class="{
             'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === 'upcoming',
             'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'upcoming'
           }"
         >
           <div class="flex items-center gap-1">
-            <ClockIcon class="h-4 w-4" />
+            <ClockIcon class="h-3 w-3 md:h-4 md:w-4" />
             Mis Observaciones
           </div>
         </button>
@@ -546,76 +545,72 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
     </div>
     
-    <section v-else class="dashboard-content space-y-6">
+    <section v-else class="dashboard-content space-y-4 md:space-y-6">
       <!-- Vista general (Overview) -->
-      <div v-if="activeTab === 'overview'" class="space-y-6">
+      <div v-if="activeTab === 'overview'" class="space-y-4 md:space-y-6">
         <!-- Componente de métricas del panel -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           <div 
             v-for="metric in dashboardMetrics" 
             :key="metric.title"
-            class="bg-white dark:bg-gray-800 rounded-lg shadow p-4"
+            class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-transform hover:scale-[1.02]"
           >
             <div class="flex items-center">
               <div :class="`${metric.color} p-3 rounded-lg`">
-                <component :is="metric.icon" class="h-6 w-6" />
+                <component :is="metric.icon" class="h-5 w-5 md:h-6 md:w-6" />
               </div>
               <div class="ml-4">
                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ metric.title }}</p>
-                <p class="text-xl font-bold">{{ metric.value }}</p>
+                <p class="text-lg md:text-xl font-bold">{{ metric.value }}</p>
               </div>
             </div>
           </div>
         </div>
         
-        
         <!-- Botones de acción rápida -->
-        <div class="flex flex-wrap gap-3">
+        <div class="flex flex-wrap gap-2 md:gap-3">
           <button 
             @click="handleAddClass" 
-            class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            class="flex items-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-blue-600 text-white text-sm md:text-base rounded-md hover:bg-blue-700 transition-colors"
           >
-            <PlusIcon class="w-5 h-5" />
+            <PlusIcon class="w-4 h-4 md:w-5 md:h-5" />
             <span>Agregar Clase</span>
           </button>
-
         </div>
       </div>
       
       <!-- Vista del horario semanal -->
-      <div v-if="activeTab === 'schedule'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-4 flex justify-between items-center">
+      <div v-if="activeTab === 'schedule'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 md:p-4">
+        <h2 class="text-base md:text-lg font-semibold mb-3 md:mb-4 flex justify-between items-center">
           <span>Horario Semanal</span>
           <button 
             @click="handleAddClass"
-            class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700"
+            class="flex items-center gap-1 text-xs md:text-sm bg-blue-600 text-white px-2 md:px-3 py-1 rounded-md hover:bg-blue-700 transition-colors"
           >
-            <PlusIcon class="w-4 h-4" />
+            <PlusIcon class="w-3 h-3 md:w-4 md:h-4" />
             Nueva Clase
           </button>
         </h2>
         
         <!-- Componente de horario semanal -->
-      <!-- añadir la vista StudentAnalytics -->
-       <StudentAnalytics /> 
-
+        <StudentAnalytics /> 
       </div>
       
       <!-- Vista de listado de clases -->
-      <div v-if="activeTab === 'classes'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-1 flex justify-between items-center">
+      <div v-if="activeTab === 'classes'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 md:p-4">
+        <h2 class="text-base md:text-lg font-semibold mb-3 md:mb-4 flex justify-between items-center">
           <span>Mis Clases</span>
           <button 
             @click="handleAddClass"
-            class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700"
+            class="flex items-center gap-1 text-xs md:text-sm bg-blue-600 text-white px-2 md:px-3 py-1 rounded-md hover:bg-blue-700 transition-colors"
           >
-            <PlusIcon class="w-4 h-4" />
+            <PlusIcon class="w-3 h-3 md:w-4 md:h-4" />
             Nueva Clase
           </button>
         </h2>
         
         <!-- Grid de Card de clases -->
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           <template v-if="teacherClasses.length > 0">
             <TeacherClassesCard
               v-for="classItem in teacherClasses"
@@ -637,9 +632,9 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         </div>
       </div>
       
-      <!-- Vista de próximas clases -->
-      <div v-if="activeTab === 'upcoming'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-4">Actividades y Observaciones de Clases</h2>
+      <!-- Vista de observaciones -->
+      <div v-if="activeTab === 'upcoming'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 md:p-4">
+        <h2 class="text-base md:text-lg font-semibold mb-3 md:mb-4">Actividades y Observaciones de Clases</h2>
         <ClassActivitiesView />
       </div>
     </section>

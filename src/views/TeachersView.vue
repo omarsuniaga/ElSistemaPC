@@ -9,7 +9,7 @@
             <UserIcon v-else class="h-12 w-12 text-white" />
           </div>
           <div class="text-center md:text-left">
-            <h1 class="text-xl sm:text-2xl font-bold" tabindex="0">{{ teacher?.name || 'Maestro' }}</h1>
+            <h1 class="text-xl sm:text-2xl font-bold" tabindex="0">{{ teacher?.name || 'Profesor' }}</h1>
             <p class="text-white/90 text-sm sm:text-base">{{ teacher?.specialties?.join(', ') || 'Música' }}</p>
             <div class="flex flex-wrap justify-center md:justify-start gap-2 mt-2" role="list">
               <span v-for="(specialty, index) in teacher?.specialties" :key="index" 
@@ -88,10 +88,6 @@ import TeacherDashboard from '../components/teachers/TeacherDashboard.vue';
 import TeacherSchedule from '../components/teachers/TeacherSchedule.vue';
 import TeacherClasses from '../components/teachers/TeacherClasses.vue';
 import TeacherUpcoming from '../components/teachers/TeacherUpcoming.vue';
-// obtener el ID del profesor autenticado 
-import { useAuthStore } from '@/stores/auth';
-const authStore = useAuthStore();
-const teacherId = ref(authStore.user?.uid || ''); // ID del profesor autenticado
 import {
   UserIcon,
   ChartBarIcon,
@@ -116,7 +112,6 @@ const teachersStore = useTeachersStore();
 const classesStore = useClassesStore();
 const studentsStore = useStudentsStore();
 
-
 // Definir la interfaz para el tipo Teacher
 interface Teacher {
   id: string;
@@ -126,6 +121,7 @@ interface Teacher {
 }
 
 // Datos del profesor (simulando que obtenemos el ID del profesor autenticado)
+const teacherId = ref('1'); // En un caso real, se obtendría del usuario autenticado
 const teacher = ref<Teacher | null>(null);
 
 // Estadísticas del profesor
@@ -151,13 +147,13 @@ onMounted(async () => {
     }
     
     // Calcular estadísticas
-    const teacherClasses = classesStore.classes.filter(c => c.teacherId === teacherId.value);
+    const teacherClasses = classesStore.classes.filter(c => c.profesor === teacherId.value);
     teacherStats.classesCount = teacherClasses.length;
     
     // Obtener alumnos únicos de todas las clases del profesor
     const studentIds = new Set();
     teacherClasses.forEach(c => {
-      c.alumnos?.forEach(id => studentIds.add(id));
+      c.studentIds?.forEach(id => studentIds.add(id));
     });
     teacherStats.studentsCount = studentIds.size;
     

@@ -130,7 +130,7 @@ const saveAllPendingChanges = async () => {
       }
     };
     
-    // Agrupar estudiantes por estado
+    // Agrupar estudiantes por estado - sólo se incluyen los estudiantes con un estado asignado explícitamente
     Object.entries(localAttendanceRecords.value).forEach(([studentId, status]) => {
       if (status === 'Presente') {
         attendanceDoc.data.presentes.push(studentId);
@@ -380,12 +380,16 @@ const todayIndex = computed(() => {
               </div>
             </td>
             <td class="px-1 sm:px-4 py-2 sm:py-3">
-              <div class="flex flex-wrap gap-1 sm:gap-2 justify-center">
-                <button 
+              <div class="flex gap-1 sm:mx-2 sm:gap-2 justify-end items-center">
+                  <!-- Indicador de cambio pendiente -->
+                <div v-if="pendingChanges.has(student.id)" class="flex items-center">
+                  <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+                </div>
+          <button 
                   @click="handleUpdateStatus(student.id, 'Presente')"
                   :class="[
                     'btn btn-icon btn-xs sm:btn-sm p-1 sm:p-1.5',
-                    (localAttendanceRecords[student.id] || 'Ausente') === 'Presente' ? 'btn-success-active' : 'btn-success'
+                    localAttendanceRecords[student.id] === 'Presente' ? 'btn-success-active' : 'btn-success'
                   ]"
                   :disabled="isDisabled"
                   title="Presente"
@@ -396,7 +400,7 @@ const todayIndex = computed(() => {
                   @click="handleUpdateStatus(student.id, 'Ausente')"
                   :class="[
                     'btn btn-icon btn-xs sm:btn-sm p-1 sm:p-1.5',
-                    (localAttendanceRecords[student.id] || 'Ausente') === 'Ausente' ? 'btn-danger-active' : 'btn-danger'
+                    localAttendanceRecords[student.id] === 'Ausente' ? 'btn-danger-active' : 'btn-danger'
                   ]"
                   :disabled="isDisabled"
                   title="Ausente"
@@ -407,7 +411,7 @@ const todayIndex = computed(() => {
                   @click="handleUpdateStatus(student.id, 'Tardanza')"
                   :class="[
                     'btn btn-icon btn-xs sm:btn-sm p-1 sm:p-1.5',
-                    (localAttendanceRecords[student.id] || 'Ausente') === 'Tardanza' ? 'btn-warning-active' : 'btn-warning'
+                    localAttendanceRecords[student.id] === 'Tardanza' ? 'btn-warning-active' : 'btn-warning'
                   ]"
                   :disabled="isDisabled"
                   title="Tardanza"
@@ -418,17 +422,14 @@ const todayIndex = computed(() => {
                   @click="handleOpenJustification(student)"
                   :class="[
                     'btn btn-icon btn-xs sm:btn-sm p-1 sm:p-1.5',
-                    (localAttendanceRecords[student.id] || 'Ausente') === 'Justificado' ? 'btn-info-active' : 'btn-info'
+                    localAttendanceRecords[student.id] === 'Justificado' ? 'btn-info-active' : 'btn-info'
                   ]"
                   :disabled="isDisabled"
                   title="Justificacion"
                 >
                   <DocumentCheckIcon class="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
-                <!-- Indicador de cambio pendiente -->
-                <div v-if="pendingChanges.has(student.id)" class="flex items-center">
-                  <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
-                </div>
+              
               </div>
             </td>
           </tr>
