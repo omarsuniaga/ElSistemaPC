@@ -31,6 +31,7 @@ const newStudent = ref({
   email: '',
   direccion: '',
   observaciones: '',
+  grupo: [], // Inicializamos la propiedad grupo como un array vacío
   activo: true,
   createdAt: new Date(),
   updatedAt: new Date()
@@ -45,6 +46,67 @@ const normalizeText = (text: string = '') => {
   if (!text) return '';
   return text.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 };
+
+// Computed property para obtener todos los valores de grupo disponibles en los estudiantes
+const availableGrupo = computed(() => {
+  // Crear un Set para manejar valores únicos
+  const grupoSet = new Set<string>()
+  
+  // Recorrer todos los estudiantes
+  studentsStore.students.forEach(student => {
+    // Si el estudiante tiene grupos asignados
+    if (student.grupo) {
+      // Si grupo es un array, agregar cada elemento
+      if (Array.isArray(student.grupo)) {
+        student.grupo.forEach(group => {
+          if (group && typeof group === 'string') {
+            // Limpiar el valor: eliminar caracteres especiales y capitalizar primera letra
+            let cleanValue = group.trim()
+              .replace(/[[\]"',]+/g, '') // Eliminar [], comillas y comas
+              .trim()
+            
+            // Capitalizar primera letra de cada palabra
+            cleanValue = cleanValue.split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+              .join(' ')
+              
+            if (cleanValue) {
+              grupoSet.add(cleanValue)
+            }
+          }
+        })
+      } 
+      // Si grupo es un string, tratarlo como un solo valor
+      else if (typeof student.grupo === 'string') {
+        // Limpiar el valor: eliminar caracteres especiales y capitalizar primera letra
+        let cleanValue = student.grupo.trim()
+          .replace(/[[\]"',]+/g, '') // Eliminar [], comillas y comas
+          .trim()
+        
+        // Capitalizar primera letra de cada palabra
+        cleanValue = cleanValue.split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ')
+          
+        if (cleanValue) {
+          grupoSet.add(cleanValue)
+        }
+      }
+    }
+  })
+  
+  // Agregar algunos valores predeterminados si no hay suficientes opciones
+  if (grupoSet.size < 3) {
+    grupoSet.add('Coro')
+    grupoSet.add('Orquesta')
+    grupoSet.add('Solfeo')
+    grupoSet.add('Teoría')
+    grupoSet.add('Ensamble')
+  }
+  
+  // Convertir el Set a un Array y ordenarlo alfabéticamente
+  return Array.from(grupoSet).sort()
+})
 
 // Keep original computed properties but add verification after setting
 const capitalizedNombre = computed({
@@ -122,6 +184,7 @@ const clearForm = () => {
     email: '',
     direccion: '',
     observaciones: '',
+    grupo: [], // Asegurar que grupo sea un array vacío al limpiar el formulario
     activo: true,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -334,6 +397,7 @@ const clearFormExceptNameAndSurname = () => {
     email: '',
     direccion: '',
     observaciones: '',
+    grupo: [], // Inicializamos la propiedad grupo como un array vacío
     activo: true,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -394,8 +458,7 @@ const clearFormExceptNameAndSurname = () => {
             id="edad"
             class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-800 dark:text-gray-100"
           />
-        </div>
-        <!-- Instrumento -->
+        </div>        <!-- Instrumento -->
         <div>
           <label for="instrumento" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Instrumento</label>
           <input
@@ -405,6 +468,23 @@ const clearFormExceptNameAndSurname = () => {
             class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-800 dark:text-gray-100"
           />
         </div>
+        
+        <!-- Clase/Grupo -->
+        <div>
+          <label for="grupo" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Clase</label>
+          <select 
+            v-model="newStudent.grupo" 
+            id="grupo" 
+            multiple
+            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-800 dark:text-gray-100"
+          >
+            <option v-for="grupoName in availableGrupo" :key="grupoName" :value="grupoName">
+              {{ grupoName }}
+            </option>
+          </select>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Puedes seleccionar múltiples clases (Ctrl+click)</p>
+        </div>
+        
         <!-- Teléfono -->
         <div>
           <label for="tlf" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono</label>

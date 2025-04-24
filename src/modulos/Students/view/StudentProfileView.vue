@@ -84,6 +84,25 @@ const attendanceData = computed(() => {
   }
 })
 
+// Nueva propiedad computada para obtener las clases a las que pertenece el estudiante
+const studentClasses = computed(() => {
+  if (!student.value || !studentId) return []
+  
+  // Usar el getter del classesStore para obtener las clases del estudiante
+  const classesForStudent = classesStore.getClassesByStudentId(studentId)
+  
+  // Devolver información relevante de las clases
+  return classesForStudent.map(classItem => ({
+    id: classItem.id,
+    name: classItem.name,
+    teacher: classItem.teacherName || 'Sin profesor asignado',
+    level: classItem.level || 'Nivel no especificado',
+    schedule: classItem.schedule ? classItem.schedule.slots.map(slot => 
+      `${slot.day} ${slot.startTime}-${slot.endTime}`
+    ).join(', ') : 'Horario no definido'
+  }))
+})
+
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
@@ -133,7 +152,7 @@ const handleDocumentUpload = async (files: FileList, documentType: string) => {
     const url = await uploadFile(file, path)
     
     const documentos = {
-      ...student.value.documentos,
+      ...(student.value.documentos || {}),
       [documentType]: {
         url,
         fecha: new Date().toISOString()
@@ -153,7 +172,9 @@ const handleDocumentUpload = async (files: FileList, documentType: string) => {
 }
 
 const isEditing = ref(false)
-const localStudent = ref({})
+// Define a type for localStudent that matches the student structure
+type StudentType = typeof student.value
+const localStudent = ref({} as StudentType)
 
 // Extract unique instruments from all students
 const uniqueInstruments = computed(() => {
@@ -197,15 +218,32 @@ const uniqueGroups = computed(() => {
   return Array.from(groupSet).sort()
 })
 
-// Extract unique classes from all students
-const uniqueClasses = computed(() => {
+// Extract unique classes from all students (using grupos values as classes)
+const availableClasses = computed(() => {
   // Create a Set to automatically handle uniqueness
   const classSet = new Set()
   
-  // Extract classes from all students
+  // Extract classes from students' grupo property
   studentsStore.students.forEach(student => {
+    // Add regular clase values
     if (student.clase && typeof student.clase === 'string' && student.clase.trim() !== '') {
       classSet.add(student.clase.trim())
+    }
+    
+    // Add values from grupo arrays as potential classes
+    if (student.grupo) {
+      // Handle grupo as array
+      if (Array.isArray(student.grupo)) {
+        student.grupo.forEach(group => {
+          if (group && typeof group === 'string' && group.trim() !== '') {
+            classSet.add(group.trim())
+          }
+        })
+      }
+      // Handle grupo as string (fallback)
+      else if (typeof student.grupo === 'string' && student.grupo.trim() !== '') {
+        classSet.add(student.grupo.trim())
+      }
     }
   })
   
@@ -419,21 +457,36 @@ const handleDelete = () => {
         <div>
           <p class="text-sm text-gray-600 dark:text-gray-400">Instrumento</p>
           <p class="font-medium">{{ student.instrumento }}</p>
+        </div>        <div>
+          <p class="text-sm text-gray-600 dark:text-gray-400">Clases</p>
+          <div class="space-y-2 mt-1">
+            <div v-if="studentClasses.length === 0" class="text-gray-500 italic">
+              No está inscrito en ninguna clase
+            </div>
+            <div 
+              v-for="classItem in studentClasses" 
+              :key="classItem.id" 
+              class="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700"
+            >
+              <p class="font-medium">{{ classItem.name }}</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Profesor: {{ classItem.teacher }}</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Nivel: {{ classItem.level }}</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ classItem.schedule }}</p>
+            </div>
+          </div>
         </div>
         <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Clase</p>
-          <p class="font-medium">{{ student.clase }}</p>
-        </div>
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Grupos</p>
+          <p class="text-sm text-gray-600 dark:text-gray-400">Grupos (Histórico)</p>
           <div class="flex flex-wrap gap-2 mt-1">
             <span
+              v-if="student.grupo && student.grupo.length > 0"
               v-for="grupo in student.grupo"
               :key="grupo"
               class="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 rounded-full"
             >
               {{ grupo }}
             </span>
+            <span v-else class="text-gray-500 italic">Sin grupos asignados</span>
           </div>
         </div>
         <div>
@@ -448,21 +501,37 @@ const handleDelete = () => {
               {{ instrument }}
             </option>
           </select>
-        </div>        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Clase</label>
-          <select v-model="localStudent.clase" class="input w-full">
-            <option v-for="className in uniqueClasses" :key="className" :value="className">
-              {{ className }}
-            </option>
-          </select>
+        </div>                <div>
+          <label class="text-sm text-gray-600 dark:text-gray-400">Clases</label>
+          <div class="mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg text-sm">
+            <p>Las clases se gestionan desde el módulo de Clases.</p>
+            <p class="mt-1">Para inscribir al estudiante en una nueva clase, por favor:</p>
+            <ol class="list-decimal ml-5 mt-1 space-y-1">
+              <li>Ve al menú de Clases</li>
+              <li>Selecciona o crea una clase</li>
+              <li>Agrega este estudiante a la lista de inscritos</li>
+            </ol>
+          </div>
+          <div class="mt-2 space-y-1">
+            <p class="font-medium">Clases actuales:</p>
+            <ul class="list-disc ml-5">
+              <li v-for="classItem in studentClasses" :key="classItem.id">
+                {{ classItem.name }} ({{ classItem.teacher }})
+              </li>
+              <li v-if="studentClasses.length === 0" class="text-gray-500 italic">
+                No está inscrito en ninguna clase
+              </li>
+            </ul>
+          </div>
         </div>
         <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Grupos</label>
+          <label class="text-sm text-gray-600 dark:text-gray-400">Grupos Históricos</label>
           <select v-model="localStudent.grupo" class="input w-full" multiple>
             <option v-for="group in uniqueGroups" :key="group" :value="group">
               {{ group }}
             </option>
           </select>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Estos son grupos históricos para referencia y pueden ser diferentes de las clases actuales.</p>
         </div>
         <div>
           <label class="text-sm text-gray-600 dark:text-gray-400">Fecha de Inscripción</label>
