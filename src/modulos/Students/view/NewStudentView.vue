@@ -156,21 +156,21 @@ const handleSubmit = async () => {
       matchedStudent.value = null
       return
     }
-    
-    // Otherwise proceed with duplicate check as before
-    // Fix: properly call getStudents method
+      // Otherwise proceed with duplicate check as before
+    // Use the students array directly from the store state
     let students = [];
     try {
-      // Check if getStudents is a function or a getter property
-      if (typeof studentsStore.getStudents === 'function') {
-        students = await studentsStore.getStudents();
-      } else {
-        students = studentsStore.getStudents;
+      // Make sure students are loaded in the store before checking
+      if (studentsStore.students.length === 0) {
+        await studentsStore.fetchStudents();
       }
+      
+      // Use the students array from the store state
+      students = studentsStore.students;
       
       // Make sure students is an array
       if (!Array.isArray(students)) {
-        console.error('getStudents did not return an array:', students);
+        console.error('Students data is not an array:', students);
         students = [];
       }
     } catch (err) {
@@ -262,9 +262,6 @@ const verifyStudentExists = async () => {
       console.error('Students is not an array:', students)
       students = []
     }
-  } catch (err) {
-      students = []
-    }
 
     const normalizedNombre = normalizeText(newStudent.value.nombre)
     const normalizedApellido = normalizeText(newStudent.value.apellido)
@@ -282,8 +279,8 @@ const verifyStudentExists = async () => {
         `¡ATENCIÓN! Alumno ya registrado: ${matchedStudent.value.nombre} ${matchedStudent.value.apellido}`,
         'warning'
       )
-      populateFormWithStudentData(matchedStudent.value)
-      isEditingExistingStudent.value = true
+      populateFormWithStudentData(matchedStudent.value)     
+       isEditingExistingStudent.value = true
     } else {
       if (isEditingExistingStudent.value) {
         clearFormExceptNameAndSurname()
@@ -295,6 +292,7 @@ const verifyStudentExists = async () => {
     console.error('Error verifying student:', err)
   }
 }
+
 
 // Function to populate form with existing student data
 const populateFormWithStudentData = (student) => {
@@ -465,10 +463,9 @@ const clearFormExceptNameAndSurname = () => {
           type="submit"
           :disabled="isLoading"
           class="fixed right-6 top-1/2 transform -translate-y-1/2 btn btn-primary rounded-full h-12 w-12 flex items-center justify-center z-10 shadow-lg"
-        >
-          <span v-if="isLoading" class="animate-spin">
+        >          <span v-if="isLoading" class="animate-spin">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m-15.357-2A8.001 8.001 0 0019.419 15m0 0H15m-11-1va3 3 0 116 0v3a3 3 0 10-6 0v-3z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m-15.357-2A8.001 8.001 0 0019.419 15m0 0H15" />
             </svg>
           </span>
           <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

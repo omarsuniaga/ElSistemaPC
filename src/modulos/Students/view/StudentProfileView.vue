@@ -155,6 +155,64 @@ const handleDocumentUpload = async (files: FileList, documentType: string) => {
 const isEditing = ref(false)
 const localStudent = ref({})
 
+// Extract unique instruments from all students
+const uniqueInstruments = computed(() => {
+  // Create a Set to automatically handle uniqueness
+  const instrumentSet = new Set()
+  
+  // Extract instruments from all students
+  studentsStore.students.forEach(student => {
+    if (student.instrumento && student.instrumento.trim() !== '') {
+      instrumentSet.add(student.instrumento)
+    }
+  })
+  
+  // Convert Set to Array and sort alphabetically
+  return Array.from(instrumentSet).sort()
+})
+
+// Extract unique groups from all students
+const uniqueGroups = computed(() => {
+  // Create a Set to automatically handle uniqueness
+  const groupSet = new Set()
+  
+  // Extract groups from all students
+  studentsStore.students.forEach(student => {
+    // Check if grupo property exists and is an array
+    if (student.grupo && Array.isArray(student.grupo)) {
+      // Add each group to the set
+      student.grupo.forEach(group => {
+        if (group && typeof group === 'string' && group.trim() !== '') {
+          groupSet.add(group.trim())
+        }
+      })
+    } 
+    // Handle case where grupo might be a string
+    else if (student.grupo && typeof student.grupo === 'string' && student.grupo.trim() !== '') {
+      groupSet.add(student.grupo.trim())
+    }
+  })
+  
+  // Convert Set to Array and sort alphabetically
+  return Array.from(groupSet).sort()
+})
+
+// Extract unique classes from all students
+const uniqueClasses = computed(() => {
+  // Create a Set to automatically handle uniqueness
+  const classSet = new Set()
+  
+  // Extract classes from all students
+  studentsStore.students.forEach(student => {
+    if (student.clase && typeof student.clase === 'string' && student.clase.trim() !== '') {
+      classSet.add(student.clase.trim())
+    }
+  })
+  
+  // Convert Set to Array and sort alphabetically
+  return Array.from(classSet).sort()
+})
+
 watch(student, (newStudent) => {
   if (newStudent) {
     localStudent.value = { ...newStudent }
@@ -383,32 +441,27 @@ const handleDelete = () => {
           <p class="font-medium">{{ student.fecInscripcion }}</p>
         </div>
       </div>
-      <div class="space-y-3" v-else>
-        <div>
+      <div class="space-y-3" v-else>        <div>
           <label class="text-sm text-gray-600 dark:text-gray-400">Instrumento</label>
           <select v-model="localStudent.instrumento" class="input w-full">
-            <option value="Piano">Piano</option>
-            <option value="Violín">Violín</option>
-            <option value="Guitarra">Guitarra</option>
+            <option v-for="instrument in uniqueInstruments" :key="instrument" :value="instrument">
+              {{ instrument }}
+            </option>
           </select>
-        </div>
-        <div>
+        </div>        <div>
           <label class="text-sm text-gray-600 dark:text-gray-400">Clase</label>
           <select v-model="localStudent.clase" class="input w-full">
-            <option value="Piano - Nivel 1">Piano - Nivel 1</option>
-            <option value="Piano - Nivel 2">Piano - Nivel 2</option>
-            <option value="Violín - Nivel 1">Violín - Nivel 1</option>
-            <option value="Violín - Nivel 2">Violín - Nivel 2</option>
-            <option value="Guitarra - Nivel 1">Guitarra - Nivel 1</option>
-            <option value="Guitarra - Nivel 2">Guitarra - Nivel 2</option>
+            <option v-for="className in uniqueClasses" :key="className" :value="className">
+              {{ className }}
+            </option>
           </select>
         </div>
         <div>
           <label class="text-sm text-gray-600 dark:text-gray-400">Grupos</label>
           <select v-model="localStudent.grupo" class="input w-full" multiple>
-            <option value="Teoría Musical">Teoría Musical</option>
-            <option value="Ensamble">Ensamble</option>
-            <option value="Coro">Coro</option>
+            <option v-for="group in uniqueGroups" :key="group" :value="group">
+              {{ group }}
+            </option>
           </select>
         </div>
         <div>

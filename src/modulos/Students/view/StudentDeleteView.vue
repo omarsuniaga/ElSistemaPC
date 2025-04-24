@@ -22,9 +22,8 @@ const handleCancel = () => {
 }
 </script>
 
-<template>
-  <ConfirmModal
-    :is-open="true"
+<template>  <ConfirmModal
+    :show="true"
     title="Eliminar Alumno"
     :message="`¿Estás seguro que deseas eliminar al alumno ${student?.nombre} ${student?.apellido}? Esta acción no se puede deshacer.`"
     @confirm="handleConfirm"
