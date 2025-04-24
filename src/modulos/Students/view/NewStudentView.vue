@@ -246,19 +246,23 @@ watch(
 // Function to verify if student exists
 const verifyStudentExists = async () => {
   if (!newStudent.value.nombre || !newStudent.value.apellido) return
-
   try {
+    // Use the students array directly from the store state
     let students = []
-    try {
-      if (typeof studentsStore.getStudents === 'function') {
-        students = await studentsStore.getStudents()
-      } else {
-        students = studentsStore.getStudents
-      }
-      if (!Array.isArray(students)) {
-        students = []
-      }
-    } catch (err) {
+    
+    // Make sure students are loaded in the store before checking
+    if (studentsStore.students.length === 0) {
+      await studentsStore.fetchStudents()
+    }
+    
+    // Use the students array from the store state
+    students = studentsStore.students
+    
+    if (!Array.isArray(students)) {
+      console.error('Students is not an array:', students)
+      students = []
+    }
+  } catch (err) {
       students = []
     }
 
