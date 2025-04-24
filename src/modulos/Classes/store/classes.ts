@@ -5,7 +5,8 @@ import {
   addClassFirestore,
   updateClassFirestore,
   removeClassFirestore,
-  getClassByIdFirestore
+  getClassByIdFirestore,
+  fetchClassesByStudentIdFirestore
 } from "../service/classes";
 import type { ClassData, ClassCreate } from "../types/class";
 import { useAttendanceStore } from "../../Attendance/store/attendance";
@@ -35,10 +36,9 @@ export const useClassesStore = defineStore('classes', {
     // Retorna clases sin horario definido
     getUnscheduledClasses: (state) => state.classes.filter(classItem => !classItem.schedule),
     // obtener clases por dias de la semana
-    
-    getClassesByStudentId: (state) => (studentId: string) => {
+      getClassesByStudentId: (state) => (studentId: string) => {
       if (!studentId) return [];
-      return state.classes.filter(c => c.studentIds && c.studentIds.includes(studentId));
+      return state.classes.filter(c => c.studentIds && Array.isArray(c.studentIds) && c.studentIds.includes(studentId));
     },
     
     // obtener clases por dias de la semana
@@ -508,6 +508,37 @@ export const useClassesStore = defineStore('classes', {
           return false;
         })
       );
+    },
+
+    /**
+     * Obtiene y carga las clases específicas para un estudiante
+     * @param studentId ID del estudiante 
+     */
+    async fetchClassesByStudentId(studentId: string) {
+      return await this.withLoading(async () => {
+        if (!studentId) return [];
+        
+        console.log('Cargando clases para el estudiante ID:', studentId);
+        const classes = await fetchClassesByStudentIdFirestore(studentId);
+        
+        // Procesamos cada clase obtenida
+        const normalizedClasses = classes.map(classItem => this.normalizeClassData(classItem));
+        
+        // Actualizamos el store con estas clases
+        normalizedClasses.forEach(classItem => {
+          const index = this.classes.findIndex(c => c.id === classItem.id);
+          if (index >= 0) {
+            // Actualizamos la clase existente
+            this.classes[index] = classItem;
+          } else {
+            // Agregamos la nueva clase
+            this.classes.push(classItem);
+          }
+        });
+        
+        console.log(`Se cargaron ${classes.length} clases para el estudiante ${studentId}`);
+        return normalizedClasses;
+      });
     },
   }
 });

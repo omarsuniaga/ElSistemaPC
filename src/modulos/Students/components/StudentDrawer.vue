@@ -303,7 +303,7 @@ const viewSchedule = () => {
       <div class="border-t border-gray-200 dark:border-gray-700 p-4">
         <div class="grid grid-cols-3 gap-3 mb-3">
           <button 
-            @click="$emit('edit', student?.id)" 
+            @click="viewProfile()" 
 
             class="btn btn-outline-primary flex items-center justify-center dark:text-gray-800 dark:bg-gray-400"
           >

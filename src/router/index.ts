@@ -232,8 +232,20 @@ const routes: Array<RouteRecordRaw> = [
       allowedRoles: ['Director', 'Admin', 'Maestro']
     }
   },
+  // ruta para /students/:studentId/
   {
-    path: '/alumnos/:studentId/instrumento/:instrumentId',
+    path: '/students/:studentId',
+    name: 'StudentProfile',
+    component: () => import('../modulos/Students/view/StudentProfileView.vue'),
+    props: true,
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin', 'Maestro']
+    }
+  },
+
+  {
+    path: '/students/:studentId/instrumento/:instrumentId',
     name: 'StudentInstrumentProfile',
     component: () => import('../modulos/Students/view/StudentInstrumentProfile.vue'),
     meta: { requiresAuth: true, allowedRoles: ['Director', 'Admin', 'Maestro'] }

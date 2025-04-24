@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { ref as vueRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { format } from 'date-fns'
@@ -14,11 +14,26 @@ import {
   ClockIcon,
   DocumentTextIcon,
   ChartBarIcon,
-  CameraIcon
+  CameraIcon,
+  MusicalNoteIcon,
+  UserGroupIcon,
+  BookOpenIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ArrowPathIcon,
+  PencilIcon,
+  TrashIcon,
+  CheckIcon,
+  XMarkIcon,
+  IdentificationIcon,
+  BriefcaseIcon,
+  MapPinIcon,
+  ArchiveBoxIcon
 } from '@heroicons/vue/24/outline'
 import { useStudentsStore } from '../store/students'
 import { useClassesStore } from '../../Classes/store/classes'
 import { useAttendanceStore } from '../../Attendance/store/attendance'
+import { useTeachersStore } from '../../Teachers/store/teachers'
 import { Line } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -48,6 +63,7 @@ const router = useRouter()
 const studentsStore = useStudentsStore()
 const classesStore = useClassesStore()
 const attendanceStore = useAttendanceStore()
+const teachersStore = useTeachersStore()
 
 const studentId = route.params.id as string
 const student = computed(() => studentsStore.students.find(s => s.id.toString() === studentId))
@@ -61,46 +77,400 @@ const classes = computed(() => {
 })
 
 const attendanceData = computed(() => {
-  const labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun']
-  const present = [90, 85, 95, 88, 92, 87]
-  const absent = [10, 15, 5, 12, 8, 13]
+  // Si tenemos datos reales de asistencia, usarlos
+  if (studentAttendance.value && studentAttendance.value.chartData) {
+    const { labels, presentData, absentData, justifiedData, lateData, attendanceRateData } = studentAttendance.value.chartData;
+    
+    return {
+      labels,
+      datasets: [
+        {
+          label: '% Asistencia',
+          data: attendanceRateData,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderWidth: 3,
+          pointBackgroundColor: '#3b82f6',
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          fill: true,
+          tension: 0.3,
+          type: 'line',
+          yAxisID: 'y1',
+          order: 0
+        },
+        {
+          label: 'Asistencias',
+          data: presentData,
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34, 197, 94, 0.7)',
+          borderWidth: 1,
+          yAxisID: 'y',
+          order: 1
+        },
+        {
+          label: 'Tardanzas',
+          data: lateData,
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245, 158, 11, 0.7)',
+          borderWidth: 1,
+          yAxisID: 'y',
+          order: 2
+        },
+        {
+          label: 'Ausencias',
+          data: absentData,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.7)',
+          borderWidth: 1,
+          yAxisID: 'y',
+          order: 3
+        },
+        {
+          label: 'Justificadas',
+          data: justifiedData,
+          borderColor: '#a855f7',
+          backgroundColor: 'rgba(168, 85, 247, 0.7)',
+          borderWidth: 1,
+          yAxisID: 'y',
+          order: 4
+        }
+      ]
+    };
+  }
+  
+  // Si no hay datos reales, usar datos de ejemplo
+  const labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
+  const present = [12, 10, 14, 8, 10, 11];
+  const absent = [3, 4, 2, 3, 2, 4];
+  const justified = [1, 2, 1, 1, 1, 2];
+  const late = [2, 1, 2, 3, 2, 1];
+  const rate = [80, 75, 85, 70, 80, 75];
 
   return {
     labels,
     datasets: [
       {
+        label: '% Asistencia',
+        data: rate,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderWidth: 3,
+        pointBackgroundColor: '#3b82f6',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: true,
+        tension: 0.3,
+        type: 'line',
+        yAxisID: 'y1',
+        order: 0
+      },
+      {
         label: 'Asistencias',
         data: present,
         borderColor: '#22c55e',
-        backgroundColor: '#22c55e',
+        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+        borderWidth: 1,
+        yAxisID: 'y',
+        order: 1
+      },
+      {
+        label: 'Tardanzas',
+        data: late,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.7)',
+        borderWidth: 1,
+        yAxisID: 'y',
+        order: 2
       },
       {
         label: 'Ausencias',
         data: absent,
         borderColor: '#ef4444',
-        backgroundColor: '#ef4444',
+        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+        borderWidth: 1,
+        yAxisID: 'y',
+        order: 3
+      },
+      {
+        label: 'Justificadas',
+        data: justified,
+        borderColor: '#a855f7',
+        backgroundColor: 'rgba(168, 85, 247, 0.7)',
+        borderWidth: 1,
+        yAxisID: 'y',
+        order: 4
       }
     ]
-  }
+  };
 })
 
-// Nueva propiedad computada para obtener las clases a las que pertenece el estudiante
+// Obtener y procesar los datos de asistencia del estudiante
+const studentAttendance = computed(() => {
+  if (!student.value || !studentId) return {
+    records: [],
+    summary: {
+      total: 0,
+      present: 0,
+      absent: 0,
+      justified: 0,
+      late: 0,
+      attendanceRate: 0
+    },
+    classification: 'Sin datos',
+    monthlyData: {},
+    recentRecords: [],
+    classPerformance: []
+  };
+  
+  // Obtener los registros de asistencia del estudiante
+  const attendanceRecords = attendanceStore.getAttendanceByStudent ? 
+    attendanceStore.getAttendanceByStudent(studentId) : 
+    attendanceStore.records.filter(record => record.studentId === studentId);
+  
+  // Si no hay registros, devolvemos un objeto vacío
+  if (!attendanceRecords || attendanceRecords.length === 0) {
+    return {
+      records: [],
+      summary: {
+        total: 0,
+        present: 0,
+        absent: 0,
+        justified: 0,
+        late: 0,
+        attendanceRate: 0
+      },
+      classification: 'Sin datos',
+      monthlyData: {},
+      recentRecords: [],
+      classPerformance: []
+    };
+  }
+  
+  // Resumen de asistencias (normalizar estados a minúsculas para consistencia)
+  const present = attendanceRecords.filter(record => 
+    record.status?.toLowerCase() === 'presente' || 
+    record.status?.toLowerCase() === 'present').length;
+  
+  const absent = attendanceRecords.filter(record => 
+    record.status?.toLowerCase() === 'ausente' || 
+    record.status?.toLowerCase() === 'absent').length;
+  
+  const justified = attendanceRecords.filter(record => 
+    (record.status?.toLowerCase() === 'ausente' || record.status?.toLowerCase() === 'absent') && 
+    record.justification).length;
+  
+  const late = attendanceRecords.filter(record => 
+    record.status?.toLowerCase() === 'tardanza' || 
+    record.status?.toLowerCase() === 'tarde' || 
+    record.status?.toLowerCase() === 'late').length;
+  
+  const total = attendanceRecords.length;
+  
+  // Para el cálculo de tasa de asistencia, consideramos presentes + justificados + tarde como "asistencias"
+  const attendedClasses = present + late;
+  const attendanceRate = total > 0 ? Math.round((attendedClasses / total) * 100) : 0;
+  
+  // Clasificación del estudiante según su tasa de asistencia
+  let classification = 'Sin datos';
+  if (total > 0) {
+    if (attendanceRate >= 70) {
+      classification = 'Responsable';
+    } else if (attendanceRate >= 40) {
+      classification = 'Irregular';
+    } else {
+      classification = 'Crítico';
+    }
+  }
+  
+  // Obtener rendimiento por clase
+  const classPerformance = [];
+  const classesSummary = {};
+  
+  // Agrupar registros por clase
+  attendanceRecords.forEach(record => {
+    if (!record.classId) return;
+    
+    if (!classesSummary[record.classId]) {
+      classesSummary[record.classId] = {
+        classId: record.classId,
+        className: '',
+        total: 0,
+        present: 0,
+        absent: 0,
+        justified: 0,
+        late: 0,
+        rate: 0
+      };
+    }
+    
+    // Obtener nombre de la clase
+    if (!classesSummary[record.classId].className) {
+      const classInfo = classesStore.getClassById ? 
+        classesStore.getClassById(record.classId) : 
+        classesStore.classes.find(c => c.id === record.classId);
+      
+      if (classInfo) {
+        classesSummary[record.classId].className = classInfo.name || 'Clase sin nombre';
+      }
+    }
+    
+    classesSummary[record.classId].total++;
+    
+    if (record.status?.toLowerCase() === 'presente' || record.status?.toLowerCase() === 'present') {
+      classesSummary[record.classId].present++;
+    } else if (record.status?.toLowerCase() === 'ausente' || record.status?.toLowerCase() === 'absent') {
+      classesSummary[record.classId].absent++;
+      if (record.justification) {
+        classesSummary[record.classId].justified++;
+      }
+    } else if (record.status?.toLowerCase() === 'tardanza' || record.status?.toLowerCase() === 'tarde' || record.status?.toLowerCase() === 'late') {
+      classesSummary[record.classId].late++;
+    }
+  });
+  
+  // Calcular tasa de asistencia para cada clase
+  Object.values(classesSummary).forEach(classData => {
+    const attended = classData.present + classData.late;
+    classData.rate = classData.total > 0 ? Math.round((attended / classData.total) * 100) : 0;
+    classPerformance.push(classData);
+  });
+  
+  // Ordenar clases por tasa de asistencia (de menor a mayor para resaltar problemas)
+  classPerformance.sort((a, b) => a.rate - b.rate);
+  
+  // Datos para la gráfica por mes
+  const monthlyData = attendanceRecords.reduce((acc, record) => {
+    if (!record.Fecha) return acc;
+    
+    try {
+      // Extraer el mes de la fecha
+      const date = new Date(record.Fecha);
+      const monthYear = format(date, 'MMM yyyy', { locale: es });
+      
+      if (!acc[monthYear]) {
+        acc[monthYear] = {
+          present: 0,
+          absent: 0,
+          justified: 0,
+          late: 0,
+          total: 0
+        };
+      }
+      
+      acc[monthYear].total++;
+      
+      if (record.status?.toLowerCase() === 'presente' || record.status?.toLowerCase() === 'present') {
+        acc[monthYear].present++;
+      } else if (record.status?.toLowerCase() === 'ausente' || record.status?.toLowerCase() === 'absent') {
+        acc[monthYear].absent++;
+        if (record.justification) {
+          acc[monthYear].justified++;
+        }
+      } else if (record.status?.toLowerCase() === 'tardanza' || record.status?.toLowerCase() === 'tarde' || record.status?.toLowerCase() === 'late') {
+        acc[monthYear].late++;
+      }
+    } catch (error) {
+      console.error('Error al procesar fecha:', record.Fecha, error);
+    }
+    
+    return acc;
+  }, {});
+  
+  // Convertir los datos mensuales para la gráfica
+  const months = Object.keys(monthlyData).slice(-6); // Últimos 6 meses
+  const presentData = months.map(m => monthlyData[m].present);
+  const absentData = months.map(m => monthlyData[m].absent);
+  const justifiedData = months.map(m => monthlyData[m].justified);
+  const lateData = months.map(m => monthlyData[m].late);
+  const attendanceRateData = months.map(m => {
+    const attended = monthlyData[m].present + monthlyData[m].late;
+    return monthlyData[m].total > 0 ? Math.round((attended / monthlyData[m].total) * 100) : 0;
+  });
+  
+  // Obtener los últimos 10 registros ordenados por fecha
+  const recentRecords = [...attendanceRecords]
+    .sort((a, b) => {
+      if (!a.Fecha || !b.Fecha) return 0;
+      return new Date(b.Fecha).getTime() - new Date(a.Fecha).getTime();
+    })
+    .slice(0, 10)
+    .map(record => {
+      // Enriquecer los datos con información adicional
+      const classInfo = classesStore.getClassById ? 
+        classesStore.getClassById(record.classId) : 
+        classesStore.classes.find(c => c.id === record.classId);
+        
+      const teacherInfo = classInfo?.teacherId && teachersStore.getTeacherById ? 
+        teachersStore.getTeacherById(classInfo.teacherId) : 
+        teachersStore.teachers?.find(t => t.id === classInfo?.teacherId);
+      
+      return {
+        ...record,
+        className: classInfo?.name || 'Clase desconocida',
+        teacherName: teacherInfo?.name || teacherInfo?.nombre || 'Profesor desconocido',
+        formattedDate: record.Fecha ? format(new Date(record.Fecha), 'dd/MM/yyyy') : 'Fecha desconocida'
+      };
+    });
+    
+  return {
+    records: attendanceRecords,
+    summary: {
+      total,
+      present,
+      absent,
+      justified,
+      late,
+      attendanceRate
+    },
+    classification,
+    chartData: {
+      labels: months,
+      presentData,
+      absentData,
+      justifiedData,
+      lateData,
+      attendanceRateData
+    },
+    monthlyData,
+    recentRecords,
+    classPerformance
+  };
+});
+
+// Lista reactiva de clases para el estudiante actual
 const studentClasses = computed(() => {
-  if (!student.value || !studentId) return []
+  console.log('Student ID:', studentId)
+  if (!student.value || !studentId) {
+    console.log('No hay estudiante seleccionado o ID de estudiante')
+    return []
+  }
+  
+  // Normalizar el ID para asegurar que las comparaciones funcionen
+  const normalizedStudentId = String(studentId)
+  console.log('ID de estudiante normalizado:', normalizedStudentId)
+  
+  // Verificar si hay clases cargadas en el store
+  console.log('Total de clases en el store:', classesStore.classes.length)
   
   // Usar el getter del classesStore para obtener las clases del estudiante
-  const classesForStudent = classesStore.getClassesByStudentId(studentId)
-  
-  // Devolver información relevante de las clases
-  return classesForStudent.map(classItem => ({
-    id: classItem.id,
-    name: classItem.name,
-    teacher: classItem.teacherName || 'Sin profesor asignado',
-    level: classItem.level || 'Nivel no especificado',
-    schedule: classItem.schedule ? classItem.schedule.slots.map(slot => 
-      `${slot.day} ${slot.startTime}-${slot.endTime}`
-    ).join(', ') : 'Horario no definido'
-  }))
+  const classesForStudent = classesStore.getClassesByStudentId(normalizedStudentId)
+  console.log('Clases encontradas para el estudiante:', classesForStudent)  // Devolver información relevante de las clases
+  return classesForStudent.map(classItem => {
+    // Usar el getter del store para obtener directamente la información del profesor
+    const teacherInfo = classItem.teacherId ? teachersStore.getTeacherById(classItem.teacherId) : null;
+    const teacherName = teacherInfo ? teacherInfo.name : null;
+    
+    return {
+      id: classItem.id,
+      name: classItem.name || 'Clase sin nombre',
+      teacher: teacherName || (classItem.teacherId ? `Profesor (ID: ${classItem.teacherId})` : 'Sin profesor asignado'),
+      level: classItem.level || 'Nivel no especificado',
+      schedule: classItem.schedule && classItem.schedule.slots ? classItem.schedule.slots.map(slot => 
+        `${slot.day} ${slot.startTime}-${slot.endTime}`
+      ).join(', ') : 'Horario no definido'
+    };
+  })
 })
 
 const chartOptions = {
@@ -109,13 +479,78 @@ const chartOptions = {
   plugins: {
     legend: {
       position: 'top' as const,
+      labels: {
+        usePointStyle: true,
+        padding: 15
+      }
+    },
+    tooltip: {
+      mode: 'index',
+      intersect: false,
+      callbacks: {
+        label: function(context) {
+          let label = context.dataset.label || '';
+          if (label) {
+            label += ': ';
+          }
+          if (context.parsed.y !== null) {
+            if (context.dataset.yAxisID === 'y1') {
+              label += context.parsed.y + '%';
+            } else {
+              label += context.parsed.y;
+            }
+          }
+          return label;
+        }
+      }
     }
   },
   scales: {
     y: {
       beginAtZero: true,
+      title: {
+        display: true,
+        text: 'Cantidad de asistencias',
+        color: '#6b7280'
+      },
+      grid: {
+        color: 'rgba(160, 174, 192, 0.1)'
+      },
+      ticks: {
+        color: '#6b7280'
+      }
+    },
+    y1: {
+      beginAtZero: true,
+      position: 'right',
       max: 100,
+      title: {
+        display: true,
+        text: 'Porcentaje (%)',
+        color: '#3b82f6'
+      },
+      grid: {
+        drawOnChartArea: false
+      },
+      ticks: {
+        color: '#3b82f6',
+        callback: function(value) {
+          return value + '%';
+        }
+      }
+    },
+    x: {
+      grid: {
+        color: 'rgba(160, 174, 192, 0.1)'
+      },
+      ticks: {
+        color: '#6b7280'
+      }
     }
+  },
+  interaction: {
+    mode: 'index',
+    intersect: false
   }
 }
 
@@ -278,10 +713,386 @@ const handleSave = async () => {
 const handleDelete = () => {
   router.push(`/students/${String(studentId)}/delete`)
 }
+
+// onMounted para cargar los datos necesarios del estudiante
+onMounted(async () => {
+  // Cargar el id de estudiante desde la ruta
+  const studentId = route.params.id as string
+  
+  // Verificar si tenemos un ID de estudiante válido
+  if (studentId) {
+    try {
+      // Asegurar que los estudiantes estén cargados
+      if (studentsStore.students.length === 0) {
+        console.log('Cargando lista de estudiantes...')
+        await studentsStore.fetchStudents()
+      }
+      
+      // Asegurar que tenemos el estudiante actual
+      if (!student.value) {
+        console.log('Buscando estudiante específico:', studentId)
+        await studentsStore.fetchStudentById(studentId)
+      }
+      
+      // Cargar las clases específicas para este estudiante desde Firestore
+      console.log('Cargando clases del estudiante:', studentId)
+      await classesStore.fetchClassesByStudentId(studentId)
+      
+      // Si tenemos IDs de profesores, cargarlos también
+      if (classesStore.classes.length > 0) {
+        const teacherIds = new Set<string>()
+        
+        // Recopilar todos los IDs de profesores de las clases del estudiante
+        classesStore.classes
+          .filter(c => c.studentIds?.includes(studentId))
+          .forEach(c => {
+            if (c.teacherId) teacherIds.add(c.teacherId)
+          })
+        
+        // Cargar información de los profesores si no la tenemos ya
+        if (teacherIds.size > 0 && teachersStore.teachers.length === 0) {
+          console.log('Cargando información de profesores...')
+          await teachersStore.fetchTeachers()
+        }
+        
+        // Cargar asistencias para todas las clases del estudiante
+        console.log('Cargando registros de asistencia del estudiante...')
+        
+        // Primero obtenemos todas las clases del estudiante
+        const studentClassIds = classesStore.classes
+          .filter(c => c.studentIds?.includes(studentId))
+          .map(c => c.id)        // Cargar las asistencias para cada clase
+        try {
+          // Usar los métodos disponibles en el attendanceStore para cargar asistencias
+          console.log('Intentando cargar registros de asistencia...')
+          
+          // Utilizar el método correcto para cargar las asistencias según revisión del código
+          await attendanceStore.fetchAttendance()
+          
+          // Si hay clases específicas del estudiante, cargar sus documentos de asistencia
+          if (studentClassIds.length > 0) {
+            console.log(`Cargando asistencias para ${studentClassIds.length} clases del estudiante`)
+            
+            // Cargar documentos de asistencia para cada clase del estudiante
+            for (const classId of studentClassIds) {
+              try {
+                // Intentar cargar datos por fecha y clase
+                // Usamos fechas recientes para tener algún dato (último mes)
+                const today = new Date()
+                const lastMonth = new Date(today)
+                lastMonth.setMonth(today.getMonth() - 1)
+                
+                const startDate = format(lastMonth, 'yyyy-MM-dd')
+                const endDate = format(today, 'yyyy-MM-dd')
+                
+                // Usar fetchAttendanceByDateRange si está disponible
+                if (typeof attendanceStore.fetchAttendanceByDateRange === 'function') {
+                  await attendanceStore.fetchAttendanceByDateRange(startDate, endDate)
+                }
+                
+                // También intentar cargar documentos específicos
+                if (typeof attendanceStore.fetchAttendanceByClassAndDate === 'function') {
+                  await attendanceStore.fetchAttendanceByClassAndDate(classId, format(today, 'yyyy-MM-dd'))
+                }
+              } catch (err) {
+                console.log(`Error al cargar asistencias para la clase ${classId}:`, err)
+              }
+            }
+          }
+          
+          console.log(`Registros de asistencia cargados: ${attendanceStore.records.length}`)
+        } catch (error) {
+          console.error('Error al cargar registros de asistencia:', error)
+        }
+      }
+      
+      console.log('Todos los datos necesarios han sido cargados correctamente')
+    } catch (error) {
+      console.error('Error al cargar datos del estudiante:', error)
+    }
+  }
+  
+  // Mostrar valores en consola para depuración
+  console.log('Student:', student.value?.nombre, student.value?.apellido)
+  console.log('Student Classes:', studentClasses.value)
+  console.log('Student Attendance Records:', studentAttendance.value?.records?.length || 0)
+})
 </script>
 
+<style scoped>
+/* Animaciones y transiciones */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease-out;
+}
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(30px);
+}
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(-30px);
+}
+
+.bounce-enter-active {
+  animation: bounce-in 0.5s;
+}
+.bounce-leave-active {
+  animation: bounce-in 0.5s reverse;
+}
+@keyframes bounce-in {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+@keyframes slideUp {
+  0% { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.dark .card {
+  background-color: #1f2937;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.info-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.info-tag-primary {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.dark .info-tag-primary {
+  background-color: rgba(30, 58, 138, 0.3);
+  color: #93c5fd;
+}
+
+.info-tag-success {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.dark .info-tag-success {
+  background-color: rgba(22, 101, 52, 0.3);
+  color: #86efac;
+}
+
+.info-tag-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.dark .info-tag-warning {
+  background-color: rgba(146, 64, 14, 0.3);
+  color: #fcd34d;
+}
+
+.info-tag-danger {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.dark .info-tag-danger {
+  background-color: rgba(185, 28, 28, 0.3);
+  color: #fca5a5;
+}
+
+.profile-section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.profile-section-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 2rem;
+  height: 2px;
+  background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+  transition: width 0.3s ease;
+}
+
+.profile-section-title:hover::after {
+  width: 100%;
+}
+
+.profile-avatar {
+  border-radius: 9999px;
+  object-fit: cover;
+  border: 2px solid #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s ease;
+}
+
+.profile-avatar:hover {
+  transform: scale(1.05);
+  border-color: #8b5cf6;
+}
+
+.data-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.dark .data-label {
+  color: #9ca3af;
+}
+
+.data-value {
+  font-weight: 500;
+}
+
+/* Estilos para la tarjeta de clase */
+.class-card {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #f3f4f6;
+  background: linear-gradient(145deg, #f3f4f6 0%, #eff6ff 100%);
+  transition: all 0.3s ease;
+  margin-bottom: 0.5rem;
+}
+
+.dark .class-card {
+  border-color: #374151;
+  background: linear-gradient(145deg, #1e293b 0%, #1e3a8a 100%);
+}
+
+.class-card:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Animación para mostrar datos cargando */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.loading-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+  background-color: #e5e7eb;
+  border-radius: 0.375rem;
+}
+
+.dark .loading-pulse {
+  background-color: #374151;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #2563eb;
+  transform: translateY(-2px);
+}
+
+.btn-success {
+  background-color: #10b981;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+  background-color: #059669;
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  background-color: #ef4444;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
+  transform: translateY(-2px);
+}
+
+.icon-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
+
 <template>
-  <div v-if="student" class="py-6">
+  <div v-if="student" class="py-6 animate-fade-in">
     <!-- Header with Profile Photo -->
     <div class="flex justify-between items-start mb-6">
       <div class="flex items-center gap-4">
@@ -352,37 +1163,60 @@ const handleDelete = () => {
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Información Personal -->
-    <div class="card">
-      <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-        <UserIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
+    <div class="card">      <h2 class="profile-section-title">
+        <UserIcon class="w-5 h-5 text-blue-600 dark:text-blue-400" />
         Información Personal
       </h2>
       <div class="space-y-3" v-if="!isEditing">
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Edad</p>
-          <p class="font-medium">{{ student.edad }} años</p>
+        <div class="animate-slide-up" style="animation-delay: 0.1s;">
+          <p class="data-label">Edad</p>
+          <p class="data-value flex items-center gap-2">
+            <span class="info-tag info-tag-primary">{{ student.edad }} años</span>
+          </p>
         </div>
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Fecha de Nacimiento</p>
-          <p class="font-medium">{{ student.nac }}</p>
+        <div class="animate-slide-up" style="animation-delay: 0.15s;">
+          <p class="data-label flex items-center gap-1">
+            <CalendarIcon class="w-4 h-4" />
+            Fecha de Nacimiento
+          </p>
+          <p class="data-value">{{ student.nac }}</p>
         </div>
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Sexo</p>
-          <p class="font-medium">{{ student.sexo }}</p>
+        <div class="animate-slide-up" style="animation-delay: 0.2s;">
+          <p class="data-label flex items-center gap-1">
+            <IdentificationIcon class="w-4 h-4" />
+            Sexo
+          </p>
+          <p class="data-value">
+            <span v-if="student.sexo === 'Masculino'" class="info-tag info-tag-primary">
+              {{ student.sexo }}
+            </span>
+            <span v-else class="info-tag info-tag-warning">
+              {{ student.sexo }}
+            </span>
+          </p>
         </div>
-        <div class="pt-3 border-t dark:border-gray-700">
-          <p class="text-sm text-gray-600 dark:text-gray-400">Padres</p>
-          <p class="font-medium">{{ student.madre }} (Madre)</p>
-          <p class="font-medium">{{ student.padre }} (Padre)</p>
+        <div class="pt-3 border-t dark:border-gray-700 animate-slide-up" style="animation-delay: 0.25s;">
+          <p class="data-label flex items-center gap-1">
+            <UserGroupIcon class="w-4 h-4" />
+            Padres
+          </p>
+          <p class="data-value flex items-center gap-2 mt-1">
+            <span class="text-purple-600 dark:text-purple-400">•</span>
+            {{ student.madre }} (Madre)
+          </p>
+          <p class="data-value flex items-center gap-2">
+            <span class="text-blue-600 dark:text-blue-400">•</span>
+            {{ student.padre }} (Padre)
+          </p>
         </div>
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Contacto</p>
-          <p class="font-medium flex items-center gap-2">
-            <PhoneIcon class="w-4 h-4" />
+        <div class="animate-slide-up" style="animation-delay: 0.3s;">
+          <p class="data-label">Contacto</p>
+          <p class="data-value flex items-center gap-2 mt-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300">
+            <PhoneIcon class="w-4 h-4 text-green-600 dark:text-green-400" />
             {{ student.tlf }}
           </p>
-          <p class="font-medium flex items-center gap-2">
-            <EnvelopeIcon class="w-4 h-4" />
+          <p class="data-value flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300">
+            <EnvelopeIcon class="w-4 h-4 text-blue-600 dark:text-blue-400" />
             {{ student.email !== 'Vacio' ? student.email : 'No disponible' }}
           </p>
         </div>
@@ -462,16 +1296,28 @@ const handleDelete = () => {
           <div class="space-y-2 mt-1">
             <div v-if="studentClasses.length === 0" class="text-gray-500 italic">
               No está inscrito en ninguna clase
-            </div>
-            <div 
-              v-for="classItem in studentClasses" 
+            </div>            <div 
+              v-for="(classItem, index) in studentClasses" 
               :key="classItem.id" 
-              class="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700"
+              class="class-card"
+              :style="{'animation-delay': `${index * 0.1}s`}"
             >
-              <p class="font-medium">{{ classItem.name }}</p>
-              <p class="text-sm text-gray-600 dark:text-gray-400">Profesor: {{ classItem.teacher }}</p>
-              <p class="text-sm text-gray-600 dark:text-gray-400">Nivel: {{ classItem.level }}</p>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ classItem.schedule }}</p>
+              <p class="font-medium flex items-center gap-2">
+                <MusicalNoteIcon class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                {{ classItem.name }}
+              </p>
+              <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                <UserIcon class="w-4 h-4" /> 
+                {{ classItem.teacher }}
+              </p>
+              <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                <AcademicCapIcon class="w-4 h-4" /> 
+                {{ classItem.level }}
+              </p>
+              <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                <ClockIcon class="w-4 h-4" />
+                {{ classItem.schedule }}
+              </p>
             </div>
           </div>
         </div>
@@ -580,19 +1426,201 @@ const handleDelete = () => {
           />
         </div>
       </div>
-    </div>
-
-    <!-- Gráfico de Asistencia -->
+    </div>    <!-- Análisis de Asistencia -->
     <div class="card lg:col-span-2">
-      <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-        <ChartBarIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
-        Asistencia
-      </h2>
-      <div class="h-64">
-        <Line
-          :data="attendanceData"
-          :options="chartOptions"
-        />
+      <h2 class="profile-section-title">
+        <ChartBarIcon class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+        Análisis de Asistencia
+      </h2>      <!-- Clasificación del estudiante -->
+      <div class="mb-6 bg-gradient-to-r rounded-lg p-4 shadow-sm animate-slide-up"
+           :class="{
+             'from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/30': studentAttendance.classification === 'Responsable',
+             'from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/30': studentAttendance.classification === 'Irregular',
+             'from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/30': studentAttendance.classification === 'Crítico',
+             'from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/30': studentAttendance.classification === 'Sin datos'
+           }">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="text-lg font-medium mb-1">Estado: {{ studentAttendance.classification }}</h3>
+            <p class="text-sm" 
+               :class="{
+                 'text-green-700 dark:text-green-400': studentAttendance.classification === 'Responsable',
+                 'text-yellow-700 dark:text-yellow-400': studentAttendance.classification === 'Irregular',
+                 'text-red-700 dark:text-red-400': studentAttendance.classification === 'Crítico',
+                 'text-gray-700 dark:text-gray-400': studentAttendance.classification === 'Sin datos'
+               }">
+              <span v-if="studentAttendance.classification === 'Responsable'">Excelente asistencia. El estudiante asiste regularmente a clases.</span>
+              <span v-else-if="studentAttendance.classification === 'Irregular'">Asistencia inconsistente. Es necesario mejorar la regularidad.</span>
+              <span v-else-if="studentAttendance.classification === 'Crítico'">Atención requerida. Asistencia muy baja.</span>
+              <span v-else>No hay datos suficientes para evaluar al estudiante.</span>
+            </p>
+          </div>
+          <div class="text-4xl font-bold"
+              :class="{
+                'text-green-600 dark:text-green-400': studentAttendance.classification === 'Responsable',
+                'text-yellow-600 dark:text-yellow-400': studentAttendance.classification === 'Irregular',
+                'text-red-600 dark:text-red-400': studentAttendance.classification === 'Crítico',
+                'text-gray-600 dark:text-gray-400': studentAttendance.classification === 'Sin datos'
+              }">
+            {{ studentAttendance.summary?.attendanceRate || 0 }}%
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel de estadísticas -->
+      <div class="grid grid-cols-5 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/30 p-4 rounded-lg shadow-sm animate-slide-up" style="animation-delay: 0.1s;">
+          <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+            <ClockIcon class="w-4 h-4" />
+            Clases Totales
+          </p>
+          <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
+            {{ studentAttendance.summary?.total || 0 }}
+          </p>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/30 p-4 rounded-lg shadow-sm animate-slide-up" style="animation-delay: 0.15s;">
+          <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+            <CheckCircleIcon class="w-4 h-4 text-green-500" />
+            Asistencias
+          </p>
+          <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
+            {{ studentAttendance.summary?.present || 0 }}
+          </p>
+        </div>
+
+        <div class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/30 p-4 rounded-lg shadow-sm animate-slide-up" style="animation-delay: 0.2s;">
+          <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+            <XCircleIcon class="w-4 h-4 text-red-500" />
+            Ausencias
+          </p>
+          <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
+            {{ studentAttendance.summary?.absent || 0 }}
+          </p>
+        </div>
+
+        <div class="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/30 p-4 rounded-lg shadow-sm animate-slide-up" style="animation-delay: 0.25s;">
+          <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+            <DocumentTextIcon class="w-4 h-4 text-amber-500" />
+            Justificadas
+          </p>
+          <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
+            {{ studentAttendance.summary?.justified || 0 }}
+          </p>
+        </div>
+        
+        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/30 p-4 rounded-lg shadow-sm animate-slide-up" style="animation-delay: 0.3s;">
+          <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+            <ClockIcon class="w-4 h-4 text-yellow-500" />
+            Tardanzas
+          </p>
+          <p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
+            {{ studentAttendance.summary?.late || 0 }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Porcentaje de asistencia en círculo -->
+      <div class="flex justify-between items-center mb-6">
+        <div class="animate-slide-up" style="animation-delay: 0.3s;">
+          <div class="relative w-24 h-24">
+            <svg class="w-24 h-24" viewBox="0 0 100 100">
+              <!-- Círculo de fondo -->
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                stroke="#e5e7eb"
+                stroke-width="10"
+              />
+              <!-- Círculo de progreso -->
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                :stroke="studentAttendance.summary?.attendanceRate >= 80 ? '#22c55e' : studentAttendance.summary?.attendanceRate >= 60 ? '#f59e0b' : '#ef4444'"
+                stroke-width="10"
+                :stroke-dasharray="`${studentAttendance.summary?.attendanceRate || 0}, 100`"
+                stroke-dashoffset="25"
+                transform="rotate(-90 50 50)"
+              />
+              <!-- Texto de porcentaje -->
+              <text
+                x="50"
+                y="50"
+                text-anchor="middle"
+                dominant-baseline="middle"
+                font-size="18"
+                font-weight="bold"
+                :fill="studentAttendance.summary?.attendanceRate >= 80 ? '#22c55e' : studentAttendance.summary?.attendanceRate >= 60 ? '#f59e0b' : '#ef4444'"
+              >
+                {{ studentAttendance.summary?.attendanceRate || 0 }}%
+              </text>
+            </svg>
+          </div>
+          <p class="text-center text-sm text-gray-600 dark:text-gray-400 mt-2">Asistencia</p>
+        </div>
+
+        <!-- Gráfico de asistencia -->
+        <div class="h-64 w-3/4 animate-slide-up" style="animation-delay: 0.35s;">
+          <Line
+            :data="attendanceData"
+            :options="chartOptions"
+          />
+        </div>
+      </div>
+
+      <!-- Historial de asistencias recientes -->
+      <div class="animate-slide-up" style="animation-delay: 0.4s;">
+        <h3 class="text-base font-medium mb-3 flex items-center gap-2">
+          <CalendarIcon class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          Asistencias Recientes
+        </h3>
+        
+        <div v-if="studentAttendance.recentRecords && studentAttendance.recentRecords.length > 0">
+          <div class="overflow-hidden overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead class="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Clase</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Justificación</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                <tr v-for="(record, index) in studentAttendance.recentRecords" :key="index" class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td class="px-3 py-2 text-sm text-gray-900 dark:text-gray-200">{{ record.formattedDate }}</td>
+                  <td class="px-3 py-2 text-sm text-gray-900 dark:text-gray-200">{{ record.className }}</td>
+                  <td class="px-3 py-2 text-sm">
+                    <span v-if="record.status === 'presente'" class="info-tag info-tag-success flex items-center gap-1">
+                      <CheckCircleIcon class="w-3 h-3" />
+                      Presente
+                    </span>
+                    <span v-else-if="record.status === 'ausente' && record.justification" class="info-tag info-tag-warning flex items-center gap-1">
+                      <DocumentTextIcon class="w-3 h-3" />
+                      Justificada
+                    </span>
+                    <span v-else class="info-tag info-tag-danger flex items-center gap-1">
+                      <XCircleIcon class="w-3 h-3" />
+                      Ausente
+                    </span>
+                  </td>
+                  <td class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                    <span v-if="record.justification">{{ record.justification }}</span>
+                    <span v-else>-</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div v-else class="text-center py-6 text-gray-500 dark:text-gray-400 italic">
+          No hay registros de asistencia disponibles
+        </div>
       </div>
     </div>
 

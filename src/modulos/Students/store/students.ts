@@ -128,7 +128,23 @@ export const useStudentsStore = defineStore('students', {
         this.loading = false
       }
     },
-    
+
+    async fetchStudentById(id: string) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const student = await getStudentsFirebase(id)
+        this.students = this.students.map(s => s.id === id ? student : s)
+        return student
+      } catch (error: any) {
+        console.error('Error fetching student by ID:', error)
+        this.error = error.message
+        return null
+      } finally {
+        this.loading = false
+      }
+    },
     // Función de compatibilidad con el patrón BaseStore
     async fetchItems() {
       return this.fetchStudents()

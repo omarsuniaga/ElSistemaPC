@@ -197,3 +197,34 @@ export const canModifyClass = async (classId: string): Promise<boolean> => {
     return false;
   }
 };
+
+/**
+ * Obtiene todas las clases que tienen a un estudiante específico en su lista de estudiantes.
+ * @param studentId ID del estudiante a buscar
+ * @returns Lista de clases que incluyen al estudiante especificado
+ */
+export const fetchClassesByStudentIdFirestore = async (studentId: string): Promise<any[]> => {
+  try {
+    if (!studentId) return [];
+    
+    console.log('Buscando clases para el estudiante ID:', studentId);
+    const classesCollection = collection(db, CLASSES_COLLECTION);
+    
+    // Creamos una consulta para buscar clases donde el array studentIds contenga el ID del estudiante
+    const q = query(classesCollection, where("studentIds", "array-contains", studentId));
+    const querySnapshot = await getDocs(q);
+    
+    console.log(`Se encontraron ${querySnapshot.size} clases para el estudiante ${studentId}`);
+    
+    // Convertimos los documentos a objetos con sus IDs incluidos
+    const classes = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    return classes;
+  } catch (error) {
+    console.error("Error fetching classes by student ID:", error);
+    return [];
+  }
+};
