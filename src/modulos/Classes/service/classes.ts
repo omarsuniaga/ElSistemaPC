@@ -52,12 +52,10 @@ export const fetchClassesFirestore = async (): Promise<Class[]> => {
     const isDevelopment = process.env.NODE_ENV === 'development';
     
     if (isDevelopment) {
-      console.log('🔍 Modo desarrollo: obteniendo todas las clases sin restricciones de rol');
       classesSnapshot = await getDocs(classesCollection);
     }
     else if (currentUser) {
       const role = currentUser.role;
-      console.log('Rol del usuario actual:', currentUser.uid);
       if (role === 'Maestro' || role === 'teacher') {
         const q = query(classesCollection, where("teacherId", "==", currentUser.uid));
         classesSnapshot = await getDocs(q);
@@ -79,7 +77,6 @@ export const fetchClassesFirestore = async (): Promise<Class[]> => {
       ...doc.data()
     })) as Class[];
     
-    console.log(`✅ Se encontraron ${classes.length} clases en Firestore`);
     return classes;
   } catch (error) {
     console.error("Error fetching classes:", error);
@@ -207,15 +204,10 @@ export const fetchClassesByStudentIdFirestore = async (studentId: string): Promi
   try {
     if (!studentId) return [];
     
-    console.log('Buscando clases para el estudiante ID:', studentId);
     const classesCollection = collection(db, CLASSES_COLLECTION);
-    
     // Creamos una consulta para buscar clases donde el array studentIds contenga el ID del estudiante
     const q = query(classesCollection, where("studentIds", "array-contains", studentId));
     const querySnapshot = await getDocs(q);
-    
-    console.log(`Se encontraron ${querySnapshot.size} clases para el estudiante ${studentId}`);
-    
     // Convertimos los documentos a objetos con sus IDs incluidos
     const classes = querySnapshot.docs.map(doc => ({
       id: doc.id,

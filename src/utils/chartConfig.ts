@@ -1,27 +1,61 @@
+import Chart from 'chart.js/auto';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
+  ArcElement,
   LineElement,
   BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js'
-
-// Registrar todos los componentes necesarios para Chart.js
-ChartJS.register(
+  PointElement,
+  BarController,
+  BubbleController,
+  DoughnutController,
+  LineController,
+  PieController,
+  PolarAreaController,
+  RadarController,
+  ScatterController,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
+  LogarithmicScale,
+  RadialLinearScale,
+  TimeScale,
+  TimeSeriesScale,
+  Decimation,
+  Filler,
+  Legend,
   Title,
   Tooltip,
-  Legend
-)
+  SubTitle
+} from 'chart.js';
 
-export default ChartJS
+// Register all the Chart.js components we need
+Chart.register(
+  // Elements
+  ArcElement,
+  LineElement,
+  BarElement,
+  PointElement,
+  // Controllers
+  BarController,
+  BubbleController,
+  DoughnutController,
+  LineController,
+  PieController,
+  PolarAreaController,
+  RadarController,
+  ScatterController,
+  // Scales
+  CategoryScale,
+  LinearScale,
+  LogarithmicScale,
+  RadialLinearScale,
+  TimeScale,
+  TimeSeriesScale,
+  // Plugins
+  Decimation,
+  Filler,
+  Legend,
+  Title,
+  Tooltip,
+  SubTitle
+);
+
+export default Chart;

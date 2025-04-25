@@ -17,11 +17,8 @@ const COLLECTION_NAME = 'ALUMNOS'
 
 export const getStudentsFirebase = async (): Promise<Student[]> => {
   try {
-    console.log('🔄 Consultando estudiantes en Firestore...')
     const q = query(collection(db, COLLECTION_NAME), orderBy('apellido'))
     const querySnapshot = await getDocs(q)
-    console.log(`✅ Estudiantes recuperados: ${querySnapshot.size}`)
-    
     const students = querySnapshot.docs.map(doc => {
       const data = doc.data()
       return {
@@ -58,7 +55,6 @@ export const getStudentsFirebase = async (): Promise<Student[]> => {
     throw new Error('Error al obtener la lista de estudiantes')
   }
 }
-
 
 export const getStudentByIdFirebase = async (id: string): Promise<Student | null> => {
   try {

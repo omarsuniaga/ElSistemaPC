@@ -518,7 +518,6 @@ export const useClassesStore = defineStore('classes', {
       return await this.withLoading(async () => {
         if (!studentId) return [];
         
-        console.log('Cargando clases para el estudiante ID:', studentId);
         const classes = await fetchClassesByStudentIdFirestore(studentId);
         
         // Procesamos cada clase obtenida
@@ -535,8 +534,6 @@ export const useClassesStore = defineStore('classes', {
             this.classes.push(classItem);
           }
         });
-        
-        console.log(`Se cargaron ${classes.length} clases para el estudiante ${studentId}`);
         return normalizedClasses;
       });
     },

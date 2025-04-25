@@ -340,9 +340,8 @@ const saveAllAttendanceChanges = async () => {
         presentes: [] as string[],
         ausentes: [] as string[],
         tarde: [] as string[],
-        justificacion: attendanceStore.currentAttendanceDoc?.data.justificacion?.filter(j => 
-          attendanceStore.attendanceRecords[j.id] === 'Justificado'
-        ) || [],
+        // Mantener todas las justificaciones existentes en el documento actual
+        justificacion: attendanceStore.currentAttendanceDoc?.data.justificacion || [],
         observations: attendanceStore.currentAttendanceDoc?.data.observations || ''
       }
     }
@@ -361,9 +360,14 @@ const saveAllAttendanceChanges = async () => {
           attendanceDoc.data.tarde.push(studentId)
         }
         
+        // Verificar que este estudiante tenga una justificación registrada
         const existingJust = attendanceDoc.data.justificacion.find(j => j.id === studentId)
         if (!existingJust) {
-          attendanceDoc.data.justificacion.push({ id: studentId, reason: 'Justificación pendiente de detalles' })
+          // Si no existe una justificación registrada para este estudiante, creamos una básica
+          attendanceDoc.data.justificacion.push({ 
+            id: studentId, 
+            reason: 'Justificación pendiente de detalles' 
+          })
         }
       }
     })
@@ -421,17 +425,65 @@ const handleJustificationSave = async (data: { reason: string, documentUrl?: str
     isLoading.value = true
     loadingMessage.value = 'Guardando justificación...'
     const studentId = selectedStudentForJustification.value.id
+    
+    // Actualizar el estado local del estudiante a "Justificado"
     attendanceStore.attendanceRecords[studentId] = 'Justificado'
-    await attendanceStore.addJustificationToAttendance(
-      studentId,
-      selectedDate.value,
-      selectedClass.value,
-      data.reason,
-      data.file || null
+    
+    // Guardar temporalmente la justificación en el documento de asistencia actual
+    // Si no existe el documento o el array de justificaciones, los creamos
+    if (!attendanceStore.currentAttendanceDoc) {
+      attendanceStore.currentAttendanceDoc = {
+        fecha: selectedDate.value,
+        classId: selectedClass.value,
+        data: {
+          presentes: [],
+          ausentes: [],
+          tarde: [],
+          justificacion: [],
+          observations: ''
+        }
+      }
+    }
+    
+    if (!attendanceStore.currentAttendanceDoc.data.justificacion) {
+      attendanceStore.currentAttendanceDoc.data.justificacion = []
+    }
+    
+    // Buscar si ya existe una justificación para este estudiante
+    const existingIndex = attendanceStore.currentAttendanceDoc.data.justificacion.findIndex(
+      j => j.id === studentId
     )
+    
+    // Crear el objeto de justificación
+    const justification = {
+      id: studentId,
+      reason: data.reason,
+      documentUrl: data.documentUrl || ''
+    }
+    
+    // Si ya existe, la actualizamos; si no, la añadimos
+    if (existingIndex >= 0) {
+      attendanceStore.currentAttendanceDoc.data.justificacion[existingIndex] = justification
+    } else {
+      attendanceStore.currentAttendanceDoc.data.justificacion.push(justification)
+    }
+    
+    // Si hay un archivo adjunto, lo subimos
+    if (data.file) {
+      await attendanceStore.addJustificationToAttendance(
+        studentId,
+        selectedDate.value,
+        selectedClass.value,
+        data.reason,
+        data.file
+      )
+    }
+    
     showJustifiedAbsenceModal.value = false
     showToast('Justificación guardada correctamente', 'success')
-    await loadAttendanceData(selectedClass.value)
+    
+    // No cargamos de nuevo los datos para no perder los cambios pendientes
+    // Solo actualizamos el UI para reflejar que la justificación está guardada temporalmente
   } catch (err) {
     error.value = 'Error al guardar la justificación'
     console.error('Error guardando justificación:', err)
@@ -783,7 +835,7 @@ const sendAttendanceEmail = async () => {
         Apellido: student.apellido || '',
         Estado: attendanceStatus,
         Observaciones: attendanceStatus === 'Justificado' ? justificationReason : observations,
-        Maestro: authStore.user?.displayName || authStore.user?.email || 'Profesor Desconocido',
+        Maestro: authStore.user?.email || 'Profesor Desconocido',
         Fecha: format(new Date(date), 'yyyy-MM-dd'),
         Clase: className
       };
@@ -994,6 +1046,7 @@ const checkExistingAttendance = async (date: string, classId: string): Promise<b
 }
 
 // Función para cerrar todos los modales
+
 const closeAllModals = () => {
   showAnalytics.value = false
   showTrends.value = false
@@ -1227,7 +1280,8 @@ watch(() => [route.params.date, route.params.classId, route.path], async ([newDa
             :currentDate="selectedDate"
             :availableDates="availableClassDates"
             :observationsCount="getObservationsCount"
-            @update-status="handleUpdateStatus"            @open-justification="handleOpenJustification"
+            @update-status="handleUpdateStatus"            
+            @open-justification="handleOpenJustification"
             @open-observation="handleOpenObservation"
             @open-export="() => handleOpenExport(true)"
             @class-changed="selectClass"

@@ -1,7 +1,16 @@
 // src/stores/attendance.ts
 import { defineStore } from 'pinia'
 import { format, parseISO, isValid } from 'date-fns'
-import { collection, getDocs, query } from 'firebase/firestore'
+import { 
+  collection, 
+  getDocs, 
+  query, 
+  where, 
+  orderBy, 
+  getFirestore, 
+  addDoc,
+  Timestamp 
+} from 'firebase/firestore'
 import { db } from '../../../firebase'
 import { useClassesStore } from '../../Classes/store/classes'
 import { useAuthStore } from '../../../stores/auth'
@@ -51,6 +60,7 @@ import { getFromLocalStorage, saveToLocalStorage, clearLocalStorage } from '../.
 
 // Constantes
 const ATTENDANCE_COLLECTION = 'ASISTENCIAS';
+const OBSERVATIONS_COLLECTION = 'OBSERVACIONES';
 const LOCAL_STORAGE_KEYS = {
   ATTENDANCE: 'attendance',
   ATTENDANCE_DOCUMENTS: 'attendance_documents'
@@ -771,113 +781,202 @@ getJustification: (state) => {
     },
 
     // Guardar una nueva observación en el historial
-    async addObservationToHistory(classId: string, date: string, text: string, author: string) {
+    async addObservationToHistory(classId: string, date: string, text: string, author: string): Promise<void> {
+      if (!text.trim()) return;
+      
+      try {
+        const observationData = {
+          text,
+          createdAt: new Date().toISOString(),
+          author,
+          classId,
+          date
+        };
+        
+        // Add to the observations collection
+        await addDoc(collection(db, OBSERVATIONS_COLLECTION), observationData);
+        
+        // Also update the current attendance document if it exists
+        if (this.currentAttendanceDoc) {
+          this.currentAttendanceDoc.data.observations = text;
+          await this.saveAttendanceDocument(this.currentAttendanceDoc);
+        }
+      } catch (error) {
+        console.error('Error adding observation to history:', error);
+        throw error;
+      }
+    },
+
+    async getObservationsHistory(classId: string, specificDate?: string): Promise<any[]> {
+      try {
+        let q;
+        
+        if (specificDate) {
+          // Get observations for a specific class and date
+          q = query(
+            collection(db, OBSERVATIONS_COLLECTION),
+            where('classId', '==', classId),
+            where('date', '==', specificDate),
+            orderBy('createdAt', 'desc')
+          );
+        } else {
+          // Get all observations for a class
+          q = query(
+            collection(db, OBSERVATIONS_COLLECTION),
+            where('classId', '==', classId),
+            orderBy('createdAt', 'desc')
+          );
+        }
+        
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => {
+          return {
+            id: doc.id,
+            ...doc.data()
+          };
+        });
+      } catch (error) {
+        console.error('Error getting observations history:', error);
+        return [];
+      }
+    },
+
+    // Cargar historial de observaciones para una clase
+    async fetchObservationsHistory(teacherId: string) {
       this.isLoading = true;
       this.error = null;
       try {
-        // console.log('Añadiendo observación al historial:', { classId, date, text, author });
-        
-        // Guardar en Firebase
-        const observationId = await addClassObservationFirebase(classId, date, text, author);
-        
-        // Actualizar también la observación actual por compatibilidad
-        this.observations = text;
-        
-        if (this.currentAttendanceDoc &&
-            this.currentAttendanceDoc.fecha === date &&
-            this.currentAttendanceDoc.classId === classId) {
-          this.currentAttendanceDoc.data.observations = text;
+        const classesStore = useClassesStore();
+        if (!classesStore.classes.length) {
+          await classesStore.fetchClasses();
         }
         
-        // Recargar el historial
-        await this.fetchObservationsHistory(classId);
-        
-        return observationId;
+        // 1. Obtener todas las clases del maestro
+        const teacherClasses = classesStore.classes.filter(c => c.teacherId === teacherId);
+        // console.log("Cargando historial de observaciones para las clases del maestro:", teacherClasses.map(c => c.name));
+
+        // 2. Para cada clase, obtener sus observaciones
+        const allActivities: Array<{
+          classId: string;
+          className: string;
+          activities: Array<{
+            id: string;
+            classId: string;
+            className: string;
+            observacion: string;
+            fecha: string;
+            presentCount: number;
+            totalCount: number;
+            author?: string;
+            createdAt?: string;
+          }>;
+        }> = [];
+
+        for (const classItem of teacherClasses) {
+          const totalAlumnos = classItem?.studentIds?.length || 0;
+          const className = classItem.name || 'Clase sin nombre';
+          
+          // Obtener observaciones de la colección OBSERVACIONES
+          const observationsQuery = query(
+            collection(db, OBSERVATIONS_COLLECTION),
+            where('classId', '==', classItem.id)
+          );
+          
+          const observationsSnapshot = await getDocs(observationsQuery);
+          const activities = observationsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              classId: classItem.id,
+              className,
+              observacion: data.text || '',
+              fecha: data.date || '',
+              presentCount: 0, // Will be updated if we have attendance data
+              totalCount: totalAlumnos,
+              author: data.author || 'Sistema',
+              createdAt: data.createdAt || '',
+              // Add a hash for deduplication
+              contentHash: `${data.date}-${(data.text || '').substring(0, 50)}`
+            };
+          });
+          
+          // Create a set of content hashes for deduplication
+          const contentHashes = new Set(activities.map(a => a.contentHash));
+          
+          // Also check for observations in attendance documents (for backward compatibility)
+          const attendanceQuery = query(
+            collection(db, ATTENDANCE_COLLECTION),
+            where('classId', '==', classItem.id)
+          );
+          
+          const attendanceSnapshot = await getDocs(attendanceQuery);
+          attendanceSnapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.data?.observations && data.data.observations.trim()) {
+              const presentes = Array.isArray(data.data.presentes) ? data.data.presentes.length : 0;
+              const tarde = Array.isArray(data.data.tarde) ? data.data.tarde.length : 0;
+              
+              // Create a content hash for deduplication
+              const contentHash = `${data.fecha}-${data.data.observations.substring(0, 50)}`;
+              
+              // Only add if we don't already have this observation (prevent duplicates)
+              if (!contentHashes.has(contentHash)) {
+                activities.push({
+                  id: `attendance-${doc.id}`,
+                  classId: classItem.id,
+                  className,
+                  observacion: data.data.observations,
+                  fecha: data.fecha || '',
+                  presentCount: Number(presentes + tarde),
+                  totalCount: totalAlumnos,
+                  author: 'Sistema',
+                  createdAt: data.createdAt ? new Date(data.createdAt.toDate()).toISOString() : new Date().toISOString(),
+                  contentHash
+                });
+                
+                // Add to hash set to prevent further duplicates
+                contentHashes.add(contentHash);
+              } else {
+                // If we have a duplicate, we need to update the attendance counts
+                // Find the existing entry and update its attendance counts
+                const existingEntry = activities.find(a => a.contentHash === contentHash);
+                if (existingEntry) {
+                  existingEntry.presentCount = Number(presentes + tarde);
+                }
+              }
+            }
+          });
+          
+          // Remove the contentHash property before returning the results
+          const cleanedActivities = activities.map(({ contentHash, ...item }) => item);
+          
+          // Ordenar por fecha descendente
+          cleanedActivities.sort((a, b) => {
+            if (!a.fecha || !b.fecha) return 0;
+            return b.fecha.localeCompare(a.fecha);
+          });
+          
+          if (cleanedActivities.length > 0) {
+            allActivities.push({
+              classId: classItem.id,
+              className,
+              activities: cleanedActivities,
+            });
+          }
+        }
+
+        // Ordenar clases por nombre
+        allActivities.sort((a, b) => a.className.localeCompare(b.className));
+        return allActivities;
       } catch (error) {
-        this.error = 'Error al añadir observación al historial';
-        console.error('Error al añadir observación:', error);
-        throw error;
+        this.error = 'Error al cargar historial de observaciones';
+        console.error('Error al cargar historial de observaciones:', error);
+        return [];
       } finally {
         this.isLoading = false;
       }
     },
-    
-    // Cargar historial de observaciones para una clase
-// Cargar historial de observaciones para todas las clases de un maestro
-async fetchObservationsHistory(teacherId: string) {
-  this.isLoading = true;
-  this.error = null;
-  try {
-    const classesStore = useClassesStore();
-    const observations = await getClassObservationsHistoryFirebase(teacherId);
-    if (!classesStore.classes.length) {
-      await classesStore.fetchClasses();
-    }
-    // 1. Obtener todas las clases del maestro
-    const teacherClasses = classesStore.classes.filter(c => c.teacherId === teacherId);
-    console.log("Cargando historial de observaciones para el maestro:", teacherClasses);
 
-    // 2. Para cada clase, obtener sus observaciones y armar la estructura
-    const allActivities: Array<{
-      classId: string;
-      className: string;
-      activities: Array<{
-        id: string;
-        classId: string;
-        className: string;
-        observacion: string;
-        fecha: string;
-        presentCount: number;
-        totalCount: number;
-      }>;
-    }> = [];
-
-    for (const classItem of teacherClasses) {
-      // Obtener historial de Firebase para la clase (¡corregido!)
-      const totalAlumnos = classItem?.studentIds?.length || 0;
-      const className = classItem.name || 'Clase sin nombre';
-    console.log("Clase:", classItem.name, "Total alumnos:", totalAlumnos);
-      // Procesar cada documento de observación
-      const activities = (observations || [])
-        .filter(doc => doc.classId === classItem.id || doc.classId === classItem.name)
-        .map(doc => {
-          const presentes = Array.isArray(doc.data.presentes) ? doc.data.presentes.length : 0;
-          const tarde = Array.isArray(doc.data.tarde) ? doc.data.tarde.length : 0;
-          return {
-            id: Date.now().toString() + Math.random().toString(36).slice(2),
-            classId: classItem.id,
-            className,
-            observacion: doc.data.observations || '',
-            fecha: doc.fecha || '',
-            presentCount: Number(presentes + tarde),
-            totalCount: totalAlumnos
-          };
-        });
-    
-      // Ordenar por fecha descendente
-      activities.sort((a, b) => b.fecha.localeCompare(a.fecha));
-    
-      if (activities.length > 0) {
-        allActivities.push({
-          classId: classItem.id,
-          className,
-          activities,
-        });
-      }
-    }
-
-    // Ordenar clases por nombre
-    allActivities.sort((a, b) => a.className.localeCompare(b.className));
-    return allActivities;
-  } catch (error) {
-    this.error = 'Error al cargar historial de observaciones';
-    console.error('Error al cargar historial de observaciones:', error);
-    return [];
-  } finally {
-    this.isLoading = false;
-  }
-},
-    
     // Cargar historial de observaciones para una clase en una fecha específica
     async fetchObservationsByDate(classId: string, date: string) {
       this.isLoading = true;
@@ -907,8 +1006,8 @@ async fetchObservationsHistory(teacherId: string) {
         // console.log('Actualizando observaciones para fecha:', date, 'clase:', classId);
         
         // Primero añadir al historial (esto también actualiza la observación actual)
-        const author = 'Sistema'; // Ideal sería obtenerlo del usuario actual
-        await this.addObservationToHistory(classId, date, observations, author);
+        // const author = 'Sistema'; // Ideal sería obtenerlo del usuario actual
+        // await this.addObservationToHistory(classId, date, observations, author);
         
         // console.log('Observaciones actualizadas con éxito');
         
@@ -1620,7 +1719,7 @@ async fetchRecordsForMultipleEntities({
         }),
       };
 
-      console.log('Generated Report:', report);
+      // console.log('Generated Report:', report);
       return report;
 
       } catch (error) {
@@ -1725,7 +1824,7 @@ async fetchAttendanceByDateRange(startDate: string, endDate: string) {
     // Use the dedicated service function
     const records = await fetchAttendanceByDateRangeFirebase(startDate, endDate);
     
-    console.log(`Registros de asistencia encontrados: ${records.length}`);
+    // console.log(`Registros de asistencia encontrados: ${records.length}`);
     
     // Update the records in the store
     this.records = records;
@@ -1873,7 +1972,6 @@ async getStudentAttendanceStatus(studentId: string, date: string, classId?: stri
           await this.fetchAttendanceByClassAndDate(effectiveClassId, formattedDate);
           return this.attendanceRecords;
         } 
-        
         // Si startDate es un objeto Date
         if (startDate instanceof Date) {
           if (!isValid(startDate)) {

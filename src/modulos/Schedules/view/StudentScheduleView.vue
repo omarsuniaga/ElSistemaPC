@@ -251,12 +251,17 @@ const hasClasses = computed(() => {
             <h3 class="font-semibold truncate">{{ class_.name }}</h3>
           </div>
           
-          <div class="p-4 space-y-3">
+          <div class="p-4 space-y-3">            
             <div class="flex items-start">
               <i class="fas fa-clock mt-1 text-gray-500 dark:text-gray-400 w-5"></i>
               <div class="ml-2">
                 <p class="text-sm font-medium text-gray-900 dark:text-white">Horario</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ class_.schedule || 'No definido' }}</p>
+                <div v-if="class_.schedule?.slots && class_.schedule.slots.length > 0" class="space-y-1">
+                  <div v-for="(slot, index) in class_.schedule.slots" :key="index" class="text-sm text-gray-600 dark:text-gray-400">
+                    <span class="font-medium">{{ slot.day }}:</span> {{ slot.startTime }} - {{ slot.endTime }}
+                  </div>
+                </div>
+                <p v-else class="text-sm text-gray-600 dark:text-gray-400">No definido</p>
               </div>
             </div>
             

@@ -6,6 +6,27 @@ import { useStudentsStore } from '../store/students';
 import { useAttendanceStore } from '../../Attendance/store/attendance';
 import { useAnalyticsStore } from '../../Analytics/store/analytics';
 import { useRouter } from 'vue-router'
+import { Bar as BarChart } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js'
+import FileUpload from '../../../components/FileUpload.vue'
+
+// Registrar los componentes de Chart.js que necesitamos
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+)
 
 const props = defineProps({
   show: {
@@ -58,12 +79,153 @@ const attendanceStats = computed(() => {
   }
 })
 
-// Computed attendance rate
+// Computed attendance rate con clasificación según criterios específicos
 const attendanceRate = computed(() => {
   if (!attendanceStats.value) return 0
-  const { total, present, justified } = attendanceStats.value
-  return Math.round(((present + justified) / total) * 100)
+  const { total, present, late = 0 } = attendanceStats.value
+  return Math.round(((present + late) / total) * 100)
 })
+
+// Clasificación del estudiante según su porcentaje de asistencia
+const studentClassification = computed(() => {
+  if (!attendanceStats.value || attendanceStats.value.total === 0) {
+    return { 
+      type: 'Sin datos', 
+      color: 'gray', 
+      description: 'No hay datos suficientes para evaluar al estudiante'
+    }
+  }
+  
+  const rate = attendanceRate.value
+  
+  if (rate >= 70) {
+    return { 
+      type: 'Responsable', 
+      color: 'green',
+      description: 'Excelente asistencia. El estudiante asiste regularmente a clases.'
+    }
+  } else if (rate >= 40) {
+    return { 
+      type: 'Irregular', 
+      color: 'yellow',
+      description: 'Asistencia inconsistente. Es necesario mejorar la regularidad.'
+    }
+  } else {
+    return { 
+      type: 'Crítico', 
+      color: 'red',
+      description: 'Atención requerida. Asistencia muy baja.'
+    }
+  }
+})
+
+// Generando datos de gráfico para Chart.js
+const chartData = computed(() => {
+  if (!attendanceRecords.value.length) {
+    return {
+      labels: ['Sin datos'],
+      datasets: [
+        {
+          label: 'Asistencia',
+          data: [0],
+          backgroundColor: '#e5e7eb'
+        }
+      ]
+    }
+  }
+  
+  // Agrupar por meses los registros de asistencia
+  const monthlyData = attendanceRecords.value.reduce((acc, record) => {
+    if (!record.Fecha) return acc
+    
+    try {
+      const date = new Date(record.Fecha)
+      const month = date.toLocaleDateString('es-ES', { month: 'short' })
+      
+      if (!acc[month]) {
+        acc[month] = {
+          present: 0,
+          absent: 0,
+          justified: 0,
+          late: 0,
+          total: 0
+        }
+      }
+      
+      acc[month].total++
+      
+      const status = (record.status || '').toLowerCase()
+      if (status === 'presente' || status === 'present') {
+        acc[month].present++
+      } else if (status === 'ausente' || status === 'absent') {
+        acc[month].absent++
+        if (record.justification) {
+          acc[month].justified++
+        }
+      } else if (status === 'tardanza' || status === 'tarde' || status === 'late') {
+        acc[month].late++
+      }
+    } catch (error) {
+      console.error('Error procesando fecha:', error)
+    }
+    
+    return acc
+  }, {})
+  
+  // Convertir datos agrupados para Chart.js
+  const months = Object.keys(monthlyData).slice(-3) // Últimos 3 meses para una vista compacta
+  
+  return {
+    labels: months,
+    datasets: [
+      {
+        label: 'Asistencias',
+        data: months.map(m => monthlyData[m].present),
+        backgroundColor: '#22c55e'
+      },
+      {
+        label: 'Tardanzas',
+        data: months.map(m => monthlyData[m].late),
+        backgroundColor: '#f59e0b'
+      },
+      {
+        label: 'Ausencias',
+        data: months.map(m => monthlyData[m].absent),
+        backgroundColor: '#ef4444'
+      },
+      {
+        label: 'Justificadas',
+        data: months.map(m => monthlyData[m].justified),
+        backgroundColor: '#a855f7'
+      }
+    ]
+  }
+})
+
+// Opciones para la gráfica de Chart.js
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    x: {
+      stacked: true
+    },
+    y: {
+      stacked: true,
+      beginAtZero: true
+    }
+  },
+  plugins: {
+    legend: {
+      display: true,
+      position: 'bottom',
+      labels: {
+        boxWidth: 12,
+        padding: 10
+      }
+    }
+  }
+}
 
 // Load student data when student changes
 watch(() => props.student, async (newStudent) => {
@@ -229,6 +391,53 @@ const viewSchedule = () => {
     console.error('No se puede mostrar el horario: ID de estudiante no disponible')
   }
 }
+
+// Funciones para manejar la subida de fotos de perfil
+function isValidImageUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  return typeof url === 'string' && (
+    url.startsWith('http') || 
+    url.startsWith('https') || 
+    url.startsWith('data:image')
+  );
+}
+
+function handleImageError(event: Event) {
+  // Si la imagen falla al cargar, usar el avatar generado
+  const imgElement = event.target as HTMLImageElement;
+  if (imgElement && student.value?.nombre) {
+    imgElement.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.value.nombre}`;
+  }
+}
+
+function handleProfilePhotoUpload(url: string) {
+  if (!student.value?.id) return;
+  
+  console.log('[StudentDrawer] URL de foto recibida:', url);
+  
+  // Verificar que sea una URL válida de Firebase Storage
+  if (!url.includes('firebasestorage.googleapis.com')) {
+    console.error('[StudentDrawer] URL inválida:', url);
+    emit('error', 'La URL de la imagen no es válida');
+    return;
+  }
+  
+  // Actualizar el avatar del estudiante
+  studentsStore.updateStudent(student.value.id, { avatar: url })
+    .then(() => {
+      console.log('[StudentDrawer] Avatar actualizado correctamente');
+      // No es necesario hacer nada más, la UI se actualiza automáticamente
+    })
+    .catch(error => {
+      console.error('[StudentDrawer] Error al actualizar avatar:', error);
+      emit('error', `Error al guardar foto: ${error.message || 'Error desconocido'}`);
+    });
+}
+
+function handleUploadError(message: string) {
+  console.error('[StudentDrawer] Error de subida:', message);
+  emit('error', message);
+}
 </script>
 <template>
   <div
@@ -271,11 +480,30 @@ const viewSchedule = () => {
         <div v-else-if="student" class="space-y-6">
           <!-- Student Profile -->
           <div class="flex items-center space-x-4">
-            <img
-              :src="student.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.nombre}`"
-              :alt="`${student.nombre} ${student.apellido}`"
-              class="w-16 h-16 rounded-full"
-            />
+            <div class="relative">              <img
+                :src="isValidImageUrl(student.avatar) ? student.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.nombre}`"
+                :alt="`${student.nombre} ${student.apellido}`"
+                class="w-16 h-16 rounded-full object-cover border border-gray-300 dark:border-gray-600"
+                @error="handleImageError"
+              />
+              <!-- FileUpload para foto de perfil -->
+              <FileUpload
+                v-if="student.id"
+                accept="image/*"
+                :maxSize="3"
+                :path="`students/${student.id}/profile`"
+                label="Subir foto"
+                @success="handleProfilePhotoUpload"
+                @error="handleUploadError"
+                class="absolute -bottom-2 -right-2 w-8 h-8 z-10"
+              >
+                <button class="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center shadow hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 20h14M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              </FileUpload>
+            </div>
             <div>
               <h3 class="text-xl font-bold">{{ student.nombre }} {{ student.apellido }}</h3>
               <div class="flex flex-wrap gap-1 mt-1">
@@ -295,7 +523,6 @@ const viewSchedule = () => {
               </div>
             </div>
           </div>
-
           <!-- Student Info -->
           <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-3">
             
@@ -366,27 +593,52 @@ const viewSchedule = () => {
                 <span class="ml-1 font-medium">{{ student.fecInscripcion || "No disponible" }}</span>
               </div>
             </div>
-          </div>
-
-          <!-- Attendance Analysis -->
+          </div>          <!-- Attendance Analysis -->
           <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
             <div class="bg-gray-50 dark:bg-gray-700/30 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-              <h4 class="font-medium">Análisis de Asistencia</h4>
+              <h4 class="font-medium flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Análisis de Asistencia
+              </h4>
             </div>
             <div class="p-4">
               <div v-if="attendanceStats">
-                <div class="flex justify-between items-center mb-2">
-                  <span class="text-sm text-gray-500 dark:text-gray-400">Tasa de asistencia:</span>
-                  <span 
-                    class="font-bold" 
-                    :class="{
-                      'text-green-600 dark:text-green-400': attendanceRate >= 85,
-                      'text-yellow-600 dark:text-yellow-400': attendanceRate >= 75 && attendanceRate < 85,
-                      'text-red-600 dark:text-red-400': attendanceRate < 75
-                    }"
-                  >
-                    {{ attendanceRate }}%
-                  </span>
+                <!-- Clasificación del estudiante -->
+                <div class="mb-3 p-3 rounded-lg" 
+                  :class="{
+                    'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30': studentClassification.color === 'green',
+                    'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/30': studentClassification.color === 'yellow',
+                    'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30': studentClassification.color === 'red',
+                    'bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800/30': studentClassification.color === 'gray'
+                  }"
+                >
+                  <div class="flex justify-between items-center">
+                    <div>
+                      <h5 class="font-medium"
+                        :class="{
+                          'text-green-700 dark:text-green-400': studentClassification.color === 'green',
+                          'text-yellow-700 dark:text-yellow-400': studentClassification.color === 'yellow',
+                          'text-red-700 dark:text-red-400': studentClassification.color === 'red',
+                          'text-gray-700 dark:text-gray-400': studentClassification.color === 'gray'
+                        }"
+                      >
+                        {{ studentClassification.type }}
+                      </h5>
+                      <p class="text-xs text-gray-600 dark:text-gray-400">{{ studentClassification.description }}</p>
+                    </div>
+                    <div class="text-xl font-bold"
+                      :class="{
+                        'text-green-600 dark:text-green-400': studentClassification.color === 'green',
+                        'text-yellow-600 dark:text-yellow-400': studentClassification.color === 'yellow',
+                        'text-red-600 dark:text-red-400': studentClassification.color === 'red',
+                        'text-gray-600 dark:text-gray-400': studentClassification.color === 'gray'
+                      }"
+                    >
+                      {{ attendanceRate }}%
+                    </div>
+                  </div>
                 </div>
                 <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-4">
                   <div 
@@ -415,6 +667,67 @@ const viewSchedule = () => {
                   <div class="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded">
                     <div class="text-xl font-bold text-yellow-700 dark:text-yellow-400">{{ attendanceStats.late }}</div>
                     <div class="text-xs text-yellow-600 dark:text-yellow-500">Tardanzas</div>
+                  </div>                </div>
+                
+                <!-- Visualización alternativa de asistencia -->
+                <div class="mt-4 mb-3">
+                  <h5 class="text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Asistencia por meses</h5>
+                  <div class="space-y-3">
+                    <template v-if="chartData.labels.length > 0 && chartData.labels[0] !== 'Sin datos'">
+                      <div v-for="(month, idx) in chartData.labels" :key="idx">
+                        <div class="flex justify-between text-xs mb-1">
+                          <span class="font-medium">{{ month }}</span>
+                          <span>{{ chartData.datasets[0].data[idx] + chartData.datasets[1].data[idx] + chartData.datasets[2].data[idx] + chartData.datasets[3].data[idx] }} clases</span>
+                        </div>
+                        <div class="flex h-6 w-full rounded-md overflow-hidden">
+                          <!-- Presentes -->
+                          <div 
+                            class="bg-green-500" 
+                            :style="{width: chartData.datasets[0].data[idx] > 0 ? `${chartData.datasets[0].data[idx] / (chartData.datasets[0].data[idx] + chartData.datasets[1].data[idx] + chartData.datasets[2].data[idx] + chartData.datasets[3].data[idx]) * 100}%` : '0%'}"
+                            :title="`Presentes: ${chartData.datasets[0].data[idx]}`"
+                          ></div>
+                          <!-- Tardanzas -->
+                          <div 
+                            class="bg-yellow-500" 
+                            :style="{width: chartData.datasets[1].data[idx] > 0 ? `${chartData.datasets[1].data[idx] / (chartData.datasets[0].data[idx] + chartData.datasets[1].data[idx] + chartData.datasets[2].data[idx] + chartData.datasets[3].data[idx]) * 100}%` : '0%'}"
+                            :title="`Tardanzas: ${chartData.datasets[1].data[idx]}`"
+                          ></div>
+                          <!-- Ausencias -->
+                          <div 
+                            class="bg-red-500" 
+                            :style="{width: chartData.datasets[2].data[idx] > 0 ? `${chartData.datasets[2].data[idx] / (chartData.datasets[0].data[idx] + chartData.datasets[1].data[idx] + chartData.datasets[2].data[idx] + chartData.datasets[3].data[idx]) * 100}%` : '0%'}"
+                            :title="`Ausencias: ${chartData.datasets[2].data[idx]}`"
+                          ></div>
+                          <!-- Justificadas -->
+                          <div 
+                            class="bg-purple-500" 
+                            :style="{width: chartData.datasets[3].data[idx] > 0 ? `${chartData.datasets[3].data[idx] / (chartData.datasets[0].data[idx] + chartData.datasets[1].data[idx] + chartData.datasets[2].data[idx] + chartData.datasets[3].data[idx]) * 100}%` : '0%'}"
+                            :title="`Justificadas: ${chartData.datasets[3].data[idx]}`"
+                          ></div>
+                        </div>
+                      </div>
+                    </template>
+                    <div v-else class="text-center text-sm text-gray-500">
+                      No hay datos suficientes para mostrar
+                    </div>
+                  </div>
+                  <div class="flex gap-2 text-xs mt-2 justify-center">
+                    <div class="flex items-center gap-1">
+                      <div class="w-3 h-3 bg-green-500 rounded-sm"></div>
+                      <span>Presentes</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <div class="w-3 h-3 bg-yellow-500 rounded-sm"></div>
+                      <span>Tardanzas</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <div class="w-3 h-3 bg-red-500 rounded-sm"></div>
+                      <span>Ausencias</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <div class="w-3 h-3 bg-purple-500 rounded-sm"></div>
+                      <span>Justificadas</span>
+                    </div>
                   </div>
                 </div>
               </div>

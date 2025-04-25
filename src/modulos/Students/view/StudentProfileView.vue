@@ -70,10 +70,12 @@ const student = computed(() => studentsStore.students.find(s => s.id.toString() 
 
 // Add the missing classes computed property
 const classes = computed(() => {
-  // If classesStore has a groups or classes array, use it
+  // If classesStore has classes array, use it to extract the names
   // Otherwise provide a default set of groups
-  return classesStore.groups || 
-    ['Teoría Musical', 'Ensamble', 'Coro', 'Orquesta', 'Jazz', 'Música Clásica']
+  return (classesStore.classes && classesStore.classes.length > 0) 
+    ? Array.from(new Set(classesStore.classes.map(c => c.name)))
+      .filter(name => name && typeof name === 'string')
+    : ['Teoría Musical','Coro', 'Orquesta']
 })
 
 const attendanceData = computed(() => {
@@ -285,7 +287,20 @@ const studentAttendance = computed(() => {
   
   // Obtener rendimiento por clase
   const classPerformance = [];
-  const classesSummary = {};
+  
+  // Definir tipo para resumen de clases
+  interface ClassSummary {
+    classId: string;
+    className: string;
+    total: number;
+    present: number;
+    absent: number;
+    justified: number;
+    late: number;
+    rate: number;
+  }
+  
+  const classesSummary: Record<string, ClassSummary> = {};
   
   // Agrupar registros por clase
   attendanceRecords.forEach(record => {
@@ -408,7 +423,7 @@ const studentAttendance = computed(() => {
       return {
         ...record,
         className: classInfo?.name || 'Clase desconocida',
-        teacherName: teacherInfo?.name || teacherInfo?.nombre || 'Profesor desconocido',
+        teacherName: teacherInfo?.name || 'Profesor desconocido',
         formattedDate: record.Fecha ? format(new Date(record.Fecha), 'dd/MM/yyyy') : 'Fecha desconocida'
       };
     });
@@ -556,22 +571,24 @@ const chartOptions = {
 
 const isUploading = vueRef(false)
 
-const handleProfilePhotoUpload = async (files: FileList) => {
-  if (!student.value || !files.length) return
+// Reemplazar la función actual por esta
+const handleProfilePhotoUpload = async (url) => {
+  if (!student.value) return
   
   isUploading.value = true
   try {
-    const file = files[0]
-    const path = `avatars/${student.value.id}/${file.name}`
-    const url = await uploadFile(file, path)
+    console.log('[StudentProfileView] URL de foto recibida:', url);
     
-    await studentsStore.updateStudent(studentId, {
-      ...student.value,
-      avatar: url
-    })
+    // Verificar que sea una URL válida de Firebase Storage
+    if (!url || !url.includes('firebasestorage.googleapis.com')) {
+      console.error('[StudentProfileView] URL inválida:', url);
+      throw new Error('La URL de la imagen no es válida');
+    }
+    
+    await studentsStore.updateStudent(studentId, { avatar: url })
+    console.log('[StudentProfileView] Avatar actualizado correctamente');
   } catch (error) {
-    console.error('Error uploading profile photo:', error)
-    // Add error handling/notification here
+    console.error('Error actualizando foto de perfil:', error)
   } finally {
     isUploading.value = false
   }
@@ -676,7 +693,7 @@ const availableClasses = computed(() => {
         })
       }
       // Handle grupo as string (fallback)
-      else if (typeof student.grupo === 'string' && student.grupo.trim() !== '') {
+      else if (typeof student.grupo === 'string' && student.grupo?.trim() !== '') {
         classSet.add(student.grupo.trim())
       }
     }
@@ -724,18 +741,15 @@ onMounted(async () => {
     try {
       // Asegurar que los estudiantes estén cargados
       if (studentsStore.students.length === 0) {
-        console.log('Cargando lista de estudiantes...')
         await studentsStore.fetchStudents()
       }
       
       // Asegurar que tenemos el estudiante actual
       if (!student.value) {
-        console.log('Buscando estudiante específico:', studentId)
         await studentsStore.fetchStudentById(studentId)
       }
       
       // Cargar las clases específicas para este estudiante desde Firestore
-      console.log('Cargando clases del estudiante:', studentId)
       await classesStore.fetchClassesByStudentId(studentId)
       
       // Si tenemos IDs de profesores, cargarlos también
@@ -751,12 +765,8 @@ onMounted(async () => {
         
         // Cargar información de los profesores si no la tenemos ya
         if (teacherIds.size > 0 && teachersStore.teachers.length === 0) {
-          console.log('Cargando información de profesores...')
           await teachersStore.fetchTeachers()
         }
-        
-        // Cargar asistencias para todas las clases del estudiante
-        console.log('Cargando registros de asistencia del estudiante...')
         
         // Primero obtenemos todas las clases del estudiante
         const studentClassIds = classesStore.classes
@@ -764,15 +774,10 @@ onMounted(async () => {
           .map(c => c.id)        // Cargar las asistencias para cada clase
         try {
           // Usar los métodos disponibles en el attendanceStore para cargar asistencias
-          console.log('Intentando cargar registros de asistencia...')
-          
-          // Utilizar el método correcto para cargar las asistencias según revisión del código
           await attendanceStore.fetchAttendance()
           
           // Si hay clases específicas del estudiante, cargar sus documentos de asistencia
           if (studentClassIds.length > 0) {
-            console.log(`Cargando asistencias para ${studentClassIds.length} clases del estudiante`)
-            
             // Cargar documentos de asistencia para cada clase del estudiante
             for (const classId of studentClassIds) {
               try {
@@ -795,27 +800,22 @@ onMounted(async () => {
                   await attendanceStore.fetchAttendanceByClassAndDate(classId, format(today, 'yyyy-MM-dd'))
                 }
               } catch (err) {
-                console.log(`Error al cargar asistencias para la clase ${classId}:`, err)
+                console.error(`Error al cargar asistencias para la clase ${classId}:`, err)
               }
             }
           }
-          
-          console.log(`Registros de asistencia cargados: ${attendanceStore.records.length}`)
         } catch (error) {
           console.error('Error al cargar registros de asistencia:', error)
         }
       }
       
-      console.log('Todos los datos necesarios han sido cargados correctamente')
     } catch (error) {
       console.error('Error al cargar datos del estudiante:', error)
     }
+  } 
+  else {
+    console.error('ID de estudiante no válido:', studentId)
   }
-  
-  // Mostrar valores en consola para depuración
-  console.log('Student:', student.value?.nombre, student.value?.apellido)
-  console.log('Student Classes:', studentClasses.value)
-  console.log('Student Attendance Records:', studentAttendance.value?.records?.length || 0)
 })
 </script>
 
@@ -1103,11 +1103,13 @@ onMounted(async () => {
             class="w-24 h-24 rounded-full object-cover"
           />
           <div class="absolute -bottom-2 -right-2">
-            <FileUpload
-              accept="image/*"
-              label=""
-              @select="handleProfilePhotoUpload"
-            >
+          <FileUpload
+            accept="image/*"
+            label=""
+            @success="handleProfilePhotoUpload" 
+            :path="`students/${student.id}/profile`"
+            :maxSize="3"  
+          >
               <template #default>
                 <button
                   type="button"

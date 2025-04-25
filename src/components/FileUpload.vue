@@ -1,6 +1,6 @@
 <!-- components/FileUpload.vue -->
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
 import { getApp } from 'firebase/app'
 
@@ -35,6 +35,20 @@ const getFirebaseStorage = () => {
   }
 }
 
+// Validar Firebase Storage al cargar el componente
+onMounted(() => {
+  try {
+    const storage = getFirebaseStorage();
+    if (!storage) {
+      console.warn('[FileUpload] No se pudo inicializar Firebase Storage. Verifica la configuración de Firebase.');
+    } else {
+      console.log('[FileUpload] Firebase Storage inicializado correctamente');
+    }
+  } catch (error) {
+    console.error('[FileUpload] Error al validar Firebase Storage:', error);
+  }
+});
+
 const triggerFileInput = () => {
   if (fileInput.value) {
     fileInput.value.click()
@@ -67,6 +81,14 @@ const onDrop = (event: DragEvent) => {
   validateAndProcessFiles(event.dataTransfer.files)
 }
 
+// Reset the file input
+const resetFileInput = () => {
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+  return
+}
+
 const validateAndProcessFiles = (files: FileList) => {
   // Validate max size (convert MB to bytes)
   if (props.maxSize) {
@@ -89,15 +111,30 @@ const validateAndProcessFiles = (files: FileList) => {
 
 const uploadToFirebase = async (file: File) => {
   const storage = getFirebaseStorage()
-  if (!storage) return
+  if (!storage) {
+    emit('error', 'No se pudo inicializar el almacenamiento de Firebase')
+    return
+  }
   
-  const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`
-  const filePath = `${props.path}/${fileName}`
+  // Generar un nombre de archivo seguro con timestamp para evitar colisiones
+  const timestamp = Date.now()
+  const safeFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_')
+  const fileName = `${timestamp}-${safeFileName}`
+  
+  // Asegurar que la ruta sea válida (con fallback a 'uploads')
+  const uploadPath = props.path || 'uploads'
+  const filePath = `${uploadPath}/${fileName}`
+  
+  // Crear referencia al archivo en Firebase Storage
   const fileRef = storageRef(storage, filePath)
   
+  // Iniciar indicadores de carga
   isUploading.value = true
   uploadProgress.value = 0
   
+  console.log(`[FileUpload] Subiendo archivo a: ${filePath}`)
+  
+  // Iniciar la subida con seguimiento de progreso
   const uploadTask = uploadBytesResumable(fileRef, file)
   
   uploadTask.on('state_changed',
@@ -109,34 +146,44 @@ const uploadToFirebase = async (file: File) => {
     },
     (error) => {
       // Handle errors
-      console.error('Upload error:', error)
+      console.error('[FileUpload] Error de subida:', error)
       isUploading.value = false
       emit('error', 'Error al subir el archivo: ' + error.message)
+      resetFileInput()
     },
     async () => {
       // Upload complete
       try {
         const downloadURL = await getDownloadURL(uploadTask.snapshot.ref)
+          // Validar que la URL sea válida (contiene el dominio de Firebase Storage)
+        if (!downloadURL || typeof downloadURL !== 'string') {
+          console.error('[FileUpload] URL de descarga inválida:', downloadURL)
+          emit('error', 'La URL generada no es válida. Verifica la configuración de Firebase.')
+          isUploading.value = false
+          resetFileInput()
+          return
+        }
+
+        // Validar que la URL sea de Firebase Storage y no de otro dominio
+        if (downloadURL.includes('storage.example.com') || !downloadURL.includes('firebasestorage.googleapis.com')) {
+          console.error('[FileUpload] URL de descarga no es de Firebase Storage:', downloadURL)
+          emit('error', 'La URL generada no corresponde a Firebase Storage. Verifica la configuración.')
+          isUploading.value = false
+          resetFileInput()
+          return
+        }
+        
+        console.log(`[FileUpload] Archivo subido exitosamente. URL: ${downloadURL}`)
         isUploading.value = false
+        resetFileInput()
         emit('success', downloadURL)
       } catch (error: any) {
-        console.error('Error getting download URL:', error)
+        console.error('[FileUpload] Error al obtener URL de descarga:', error)
         isUploading.value = false
-        emit('error', 'Error al obtener la URL de descarga')
+        resetFileInput()
+        emit('error', 'Error al obtener la URL de descarga: ' + (error.message || 'Error desconocido'))
       }
-    }
-  )
-}
-
-// Reset the file input
-// Add resetFileInput call in onFilesSelected and onDrop
-// Reset file input after selection/upload
-// Reset file input after selection/upload
-const resetFileInput = () => {
-  if (fileInput.value) {
-    fileInput.value.value = ''
-  }
-  return
+    })
 }
 </script>
 
@@ -147,8 +194,8 @@ const resetFileInput = () => {
     @dragover.prevent
     @dragleave="onDragLeave"
     @drop="onDrop"
+    class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
     :class="[
-      'file-upload-container',
       isDragging ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-400 dark:border-blue-600' : '',
       isUploading ? 'cursor-not-allowed' : 'cursor-pointer'
     ]"
@@ -217,9 +264,3 @@ const resetFileInput = () => {
     </slot>
   </div>
 </template>
-
-<style scoped>
-.file-upload-container {
-  @apply border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50;
-}
-</style>

@@ -31,11 +31,9 @@ export const fetchTeachersFromFirebase = async (): Promise<Teacher[]> => {
     if (isDevelopment) {
       const cached = localStorage.getItem(LOCAL_STORAGE_KEY)
       if (cached) {
-        console.log('Usando datos cacheados de localStorage')
         return JSON.parse(cached) as Teacher[]
       }
     }
-
     const querySnapshot = await getDocs(collection(db, COLLECTION_NAME))
     const teachers = querySnapshot.docs.map(doc => ({
       id: doc.id,

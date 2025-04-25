@@ -141,6 +141,38 @@ const allStudents = computed(() => {
   return result;
 });
 
+// Función para obtener el orden del día de la semana (para ordenamiento)
+const getDayOrder = (dayString) => {
+  if (!dayString) return 7; // Si no hay día, se coloca al final
+  
+  const dayOrder = {
+    'domingo': 7, 'dom': 7, 'sunday': 7, 'sun': 7, '0': 7,
+    'lunes': 1, 'lun': 1, 'monday': 1, 'mon': 1, '1': 1,
+    'martes': 2, 'mar': 2, 'tuesday': 2, 'tue': 2, '2': 2,
+    'miércoles': 3, 'miercoles': 3, 'mié': 3, 'mie': 3, 'wednesday': 3, 'wed': 3, '3': 3,
+    'jueves': 4, 'jue': 4, 'thursday': 4, 'thu': 4, '4': 4,
+    'viernes': 5, 'vie': 5, 'friday': 5, 'fri': 5, '5': 5,
+    'sábado': 6, 'sabado': 6, 'sáb': 6, 'sab': 6, 'saturday': 6, 'sat': 6, '6': 6
+  };
+  
+  // Normalizar e intentar mapear la cadena a un orden
+  const normalizedDay = typeof dayString === 'string' 
+    ? dayString.toLowerCase().trim() 
+    : dayString.toString();
+  
+  return normalizedDay in dayOrder 
+    ? dayOrder[normalizedDay] 
+    : (typeof dayString === 'number' && dayString >= 0 && dayString <= 6 
+        ? dayString + 1 // Para que domingo (0) sea 1 y así sucesivamente
+        : 7); // Valor por defecto si no se puede determinar
+};
+
+// Computed property para obtener el orden del día de la clase actual
+const currentClassDayOrder = computed(() => {
+  const dayString = props.classData.schedule?.slots?.[0]?.day;
+  return getDayOrder(dayString);
+});
+
 // Formatea los horarios de clase para mostrar en la tarjeta
 const formatSchedule = computed(() => {
   if (!props.classData.schedule || !props.classData.schedule.slots || props.classData.schedule.slots.length === 0) {

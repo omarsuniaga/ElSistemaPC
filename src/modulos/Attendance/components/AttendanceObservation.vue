@@ -98,7 +98,7 @@
         <div v-else-if="activeTab === 'history'">
           <ObservationsHistory 
             :classId="classId" 
-            :date="classObservationMode ? attendanceDate : undefined"
+            :date="classObservationMode ? undefined : attendanceDate"
           />
         </div>
       </div>
@@ -180,15 +180,13 @@ const saveObservation = async () => {
     // Obtener info del usuario actual
     const username = authStore.user?.displayName || authStore.user?.email || 'Usuario';
     
-    if (classObservationMode.value) {
-      // Para observaciones de clase, guardar en el historial
-      await attendanceStore.addObservationToHistory(
-        props.classId,
-        props.attendanceDate,
-        newObservation.value,
-        username
-      );
-    }
+    // Guardar en el historial de observaciones
+    await attendanceStore.addObservationToHistory(
+      props.classId,
+      props.attendanceDate,
+      newObservation.value,
+      username
+    );
     
     // Emitir para mantener compatibilidad con el flujo actual
     emit('observation', newObservation.value);

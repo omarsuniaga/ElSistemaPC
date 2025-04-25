@@ -38,7 +38,7 @@ async function loadActivities() {
     // 1. Obtener el uid de la sesión activa
     const teacherId = authStore.user?.uid;
     if (!teacherId) {
-      console.log('No hay usuario autenticado');
+      // console.log('No hay usuario autenticado');
       return;
     }
 
@@ -59,7 +59,6 @@ async function loadActivities() {
         totalCount: activity.totalCount
       }))
     }));
-    console.log('Actividades cargadas:', groupedByClass.value);
   } catch (error) {
     console.error('Error al cargar las actividades:', error);
   } finally {

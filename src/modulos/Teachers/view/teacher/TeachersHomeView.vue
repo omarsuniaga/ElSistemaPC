@@ -15,7 +15,8 @@ import {
   ChartBarSquareIcon,
   AcademicCapIcon
 } from '@heroicons/vue/24/outline';
-import { useToast } from '../../../../components/ui/toast/use-toast';
+import TopAbsenteesByRange from '@/components/TopAbsenteesByRange.vue';
+import { useToast } from '@/components/ui/toast/use-toast';
 import { Dialog, DialogPanel, DialogOverlay, TransitionRoot, TransitionChild } from '@headlessui/vue';
 import TeacherWeeklySchedule from '../../components/TeacherWeeklySchedule.vue'; // Componente que acabamos de crear
 import TeacherClassesCard from '../../components/TeacherClassesCard.vue';
@@ -103,6 +104,52 @@ const dashboardMetrics = computed(() => {
       color: 'bg-amber-100 text-amber-800'
     }
   ];
+});
+
+// Función auxiliar para obtener el orden del día de la semana (lunes=1, domingo=7)
+const getDayOrder = (classItem) => {
+  if (!classItem?.schedule?.slots?.[0]?.day) return 8; // Si no hay día, se coloca al final
+  
+  const day = classItem.schedule.slots[0].day;
+  const dayOrder = {
+    'lunes': 1, 'lun': 1, 'monday': 1, 'mon': 1, '1': 1, 0: 1,
+    'martes': 2, 'mar': 2, 'tuesday': 2, 'tue': 2, '2': 2, 1: 2,
+    'miércoles': 3, 'miercoles': 3, 'mié': 3, 'mie': 3, 'wednesday': 3, 'wed': 3, '3': 3, 2: 3,
+    'jueves': 4, 'jue': 4, 'thursday': 4, 'thu': 4, '4': 4, 3: 4,
+    'viernes': 5, 'vie': 5, 'friday': 5, 'fri': 5, '5': 5, 4: 5,
+    'sábado': 6, 'sabado': 6, 'sáb': 6, 'sab': 6, 'saturday': 6, 'sat': 6, '6': 6, 5: 6,
+    'domingo': 7, 'dom': 7, 'sunday': 7, 'sun': 7, '0': 7, 6: 7,
+  };
+  
+  // Normalizar el día
+  const normalizedDay = typeof day === 'string' 
+    ? day.toLowerCase().trim() 
+    : day.toString();
+  
+  return normalizedDay in dayOrder 
+    ? dayOrder[normalizedDay] 
+    : (typeof day === 'number' && day >= 0 && day <= 6
+        ? day === 0 ? 7 : day // Convertir 0 (domingo) a 7 para el orden correcto
+        : 8); // Valor por defecto si no se puede determinar
+};
+
+// Clases ordenadas por día de la semana (lunes a domingo)
+const sortedTeacherClasses = computed(() => {
+  if (!teacherClasses.value.length) return [];
+  
+  return [...teacherClasses.value].sort((a, b) => {
+    const dayOrderA = getDayOrder(a);
+    const dayOrderB = getDayOrder(b);
+    
+    if (dayOrderA !== dayOrderB) {
+      return dayOrderA - dayOrderB; // Primero ordenar por día
+    }
+    
+    // Si son del mismo día, ordenar por hora de inicio
+    const startTimeA = a.schedule?.slots?.[0]?.startTime || '00:00';
+    const startTimeB = b.schedule?.slots?.[0]?.startTime || '00:00';
+    return startTimeA.localeCompare(startTimeB);
+  });
 });
 
 // Próximas clases del maestro (próximas 24 horas)
@@ -377,23 +424,18 @@ const setActiveTab = (tab) => {
 onMounted(async () => {
   loading.value = true;
   try {
-    console.log('🔄 Iniciando carga de datos desde Firebase...');
-    
     // Asegurarnos de que los métodos existen antes de llamarlos
     const promises: Promise<any>[] = [];
     
     // Primero cargamos los datos de los profesores para obtener la correspondencia UID -> ID de maestro
     if (typeof teachersStore.fetchTeachers === 'function') {
-      console.log('👨‍🏫 Cargando profesores...');
       await teachersStore.fetchTeachers();
       
       // Ahora obtenemos el maestro actual basado en el UID de autenticación
       if (authStore.user?.uid) {
-        console.log('🔍 Buscando maestro con UID de autenticación:', authStore.user.uid);
         const teacher = await teachersStore.fetchTeacherByAuthUid(authStore.user.uid);
         
         if (teacher) {
-          console.log('✅ Maestro encontrado:', teacher.name, 'con ID:', teacher.id);
           currentTeacherId.value = teacher.id;
           currentTeacher.value = teacher;
         } else {
@@ -409,17 +451,13 @@ onMounted(async () => {
     }
     
     if (typeof classesStore.forceSync === 'function') {
-      console.log('📚 Forzando sincronización de clases desde Firebase...');
       promises.push(classesStore.forceSync());
     } else if (typeof classesStore.fetchClasses === 'function') {
-      console.log('📚 Cargando clases...');
       promises.push(classesStore.fetchClasses());
     } else {
       console.warn('⚠️ El método fetchClasses no está disponible en classesStore');
     }
-    
     if (typeof studentsStore.fetchStudents === 'function') {
-      console.log('👨‍🎓 Cargando estudiantes...');
       promises.push(studentsStore.fetchStudents());
     } else {
       console.warn('⚠️ El método fetchStudents no está disponible en studentsStore');
@@ -428,23 +466,14 @@ onMounted(async () => {
     // Esperar a que todas las promesas se resuelvan
     await Promise.all(promises);
     
-    // Verificar que se hayan cargado los datos
-    console.log(`✅ Datos cargados correctamente:`);
-    console.log(`   - Clases: ${classesStore.classes.length}`);
-    console.log(`   - ID de maestro usado para filtrar: ${currentTeacherId.value}`);
-    console.log(`   - Clases del profesor: ${teacherClasses.value.length}`);
-    console.log(`   - Profesores: ${teachersStore.teachers?.length || 0}`);
-    console.log(`   - Estudiantes: ${studentsStore.students?.length || 0}`);
-    
     // Si no hay clases, intentar nuevamente para asegurarnos
     if (classesStore.classes.length === 0) {
-      console.log('⚠️ No se encontraron clases, intentando nuevamente...');
       if (typeof classesStore.forceSync === 'function') {
         await classesStore.forceSync();
-        console.log(`   - Clases (reintento): ${classesStore.classes.length}`);
+      } else if (typeof classesStore.fetchClasses === 'function') {
+        await classesStore.fetchClasses();
       }
     }
-
   } catch (error) {
     console.error('❌ Error cargando datos:', error);
     toast({
@@ -460,13 +489,11 @@ onMounted(async () => {
 // Observar cambios en el ID del profesor o en las clases para recargar datos si es necesario
 watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherId, classesCount], [oldTeacherId, oldClassesCount]) => {
   if (newTeacherId !== oldTeacherId || (classesCount === 0 && oldClassesCount === 0)) {
-    console.log('🔄 Detectado cambio en el profesor o en las clases. Actualizando datos...');
-    
     try {
       // Si cambia el ID del profesor o no hay clases, recargamos las clases
       if (typeof classesStore.forceSync === 'function') {
         const classes = await classesStore.forceSync();
-        console.log(`✅ Clases actualizadas: ${classes.length} total, ${teacherClasses.value.length} del profesor`);
+        return classes;
       }
     } catch (error) {
       console.error('❌ Error al actualizar clases:', error);
@@ -506,7 +533,7 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         >
           <div class="flex items-center gap-1">
             <ChartBarSquareIcon class="h-3 w-3 md:h-4 md:w-4" />
-            Panel General
+            Metricas
           </div>
         </button>
         
@@ -520,7 +547,7 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         >
           <div class="flex items-center gap-1">
             <CalendarIcon class="h-3 w-3 md:h-4 md:w-4" />
-            Más Ausentes
+            Ausentes
           </div>
         </button>
         
@@ -534,7 +561,7 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         >
           <div class="flex items-center gap-1">
             <ClockIcon class="h-3 w-3 md:h-4 md:w-4" />
-            Mis Observaciones
+            Observaciones
           </div>
         </button>
       </div>
@@ -593,7 +620,8 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         </h2>
         
         <!-- Componente de horario semanal -->
-        <StudentAnalytics /> 
+        <!-- <StudentAnalytics />  -->
+        <TopAbsenteesByRange :limit="10" class="mt-8" />
       </div>
       
       <!-- Vista de listado de clases -->
@@ -611,23 +639,19 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         
         <!-- Grid de Card de clases -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-          <template v-if="teacherClasses.length > 0">
+          <template v-if="sortedTeacherClasses.length">
             <TeacherClassesCard
-              v-for="classItem in teacherClasses"
+              v-for="classItem in sortedTeacherClasses"
               :key="classItem.id"
-              :class-data="classItem"
+              :classData="classItem"
               @view="handleViewClass"
               @edit="handleEditClass"
               @delete="handleDeleteClass"
               @manage-students="handleManageStudents"
             />
           </template>
-          
-          <div v-else class="col-span-full py-12 text-center text-gray-500 dark:text-gray-400">
-            No tienes clases asignadas actualmente.
-            <button @click="handleAddClass" class="ml-2 text-blue-500 hover:underline">
-              Crear una nueva clase
-            </button>
+          <div v-else class="col-span-full text-center text-gray-500 dark:text-gray-400 py-8">
+            No tienes clases asignadas todavía.
           </div>
         </div>
       </div>

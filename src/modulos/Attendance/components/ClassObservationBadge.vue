@@ -1,67 +1,20 @@
 <template>
   <div 
-    @click="handleClick"
-    class="group relative inline-flex items-center px-3 py-1 rounded-full border cursor-pointer transition-all"
-    :class="[hasObservations ? 
-      'bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/40' : 
-      'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700']"
+    v-if="observations" 
+    @click="$emit('click')"
+    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-700 transition-colors"
   >
-    <ChatBubbleLeftRightIcon class="h-4 w-4 mr-1.5" />
-    <span class="text-xs font-medium">
-      {{ hasObservations ? 'Ver observaciones' : 'Agregar observación' }}
-    </span>
-    
-    <!-- Tooltip de vista previa -->
-    <div v-if="hasObservations && observations" 
-        class="absolute z-10 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64">
-      <div class="bg-gray-900 text-white text-xs p-2 rounded shadow">
-        <div class="max-h-32 overflow-y-auto text-left">
-          <div class="font-semibold mb-1">Observaciones:</div>
-          {{ truncateObservation(observations) }}
-        </div>
-        <div class="mt-1 text-blue-300 text-center">Click para editar</div>
-        <div class="arrow-down"></div>
-      </div>
-    </div>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+    </svg>
+    Con observaciones
   </div>
 </template>
 
 <script setup lang="ts">
-import { ChatBubbleLeftRightIcon } from '@heroicons/vue/24/outline';
-import { computed } from 'vue';
-
-const props = defineProps<{
-  observations: string;
+defineProps<{
+  observations: string | null | undefined
 }>();
 
-const emit = defineEmits<{
-  (e: 'click'): void;
-}>();
-
-const hasObservations = computed(() => {
-  return !!props.observations && props.observations.trim().length > 0;
-});
-
-const handleClick = () => {
-  emit('click');
-};
-
-const truncateObservation = (text: string, maxLength = 150) => {
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
-};
+defineEmits(['click']);
 </script>
-
-<style scoped>
-.arrow-down {
-  position: absolute;
-  bottom: -5px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0; 
-  height: 0; 
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid #1f2937; /* bg-gray-900 */
-}
-</style>

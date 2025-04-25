@@ -484,145 +484,93 @@ export const updateAttendanceWithJustificationFirebase = async (
 ): Promise<string> => {
   const justification: JustificationData = {
     id: studentId,
-    reason: reason
+    reason
   };
   
   return addJustificationToAttendanceFirebase(date, classId, justification, file);
 };
 
-export const registerAttendanceFirebase = async (attendanceData: AttendanceRecord): Promise<string> => {
-  // Usar el método updateAttendance para mantener la compatibilidad
-  return updateAttendanceFirebase(attendanceData);
-};
-
 /**
- * Fetches attendance records within a date range
+ * Añade una observación al historial de clase
+ * @param classId - ID de la clase
+ * @param date - Fecha de la clase
+ * @param text - Texto de la observación
+ * @param author - Nombre del autor
+ * @returns Promise con el ID del documento creado
  */
-export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endDate: string): Promise<AttendanceRecord[]> => {
+export const addObservationToHistoryFirebase = async (
+  classId: string,
+  date: string,
+  text: string,
+  author: string
+): Promise<string> => {
   try {
-    const attendanceRef = collection(db, 'ASISTENCIAS');
+    console.log('📝 Añadiendo observación al historial:', { classId, date });
     
-    // Query using the fecha field between the start and end dates
-    const q = query(
-      attendanceRef,
-      where("fecha", ">=", startDate),
-      where("fecha", "<=", endDate)
-    );
+    const observationsCollection = collection(db, 'OBSERVACIONES');
     
-    const querySnapshot = await getDocs(q);
-    const records: AttendanceRecord[] = [];
+    const observationData = {
+      classId,
+      date,
+      text,
+      author,
+      createdAt: new Date().toISOString()
+    };
     
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      // Process according to Firestore structure
-      if (data && data.fecha && data.classId && data.data) {
-        // Process present students
-        if (data.data.presentes && Array.isArray(data.data.presentes)) {
-          data.data.presentes.forEach(studentId => {
-            records.push({
-              id: doc.id,
-              studentId,
-              classId: data.classId,
-              Fecha: data.fecha,
-              status: 'Presente',
-            });
-          });
-        }
-        // Atlantica Segu
-        // Process absent students
-        if (data.data.ausentes && Array.isArray(data.data.ausentes)) {
-          data.data.ausentes.forEach(studentId => {
-            records.push({
-              id: doc.id,
-              studentId,
-              classId: data.classId,
-              Fecha: data.fecha,
-              status: 'Ausente',
-            });
-          });
-        }
-        
-        // Process late students and justifications
-        if (data.data.tarde && Array.isArray(data.data.tarde)) {
-          data.data.tarde.forEach(studentId => {
-            // Check if student has a justification
-            const hasJustification = data.data.justificacion?.some((j: JustificationData) => j.id === studentId);
-            
-            records.push({
-              id: doc.id,
-              studentId,
-              classId: data.classId,
-              Fecha: data.fecha,
-              status: hasJustification ? 'Justificado' : 'Tardanza',
-              justification: hasJustification ? 
-                { 
-                  reason: data.data.justificacion.find((j: JustificationData) => j.id === studentId)?.reason || '',
-                  documentUrl: data.data.justificacion.find((j: JustificationData) => j.id === studentId)?.documentURL
-                } : 
-                undefined
-            });
-          });
-        }
-      }
-    });
+    const docRef = await addDoc(observationsCollection, observationData);
     
-    return records;
+    // También actualizar la observación en el documento de asistencia
+    await updateObservationsFirebase(date, classId, text);
+    
+    console.log('✅ Observación añadida al historial con ID:', docRef.id);
+    return docRef.id;
   } catch (error) {
-    console.error('Error fetching attendance by date range:', error);
+    console.error('❌ Error al añadir observación al historial:', error);
     throw error;
   }
 };
 
 /**
- * Gets the attendance status for a specific student on a specific date
+ * Obtiene el historial de observaciones para una clase
+ * @param classId - ID de la clase
+ * @param date - Fecha específica (opcional)
+ * @returns Promise con array de observaciones
  */
-export const getAttendanceStatusFirebase = async (studentId: string, date: string, classId?: string): Promise<string> => {
+export const getObservationsHistoryFirebase = async (
+  classId: string,
+  date?: string
+): Promise<any[]> => {
   try {
-    // Query the attendance collection for the specific date
-    const attendanceRef = collection(db, 'ASISTENCIAS');
+    console.log('🔍 Buscando historial de observaciones para:', { classId, date });
+    
     let q;
     
-    if (classId) {
+    if (date) {
+      // Filtrar por clase y fecha específica
       q = query(
-        attendanceRef,
-        where("fecha", "==", date),
-        where("classId", "==", classId)
+        collection(db, 'OBSERVACIONES'),
+        where('classId', '==', classId),
+        where('date', '==', date)
       );
     } else {
+      // Filtrar solo por clase
       q = query(
-        attendanceRef,
-        where("fecha", "==", date)
+        collection(db, 'OBSERVACIONES'),
+        where('classId', '==', classId)
       );
     }
     
     const querySnapshot = await getDocs(q);
     
-    for (const doc of querySnapshot.docs) {
-      const data = doc.data();
-      if (data && data.data) {
-        // Check if student is in presentes array
-        if (data.data.presentes?.includes(studentId)) {
-          return 'Presente';
-        }
-        
-        // Check if student is in ausentes array
-        if (data.data.ausentes?.includes(studentId)) {
-          return 'Ausente';
-        }
-        
-        // Check if student is in tarde array
-        if (data.data.tarde?.includes(studentId)) {
-          // Check if student has justification
-          const hasJustification = data.data.justificacion?.some((j: JustificationData) => j.id === studentId);
-          return hasJustification ? 'Justificado' : 'Tardanza';
-        }
-      }
-    }
+    const result = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
     
-    // Default if not found
-    return 'Ausente';
+    console.log(`✅ Se encontraron ${result.length} observaciones`);
+    return result;
   } catch (error) {
-    console.error('Error fetching student attendance status:', error);
-    throw error;
+    console.error('❌ Error al obtener historial de observaciones:', error);
+    return [];
   }
 };

@@ -435,9 +435,10 @@ const teacherMetrics = computed(() => {
     const classCount = teacherClasses.length;
     // Attendance: count how many classes have attendance records for this teacher
     const teacherClassIds = teacherClasses.map(c => c.id);
-    const teacherAttendanceDocs = attendanceStore.attendanceDocuments.filter(doc =>
-      teacherClassIds.includes(doc.classId)
-    );
+    // only include docs that have a data object
+    const teacherAttendanceDocs = attendanceStore.attendanceDocuments
+      .filter(doc => doc.data && teacherClassIds.includes(doc.classId));
+
     const totalAttendance = teacherAttendanceDocs.length;
     // Attendance rate: average attendance rate over these classes
     let attendanceRate = 0;
@@ -570,14 +571,20 @@ async function calcularDiaMayorAsistencia(startDate, endDate) {
   const attendanceByDay = {
     'Domingo': 0, 'Lunes': 0, 'Martes': 0, 'Miércoles': 0, 'Jueves': 0, 'Viernes': 0, 'Sábado': 0
   };
+
   attendanceStore.attendanceDocuments.forEach(doc => {
+    // skip any doc without a data object
+    if (!doc.data) return;
+
     const date = new Date(doc.fecha);
     const dayIndex = date.getDay();
-    const dayName = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][dayIndex];
+    const dayName = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][dayIndex];
+
     const presentes = Array.isArray(doc.data.presentes) ? doc.data.presentes.length : 0;
-    const tarde = Array.isArray(doc.data.tarde) ? doc.data.tarde.length : 0;
-    attendanceByDay[dayName] += presentes + tarde;
+    const tarde    = Array.isArray(doc.data.tarde)    ? doc.data.tarde.length    : 0;
+    attendanceByDay[dayName] += (presentes + tarde);
   });
+
   let bestDay = '';
   let max = 0;
   for (const [day, total] of Object.entries(attendanceByDay)) {

@@ -101,7 +101,6 @@ const loadData = async () => {
     if (!teacherId.value) {
       // Si estamos autenticados pero no tenemos ID de maestro, intentar buscar por usuario
       if (auth.currentUser) {
-        console.log('Usuario autenticado pero sin ID de maestro, buscando por userId:', auth.currentUser.uid)
         // Intentar cargar un maestro basado en el ID de usuario
         try {
           // Asegurarnos que los maestros estén cargados
@@ -111,7 +110,6 @@ const loadData = async () => {
           const teacherByUserId = teachersStore.teachers.find(t => t.uid === auth.currentUser?.uid)
           
           if (teacherByUserId) {
-            console.log('Maestro encontrado mediante userId:', teacherByUserId.id)
             teacher.value = {
               ...teacherByUserId,
               experiencia: typeof teacherByUserId.experiencia === 'string' 
@@ -130,11 +128,9 @@ const loadData = async () => {
 
     // MÉTODO 3.5: Buscar explícitamente por authUid
     if (!teacher.value && auth.currentUser && teachersStore.fetchTeacherByAuthUid) {
-      console.log('Buscando maestro por authUid en Firebase:', auth.currentUser.uid)
       try {
         const teacherByAuthUid = await teachersStore.fetchTeacherByAuthUid(auth.currentUser.uid)
         if (teacherByAuthUid) {
-          console.log('Maestro encontrado por authUid:', teacherByAuthUid.id)
           teacher.value = {
             ...teacherByAuthUid,
             experiencia: typeof teacherByAuthUid.experiencia === 'string' 
@@ -145,10 +141,7 @@ const loadData = async () => {
       } catch (e) {
         console.warn('Error al buscar maestro por authUid:', e)
       }
-    }
-    
-    console.log('Buscando maestro con ID:', teacherId.value)
-    
+    }    
     // MÉTODO 1: Intentar usando getTeacherById directamente (puede funcionar si ya está en caché)
     if (teachersStore.getTeacherById) {
       const fetchedTeacher = teachersStore.getTeacherById(teacherId.value)
@@ -159,15 +152,12 @@ const loadData = async () => {
             ? { institution: fetchedTeacher.experiencia }
             : fetchedTeacher.experiencia
         }
-        console.log('Maestro encontrado en caché:', teacher.value.name)
       }
     }
     
     // MÉTODO 2: Si no lo encontramos, cargar todos los maestros y volver a intentar
     if (!teacher.value) {
-      console.log('Maestro no encontrado en caché, cargando todos los maestros...')
-      await teachersStore.fetchTeachers()
-      
+      await teachersStore.fetchTeachers()      
       if (teachersStore.getTeacherById) {
         const fetchedTeacher = teachersStore.getTeacherById(teacherId.value)
         if (fetchedTeacher) {
@@ -196,13 +186,12 @@ const loadData = async () => {
       }
       
       if (teacher.value) {
-        console.log('Maestro encontrado después de cargar todos:', teacher.value.name)
+        return // Salir si ya encontramos al maestro
       }
     }
     
     // MÉTODO 3: Buscar al maestro por userId
     if (!teacher.value && teachersStore.teachers) {
-      console.log('Intentando buscar maestro por userId...')
       const foundTeacher = teachersStore.teachers.find(t => t.uid === teacherId.value)
       
       if (foundTeacher) {
@@ -212,7 +201,6 @@ const loadData = async () => {
             ? { institution: foundTeacher.experiencia }
             : foundTeacher.experiencia
         }
-        console.log('Maestro encontrado por userId:', teacher.value.name)
       } else {
         teacher.value = null
       }
@@ -220,7 +208,6 @@ const loadData = async () => {
     
     // MÉTODO 4: Último recurso - actualizar datos desde Firebase y buscar nuevamente
     if (!teacher.value) {
-      console.log('Último intento: actualizar datos desde Firebase y buscar nuevamente')
       try {
         // Recargar todos los maestros desde Firebase
         await teachersStore.fetchTeachers()
@@ -234,7 +221,6 @@ const loadData = async () => {
               ? { institution: fetchedTeacher.experiencia }
               : fetchedTeacher.experiencia
           }
-          console.log('Maestro encontrado después de actualizar datos:', teacher.value.name)
         }
       } catch (e) {
         console.error('Error al actualizar y buscar maestro en Firebase:', e)
@@ -258,22 +244,27 @@ const loadData = async () => {
             // Method 1: Get role from token claims
             const idTokenResult = await currentUser.getIdTokenResult(true); // Force token refresh
             
-            console.log('Token claims:', idTokenResult.claims); // Debug log
-            
-            // Check if role exists in claims
-            if (idTokenResult.claims.role) {
+            // Check if role exists in claims and is a string
+            if (idTokenResult.claims.role && typeof idTokenResult.claims.role === 'string') {
               userRole = idTokenResult.claims.role;
-              console.log('Role found in token claims:', userRole);
-            } else if (idTokenResult.claims.custom_claims && idTokenResult.claims.custom_claims.role) {
+            } else if (idTokenResult.claims.custom_claims && 
+                       typeof idTokenResult.claims.custom_claims === 'object' && 
+                       idTokenResult.claims.custom_claims !== null &&
+                       'role' in idTokenResult.claims.custom_claims) {
               // Some implementations nest custom claims
-              userRole = idTokenResult.claims.custom_claims.role;
-              console.log('Role found in nested custom claims:', userRole);
+              userRole = (idTokenResult.claims.custom_claims as {role: string}).role;
             }
             
-            // Method 2: Try to get role from user store if available
-            if (userRole === 'unknown' && userStore.currentUser && userStore.currentUser.role) {
-              userRole = userStore.currentUser.role;
-              console.log('Role found in user store:', userRole);
+            // Method 2: Try to get role from user sessions store if available
+            if (userRole === 'unknown' && auth.currentUser && userStore.sessions) {
+              // Find the user session for the current authenticated user
+              const userSession = userStore.sessions.find(session => 
+                session.userId === auth.currentUser?.uid || session.uid === auth.currentUser?.uid
+              );
+              
+              if (userSession && userSession.role) {
+                userRole = userSession.role;
+              }
             }
             
             // Method 3: Check if user email matches any teacher email
@@ -284,8 +275,6 @@ const loadData = async () => {
               
               if (teacherWithEmail) {
                 userRole = 'teacher'; // If email matches a teacher, assume role is teacher
-                console.log('User email matches a teacher email, assuming role is teacher');
-                
                 // Set the teacher value since we found a match
                 teacher.value = {
                   ...teacherWithEmail,
@@ -299,13 +288,11 @@ const loadData = async () => {
             // Method 4: Check if user UID matches any teacher UID
             if (userRole === 'unknown') {
               const teacherWithUid = teachersStore.teachers.find(t => 
-                t.uid === currentUser.uid || t.userId === currentUser.uid
+                t.uid === currentUser.uid || (t as any).userId === currentUser.uid
               );
               
               if (teacherWithUid) {
                 userRole = 'teacher'; // If UID matches a teacher, assume role is teacher
-                console.log('User UID matches a teacher UID, assuming role is teacher');
-                
                 // Set the teacher value since we found a match
                 teacher.value = {
                   ...teacherWithUid,
@@ -382,10 +369,30 @@ const loadData = async () => {
         }
         return classItem
       })
-      
-      // Calcular métricas para mostrar en la vista
+        // Calcular métricas para mostrar en la vista
       const weeklyHours = teacherSchedules.reduce((total, s) => {
-        return total + (s.scheduleDay.timeSlot.duration / 60)
+        // Verificar que timeSlot y duration existan
+        if (!s.scheduleDay?.timeSlot) return total
+        
+        // Si duration ya está calculada, usarla
+        if (typeof s.scheduleDay.timeSlot.duration === 'number') {
+          return total + (s.scheduleDay.timeSlot.duration / 60)
+        }
+        
+        // Sino, calcular la duración en minutos a partir de startTime y endTime
+        const startTime = s.scheduleDay.timeSlot.startTime
+        const endTime = s.scheduleDay.timeSlot.endTime
+        
+        if (!startTime || !endTime) return total
+        
+        // Convertir a minutos y calcular la diferencia
+        const [startHours, startMinutes] = startTime.split(':').map(Number)
+        const [endHours, endMinutes] = endTime.split(':').map(Number)
+        const startTotalMinutes = startHours * 60 + startMinutes
+        const endTotalMinutes = endHours * 60 + endMinutes
+        const durationMinutes = endTotalMinutes - startTotalMinutes
+        
+        return total + (durationMinutes / 60)
       }, 0)
       
       // Define a type for a schedule entry (each item in the schedule array)
@@ -397,12 +404,10 @@ const loadData = async () => {
         classId: string;
         room: string;
         studentCount: number;
-      }
-
-      // Crear objeto de horario para la vista
+      }      // Crear objeto de horario para la vista
       schedule.value = {
         totalClasses: teacherSchedules.length,
-        weeklyHours: weeklyHours,
+        weeklyHours: calculateTotalWeeklyHours(teacherClasses.value) || weeklyHours,
         hasConflicts: false, // Podría implementarse detección de conflictos
         schedule: teacherSchedules.map((s: ScheduleItem): ScheduleEntry => ({
           dayOfWeek: s.scheduleDay.dayOfWeek,
@@ -462,7 +467,7 @@ onMounted(async () => {
     
     // Only try to display classes if we successfully loaded the teacher
     if (teacher.value) {
-      console.log('Teacher Classes:', getTeacherClasses(teacher.value.id))
+      return
     }
   } catch (e) {
     // Error already handled by loadData function
@@ -471,7 +476,22 @@ onMounted(async () => {
 })
 
 const formatHours = (hours: number): string => {
-  return `${Math.floor(hours)} h ${Math.round((hours % 1) * 60)} min`
+  // Si no hay horas o es inválido, mostrar 0h 0min
+  if (!hours || isNaN(hours)) return "0 h 0 min"
+  
+  // Extraer horas (parte entera)
+  const hoursFloor = Math.floor(hours)
+  
+  // Calcular minutos (parte decimal convertida a minutos)
+  const minutesDecimal = (hours % 1) * 60
+  const minutes = Math.round(minutesDecimal)
+  
+  // Si después de redondear los minutos son 60, ajustar las horas
+  if (minutes === 60) {
+    return `${hoursFloor + 1} h 0 min`
+  }
+  
+  return `${hoursFloor} h ${minutes} min`
 }
 
 // PDF & compartir
@@ -535,8 +555,54 @@ const getTeacherClasses = (teacherId: string) => {
   return teacherClasses.value.length > 0 
     ? teacherClasses.value 
     : classesStore.classes.filter(class_ => class_.teacherId === effectiveTeacherId)
-}
-
+}// Mejora para el cálculo de las horas semanales totales
+const calculateTotalWeeklyHours = (teacherClasses: any[]): number => {
+  if (!teacherClasses || teacherClasses.length === 0) return 0;
+  
+  let totalHours = 0;
+  
+  // Recorrer todas las clases del maestro
+  teacherClasses.forEach(classItem => {
+    // Si la clase tiene un horario en formato array con day, startTime y endTime
+    if (classItem.schedule && Array.isArray(classItem.schedule)) {
+      classItem.schedule.forEach((scheduleItem: any) => {
+        if (scheduleItem.startTime && scheduleItem.endTime) {
+          // Calcular duración de esta sesión
+          const [startHours, startMinutes] = scheduleItem.startTime.split(':').map(Number);
+          const [endHours, endMinutes] = scheduleItem.endTime.split(':').map(Number);
+          
+          // Calcular minutos totales
+          const startTotalMinutes = startHours * 60 + startMinutes;
+          const endTotalMinutes = endHours * 60 + endMinutes;
+          const durationMinutes = endTotalMinutes - startTotalMinutes;
+          
+          // Sumar al total (convertir de minutos a horas)
+          totalHours += durationMinutes / 60;
+        }
+      });
+    }
+    // Si la clase tiene un formato de slots de horario
+    else if (classItem.schedule && classItem.schedule.slots && Array.isArray(classItem.schedule.slots)) {
+      classItem.schedule.slots.forEach((slot: any) => {
+        if (slot.startTime && slot.endTime) {
+          // Calcular duración de esta sesión
+          const [startHours, startMinutes] = slot.startTime.split(':').map(Number);
+          const [endHours, endMinutes] = slot.endTime.split(':').map(Number);
+          
+          // Calcular minutos totales
+          const startTotalMinutes = startHours * 60 + startMinutes;
+          const endTotalMinutes = endHours * 60 + endMinutes;
+          const durationMinutes = endTotalMinutes - startTotalMinutes;
+          
+          // Sumar al total (convertir de minutos a horas)
+          totalHours += durationMinutes / 60;
+        }
+      });
+    }
+  });
+  
+  return totalHours;
+};
 </script>
 
 <template>
@@ -649,14 +715,13 @@ const getTeacherClasses = (teacherId: string) => {
             <div class="col-span-2 sm:col-span-1 block sm:hidden">
               <span class="text-gray-500 dark:text-gray-400">Email:</span>
               <span class="ml-1 font-medium truncate dark:text-gray-200">{{ teacher.email || "No disponible" }}</span>
-            </div>
-            <div class="col-span-2 flex justify-between" v-if="schedule">
-              <div class="col-span-2 sm:col-span-1 block sm:hidden">
+            </div>          <div class="col-span-2 md:grid md:grid-cols-2 gap-2 flex justify-between" v-if="schedule">
+              <div>
                 <span class="text-gray-500 dark:text-gray-400">Clases:</span>
                 <span class="ml-1 font-medium dark:text-gray-200">{{ schedule.totalClasses }}</span>
               </div>
-              <div class="col-span-2 sm:col-span-1 block sm:hidden" >
-                <span class="text-gray-500 dark:text-gray-400">Horas:</span>
+              <div>
+                <span class="text-gray-500 dark:text-gray-400">Horas Semanales:</span>
                 <span class="ml-1 font-medium dark:text-gray-200">{{ formatHours(schedule.weeklyHours) }}</span>
               </div>
             </div>

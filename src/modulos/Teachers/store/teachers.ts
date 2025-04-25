@@ -98,10 +98,8 @@ export const useTeachersStore = defineStore('teacher', {
       }
       const teacher = this.teachers.find((teacher: TeacherData) => teacher.uid === currentTeacherUid)
       if (teacher) {
-        console.log('Maestro encontrado en caché:', teacher.name)
         return teacher
       }
-      console.log('Buscando maestro en Firebase...')
       const db = getFirestore()
       const teachersCollection = collection(db, 'MAESTROS')
       const q = query(teachersCollection, where("uid", "==", currentTeacherUid))
@@ -111,7 +109,7 @@ export const useTeachersStore = defineStore('teacher', {
         const teacherData = { id: teacherDoc.id, ...teacherDoc.data() }
         return normalizeTeacherData(teacherData)
       } else {
-        console.log('No se encontró maestro en Firebase')
+        console.warn('No se encontró maestro en Firebase')
         return null
       }
   },
@@ -122,9 +120,7 @@ export const useTeachersStore = defineStore('teacher', {
      */
     async fetchTeachers() {
       return await withLoading(this, async () => {
-        console.log('🔍 Consultando maestros desde el servicio...')
         const teachers = await fetchTeachersFromFirebase()
-        console.log(`✅ Se encontraron ${teachers.length} maestros`)
         const formattedTeachers = teachers.map(normalizeTeacherData)
         this.teachers = formattedTeachers
         this.lastSync = new Date()
@@ -143,7 +139,6 @@ export const useTeachersStore = defineStore('teacher', {
      */
     async addTeacher(teacher: Omit<TeacherData, 'id'>) {
       return await withLoading(this, async () => {
-        console.log('📝 Preparando datos para crear nuevo maestro...')
         // Convertir los datos al formato que espera el servicio.
         const teacherData: Omit<Teacher, 'id'> = {
           uid: teacher.uid || '',
@@ -162,7 +157,6 @@ export const useTeachersStore = defineStore('teacher', {
         }
         // Crear el maestro en Firebase.
         const newTeacher = await addTeacherToFirebase(teacherData)
-        console.log('✅ Maestro creado correctamente con ID:', newTeacher.id)
         const newTeacherData = normalizeTeacherData(newTeacher)
         this.teachers.push(newTeacherData)
         return newTeacherData
@@ -183,7 +177,6 @@ export const useTeachersStore = defineStore('teacher', {
      */
     async updateTeacher(id: string, updates: Partial<TeacherData>) {
       return await withLoading(this, async () => {
-        console.log(`📝 Actualizando maestro con ID: ${id}`)
         const teacherUpdates: Partial<Teacher> = {}
         if (updates.name !== undefined) teacherUpdates.name = updates.name
         if (updates.email !== undefined) teacherUpdates.email = updates.email
@@ -199,7 +192,6 @@ export const useTeachersStore = defineStore('teacher', {
         }
         // Actualizar en Firebase.
         await updateTeacherInFirebase(id, teacherUpdates)
-        console.log('✅ Maestro actualizado correctamente')
         const index = this.teachers.findIndex(item => item.id === id)
         if (index !== -1) {
           this.teachers[index] = { ...this.teachers[index], ...updates }
@@ -220,9 +212,7 @@ export const useTeachersStore = defineStore('teacher', {
      */
     async deleteTeacher(id: string) {
       return await withLoading(this, async () => {
-        console.log(`🗑️ Eliminando maestro con ID: ${id}`)
         await deleteTeacherFromFirebase(id)
-        console.log('✅ Maestro eliminado correctamente')
         this.teachers = this.teachers.filter(item => item.id !== id)
       })
     },
@@ -354,11 +344,9 @@ export const useTeachersStore = defineStore('teacher', {
      */
     async fetchTeacherByAuthUid(authUid: string) {
       try {
-        console.log('Buscando maestro con auth UID:', authUid)
         // Intentar primero buscar en la memoria caché
         const cachedTeacher = this.teachers.find(t => t.uid === authUid)
         if (cachedTeacher) {
-          console.log('Maestro encontrado en caché por authUid:', cachedTeacher.id)
           return cachedTeacher
         }
         
@@ -367,15 +355,11 @@ export const useTeachersStore = defineStore('teacher', {
         const teachersCollection = collection(db, 'MAESTROS')
         const q = query(teachersCollection, where("uid", "==", authUid))
         const querySnapshot = await getDocs(q)
-        
         if (!querySnapshot.empty) {
           const teacherDoc = querySnapshot.docs[0]
           const teacherData = { id: teacherDoc.id, ...teacherDoc.data() }
-          console.log('Maestro encontrado en Firebase por authUid:', teacherData.id)
           return normalizeTeacherData(teacherData)
         }
-        
-        console.log('No se encontró maestro con authUid:', authUid)
         return null
       } catch (error) {
         console.error('Error al buscar maestro por auth UID:', error)

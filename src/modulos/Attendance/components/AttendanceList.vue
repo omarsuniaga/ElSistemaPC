@@ -337,7 +337,7 @@ const todayIndex = computed(() => {
         >
           <ChatBubbleLeftRightIcon class="w-3 h-3 sm:w-4 sm:h-4" />
           <span class="hidden xs:inline">Observaciones</span>
-          <span class="xs:hidden">O</span>
+          <span class="xs:hidden">Observaciones</span>
         </button>
       </div>
     </div>

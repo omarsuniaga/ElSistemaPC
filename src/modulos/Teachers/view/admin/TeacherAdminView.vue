@@ -338,7 +338,7 @@ const saveTeacher = async (teacherData) => {
       });
     } else {
       // Crear nuevo maestro
-      await teachersStore.createTeacher(teacherData);
+      await teachersStore.addTeacher(teacherData);
       toast({
         title: 'Éxito',
         description: 'Maestro creado correctamente',

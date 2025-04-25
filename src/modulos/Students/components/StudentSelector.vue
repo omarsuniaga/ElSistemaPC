@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import type { Student } from '../types'
+import type { Student } from '../types/student'
 
 const props = defineProps<{
   availableStudents: Student[];
