@@ -6,23 +6,24 @@ export async function generatePDF(element, fileName, options = {}) {
 
     // Configuraciones por defecto para PDF
     const defaultOptions = {
-      margin: [15, 15],
+      margin: [10, 10, 10, 10], // [top, right, bottom, left] en mm
       filename: fileName,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: {
         scale: 2,
         useCORS: true,
-        letterRendering: true
+        letterRendering: true,
+        scrollY: 0
       },
       jsPDF: {
         unit: 'mm',
         format: 'a4',
         orientation: 'landscape'
       },
-      // Configuración de saltos de página - usamos CSS para controlar los saltos
+      // Configuración mejorada de saltos de página
       pagebreak: {
         mode: ['css', 'legacy'],
-        after: '.page-break-after',
+        before: '.pdf-page-break',
         avoid: '.page-break-avoid'
       }
     };
@@ -32,32 +33,31 @@ export async function generatePDF(element, fileName, options = {}) {
 
     // Preparar el elemento para la exportación - añadir clase temporal
     element.classList.add('pdf-export');
-
-    // Añadir clase de salto de página a cada clase
-    const classElements = element.querySelectorAll('.mb-10');
-    classElements.forEach((el, index) => {
-      if (index < classElements.length - 1) {
-        el.classList.add('page-break-after');
-      }
-    });
-
-    // Generar el PDF
-    console.log('Iniciando generación del PDF con html2pdf...');
     
-    return html2pdf()
+    console.log('Iniciando generación del PDF con configuración horizontal...');
+    
+    // Para mejorar el rendimiento y evitar problemas con elementos anidados
+    const worker = html2pdf()
       .from(element)
-      .set(mergedOptions)
-      .save()
-      .then(() => {
-        // Limpiar clases temporales
+      .set(mergedOptions);
+      
+    // Si hay muchos elementos, usar paginación por lotes
+    if (element.querySelectorAll('table').length > 3) {
+      console.log('Detectadas múltiples tablas. Usando paginación por lotes...');
+      return worker.toPdf().get('pdf').then((pdf) => {
+        pdf.save();
         element.classList.remove('pdf-export');
-        classElements.forEach(el => {
-          el.classList.remove('page-break-after');
-        });
-        
+        console.log('PDF generado exitosamente con paginación optimizada');
+        return true;
+      });
+    } else {
+      // Proceso estándar para pocos elementos
+      return worker.save().then(() => {
+        element.classList.remove('pdf-export');
         console.log('PDF generado exitosamente');
         return true;
       });
+    }
       
   } catch (error) {
     console.error('Error al generar PDF:', error);

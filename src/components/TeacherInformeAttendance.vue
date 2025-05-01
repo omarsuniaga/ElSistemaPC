@@ -535,41 +535,38 @@ function getClassObservation(classId: string, date: string): string | null {
     d.classId === classId
   );
   
-  console.log(`Buscando observaciones para ${date}, clase ${classId}. Encontrados ${matchingDocs.length} documentos.`);
-  
   // Revisar cada documento encontrado para buscar observaciones en cualquier formato
   for (const doc of matchingDocs) {
     // 1. Verificar la estructura principal (data.observations)
     if (doc.data && typeof doc.data.observations === 'string' && doc.data.observations.trim()) {
-      console.log(`Encontrada observación en data.observations: "${doc.data.observations}"`);
       return doc.data.observations;
     }
     
     // 2. Verificar la estructura alternativa (observations en raíz)
-    if (doc.observations && typeof doc.observations === 'string' && doc.observations.trim()) {
-      console.log(`Encontrada observación en observations: "${doc.observations}"`);
+    if (typeof doc.observations === 'string' && doc.observations.trim()) {
       return doc.observations;
     }
     
-    // 3. Verificar la estructura de firebase que mencionaste
-    if (doc.data && doc.data.data && typeof doc.data.data.observations === 'string' && doc.data.observations.trim()) {
-      console.log(`Encontrada observación en data.data.observations: "${doc.data.observations}"`);
+    // 3. Verificar la estructura de firebase - CORREGIDO
+    if (doc.data && doc.data.data && typeof doc.data.data.observations === 'string' && doc.data.data.observations.trim()) {
       return doc.data.data.observations;
+    }
+    
+    // 4. Verificar observaciones en español (common variation)
+    if (typeof doc.observaciones === 'string' && doc.observaciones.trim()) {
+      return doc.observaciones;
     }
   }
   
-  // 4. Buscar en la colección específica de observaciones
+  // 5. Buscar en la colección específica de observaciones
   const observations = attendanceStore.observationsHistory?.filter(obs => 
     obs.classId === classId && obs.date === date
   ) || [];
   
   if (observations.length > 0 && observations[0].text) {
-    console.log(`Encontrada observación en observationsHistory: "${observations[0].text}"`);
     return observations[0].text;
   }
   
-  // No se encontró ninguna observación para esta fecha y clase
-  console.log(`No se encontraron observaciones para ${date}, clase ${classId}`);
   return null;
 }
 
@@ -787,7 +784,7 @@ async function fetchReport() {
         }      }
     }
     
-    // 5. Filtrar fechas relevantes para cada clase y eliminar días sin clases
+    // 5. Filtrar fechas relevantes para cada clase y ordenarlas cronológicamente
     const relevantDatesPerClass: Record<string, string[]> = {};
     
     // Primero identificar las fechas relevantes para cada clase
@@ -805,16 +802,22 @@ async function fetchReport() {
         }
       }
       
+      // Ordenar las fechas cronológicamente
+      relevantDates.sort((a, b) => parseISO(a).getTime() - parseISO(b).getTime());
       relevantDatesPerClass[classId] = relevantDates;
     }
-      // 6. Convertir la estructura a un array para el template y ordenar
-    // Primero filtrar solo las clases que tienen fechas relevantes en el rango seleccionado
+  
+    // 6. Convertir la estructura a un array para el template y ordenar
     classReports.value = Object.values(classStructure)
       .map(classData => ({
         ...classData,
+        // Ordenar las observaciones por fecha
+        observations: classData.observations.sort((a, b) => 
+          parseISO(a.date).getTime() - parseISO(b.date).getTime()
+        ),
         // Convertir el objeto students a un array ordenado alfabéticamente
         students: Object.values(classData.students).sort((a, b) => a.name.localeCompare(b.name)),
-        // Añadir las fechas relevantes para esta clase específica
+        // Añadir las fechas relevantes para esta clase específica (ya ordenadas)
         relevantDates: relevantDatesPerClass[classData.classId]
       }))
       // Filtrar solo las clases que realmente tienen fechas relevantes en el período
@@ -1086,7 +1089,7 @@ function drawCharts() {
             }
           }
         }
-      });
+        });
     }
   } catch (error) {
     console.error("Error al dibujar gráficas:", error);
@@ -1095,7 +1098,19 @@ function drawCharts() {
 
 // Functions for exporting
 async function downloadPDF() {
-  // Mostrar indicador de carga
+  // Important: First find the element BEFORE setting loading state
+  const reportElement = document.getElementById('printable-report');
+  
+  if (!reportElement) {
+    error.value = 'No se pudo encontrar el elemento del informe. Asegúrese de que el informe está generado.';
+    console.error('Error: elemento del informe no encontrado');
+    return;
+  }
+  
+  // Clone the element to prevent DOM changes affecting our PDF
+  const clonedReport = reportElement.cloneNode(true) as HTMLElement;
+  
+  // Ahora mostrar indicador de carga
   loading.value = true;
   error.value = null;
   
@@ -1103,45 +1118,49 @@ async function downloadPDF() {
     // Importar la función de generación de PDF
     const { generatePDF } = await import('./downloadPDF.js');
     
-    const reportElement = document.getElementById('printable-report');
     const fileName = `informe-asistencia-${from.value}-${to.value}.pdf`;
-    
-    if (!reportElement) {
-      throw new Error('No se pudo encontrar el elemento del informe');
-    }
     
     console.log('Preparando PDF con formato horizontal y una clase por página...');
     
-    // Agregar clases de estilo para la exportación
-    document.documentElement.classList.add('generating-pdf');
+    // Add page break markers to each class report
+    const classElements = reportElement.querySelectorAll('.mb-10');
+    classElements.forEach((el) => {
+      el.classList.add('pdf-page-break');
+    });
     
     // Opciones adicionales específicas para este informe
     const options = {
       filename: fileName,
       jsPDF: {
-        orientation: 'landscape',
+        orientation: 'landscape',  // Horizontal pages
         format: 'a4'
       },
       html2canvas: {
         scale: 2,
         useCORS: true,
-        logging: false,
+        logging: true,
         letterRendering: true,
         allowTaint: false
+      },
+      pagebreak: {
+        mode: ['css', 'legacy'],
+        before: '.pdf-page-break',
+        avoid: '.page-break-avoid'
       }
     };
     
     // Generar el PDF utilizando la función especializada
     await generatePDF(reportElement, fileName, options);
     
-    // Eliminar clase temporal
-    document.documentElement.classList.remove('generating-pdf');
-    
     console.log('PDF generado exitosamente');
   } catch (err) {
     console.error('Error al generar PDF:', err);
-    error.value = `Error al generar PDF: ${err.message}`;
+    error.value = `Error al generar PDF: ${err instanceof Error ? err.message : 'Error desconocido'}`;
   } finally {
+    // Clean up any added classes
+    const classElements = document.querySelectorAll('.pdf-page-break');
+    classElements.forEach(el => el.classList.remove('pdf-page-break'));
+    
     loading.value = false;
   }
 }
@@ -1322,5 +1341,95 @@ onMounted(() => {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
+}
+
+/* Enhanced PDF export styles - more compact version */
+:global(.pdf-export) {
+  background-color: white !important;
+  color: black !important;
+  font-size: 13pt !important; /* Reduced from 12pt */
+  transform: scale(0.95); /* Scale down entire content */
+  transform-origin: top left;
+  margin-bottom: -15% !important; /* Compensate for scaling */
+}
+
+/* Each class gets its own page - with reduced margins */
+:global(.pdf-page-break) {
+  page-break-after: always !important;
+  margin-bottom: 10mm !important; /* Reduced from 20mm */
+}
+
+:global(.pdf-page-break:last-child) {
+  page-break-after: auto !important;
+}
+
+/* More compact table styling for PDF */
+:global(.pdf-export table) {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin-bottom: 5mm !important; /* Reduced from 10mm */
+}
+
+:global(.pdf-export th) {
+  background-color: #f3f4f6 !important;
+  color: #111827 !important;
+  font-weight: bold !important;
+  text-align: left !important;
+  padding: 2mm !important; /* Reduced from 4mm */
+  border: 1px solid #d1d5db !important;
+  font-size: 8pt !important; /* Added specific font size */
+}
+
+:global(.pdf-export td) {
+  padding: 1mm 2mm !important; /* Reduced from 2mm 4mm */
+  border: 1px solid #d1d5db !important;
+  font-size: 8pt !important; /* Added specific font size */
+}
+
+/* More compact headers for PDF */
+:global(.pdf-export h2) {
+  font-size: 12pt !important; /* Reduced from 16pt */
+  margin-bottom: 3mm !important; /* Reduced from 5mm */
+  color: #000 !important;
+}
+
+:global(.pdf-export h3) {
+  font-size: 11pt !important; /* Reduced from 14pt */
+  margin-top: 6mm !important; /* Reduced from 10mm */
+  margin-bottom: 3mm !important; /* Reduced from 5mm */
+  color: #000 !important;
+}
+
+/* Reduce spacing in the observations section */
+:global(.pdf-export .bg-gray-50),
+:global(.pdf-export .bg-gray-100) {
+  padding: 2mm !important;
+  margin-bottom: 3mm !important;
+  background-color: #f9fafb !important;
+  border-radius: 2mm !important;
+}
+
+:global(.pdf-export .border-l-4) {
+  border-left-width: 2mm !important;
+  border-color: #2563eb !important;
+}
+
+/* Destacar observaciones en PDF */
+:global(.pdf-export .text-primary-600),
+:global(.pdf-export .text-primary-400) {
+  color: #2563eb !important;
+  font-weight: bold !important;
+}
+
+/* Ajustar espacio entre fechas en la tabla */
+:global(.pdf-export th) {
+  white-space: nowrap !important;
+}
+
+/* Hacer que las observaciones de estudiantes sean más visibles */
+:global(.pdf-export .text-blue-600),
+:global(.pdf-export .text-blue-400) {
+  color: #2563eb !important;
+  font-weight: bold !important;
 }
 </style>
