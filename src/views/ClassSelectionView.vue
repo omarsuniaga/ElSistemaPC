@@ -34,7 +34,7 @@ const isLoading = ref(false)
 const classesWithRecords = computed(() =>
   attendanceStore.attendanceDocuments
     .filter(doc => doc.fecha === selectedDate.value)
-    .map(doc => doc.classId)
+    .map(doc => ({ classId: doc.classId, date: doc.fecha }))
 )
 
 function onDateChange(date: string) {

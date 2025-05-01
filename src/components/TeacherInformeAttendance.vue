@@ -323,6 +323,7 @@ const classReports = ref<Array<{
     attendance: Record<string, string>; // fecha -> estado
     observations: string;
   }>;
+  relevantDates?: string[]; // Add the missing property
 }>>([])
 
 // Rango de fechas entre from y to
@@ -543,8 +544,8 @@ function getClassObservation(classId: string, date: string): string | null {
     }
     
     // 2. Verificar la estructura alternativa (observations en raíz)
-    if (typeof doc.observations === 'string' && doc.observations.trim()) {
-      return doc.observations;
+    if (doc.data && typeof doc.data.observations === 'string' && doc.data.observations.trim()) {
+      return doc.data.observations;
     }
     
     // 3. Verificar la estructura de firebase - CORREGIDO
@@ -553,8 +554,8 @@ function getClassObservation(classId: string, date: string): string | null {
     }
     
     // 4. Verificar observaciones en español (common variation)
-    if (typeof doc.observaciones === 'string' && doc.observaciones.trim()) {
-      return doc.observaciones;
+    if (typeof (doc as any).observaciones === 'string' && (doc as any).observaciones.trim()) {
+      return (doc as any).observaciones;
     }
   }
   
@@ -584,6 +585,30 @@ function hasAnyObservations(classData: any): boolean {
   }
   
   return false;
+}
+
+// Función para obtener la justificación de un estudiante en una fecha específica
+function getStudentJustification(classId: string, date: string, studentId: string): string | null {
+  // Buscar documentos de asistencia que coincidan con los criterios
+  const attendanceDocs = attendanceStore.attendanceDocuments.filter(doc => 
+    (doc.Fecha === date || doc.fecha === date) && 
+    doc.classId === classId &&
+    doc.studentId === studentId
+  );
+  
+  // Revisar cada documento en busca de justificación
+  for (const doc of attendanceDocs) {
+    // Manejar diferentes formatos de justificación
+    if (doc.justification) {
+      if (typeof doc.justification === 'string') {
+        return doc.justification;
+      } else if (doc.justification.reason) {
+        return doc.justification.reason;
+      }
+    }
+  }
+  
+  return null;
 }
 
 // FUNCIÓN PRINCIPAL: Generar el informe
@@ -759,11 +784,20 @@ async function fetchReport() {
               classData.students[studentId].attendance[dateStr] = mappedStatus;
               
               // Si tiene justificación, registrarla
-              if (doc.justification && !classData.students[studentId].observations) {
-                const reason = typeof doc.justification === 'string' 
-                  ? doc.justification 
-                  : (doc.justification?.reason || '');
-                  
+              if (!classData.students[studentId].observations) {
+                let reason = '';
+                
+                // Verificar justificación en la propiedad directa (usando type assertion)
+                if ((doc as any).justification) {
+                  reason = typeof (doc as any).justification === 'string' 
+                    ? (doc as any).justification 
+                    : ((doc as any).justification?.reason || '');
+                } 
+                // Verificar justificación en el formato de data.justificacion (array)
+                else if (doc.data?.justificacion?.length > 0) {
+                  reason = doc.data.justificacion[0].reason || '';
+                }
+                
                 if (reason) {
                   classData.students[studentId].observations = reason;
                 }
