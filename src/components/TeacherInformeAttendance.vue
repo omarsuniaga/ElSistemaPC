@@ -171,7 +171,7 @@
                   <th v-for="date in classData.relevantDates" :key="date" class="p-2 border border-gray-300 dark:border-gray-600 text-center min-w-[60px]">
                     {{ formatDateShort(date) }}
                   </th>
-                  <th class="p-2 border border-gray-300 dark:border-gray-600 text-left">Observaciones</th>
+                  <!-- Eliminamos columna Observaciones, usaremos sección de justificaciones debajo de la tabla -->
                 </tr>
               </thead>
               <tbody>
@@ -1173,8 +1173,7 @@ async function downloadPDF() {
     const options = {
       filename: fileName,
       jsPDF: {
-        orientation: 'landscape',  // Horizontal pages
-        format: 'a4'
+        format: 'A4'
       },
       html2canvas: {
         scale: 2,
@@ -1201,7 +1200,6 @@ async function downloadPDF() {
     // Clean up any added classes
     const classElements = document.querySelectorAll('.pdf-page-break');
     classElements.forEach(el => el.classList.remove('pdf-page-break'));
-    
     loading.value = false;
   }
 }
