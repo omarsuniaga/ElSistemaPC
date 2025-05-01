@@ -22,7 +22,7 @@ import type {
 
 // Constantes
 const COLLECTION_ATTENDANCE = 'ASISTENCIAS';
-const COLLECTION_OBSERVATIONS = 'OBSERVACIONES_CLASE';
+const COLLECTION_OBSERVATIONS = 'OBSERVACIONES';
 
 /**
  * Genera un ID de documento consistente para documentos de asistencia
@@ -329,6 +329,7 @@ export const addClassObservationFirebase = async (
       ...newObservation,
       createdAt: serverTimestamp()
     });
+
     
     await updateDoc(docRef, {
       id: docRef.id
@@ -343,6 +344,25 @@ export const addClassObservationFirebase = async (
     throw error;
   }
 }
+
+export const getAllObservationsFirebase = async (): Promise<ClassObservation[]> => {
+  try {
+    const observationsCollection = collection(db, COLLECTION_OBSERVATIONS);
+    const querySnapshot = await getDocs(observationsCollection);
+    
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data() as ClassObservation;
+      return {
+        ...data,
+        id: doc.id
+      };
+    });
+  } catch (error) {
+    console.error('Error al obtener observaciones:', error);
+    throw error;
+  }
+} ;
+
 
 // Modificar la función getClassObservationsHistoryFirebase para evitar problemas de índices
 export async function getClassObservationsHistoryFirebase(uid: string): Promise<ClassObservation[]> {

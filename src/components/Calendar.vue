@@ -212,6 +212,7 @@ console.log('Calendar.vue > markedDates:', props.markedDates);
         :class="[
           'p-2 text-center rounded-lg transition-colors relative',
           {
+            marked: day.isMarked,
             'text-gray-400 dark:text-gray-600': !day.isCurrentMonth,
             'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-100': day.isToday,
             'hover:bg-gray-100 dark:hover:bg-gray-700': true,
@@ -219,12 +220,42 @@ console.log('Calendar.vue > markedDates:', props.markedDates);
           }
         ]" @click="onClick(day)">
         <span class="block text-sm">{{ day.dayOfMonth }}</span>
-        <!-- Punto verde para fechas marcadas -->
-        <span v-if="day.isMarked" 
-          class="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-green-500 dark:bg-green-400"
-          :title="`Hay registros de asistencia para ${day.date}`">
-        </span>
+        <!-- Indicador para fechas con asistencia -->
+        <div v-if="day.isMarked" class="date-markers">
+          <!-- Punto indicador -->
+          <span 
+            class="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-green-500 dark:bg-green-400"
+            :title="`Hay registros de asistencia para ${day.date}`">
+          </span>
+          <!-- Texto "Marked" -->
+          <span class="marked-text">Marked</span>
+        </div>
       </button>
     </div>
   </div>
 </template>
+
+<style scoped>
+.date-markers {
+  position: relative;
+}
+
+.marked-text {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  padding: 1px 2px;
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 3px;
+  white-space: nowrap;
+  opacity: 0.9;
+  font-weight: bold;
+}
+
+.marked {
+  position: relative;
+}
+</style>

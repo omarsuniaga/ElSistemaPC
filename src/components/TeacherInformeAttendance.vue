@@ -250,8 +250,7 @@
   
   <div v-else class="p-4 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 rounded-lg">
     <InformationCircleIcon class="h-6 w-6 mx-auto mb-2 text-gray-400" />
-    <p class="text-sm">No hay observaciones registradas para esta clase en el período seleccionado.</p>
-          </div>
+    <p class="text-sm">No hay observaciones registradas para esta clase en el período seleccionado.</p>          </div>
           
           <!-- Pie de tabla con estadísticas -->
           <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -276,15 +275,12 @@
               </div>
             </div>
           </div>
-        </div>
-        
-        <div v-if="classReports.length === 0" class="text-center py-8">
+        </div>        <div v-if="classReports.length === 0" class="text-center py-8">
           <p class="text-gray-500 dark:text-gray-400">No hay datos para mostrar en el rango seleccionado.</p>
           <p class="text-sm mt-2">Intente seleccionar otro rango de fechas o verifique si hay asistencias registradas.</p>
-        </div>
+        </div>      
       </div>
-      
-    
+      </div>
     </div>
   </div>
 </template>
@@ -294,6 +290,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import Chart from 'chart.js/auto'
 import { format, subDays, subWeeks, subMonths, parseISO, eachDayOfInterval, getDay, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { CalendarIcon, InformationCircleIcon } from '@heroicons/vue/24/outline'
 
 // Stores
 import { useAttendanceStore } from '../modulos/Attendance/store/attendance'
@@ -549,9 +546,24 @@ const sortedObservations = (observations: Array<{ date: string; text: string }>)
 };
 
 // Función para verificar si hay observaciones
-const hasObservations = (classData: any): boolean => {
-  return classData.observations && classData.observations.length > 0;
+const hasObservations = async (classId: any) => {
+  // iterar classData y obtener el classData
+  const classData = classReports.value.find(cls => cls.classId === classId);
+  // crear un bucle para iterar classData.relevantDates y obtener el classData
+  const relevantDates = classData.relevantDates || [];
+  for (const date of relevantDates) {
+    const observation = await getClassObservation(classId, date);
+    if (observation) {
+      console.log('Historial de observaciones:', observation);
+      return true;
+    }
+  }
+
+  // const res = await  attendanceStore.getObservationsHistory(classId, '2025-04-30');
+  // return classData.observations && classData.observations.length > 0;
 };
+// vamos a llamar a la funcion hasObservations en el fetchReport
+
 
 // Función para verificar si hay alguna observación para una clase
 function hasAnyObservations(classData: any): boolean {
@@ -613,6 +625,11 @@ async function fetchReport() {
     if (!attendanceStore.attendanceDocuments.length) {
       await attendanceStore.fetchAttendanceDocuments();
     }
+
+    if (!attendanceStore.observationsHistory.length) {
+      await attendanceStore.fetchObservations();
+    }
+
     
     // 2. Obtener las clases del maestro actual
     teacherClasses.value = classesStore.classes.filter(cls => cls.teacherId === userId.value);
@@ -693,6 +710,12 @@ async function fetchReport() {
         
         // Si la clase no tiene programación este día, continuar con la siguiente
         if (!classData.daySchedule.includes(dayOfWeek)) continue;
+        // Asegurarnos de cargar el documento de asistencia actual antes de procesar las observaciones
+        try {
+          await attendanceStore.fetchAttendanceDocument(dateStr, classId);
+        } catch (e) {
+          console.warn(`No se pudo cargar el documento de asistencia para ${dateStr}, clase ${classId}`, e);
+        }
           // Buscar documentos de asistencia para esta fecha y clase
         // Con la nueva estructura, pueden existir múltiples registros (uno por alumno)
         const attendanceDocs = attendanceStore.attendanceDocuments.filter(doc => 
@@ -723,19 +746,17 @@ async function fetchReport() {
             });
           }
           
-          // 2. Luego en el historial de observaciones
-          const classObservations = attendanceStore.observationsHistory.filter(obs => 
-            obs.classId === classId && obs.date === dateStr
-          );
-          
-          if (classObservations.length > 0) {
-            // Verificar si ya existe la observación para no duplicarla
-            if (!classData.observations.some(o => o.date === dateStr)) {
+          // 2. Luego en el historial de observaciones (colección OBSERVACIONES)
+          try {
+            const historyObs = await attendanceStore.getObservationsHistory(classId, dateStr);
+            historyObs.forEach(obs => {
               classData.observations.push({
                 date: dateStr,
-                text: classObservations[0].text || ''
+                text: obs.text || obs.observacion || ''
               });
-            }
+            });
+          } catch (e) {
+            console.warn(`No se pudo obtener historial de observaciones para ${dateStr}, clase ${classId}`, e);
           }
           
           // Procesar cada registro de asistencia
@@ -783,8 +804,12 @@ async function fetchReport() {
                 if (reason) {
                   classData.students[studentId].observations = reason;
                 }
+                // iterar observaciones en el documento de asistencia
+
               }
             }
+
+
             
             // Esta línea está causando el error - la eliminamos porque ya asignamos el estado
             // correctamente dentro del bloque if anterior
@@ -1278,6 +1303,37 @@ onMounted(() => {
     // mostrar en console el valor de attendanceStore.records
   fetchReport();
 });
+
+// Función para agrupar y mostrar observaciones
+const logObservationsGrouped = (classReports: any[]) => {
+  console.group('Observaciones agrupadas por clase y fecha');
+  
+  classReports.forEach(classData => {
+    if (classData.observations && classData.observations.length > 0) {
+      console.group(`Clase: ${classData.className}`);
+      
+      // Agrupar observaciones por fecha
+      const observationsByDate = classData.observations.reduce((acc: any, obs: any) => {
+        if (!acc[obs.date]) {
+          acc[obs.date] = [];
+        }
+        acc[obs.date].push(obs.text);
+        return acc;
+      }, {});
+      
+      // Mostrar observaciones agrupadas por fecha
+      Object.entries(observationsByDate).forEach(([date, texts]: [string, any]) => {
+        console.group(`Fecha: ${formatDate(date)}`);
+        texts.forEach((text: string) => console.log('-', text));
+        console.groupEnd();
+      });
+      
+      console.groupEnd();
+    }
+  });
+  
+  console.groupEnd();
+};
 </script>
 
 <style scoped>

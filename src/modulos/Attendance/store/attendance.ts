@@ -48,7 +48,7 @@ import {
   getAttendanceDocumentFirebase,
   saveAttendanceDocumentFirebase,
   addJustificationToAttendanceFirebase,
-  // updateObservationsFirebase,
+  getAllObservationsFirebase,
   getAttendanceStatusFirebase,
   fetchAttendanceByDateRangeFirebase,
   addClassObservationFirebase,
@@ -609,6 +609,14 @@ getJustification: (state) => {
               this.attendanceRecords[studentId] = hasJustification ? 'Justificado' : 'Tardanza';
             }
           });
+          // itera data para obtener las observaciones 
+
+          // Obtener observations si existen en el documento
+          if (document.data.observations) {
+            this.observations = document.data.observations;
+          } else {
+            this.observations = '';
+          }
           
           this.observations = document.data.observations || '';
           return document;
@@ -992,6 +1000,25 @@ getJustification: (state) => {
       } catch (error) {
         this.error = 'Error al cargar observaciones por fecha';
         console.error('Error al cargar observaciones por fecha:', error);
+        return [];
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    async fetchObservations() {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        // Obtener todas las observaciones
+        const observations = await getAllObservationsFirebase();
+        
+        // Guardar en el estado
+        this.observations = observations;
+        
+        return observations;
+      } catch (error) {
+        this.error = 'Error al cargar observaciones';
+        console.error('Error al cargar observaciones:', error);
         return [];
       } finally {
         this.isLoading = false;
