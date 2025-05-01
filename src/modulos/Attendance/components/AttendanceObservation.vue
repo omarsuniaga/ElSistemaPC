@@ -179,15 +179,13 @@ const saveObservation = async () => {
   try {
     // Obtener info del usuario actual
     const username = authStore.user?.displayName || authStore.user?.email || 'Usuario';
-    
-    // Guardar en el historial de observaciones
+    // IMPORTANTE: Guardar la observación con la fecha de la clase (attendanceDate), no la fecha actual
     await attendanceStore.addObservationToHistory(
       props.classId,
-      props.attendanceDate,
+      props.attendanceDate, // <- este campo será el que se almacene como 'date' en la observación
       newObservation.value,
       username
     );
-    
     // Emitir para mantener compatibilidad con el flujo actual
     emit('observation', newObservation.value);
     close();

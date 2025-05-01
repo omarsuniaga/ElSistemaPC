@@ -133,7 +133,30 @@ const getDayOrder = (classItem) => {
         : 8); // Valor por defecto si no se puede determinar
 };
 
-// Clases ordenadas por día de la semana (lunes a domingo)
+// Función para obtener el día de la semana actual (0-6, donde 0 es domingo)
+const getCurrentDayOrder = () => {
+  const today = new Date().getDay(); // 0 (domingo) a 6 (sábado)
+  // Convertir a nuestro sistema donde lunes = 1, domingo = 7
+  return today === 0 ? 7 : today;
+};
+
+// Día actual de la semana
+const currentDayOrder = ref(getCurrentDayOrder());
+
+// Calcular la distancia desde hoy a un día específico de la semana
+const getDistanceFromToday = (dayOrder) => {
+  const today = currentDayOrder.value;
+  
+  // Si el día de la clase es igual o posterior a hoy en la semana, será la diferencia directa
+  // Si es anterior a hoy, será 7 + diferencia (para ponerlo en la siguiente semana)
+  if (dayOrder >= today) {
+    return dayOrder - today;
+  } else {
+    return dayOrder + 7 - today;
+  }
+};
+
+// Clases ordenadas comenzando desde el día actual de la semana
 const sortedTeacherClasses = computed(() => {
   if (!teacherClasses.value.length) return [];
   
@@ -141,8 +164,12 @@ const sortedTeacherClasses = computed(() => {
     const dayOrderA = getDayOrder(a);
     const dayOrderB = getDayOrder(b);
     
-    if (dayOrderA !== dayOrderB) {
-      return dayOrderA - dayOrderB; // Primero ordenar por día
+    // Calcular la distancia desde hoy para ambos días
+    const distanceA = getDistanceFromToday(dayOrderA);
+    const distanceB = getDistanceFromToday(dayOrderB);
+    
+    if (distanceA !== distanceB) {
+      return distanceA - distanceB; // Ordenar por proximidad al día actual
     }
     
     // Si son del mismo día, ordenar por hora de inicio

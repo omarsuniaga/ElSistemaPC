@@ -93,8 +93,18 @@ const isRouteActive = (path: string) => {
     }
     
     // Caso especial para la sección de asistencia
-    if (path.includes('/attendance') && route.path.includes('/attendance')) {
-      return !route.path.includes('/teacher') || path.includes('/teacher');
+    if (path.includes('/attendance') || path.includes('/teacher/attendance')) {
+      // Verificar si estamos en alguna ruta relacionada con la asistencia
+      const isAttendanceRoute = route.path.includes('/attendance');
+      
+      // Manejo especial para la ruta del calendario frente a la página de asistencia detallada
+      if (path.endsWith('/attendance/calendar') || path === '/attendance') {
+        // Este es el ítem de navegación principal de asistencia
+        return isAttendanceRoute && !route.params.classId;
+      } else if (isAttendanceRoute) {
+        // Para páginas específicas de asistencia (con ID de clase)
+        return route.params.classId !== undefined;
+      }
     }
   }
   

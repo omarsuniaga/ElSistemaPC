@@ -241,13 +241,7 @@ const handleSelectedDateUpdate = (date: string) => {
 // Corregido para usar los mismos valores que AttendanceHeader.vue
 const updateView = (newView: 'calendar' | 'class-select' | 'attendance-form') => {
   view.value = newView;
-  if (newView === 'calendar') {
-    showCalendarModal.value = false
-  } else if (newView === 'class-select') {
-    showCalendarModal.value = true
-  } else if (newView === 'attendance-form') {
-    showCalendarModal.value = false
-  }
+  showCalendarModal.value = (newView === 'class-select');
 }
 
 // Cargar datos de asistencia para una clase
@@ -968,7 +962,10 @@ const toggleTrends = () => {
 };
 
 const openReportModal = () => { 
-  showReportModal.value = true;
+  showReportModal.value = true
+  showAnalytics.value = false
+  showTrends.value = false
+  router.push({ name: 'TeacherInformeAttendance' })
 };
 
 const handleGenerateReport = async (filters: AttendanceFiltersType) => {
@@ -1066,11 +1063,10 @@ const fetchInitialData = async () => {
     
     // Cerrar todos los modales para asegurar una experiencia limpia
     closeAllModals()
-    
-    await Promise.all([
+      await Promise.all([
       classesStore.fetchClasses(),
       studentsStore.fetchStudents(),
-      attendanceStore.fetchAllAttendanceDates()
+      attendanceStore.fetchAttendanceDocuments()
     ])
     
     // Verificar si estamos navegando desde el menú principal de asistencia
@@ -1140,6 +1136,21 @@ watch(() => [route.params.date, route.params.classId, route.path], async ([newDa
     await selectClass(newClassId as string)
   }
 })
+
+// Computed property to filter classes with attendance records for selected date
+const classesWithRecordsForSelectedDate = computed(() => {
+  return attendanceStore.attendanceDocuments
+    .filter(doc => doc.fecha === selectedDate.value)
+    .map(doc => doc.classId);
+});
+
+// Ensure we refresh attendance docs when date changes
+watch(() => selectedDate.value, async (newDate) => {
+  if (newDate) {
+    console.log("Fetching attendance records for date:", newDate);
+    await attendanceStore.fetchAttendanceDocuments();
+  }
+}, { immediate: true });
 </script>
 
 <template>  <div class="p-2 sm:p-4 md:p-6 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 max-w-full overflow-x-hidden">
@@ -1242,13 +1253,21 @@ watch(() => [route.params.date, route.params.classId, route.path], async ([newDa
 
         <!-- Vista de Selección de Clase -->
         <div v-else-if="view === 'class-select'" class="max-w-3xl mx-auto">
-          <h2 class="text-lg font-semibold mb-3 text-center sm:text-left">Seleccionar Clase</h2>
+          <div class="flex justify-between items-center mb-3">
+            <h2 class="text-lg font-semibold">Seleccionar Clase</h2>
+            <button 
+              @click="updateView('calendar')" 
+              class="btn btn-secondary btn-sm"
+            >
+              Volver
+            </button>
+          </div>
           <DateClassSelector 
             v-model="selectedClass" 
             v-model:selectedDate="selectedDate" 
             :dayFilter="true"
             :isLoading="isLoading"
-            :classesWithRecords="attendanceStore.classesWithRecords"
+            :classesWithRecords="classesWithRecordsForSelectedDate"
             @continue="() => selectClass(selectedClass)"
             @date-change="handleDateChange"
             @update:selectedDate="handleSelectedDateUpdate"
@@ -1258,9 +1277,16 @@ watch(() => [route.params.date, route.params.classId, route.path], async ([newDa
 
         <!-- Vista de Lista de Asistencia -->
         <div v-else-if="view === 'attendance-form'" class="space-y-3 sm:space-y-4">
-          <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-center sm:text-left">
-            Lista de Asistencia <span class="block sm:inline">{{ formattedSelectedDate }}</span>
-          </h2>          <div class="flex flex-col sm:flex-row flex-wrap justify-between items-center gap-2 mb-3 sm:mb-4">
+          <div class="flex justify-between items-center mb-2">
+            <h2 class="text-base sm:text-lg font-semibold">Lista de Asistencia</h2>
+            <button 
+              @click="updateView('class-select')" 
+              class="btn btn-secondary btn-sm"
+            >
+              Volver
+            </button>
+          </div>
+          <div class="flex flex-col sm:flex-row flex-wrap justify-between items-center gap-2 mb-3 sm:mb-4">
             <div v-if="attendanceStore.getObservations" class="flex items-center justify-center sm:justify-start w-full sm:w-auto mt-2 sm:mt-0">
               <span class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 italic mr-2">
                 Esta clase tiene observaciones

@@ -121,6 +121,8 @@ const saveAllPendingChanges = async () => {
     const attendanceDoc = {
       fecha: attendanceStore.selectedDate || new Date().toISOString().split('T')[0],
       classId: selectedClass.value,
+      // Añadir un campo de timestamp para saber cuándo se creó/modificó el registro
+      timestamp: new Date().toISOString(),
       data: {
         presentes: [] as string[],
         ausentes: [] as string[],
@@ -129,6 +131,9 @@ const saveAllPendingChanges = async () => {
         observations: attendanceStore.currentAttendanceDoc?.data.observations || ''
       }
     };
+    
+    // Log para depuración (opcional)
+    console.log(`Guardando asistencia para ${attendanceDoc.fecha} - Clase: ${selectedClass.value}`);
     
     // Agrupar estudiantes por estado - sólo se incluyen los estudiantes con un estado asignado explícitamente
     Object.entries(localAttendanceRecords.value).forEach(([studentId, status]) => {

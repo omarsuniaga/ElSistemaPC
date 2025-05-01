@@ -56,14 +56,20 @@ const attendanceStore = useAttendanceStore();
 const observations = ref<Observation[]>([]);
 const loading = ref(true);
 
-// Sort observations by date, most recent first
+// Sort observations by date of la clase (observation.date), most recent first
 const sortedObservations = computed(() => {
   return [...observations.value].sort((a, b) => {
-    // Safety check for both dates
+    // Si ambos tienen campo 'date', ordenar por ese campo (descendente)
+    if (a.date && b.date) {
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    }
+    // Si solo uno tiene 'date', ese va primero
+    if (a.date) return -1;
+    if (b.date) return 1;
+    // Si ninguno tiene 'date', usar createdAt
     if (!a.createdAt && !b.createdAt) return 0;
     if (!a.createdAt) return 1;
     if (!b.createdAt) return -1;
-    
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 });

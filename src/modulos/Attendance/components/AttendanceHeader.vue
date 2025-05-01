@@ -3,9 +3,11 @@
 import { computed } from 'vue'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { useRouter } from 'vue-router'               // <–– nuevo
 import HeaderActions from './HeaderActions.vue'
 import { useHeaderActions } from '../composables/useHeaderActions'
 
+const router = useRouter()                             // <–– nuevo
 
 /** Props actualizados */
 const props = defineProps<{
@@ -19,6 +21,7 @@ const emit = defineEmits<{
   (e: 'analytics'): void
   (e: 'report'): void
   (e: 'export'): void
+  (e: 'createEmergency'): void
   (e: 'emergency'): void
   (e: 'changeView', view: 'calendar' | 'class-select' | 'attendance-form'): void
 }>()
@@ -46,11 +49,19 @@ const formattedDate = computed(() =>
       <p class="text-xs text-gray-400 dark:text-gray-500">{{ userName }}</p>
     </div>
 
+    <!--  botón para informe profesional -->
+    <button
+      class="btn btn-secondary w-full sm:w-auto mb-2 sm:mb-0"
+      @click="router.push({ name: 'TeacherInformeAttendance' })"
+    >
+      Informe Profesional
+    </button>
+
     <button
       class="btn btn-secondary w-full sm:w-auto mb-2 sm:mb-0"
       @click="emit('changeView', 'calendar')"
     >
-      <i class="fa-solid fa-calendar-days mr-2" /> Calendario
+      Calendario
     </button>
 
     <HeaderActions
@@ -59,7 +70,6 @@ const formattedDate = computed(() =>
       @report="() => emit('report')"
       @export="() => canExport && emit('export')"
       @emergency="() => canCreateEmergency && emit('emergency')"
-      
     />
   </header>
 </template>

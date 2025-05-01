@@ -1992,6 +1992,45 @@ async getStudentAttendanceStatus(studentId: string, date: string, classId?: stri
       } finally {
         this.isLoading = false;
       }
-    }
+    },
+    // Método para obtener la asistencia de un estudiante en una fecha específica
+    async generateProfessionalReport (params: {
+      classId?: string;
+      studentId?: string;
+      startDate: string;
+      endDate: string;
+    }): Promise<any> {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        const { classId, studentId, startDate, endDate } = params;
+        
+        // Validar fechas
+        if (!isValid(parseISO(startDate)) || (endDate && !isValid(parseISO(endDate)))) {
+          throw new Error('Fechas inválidas proporcionadas para el reporte.');
+        }
+        
+        // Obtener registros de asistencia filtrados por clase y fecha
+        const records = await this.fetchAttendanceRecords({ classId, startDate, endDate });
+        
+        // Procesar los registros para generar el reporte
+        const reportData = records.map(record => ({
+          studentId: record.studentId,
+          status: record.status,
+          date: record.Fecha,
+          classId: record.classId,
+          justification: record.justification || ''
+        }));
+        
+        return reportData;
+      } catch (error) {
+        this.error = 'Error al generar el reporte profesional';
+        console.error('Error generating professional report:', error);
+        throw error;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    // Método para obtener la asistencia de un estudiante en una fecha específica
   }
 });

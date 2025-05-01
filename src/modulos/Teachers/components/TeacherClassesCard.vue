@@ -281,6 +281,42 @@ onMounted(async () => {
     debugInfo.value.error = error instanceof Error ? error.message : String(error);
   }
 });
+
+
+// Función para obtener el orden del día actual de la semana
+const getCurrentDayOrder = () => {
+  const today = new Date().getDay(); // 0 (domingo) a 6 (sábado)
+  // Convertir a nuestro sistema donde lunes = 1, domingo = 7
+  return today === 0 ? 7 : today;
+};
+
+// Computed property para obtener el día actual
+const currentDayOrder = ref(getCurrentDayOrder());
+
+// Función para calcular la distancia entre el día de la clase y el día actual
+const getDistanceFromCurrentDay = computed(() => {
+  const classDayOrder = currentClassDayOrder.value;
+  const today = currentDayOrder.value;
+  
+  // Calcula cuántos días faltan desde hoy hasta el día de la clase
+  // Si el día de la clase es posterior a hoy, será la diferencia directa
+  // Si es anterior o igual a hoy, será 7 + diferencia (para ponerlo en la siguiente semana)
+  if (classDayOrder >= today) {
+    return classDayOrder - today;
+  } else {
+    return classDayOrder + 7 - today;
+  }
+});
+
+// Exponer un método que el componente padre puede usar para ordenar las clases
+const getSortValue = () => {
+  return getDistanceFromCurrentDay.value;
+};
+
+defineExpose({
+  getSortValue
+});
+
 const getDayAbbr = (day) => {
   if (!day) return '';
   return day.slice(0, 3); // "Sábado" -> "Sáb"

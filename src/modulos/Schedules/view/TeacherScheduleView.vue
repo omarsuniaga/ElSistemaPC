@@ -259,7 +259,7 @@ const loadData = async () => {
             if (userRole === 'unknown' && auth.currentUser && userStore.sessions) {
               // Find the user session for the current authenticated user
               const userSession = userStore.sessions.find(session => 
-                session.userId === auth.currentUser?.uid || session.uid === auth.currentUser?.uid
+                session.userId === auth.currentUser?.uid || session.id === auth.currentUser?.uid
               );
               
               if (userSession && userSession.role) {

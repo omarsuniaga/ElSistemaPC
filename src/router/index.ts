@@ -250,6 +250,17 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../modulos/Students/view/StudentInstrumentProfile.vue'),
     meta: { requiresAuth: true, allowedRoles: ['Director', 'Admin', 'Maestro'] }
   },
+  {
+    path: '/attendance/calendar',
+    name: 'AttendanceCalendar',
+    component: () => import('../views/ClassSelectionView.vue')
+  },
+  {
+    path: '/teacher/attendance/informe',
+    name: 'TeacherInformeAttendance',
+    component: () => import('../components/TeacherInformeAttendance.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['Maestro'] }
+  },
   ...instrumentsRoutes,
   ...studentRoutes,
   // ...attendanceRoutes,

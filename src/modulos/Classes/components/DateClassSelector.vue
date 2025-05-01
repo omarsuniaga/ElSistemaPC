@@ -2,15 +2,22 @@
   <!-- modulos/Classes/components/DateClassSelector.vue -->
   <div>
     <div class="space-y-6" :class="customClass">
-      <!-- Búsqueda -->
-      <!-- <div class="relative">
-      <input
-        v-model="searchQuery"
-        type="text"
-        placeholder="Buscar por nombre, instrumento o nivel..."
-        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-      />
-    </div> -->
+      <!-- Búsqueda - Uncommented and improved -->
+      <div class="relative">
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Buscar por nombre, instrumento o nivel..."
+          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        />
+        <div v-if="searchQuery" 
+             @click="searchQuery = ''" 
+             class="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+      </div>
 
       <!-- Estado de carga -->
       <div v-if="loading || isLoading" class="flex justify-center py-4">
@@ -73,7 +80,7 @@
               <!-- Indicador "Asistencia Lista" para clases con asistencia registrada -->
               <div class="flex items-center space-x-2">
                 <div
-                  v-if="hasAttendanceRecord(class_.id)"
+                  v-if="hasAttendanceRecord(class_.id, props.selectedDate)"
                   class="mr-3 text-xs px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-full flex items-center"
                 >
                   <svg
@@ -86,7 +93,7 @@
                       fill-rule="evenodd"
                       d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
                       clip-rule="evenodd"
-                    ></path>
+                    />
                   </svg>
                   Asistencia Lista
                 </div>
@@ -207,7 +214,7 @@ const props = defineProps({
   },
   // Nueva prop para identificar clases con registros
   classesWithRecords: {
-    type: Array as () => string[],
+    type: Array as () => Array<{ classId: string; date: string }>,
     default: () => [],
   },
 });
@@ -281,7 +288,7 @@ const availableClassDates = computed(() => {
           const dateStr = format(nextOccurrence, 'yyyy-MM-dd');
           
           // Verificar si esta clase tiene registro de asistencia
-          const hasRecord = hasAttendanceRecord(classItem.id);
+          const hasRecord = hasAttendanceRecord(classItem.id, dateStr);
           
           // Si la fecha ya existe en el mapa, actualizar su estado
           if (dateStatusMap.has(dateStr)) {
@@ -322,15 +329,44 @@ const availableClassDates = computed(() => {
 // Filtrar clases según el día seleccionado y el maestro actual
 const filterClassesByDay = (date: string) => {
   try {
-    const localDate = new Date(date + "T00:00:00");
+    if (!date) {
+      console.warn('Date is empty in filterClassesByDay');
+      return [];
+    }
+
+    // Ensure date is in correct format (yyyy-MM-dd)
+    let formattedDate = date;
+    if (!date.includes('-') && date.length === 8) {
+      // Handle date in format YYYYMMDD
+      formattedDate = `${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}`;
+    }
+
+    console.log('Filtering classes for date:', formattedDate);
+    
+    // Create a proper Date object with time set to midnight
+    const localDate = new Date(`${formattedDate}T00:00:00`);
+    if (isNaN(localDate.getTime())) {
+      console.error('Invalid date:', formattedDate);
+      return [];
+    }
+    
     const dayName = format(localDate, "EEEE", { locale: es }).toLowerCase();
+    console.log('Day name:', dayName);
     const dayIndex = getDayIndex(dayName);
+    console.log('Day index:', dayIndex);
 
     // Obtener ID del maestro autenticado
     const currentTeacherId = authStore.user?.uid;
+    if (!currentTeacherId) {
+      console.warn('No teacher ID found');
+    }
 
     // Filtrar clases que tienen actividad en el día seleccionado Y que pertenecen al maestro actual
     const classesForDay = classesStore.classes.filter((c) => {
+      // Debug info
+      if (!c.teacherId) console.log('Class without teacher ID:', c.id, c.name);
+      if (!c.schedule?.slots) console.log('Class without schedule slots:', c.id, c.name);
+
       // Primero verificar si la clase pertenece al maestro actual
       if (c.teacherId !== currentTeacherId) return false;
 
@@ -338,20 +374,42 @@ const filterClassesByDay = (date: string) => {
       if (!c.schedule?.slots || !Array.isArray(c.schedule.slots)) return false;
 
       return c.schedule.slots.some((slot) => {
+        // Handle different types of day representation
         if (typeof slot.day === "number") {
-          return slot.day === dayIndex;
+          // For numeric representation (0-6)
+          const slotDayIndex = slot.day === 0 ? 6 : slot.day - 1; // Convert Sunday=0 to Sunday=6
+          return slotDayIndex === dayIndex;
         } else if (typeof slot.day === "string") {
-          return slot.day.toLowerCase() === dayName;
+          // For string representation (name of day)
+          const normalizedSlotDay = slot.day.toLowerCase().trim();
+          return normalizedSlotDay === dayName || 
+                 getDayAbbreviation(normalizedSlotDay) === getDayAbbreviation(dayName);
         }
         return false;
       });
     });
 
+    console.log(`Found ${classesForDay.length} classes for ${dayName}`);
     return classesForDay;
   } catch (err) {
-    console.error("Error al filtrar clases por día y maestro:", err);
+    console.error("Error filtering classes by day:", err);
     return [];
   }
+};
+
+// Helper function to get day abbreviation for comparison
+const getDayAbbreviation = (dayName: string): string => {
+  const abbreviations: Record<string, string> = {
+    'domingo': 'dom', 'sunday': 'dom', 
+    'lunes': 'lun', 'monday': 'lun',
+    'martes': 'mar', 'tuesday': 'mar',
+    'miércoles': 'mie', 'miercoles': 'mie', 'wednesday': 'mie',
+    'jueves': 'jue', 'thursday': 'jue',
+    'viernes': 'vie', 'friday': 'vie',
+    'sábado': 'sab', 'sabado': 'sab', 'saturday': 'sab'
+  };
+  
+  return abbreviations[dayName] || dayName.substring(0, 3);
 };
 
 // Verificar si una clase está programada para el día de la fecha seleccionada
@@ -381,13 +439,14 @@ const isClassScheduledForDay = (classItem: Class): boolean => {
   }
 };
 
-// Verificar si una clase ya tiene un registro de asistencia
-const hasAttendanceRecord = (classId: string) => {
-  // Asegurarse de que props.classesWithRecords es un array antes de llamar a includes()
-  return (
-    Array.isArray(props.classesWithRecords) &&
-    props.classesWithRecords.includes(classId)
-  );
+// Build a reactive Set for constant‑time lookup (clave compuesta classId|date)
+const attendanceSet = computed(() =>
+  new Set(props.classesWithRecords.map(r => `${r.classId}|${r.date}`))
+);
+
+// Optimized check for attendance record (ahora depende de classId y fecha)
+const hasAttendanceRecord = (classId: string, date: string) => {
+  return attendanceSet.value.has(`${classId}|${date}`);
 };
 
 // Función helper para convertir nombre de día a índice
@@ -410,15 +469,20 @@ const loadData = async () => {
   error.value = "";
 
   try {
+    console.log("Loading data for date:", props.selectedDate);
+    
     // Si aún no tenemos clases, cargarlas
     if (classesStore.classes.length === 0) {
+      console.log("Fetching classes as store is empty");
       await classesStore.fetchClasses();
     }
 
     // Filtrar clases por día y búsqueda
     const filtered = filterClassesByDay(props.selectedDate);
+    console.log(`Found ${filtered.length} classes before search filtering`);
+    
     filteredClasses.value = filtered.filter((c) => {
-      // Filtrar por texto de búsqueda
+      // Si no hay búsqueda, mostrar todas las clases filtradas por día
       if (!searchQuery.value) return true;
 
       const query = searchQuery.value.toLowerCase();
@@ -432,8 +496,10 @@ const loadData = async () => {
         level.includes(query)
       );
     });
+    
+    console.log(`Displaying ${filteredClasses.value.length} classes after search filtering`);
   } catch (err) {
-    console.error("Error al cargar datos:", err);
+    console.error("Error loading class data:", err);
     error.value = "Error al cargar las clases. Inténtalo de nuevo.";
   } finally {
     loading.value = false;
@@ -453,30 +519,40 @@ const formatDate = (date: string) => {
 
 // Seleccionar una clase
 const selectClass = (classItem: any) => {
-  emit("update:modelValue", classItem.id);
-  emit("continue"); // Esto fuerza el cambio de vista en el padre
-  // Navegar automáticamente al seleccionar una clase, sin esperar el botón continuar
-  if (classItem.id && props.selectedDate) {
-    // Formatear la fecha para la URL (remover los guiones)
-    const formattedDate = props.selectedDate.replace(/-/g, "");
+  if (!classItem || !classItem.id) {
+    console.error("Invalid class selected:", classItem);
+    return;
+  }
 
-    // Usar router.push para navegar a la vista de asistencia
-    router
-      .push({
-        name: "TeacherAttendanceDetail",
-        params: {
-          date: formattedDate,
-          classId: classItem.id,
-        },
-        replace: true,
-      })
-      .then(() => {
-        // Emitir evento para notificar que se continuó al siguiente paso
-        emit("continue");
-      })
-      .catch((error) => {
-        console.error("Error navigating to attendance page:", error);
+  emit("update:modelValue", classItem.id);
+  emit("continue");
+
+  if (props.selectedDate) {
+    try {
+      // Format date for URL and ensure it's in correct format
+      let formattedDate = props.selectedDate.replace(/-/g, "");
+      
+      // Debug info
+      console.log("Navigating to attendance with:", {
+        date: formattedDate,
+        classId: classItem.id,
+        className: classItem.name
       });
+
+      // Use router.push with a more robust approach
+      router.push({
+        path: `/attendance/${formattedDate}/${classItem.id}`
+      }).catch((error) => {
+        // If named route fails, try direct path
+        console.error("Route navigation error:", error);
+        router.push(`/attendance/${formattedDate}/${classItem.id}`);
+      });
+    } catch (error) {
+      console.error("Error in class selection navigation:", error);
+      // Show a user-friendly error message here if needed
+    }
+  } else {
+    console.error("No date selected");
   }
 };
 
@@ -495,6 +571,11 @@ const handleCalendarSelect = (date: string) => {
 // Observar cambios en fecha y filtro
 watch(() => props.selectedDate, loadData, { immediate: true });
 watch(searchQuery, loadData);
+
+// Re-run loadData when selectedDate or classesWithRecords changes
+watch([() => props.selectedDate, () => props.classesWithRecords], loadData, {
+  immediate: true
+});
 
 // Cargar datos al montar
 onMounted(loadData);
