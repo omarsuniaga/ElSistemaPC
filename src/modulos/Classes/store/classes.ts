@@ -63,26 +63,33 @@ export const useClassesStore = defineStore('classes', {
         c.schedule.slots &&
         c.schedule.slots.length > 0
       );
-    },
+    },    // Clases por día de la semana filtradas por ID de maestro
+    getClassesByDayAndTeacherId: (state) => (day: string | number, teacherId: string) => {
+      const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+      let dayIndex: number;
+      
+      if (typeof day === 'string') {
+        dayIndex = dayNames.indexOf(day.toLowerCase());
+      } else {
+        dayIndex = day >= 0 && day <= 6 ? day : -1;
+      }
 
-    // Clases por día de la semana filtradas por ID de maestro
-    getClassesByDayAndTeacherId: (state) => (day: string, teacherId: string) => {
-      const dayIndex = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'].indexOf(day.toLowerCase());
-
-      if (!teacherId) return [];
+      if (!teacherId || dayIndex === -1) return [];
 
       return state.classes.filter(c => {
         // Verificar que la clase pertenece al maestro
         if (c.teacherId !== teacherId) return false;
 
-        // Verificar que la clase está programada para ese día
+        // Verificar que la clase tiene horario configurado
         if (!c.schedule?.slots || !Array.isArray(c.schedule.slots)) return false;
 
+        // Buscar si la clase está programada para ese día
         return c.schedule.slots.some(slot => {
           if (typeof slot.day === 'number') {
             return slot.day === dayIndex;
-          } else if (typeof slot.day === 'string') {
-            return slot.day.toLowerCase() === day.toLowerCase();
+          }
+          if (typeof slot.day === 'string') {
+            return dayNames[dayIndex] === slot.day.toLowerCase();
           }
           return false;
         });

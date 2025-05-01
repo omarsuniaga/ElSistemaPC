@@ -7,6 +7,7 @@
       :dayFilter="true"
       :isLoading="isLoading"
       :classesWithRecords="classesWithRecords"
+      :markedDates="markedDates"
       @continue="goToAttendance"
       @date-change="onDateChange"
       class="max-w-full"
@@ -36,6 +37,23 @@ const classesWithRecords = computed(() =>
     .filter(doc => doc.fecha === selectedDate.value)
     .map(doc => ({ classId: doc.classId, date: doc.fecha }))
 )
+
+// Fechas que tienen registros (para marcar en el calendario)
+const markedDates = computed(() => {
+  // Get unique dates from attendance documents
+  const uniqueDates = new Set<string>()
+  attendanceStore.attendanceDocuments.forEach(doc => {
+    if (doc.fecha && typeof doc.fecha === 'string') {
+      uniqueDates.add(doc.fecha)
+    }
+  })
+  
+  // Convert to array and ensure it's populated
+  const datesArray = Array.from(uniqueDates)
+  console.log('Marked dates:', datesArray) // Debug to see what's being passed
+  
+  return datesArray
+})
 
 function onDateChange(date: string) {
   selectedDate.value = date

@@ -143,6 +143,7 @@
         <Calendar
           :selected-date="selectedDate"
           :date-statuses="availableClassDates"
+          :marked-dates="markedDates"
           @select="handleCalendarSelect"
         />
         <div class="mt-4 text-right">
@@ -215,6 +216,11 @@ const props = defineProps({
   // Nueva prop para identificar clases con registros
   classesWithRecords: {
     type: Array as () => Array<{ classId: string; date: string }>,
+    default: () => [],
+  },
+  // Prop para fechas marcadas en el calendario
+  markedDates: {
+    type: Array as () => string[],
     default: () => [],
   },
 });

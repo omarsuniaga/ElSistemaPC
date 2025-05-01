@@ -226,19 +226,31 @@
             </table>
           </div>
             <!-- Observaciones generales de la clase por día -->
-          <div v-if="classData.relevantDates && classData.relevantDates.length > 0" class="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border-l-4 border-primary-500">
-            <h4 class="font-medium mb-2 text-primary-600 dark:text-primary-400">Observaciones generales de la clase:</h4>
-            
-            <div v-for="date in classData.relevantDates" :key="date" class="mb-2">
-              <div v-if="getClassObservation(classData.classId, date)" class="pl-2 border-l-2 border-gray-300 dark:border-gray-500">
-                <span class="font-medium">{{ formatDateShort(date) }}:</span> 
-                <span>{{ getClassObservation(classData.classId, date) }}</span>
-              </div>
-            </div>
-            
-            <div v-if="!hasAnyObservations(classData)" class="text-gray-500 dark:text-gray-400 italic">
-              No hay observaciones generales registradas para esta clase.
-            </div>
+<!-- Observaciones de la clase por día -->
+<div class="mt-4">
+  <h4 class="font-medium mb-2 text-primary-600 dark:text-primary-400">
+    Observaciones registradas:
+  </h4>
+  
+  <div v-if="classData.observations && classData.observations.length > 0" 
+       class="space-y-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+    <div v-for="obs in sortedObservations(classData.observations)" :key="obs.date" 
+         class="p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+      <div class="flex items-center gap-2 mb-1">
+        <CalendarIcon class="h-4 w-4 text-primary-500" />
+        <span class="font-medium text-sm text-gray-600 dark:text-gray-300">
+          {{ formatDate(obs.date) }}
+        </span>
+      </div>
+      <p class="text-gray-700 dark:text-gray-200 text-sm pl-6">
+        {{ obs.text }}
+      </p>
+    </div>
+  </div>
+  
+  <div v-else class="p-4 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 rounded-lg">
+    <InformationCircleIcon class="h-6 w-6 mx-auto mb-2 text-gray-400" />
+    <p class="text-sm">No hay observaciones registradas para esta clase en el período seleccionado.</p>
           </div>
           
           <!-- Pie de tabla con estadísticas -->
@@ -370,6 +382,18 @@ const totalJustificados = computed(() => {
   });
   return total;
 });
+
+// Obtener observaciones de la clase para una fecha específica
+/**
+ * Devuelve la observación (data.observations) del documento de asistencia
+ * correspondiente a la clase y fecha, o cadena vacía si no existe.
+ */
+const getClassObservation = async (classId: string, date: string): Promise<string> => {
+  // Primero cargar el documento de asistencia específico para esta fecha y clase
+  await attendanceStore.fetchAttendanceDocument(date, classId);
+  // Usar el getter getObservations para obtener la observación
+  return attendanceStore.getObservations;
+};
 
 // Porcentaje promedio de asistencia
 const averageAttendancePercentage = computed(() => {
@@ -518,58 +542,16 @@ function countStatusForDate(classData: any, date: string, status: string): numbe
   return count;
 }
 
-// Función para obtener la observación de una clase en una fecha específica
-function getClassObservation(classId: string, date: string): string | null {
-  // Primero buscar en las observaciones ya cargadas en classReports
-  for (const classReport of classReports.value) {
-    if (classReport.classId === classId) {
-      const existingObs = classReport.observations.find(obs => obs.date === date);
-      if (existingObs) {
-        return existingObs.text;
-      }
-    }
-  }
-  
-  // SOLUCIÓN MEJORADA: Buscar en TODOS los documentos que coincidan con la fecha y clase
-  const matchingDocs = attendanceStore.attendanceDocuments.filter(d => 
-    (d.fecha === date || d.Fecha === date) && 
-    d.classId === classId
-  );
-  
-  // Revisar cada documento encontrado para buscar observaciones en cualquier formato
-  for (const doc of matchingDocs) {
-    // 1. Verificar la estructura principal (data.observations)
-    if (doc.data && typeof doc.data.observations === 'string' && doc.data.observations.trim()) {
-      return doc.data.observations;
-    }
-    
-    // 2. Verificar la estructura alternativa (observations en raíz)
-    if (doc.data && typeof doc.data.observations === 'string' && doc.data.observations.trim()) {
-      return doc.data.observations;
-    }
-    
-    // 3. Verificar la estructura de firebase - CORREGIDO
-    if (doc.data && doc.data.data && typeof doc.data.data.observations === 'string' && doc.data.data.observations.trim()) {
-      return doc.data.data.observations;
-    }
-    
-    // 4. Verificar observaciones en español (common variation)
-    if (typeof (doc as any).observaciones === 'string' && (doc as any).observaciones.trim()) {
-      return (doc as any).observaciones;
-    }
-  }
-  
-  // 5. Buscar en la colección específica de observaciones
-  const observations = attendanceStore.observationsHistory?.filter(obs => 
-    obs.classId === classId && obs.date === date
-  ) || [];
-  
-  if (observations.length > 0 && observations[0].text) {
-    return observations[0].text;
-  }
-  
-  return null;
-}
+// Función para ordenar observaciones por fecha
+const sortedObservations = (observations: Array<{ date: string; text: string }>) => {
+  if (!observations) return [];
+  return [...observations].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+};
+
+// Función para verificar si hay observaciones
+const hasObservations = (classData: any): boolean => {
+  return classData.observations && classData.observations.length > 0;
+};
 
 // Función para verificar si hay alguna observación para una clase
 function hasAnyObservations(classData: any): boolean {

@@ -73,7 +73,7 @@ const selectedColorScheme = ref('default')
 const includeHeader = ref(true)
 const includeFooter = ref(true)
 const headerLogo = ref(null)
-const footerText = ref('Academia de Música - Generado el ' + format(new Date(), 'PPP', { locale: es }))
+const footerText = ref('El Sistema Punta Cana - Generado el ' + format(new Date(), 'PPP', { locale: es }))
 const pageOrientation = ref<'portrait' | 'landscape'>('portrait')
 
 // Lista de informes disponibles

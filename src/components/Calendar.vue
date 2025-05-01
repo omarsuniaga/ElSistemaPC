@@ -154,17 +154,8 @@ const goToCurrentMonth = () => {
 // Función de manejo de clic en un día del calendario
 const onClick = (day: { date: string; dayOfMonth: number; isCurrentMonth: boolean; isToday: boolean; isMarked: boolean; dayName: string; }): void => {
   if (!day || !day.date) return
-  
-  // Log for debugging
-  console.log(`Calendar date selected: ${day.date} (${day.dayName})`);
-  
-  // Emit complete data and simple date string for backward compatibility
   emit('select', day.date)
-  emit('day-click', {
-    ...day,
-    formattedDate: day.date.replace(/-/g, ""), // Add YYYYMMDD format for URLs
-    timestamp: new Date(day.date).getTime() // Add timestamp for easy comparisons
-  })
+  emit('day-click', day)
 }
 
 // Generar el calendario cada vez que cambie el mes o las fechas marcadas
@@ -176,19 +167,12 @@ watch(() => [props.currentMonth, props.markedDates], ([newMonth]) => {
   generateCalendar()
 }, { deep: true })
 
-// Add a watch to ensure currentMonth prop is respected
-watch(() => props.currentMonth, (newMonth) => {
-  if (newMonth instanceof Date && !isNaN(newMonth.getTime())) {
-    displayedMonth.value = newMonth;
-    console.log(`Calendar month updated to: ${format(displayedMonth.value, 'MMMM yyyy', { locale: es })}`);
-    generateCalendar();
-  }
-}, { immediate: true });
-
 // Si se pasa currentMonth como prop, usarlo para el mes mostrado
 if (props.currentMonth) {
   displayedMonth.value = props.currentMonth
 }
+
+console.log('Calendar.vue > markedDates:', props.markedDates);
 </script>
 
 <template>

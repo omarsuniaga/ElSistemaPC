@@ -9,8 +9,7 @@ import {
   ClockIcon,
   DocumentCheckIcon,
   ChatBubbleLeftRightIcon,
-  ArrowDownOnSquareIcon,
-  ArrowDownTrayIcon,
+  ArrowDownOnSquareIcon,  ArrowDownTrayIcon
 } from '@heroicons/vue/24/outline'
 import './AttendanceList.css'
 import { useClassesStore } from '../../Classes/store/classes'
@@ -289,6 +288,15 @@ const todayIndex = computed(() => {
   return new Date().getDay();
 });
 
+// Computed property para ordenar estudiantes alfabéticamente
+const sortedStudents = computed(() => {
+  return [...students.value].sort((a, b) => {
+    const nameA = `${a.nombre} ${a.apellido}`.toLowerCase();
+    const nameB = `${b.nombre} ${b.apellido}`.toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+});
+
 </script>
 <template>
   <div class="space-y-4">
@@ -366,7 +374,7 @@ const todayIndex = computed(() => {
           </tr>
         </thead>
         <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-          <tr v-for="student in students" :key="student.id" class="hover:bg-gray-50 dark:hover:bg-gray-800">
+          <tr v-for="student in sortedStudents" :key="student.id" class="hover:bg-gray-50 dark:hover:bg-gray-800">
             <td class="px-1 sm:px-2 py-2 sm:py-3">
               <div class="flex items-center">
                 <div class="flex-shrink-0 h-7 w-7 sm:h-10 sm:w-10">

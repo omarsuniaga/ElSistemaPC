@@ -1042,6 +1042,16 @@ const checkExistingAttendance = async (date: string, classId: string): Promise<b
   }
 }
 
+// Computed para fechas marcadas en el calendario (puntitos de asistencia)
+const markedDates = computed(() => {
+  // Obtener fechas únicas de los documentos de asistencia cargados
+  const dates = attendanceStore.attendanceDocuments
+    .filter(doc => typeof doc.fecha === 'string')
+    .map(doc => doc.fecha);
+  // Quitar duplicados
+  return Array.from(new Set(dates));
+});
+
 // Función para cerrar todos los modales
 
 const closeAllModals = () => {
@@ -1107,7 +1117,7 @@ const fetchInitialData = async () => {
 onMounted(async () => {
   // Cargar configuraciones de la aplicación
   await configStore.fetchConfigs()
-  
+  await attendanceStore.fetchAttendanceDocuments()
   await fetchInitialData()
 })
 
@@ -1244,7 +1254,7 @@ watch(() => selectedDate.value, async (newDate) => {
           <Calendar 
             :selected-date="selectedDate" 
             :current-month="currentMonth"
-            :markedDates="attendanceStore.datesWithRecords" 
+            :markedDates="markedDates" 
             @select="selectDate"
             @month-change="handleMonthChange"
             class="max-w-full overflow-x-auto"
@@ -1268,6 +1278,7 @@ watch(() => selectedDate.value, async (newDate) => {
             :dayFilter="true"
             :isLoading="isLoading"
             :classesWithRecords="classesWithRecordsForSelectedDate"
+            :markedDates="markedDates"
             @continue="() => selectClass(selectedClass)"
             @date-change="handleDateChange"
             @update:selectedDate="handleSelectedDateUpdate"
@@ -1369,7 +1380,7 @@ watch(() => selectedDate.value, async (newDate) => {
           <Calendar 
             :selected-date="selectedDate" 
             :current-month="currentMonth"
-            :markedDates="attendanceStore.datesWithRecords" 
+            :markedDates="markedDates" 
             @select="handleCalendarSelect"
             @month-change="handleMonthChange"
           />
