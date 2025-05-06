@@ -28,6 +28,7 @@ export interface JustificationData {
 export interface AttendanceDocument {
   fecha: string; // Fecha seleccionada (ej: 2025-03-18)
   classId: string; // Clase seleccionada (ej: teoria-y-solfeo)
+  teacherId?: string; // ID del maestro que registró la asistencia
   data: {
     presentes: string[]; // Lista de IDs de alumnos presentes
     ausentes: string[]; // Lista de IDs de alumnos ausentes

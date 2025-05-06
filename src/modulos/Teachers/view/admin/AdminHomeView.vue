@@ -9,6 +9,11 @@ import { useTeachersStore } from '../../store/teachers'
 import TodayClassesPanel from '../../../../components/TodayClassesPanel.vue'
 import AttendanceWeeklyTable from '../../../../components/AttendanceWeeklyTable.vue'
 import AbsenteesList from '../../../../components/AbsenteesList.vue'
+import StudentsKpi from '../../../../components/dashboard/StudentsKpi.vue'
+import ClassesKpi from '../../../../components/dashboard/ClassesKpi.vue'
+import EmergentClassesKpi from '../../../../components/dashboard/EmergentClassesKpi.vue'
+import TeachersKpi from '../../../../components/dashboard/TeachersKpi.vue'
+import MinimizablePanel from '../../../../components/dashboard/MinimizablePanel.vue'
 
 // Estado reactivo
 const attendanceStore = useAttendanceStore()
@@ -22,8 +27,11 @@ const error = ref<string | null>(null)
 const presentStudentsList = ref<any[]>([])
 const studentsPresent = ref(0)
 const activeClasses = ref(0)
-const regularClasses = ref(1)
+const regularClasses = ref(0) // Changed initial value from 1 to 0
 const emergentClasses = ref(0)
+const expectedClasses = ref(0) // New ref for expected classes
+const expectedClassrooms = ref(0) // New ref for expected classrooms
+const classCompletionRate = ref(0) // New ref for class completion rate
 const activeTeachers = ref(0)
 const classroomsInUse = ref(0)
 const attendancePercentage = ref(0)
@@ -36,11 +44,21 @@ const formattedCurrentDate = computed(() => {
   return format(new Date(), "d 'de' MMMM, yyyy", { locale: es })
 })
 
+// Día de la semana actual (0 = domingo, 1 = lunes, etc.)
+const currentDayOfWeek = computed(() => {
+  return new Date().getDay()
+})
+
 // Al montar el componente
 onMounted(async () => {
   try {
     isLoading.value = true
-    
+    // Cargar datos de asistencia y estudiantes presentes
+    await fetchAttendanceData()
+    // Construir lista de estudiantes presentes
+    presentStudentsList.value = await buildPresentStudentsList()
+    studentsPresent.value = countUniquePresentStudents()
+    console.log('📊 Estudiantes presentes hoy:', presentStudentsList.value)
     // Cargar datos necesarios de los almacenes
     await Promise.all([
       fetchAttendanceData(),
@@ -51,6 +69,9 @@ onMounted(async () => {
     
     // Calcular estadísticas una vez que tenemos todos los datos
     calculateStatistics()
+    
+    // Calcular las clases esperadas para hoy
+    calculateExpectedClasses()
     
     // Configurar actualizaciones periódicas (cada 30 segundos)
     refreshInterval.value = window.setInterval(() => {
@@ -102,6 +123,7 @@ watch(() => todayClassesPanel.value, (newVal) => {
 watch(() => (todayClassesPanel.value as any)?.totalClassesToday, (newVal) => {
   if (newVal !== undefined) {
     updateClassesStatistics()
+    calculateExpectedClasses() // Recalcular clases esperadas cuando actualicen las clases totales
   }
 })
 
@@ -153,26 +175,28 @@ async function fetchAttendanceData(skipLoadingState = false) {
         }
       })
 
-      // También considerar estudiantes con tardanza justificada como presentes
-      if (doc.data.justificacion && Array.isArray(doc.data.justificacion)) {
-        doc.data.justificacion.forEach(justification => {
-          if (justification && justification.id) {
-            uniqueStudentIds.add(justification.id)
-            
-            const student = studentsStore.items.find(s => s.id === justification.id)
-            
-            if (student) {
-              presentStudents.push({
-                id: justification.id,
-                name: `${student.nombre} ${student.apellido || ''}`.trim(),
-                className: classInfo?.name || 'Clase sin nombre',
-                time: classInfo?.schedule || 'Horario no especificado',
-                justified: true
-              })
-            }
+      // También considerar estudiantes con estado "tarde" como presentes
+      if (doc.data.tarde && Array.isArray(doc.data.tarde)) {
+        doc.data.tarde.forEach(lateStudentId => {
+          // Añadir ID al set de estudiantes únicos
+          uniqueStudentIds.add(lateStudentId)
+          
+          // Obtener información del estudiante
+          const student = studentsStore.items.find(s => s.id === lateStudentId)
+          
+          if (student) {
+            presentStudents.push({
+              id: lateStudentId,
+              name: `${student.nombre} ${student.apellido || ''}`.trim(),
+              className: classInfo?.name || 'Clase sin nombre',
+              time: classInfo?.schedule || 'Horario no especificado',
+              late: true
+            })
           }
         })
       }
+
+      // NO incluimos estudiantes justificados o ausentes según el nuevo requerimiento
     }
     
     // Actualizar el estado con los datos procesados
@@ -207,6 +231,34 @@ async function loadTeachersData() {
   if (teachersStore.teachers.length === 0) {
     await teachersStore.fetchTeachers()
   }
+}
+
+// Función para calcular las clases esperadas para hoy
+function calculateExpectedClasses() {
+  // Usar el método getClassesByDay del store para obtener las clases de hoy
+  const today = currentDayOfWeek.value
+  const classesForToday = classesStore.getClassesByDay(today)
+  
+  // Actualizar el número de clases esperadas
+  expectedClasses.value = classesForToday.length
+  
+  // Calcular salones únicos esperados
+  const uniqueClassrooms = new Set<string>()
+  classesForToday.forEach(classItem => {
+    if (classItem.classroom) {
+      uniqueClassrooms.add(classItem.classroom)
+    }
+  })
+  expectedClassrooms.value = uniqueClassrooms.size
+  
+  // Calcular tasa de completado (clases activas vs. clases esperadas)
+  if (expectedClasses.value > 0) {
+    classCompletionRate.value = Math.round((regularClasses.value / expectedClasses.value) * 100)
+  } else {
+    classCompletionRate.value = 0
+  }
+  
+  console.log(`📊 Se esperan ${expectedClasses.value} clases hoy en ${expectedClassrooms.value} salones`)
 }
 
 // Función para actualizar las estadísticas de clases desde el componente TodayClassesPanel
@@ -292,23 +344,23 @@ async function buildPresentStudentsList() {
           }
         }
         
-        // También incluir estudiantes con tardanza justificada
-        const justifiedStudents = doc.data.justificacion || []
-        for (const justification of justifiedStudents) {
-          if (justification && justification.id) {
-            const student = studentsStore.items.find(s => s.id === justification.id)
-            
-            if (student) {
-              presentStudents.push({
-                id: justification.id,
-                name: `${student.nombre || ''} ${student.apellido || ''}`.trim(),
-                className: classInfo?.name || 'Clase sin nombre',
-                time: classInfo?.schedule?.slots?.[0]?.startTime || 'Horario no especificado',
-                justified: true
-              })
-            }
+        // También procesar estudiantes con tardanza (no justificada)
+        const lateStudents = doc.data.tarde || []
+        for (const lateStudentId of lateStudents) {
+          const student = studentsStore.items.find(s => s.id === lateStudentId)
+          
+          if (student) {
+            presentStudents.push({
+              id: lateStudentId,
+              name: `${student.nombre || ''} ${student.apellido || ''}`.trim(),
+              className: classInfo?.name || 'Clase sin nombre',
+              time: classInfo?.schedule?.slots?.[0]?.startTime || 'Horario no especificado',
+              late: true
+            })
           }
         }
+        
+        // NO incluimos estudiantes justificados o ausentes
       }
     }
     
@@ -334,10 +386,56 @@ function countUniquePresentStudents(): number {
       doc.data.presentes.forEach(studentId => {
         uniqueStudentIds.add(studentId)
       })
+      
+      // Añadir estudiantes con tardanza (no justificada)
+      if (doc.data.tarde && Array.isArray(doc.data.tarde)) {
+        doc.data.tarde.forEach(lateStudentId => {
+          uniqueStudentIds.add(lateStudentId)
+        })
+      }
     })
   
   return uniqueStudentIds.size
 }
+
+// Lista de maestros activos con sus datos
+const activeTeachersWithData = computed(() => {
+  // Obtener los IDs de los profesores activos
+  const activeTeacherIds = new Set<string>()
+  const currentDate = format(new Date(), 'yyyy-MM-dd')
+  
+  attendanceStore.attendanceDocuments
+    .filter(doc => doc.fecha === currentDate)
+    .forEach(doc => {
+      const classInfo = classesStore.getClassById(doc.classId)
+      if (classInfo && classInfo.teacherId) {
+        activeTeacherIds.add(classInfo.teacherId)
+      }
+    })
+  
+  // Mapear los IDs a objetos de profesor completos
+  return Array.from(activeTeacherIds)
+    .map(id => {
+      const teacher = teachersStore.teachers.find(t => t.id === id)
+      if (!teacher) return null
+      
+      // Obtener las clases del profesor para hoy
+      const today = currentDayOfWeek.value
+      const teacherClasses = classesStore.getClassesByDayAndTeacherId(today, id)
+      
+      return {
+        ...teacher,
+        // Añadir las clases que imparte hoy
+        classes: teacherClasses.map(c => ({
+          name: c.name || 'Clase sin nombre',
+          time: c.schedule?.slots?.[0]?.startTime 
+            ? `${c.schedule.slots[0].startTime} - ${c.schedule.slots[0].endTime || ''}` 
+            : 'Sin horario'
+        }))
+      }
+    })
+    .filter(Boolean) // Eliminar posibles nulos
+})
 </script>
 
 <template>
@@ -345,82 +443,74 @@ function countUniquePresentStudents(): number {
     <h1 class="text-3xl font-bold mb-8">Panel Administrativo</h1>
     <!-- Panel de estadísticas diarias -->
     <div class="mb-8">
-      <h2 class="text-2xl font-semibold mb-4">Actividad del día ({{ formattedCurrentDate }})</h2>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <h2 class="text-2xl font-semibold mb-4 text-white">
+        Actividad del día 
+        <span class="text-blue-200">({{ formattedCurrentDate }})</span>
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
         <!-- KPI de Estudiantes Presentes -->
-        <div class="bg-gray-500 rounded-lg shadow p-6">
-          <h3 class="text-lg font-medium text-gray-900">Estudiantes presentes hoy</h3>
-          <div class="flex items-center justify-between mt-2">
-            <div class="text-3xl font-bold">{{ studentsPresent }}</div>
-            <div class="text-green-500 bg-green-100 rounded-full p-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <div class="text-sm text-gray-900 mt-2">
-            {{ attendancePercentage }}% de asistencia
-          </div>
-        </div>
+        <StudentsKpi 
+          :studentsPresent="studentsPresent"
+          :attendancePercentage="attendancePercentage"
+          :totalActiveStudents="studentsStore.activeStudents.length"
+        />
 
         <!-- KPI de Clases Regulares -->
-        <div v-if="regularClasses !== 0" class="bg-gray-500 rounded-lg shadow p-6">
-          <h3 class="text-lg font-medium text-gray-900">Clases regulares hoy</h3>
-          <div class="flex items-center justify-between mt-2">
-            <div class="text-3xl font-bold">{{ regularClasses }}</div>
-            <div class="text-blue-500 bg-blue-100 rounded-full p-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-          </div>
-          <div class="text-sm text-gray-900 mt-2">
-            En {{ classroomsInUse }} salones
-          </div>
-        </div>
+        <ClassesKpi 
+          :regularClasses="regularClasses"
+          :expectedClasses="expectedClasses"
+          :classCompletionRate="classCompletionRate"
+          :classroomsInUse="classroomsInUse"
+          :expectedClassrooms="expectedClassrooms"
+        />
 
         <!-- KPI de Clases Emergentes -->
-        <div v-if="emergentClasses !== 0" class="bg-gray-500 rounded-lg shadow p-6">
-          <h3 class="text-lg font-medium text-gray-900">Clases emergentes hoy</h3>
-          <div class="flex items-center justify-between mt-2">
-            <div class="text-3xl font-bold">{{ emergentClasses }}</div>
-            <div class="text-purple-500 bg-purple-100 rounded-full p-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <div class="text-sm text-gray-900 mt-2">
-            {{ emergentClassPercentage }}% del total de clases
-          </div>
-        </div>
+        <EmergentClassesKpi 
+          v-if="emergentClasses !== 0"
+          :emergentClasses="emergentClasses"
+          :emergentClassPercentage="emergentClassPercentage"
+          :totalClasses="activeClasses"
+        />
 
         <!-- KPI de Profesores Presentes -->
-        <div class="bg-gray-500 rounded-lg shadow p-6">
-          <h3 class="text-lg font-medium text-gray-900">Maestros activos hoy</h3>
-          <div class="flex items-center justify-between mt-2">
-            <div class="text-3xl font-bold">{{ activeTeachers }}</div>
-            <div class="text-purple-500 bg-purple-100 rounded-full p-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-          </div>
-          <div class="text-sm text-gray-900 mt-2">
-            {{ teacherAttendancePercentage }}% de asistencia
-          </div>
-        </div>
+        <TeachersKpi 
+          :activeTeachers="activeTeachers"
+          :teacherAttendancePercentage="teacherAttendancePercentage"
+          :totalTeachers="teachersStore.teachers.length"
+          :activeTeachersData="activeTeachersWithData"
+        />
       </div>
     </div>
 
     <!-- Panel de Clases del Día -->
-    <TodayClassesPanel ref="todayClassesPanel" class="mb-8" />
+    <MinimizablePanel 
+      title="Clases Programadas para Hoy" 
+      panelId="today-classes" 
+      iconClass="text-blue-500 dark:text-blue-400 bg-blue-100 dark:bg-blue-900"
+      iconPath="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+    >
+      <TodayClassesPanel ref="todayClassesPanel" />
+    </MinimizablePanel>
 
-    <AttendanceWeeklyTable class="mb-8" />
+    <!-- Tabla de Asistencia Semanal -->
+    <MinimizablePanel 
+      title="Asistencia Semanal" 
+      panelId="weekly-attendance"
+      iconClass="text-green-500 dark:text-green-400 bg-green-100 dark:bg-green-900"
+      iconPath="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+    >
+      <AttendanceWeeklyTable />
+    </MinimizablePanel>
 
     <!-- Alumnos con Mayor Ausencia -->
-    <AbsenteesList class="mb-8" :className="null" :limit="5" />
-
+    <MinimizablePanel 
+      title="Estudiantes con Mayor Ausencia" 
+      panelId="absentees"
+      iconClass="text-red-500 dark:text-red-400 bg-red-100 dark:bg-red-900"
+      iconPath="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+    >
+      <AbsenteesList :className="null" :limit="5" />
+    </MinimizablePanel>
   </div>
 </template>
 

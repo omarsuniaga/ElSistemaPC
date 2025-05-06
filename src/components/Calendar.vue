@@ -17,7 +17,6 @@ import { es } from 'date-fns/locale'
 interface MarkedDateInfo {
   date: string; // Formato 'yyyy-MM-dd'
   userId: number | string; // ID del usuario que registró la actividad
-  // Se pueden añadir más campos si es necesario: activityType, description, etc.
 }
 
 // Interfaz para la información del usuario actual
@@ -26,14 +25,13 @@ interface UserInfo {
   role: string; // 'Admin', 'Director', 'Teacher' u otros roles del sistema
 }
 
-// Props: se reciben la fecha actual, las fechas marcadas (pueden ser strings o MarkedDateInfo),
-// la fecha seleccionada, y la información del usuario actual
+// Props: se reciben la fecha actual, las fechas marcadas, la fecha seleccionada, y la información del usuario actual
 const props = defineProps<{
   currentMonth?: Date,
   markedDates?: (string | MarkedDateInfo)[],
   selectedDate?: string,
   currentUser?: UserInfo,
-  highlightedDates?: string[] // Mantenemos compatibilidad con otras props existentes
+  highlightedDates?: string[] // Mantener compatibilidad con otras props existentes
 }>()
 
 const emit = defineEmits<{
@@ -66,18 +64,19 @@ const currentMonthLabel = computed(() => {
 // Función que determina si una fecha está marcada según el rol del usuario
 const isDateMarked = (dateStr: string): boolean => {
   // Si no hay fechas marcadas, no se marca nada
-  if (!props.markedDates || props.markedDates.length === 0) return false;
+  if (!props.markedDates || props.markedDates.length === 0) {
+    return false;
+  }
 
-  // Primero verificamos el formato de markedDates para hacer el componente compatible con ambas versiones
-  // Si el primer elemento es una cadena, asumimos que es el formato antiguo (array de strings)
+  // Primero verificamos el formato de markedDates
   const isLegacyFormat = typeof props.markedDates[0] === 'string';
 
-  // Caso 1: Formato antiguo (array de strings)
+  // Caso 1: Formato de strings directo
   if (isLegacyFormat) {
     return (props.markedDates as string[]).includes(dateStr);
   }
   
-  // Caso 2: Nuevo formato (array de objetos) con filtrado basado en rol
+  // Caso 2: Formato de objetos con información de usuario
   // Si no hay usuario actual, mostramos todas las fechas marcadas
   if (!props.currentUser) {
     return (props.markedDates as MarkedDateInfo[]).some(item => item.date === dateStr);
@@ -113,8 +112,8 @@ interface CalendarDay {
   dayName: string;
 }
 
-
 type DayClickEvent = CalendarDay;
+
 // Función para generar la grilla del calendario (42 días para cubrir 6 semanas)
 const generateCalendar = () => {
   const firstDayOfMonth = startOfMonth(displayedMonth.value)
@@ -130,7 +129,7 @@ const generateCalendar = () => {
       dayOfMonth: getDate(date),
       isCurrentMonth: isSameMonth(date, displayedMonth.value),
       isToday: isToday(date),
-      isMarked: isDateMarked(dateStr), // Ahora usa la lógica de filtrado por usuario
+      isMarked: isDateMarked(dateStr),
       dayName: format(date, 'EEEE', { locale: es })
     })
   }
@@ -152,7 +151,7 @@ const goToCurrentMonth = () => {
 }
 
 // Función de manejo de clic en un día del calendario
-const onClick = (day: { date: string; dayOfMonth: number; isCurrentMonth: boolean; isToday: boolean; isMarked: boolean; dayName: string; }): void => {
+const onClick = (day: CalendarDay): void => {
   if (!day || !day.date) return
   emit('select', day.date)
   emit('day-click', day)
@@ -171,8 +170,6 @@ watch(() => [props.currentMonth, props.markedDates], ([newMonth]) => {
 if (props.currentMonth) {
   displayedMonth.value = props.currentMonth
 }
-
-console.log('Calendar.vue > markedDates:', props.markedDates);
 </script>
 
 <template>
@@ -212,23 +209,22 @@ console.log('Calendar.vue > markedDates:', props.markedDates);
         :class="[
           'p-2 text-center rounded-lg transition-colors relative',
           {
-            marked: day.isMarked,
+            'marked': day.isMarked,
             'text-gray-400 dark:text-gray-600': !day.isCurrentMonth,
             'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-100': day.isToday,
             'hover:bg-gray-100 dark:hover:bg-gray-700': true,
             'font-bold border-2 border-blue-500 dark:border-blue-400': day.date === props.selectedDate
           }
         ]" @click="onClick(day)">
-        <span class="block text-sm">{{ day.dayOfMonth }}</span>
-        <!-- Indicador para fechas con asistencia -->
+        <span class="block text-sm">{{ day.dayOfMonth }}</span>      <!-- Indicador para fechas con asistencia -->
         <div v-if="day.isMarked" class="date-markers">
           <!-- Punto indicador -->
           <span 
-            class="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-green-500 dark:bg-green-400"
+            class="absolute bottom-0.5 left-3/4 transform -translate-x-3/4 w-2.5 h-2.5 rounded-full bg-green-500 dark:bg-green-400"
             :title="`Hay registros de asistencia para ${day.date}`">
           </span>
-          <!-- Texto "Marked" -->
-          <span class="marked-text">Marked</span>
+          <!-- Texto "Registrado" -->
+          <span class="marked-text">Registrado</span>
         </div>
       </button>
     </div>
@@ -242,20 +238,40 @@ console.log('Calendar.vue > markedDates:', props.markedDates);
 
 .marked-text {
   position: absolute;
-  bottom: -5px;
+  bottom: -8px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 0.55rem;
-  padding: 1px 2px;
+  padding: 2px 4px;
   background-color: #4CAF50;
   color: white;
   border-radius: 3px;
   white-space: nowrap;
-  opacity: 0.9;
+  opacity: 0;
   font-weight: bold;
+  transition: opacity 0.2s ease-in-out;
+  z-index: 10;
 }
 
 .marked {
   position: relative;
+  border-bottom: 1px solid #4CAF50 !important;
+  background-color: rgba(76, 175, 80, 0.1) !important;
+}
+
+/* Mostrar el texto al pasar el ratón por encima */
+.marked:hover .marked-text {
+  opacity: 1;
+}
+
+/* Efecto de pulso en las fechas marcadas */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4); }
+  70% { box-shadow: 0 0 0 5px rgba(76, 175, 80, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+}
+
+.marked span.absolute {
+  animation: pulse 2s infinite;
 }
 </style>

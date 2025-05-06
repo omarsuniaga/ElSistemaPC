@@ -2,6 +2,41 @@
   <div class="p-4 space-y-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg shadow">
     <h2 class="text-xl font-bold mb-4 text-primary-600 dark:text-primary-400">Informe de Asistencia</h2>
     
+    <!-- Admin/Director indicator when viewing other teacher's data -->
+    <div v-if="isViewingOtherTeacher" class="bg-blue-50 border-l-4 border-blue-500 p-4 dark:bg-blue-900/20 dark:border-blue-600 mb-4">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <InformationCircleIcon class="h-5 w-5 text-blue-500" aria-hidden="true" />
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-blue-700 dark:text-blue-300">
+            Estás viendo el informe de asistencia de <strong>{{ teacherName }}</strong>
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Debug Info Panel (visible only in development) - FIXED: Use computed property instead of direct import.meta -->
+    <div v-if="isDevelopmentMode" class="bg-yellow-50 border-l-4 border-yellow-500 p-4 dark:bg-yellow-900/20 dark:border-yellow-600 mb-4">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <InformationCircleIcon class="h-5 w-5 text-yellow-500" aria-hidden="true" />
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-yellow-700 dark:text-yellow-300 font-bold">
+            DEBUG INFO
+          </p>
+          <p class="text-xs text-yellow-600 dark:text-yellow-400">
+            Teacher ID: {{ currentTeacherId }} <br>
+            Classes: {{ teacherClasses.length }} <br>
+            Date Range: {{ from }} to {{ to }} <br>
+            Attendance Docs: {{ attendanceStore.attendanceDocuments.length }} <br>
+            Generated Reports: {{ classReports.length }}
+          </p>
+        </div>
+      </div>
+    </div>
+    
     <!-- Controles de fecha -->
     <div class="flex flex-wrap gap-2 items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
       <div class="flex items-center">
@@ -108,7 +143,7 @@
         <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
             <div>
-              <h2 class="text-2xl font-bold">ACADEMIA DE MÚSICA</h2>
+              <h2 class="text-2xl font-bold">El Sistema Punta Cana</h2>
               <p class="text-gray-600 dark:text-gray-400">Informe de Asistencia</p>
             </div>
             <div class="text-left md:text-right mt-4 md:mt-0">
@@ -149,16 +184,7 @@
         <!-- Por cada clase, mostrar una tabla de asistencias -->
         <div v-for="(classData, index) in classReports" :key="index" class="mb-10">
           <h3 class="text-xl font-bold mb-3 text-primary-600 dark:text-primary-400">{{ classData.className }}</h3>
-          
-          <!-- Observaciones de la clase -->
-          <div v-if="classData.observations && classData.observations.length > 0" class="mb-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <h4 class="font-medium mb-1">Observaciones:</h4>
-            <ul class="list-disc pl-5 space-y-1">
-              <li v-for="(obs, idx) in classData.observations" :key="idx">
-                {{ formatDate(obs.date) }}: {{ obs.text }}
-              </li>
-            </ul>
-          </div>
+
             <!-- Tabla de alumnos y asistencias -->
           <div class="overflow-x-auto">
             <table class="w-full table-auto border-collapse">
@@ -186,16 +212,18 @@
                     <span :class="getStatusClass(student.attendance[date])">
                       {{ getStatusSymbol(student.attendance[date]) }}
                     </span>
-                  </td>                  <td class="p-2 border border-gray-300 dark:border-gray-600">
+                  </td>
+                    <td class="p-2 border border-gray-300 dark:border-gray-600">
                     <!-- Mostrar observación o razón de justificación -->
                     <template v-if="student.observations">{{ student.observations }}</template>
                     <template v-else>
                       <!-- Buscar si hay alguna justificación en las fechas -->
                       <template v-for="date in classData.relevantDates" :key="date">
                         <template v-if="student.attendance[date] === 'J' && getStudentJustification(classData.classId, date, student.id)">
-                          <span class="text-blue-600 dark:text-blue-400">
-                            {{ formatDateShort(date) }}: {{ getStudentJustification(classData.classId, date, student.id) }}
-                          </span>
+                          <div class="text-blue-600 dark:text-blue-400 font-bold mb-1">
+                            <span class="font-semibold underline">{{ formatDateShort(date) }}</span>:
+                            <span class="whitespace-pre-line">{{ formatObservationText(getStudentJustification(classData.classId, date, student.id)) }}</span>
+                          </div>
                         </template>
                       </template>
                     </template>
@@ -242,8 +270,8 @@
           {{ formatDate(obs.date) }}
         </span>
       </div>
-      <p class="text-gray-700 dark:text-gray-200 text-sm pl-6">
-        {{ obs.text }}
+      <p class="text-gray-700 dark:text-gray-200 text-sm pl-6 hitespace-pre-line">
+        {{ formatObservationText(obs.text) }}
       </p>
     </div>
   </div>
@@ -291,26 +319,77 @@ import Chart from 'chart.js/auto'
 import { format, subDays, subWeeks, subMonths, parseISO, eachDayOfInterval, getDay, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { CalendarIcon, InformationCircleIcon } from '@heroicons/vue/24/outline'
+import { useRoute } from 'vue-router'
+
+// Add missing computed property for development mode
+const isDevelopmentMode = computed(() => {
+  return import.meta.env.DEV;
+});
 
 // Stores
 import { useAttendanceStore } from '../modulos/Attendance/store/attendance'
 import { useAuthStore } from '../stores/auth'
 import { useClassesStore } from '../stores/classes'
 import { useStudentsStore } from '../modulos/Students/store/students'
+import { useTeachersStore } from '../modulos/Teachers/store/teachers' // Add this import
+
+// Props definition
+const props = defineProps({
+  teacherId: {
+    type: String,
+    default: ''
+  }
+})
+
+// Get route to read query params
+const route = useRoute()
 
 // 1. Leer el usuario y su rol
 const authStore = useAuthStore()
 const attendanceStore = useAttendanceStore()
 const classesStore = useClassesStore()
 const studentsStore = useStudentsStore()
+const teachersStore = useTeachersStore() // Add teachers store
 
-// Estado del componente
-const from = ref(format(subWeeks(new Date(), 1), 'yyyy-MM-dd'))
-const to = ref(format(new Date(), 'yyyy-MM-dd'))
-const loading = ref(false)
+// Estado del componente - UPDATED: use current year not future dates
+const from = ref(format(subDays(new Date(), 30), 'yyyy-MM-dd')); // Changed to 30 days ago instead of a week
+const to = ref(format(new Date(), 'yyyy-MM-dd')); // Today
+const loading = ref(false);
 const error = ref<string | null>(null)
-const teacherName = computed(() => authStore.user?.displayName || authStore.user?.email || 'Profesor')
-const userId = computed(() => authStore.user?.uid)
+
+// Get teacher ID based on user role
+const currentTeacherId = computed(() => {
+  const userRole = authStore.user?.role;
+  
+  // For Director or Admin roles, prioritize the query parameter
+  if (userRole === 'Director' || userRole === 'Admin') {
+    // If a teacherId was provided in the URL, use it
+    if (route.query.teacherId) {
+      return route.query.teacherId as string;
+    }
+  }
+  
+  // For teachers or as fallback, use the user's own ID
+  return props.teacherId || authStore.user?.uid;
+});
+
+// Flag to show admin indicator
+const isViewingOtherTeacher = computed(() => {
+  return (authStore.user?.role === 'Director' || authStore.user?.role === 'Admin') && 
+         route.query.teacherId && 
+         route.query.teacherId !== authStore.user?.uid;
+});
+
+// Get teacher name from the store based on the ID
+const teacherName = computed(() => {
+  if (!currentTeacherId.value) return authStore.user?.email || 'Profesor'
+  
+  const teacher = teachersStore.teachers.find(t => t.id === currentTeacherId.value)
+  return teacher ? teacher.name : authStore.user?.email || 'Profesor'
+})
+
+// Filtered teacher classes - only classes for the current teacher
+const teacherClasses = ref<any[]>([])
 
 // Referencias para gráficas
 const chartDates = ref<HTMLCanvasElement | null>(null)
@@ -318,7 +397,7 @@ const chartWeekday = ref<HTMLCanvasElement | null>(null)
 let chart1: any, chart2: any
 
 // 2. Buscar las clases del maestro
-const teacherClasses = ref<any[]>([])
+// const teacherClasses = ref<any[]>([])
 
 // 3. Listas para almacenar los datos procesados
 const classReports = ref<Array<{
@@ -581,30 +660,6 @@ function hasAnyObservations(classData: any): boolean {
   return false;
 }
 
-// Función para obtener la justificación de un estudiante en una fecha específica
-function getStudentJustification(classId: string, date: string, studentId: string): string | null {
-  // Buscar documentos de asistencia que coincidan con los criterios
-  const attendanceDocs = attendanceStore.attendanceDocuments.filter(doc => 
-    (doc.Fecha === date || doc.fecha === date) && 
-    doc.classId === classId &&
-    doc.studentId === studentId
-  );
-  
-  // Revisar cada documento en busca de justificación
-  for (const doc of attendanceDocs) {
-    // Manejar diferentes formatos de justificación
-    if (doc.justification) {
-      if (typeof doc.justification === 'string') {
-        return doc.justification;
-      } else if (doc.justification.reason) {
-        return doc.justification.reason;
-      }
-    }
-  }
-  
-  return null;
-}
-
 // FUNCIÓN PRINCIPAL: Generar el informe
 async function fetchReport() {
   try {
@@ -612,6 +667,10 @@ async function fetchReport() {
     error.value = null;
     
     console.log('Generando informe de asistencia para', teacherName.value);
+    console.log('Rango de fechas:', from.value, 'a', to.value);
+    console.log('ID del maestro:', currentTeacherId.value);
+    const teacherId = currentTeacherId.value;
+    
     
     // 1. Asegurarnos de que tenemos los datos necesarios cargados
     if (!classesStore.classes.length) {
@@ -622,36 +681,60 @@ async function fetchReport() {
       await studentsStore.fetchStudents();
     }
     
-    if (!attendanceStore.attendanceDocuments.length) {
-      await attendanceStore.fetchAttendanceDocuments();
-    }
-
+    // Important: Force reload attendance documents to ensure we have fresh data
+    await attendanceStore.loadAttendanceDataForCalendar(teacherId);
+    console.log(`Cargados ${attendanceStore.attendanceDocuments.length} documentos de asistencia`);
+    
     if (!attendanceStore.observationsHistory.length) {
       await attendanceStore.fetchObservations();
     }
-
     
-    // 2. Obtener las clases del maestro actual
-    teacherClasses.value = classesStore.classes.filter(cls => cls.teacherId === userId.value);
-    console.log('Clases del maestro:', teacherClasses.value.length);
+    // Load teachers if needed
+    if (!teachersStore.teachers.length) {
+      await teachersStore.fetchTeachers();
+    }
+    
+    // 2. Obtener las clases del maestro actual - filtrar por el ID del maestro obtenido
+    teacherClasses.value = classesStore.classes.filter(cls => cls.teacherId === currentTeacherId.value);
+    console.log('Clases del maestro:', teacherClasses.value.length, teacherClasses.value.map(c => c.name));
     
     if (teacherClasses.value.length === 0) {
-      error.value = "No se encontraron clases asignadas a este maestro";
+      error.value = `No se encontraron clases asignadas al maestro con ID: ${currentTeacherId.value}`;
       return;
     }
     
-  // 3. Inicializar estructura para el reporte por clase
+    // Debugging: Check which attendance documents exist for this teacher's classes
+    const teacherClassIds = teacherClasses.value.map(cls => cls.id);
+    const relevantDocs = attendanceStore.attendanceDocuments.filter(doc => {
+      const docDate = doc.fecha || doc.Fecha || doc.date;
+      const isInDateRange = docDate >= from.value && docDate <= to.value;
+      const isForTeacherClass = teacherClassIds.includes(doc.classId);
+      return isInDateRange && isForTeacherClass;
+    });
+    
+    console.log(`Encontrados ${relevantDocs.length} documentos de asistencia relevantes para las clases del maestro en el período seleccionado`);
+    if (relevantDocs.length > 0) {
+      console.log('Muestra de documentos encontrados:', relevantDocs.slice(0, 3).map(doc => ({
+        fecha: doc.fecha || doc.Fecha || doc.date, 
+        classId: doc.classId,
+        className: classesStore.classes.find(c => c.id === doc.classId)?.name || 'Desconocida'
+      })));
+    } else {
+      console.warn('No se encontraron documentos de asistencia para las clases de este maestro en el rango de fechas especificado');
+    }
+    
+    // 3. Inicializar estructura para el reporte por clase
     const classStructure: Record<string, {
       classId: string;
       className: string;
       daySchedule: number[];
-      observations: Array<{ date: string; text: string }>;
+      observations: Array<{ date: string; text: string }> ;
       students: Record<string, {
         id: string;
         name: string;
         attendance: Record<string, string>;
         observations: string;
-      }>;
+      }> ;
     }> = {};
     
     // Preparar la estructura para cada clase
@@ -710,19 +793,21 @@ async function fetchReport() {
         
         // Si la clase no tiene programación este día, continuar con la siguiente
         if (!classData.daySchedule.includes(dayOfWeek)) continue;
+        
         // Asegurarnos de cargar el documento de asistencia actual antes de procesar las observaciones
         try {
           await attendanceStore.fetchAttendanceDocument(dateStr, classId);
         } catch (e) {
           console.warn(`No se pudo cargar el documento de asistencia para ${dateStr}, clase ${classId}`, e);
         }
-          // Buscar documentos de asistencia para esta fecha y clase
-        // Con la nueva estructura, pueden existir múltiples registros (uno por alumno)
+        
+        // Buscar documentos de asistencia para esta fecha y clase - con mejor manejo de diferentes formatos de fecha
         const attendanceDocs = attendanceStore.attendanceDocuments.filter(doc => 
-          doc.Fecha === dateStr && 
+          (doc.Fecha === dateStr || doc.fecha === dateStr || doc.date === dateStr) && 
           doc.classId === classId
         );
-          // Si existen documentos de asistencia, procesar los datos
+        
+        // Si existen documentos de asistencia, procesar los datos
         if (attendanceDocs.length > 0) {
           console.log(`Se encontraron ${attendanceDocs.length} registros de asistencia para ${dateStr}, clase ${classId}`);
           
@@ -786,6 +871,7 @@ async function fetchReport() {
               // Registrar el estado para este estudiante en esta fecha
               classData.students[studentId].attendance[dateStr] = mappedStatus;
               
+
               // Si tiene justificación, registrarla
               if (!classData.students[studentId].observations) {
                 let reason = '';
@@ -822,7 +908,8 @@ async function fetchReport() {
           for (const studentId in classData.students) {
             classData.students[studentId].attendance[dateStr] = '-';
           }
-        }      }
+        }
+      }
     }
     
     // 5. Filtrar fechas relevantes para cada clase y ordenarlas cronológicamente
@@ -1292,13 +1379,12 @@ if (typeof window !== 'undefined') {
 }
 
 // Observar cambios en las fechas para regenerar informe
-watch([from, to], () => {
+watch([currentTeacherId, from, to], () => {
   fetchReport();
 });
 
 // Inicializar informe al montar el componente
 onMounted(() => {
-    // mostrar en console el valor de attendanceStore.records
   fetchReport();
 });
 
@@ -1332,174 +1418,91 @@ const logObservationsGrouped = (classReports: any[]) => {
   
   console.groupEnd();
 };
+
+
+function formatJustificationText(text: string): string {
+  if (!text) return '';
+  
+  // Reemplazar : con salto de línea
+  let formatted = text.replace(/:/g, ':\n');
+  
+  // Reemplazar patrones de guion con salto de línea
+  formatted = formatted.replace(/(\s-\s|\n-\s|^-\s)/g, '\n- ');
+  
+  return formatted;
+}
+
+/**
+ * Formats observation text to improve readability:
+ * - Adds line breaks after colons
+ * - Formats dashes as bullet points
+ * - Ensures proper spacing for list items
+ * - Adds line break after each bullet point
+ * 
+ * @param text The observation text to format
+ * @returns Formatted text with improved readability
+ */
+function formatObservationText(text: string): string {
+  if (!text || typeof text !== 'string') return '';
+  
+  // Replace colons with colon + line break
+  let formatted = text.replace(/:\s*/g, ':\n');
+  
+  // Format dash-prefixed text as bullet points
+  // Match dash followed by space at start of line or after line break
+  formatted = formatted.replace(/^-\s+/gm, '• ');     // Dash at beginning of text
+  formatted = formatted.replace(/\n-\s+/g, '\n• ');   // Dash after line break
+  formatted = formatted.replace(/\s+-\s+/g, '\n• ');  // Dash with spaces before and after
+  
+  // Ensure two line breaks before bullet points that follow normal text
+  formatted = formatted.replace(/([^\n])(\n• )/g, '$1\n\n• ');
+  
+  // Add line break after each bullet point item
+  formatted = formatted.replace(/• (.+?)(?=\n• |\n\n|$)/g, '• $1\n');
+  
+  // Clean up any excessive line breaks (more than 2 consecutive)
+  formatted = formatted.replace(/\n{3,}/g, '\n\n');
+  
+  return formatted;
+}
+
+/**
+ * Get justification reason for a student on a specific date and class
+ * 
+ * @param classId - Class identifier
+ * @param date - Date string in YYYY-MM-DD format
+ * @param studentId - Student identifier
+ * @returns The justification reason or null if not found
+ */
+function getStudentJustification(classId: string, date: string, studentId: string): string | null {
+  // First check if we can find the document in the attendance store
+  const document = attendanceStore.attendanceDocuments.find(
+    doc => doc.classId === classId && 
+           (doc.fecha === date || doc.Fecha === date || doc.date === date)
+  );
+  
+  // If we found a document, look for justification
+  if (document && document.data && document.data.justificacion) {
+    const justification = document.data.justificacion.find(j => j.id === studentId);
+    if (justification) {
+      return justification.reason || '';
+    }
+  }
+  
+  // As a fallback, check in the class reports structure
+  const classData = classReports.value.find(c => c.classId === classId);
+  if (classData) {
+    const student = classData.students.find(s => s.id === studentId);
+    if (student && student.observations) {
+      return student.observations;
+    }
+  }
+  
+  return null;
+}
+
+// ...existing code...
 </script>
 
 <style scoped>
-/* Estilos para impresión */
-@media print {
-  .bg-white { background-color: white !important; }
-  .text-gray-900 { color: black !important; }
-  button, input, .btn, .flex-wrap:not(#printable-report *) { display: none !important; }
-  
-  #printable-report {
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0.5cm !important;
-    border: none !important;
-  }
-  
-  /* Estilos para tablas en modo de impresión */
-  table { 
-    border-collapse: collapse !important;
-    width: 100% !important;
-    page-break-inside: auto !important;
-  }
-  
-  tr {
-    page-break-inside: avoid !important;
-    page-break-after: auto !important;
-  }
-  
-  th, td { 
-    border: 1px solid #000 !important; 
-    padding: 2px 5px !important;
-    font-size: 11px !important;
-  }
-  
-  /* Configuración para separar clases en páginas distintas */
-  .mb-10 {
-    page-break-after: always !important;
-  }
-  
-  .mb-10:last-child {
-    page-break-after: avoid !important;
-  }
-  
-  /* Asegura que los encabezados de clase empiecen en nueva página */
-  h3 { 
-    margin-top: 15px !important;
-    margin-bottom: 5px !important; 
-  }
-  
-  /* Evitar salto de página en el primer encabezado */
-  h3:first-of-type {
-    page-break-before: avoid !important;
-  }
-  
-  /* Clase especial para PDF con orientación horizontal */
-  .pdf-landscape-mode {
-    size: landscape !important;
-    width: 100% !important;
-  }
-}
-
-/* Configuración global de la página para impresión en modo horizontal */
-@page {
-  size: landscape;
-}
-
-/* Colores para los diferentes estados */
-.text-green-600 { color: #10b981; }
-.text-red-600 { color: #ef4444; }
-.text-yellow-600 { color: #f59e0b; }
-.text-blue-600 { color: #3b82f6; }
-
-/* Estilos responsivos */
-@media (max-width: 768px) {
-  .overflow-x-auto {
-    max-width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
-/* Enhanced PDF export styles - more compact version */
-:global(.pdf-export) {
-  background-color: white !important;
-  color: black !important;
-  font-size: 13pt !important; /* Reduced from 12pt */
-  transform: scale(0.95); /* Scale down entire content */
-  transform-origin: top left;
-  margin-bottom: -15% !important; /* Compensate for scaling */
-}
-
-/* Each class gets its own page - with reduced margins */
-:global(.pdf-page-break) {
-  page-break-after: always !important;
-  margin-bottom: 10mm !important; /* Reduced from 20mm */
-}
-
-:global(.pdf-page-break:last-child) {
-  page-break-after: auto !important;
-}
-
-/* More compact table styling for PDF */
-:global(.pdf-export table) {
-  width: 100% !important;
-  border-collapse: collapse !important;
-  margin-bottom: 5mm !important; /* Reduced from 10mm */
-}
-
-:global(.pdf-export th) {
-  background-color: #f3f4f6 !important;
-  color: #111827 !important;
-  font-weight: bold !important;
-  text-align: left !important;
-  padding: 2mm !important; /* Reduced from 4mm */
-  border: 1px solid #d1d5db !important;
-  font-size: 8pt !important; /* Added specific font size */
-}
-
-:global(.pdf-export td) {
-  padding: 1mm 2mm !important; /* Reduced from 2mm 4mm */
-  border: 1px solid #d1d5db !important;
-  font-size: 8pt !important; /* Added specific font size */
-}
-
-/* More compact headers for PDF */
-:global(.pdf-export h2) {
-  font-size: 12pt !important; /* Reduced from 16pt */
-  margin-bottom: 3mm !important; /* Reduced from 5mm */
-  color: #000 !important;
-}
-
-:global(.pdf-export h3) {
-  font-size: 11pt !important; /* Reduced from 14pt */
-  margin-top: 6mm !important; /* Reduced from 10mm */
-  margin-bottom: 3mm !important; /* Reduced from 5mm */
-  color: #000 !important;
-}
-
-/* Reduce spacing in the observations section */
-:global(.pdf-export .bg-gray-50),
-:global(.pdf-export .bg-gray-100) {
-  padding: 2mm !important;
-  margin-bottom: 3mm !important;
-  background-color: #f9fafb !important;
-  border-radius: 2mm !important;
-}
-
-:global(.pdf-export .border-l-4) {
-  border-left-width: 2mm !important;
-  border-color: #2563eb !important;
-}
-
-/* Destacar observaciones en PDF */
-:global(.pdf-export .text-primary-600),
-:global(.pdf-export .text-primary-400) {
-  color: #2563eb !important;
-  font-weight: bold !important;
-}
-
-/* Ajustar espacio entre fechas en la tabla */
-:global(.pdf-export th) {
-  white-space: nowrap !important;
-}
-
-/* Hacer que las observaciones de estudiantes sean más visibles */
-:global(.pdf-export .text-blue-600),
-:global(.pdf-export .text-blue-400) {
-  color: #2563eb !important;
-  font-weight: bold !important;
-}
 </style>

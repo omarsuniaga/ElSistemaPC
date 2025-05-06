@@ -256,6 +256,16 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/ClassSelectionView.vue')
   },
   {
+    path: '/attendance/informe',
+    name: 'AttendanceReport',
+    component: () => import('../components/TeacherInformeAttendance.vue'),
+    props: route => ({ teacherId: route.query.teacherId }),
+    meta: { 
+      requiresAuth: true, 
+      allowedRoles: ['Director', 'Admin', 'Maestro'] 
+    }
+  },
+  {
     path: '/teacher/attendance/informe',
     name: 'TeacherInformeAttendance',
     component: () => import('../components/TeacherInformeAttendance.vue'),

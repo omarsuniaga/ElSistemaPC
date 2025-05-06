@@ -144,12 +144,6 @@ function getStatusLabel(status: string) {
 </script>
 <template>
   <section class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden" aria-labelledby="today-classes-title">
-    <header class="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 border-b dark:border-gray-700 flex justify-between items-center">
-      <h2 id="today-classes-title" class="text-lg font-medium text-gray-900 dark:text-gray-100">
-        Clases de hoy
-      </h2>
-    </header>
-
     <div v-if="isLoading" class="flex justify-center items-center p-6">
       <div class="animate-pulse flex flex-col items-center">
         <div class="rounded-full bg-gray-200 dark:bg-gray-700 h-10 w-10 mb-2"></div>
@@ -178,7 +172,7 @@ function getStatusLabel(status: string) {
               {{ classItem.name }}
             </div>
             <div class="text-xs text-gray-500 dark:text-gray-400">
-              Maestro: {{ classItem.teacherName }} | Salón: {{ classItem.classroom || 'Sin asignar' }}
+              Maestro: {{ classItem.teacherName }} | {{ classItem.classroom || 'Sin asignar' }}
             </div>
           </div>
           <div class="flex flex-col items-end">

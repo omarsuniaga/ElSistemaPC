@@ -1,24 +1,31 @@
 // Función para generar PDF con html2pdf
 export async function generatePDF(element, fileName, options = {}) {
   try {
+    // Forzar tema claro eliminando modo oscuro
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('dark');
+    }
+    // Asegurar que el elemento no tenga clases dark
+    element.classList.remove('dark');
     // Importar la librería html2pdf dinámicamente
     const html2pdf = (await import('html2pdf.js')).default;
 
     // Configuraciones por defecto para PDF
     const defaultOptions = {
-      margin: [10, 10, 10, 10], // [top, right, bottom, left] en mm
+      margin: [5, 5, 5, 5], // [top, right, bottom, left] en mm
       filename: fileName,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: {
         scale: 2,
         useCORS: true,
         letterRendering: true,
-        scrollY: 0
+        scrollY: 0,
+        backgroundColor: '#ffffff' // Forzar fondo claro en PDF
       },
       jsPDF: {
         unit: 'mm',
         format: 'a4',
-        orientation: 'landscape'
+        // orientation: 'landscape'
       },
       // Configuración mejorada de saltos de página
       pagebreak: {

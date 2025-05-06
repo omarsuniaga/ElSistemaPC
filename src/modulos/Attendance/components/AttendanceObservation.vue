@@ -176,23 +176,31 @@ const saveObservation = async () => {
   if (!newObservation.value.trim() || characterCount.value > 1000) return;
   
   isLoading.value = true;
-  try {
-    // Obtener info del usuario actual
-    const username = authStore.user?.displayName || authStore.user?.email || 'Usuario';
-    // IMPORTANTE: Guardar la observación con la fecha de la clase (attendanceDate), no la fecha actual
-    await attendanceStore.addObservationToHistory(
-      props.classId,
-      props.attendanceDate, // <- este campo será el que se almacene como 'date' en la observación
-      newObservation.value,
-      username
-    );
-    // Emitir para mantener compatibilidad con el flujo actual
-    emit('observation', newObservation.value);
-    close();
-  } catch (error) {
-    console.error('Error al guardar la observación:', error);
-  } finally {
-    isLoading.value = false;
-  }
+    try {
+      // Obtener info del usuario actual
+      const username = authStore.user?.displayName || authStore.user?.email || 'Usuario';
+      // Verificar si ya existe una observación para esta clase y fecha
+      const existing = await attendanceStore.getObservationsHistory(props.classId, props.attendanceDate);
+      if (existing.length > 0) {
+        // Actualizar la primera observación existente
+        const obsEntry = existing[0];
+        await attendanceStore.updateObservationInHistory(obsEntry.id, newObservation.value);
+      } else {
+        // Crear nueva observación
+        await attendanceStore.addObservationToHistory(
+          props.classId,
+          props.attendanceDate,
+          newObservation.value,
+          username
+        );
+      }
+      // Emitir evento y cerrar modal
+      emit('observation', newObservation.value);
+      close();
+    } catch (error) {
+      console.error('Error al guardar/actualizar la observación:', error);
+    } finally {
+      isLoading.value = false;
+    }
 }
 </script>

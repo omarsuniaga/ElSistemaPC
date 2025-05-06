@@ -9,7 +9,10 @@ import {
   serverTimestamp,
   query,
   where,
-  addDoc
+  addDoc,
+  orderBy,
+  Timestamp,
+  deleteDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../firebase';
@@ -19,10 +22,11 @@ import type {
   AttendanceRecord, 
   ClassObservation 
 } from '../types/attendance';
+import { auth } from '../../../firebase'; // Asegúrate de importar auth desde tu configuración de Firebase
 
-// Constantes
-const COLLECTION_ATTENDANCE = 'ASISTENCIAS';
-const COLLECTION_OBSERVATIONS = 'OBSERVACIONES';
+// Constants
+const ATTENDANCE_COLLECTION = 'ASISTENCIAS';
+const OBSERVATIONS_COLLECTION = 'OBSERVACIONES';
 
 /**
  * Genera un ID de documento consistente para documentos de asistencia
@@ -38,7 +42,7 @@ export const getAttendanceDocumentFirebase = async (
 ): Promise<AttendanceDocument | null> => {
   try {
     const docId = getAttendanceDocId(fecha, classId);
-    const docRef = doc(db, COLLECTION_ATTENDANCE, docId);
+    const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
@@ -60,7 +64,7 @@ export const saveAttendanceDocumentFirebase = async (
 ): Promise<string> => {
   try {
     const docId = getAttendanceDocId(attendanceDoc.fecha, attendanceDoc.classId);
-    const docRef = doc(db, COLLECTION_ATTENDANCE, docId);
+    const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
     const docSnap = await getDoc(docRef);
     
     const updates = {
@@ -103,7 +107,7 @@ export const addJustificationToAttendanceFirebase = async (
 
     // Obtener o crear el documento
     const docId = getAttendanceDocId(fecha, classId);
-    const docRef = doc(db, COLLECTION_ATTENDANCE, docId);
+    const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
@@ -190,7 +194,7 @@ export const updateObservationsFirebase = async (
 ): Promise<string> => {
   try {
     const docId = getAttendanceDocId(fecha, classId);
-    const docRef = doc(db, COLLECTION_ATTENDANCE, docId);
+    const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
@@ -243,19 +247,55 @@ export const updateObservationsFirebase = async (
 };
 
 /**
- * Obtiene todos los documentos de asistencia
+ * Obtiene todos los documentos de asistencia por maestro
  */
-export const getAllAttendanceDocumentsFirebase = async (): Promise<AttendanceDocument[]> => {
+export const getAllAttendanceDocumentsFirebase = async (
+  teacherId?: string
+): Promise<AttendanceDocument[]> => {
   try {
-    const attendanceCollection = collection(db, COLLECTION_ATTENDANCE);
-    const querySnapshot = await getDocs(attendanceCollection);
-    
-    return querySnapshot.docs.map(doc => doc.data() as AttendanceDocument);
+    // Referencia a la colección de asistencias en Firestore
+    const attendanceCollection = collection(db, ATTENDANCE_COLLECTION);
+
+    // Si se proporciona teacherId, filtramos por ese campo
+    if (teacherId) {
+      const teacherQuery = query(
+        attendanceCollection,
+        where('teacherId', '==', teacherId)
+      );
+
+      // Ejecutamos la consulta filtrada
+      const querySnapshot = await getDocs(teacherQuery);
+
+      // Mappeamos cada documento al tipo AttendanceDocument
+      // e incluimos el ID del documento en la propiedad 'id'
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data() as AttendanceDocument;
+        return {
+          ...data,
+          id: doc.id
+        };
+      });
+    } else {
+      // Si no se pasa teacherId, traemos todos los documentos
+      const querySnapshot = await getDocs(attendanceCollection);
+
+      // Convertimos cada documento al tipo AttendanceDocument
+      const res = querySnapshot.docs.map(doc =>
+        doc.data() as AttendanceDocument
+      );
+
+      // Mostramos en consola los datos para fines de depuración
+      console.log('Document Data:', res);
+
+      return res;
+    }
   } catch (error) {
+    // En caso de error, lo registramos y lo volvemos a lanzar
     console.error('Error al obtener documentos de asistencia:', error);
     throw error;
   }
 };
+
 
 /**
  * Convierte documentos al formato antiguo para compatibilidad
@@ -314,7 +354,7 @@ export const addClassObservationFirebase = async (
   author: string
 ): Promise<string> => {
   try {
-    const observationsCollection = collection(db, COLLECTION_OBSERVATIONS);
+    const observationsCollection = collection(db, OBSERVATIONS_COLLECTION);
     
     const newObservation: ClassObservation = {
       id: '',
@@ -347,7 +387,7 @@ export const addClassObservationFirebase = async (
 
 export const getAllObservationsFirebase = async (): Promise<ClassObservation[]> => {
   try {
-    const observationsCollection = collection(db, COLLECTION_OBSERVATIONS);
+    const observationsCollection = collection(db, OBSERVATIONS_COLLECTION);
     const querySnapshot = await getDocs(observationsCollection);
     
     return querySnapshot.docs.map(doc => {
@@ -447,7 +487,9 @@ export const getAttendancesFirebase = async (): Promise<AttendanceRecord[]> => {
     const documents = await getAllAttendanceDocumentsFirebase();
     
     // Convertir todos los documentos a registros
-    return documents.flatMap(doc => convertDocumentToRecords(doc));
+    const res = documents.flatMap(doc => convertDocumentToRecords(doc));
+    console.log('Registros de asistencia:', res);
+    return res
   } catch (error) {
     console.error('Error al obtener registros de asistencia:', error);
     throw error;
@@ -486,7 +528,7 @@ export const updateAttendanceFirebase = async (attendanceData: AttendanceRecord)
   try {
     // Obtener o crear el documento
     const docId = getAttendanceDocId(attendanceData.Fecha, attendanceData.classId);
-    const docRef = doc(db, COLLECTION_ATTENDANCE, docId);
+    const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
     const docSnap = await getDoc(docRef);
     
     let document: AttendanceDocument;
@@ -592,7 +634,7 @@ export const registerAttendanceFirebase = async (attendanceData: AttendanceRecor
  */
 export const getAttendanceReport = async () => {
   try {
-    const querySnapshot = await getDocs(collection(db, COLLECTION_ATTENDANCE));
+    const querySnapshot = await getDocs(collection(db, ATTENDANCE_COLLECTION));
     
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -609,69 +651,78 @@ export const getAttendanceReport = async () => {
  */
 export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endDate: string): Promise<AttendanceRecord[]> => {
   try {
-    const attendanceRef = collection(db, COLLECTION_ATTENDANCE);
-    
-    // Query using the fecha field between the start and end dates
-    const q = query(
-      attendanceRef,
-      where("fecha", ">=", startDate),
-      where("fecha", "<=", endDate)
+    // Create a query against the attendance collection
+    const attendanceQuery = query(
+      collection(db, 'ASISTENCIAS'),
+      where('fecha', '>=', startDate),
+      where('fecha', '<=', endDate),
+      orderBy('fecha', 'asc')
     );
-    
-    const querySnapshot = await getDocs(q);
+
+    const snapshot = await getDocs(attendanceQuery);
     const records: AttendanceRecord[] = [];
     
-    querySnapshot.forEach((doc) => {
+    snapshot.forEach((doc) => {
       const data = doc.data();
-      // Process according to Firestore structure
-      if (data && data.fecha && data.classId && data.data) {
-        // Process present students
-        if (data.data.presentes && Array.isArray(data.data.presentes)) {
-          data.data.presentes.forEach((studentId: string) => {
+      
+      // Process each document into a normalized attendance record format
+      if (data.data) {
+        // Handle newer document format
+        const { fecha, classId, data: attendanceData } = data;
+        
+        // Process presente students
+        if (attendanceData.presentes && Array.isArray(attendanceData.presentes)) {
+          attendanceData.presentes.forEach((studentId: string) => {
             records.push({
-              id: doc.id,
+              id: doc.id + '_' + studentId,
               studentId,
-              classId: data.classId,
-              Fecha: data.fecha,
-              status: 'Presente',
+              classId,
+              Fecha: fecha,
+              status: 'Presente'
             });
           });
         }
         
-        // Process absent students
-        if (data.data.ausentes && Array.isArray(data.data.ausentes)) {
-          data.data.ausentes.forEach((studentId: string) => {
+        // Process ausente students
+        if (attendanceData.ausentes && Array.isArray(attendanceData.ausentes)) {
+          attendanceData.ausentes.forEach((studentId: string) => {
             records.push({
-              id: doc.id,
+              id: doc.id + '_' + studentId,
               studentId,
-              classId: data.classId,
-              Fecha: data.fecha,
-              status: 'Ausente',
+              classId,
+              Fecha: fecha,
+              status: 'Ausente'
             });
           });
         }
         
-        // Process late students and justifications
-        if (data.data.tarde && Array.isArray(data.data.tarde)) {
-          data.data.tarde.forEach((studentId: string) => {
-            // Check if student has a justification
-            const hasJustification = data.data.justificacion?.some((j: JustificationData) => j.id === studentId);
+        // Process tarde students (with possible justification)
+        if (attendanceData.tarde && Array.isArray(attendanceData.tarde)) {
+          attendanceData.tarde.forEach((studentId: string) => {
+            const justification = attendanceData.justificacion?.find(
+              (j: any) => j.id === studentId
+            );
             
             records.push({
-              id: doc.id,
+              id: doc.id + '_' + studentId,
               studentId,
-              classId: data.classId,
-              Fecha: data.fecha,
-              status: hasJustification ? 'Justificado' : 'Tardanza',
-              justification: hasJustification ? 
-                { 
-                  reason: data.data.justificacion.find((j: JustificationData) => j.id === studentId)?.reason || '',
-                  documentUrl: data.data.justificacion.find((j: JustificationData) => j.id === studentId)?.documentURL
-                } : 
-                undefined
+              classId,
+              Fecha: fecha,
+              status: justification ? 'Justificado' : 'Tardanza',
+              justification: justification ? justification.reason : undefined
             });
           });
         }
+      } else {
+        // Handle older direct record format
+        records.push({
+          id: doc.id,
+          studentId: data.studentId,
+          classId: data.classId,
+          Fecha: data.Fecha,
+          status: data.status,
+          justification: data.justification
+        });
       }
     });
     
@@ -688,7 +739,7 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
 export const getAttendanceStatusFirebase = async (studentId: string, date: string, classId?: string): Promise<string> => {
   try {
     // Query the attendance collection for the specific date
-    const attendanceRef = collection(db, COLLECTION_ATTENDANCE);
+    const attendanceRef = collection(db, ATTENDANCE_COLLECTION);
     let q;
     
     if (classId) {
@@ -735,3 +786,196 @@ export const getAttendanceStatusFirebase = async (studentId: string, date: strin
     throw error;
   }
 };
+
+/**
+ * Add a class observation to history
+ * 
+ * @param classId - Class identifier
+ * @param date - Date string in YYYY-MM-DD format
+ * @param text - Observation text
+ * @param author - Author name or identifier
+ * @returns Promise that resolves when the observation is added
+ */
+export async function addObservationToHistoryFirebase(
+  classId: string, 
+  date: string, 
+  text: string, 
+  author: string
+): Promise<void> {
+  try {
+    // Check if an observation already exists for this class and date
+    const existingQuery = query(
+      collection(db, OBSERVATIONS_COLLECTION),
+      where('classId', '==', classId),
+      where('date', '==', date)
+    );
+    
+    const querySnapshot = await getDocs(existingQuery);
+    
+    if (!querySnapshot.empty) {
+      // Observation exists, update it
+      const existingObservation = querySnapshot.docs[0];
+      await updateObservationInHistoryFirebase(existingObservation.id, text);
+    } else {
+      // No existing observation, create a new one
+      const observationData = {
+        text,
+        createdAt: new Date().toISOString(),
+        author,
+        classId,
+        date
+      };
+      
+      // Add to the observations collection
+      await addDoc(collection(db, OBSERVATIONS_COLLECTION), observationData);
+    }
+  } catch (error) {
+    console.error('Firebase error adding observation to history:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update an existing observation in history
+ * 
+ * @param observationId - Observation document ID
+ * @param text - Updated observation text
+ * @returns Promise that resolves when the observation is updated
+ */
+export async function updateObservationInHistoryFirebase(
+  observationId: string, 
+  text: string
+): Promise<void> {
+  try {
+    const obsRef = doc(db, OBSERVATIONS_COLLECTION, observationId);
+    await updateDoc(obsRef, {
+      text,
+      updatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Firebase error updating observation in history:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get observations history for a class, optionally filtered by date
+ * 
+ * @param classId - Class identifier
+ * @param specificDate - Optional date filter
+ * @returns Promise resolving to array of observation objects
+ */
+export async function getObservationsHistoryFirebase(
+  classId: string, 
+  specificDate?: string
+): Promise<any[]> {
+  try {
+    let queryRef;
+    
+    if (specificDate) {
+      // Get observations for a specific class and date
+      queryRef = query(
+        collection(db, OBSERVATIONS_COLLECTION),
+        where('classId', '==', classId),
+        where('date', '==', specificDate),
+        orderBy('createdAt', 'desc')
+      );
+    } else {
+      // Get all observations for a class
+      queryRef = query(
+        collection(db, OBSERVATIONS_COLLECTION),
+        where('classId', '==', classId),
+        orderBy('createdAt', 'desc')
+      );
+    }
+    
+    const querySnapshot = await getDocs(queryRef);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Firebase error getting observations history:', error);
+    return [];
+  }
+}
+
+// Reference to the attendance collection
+const attendanceCollection = collection(db, 'attendance');
+
+// Helper to convert Firebase timestamp to string date
+const formatDate = (timestamp: any) => {
+  if (!timestamp) return '';
+  const date = timestamp instanceof Timestamp 
+    ? timestamp.toDate() 
+    : (timestamp.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp));
+  return date.toISOString().split('T')[0]; // YYYY-MM-DD
+};
+
+// Fetch all attendance records
+export async function fetchAttendanceRecords(startDate?: string, endDate?: string) {
+  try {
+    let q = attendanceCollection;
+    
+    // If date range is provided, add query filters
+    if (startDate && endDate) {
+      q = query(
+        attendanceCollection,
+        where('Fecha', '>=', startDate),
+        where('Fecha', '<=', endDate)
+      );
+    }
+    
+    const snapshot = await getDocs(q);
+    
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        studentId: data.studentId,
+        classId: data.classId,
+        Fecha: formatDate(data.Fecha) || data.Fecha,
+        status: data.status,
+        notes: data.notes
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching attendance records:', error);
+    throw error;
+  }
+}
+
+// Add a new attendance record
+export async function addAttendanceRecord(record) {
+  try {
+    const docRef = await addDoc(attendanceCollection, record);
+    return { id: docRef.id, ...record };
+  } catch (error) {
+    console.error('Error adding attendance record:', error);
+    throw error;
+  }
+}
+
+// Update an attendance record
+export async function updateAttendanceRecord(id, updates) {
+  try {
+    const docRef = doc(attendanceCollection, id);
+    await updateDoc(docRef, updates);
+    return { id, ...updates };
+  } catch (error) {
+    console.error('Error updating attendance record:', error);
+    throw error;
+  }
+}
+
+// Delete an attendance record
+export async function deleteAttendanceRecord(id) {
+  try {
+    const docRef = doc(attendanceCollection, id);
+    await deleteDoc(docRef);
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting attendance record:', error);
+    throw error;
+  }
+}

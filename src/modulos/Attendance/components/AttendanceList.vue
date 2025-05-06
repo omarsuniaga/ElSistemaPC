@@ -66,10 +66,16 @@ const toastMessage = ref('');
 const toastType = ref<'success' | 'error' | 'warning' | 'info'>('success');
 
 // Watch para inicializar el estado local cuando cambian los attendanceRecords
-watch(() => props.attendanceRecords, (newRecords) => {
-  localAttendanceRecords.value = { ...newRecords };
-}, { immediate: true, deep: true });
-
+ watch(
+   () => props.attendanceRecords,
+   (newRecords) => {
+     // Sólo resetea la copia local si no hay cambios pendientes
+     if (pendingChanges.value.size === 0) {
+       localAttendanceRecords.value = { ...newRecords }
+     }
+   },
+   { immediate: true }
+ )
 // Removidas funciones no utilizadas para obtener información de justificación
 // Si se necesitan en el futuro, pueden ser reintroducidas
 
@@ -87,7 +93,11 @@ const handleUpdateStatus = (studentId: string, status: string) => {
     classesStore.getClassesByDay(todayIndex.value).forEach((classObj) => {
       // Guardar cambios pendientes para cada clase
       const classId = classObj.id;
-      const attendanceDoc = attendanceStore.attendanceDocuments.find(doc => doc.classId === classId && doc.fecha === attendanceStore.selectedDate);
+      // agregar la propiedad teacherId a attendanceDoc
+
+
+
+      const attendanceDoc = attendanceStore.attendanceDocuments.find(doc => doc.classId === classId && doc.fecha === attendanceStore.selectedDate && doc.teacherId === attendanceStore.currentAttendanceDoc?.teacherId);
       if (attendanceDoc) {
         attendanceStore.saveAttendanceDocument(attendanceDoc);
       }

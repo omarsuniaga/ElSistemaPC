@@ -74,6 +74,7 @@ const availableClassDates = computed(() => {
     return classesForDay && classesForDay.length > 0
   })
 })
+const markedDates = computed(() => attendanceStore.getMarkedDatesForCalendar);
 // Props para recibir fecha y clase desde la URL
 const props = defineProps({
   date: String,
@@ -190,7 +191,9 @@ const handleCalendarSelect = (date: string) => {
   } else if (date && date.date) {
     selectedDate.value = date.date
   }
-  // No cerramos el modal automáticamente para permitir al usuario confirmar
+
+  // cerrar modal
+  showCalendarModal.value = false
 }
 
 // Función para confirmar la fecha seleccionada en el modal
@@ -239,9 +242,11 @@ const handleSelectedDateUpdate = (date: string) => {
 }
 
 // Corregido para usar los mismos valores que AttendanceHeader.vue
+// Después en AttendanceView.vue
 const updateView = (newView: 'calendar' | 'class-select' | 'attendance-form') => {
   view.value = newView;
-  showCalendarModal.value = (newView === 'class-select');
+  // Desactivar siempre el modal al cambiar de vista
+  showCalendarModal.value = false;
 }
 
 // Cargar datos de asistencia para una clase
@@ -1042,15 +1047,6 @@ const checkExistingAttendance = async (date: string, classId: string): Promise<b
   }
 }
 
-// Computed para fechas marcadas en el calendario (puntitos de asistencia)
-const markedDates = computed(() => {
-  // Obtener fechas únicas de los documentos de asistencia cargados
-  const dates = attendanceStore.attendanceDocuments
-    .filter(doc => typeof doc.fecha === 'string')
-    .map(doc => doc.fecha);
-  // Quitar duplicados
-  return Array.from(new Set(dates));
-});
 
 // Función para cerrar todos los modales
 
@@ -1073,10 +1069,15 @@ const fetchInitialData = async () => {
     
     // Cerrar todos los modales para asegurar una experiencia limpia
     closeAllModals()
-      await Promise.all([
+    
+    console.log('Iniciando carga de datos iniciales...');
+    
+    // Cargar todos los documentos de asistencia (sin filtros de fecha)
+    // Esto es esencial para que el calendario pueda marcar todas las fechas con actividades
+    await Promise.all([
       classesStore.fetchClasses(),
       studentsStore.fetchStudents(),
-      attendanceStore.fetchAttendanceDocuments()
+      attendanceStore.fetchAttendanceDocuments() // Carga todos los documentos
     ])
     
     // Verificar si estamos navegando desde el menú principal de asistencia
@@ -1117,7 +1118,9 @@ const fetchInitialData = async () => {
 onMounted(async () => {
   // Cargar configuraciones de la aplicación
   await configStore.fetchConfigs()
-  await attendanceStore.fetchAttendanceDocuments()
+  const dates = await attendanceStore.loadAttendanceDataForCalendar();
+  
+  console.log("Fechas de actividades registradas: ", dates);
   await fetchInitialData()
 })
 
@@ -1157,10 +1160,35 @@ const classesWithRecordsForSelectedDate = computed(() => {
 // Ensure we refresh attendance docs when date changes
 watch(() => selectedDate.value, async (newDate) => {
   if (newDate) {
-    console.log("Fetching attendance records for date:", newDate);
-    await attendanceStore.fetchAttendanceDocuments();
+    console.log("AttendanceView: Fecha seleccionada cambiada a:", newDate);
+    // En lugar de volver a cargar todos los documentos (lo que podría ser costoso),
+    // solo actualizamos los filtros locales si ya tenemos documentos cargados
+    if (attendanceStore.attendanceDocuments.length === 0) {
+      console.log("AttendanceView: Cargando documentos de asistencia para la fecha:", newDate);
+      await attendanceStore.fetchAttendanceDocuments();
+    }
   }
 }, { immediate: true });
+
+// Watch especial para monitorear cambios en los documentos de asistencia
+// Este watch se activará cuando se añadan/eliminen/modifiquen documentos
+watch(() => attendanceStore.attendanceDocuments.length, (newLength) => {
+  console.log(`AttendanceView: Cambio detectado en documentos de asistencia. Nuevo total: ${newLength}`);
+  // No necesitamos hacer nada explícitamente aquí, 
+  // ya que la computed property markedDates se recalculará automáticamente
+});
+
+const dayNumber = ref(1); // Ejemplo: día 1 del mes
+const teacherId = ref(authStore.user?.uid || ''); // ID del maestro actual
+
+const relevantClasses = computed(() => {
+  // Defensive check to prevent errors
+  if (!classesStore.getClassesByDayAndTeacherId) {
+    console.error('getClassesByDayAndTeacherId method not found in classesStore - check imports');
+    return [];
+  }
+  return classesStore.getClassesByDayAndTeacherId(dayNumber.value, teacherId.value);
+});
 </script>
 
 <template>  <div class="p-2 sm:p-4 md:p-6 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 max-w-full overflow-x-hidden">
@@ -1254,7 +1282,7 @@ watch(() => selectedDate.value, async (newDate) => {
           <Calendar 
             :selected-date="selectedDate" 
             :current-month="currentMonth"
-            :markedDates="markedDates" 
+            :marked-dates="markedDates" 
             @select="selectDate"
             @month-change="handleMonthChange"
             class="max-w-full overflow-x-auto"
@@ -1265,10 +1293,7 @@ watch(() => selectedDate.value, async (newDate) => {
         <div v-else-if="view === 'class-select'" class="max-w-3xl mx-auto">
           <div class="flex justify-between items-center mb-3">
             <h2 class="text-lg font-semibold">Seleccionar Clase</h2>
-            <button 
-              @click="updateView('calendar')" 
-              class="btn btn-secondary btn-sm"
-            >
+            <button @click="updateView('calendar')" class="btn btn-secondary btn-sm">
               Volver
             </button>
           </div>
@@ -1278,11 +1303,12 @@ watch(() => selectedDate.value, async (newDate) => {
             :dayFilter="true"
             :isLoading="isLoading"
             :classesWithRecords="classesWithRecordsForSelectedDate"
-            :markedDates="markedDates"
+            :marked-dates="markedDates"
             @continue="() => selectClass(selectedClass)"
             @date-change="handleDateChange"
             @update:selectedDate="handleSelectedDateUpdate"
             class="max-w-full"
+            @back="updateView('calendar')"
           />
         </div>
 
@@ -1290,10 +1316,12 @@ watch(() => selectedDate.value, async (newDate) => {
         <div v-else-if="view === 'attendance-form'" class="space-y-3 sm:space-y-4">
           <div class="flex justify-between items-center mb-2">
             <h2 class="text-base sm:text-lg font-semibold">Lista de Asistencia</h2>
-            <button 
-              @click="updateView('class-select')" 
-              class="btn btn-secondary btn-sm"
-            >
+            <!-- mostrar la fecha seleccionada -->
+            <span class="text-sm sm
+:text-base text-gray-600 dark:text-gray-400">
+              {{ selectedDate ? format(new Date(selectedDate), 'dd/MM/yyyy') : 'Fecha no seleccionada' }}
+            </span>
+          <button @click="updateView('class-select')" class="btn btn-secondary btn-sm">
               Volver
             </button>
           </div>
@@ -1364,7 +1392,8 @@ watch(() => selectedDate.value, async (newDate) => {
       :student="selectedStudentForJustification"
       @close="showJustifiedAbsenceModal = false"
       @save="handleJustificationSave"
-    />    <!-- Modal de calendario personalizado que usa directamente Calendar.vue -->
+    />  
+      <!-- Modal de calendario personalizado que usa directamente Calendar.vue -->
     <div v-if="showCalendarModal" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="absolute inset-0 bg-black/50" @click="showCalendarModal = false"></div>
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md z-10">
@@ -1380,18 +1409,11 @@ watch(() => selectedDate.value, async (newDate) => {
           <Calendar 
             :selected-date="selectedDate" 
             :current-month="currentMonth"
-            :markedDates="markedDates" 
+            :marked-dates="markedDates" 
             @select="handleCalendarSelect"
             @month-change="handleMonthChange"
+            class="max-w-full overflow-x-auto"
           />
-        </div>
-        <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-          <button @click="showCalendarModal = false" class="btn btn-secondary mr-2">
-            Cancelar
-          </button>
-          <button @click="confirmDateSelection" class="btn btn-primary">
-            Confirmar
-          </button>
         </div>
       </div>
     </div>
