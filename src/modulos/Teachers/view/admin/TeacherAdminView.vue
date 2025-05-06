@@ -620,20 +620,31 @@ function getTeacherClassCount(teacherId: string): number {
 }
 
 function getTeacherStudentsCount(teacherId: string): number {
-  // Get all classes for this teacher
-  const teacherClassIds = classesStore.classes
-    .filter(cls => cls.teacherId === teacherId)
-    .map(cls => cls.id);
+  try {
+    if (!teacherId || !studentsStore.students || !classesStore.classes) return 0;
     
-  // Count unique students in these classes
-  const studentIds = new Set();
-  teacherClassIds.forEach(classId => {
-    // Fix: Use studentsStore instead of classesStore
-    const studentsInClass = studentsStore.students.filter(s => s.classId === classId);
-    studentsInClass.forEach(student => studentIds.add(student.id));
-  });
-  
-  return studentIds.size;
+    // Get all class IDs for this teacher
+    const teacherClassIds = classesStore.classes
+      .filter(cls => cls.teacherId === teacherId)
+      .map(cls => cls.id);
+    
+    if (teacherClassIds.length === 0) return 0;
+    
+    // Create a Set to track unique student IDs
+    const uniqueStudentIds = new Set<string>();
+    
+    // For each student in our store, check if they belong to any of the teacher's classes
+    studentsStore.students.forEach(student => {
+      if (student.classId && teacherClassIds.includes(student.classId)) {
+        uniqueStudentIds.add(student.id);
+      }
+    });
+    
+    return uniqueStudentIds.size;
+  } catch (error) {
+    console.error('Error counting teacher students:', error);
+    return 0;
+  }
 }
 
 function getStatusText(status) {

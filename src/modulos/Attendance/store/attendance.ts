@@ -111,6 +111,11 @@ export const useAttendanceStore = defineStore('attendance', {
     datesWithRecords: [] as string[],
     observationsHistory: [] as ClassObservation[],
     activeStudents: [] as string[] // Array of active student IDs
+
+    // Add cache indicators 
+    ,lastFetch: null as Date | null,
+    lastFetchParams: null as any | null,
+    cacheExpiryMinutes: 10, // Cache expires after 10 minutes
   }),
   
   getters: {
@@ -342,6 +347,13 @@ getJustification: (state) => {
     getActiveStudents: (state) => {
       return state.activeStudents || [];
     },
+    isCacheValid: (state) => {
+      if (!state.lastFetch) return false;
+      const now = new Date();
+      const diffMs = now.getTime() - state.lastFetch.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      return diffMins < state.cacheExpiryMinutes;
+    }
   },
   
   actions: {

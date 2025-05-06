@@ -979,3 +979,55 @@ export async function deleteAttendanceRecord(id) {
     throw error;
   }
 }
+
+/**
+ * Get attendance documents optimized for a specific teacher and date range
+ * @param teacherId The ID of the teacher
+ * @param fromDate Start date in YYYY-MM-DD format
+ * @param toDate End date in YYYY-MM-DD format
+ * @returns Array of attendance documents
+ */
+export async function getTeacherAttendanceDocsFirebase(teacherId: string, fromDate: string, toDate: string): Promise<AttendanceDocument[]> {
+  try {
+    const db = getFirestore();
+    const attendanceRef = collection(db, 'attendance');
+    
+    // Create a query with the provided filters
+    let q = query(attendanceRef);
+    
+    // Add teacher filter if provided
+    if (teacherId) {
+      q = query(q, where('teacherId', '==', teacherId));
+    }
+    
+    // Add date range filters if provided
+    if (fromDate && toDate) {
+      q = query(q, where('fecha', '>=', fromDate), where('fecha', '<=', toDate));
+    }
+    
+    const querySnapshot = await getDocs(q);
+    
+    const documents: AttendanceDocument[] = [];
+    querySnapshot.forEach(doc => {
+      const data = doc.data();
+      documents.push({
+        id: doc.id,
+        fecha: data.fecha,
+        classId: data.classId,
+        teacherId: data.teacherId,
+        data: {
+          presentes: data.data?.presentes || [],
+          ausentes: data.data?.ausentes || [],
+          tarde: data.data?.tarde || [],
+          justificacion: data.data?.justificacion || [],
+          observations: data.data?.observations || ''
+        }
+      });
+    });
+    
+    return documents;
+  } catch (error) {
+    console.error('Error fetching teacher attendance documents:', error);
+    throw error;
+  }
+}
