@@ -64,13 +64,12 @@
             {{ classObservationMode ? 'Observaciones generales de la clase' : 'Observación para el estudiante' }}
           </h3>
           
-          <!-- Usamos un textarea normal -->
-          <textarea
+          <!-- Usamos un textarea normal -->          <textarea
             ref="observationTextarea"
             v-model="newObservation"
             rows="6"
             class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Escriba su observación aquí..."
+            :placeholder="typeof newObservation === 'object' ? 'Escriba su observación aquí...' : 'Escriba su observación aquí...'"
             @keydown="handleTextareaKeydown"
           ></textarea>
           
@@ -149,10 +148,9 @@
             <div class="flex gap-2">
               <button @click="close" class="btn btn-secondary">
                 Cancelar
-              </button>
-              <button 
+              </button>              <button 
                 @click="saveObservation"
-                :disabled="!newObservation.trim() || isLoading || characterCount > 1000"
+                :disabled="!(typeof newObservation === 'string' && newObservation.trim()) || isLoading || characterCount > 1000"
                 class="btn btn-primary"
               >
                 <span v-if="isLoading" class="flex items-center">
@@ -241,7 +239,7 @@
           <h3 class="text-lg font-medium mb-2 text-blue-600 dark:text-blue-400">Adjuntar imágenes</h3>
           <p class="mb-2">Puedes adjuntar imágenes a tus observaciones:</p>
           <ol class="list-decimal pl-5 space-y-1">
-            <li>Haz clic en el botón <span class="inline-flex items-center gap-1 rounded bg-gray-200 px-2 py-1"><svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" /></svg> Adjuntar imagen</span></li>
+            <li>Haz clic en el botón <span class="inline-flex items-center dark:text-black gap-1 rounded bg-gray-200 px-2 py-1"><svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" /></svg> Adjuntar imagen</span></li>
             <li>Selecciona o arrastra una imagen desde tu dispositivo</li>
             <li>La imagen se subirá automáticamente y aparecerá como miniatura debajo del editor</li>
             <li>Puedes adjuntar múltiples imágenes a una observación</li>
@@ -373,7 +371,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useAttendanceStore } from '../store/attendance'
 import { useAuthStore } from '../../../stores/auth'
@@ -448,7 +446,8 @@ onMounted(async () => {
   if (classObservationMode.value) {
     // Para observaciones de clase, cargar desde el store
     const observations = attendanceStore.getObservations;
-    newObservation.value = observations || '';
+    // Asegurarnos de que lo que se asigna sea siempre un string
+    newObservation.value = typeof observations === 'string' ? observations : '';
   } else {
     // Para observaciones de estudiante, implementar la lógica específica
     // Por ahora, dejamos vacío para que el profesor añada una nueva observación
@@ -459,14 +458,17 @@ onMounted(async () => {
 // Formatear fecha
 const formatDate = (date: string) => {
   try {
-    return format(new Date(date), 'PPP', { locale: es });
+    return format(parseISO(date), 'PPP', { locale: es });
   } catch (error) {
     return date;
   }
 }
 
 // Contador de caracteres
-const characterCount = computed(() => newObservation.value.length)
+const characterCount = computed(() => {
+  const observationText = String(newObservation.value || '');
+  return observationText.length;
+})
 
 // Cerrar el modal
 const close = () => {
@@ -475,8 +477,8 @@ const close = () => {
 
 // Guardar la observación
 const saveObservation = async () => {
-  if (!newObservation.value.trim() || characterCount.value > 1000) return;
-  
+  const observationText = String(newObservation.value || '');
+  if (!observationText.trim() || characterCount.value > 1000) return;
   isLoading.value = true;
   try {
     // Obtener info del usuario actual
@@ -485,37 +487,68 @@ const saveObservation = async () => {
     // Preparar datos completos de la observación usando el composable
     const observationData = editor.prepareObservationForSave();
     
+    // Asegurarnos de que tenemos texto formateado válido
+    const formattedText = typeof observationData.formattedText === 'string' 
+      ? observationData.formattedText 
+      : observationText;
+    
     // Verificar si ya existe una observación para esta clase y fecha
     const existing = await attendanceStore.getObservationsHistory(props.classId, props.attendanceDate);
     if (existing.length > 0) {
       // Actualizar la primera observación existente
       const obsEntry = existing[0];
-      
       try {
-        // Intentar actualizar con el objeto completo
-        await attendanceStore.updateObservationInHistory(obsEntry.id, observationData);
+        // Comprobar si el store acepta un objeto como parámetro
+        if (typeof attendanceStore.updateObservationInHistory === 'function' && 
+            attendanceStore.updateObservationInHistory.length === 2) {
+          // Actualizar con el texto formateado por defecto
+          await attendanceStore.updateObservationInHistory(obsEntry.id, formattedText);
+        } else {
+          // Intentar pasar datos adicionales si es posible (en versiones futuras del store)
+          const safeObservationData = {
+            ...observationData,
+            formattedText: formattedText
+          };
+          await (attendanceStore as any).updateObservationInHistory(obsEntry.id, safeObservationData);
+        }
       } catch (error) {
-        console.warn('El store no acepta objetos completos. Actualizando solo el texto.', error);
+        console.warn('Error al actualizar la observación:', error);
         // Fallback: actualizar solo con el texto formateado
-        await attendanceStore.updateObservationInHistory(obsEntry.id, observationData.formattedText);
+        await attendanceStore.updateObservationInHistory(obsEntry.id, formattedText);
       }
     } else {
-      // Crear nueva observación
+      // Crear nueva observación      
       try {
-        // Intentar crear con el objeto completo
-        await attendanceStore.addObservationToHistory(
-          props.classId,
-          props.attendanceDate,
-          observationData,
-          username
-        );
+        // Comprobar si el store acepta un objeto como parámetro
+        if (typeof attendanceStore.addObservationToHistory === 'function' && 
+            attendanceStore.addObservationToHistory.length === 4) {
+          // Crear con el texto formateado por defecto
+          await attendanceStore.addObservationToHistory(
+            props.classId,
+            props.attendanceDate,
+            formattedText,
+            username
+          );
+        } else {
+          // Intentar pasar datos adicionales si es posible (en versiones futuras del store)
+          const safeObservationData = {
+            ...observationData,
+            formattedText: formattedText
+          };
+          await (attendanceStore as any).addObservationToHistory(
+            props.classId,
+            props.attendanceDate,
+            safeObservationData,
+            username
+          );
+        }
       } catch (error) {
-        console.warn('El store no acepta objetos completos. Guardando solo el texto.', error);
+        console.warn('Error al guardar la observación:', error);
         // Fallback: crear solo con el texto formateado
         await attendanceStore.addObservationToHistory(
           props.classId,
           props.attendanceDate,
-          observationData.formattedText,
+          formattedText,
           username
         );
       }

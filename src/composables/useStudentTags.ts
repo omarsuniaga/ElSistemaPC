@@ -1,4 +1,4 @@
-import { ref, Ref, watch } from 'vue';
+import { ref } from 'vue';
 
 type Student = {
   id: string;
@@ -12,18 +12,37 @@ type Student = {
 export function useStudentTags() {
   const showTagModal = ref(false);
   const cursorPosition = ref(0);
-  const tagSearchText = ref('');
+  // Removed unused variable: const tagSearchText = ref('');
   const editingTagName = ref('');
   const taggedStudents = ref<string[]>([]);
-
   /**
    * Encuentra las etiquetas de estudiantes en el texto
    * @param text - Texto en el que buscar etiquetas
    */
-  const findTaggedStudents = (text: string) => {
-    const regex = /@([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+)/g;
-    const matches = [...text.matchAll(regex)];
-    taggedStudents.value = matches.map(match => match[1]);
+  const findTaggedStudents = (text: string | unknown) => {
+    // Asegurar que text sea una cadena
+    const safeText = typeof text === 'string' ? text : '';
+    
+    try {
+      const regex = /@([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+)/g;
+      
+      // En navegadores más antiguos o en ciertos entornos, matchAll puede no estar disponible
+      if (safeText.matchAll) {
+        const matches = [...safeText.matchAll(regex)];
+        taggedStudents.value = matches.map(match => match[1]);
+      } else {
+        // Alternativa para navegadores que no soportan matchAll
+        const matches: string[] = [];
+        let match;
+        while ((match = regex.exec(safeText)) !== null) {
+          matches.push(match[1]);
+        }
+        taggedStudents.value = matches;
+      }
+    } catch (error) {
+      console.error('Error al buscar etiquetas:', error);
+      taggedStudents.value = [];
+    }
   };
 
   /**

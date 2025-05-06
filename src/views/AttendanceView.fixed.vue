@@ -629,9 +629,8 @@ const relevantClasses = computed(() => {
           <div v-else-if="view === 'attendance-form'" key="attendance-form-view" class="space-y-3 sm:space-y-4">
             <div class="flex justify-between items-center mb-2">
               <h2 class="text-base sm:text-lg font-semibold">Lista de Asistencia</h2>
-              <!-- mostrar la fecha seleccionada -->
-              <span class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                {{ selectedDate ? format(new Date(selectedDate), 'dd/MM/yyyy') : 'Fecha no seleccionada' }}
+              <!-- mostrar la fecha seleccionada -->              <span class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                {{ selectedDate ? format(parseISO(selectedDate), 'dd/MM/yyyy') : 'Fecha no seleccionada' }}
               </span>
               <button @click="updateView('class-select')" class="btn btn-secondary btn-sm">
                 Volver

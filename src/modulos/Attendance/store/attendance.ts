@@ -328,13 +328,15 @@ getJustification: (state) => {
     ) || null;
   }
 },
-    
-    getObservations: (state): string => {
+      getObservations: (state): string => {
       // Get observations for current class date
       if (state.currentAttendanceDoc && state.currentAttendanceDoc.data && state.currentAttendanceDoc.data.observations) {
-        return state.currentAttendanceDoc.data.observations;
+        // Asegurar que siempre devuelve un string
+        const observations = state.currentAttendanceDoc.data.observations;
+        return typeof observations === 'string' ? observations : '';
       }
-      return state.observations || '';
+      // Asegurar que siempre devuelve un string cuando usa observations del state
+      return typeof state.observations === 'string' ? state.observations : '';
     },
 
     // IMPORTANT: Move getStudentAttendanceRate from actions to getters

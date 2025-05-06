@@ -1,4 +1,4 @@
-import { ref, Ref } from 'vue';
+import { ref } from 'vue';
 
 /**
  * Composable para manejar un diccionario inteligente de sugerencias de texto
@@ -13,9 +13,10 @@ export function useSmartDictionary() {
   /**
    * Analiza el texto para construir un diccionario de frases
    * @param text - Texto a analizar
-   */
-  const analyzeText = (text: string) => {
-    const words = text.split(/\s+/);
+   */  const analyzeText = (text: string | unknown) => {
+    // Asegurar que text sea una cadena
+    const safeText = typeof text === 'string' ? text : '';
+    const words = safeText.split(/\s+/);
     
     // Construir diccionario basado en secuencias de 3 palabras
     for (let i = 0; i < words.length - 3; i++) {
@@ -58,10 +59,12 @@ export function useSmartDictionary() {
   /**
    * Busca una sugerencia basada en las últimas palabras escritas
    * @param text - Texto actual hasta el cursor
-   */
-  const findSuggestion = (text: string) => {
+   */  const findSuggestion = (text: string | unknown) => {
+    // Asegurar que text sea una cadena
+    const safeText = typeof text === 'string' ? text : '';
+    
     // Obtener las últimas palabras hasta el cursor
-    const words = text.trim().split(/\s+/);
+    const words = safeText.trim().split(/\s+/);
     
     // Si tenemos al menos 3 palabras, buscar en el diccionario
     if (words.length >= 3) {
@@ -80,24 +83,26 @@ export function useSmartDictionary() {
     suggestionActive.value = false;
     currentSuggestion.value = '';
   };
-
   /**
    * Aplica la sugerencia actual al texto
    * @param textBeforeCursor - Texto antes del cursor
    * @param textAfterCursor - Texto después del cursor
    * @returns - Nuevo texto con la sugerencia aplicada
    */
-  const applySuggestion = (textBeforeCursor: string, textAfterCursor: string) => {
+  const applySuggestion = (textBeforeCursor: string | unknown, textAfterCursor: string | unknown) => {
     if (!suggestionActive.value || !currentSuggestion.value) {
       return null;
     }
     
-    const words = textBeforeCursor.trim().split(/\s+/);
+    // Asegurar que los textos sean cadenas
+    const safeTextBefore = typeof textBeforeCursor === 'string' ? textBeforeCursor : '';
+    const safeTextAfter = typeof textAfterCursor === 'string' ? textAfterCursor : '';
+      const words = safeTextBefore.trim().split(/\s+/);
     const preserveText = words.slice(0, Math.max(0, words.length - 3)).join(' ');  
     const suggestion = words.slice(-3).join(' ') + ' ' + currentSuggestion.value;
     
     const newText = (preserveText ? preserveText + ' ' : '') + 
-      suggestion + textAfterCursor;
+      suggestion + safeTextAfter;
     
     // Calcular la nueva posición del cursor
     const newCursorPos = (preserveText ? preserveText.length + 1 : 0) + suggestion.length;
@@ -119,19 +124,21 @@ export function useSmartDictionary() {
     suggestionActive.value = false;
     currentSuggestion.value = '';
   };
-
   /**
    * Configura un temporizador para buscar sugerencias después de escribir
    * @param text - El texto actual
    * @param delay - Retraso en ms antes de buscar sugerencias
    */
-  const setTypingTimeout = (text: string, delay = 500) => {
+  const setTypingTimeout = (text: string | unknown, delay = 500) => {
     if (typingTimeout.value) {
       window.clearTimeout(typingTimeout.value);
     }
     
+    // Asegurar que text sea una cadena
+    const safeText = typeof text === 'string' ? text : '';
+    
     typingTimeout.value = window.setTimeout(() => {
-      findSuggestion(text);
+      findSuggestion(safeText);
     }, delay);
   };
 

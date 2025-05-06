@@ -1,4 +1,4 @@
-import { ref, Ref } from 'vue';
+import { ref } from 'vue';
 
 /**
  * Composable para manejar imágenes (carga, visualización, eliminación)
@@ -96,26 +96,26 @@ export function useImageHandler() {
       selectedImageIndex.value = Math.max(0, Math.min(selectedImageIndex.value - 1, imageUrls.value.length - 1));
     }
   };
-
   /**
    * Preparar observación con referencias a imágenes para guardar
    * @param text - Texto original de la observación
    * @returns Objeto con el texto formateado y metadatos
    */
   const prepareObservationWithImages = (text: string) => {
-    let observationContent = text;
+    // Asegurar que text es un string
+    const safeText = typeof text === 'string' ? text : '';
+    let observationContent = safeText;
     
     // Si hay imágenes, añadir una sección al final del texto con las referencias
     if (imageUrls.value.length > 0) {
-      observationContent += '\n\n--- Imágenes adjuntas ---\n';
-      imageUrls.value.forEach((url, index) => {
+      observationContent += '\n\n--- Imágenes adjuntas ---\n';      imageUrls.value.forEach((_, index) => {
         observationContent += `[Imagen ${index + 1}]\n`;
       });
     }
     
     // Preparar datos completos de la observación
     return {
-      text: text,
+      text: safeText,
       formattedText: observationContent,
       images: imageUrls.value,
       timestamp: new Date()

@@ -501,7 +501,7 @@ const generateAttendanceHTML = (
   className: string,
   date: string
 ): string => {
-  const formattedDate = format(new Date(date), "d 'de' MMMM yyyy", { locale: es });
+  const formattedDate = format(parseISO(date), "d 'de' MMMM yyyy", { locale: es });
   
   // Prepara el nombre del maestro
   const teacherName = authStore.user?.displayName || authStore.user?.email || 'Profesor Desconocido';
@@ -835,7 +835,7 @@ const sendAttendanceEmail = async () => {
         Estado: attendanceStatus,
         Observaciones: attendanceStatus === 'Justificado' ? justificationReason : observations,
         Maestro: authStore.user?.email || 'Profesor Desconocido',
-        Fecha: format(new Date(date), 'yyyy-MM-dd'),
+        Fecha: format(parseISO(date), 'yyyy-MM-dd'),
         Clase: className
       };
       
@@ -873,7 +873,7 @@ const sendAttendanceEmail = async () => {
 
     // Preparar payload para Make.com
     const makePayload = {
-      subject: `Reporte de Asistencia - ${className} - ${format(new Date(date), 'yyyy-MM-dd')}`,
+      subject: `Reporte de Asistencia - ${className} - ${format(parseISO(date), 'yyyy-MM-dd')}`,
       format: 'email',
       type: 'attendance_report',
       action: 'send_attendance_email',
@@ -1319,7 +1319,7 @@ const relevantClasses = computed(() => {
             <!-- mostrar la fecha seleccionada -->
             <span class="text-sm sm
 :text-base text-gray-600 dark:text-gray-400">
-              {{ selectedDate ? format(new Date(selectedDate), 'dd/MM/yyyy') : 'Fecha no seleccionada' }}
+              {{ selectedDate ? format(parseISO(selectedDate), 'dd/MM/yyyy') : 'Fecha no seleccionada' }}
             </span>
           <button @click="updateView('class-select')" class="btn btn-secondary btn-sm">
               Volver
