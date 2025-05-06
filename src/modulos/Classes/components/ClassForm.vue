@@ -145,14 +145,14 @@ onMounted(async () => {
   <form @submit.prevent="handleSubmit" class="space-y-6">
     <!-- Nombre de la clase -->
     <div>
-      <label for="name" class="block text-sm font-medium text-gray-100 dark:text-gray-100">
+      <label for="name" class="block text-sm font-medium text-gray-100 ">
         Nombre de la clase <span class="text-red-500">*</span>
       </label>
       <input 
         id="name" 
         v-model="form.name" 
         type="text" 
-        class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-100"
+        class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-100 dark:text-black"
         :class="{'border-red-500': errors.name}"
       />
       <p v-if="errors.name" class="mt-1 text-sm text-red-500">{{ errors.name }}</p>
@@ -167,7 +167,7 @@ onMounted(async () => {
         id="description" 
         v-model="form.description" 
         rows="3" 
-        class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-100"
+        class="dark:text-black mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-100"
       ></textarea>
     </div>
 
@@ -180,7 +180,7 @@ onMounted(async () => {
         <select 
           id="level" 
           v-model="form.level" 
-          class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-100"
+          class=" dark:text-black mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-100"
           :class="{'border-red-500': errors.level}"
         >
           <option v-for="level in levels" :key="level" :value="level">{{ level }}</option>
@@ -196,7 +196,7 @@ onMounted(async () => {
           id="instrument" 
           v-model="form.instrument" 
           type="text" 
-          class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-100"
+          class=" dark:text-black mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-100"
         />
       </div>
     </div>
@@ -210,7 +210,7 @@ onMounted(async () => {
         id="classroom" 
         v-model="form.classroom" 
         type="text" 
-        class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-100"
+        class="dark:text-black mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-100"
       />
     </div>
 

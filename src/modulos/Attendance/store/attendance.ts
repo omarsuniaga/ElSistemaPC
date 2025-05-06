@@ -20,7 +20,8 @@ import {
   updateObservationInHistoryFirebase,
   getObservationsHistoryFirebase,
   getAttendancesFirebase,
-  getAttendanceByDateAndClassFirebase // <-- Add the missing function import
+  getAttendanceByDateAndClassFirebase,
+  updateObservationsFirebase // Add import for updateObservationsFirebase
 } from '../service/attendance'
 import { getFromLocalStorage, saveToLocalStorage, clearLocalStorage } from '../../../utils/localStorageUtils'
 
