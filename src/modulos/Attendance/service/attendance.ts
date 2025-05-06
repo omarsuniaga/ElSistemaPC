@@ -285,8 +285,6 @@ export const getAllAttendanceDocumentsFirebase = async (
       );
 
       // Mostramos en consola los datos para fines de depuración
-      console.log('Document Data:', res);
-
       return res;
     }
   } catch (error) {
@@ -485,10 +483,8 @@ export async function getClassObservationsByDateFirebase(classId: string, date: 
 export const getAttendancesFirebase = async (): Promise<AttendanceRecord[]> => {
   try {
     const documents = await getAllAttendanceDocumentsFirebase();
-    
     // Convertir todos los documentos a registros
     const res = documents.flatMap(doc => convertDocumentToRecords(doc));
-    console.log('Registros de asistencia:', res);
     return res
   } catch (error) {
     console.error('Error al obtener registros de asistencia:', error);

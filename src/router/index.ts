@@ -113,7 +113,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/attendance/:date/:classId',
     name: 'attendance',
-    component: () => import('../views/AttendanceView.vue'),
+      component: () => import('../modulos/Attendance/components/AttendanceList.vue'),
     props: true,
     meta: { 
       requiresAuth: true,

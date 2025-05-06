@@ -133,6 +133,39 @@ export const useAttendanceStore = defineStore('attendance', {
         averageAttendance
       };
     },
+    /**
+     * Returns the days of the week when a class is scheduled
+     * @param classId - The ID of the class to check
+     * @returns Array of day numbers (0-6, where 0 = Sunday)
+     */
+    getClassScheduleDays: (state) => (classId: string): number[] => {
+      // If no classId provided, return empty array
+      if (!classId) return [];
+      
+      // Find the class in the classes store
+      const classesStore = useClassesStore();
+      const classData = classesStore.classes.find(c => c.id === classId);
+      
+      // If class not found or no schedule, return empty array
+      if (!classData || !classData.schedule || !classData.schedule.slots) {
+        return [];
+      }
+      
+      // Extract day numbers from the schedule
+      const days = classData.schedule.slots.map(slot => {
+        // Handle both numeric days and string days
+        if (typeof slot.day === 'number') {
+          return slot.day;
+        } else if (typeof slot.day === 'string') {
+          // Convert day name to number (0 = Sunday, 1 = Monday, etc.)
+          const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+          return dayNames.findIndex(d => d.toLowerCase() === slot.day.toLowerCase());
+        }
+        return -1;
+      }).filter(day => day >= 0);
+      
+      return days;
+  },
     
     // Getters mejorados con tipado explícito
     getAttendanceByClass: (state) => {
@@ -416,11 +449,10 @@ getJustification: (state) => {
         
         console.log(`📊 Documentos obtenidos: ${documents?.length || 0}`);
         if (documents && documents.length > 0) {
-          console.log('📄 Muestra primer documento:', {
-        fecha: documents[0].fecha || documents[0].Fecha || documents[0].date,
-        classId: documents[0].classId,
-        estructura: Object.keys(documents[0])
-      });
+          // Guardar en localStorage si estamos en desarrollo
+          if (process.env.NODE_ENV === 'development') {
+            saveToLocalStorage(LOCAL_STORAGE_KEYS.ATTENDANCE_DOCUMENTS, documents);
+          }
         }
         
         // Asegurar que tenemos un array válido
