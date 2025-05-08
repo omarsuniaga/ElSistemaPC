@@ -179,23 +179,62 @@ export const useClassesStore = defineStore('classes', {
         this.classes.push(normalizedClass);
         return normalizedClass;
       });
-    },
-
-    /**
+    },    /**
      * Actualiza una clase existente en Firestore.
+     * Soporta dos formas de llamada:
+     * 1. updateClass(id, updates) - ID y actualizaciones por separado
+     * 2. updateClass({id, ...updates}) - Objeto con ID y actualizaciones
      */
-    async updateClass(updatedClass: Partial<ClassData> & { id: string }) {
+    async updateClass(idOrUpdates: string | (Partial<ClassData> & { id: string }), maybeUpdates?: Partial<ClassData>) {
       return await this.withLoading(async () => {
-        await updateClassFirestore(updatedClass.id, updatedClass);
-        const index = this.classes.findIndex(c => c.id === updatedClass.id);
+        let classId: string;
+        let updates: Partial<ClassData>;
+        
+        // Determinar forma de llamada y extraer id y updates
+        if (typeof idOrUpdates === 'string' && maybeUpdates) {
+          // Forma: updateClass(id, updates)
+          classId = idOrUpdates;
+          updates = maybeUpdates;
+        } else if (typeof idOrUpdates === 'object' && idOrUpdates.id) {
+          // Forma: updateClass({id, ...updates})
+          classId = idOrUpdates.id;
+          updates = idOrUpdates;
+        } else {
+          throw new Error('ID de clase indefinido o formato de llamada incorrecto');
+        }
+        
+        // Asegurarnos de que tenemos un ID válido
+        if (!classId) {
+          throw new Error('ID de clase indefinido');
+        }
+        
+        // Actualizar en Firestore
+        await updateClassFirestore(classId, updates);
+        
+        // Actualizar estado local
+        const index = this.classes.findIndex(c => c.id === classId);
         let updatedData: ClassData;
+        
         if (index !== -1) {
-          updatedData = this.normalizeClassData({ ...this.classes[index], ...updatedClass });
+          updatedData = this.normalizeClassData({ 
+            ...this.classes[index], 
+            ...updates,
+            id: classId // Asegurar que el ID esté presente
+          });
           this.classes[index] = updatedData;
         } else {
-          updatedData = this.normalizeClassData(updatedClass);
+          // Si la clase no existe en el estado local, pero existe en Firestore
+          if ('id' in updates) {
+            updatedData = this.normalizeClassData(updates as ClassData);
+          } else {
+            updatedData = this.normalizeClassData({
+              ...updates,
+              id: classId
+            } as ClassData);
+          }
           this.classes.push(updatedData);
         }
+        
         return true;
       });
     },

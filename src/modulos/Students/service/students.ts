@@ -36,8 +36,26 @@ export const getStudentsFirebase = async (): Promise<Student[]> => {
         tlf_madre: data.tlf_madre || '',
         tlf_padre: data.tlf_padre || '',
         colegio_trabajo: data.colegio_trabajo || '',
-        horario_colegio_trabajo: data.horario_colegio_trabajo || '',
-        grupo: Array.isArray(data.grupo) ? data.grupo : [],
+        horario_colegio_trabajo: data.horario_colegio_trabajo || '',        grupo: (() => {
+          // Manejar diferentes formatos del campo grupo
+          if (Array.isArray(data.grupo)) {
+            return data.grupo;
+          } else if (data.grupo) {
+            if (typeof data.grupo === 'string' && data.grupo.startsWith('[') && data.grupo.endsWith(']')) {
+              try {
+                const parsed = JSON.parse(data.grupo);
+                return Array.isArray(parsed) ? parsed : [data.grupo];
+              } catch (e) {
+                console.warn(`Error parsing grupo value for student ${doc.id}:`, e);
+                return [data.grupo];
+              }
+            } else {
+              return [data.grupo];
+            }
+          } else {
+            return [];
+          }
+        })(),
         clase: data.clase || '',
         classIds: Array.isArray(data.classIds) ? data.classIds : [],
         fecInscripcion: data.fecInscripcion || '',
@@ -77,15 +95,23 @@ export const getStudentByIdFirebase = async (id: string): Promise<Student | null
 
 export const createStudentFirebase = async (student: Omit<Student, 'id'>): Promise<Student> => {
   try {
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+    // Normalizar el objeto student para asegurarse de que grupo sea siempre un array
+    const normalizedStudent = {
       ...student,
+      // Asegurarse de que grupo sea un array
+      grupo: Array.isArray(student.grupo) ? student.grupo : 
+             (student.grupo ? [student.grupo] : [])
+    };
+    
+    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+      ...normalizedStudent,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     })
 
     return {
       id: docRef.id,
-      ...student
+      ...normalizedStudent
     }
   } catch (error) {
     console.error('❌ Error al crear estudiante:', error)
@@ -96,9 +122,20 @@ export const createStudentFirebase = async (student: Omit<Student, 'id'>): Promi
 export const updateStudentFirebase = async (id: string, student: Partial<Student>): Promise<void> => {
   try {
     const docRef = doc(db, COLLECTION_NAME, id)
-    // Filtrar propiedades undefined
+    // Filtrar propiedades undefined y normalizar el campo grupo
     const cleanStudent = Object.entries(student).reduce((acc, [key, value]) => {
-      if (value !== undefined) acc[key] = value
+      if (value !== undefined) {
+        // Si el campo es grupo, asegurar que sea un array
+        if (key === 'grupo') {
+          if (Array.isArray(value)) {
+            acc[key] = value;
+          } else {
+            acc[key] = value ? [value] : [];
+          }
+        } else {
+          acc[key] = value;
+        }
+      }
       return acc
     }, {} as Record<string, any>)
 

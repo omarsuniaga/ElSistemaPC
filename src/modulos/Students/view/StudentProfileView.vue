@@ -789,8 +789,7 @@ const availableClasses = computed(() => {
     if (student.clase && typeof student.clase === 'string' && student.clase.trim() !== '') {
       classSet.add(student.clase.trim())
     }
-    
-    // Add values from grupo arrays as potential classes
+      // Add values from grupo arrays as potential classes
     if (student.grupo) {
       // Handle grupo as array
       if (Array.isArray(student.grupo)) {
@@ -800,7 +799,30 @@ const availableClasses = computed(() => {
           }
         })
       }
-      // Handle grupo as string (fallback)
+      // Handle grupo as string that looks like an array "[item1,item2]"
+      else if (typeof student.grupo === 'string' && 
+              student.grupo.startsWith('[') && 
+              student.grupo.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(student.grupo);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(item => {
+              if (item && typeof item === 'string' && item.trim() !== '') {
+                classSet.add(item.trim());
+              }
+            });
+          } else {
+            // If parsing doesn't result in array, use as string
+            classSet.add(student.grupo.trim());
+          }
+        } catch (e) {
+          // If parsing fails, use as string
+          if (student.grupo.trim() !== '') {
+            classSet.add(student.grupo.trim());
+          }
+        }
+      }
+      // Handle grupo as simple string (fallback)
       else if (typeof student.grupo === 'string' && student.grupo?.trim() !== '') {
         classSet.add(student.grupo.trim())
       }

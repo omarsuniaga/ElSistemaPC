@@ -19,10 +19,12 @@ const selectedDate = ref(new Date()) // Nueva ref para la fecha seleccionada
 
 // Actualiza la hora cada minuto para monitoreo en tiempo real
 let intervalId = null;
-onMounted(() => {
-  fetchData();
+onMounted(async () => {
+  await fetchData();
   now.value = new Date();
   selectedDate.value = new Date(); // Inicializar con la fecha actual
+  // Cargar datos de asistencia para la fecha actual
+  fetchAttendanceForDate(format(selectedDate.value, 'yyyy-MM-dd'));
 });
 onUnmounted(() => {
   if (intervalId) clearInterval(intervalId);
@@ -54,16 +56,37 @@ const formattedSelectedDate = computed(() => {
 // Función para ir al día anterior
 function goToPreviousDay() {
   selectedDate.value = subDays(selectedDate.value, 1)
+  fetchAttendanceForDate(format(selectedDate.value, 'yyyy-MM-dd'))
 }
 
 // Función para ir al día siguiente
 function goToNextDay() {
   selectedDate.value = addDays(selectedDate.value, 1)
+  fetchAttendanceForDate(format(selectedDate.value, 'yyyy-MM-dd'))
 }
 
 // Función para volver al día actual
 function goToToday() {
   selectedDate.value = new Date()
+  fetchAttendanceForDate(format(selectedDate.value, 'yyyy-MM-dd'))
+}
+
+// Función para cargar los datos de asistencia para una fecha específica
+async function fetchAttendanceForDate(date) {
+  isLoading.value = true
+  try {
+    // Asegurarse que tenemos las clases cargadas
+    if (classesStore.classes.length === 0) {
+      await classesStore.fetchClasses()
+    }
+    // Cargar asistencia específicamente para la fecha seleccionada
+    await attendanceStore.fetchAttendanceByDate(date)
+  } catch (err) {
+    console.error('Error al cargar datos de asistencia para la fecha:', date, err)
+    error.value = 'Error al cargar datos de asistencia'
+  } finally {
+    isLoading.value = false
+  }
 }
 
 // Usa un ref para forzar la reactividad de classesToday

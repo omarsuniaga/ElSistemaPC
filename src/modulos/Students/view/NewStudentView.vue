@@ -47,65 +47,90 @@ const normalizeText = (text: string = '') => {
   return text.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 };
 
+// Función para limpiar y normalizar valores de grupo
+const cleanGroupValue = (group: string): string => {
+  if (!group || typeof group !== 'string') return '';
+  
+  // Limpiar el valor: eliminar caracteres especiales y capitalizar primera letra
+  let cleanValue = group.trim()
+    .replace(/[[\]"',]+/g, '') // Eliminar [], comillas y comas
+    .trim();
+  
+  // Capitalizar primera letra de cada palabra
+  cleanValue = cleanValue.split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+    
+  return cleanValue;
+};
+
 // Computed property para obtener todos los valores de grupo disponibles en los estudiantes
 const availableGrupo = computed(() => {
   // Crear un Set para manejar valores únicos
-  const grupoSet = new Set<string>()
+  const grupoSet = new Set<string>();
   
   // Recorrer todos los estudiantes
   studentsStore.students.forEach(student => {
     // Si el estudiante tiene grupos asignados
     if (student.grupo) {
-      // Si grupo es un array, agregar cada elemento
-      if (Array.isArray(student.grupo)) {
-        student.grupo.forEach(group => {
-          if (group && typeof group === 'string') {
-            // Limpiar el valor: eliminar caracteres especiales y capitalizar primera letra
-            let cleanValue = group.trim()
-              .replace(/[[\]"',]+/g, '') // Eliminar [], comillas y comas
-              .trim()
-            
-            // Capitalizar primera letra de cada palabra
-            cleanValue = cleanValue.split(' ')
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-              .join(' ')
-              
+      try {
+        // Si grupo es un array, agregar cada elemento
+        if (Array.isArray(student.grupo)) {
+          student.grupo.forEach(group => {
+            const cleanValue = cleanGroupValue(group);
             if (cleanValue) {
-              grupoSet.add(cleanValue)
+              grupoSet.add(cleanValue);
+            }
+          });
+        } 
+        // Si grupo es un string pero parece ser un array serializado
+        else if (typeof student.grupo === 'string' && 
+                (student.grupo.startsWith('[') && student.grupo.endsWith(']'))) {
+          try {
+            const parsedGroup = JSON.parse(student.grupo);
+            if (Array.isArray(parsedGroup)) {
+              parsedGroup.forEach(group => {
+                const cleanValue = cleanGroupValue(group);
+                if (cleanValue) {
+                  grupoSet.add(cleanValue);
+                }
+              });
+            } else {
+              // Si el parsing no resulta en un array, tratar como string
+              const cleanValue = cleanGroupValue(student.grupo);
+              if (cleanValue) {
+                grupoSet.add(cleanValue);
+              }
+            }
+          } catch (e) {
+            // Si hay error al parsear, tratar como string
+            const cleanValue = cleanGroupValue(student.grupo);
+            if (cleanValue) {
+              grupoSet.add(cleanValue);
             }
           }
-        })
-      } 
-      // Si grupo es un string, tratarlo como un solo valor
-      else if (typeof student.grupo === 'string') {
-        // Limpiar el valor: eliminar caracteres especiales y capitalizar primera letra
-        let cleanValue = student.grupo.trim()
-          .replace(/[[\]"',]+/g, '') // Eliminar [], comillas y comas
-          .trim()
-        
-        // Capitalizar primera letra de cada palabra
-        cleanValue = cleanValue.split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-          .join(' ')
-          
-        if (cleanValue) {
-          grupoSet.add(cleanValue)
         }
+        // Si grupo es un string simple, tratarlo como un solo valor
+        else if (typeof student.grupo === 'string') {
+          const cleanValue = cleanGroupValue(student.grupo);
+          if (cleanValue) {
+            grupoSet.add(cleanValue);
+          }
+        }
+      } catch (error) {
+        console.error('Error procesando grupo:', error, student.grupo);
       }
     }
-  })
+  });
   
   // Agregar algunos valores predeterminados si no hay suficientes opciones
+  const defaultGroups = ['Coro', 'Orquesta', 'Solfeo', 'Teoría', 'Ensamble'];
   if (grupoSet.size < 3) {
-    grupoSet.add('Coro')
-    grupoSet.add('Orquesta')
-    grupoSet.add('Solfeo')
-    grupoSet.add('Teoría')
-    grupoSet.add('Ensamble')
+    defaultGroups.forEach(group => grupoSet.add(group));
   }
   
   // Convertir el Set a un Array y ordenarlo alfabéticamente
-  return Array.from(grupoSet).sort()
+  return Array.from(grupoSet).sort();
 })
 
 // Keep original computed properties but add verification after setting
@@ -206,13 +231,19 @@ const handleSubmit = async () => {
     isLoading.value = true
     error.value = null
     
-    // Check if we're updating an existing student
+  // Check if we're updating an existing student
     if (isEditingExistingStudent.value && matchedStudent.value) {
       // Preserve the ID for updating
       newStudent.value.id = matchedStudent.value.id
       
-      // Update the student
-      await studentsStore.updateStudent(newStudent.value)
+      // Ensure grupo is always an array before updating
+      if (!Array.isArray(newStudent.value.grupo)) {
+        newStudent.value.grupo = newStudent.value.grupo ? [newStudent.value.grupo] : []
+      }
+        // Update the student with proper ID handling 
+      // Primero extraemos el ID y luego actualizamos el resto de campos
+      const { id, ...studentData } = newStudent.value
+      await studentsStore.updateStudent(matchedStudent.value.id, studentData)
       showNotification(`Alumno ${newStudent.value.nombre} ${newStudent.value.apellido} actualizado con éxito`)
       clearForm()
       isEditingExistingStudent.value = false
@@ -273,9 +304,12 @@ const handleSubmit = async () => {
       showNotification(error.value, 'error');
       isLoading.value = false;
       return;
+    }    // If no duplicates found, proceed with adding student
+    // Ensure grupo is always stored as an array
+    if (!Array.isArray(newStudent.value.grupo)) {
+      newStudent.value.grupo = newStudent.value.grupo ? [newStudent.value.grupo] : [];
     }
-
-    // If no duplicates found, proceed with adding student
+    
     await studentsStore.addStudent(newStudent.value);
     showNotification(`Alumno ${newStudent.value.nombre} ${newStudent.value.apellido} guardado con éxito`);
     clearForm();
@@ -363,12 +397,36 @@ const populateFormWithStudentData = (student) => {
   const currentNombre = newStudent.value.nombre
   const currentApellido = newStudent.value.apellido
   
+  // Normalize the grupo data before populating
+  let normalizedGrupo = [];
+  
+  // Handle different formats of grupo data
+  if (student.grupo) {
+    if (Array.isArray(student.grupo)) {
+      normalizedGrupo = [...student.grupo];
+    } else if (typeof student.grupo === 'string') {
+      // Parse string format if it looks like an array "[item1,item2]"
+      if (student.grupo.startsWith('[') && student.grupo.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(student.grupo);
+          normalizedGrupo = Array.isArray(parsed) ? parsed : [student.grupo];
+        } catch (e) {
+          normalizedGrupo = [student.grupo]; // If parsing fails, treat as single item
+        }
+      } else {
+        normalizedGrupo = [student.grupo]; // Single string item
+      }
+    }
+  }
+  
   // Populate with student data
   newStudent.value = { 
     ...student,
     // Update dates to be Date objects
     createdAt: new Date(student.createdAt),
-    updatedAt: new Date()
+    updatedAt: new Date(),
+    // Ensure grupo is always an array
+    grupo: normalizedGrupo
   }
   
   // Restore current name and surname if they differ
@@ -397,7 +455,7 @@ const clearFormExceptNameAndSurname = () => {
     email: '',
     direccion: '',
     observaciones: '',
-    grupo: [], // Inicializamos la propiedad grupo como un array vacío
+    grupo: [], // Aseguramos que grupo sea un array vacío
     activo: true,
     createdAt: new Date(),
     updatedAt: new Date()

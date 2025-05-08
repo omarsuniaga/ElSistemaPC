@@ -23,6 +23,7 @@ import type {
   ClassObservation 
 } from '../types/attendance';
 import { auth } from '../../../firebase'; // Asegúrate de importar auth desde tu configuración de Firebase
+import { fetchAttendanceByDateFirebase as fetchByDate } from './attendance/fetchByDate';
 
 // Constants
 const ATTENDANCE_COLLECTION = 'ASISTENCIAS';
@@ -1043,3 +1044,9 @@ export async function getTeacherAttendanceDocsFirebase(teacherId: string, fromDa
     throw error;
   }
 }
+
+/**
+ * Obtiene documentos de asistencia para una fecha específica
+ * Re-exportamos la función para mantener la consistencia
+ */
+export const fetchAttendanceByDateFirebase = fetchByDate;

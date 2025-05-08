@@ -27,12 +27,6 @@ export const teacherMenuItems = [
     to: '/teacher/attendance/calendar', 
     ariaLabel: 'Gestionar asistencias'
   },
-  {
-    name: 'Observaciones',
-    icon: ChatBubbleLeftRightIcon,
-    to: '/teacher/attendance/observations',
-    ariaLabel: 'Ver historial de observaciones'
-  },
   { 
     name: 'Horarios', 
     icon: ClockIcon, 

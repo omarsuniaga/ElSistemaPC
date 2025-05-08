@@ -23,7 +23,8 @@ import {
   getAttendanceByDateAndClassFirebase,
   updateObservationsFirebase, // Add import for updateObservationsFirebase
   registerAttendanceFirebase, // Import the new Firebase service function
-  updateAttendanceFirebase // Import the new Firebase service function
+  updateAttendanceFirebase, // Import the new Firebase service function
+  fetchAttendanceByDateFirebase // Import the new Firebase service function
 } from '../service/attendance'
 import { getFromLocalStorage, saveToLocalStorage, clearLocalStorage } from '../../../utils/localStorageUtils'
 
@@ -1999,17 +2000,48 @@ async getStudentAbsencesByDateRange(startDate: string, endDate: string, classId?
     this.activeStudents = this.activeStudents || []; // Ensure it's never undefined
     throw error;
   }
-},
-
-    // REMOVE THIS FUNCTION FROM ACTIONS - It's now in getters
+},    // REMOVE THIS FUNCTION FROM ACTIONS - It's now in getters
     /* 
     getStudentAttendanceRate(studentId: string, classId?: string, startDate?: string, endDate?: string): number {
       // This version should be removed - it's now in getters
     }
     */
+    
+    /**
+     * Obtiene documentos de asistencia para una fecha específica
+     * 
+     * @param date - Fecha en formato 'yyyy-MM-dd'
+     * @returns Promise que resuelve a un array de documentos de asistencia
+     */
+    async fetchAttendanceByDate(date: string) {
+      this.isLoading = true;
+      this.error = null;
+      
+      try {
+        // Obtener documentos de asistencia solo para la fecha específica
+        const documents = await fetchAttendanceByDateFirebase(date);
+        
+        // Actualizar solo los documentos para esta fecha específica
+        // Mantendremos los documentos existentes para otras fechas
+        const existingDocs = this.attendanceDocuments.filter(doc => doc.fecha !== date);
+        this.attendanceDocuments = [...existingDocs, ...documents];
+        
+        // Actualizar la variable attendanceDocs para que esté disponible en los componentes
+        const attendanceDocs = documents;
+        
+        return documents;
+      } catch (error) {
+        console.error('Error obteniendo asistencia por fecha:', error);
+        this.error = 'Error al obtener registros de asistencia para esta fecha';
+        return [];      } finally {
+        this.isLoading = false;
+      }
+    }
   }
 });
 
 function eachDayOfInterval(arg0: { start: Date; end: Date }) {
   throw new Error('Function not implemented.')
 }
+
+    

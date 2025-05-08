@@ -64,7 +64,18 @@ const filteredSelectedStudents = computed(() => {
 // Methods
 const addStudent = (studentId) => {
   if (!selectedStudentIds.value.includes(studentId)) {
+    // Verificar que el estudiante exista en el store
+    const studentExists = studentsStore.students.some(s => s.id === studentId);
+    if (!studentExists) {
+      console.warn(`Advertencia: Se intentó agregar un estudiante con ID ${studentId} que no existe en el store`);
+      return;
+    }
+    
+    // Agregar el estudiante a la lista de seleccionados
     selectedStudentIds.value.push(studentId);
+    console.log(`Estudiante agregado a la lista temporal: ${studentId}`);
+    
+    // Limpiar búsqueda
     searchQuery.value = '';
   }
 };
@@ -72,6 +83,13 @@ const addStudent = (studentId) => {
 const toggleStudentSelection = (studentId) => {
   const index = selectedForAddition.value.indexOf(studentId);
   if (index === -1) {
+    // Verificar que el estudiante exista antes de seleccionarlo
+    const studentExists = studentsStore.students.some(s => s.id === studentId);
+    if (!studentExists) {
+      console.warn(`Advertencia: Se intentó seleccionar un estudiante con ID ${studentId} que no existe en el store`);
+      return;
+    }
+    
     selectedForAddition.value.push(studentId);
   } else {
     selectedForAddition.value.splice(index, 1);
@@ -79,9 +97,19 @@ const toggleStudentSelection = (studentId) => {
 };
 
 const addSelectedStudents = () => {
-  for (const studentId of selectedForAddition.value) {
+  // Verificar estudiantes válidos antes de agregarlos
+  const validStudentIds = selectedForAddition.value.filter(id => {
+    const studentExists = studentsStore.students.some(s => s.id === id);
+    if (!studentExists) {
+      console.warn(`Estudiante con ID ${id} no encontrado, no se agregará`);
+    }
+    return studentExists;
+  });
+  
+  for (const studentId of validStudentIds) {
     if (!selectedStudentIds.value.includes(studentId)) {
       selectedStudentIds.value.push(studentId);
+      console.log(`Estudiante agregado masivamente: ${studentId}`);
     }
   }
   selectedForAddition.value = [];
@@ -95,22 +123,101 @@ const removeStudent = (studentId) => {
 
 // Función segura para guardar los cambios de estudiantes
 const saveChanges = async () => {
+  if (isLoading.value) return; // Prevenir múltiples envíos
+  
   isLoading.value = true;
   try {
-    // Asegurarnos de que los IDs de estudiantes sean un array válido
-    // Esto es crítico para evitar errores en componentes que usan estos datos
-    const validatedStudentIds = Array.isArray(selectedStudentIds.value) 
-      ? selectedStudentIds.value 
-      : [];
+    // Validaciones previas al guardado
+    if (!props.classId) {
+      throw new Error('No se ha especificado una clase válida');
+    }
+
+    if (!Array.isArray(selectedStudentIds.value)) {
+      throw new Error('La lista de estudiantes no es válida');
+    }
+
+    // Verificar que todos los IDs sean válidos y existan en el store
+    const validStudents = selectedStudentIds.value.filter(id => {
+      const studentExists = studentsStore.students.some(s => s.id === id);
+      if (!studentExists) {
+        console.warn(`Estudiante con ID ${id} no encontrado en el store`);
+      }
+      return id && typeof id === 'string' && studentExists;
+    });
+
+    if (validStudents.length !== selectedStudentIds.value.length) {
+      throw new Error('Algunos estudiantes seleccionados no son válidos o ya no existen');
+    }
+
+    // Eliminar duplicados y ordenar
+    const validatedStudentIds = [...new Set(validStudents)].sort();
     
-    // Emitimos el evento con los IDs validados
-    await emit('update', validatedStudentIds);
-    console.log('ClassStudentManager: Estudiantes actualizados correctamente', validatedStudentIds);
+    // Verificar cambios
+    const currentIds = new Set(props.studentIds);
+    const newIds = new Set(validatedStudentIds);
     
-    // Cerramos el modal
-    emit('close');
+    const added = validatedStudentIds.filter(id => !currentIds.has(id));
+    const removed = Array.from(currentIds).filter(id => !newIds.has(id));
+    const hasChanges = added.length > 0 || removed.length > 0;
+    
+    if (!hasChanges) {
+      console.log('No hay cambios en la lista de estudiantes');
+      emit('close');
+      return;
+    }
+
+    // Crear resumen de cambios para el log
+    const changesSummary = {
+      classId: props.classId,
+      previousCount: props.studentIds.length,
+      newCount: validatedStudentIds.length,
+      added: added.map(id => {
+        const student = studentsStore.students.find(s => s.id === id);
+        return {
+          id,
+          name: student ? `${student.nombre} ${student.apellido}` : 'Desconocido'
+        };
+      }),
+      removed: removed.map(id => {
+        const student = studentsStore.students.find(s => s.id === id);
+        return {
+          id,
+          name: student ? `${student.nombre} ${student.apellido}` : 'Desconocido'
+        };
+      })
+    };    // Emitir evento con los IDs validados y esperar respuesta
+    try {
+      // Mostrar info de debug
+      console.log('Guardando estudiantes:', {
+        estudiantes: validatedStudentIds,
+        totalEstudiantes: validatedStudentIds.length,
+        detalles: changesSummary
+      });
+      
+      // Verificar duplicados una última vez
+      const uniqueIds = [...new Set(validatedStudentIds)];
+      if (uniqueIds.length !== validatedStudentIds.length) {
+        console.warn('Se detectaron IDs duplicados, se eliminarán antes de guardar');
+      }
+      
+      // Llamada al evento update con los IDs únicos
+      await emit('update', uniqueIds);
+      console.log('ClassStudentManager: Estudiantes actualizados correctamente', changesSummary);
+      
+      // No cerramos aquí, dejamos que el evento de éxito lo haga
+      setTimeout(() => {
+        if (isLoading.value) {
+          console.log('El modal no se ha cerrado, forzando cierre...');
+          emit('close');
+        }
+      }, 2000); // Si después de 2 segundos el modal sigue abierto, lo cerramos
+    } catch (updateError) {
+      console.error('Error durante la actualización:', updateError);
+      throw new Error('No se pudo completar la actualización de estudiantes');
+    }
   } catch (error) {
     console.error('Error al guardar cambios:', error);
+    throw error; // Re-throw para que el componente padre pueda manejarlo
   } finally {
     isLoading.value = false;
   }

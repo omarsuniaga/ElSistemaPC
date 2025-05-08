@@ -22,13 +22,40 @@ if (!instrumentoStore.instruments.length) {
 
 const instruments = computed(() => instrumentoStore.instruments)
 
+// Asegurar que el campo grupo siempre sea un array al cargar el estudiante
+const normalizeGrupo = (grupo: any): string[] => {
+  if (Array.isArray(grupo)) {
+    return grupo;
+  } else if (grupo) {
+    if (typeof grupo === 'string') {
+      if (grupo.startsWith('[') && grupo.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(grupo);
+          return Array.isArray(parsed) ? parsed : [grupo];
+        } catch (e) {
+          console.warn('Error parsing grupo value:', e);
+          return [grupo];
+        }
+      }
+      return [grupo];
+    }
+    return [String(grupo)];
+  }
+  return [];
+};
+
 const formData = ref(originalStudent.value ? {
   ...originalStudent.value,
-  grupo: originalStudent.value.grupo || []
+  grupo: normalizeGrupo(originalStudent.value.grupo)
 } : null)
 
 const handleSubmit = () => {
   if (formData.value) {
+    // Asegurarnos que grupo sea un array antes de guardar
+    if (!Array.isArray(formData.value.grupo)) {
+      formData.value.grupo = normalizeGrupo(formData.value.grupo);
+    }
+    
     studentsStore.updateStudent(String(studentId), formData.value)
     router.push(`/students/${studentId}`)
   }

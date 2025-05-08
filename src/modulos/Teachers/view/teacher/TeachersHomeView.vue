@@ -407,28 +407,136 @@ const handleStudentChange = async (studentIds) => {
       });
       return;
     }
-    // Convertir a array si no lo es
-    const validStudentIds = Array.isArray(studentIds) ? [...studentIds] : [];
-    
+
+    // Obtener la clase actual y validar que existe
     const currentClass = classesStore.getClassById(selectedClassId.value);
-    console.log('Clase actual:', currentClass);
-    // Actualizar la clase con los nuevos estudiantes
-    await classesStore.updateClass({
-      id: selectedClassId.value,
-      studentIds: validStudentIds // Siempre será un array
+    if (!currentClass) {
+      throw new Error('No se encontró la clase seleccionada');
+    }
+
+    // Validar y normalizar IDs de estudiantes
+    const validStudentIds = Array.isArray(studentIds) 
+      ? [...new Set(studentIds.filter(id => id && typeof id === 'string'))] // Eliminar duplicados y valores inválidos
+      : [];
+    
+    // Verificar que todos los estudiantes existan en el store
+    const studentsStore = useStudentsStore();
+    await studentsStore.fetchStudents(); // Asegurar que tenemos datos actualizados
+    
+    const validatedIds = validStudentIds.filter(id => {
+      const exists = studentsStore.students.some(student => student.id === id);
+      if (!exists) {
+        console.warn(`Advertencia: El estudiante con ID ${id} no existe en el sistema.`);
+      }
+      return exists;
     });
     
+    if (validatedIds.length !== validStudentIds.length) {
+      console.warn(`Se eliminaron ${validStudentIds.length - validatedIds.length} IDs de estudiantes inválidos`);
+    }
+    
+    // Verificar si hay cambios reales
+    const currentIds = new Set(currentClass.studentIds || []);
+    const newIds = new Set(validatedIds);
+    
+    const addedStudents = validatedIds.filter(id => !currentIds.has(id));
+    const removedStudents = Array.from(currentIds).filter(id => !newIds.has(id));
+    const hasChanges = addedStudents.length > 0 || removedStudents.length > 0;
+
+    if (!hasChanges) {
+      toast({
+        title: "Sin Cambios",
+        description: "No se detectaron cambios en la lista de estudiantes."
+      });
+      showStudentManager.value = false;
+      return;
+    }
+
+    // Preparar los datos para la actualización preservando otros campos
+    const updateData = {
+      id: selectedClassId.value,
+      ...currentClass, // Mantener datos existentes
+      studentIds: validatedIds,
+      updatedAt: new Date().toISOString() // Agregar timestamp de actualización
+    };
+
+    // Validar que la actualización no deje la clase sin datos esenciales
+    if (!updateData.name || !updateData.teacherId) {
+      throw new Error('Faltan datos esenciales de la clase');
+    }
+
+    // Actualizar la clase
+    await classesStore.updateClass(updateData);
+    
+    // También actualizar la propiedad grupo en cada estudiante si es necesario
+    for (const studentId of addedStudents) {
+      try {
+        const student = studentsStore.getStudentById(studentId);
+        if (student) {
+          // Asegurar que el grupo siempre sea un array
+          const currentGrupos = Array.isArray(student.grupo) ? [...student.grupo] : 
+                              (student.grupo ? [student.grupo] : []);
+          
+          // Si esta clase no está en los grupos del estudiante, añadirla
+          if (!currentGrupos.includes(selectedClassId.value)) {
+            await studentsStore.updateStudent(studentId, {
+              grupo: [...currentGrupos, selectedClassId.value]
+            });
+            console.log(`Actualizado grupo del estudiante ${studentId}: añadido a clase ${selectedClassId.value}`);
+          }
+        }
+      } catch (err) {
+        console.error(`Error al actualizar los grupos del estudiante ${studentId}:`, err);
+        // Continuar con los demás estudiantes
+      }
+    }
+    
+    // Log detallado para debugging
+    console.log('Clase actualizada exitosamente:', {
+      classId: selectedClassId.value,
+      className: currentClass.name,
+      previousCount: currentClass.studentIds?.length || 0,
+      newCount: validatedIds.length,
+      added: addedStudents.map(id => {
+        const student = studentsStore.getStudentById(id);
+        return {
+          id,
+          name: student ? `${student.nombre} ${student.apellido}` : 'Nombre desconocido'
+        };
+      }),
+      removed: removedStudents.map(id => {
+        const student = studentsStore.getStudentById(id);
+        return {
+          id,
+          name: student ? `${student.nombre} ${student.apellido}` : 'Nombre desconocido'
+        };
+      })
+    });
+
+    // Mensaje específico basado en los cambios realizados
+    let description = "Se han actualizado los estudiantes de la clase.";
+    if (addedStudents.length > 0 && removedStudents.length > 0) {
+      description = `Se ${addedStudents.length === 1 ? 'agregó' : 'agregaron'} ${addedStudents.length} y se ${removedStudents.length === 1 ? 'eliminó' : 'eliminaron'} ${removedStudents.length} estudiante${removedStudents.length === 1 ? '' : 's'}.`;
+    } else if (addedStudents.length > 0) {
+      description = `Se ${addedStudents.length === 1 ? 'agregó' : 'agregaron'} ${addedStudents.length} estudiante${addedStudents.length === 1 ? '' : 's'} a la clase.`;
+    } else if (removedStudents.length > 0) {
+      description = `Se ${removedStudents.length === 1 ? 'eliminó' : 'eliminaron'} ${removedStudents.length} estudiante${removedStudents.length === 1 ? '' : 's'} de la clase.`;
+    }
+
     toast({
       title: "Estudiantes Actualizados",
-      description: "La lista de estudiantes ha sido actualizada exitosamente."
+      description: description
     });
+    
+    // Forzar una recarga de las clases para reflejar los cambios
+    await classesStore.forceSync();
     
     showStudentManager.value = false;
   } catch (error) {
     console.error('Error al actualizar estudiantes:', error);
     toast({
       title: "Error",
-      description: "No se pudieron actualizar los estudiantes. Intente nuevamente.",
+      description: error.message || "No se pudieron actualizar los estudiantes. Intente nuevamente.",
       variant: "destructive"
     });
   }
@@ -811,10 +919,10 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
             leave-to="opacity-0 scale-95"
           >
             <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
-              <h2 class="text-xl font-semibold mb-4">Gestionar Estudiantes - {{ selectedClass?.name }}</h2>
-              <ClassStudentManager 
-                :class-id="selectedClass?.id"
-                :student-ids="Array.isArray(selectedClass?.studentIds) ? selectedClass?.studentIds : []"
+              <h2 class="text-xl font-semibold mb-4">Gestionar Estudiantes - {{ selectedClass?.name }}</h2>              <ClassStudentManager 
+                :key="selectedClass?.id || 'no-class'"
+                :class-id="selectedClass?.id || ''"
+                :student-ids="Array.isArray(selectedClass?.studentIds) ? [...selectedClass.studentIds] : []"
                 @update="handleStudentChange"
                 @close="showStudentManager = false"
               />

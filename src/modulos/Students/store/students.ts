@@ -149,11 +149,17 @@ export const useStudentsStore = defineStore('students', {
     async fetchItems() {
       return this.fetchStudents()
     },
-    
-    async addStudent(student: Omit<Student, 'id'>) {
+      async addStudent(student: Omit<Student, 'id'>) {
       this.loading = true
       try {
-        const newStudent = await createStudentFirebase(student)
+        // Asegurarse de que el campo grupo sea siempre un array
+        const normalizedStudent = {
+          ...student,
+          grupo: Array.isArray(student.grupo) ? student.grupo : 
+                (student.grupo ? [student.grupo] : [])
+        }
+        
+        const newStudent = await createStudentFirebase(normalizedStudent)
         this.students.push(newStudent)
         return newStudent
       } catch (error: any) {
@@ -169,14 +175,26 @@ export const useStudentsStore = defineStore('students', {
     async addItem(student: Omit<Student, 'id'>) {
       return this.addStudent(student)
     },
-    
-    async updateStudent(id: string, updates: Partial<Student>) {
+      async updateStudent(id: string, updates: Partial<Student>) {
       this.loading = true
       try {
+        // Asegurarse de que el campo grupo sea siempre un array si está presente
+        if (updates.grupo !== undefined) {
+          if (!Array.isArray(updates.grupo)) {
+            updates.grupo = updates.grupo ? [updates.grupo] : [];
+          }
+        }
+        
         await updateStudentFirebase(id, updates)
         const index = this.students.findIndex(item => item.id === id)
         if (index !== -1) {
-          this.students[index] = { ...this.students[index], ...updates }
+          this.students[index] = { 
+            ...this.students[index], 
+            ...updates,
+            // Asegurarse de que en el estado local también sea un array
+            grupo: Array.isArray(updates.grupo) ? updates.grupo : 
+                   (updates.grupo ? [updates.grupo] : this.students[index].grupo || [])
+          }
         }
         return this.students[index]
       } catch (error: any) {
