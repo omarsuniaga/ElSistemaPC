@@ -207,6 +207,74 @@ export const useClassesStore = defineStore('classes', {
         if (!classId) {
           throw new Error('ID de clase indefinido');
         }
+          // Obtener datos actuales de la clase para gestionar relaciones bidireccionales
+        const currentClass = this.getClassById(classId);
+        
+        // Comprobar si hay cambios en la lista de estudiantes
+        if (updates.studentIds && currentClass) {
+          const previousStudentIds = currentClass.studentIds || [];
+          const newStudentIds = updates.studentIds;
+          
+          // Identificar cambios
+          const addedStudents = newStudentIds.filter(id => !previousStudentIds.includes(id));
+          const removedStudents = previousStudentIds.filter(id => !newStudentIds.includes(id));
+          
+          try {
+            // Importamos el store de estudiantes si hay cambios que procesar
+            if (addedStudents.length > 0 || removedStudents.length > 0) {
+              // Usamos import dinámico para evitar dependencias circulares
+              const { useStudentsStore } = await import('../../Students/store/students');
+              const studentsStore = useStudentsStore();
+              
+              // Actualizar los estudiantes añadidos para que tengan esta clase en su grupo
+              for (const studentId of addedStudents) {
+                try {
+                  const student = studentsStore.getStudentById(studentId);
+                  if (student) {
+                    const currentGrupos = Array.isArray(student.grupo) ? [...student.grupo] : 
+                                        (student.grupo ? [student.grupo] : []);
+                    
+                    if (!currentGrupos.includes(classId)) {
+                      await studentsStore.updateStudent(studentId, {
+                        grupo: [...currentGrupos, classId]
+                      });
+                      console.log(`Actualizado estudiante ${studentId}: añadido a clase ${classId}`);
+                    }
+                  }
+                } catch (err) {
+                  console.error(`Error actualizando grupos del estudiante ${studentId}:`, err);
+                  // Continuamos con los demás estudiantes
+                }
+              }
+              
+              // Actualizar los estudiantes eliminados para quitar esta clase de su grupo
+              for (const studentId of removedStudents) {
+                try {
+                  const student = studentsStore.getStudentById(studentId);
+                  if (student && student.grupo) {
+                    const currentGrupos = Array.isArray(student.grupo) ? [...student.grupo] : 
+                                        (student.grupo ? [student.grupo] : []);
+                    
+                    const updatedGrupos = currentGrupos.filter(g => g !== classId);
+                    
+                    if (currentGrupos.length !== updatedGrupos.length) {
+                      await studentsStore.updateStudent(studentId, {
+                        grupo: updatedGrupos
+                      });
+                      console.log(`Actualizado estudiante ${studentId}: eliminado de clase ${classId}`);
+                    }
+                  }
+                } catch (err) {
+                  console.error(`Error actualizando grupos del estudiante ${studentId}:`, err);
+                  // Continuamos con los demás estudiantes
+                }
+              }
+            }
+          } catch (err) {
+            console.error('Error actualizando referencias estudiantes-clases:', err);
+            // No bloqueamos la actualización principal por errores en las referencias
+          }
+        }
         
         // Actualizar en Firestore
         await updateClassFirestore(classId, updates);
