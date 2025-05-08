@@ -34,11 +34,18 @@ export const useClassesStore = defineStore('classes', {
     // Retorna clases que tienen definido un horario
     getScheduledClasses: (state) => state.classes.filter(classItem => classItem.schedule),
     // Retorna clases sin horario definido
-    getUnscheduledClasses: (state) => state.classes.filter(classItem => !classItem.schedule),
-    // obtener clases por dias de la semana
-      getClassesByStudentId: (state) => (studentId: string) => {
+    getUnscheduledClasses: (state) => state.classes.filter(classItem => !classItem.schedule),    
+    // This getter was causing conflicts with the action method
+    // It has been removed and replaced with the action method only
+    
+    // Nueva implementación del getter studentClasses para resolver el conflicto de nombres
+    studentClasses: (state) => (studentId: string) => {
       if (!studentId) return [];
-      return state.classes.filter(c => c.studentIds && Array.isArray(c.studentIds) && c.studentIds.includes(studentId));
+      return state.classes.filter(classItem => 
+        classItem.studentIds && 
+        Array.isArray(classItem.studentIds) && 
+        classItem.studentIds.includes(studentId)
+      );
     },
     
     // obtener clases por dias de la semana
@@ -96,8 +103,10 @@ export const useClassesStore = defineStore('classes', {
       });
     }
   },
+  // Actions para manejar la lógica de negocio y la comunicación con Firestore
 
   actions: {
+    
     /**
      * Normaliza la data de una clase para asegurar que el campo "schedule" tenga la estructura esperada.
      */
@@ -152,7 +161,6 @@ export const useClassesStore = defineStore('classes', {
         return this.classes;
       });
     },
-
     /**
      * Agrega una nueva clase en Firestore.
      * Se espera que se provea la data de la clase sin el campo "id".
@@ -543,6 +551,44 @@ export const useClassesStore = defineStore('classes', {
         });
         return normalizedClasses;
       });
+    },
+
+    /**
+     * Obtiene y carga las clases específicas para un maestro
+     * @param teacherId ID del maestro
+     */
+    async fetchClassesByTeacher(teacherId: string) {
+      return await this.withLoading(async () => {
+        if (!teacherId) return [];
+        // Si tienes un método Firestore específico, úsalo aquí. Si no, filtra localmente después de fetchClassesFirestore
+        let classes = [];
+        if (typeof fetchClassesFirestore === 'function') {
+          classes = await fetchClassesFirestore();
+        }
+        // Filtrar por teacherId
+        const filtered = classes.filter((classItem: any) => classItem.teacherId === teacherId);
+        const normalizedClasses = filtered.map(classItem => this.normalizeClassData(classItem));
+        // Actualizar el store
+        normalizedClasses.forEach(classItem => {
+          const index = this.classes.findIndex(c => c.id === classItem.id);
+          if (index >= 0) {
+            this.classes[index] = classItem;
+          } else {
+            this.classes.push(classItem);
+          }
+        });
+        return normalizedClasses;
+      });
+    },    /**
+     * Compatibility function for old code that uses getClassesByStudentId as a method
+     */
+    getClassesByStudentId(studentId: string) {
+      if (!studentId) return [];
+      return this.classes.filter(classItem => 
+        classItem.studentIds && 
+        Array.isArray(classItem.studentIds) && 
+        classItem.studentIds.includes(studentId)
+      );
     },
   }
 });

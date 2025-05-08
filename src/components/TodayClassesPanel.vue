@@ -4,7 +4,9 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAttendanceStore } from '@/modulos/Attendance/store/attendance'
 import { useClassesStore } from '@/modulos/Classes/store/classes'
 import { useTeachersStore } from '@/modulos/Teachers/store/teachers'
-import { format, parseISO, isAfter, isBefore, isWithinInterval } from 'date-fns'
+import { format, parseISO, isAfter, isBefore, isWithinInterval, addDays, subDays } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 
 const attendanceStore = useAttendanceStore()
 const classesStore = useClassesStore()
@@ -13,12 +15,14 @@ const teachersStore = useTeachersStore()
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 const now = ref(new Date())
+const selectedDate = ref(new Date()) // Nueva ref para la fecha seleccionada
 
 // Actualiza la hora cada minuto para monitoreo en tiempo real
 let intervalId = null;
 onMounted(() => {
   fetchData();
   now.value = new Date();
+  selectedDate.value = new Date(); // Inicializar con la fecha actual
 });
 onUnmounted(() => {
   if (intervalId) clearInterval(intervalId);
@@ -39,8 +43,28 @@ async function fetchData() {
   }
 }
 
-// Obtiene el índice del día actual (0=domingo, 1=lunes, ...)
-const todayIndex = computed(() => now.value.getDay())
+// Obtiene el índice del día seleccionado (0=domingo, 1=lunes, ...)
+const selectedDayIndex = computed(() => selectedDate.value.getDay())
+
+// Formato de la fecha seleccionada para mostrar en la UI
+const formattedSelectedDate = computed(() => {
+  return format(selectedDate.value, "EEEE, d 'de' MMMM", { locale: es })
+})
+
+// Función para ir al día anterior
+function goToPreviousDay() {
+  selectedDate.value = subDays(selectedDate.value, 1)
+}
+
+// Función para ir al día siguiente
+function goToNextDay() {
+  selectedDate.value = addDays(selectedDate.value, 1)
+}
+
+// Función para volver al día actual
+function goToToday() {
+  selectedDate.value = new Date()
+}
 
 // Usa un ref para forzar la reactividad de classesToday
 const classesTodayData = ref([])
@@ -48,30 +72,30 @@ const classesTodayData = ref([])
 watch([
   () => attendanceStore.attendanceDocuments,
   () => classesStore.classes,
-  now
+  selectedDate // Observar cambios en la fecha seleccionada en lugar de now
 ], () => {
-  const today = format(now.value, 'yyyy-MM-dd')
-  const allClasses = classesStore.getClassesByDay(todayIndex.value) || []
+  const formattedDate = format(selectedDate.value, 'yyyy-MM-dd')
+  const allClasses = classesStore.getClassesByDay(selectedDayIndex.value) || []
   const attendanceDocs = attendanceStore.attendanceDocuments || []
 
   // Mapear clases con estado y datos de asistencia
   const mapped = allClasses.map(classItem => {
     const slot = classItem.schedule?.slots?.find(slot => {
-      if (typeof slot.day === 'number') return slot.day === todayIndex.value
+      if (typeof slot.day === 'number') return slot.day === selectedDayIndex.value
       if (typeof slot.day === 'string') {
         const daysEs = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
         const daysEn = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
         return (
-          slot.day.toLowerCase() === daysEs[todayIndex.value] ||
-          slot.day.toLowerCase() === daysEn[todayIndex.value]
+          slot.day.toLowerCase() === daysEs[selectedDayIndex.value] ||
+          slot.day.toLowerCase() === daysEn[selectedDayIndex.value]
         )
       }
       return false
     })
     const startTime = slot?.startTime || '00:00'
     const endTime = slot?.endTime || '23:59'
-    const startDateTime = parseISO(`${today}T${startTime}`)
-    const endDateTime = parseISO(`${today}T${endTime}`)
+    const startDateTime = parseISO(`${formattedDate}T${startTime}`)
+    const endDateTime = parseISO(`${formattedDate}T${endTime}`)
     let status = 'active'
     if (isBefore(now.value, startDateTime)) status = 'next'
     else if (isAfter(now.value, endDateTime)) status = 'finished'
@@ -81,7 +105,8 @@ watch([
     const teacher = teachersStore.teachers.find(t => t.id === classItem.teacherId)
     const teacherName = teacher?.name || 'Profesor'
 
-    const attendanceDoc = attendanceDocs.find(doc => doc.classId === classItem.id && doc.fecha === today)
+    // Buscar el documento de asistencia para esta clase en la fecha seleccionada
+    const attendanceDoc = attendanceDocs.find(doc => doc.classId === classItem.id && doc.fecha === formattedDate)
     const presentCount = attendanceDoc ? (attendanceDoc.data.presentes?.length || 0) : 0
     const totalStudents = classItem.studentIds?.length || 0
     return {
@@ -110,10 +135,6 @@ watch(classesTodayData, (newClasses) => {
   classesToday.value = newClasses
 })
 
-function updateClassesToday() {
-  classesToday.value = classesStore.getClassesByDay(todayIndex.value)
-}
-
 // Helpers
 function formatTime(time: string) {
   if (!time) return '--:--'
@@ -141,9 +162,51 @@ function getStatusLabel(status: string) {
     default: return 'Activa'
   }
 }
+
+// Determinar si estamos viendo el día actual
+const isToday = computed(() => {
+  const today = new Date()
+  return (
+    selectedDate.value.getDate() === today.getDate() &&
+    selectedDate.value.getMonth() === today.getMonth() &&
+    selectedDate.value.getFullYear() === today.getFullYear()
+  )
+})
 </script>
 <template>
   <section class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden" aria-labelledby="today-classes-title">
+    <!-- Navegación de días -->
+    <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+      <button 
+        @click="goToPreviousDay" 
+        class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+        aria-label="Día anterior"
+      >
+        <ChevronLeftIcon class="h-5 w-5 text-gray-600 dark:text-gray-300" />
+      </button>
+      
+      <div class="flex flex-col items-center">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white capitalize">
+          {{ formattedSelectedDate }}
+        </h2>
+        <button 
+          v-if="!isToday" 
+          @click="goToToday" 
+          class="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
+        >
+          Volver a hoy
+        </button>
+      </div>
+      
+      <button 
+        @click="goToNextDay" 
+        class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+        aria-label="Día siguiente"
+      >
+        <ChevronRightIcon class="h-5 w-5 text-gray-600 dark:text-gray-300" />
+      </button>
+    </div>
+
     <div v-if="isLoading" class="flex justify-center items-center p-6">
       <div class="animate-pulse flex flex-col items-center">
         <div class="rounded-full bg-gray-200 dark:bg-gray-700 h-10 w-10 mb-2"></div>
@@ -186,7 +249,7 @@ function getStatusLabel(status: string) {
         </li>
       </ul>
       <div v-else class="p-6 text-center text-gray-500 dark:text-gray-400">
-        No hay clases programadas para hoy
+        No hay clases programadas para este día
       </div>
     </div>
   </section>

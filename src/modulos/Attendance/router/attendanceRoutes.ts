@@ -21,6 +21,11 @@ export const attendanceRoutes: RouteRecordRaw[] = [
     name: 'TeacherAttendanceCalendar',
     component: () => import('../views/teacher/TeacherHome.vue'),
     meta: { requiresAuth: true, allowedRoles: ['Maestro'] },
+  },  {
+    path: '/teacher/attendance/observations',
+    name: 'TeacherAllClassObservations',
+    component: () => import('../views/ObservationsHistoryView.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['Maestro'] },
   },
   {
     path: '/teacher/attendance/:date(\\d{8})?/:classId?',
@@ -29,7 +34,6 @@ export const attendanceRoutes: RouteRecordRaw[] = [
     props: true,
     meta: { requiresAuth: true, allowedRoles: ['Maestro'] },
   },
-
   /* Admin/Director */
   {
     path: '/attendance',
@@ -40,6 +44,11 @@ export const attendanceRoutes: RouteRecordRaw[] = [
     path: '/attendance/calendar',
     name: 'AdminAttendanceCalendar',
     component: () => import('../views/admin/AdminHome.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['Director', 'Admin'] },
+  },  {
+    path: '/attendance/observations',
+    name: 'AdminAllClassObservations',
+    component: () => import('../views/ObservationsHistoryView.vue'),
     meta: { requiresAuth: true, allowedRoles: ['Director', 'Admin'] },
   },
   {

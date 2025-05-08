@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useClassesStore } from '../stores/classes';
-import { useStudentsStore } from '../stores/students';
+import { useClassesStore } from '../modulos/Classes/store/classes';
+import { useStudentsStore } from '../modulos/Students/store/students';
 import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps<{
@@ -72,15 +72,16 @@ const progressStudents = async () => {
     ];
     
     // Update both classes
-    await classesStore.updateClass({
-      ...currentClass.value,
-      studentIds: updatedCurrentStudents
-    });
-    
-    await classesStore.updateClass({
-      ...nextLevelClass.value,
-      studentIds: updatedNextStudents
-    });
+    await Promise.all([
+      classesStore.updateClass({
+        id: currentClass.value.id,
+        studentIds: updatedCurrentStudents
+      }),
+      classesStore.updateClass({
+        id: nextLevelClass.value.id,
+        studentIds: updatedNextStudents
+      })
+    ]);
     
     emit('student-progressed');
     selectedStudents.value = [];

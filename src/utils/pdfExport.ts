@@ -90,3 +90,74 @@ export const generateAttendancePDF = async (
     return Promise.reject(error);
   }
 };
+
+/**
+ * Generates a PDF with the class details and student list
+ * @param className - Name of the class
+ * @param teacherName - Name of the teacher
+ * @param weeklyHours - Weekly hours of the class
+ * @param students - List of students in the class
+ * @returns Promise that resolves when the PDF has been generated and saved
+ */
+export const generateClassDetailsPDF = async (
+  className: string,
+  teacherName: string,
+  weeklyHours: number,
+  students: Student[]
+): Promise<void> => {
+  try {
+    // Create new PDF document
+    const doc = new jsPDF();
+    const currentDate = format(new Date(), "d 'de' MMMM yyyy", { locale: es });
+
+    // Title
+    doc.setFontSize(20);
+    doc.setTextColor(41, 128, 185); // Blue color
+    doc.text('Detalles de la Clase', 14, 20);
+
+    // Class Information
+    doc.setFontSize(12);
+    doc.setTextColor(0); // Black color
+    doc.text(`Clase: ${className}`, 14, 35);
+    doc.text(`Profesor: ${teacherName}`, 14, 43);
+    doc.text(`Horas semanales: ${weeklyHours}`, 14, 51);
+    doc.text(`Fecha de impresión: ${currentDate}`, 14, 59);    // Students Table
+    const tableColumn = ["#", "Nombre del Estudiante", "Email", "Teléfono", "Instrumento"];
+    const tableRows = students.map((student, index) => [
+      index + 1,
+      `${student.nombre} ${student.apellido}`,
+      student.email || 'No registrado',
+      student.phone || student.tlf || 'No registrado',
+      student.instrumento || 'No especificado'
+    ]);
+
+    // Add students table
+    doc.autoTable({
+      startY: 70,
+      head: [tableColumn],
+      body: tableRows,
+      theme: 'striped',
+      headStyles: { fillColor: [41, 128, 185] },      styles: {
+        overflow: 'linebreak',
+        cellWidth: 'auto',
+        fontSize: 9
+      },
+      columnStyles: {
+        0: { cellWidth: 10 },  // #
+        1: { cellWidth: 50 },  // Nombre
+        2: { cellWidth: 45 },  // Email
+        3: { cellWidth: 35 },  // Teléfono
+        4: { cellWidth: 40 }   // Instrumento
+      }
+    });
+
+    // Save the PDF
+    const safeClassName = className.replace(/\s+/g, '_');
+    const formattedDate = format(new Date(), 'yyyy-MM-dd');
+    doc.save(`Lista_Alumnos_${safeClassName}_${formattedDate}.pdf`);
+
+  } catch (error) {
+    console.error("Error generating class details PDF:", error);
+    return Promise.reject(error);
+  }
+};

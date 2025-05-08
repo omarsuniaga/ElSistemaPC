@@ -80,6 +80,14 @@
           Últ. mes
         </button>
         <button 
+          @click="syncAttendanceData" 
+          class="px-3 py-1 text-xs font-medium rounded bg-blue-600 hover:bg-blue-700 text-white 
+                 dark:bg-blue-500 dark:hover:bg-blue-600"
+          title="Sincronizar asistencias para el rango de fechas"
+        >
+          Sincronizar
+        </button>
+        <button 
           @click="fetchReport" 
           class="px-3 py-1 text-xs font-medium rounded bg-primary-600 hover:bg-primary-700 text-white 
                  dark:bg-primary-500 dark:hover:bg-primary-600"
@@ -550,7 +558,91 @@ function setRange(type: string) {
   if (type === 'month') from.value = format(subMonths(now, 1), 'yyyy-MM-dd')
 }
 
-// Función para obtener símbolo de estado
+// Función mejorada para procesar los datos de asistencia
+const processAttendanceData = (attendanceDoc: any) => {
+  const result = {
+    presentes: [] as string[],
+    ausentes: [] as string[],
+    tarde: [] as string[],
+    justificados: [] as string[],
+    observaciones: ''
+  };
+
+  if (!attendanceDoc || !attendanceDoc.data) {
+    console.warn('Documento de asistencia inválido o vacío');
+    return result;
+  }
+
+  // Validar y procesar cada estado
+  if (Array.isArray(attendanceDoc.data.presentes)) {
+    result.presentes = attendanceDoc.data.presentes;
+  }
+  if (Array.isArray(attendanceDoc.data.ausentes)) {
+    result.ausentes = attendanceDoc.data.ausentes;
+  }
+  if (Array.isArray(attendanceDoc.data.tarde)) {
+    result.tarde = attendanceDoc.data.tarde;
+  }
+  if (Array.isArray(attendanceDoc.data.justificacion)) {
+    result.justificados = attendanceDoc.data.justificacion.map((j: any) => j.id);
+  }
+  
+  result.observaciones = attendanceDoc.data.observations || '';
+  
+  return result;
+};
+
+// Función mejorada para calcular estadísticas
+const calculateClassStatistics = (classData: any) => {
+  const stats = {
+    totalStudents: classData.students.length,
+    totalDays: classData.relevantDates?.length || 0,
+    presentes: 0,
+    ausentes: 0,
+    tarde: 0,
+    justificados: 0,
+    asistenciaPromedio: 0
+  };
+
+  // Contabilizar cada estado para cada estudiante
+  classData.students.forEach((student: any) => {
+    Object.values(student.attendance).forEach((status: any) => {
+      if (status === 'P') stats.presentes++;
+      else if (status === 'A') stats.ausentes++;
+      else if (status === 'T') stats.tarde++;
+      else if (status === 'J') stats.justificados++;
+    });
+  });
+
+  // Calcular porcentaje de asistencia
+  const totalAsistencias = stats.totalStudents * stats.totalDays;
+  if (totalAsistencias > 0) {
+    stats.asistenciaPromedio = ((stats.presentes + stats.justificados) / totalAsistencias) * 100;
+  }
+
+  return stats;
+};
+
+// Función mejorada para validar y formatear fechas
+const validateDateRange = (startDate: string, endDate: string) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    throw new Error('Fechas inválidas');
+  }
+  
+  if (start > end) {
+    throw new Error('La fecha inicial debe ser anterior a la fecha final');
+  }
+  
+  return {
+    start: format(start, 'yyyy-MM-dd'),
+    end: format(end, 'yyyy-MM-dd')
+  };
+};
+
+// Función mejorada para obtener símbolo de estado
 function getStatusSymbol(status: string): string {
   switch (status) {
     case 'P': return 'P';
@@ -661,308 +753,203 @@ function hasAnyObservations(classData: any): boolean {
 }
 
 // FUNCIÓN PRINCIPAL: Generar el informe
-async function fetchReport() {
+const fetchReport = async () => {
   try {
     loading.value = true;
     error.value = null;
     
-    console.log('Generando informe de asistencia para', teacherName.value);
-    console.log('Rango de fechas:', from.value, 'a', to.value);
-    console.log('ID del maestro:', currentTeacherId.value);
-    const teacherId = currentTeacherId.value;
+    // Obtener rango de fechas validado
+    const { start, end } = validateDateRange(from.value, to.value);
+    console.log(`📆 Generando informe de ${start} a ${end} para profesor ${currentTeacherId.value}`);
     
-    
-    // 1. Asegurarnos de que tenemos los datos necesarios cargados
-    if (!classesStore.classes.length) {
-      await classesStore.fetchClasses();
-    }
-    
-    if (!studentsStore.students.length) {
-      await studentsStore.fetchStudents();
-    }
-    
-    // Important: Force reload attendance documents to ensure we have fresh data
-    await attendanceStore.loadAttendanceDataForCalendar(teacherId);
-    console.log(`Cargados ${attendanceStore.attendanceDocuments.length} documentos de asistencia`);
-    
-    if (!attendanceStore.observationsHistory.length) {
-      await attendanceStore.fetchObservations();
-    }
-    
-    // Load teachers if needed
-    if (!teachersStore.teachers.length) {
-      await teachersStore.fetchTeachers();
-    }
-    
-    // 2. Obtener las clases del maestro actual - filtrar por el ID del maestro obtenido
-    teacherClasses.value = classesStore.classes.filter(cls => cls.teacherId === currentTeacherId.value);
-    console.log('Clases del maestro:', teacherClasses.value.length, teacherClasses.value.map(c => c.name));
-    
-    if (teacherClasses.value.length === 0) {
-      error.value = `No se encontraron clases asignadas al maestro con ID: ${currentTeacherId.value}`;
+    // Primero cargar las clases del profesor actual
+    if (!currentTeacherId.value) {
+      error.value = "ID de profesor no disponible";
       return;
     }
     
-    // Debugging: Check which attendance documents exist for this teacher's classes
-    const teacherClassIds = teacherClasses.value.map(cls => cls.id);
-    const relevantDocs = attendanceStore.attendanceDocuments.filter(doc => {
-      const docDate = doc.fecha || doc.Fecha || doc.date;
-      const isInDateRange = docDate >= from.value && docDate <= to.value;
-      const isForTeacherClass = teacherClassIds.includes(doc.classId);
-      return isInDateRange && isForTeacherClass;
-    });
-    
-    console.log(`Encontrados ${relevantDocs.length} documentos de asistencia relevantes para las clases del maestro en el período seleccionado`);
-    if (relevantDocs.length > 0) {
-      console.log('Muestra de documentos encontrados:', relevantDocs.slice(0, 3).map(doc => ({
-        fecha: doc.fecha || doc.Fecha || doc.date, 
-        classId: doc.classId,
-        className: classesStore.classes.find(c => c.id === doc.classId)?.name || 'Desconocida'
-      })));
+    // Cargar clases del profesor desde el store de clases
+    // Use the action if available, otherwise fallback to filtering loaded classes
+    let classes = [];
+    if (typeof classesStore.fetchClassesByTeacher === 'function') {
+      classes = await classesStore.fetchClassesByTeacher(currentTeacherId.value);
+    } else if (typeof classesStore.getClassesByTeacher === 'function') {
+      // Fallback: use getter if action is not available (for legacy/classic Pinia stores)
+      classes = classesStore.getClassesByTeacher(currentTeacherId.value) || [];
     } else {
-      console.warn('No se encontraron documentos de asistencia para las clases de este maestro en el rango de fechas especificado');
+      // Fallback: filter loaded classes
+      classes = (classesStore.classes || []).filter(c => c.teacherId === currentTeacherId.value);
+    }
+    teacherClasses.value = classes;
+    console.log(`📚 Clases del profesor cargadas: ${teacherClasses.value.length}`);
+    
+    if (teacherClasses.value.length === 0) {
+      error.value = "El profesor no tiene clases asignadas";
+      return;
     }
     
-    // 3. Inicializar estructura para el reporte por clase
-    const classStructure: Record<string, {
-      classId: string;
-      className: string;
-      daySchedule: number[];
-      observations: Array<{ date: string; text: string }> ;
-      students: Record<string, {
-        id: string;
-        name: string;
-        attendance: Record<string, string>;
-        observations: string;
-      }> ;
-    }> = {};
+    // Obtener datos de asistencia para el rango de fechas
+    const attendanceDocs = await attendanceStore.fetchAttendanceByDateRange(start, end, currentTeacherId.value);
+    console.log(`📊 Documentos de asistencia cargados: ${attendanceDocs.length}`);
     
-    // Preparar la estructura para cada clase
-    teacherClasses.value.forEach(cls => {
-      // Convertir el horario de la clase a números de día [0-6]
-      const daySchedule: number[] = [];
-      
-      if (cls.schedule && cls.schedule.slots) {
-        cls.schedule.slots.forEach(slot => {
-          if (typeof slot.day === 'number' && slot.day >= 0 && slot.day <= 6) {
-            daySchedule.push(slot.day);
-          } else if (typeof slot.day === 'string') {
-            const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-            const dayIndex = dayNames.findIndex(d => d.toLowerCase() === slot.day.toLowerCase());
-            if (dayIndex !== -1) {
-              daySchedule.push(dayIndex);
-            }
-          }
-        });
-      }
-        // Inicializar la estructura de la clase
-      classStructure[cls.id] = {
-        classId: cls.id,
-        className: cls.name,
-        daySchedule,
-        observations: [],
-        students: {}
-      };
-      
-      // Preparar la estructura para cada estudiante en la clase
-      const classStudents = studentsStore.getStudentsByClass(cls.id);
-      
-      if (classStudents.length === 0) {
-        console.log(`No se encontraron estudiantes para la clase ${cls.name} (ID: ${cls.id})`);
-      } else {
-        console.log(`Se encontraron ${classStudents.length} estudiantes para la clase ${cls.name}`);
-      }
-      
-      classStudents.forEach(student => {
-        classStructure[cls.id].students[student.id] = {
-          id: student.id,
-          name: `${student.nombre || ''} ${student.apellido || ''}`.trim(),
-          attendance: {},
-          observations: ''
-        };
-      });
-    });
-      // 4. Iterar el rango de fechas para cada clase
-    for (const dateStr of dateRange.value) {
-      const date = parseISO(dateStr);
-      const dayOfWeek = getDay(date); // 0-6 (domingo-sábado)
-      
-      // Para cada clase, verificar si tiene clase este día
-      for (const classId in classStructure) {
-        const classData = classStructure[classId];
-        
-        // Si la clase no tiene programación este día, continuar con la siguiente
-        if (!classData.daySchedule.includes(dayOfWeek)) continue;
-        
-        // Asegurarnos de cargar el documento de asistencia actual antes de procesar las observaciones
-        try {
-          await attendanceStore.fetchAttendanceDocument(dateStr, classId);
-        } catch (e) {
-          console.warn(`No se pudo cargar el documento de asistencia para ${dateStr}, clase ${classId}`, e);
-        }
-        
-        // Buscar documentos de asistencia para esta fecha y clase - con mejor manejo de diferentes formatos de fecha
-        const attendanceDocs = attendanceStore.attendanceDocuments.filter(doc => 
-          (doc.Fecha === dateStr || doc.fecha === dateStr || doc.date === dateStr) && 
-          doc.classId === classId
+    // Procesar cada clase para generar el reporte
+    classReports.value = await Promise.all(
+      teacherClasses.value.map(async (classObj) => {
+        // Obtener documentos de asistencia para esta clase
+        const classAttendance = attendanceStore.attendanceDocuments.filter(
+          doc => doc.classId === classObj.id
         );
         
-        // Si existen documentos de asistencia, procesar los datos
-        if (attendanceDocs.length > 0) {
-          console.log(`Se encontraron ${attendanceDocs.length} registros de asistencia para ${dateStr}, clase ${classId}`);
-          
-          // Por defecto, todos los estudiantes están ausentes
-          for (const studentId in classData.students) {
-            classData.students[studentId].attendance[dateStr] = 'A';
-          }
-          
-          // Buscar si hay observaciones para esta fecha y clase
-          // 1. Primero en la estructura antigua de documentos
-          const oldFormatDoc = attendanceStore.attendanceDocuments.find(d => 
-            d.fecha === dateStr && 
-            d.classId === classId && 
-            d.data && d.data.observations
-          );
-          
-          if (oldFormatDoc?.data?.observations) {
-            classData.observations.push({
-              date: dateStr,
-              text: oldFormatDoc.data.observations
-            });
-          }
-          
-          // 2. Luego en el historial de observaciones (colección OBSERVACIONES)
-          try {
-            const historyObs = await attendanceStore.getObservationsHistory(classId, dateStr);
-            historyObs.forEach(obs => {
-              classData.observations.push({
-                date: dateStr,
-                text: obs.text || obs.observacion || ''
-              });
-            });
-          } catch (e) {
-            console.warn(`No se pudo obtener historial de observaciones para ${dateStr}, clase ${classId}`, e);
-          }
-          
-          // Procesar cada registro de asistencia
-          for (const doc of attendanceDocs) {
-            const { studentId, status } = doc;
-              // Si el estudiante existe en nuestra clase
-            if (classData.students[studentId]) {
-              // Mapear el estado al formato requerido (P, A, T, J)
-              let mappedStatus;
-              switch (status) {
-                case 'Presente':
-                  mappedStatus = 'P';
-                  break;
-                case 'Ausente':
-                  mappedStatus = 'A';
-                  break;
-                case 'Tardanza':
-                  mappedStatus = 'T';
-                  break;
-                case 'Justificado':
-                  mappedStatus = 'J';
-                  break;
-                default:
-                  mappedStatus = 'A'; // Por defecto, ausente
-              }
+        // Obtener estudiantes de esta clase
+        let students = [];
+        if (classObj.studentIds && Array.isArray(classObj.studentIds)) {
+          // Buscar información de cada estudiante
+          students = await Promise.all(classObj.studentIds.map(async (studentId) => {
+            const studentData = studentsStore.students.find(s => s.id === studentId) || 
+              { id: studentId, nombre: 'Estudiante', apellido: 'Desconocido' };
               
-              // Registrar el estado para este estudiante en esta fecha
-              classData.students[studentId].attendance[dateStr] = mappedStatus;
-              
-
-              // Si tiene justificación, registrarla
-              if (!classData.students[studentId].observations) {
-                let reason = '';
-                
-                // Verificar justificación en la propiedad directa (usando type assertion)
-                if ((doc as any).justification) {
-                  reason = typeof (doc as any).justification === 'string' 
-                    ? (doc as any).justification 
-                    : ((doc as any).justification?.reason || '');
-                } 
-                // Verificar justificación en el formato de data.justificacion (array)
-                else if (doc.data?.justificacion?.length > 0) {
-                  reason = doc.data.justificacion[0].reason || '';
-                }
-                
-                if (reason) {
-                  classData.students[studentId].observations = reason;
-                }
-                // iterar observaciones en el documento de asistencia
-
-              }
-            }
-
-
+            // Prepare attendance record for this student
+            const attendance = {};
             
-            // Esta línea está causando el error - la eliminamos porque ya asignamos el estado
-            // correctamente dentro del bloque if anterior
-          }
-        } 
-        // Si no hay documento de asistencia para este día
-        else {
-          console.log(`No se encontró documento de asistencia para ${dateStr}, clase ${classId}`);
-          // Marcar a todos los estudiantes como sin registro
-          for (const studentId in classData.students) {
-            classData.students[studentId].attendance[dateStr] = '-';
-          }
+            // Initialize attendance as empty
+            if (classAttendance.length > 0) {
+              // For each attendance document, check if student was present/absent/etc
+              classAttendance.forEach(doc => {
+                const date = doc.fecha || doc.date || '';
+                if (!date) return;
+                
+                // Determine status
+                let status = '-';
+                if (doc.data?.presentes?.includes(studentId)) {
+                  status = 'P';
+                } else if (doc.data?.ausentes?.includes(studentId)) {
+                  status = 'A';
+                } else if (doc.data?.tarde?.includes(studentId)) {
+                  status = 'T';
+                } else if (doc.data?.justificacion?.some(j => j.id === studentId)) {
+                  status = 'J';
+                }
+                
+                attendance[date] = status;
+              });
+            }
+            
+            return {
+              id: studentId,
+              name: `${studentData.nombre} ${studentData.apellido}`,
+              attendance,
+              observations: ''
+            };
+          }));
         }
-      }
-    }
-    
-    // 5. Filtrar fechas relevantes para cada clase y ordenarlas cronológicamente
-    const relevantDatesPerClass: Record<string, string[]> = {};
-    
-    // Primero identificar las fechas relevantes para cada clase
-    for (const classId in classStructure) {
-      const classData = classStructure[classId];
-      const relevantDates: string[] = [];
-      
-      // Filtrar solo las fechas donde hay clase programada
-      for (const dateStr of dateRange.value) {
-        const date = parseISO(dateStr);
-        const dayOfWeek = getDay(date);
         
-        if (classData.daySchedule.includes(dayOfWeek)) {
-          relevantDates.push(dateStr);
+        // Get unique dates with attendance records for this class
+        const relevantDates = Array.from(new Set(
+          classAttendance.map(doc => doc.fecha || doc.date || '')
+        )).filter(date => date);
+        
+        // Sort dates chronologically
+        relevantDates.sort();
+        
+        // Get observations for this class
+        const observations = [];
+        for (const doc of classAttendance) {
+          if (doc.data?.observations) {
+            observations.push({
+              date: doc.fecha || doc.date || '',
+              text: doc.data.observations
+            });
+          }
         }
-      }
-      
-      // Ordenar las fechas cronológicamente
-      relevantDates.sort((a, b) => parseISO(a).getTime() - parseISO(b).getTime());
-      relevantDatesPerClass[classId] = relevantDates;
-    }
-  
-    // 6. Convertir la estructura a un array para el template y ordenar
-    classReports.value = Object.values(classStructure)
-      .map(classData => ({
-        ...classData,
-        // Ordenar las observaciones por fecha
-        observations: classData.observations.sort((a, b) => 
-          parseISO(a.date).getTime() - parseISO(b.date).getTime()
-        ),
-        // Convertir el objeto students a un array ordenado alfabéticamente
-        students: Object.values(classData.students).sort((a, b) => a.name.localeCompare(b.name)),
-        // Añadir las fechas relevantes para esta clase específica (ya ordenadas)
-        relevantDates: relevantDatesPerClass[classData.classId]
-      }))
-      // Filtrar solo las clases que realmente tienen fechas relevantes en el período
-      .filter(classData => classData.relevantDates && classData.relevantDates.length > 0)
-      // Ordenar clases alfabéticamente
-      .sort((a, b) => a.className.localeCompare(b.className));
+        
+        // Determinar los días de la semana en que se da esta clase
+        const daySchedule = classObj.schedule ? 
+          classObj.schedule.slots.map(slot => {
+            // Convert day name to number (0 = Sunday, 1 = Monday, etc)
+            const dayMap = { 
+              'domingo': 0, 'lunes': 1, 'martes': 2, 'miércoles': 3, 
+              'jueves': 4, 'viernes': 5, 'sábado': 6 
+            };
+            return dayMap[slot.day.toLowerCase()] || 0;
+          }) : [];
+        
+        return {
+          classId: classObj.id,
+          className: classObj.name || 'Clase sin nombre',
+          daySchedule,
+          observations,
+          students,
+          relevantDates
+        };
+      })
+    );
     
-    console.log('Informe generado con éxito', classReports.value);
-    
-    // Dibujar gráficas una vez que tenemos los datos
-    setTimeout(() => drawCharts(), 200);
+    // Calcular estadísticas generales
+    calculateGeneralStats();
     
   } catch (err) {
     console.error('Error al generar informe:', err);
     error.value = err instanceof Error ? err.message : 'Error al generar el informe';
   } finally {
     loading.value = false;
+  }
+};
+
+// crear un metodo para sincronizar los datos de asistencia
+    async function syncAttendanceData() {
+    try {
+      const attendanceData = await fetchAttendanceData();
+      // Procesar y normalizar los datos de asistencia
+      const processedData = attendanceData.map(doc => {
+        // Los documentos ya son objetos, no necesitas llamar a .data()
+        return {
+          docId: doc.id || doc._id || '',
+          fecha: doc.fecha,
+          classId: doc.classId,
+          teacherId: doc.teacherId,
+          data: {
+            presentes: doc.data?.presentes || [],
+            ausentes: doc.data?.ausentes || [],
+            tarde: doc.data?.tarde || [],
+            justificados: doc.data?.justificacion || [], // nota: cambio de justificados a justificacion
+          },
+        };
+      });
+      // Actualizar el store con los datos procesados
+      classReports.value = processedData;
+      console.log(`✅ Datos sincronizados: ${processedData.length} documentos`);
+    } catch (err) {
+      console.error('Error al sincronizar datos de asistencia:', err);
+    }
+  };
+// desarrolla un metodo para fetchAttendanceData en relacion al contexto
+async function fetchAttendanceData() {
+  try {
+    const attendanceDocs = await attendanceStore.fetchAttendanceDocuments(currentTeacherId.value);
+    return attendanceDocs;
+  } catch (err) {
+    console.error('Error al obtener datos de asistencia:', err);
+    throw err;
+  }
+}
+
+// Función para calcular estadísticas generales
+function calculateGeneralStats() {
+  try {
+    // Preparar datos para las gráficas
+    const chartData = prepareChartData();
+    
+    // Dibujar las gráficas con los datos actualizados
+    drawCharts();
+    
+    // Log de observaciones si hay alguna
+    if (classReports.value.some(c => c.observations && c.observations.length > 0)) {
+      logObservationsGrouped(classReports.value);
+    }
+    
+  } catch (err) {
+    console.error('Error al calcular estadísticas generales:', err);
+    error.value = err instanceof Error ? err.message : 'Error al calcular estadísticas';
   }
 }
 
@@ -980,14 +967,26 @@ function prepareChartData() {
   // Optimizar y simplificar la gráfica para solo mostrar datos relevantes
   // Datos para la gráfica por fecha - solo mostrar fechas con clases programadas
   const relevantDates = new Set<string>();
-  
-  // Recopilar todas las fechas relevantes de todas las clases
+    // Recopilar todas las fechas relevantes de todas las clases
   classReports.value.forEach(classData => {
-    if (classData.relevantDates && classData.relevantDates.length > 0) {
-      classData.relevantDates.forEach(date => relevantDates.add(date));
+    if (classData.relevantDates && Array.isArray(classData.relevantDates)) {
+      classData.relevantDates
+        .filter(date => date && typeof date === 'string') // Asegurarse de que la fecha es válida
+        .forEach(date => {
+          try {
+            // Validar que la fecha puede ser parseada
+            const parsedDate = parseISO(date);
+            if (!isNaN(parsedDate.getTime())) {
+              relevantDates.add(date);
+            }
+          } catch (err) {
+            console.warn(`Error adding date ${date}:`, err);
+          }
+        });
     }
   });
   
+
   // Ordenar las fechas relevantes
   const sortedRelevantDates = Array.from(relevantDates).sort();
   
@@ -1038,20 +1037,30 @@ function prepareChartData() {
   // Datos para la gráfica por día de la semana - optimizado
   const attendanceByWeekday = [0, 0, 0, 0, 0, 0, 0]; // [dom, lun, mar, mié, jue, vie, sáb]
   const totalByWeekday = [0, 0, 0, 0, 0, 0, 0];
-  
-  // Contar solo las fechas relevantes para optimizar el rendimiento
+    // Contar solo las fechas relevantes para optimizar el rendimiento
   for (const classData of classReports.value) {
     for (const date of classData.relevantDates || []) {
-      const dayOfWeek = getDay(parseISO(date));
+      // Validar que la fecha existe y es válida
+      if (!date) continue;
       
-      for (const student of classData.students) {
-        const status = student.attendance[date];
-        if (status === 'P' || status === 'J') {
-          attendanceByWeekday[dayOfWeek]++;
+      try {
+        const parsedDate = parseISO(date);
+        if (isNaN(parsedDate.getTime())) continue; // Skip invalid dates
+        
+        const dayOfWeek = getDay(parsedDate);
+        
+        for (const student of classData.students) {
+          const status = student.attendance[date];
+          if (status === 'P' || status === 'J') {
+            attendanceByWeekday[dayOfWeek]++;
+          }
+          if (status !== '-') {
+            totalByWeekday[dayOfWeek]++;
+          }
         }
-        if (status !== '-') {
-          totalByWeekday[dayOfWeek]++;
-        }
+      } catch (err) {
+        console.warn(`Error processing date ${date}:`, err);
+        continue;
       }
     }
   }
@@ -1383,9 +1392,25 @@ watch([currentTeacherId, from, to], () => {
   fetchReport();
 });
 
-// Inicializar informe al montar el componente
-onMounted(() => {
-  fetchReport();
+// En el método onMounted
+onMounted(async () => {
+  try {
+    // Cargar los profesores si es necesario
+    if (teachersStore.teachers.length === 0) {
+      await teachersStore.fetchTeachers();
+    }
+    
+    // Cargar los estudiantes si es necesario
+    if (studentsStore.students.length === 0) {
+      await studentsStore.fetchStudents();
+    }
+    
+    // Generar el informe
+    await fetchReport();
+  } catch (err) {
+    console.error('Error al inicializar componente:', err);
+    error.value = 'Error al cargar datos iniciales';
+  }
 });
 
 // Función para agrupar y mostrar observaciones

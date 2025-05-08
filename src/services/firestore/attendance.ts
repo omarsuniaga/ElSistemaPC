@@ -532,12 +532,12 @@ export const addObservationToHistoryFirebase = async (
 
 /**
  * Obtiene el historial de observaciones para una clase
- * @param classId - ID de la clase
+ * @param classId - ID de la clase (opcional) - si no se proporciona, devuelve todas las observaciones
  * @param date - Fecha específica (opcional)
  * @returns Promise con array de observaciones
  */
 export const getObservationsHistoryFirebase = async (
-  classId: string,
+  classId?: string,
   date?: string
 ): Promise<any[]> => {
   try {
@@ -545,18 +545,32 @@ export const getObservationsHistoryFirebase = async (
     
     let q;
     
-    if (date) {
-      // Filtrar por clase y fecha específica
+    // Caso 1: Filtrar por clase y fecha específica
+    if (classId && date) {
       q = query(
         collection(db, 'OBSERVACIONES'),
         where('classId', '==', classId),
         where('date', '==', date)
       );
-    } else {
-      // Filtrar solo por clase
+    } 
+    // Caso 2: Filtrar solo por clase
+    else if (classId) {
       q = query(
         collection(db, 'OBSERVACIONES'),
         where('classId', '==', classId)
+      );
+    } 
+    // Caso 3: Filtrar solo por fecha
+    else if (date) {
+      q = query(
+        collection(db, 'OBSERVACIONES'),
+        where('date', '==', date)
+      );
+    } 
+    // Caso 4: Obtener todas las observaciones
+    else {
+      q = query(
+        collection(db, 'OBSERVACIONES')
       );
     }
     

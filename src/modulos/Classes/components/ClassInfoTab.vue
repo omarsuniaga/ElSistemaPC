@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { PencilIcon, XCircleIcon, CheckIcon, UserGroupIcon } from '@heroicons/vue/24/outline';
+import { PencilIcon, XCircleIcon, CheckIcon, UserGroupIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 import { useTeachersStore } from '../../Teachers/store/teachers';
 import { useStudentsStore } from '../../Students/store/students';
+import { generateClassDetailsPDF } from '../../../utils/pdfExport';
 import StudentProgress from '../../../components/StudentProgress.vue';
 
 const props = defineProps({
@@ -75,6 +76,30 @@ const saveClassChanges = async () => {
     saveLoading.value = false;
   }
 };
+
+const downloadStudentList = async () => {
+  try {
+    // Get teacher name from computed property
+    const teacher = teacherName.value;
+    
+    // Get weekly hours (for now we'll set a default)
+    const weeklyHours = 2; // You can calculate this from schedule if needed
+    
+    // Get all students with their full information
+    const students = classStudents.value.filter(s => s !== undefined);
+    
+    // Generate and download the PDF
+    await generateClassDetailsPDF(
+      props.selectedClass.name,
+      teacher,
+      weeklyHours,
+      students
+    );
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+  }
+};
+
 onMounted(() => {
   // Cargar profesores al inicio
   console.log('Loading teachers...', teachersStore.teachers);
@@ -231,12 +256,22 @@ onMounted(() => {
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Estudiantes</h2>
-        <button 
-          @click="$emit('handle-manage-students')"
-          class="text-blue-600 dark:text-blue-400 text-sm font-medium hover:text-blue-800 dark:hover:text-blue-300"
-        >
-          Ver todos
-        </button>
+        <div class="flex gap-2">
+          <button 
+            @click="$emit('handle-manage-students')" 
+            class="inline-flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+          >
+            <UserPlusIcon class="h-4 w-4 mr-1" />
+            Gestionar
+          </button>
+          <button 
+            @click="downloadStudentList" 
+            class="inline-flex items-center text-sm font-medium text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
+          >
+            <ArrowDownTrayIcon class="h-4 w-4 mr-1" />
+            PDF
+          </button>
+        </div>
       </div>
       
       <div v-if="classStudents.length > 0" class="space-y-2">

@@ -412,7 +412,10 @@ const activeTeachersWithData = computed(() => {
         activeTeacherIds.add(classInfo.teacherId)
       }
     })
-  
+const handleDayChange = (newDate) => {
+  // Actualizar los datos de asistencia para la nueva fecha
+  fetchAttendanceForDate(newDate);
+};
   // Mapear los IDs a objetos de profesor completos
   return Array.from(activeTeacherIds)
     .map(id => {
@@ -479,12 +482,24 @@ const activeTeachersWithData = computed(() => {
           :totalTeachers="teachersStore.teachers.length"
           :activeTeachersData="activeTeachersWithData"
         />
+        <!-- Botón de acceso al Reporte Semanal -->
+    <div class="mt-6 text-center">
+      <router-link 
+        to="/admin/reporte-semanal" 
+        class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        Ver Reporte Semanal Completo
+      </router-link>
+    </div>
       </div>
     </div>
 
     <!-- Panel de Clases del Día -->
     <MinimizablePanel 
-      title="Clases Programadas para Hoy" 
+    title="Asistencias" 
       panelId="today-classes" 
       iconClass="text-blue-500 dark:text-blue-400 bg-blue-100 dark:bg-blue-900"
       iconPath="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
@@ -511,6 +526,8 @@ const activeTeachersWithData = computed(() => {
     >
       <AbsenteesList :className="null" :limit="5" />
     </MinimizablePanel>
+    
+    
   </div>
 </template>
 

@@ -50,7 +50,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/teacher',
     name: 'TeacherHome',
-    component: () => import('../modulos/Teachers/view/teacher/TeachersHomeView.vue'),
+    component: () => import('../modulos/Teachers/view/TeacherDashboardPage.vue'),
     meta: { 
       requiresAuth: true,
       allowedRoles: ['Maestro']
@@ -120,6 +120,25 @@ const routes: Array<RouteRecordRaw> = [
       allowedRoles: ['Maestro', 'Director', 'Admin']
     }
   },
+  {
+    path: '/teacher/class/:id',
+    name: 'TeacherClassDetail',
+    component: () => import('../modulos/Teachers/view/teacher/ClassDetailView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Maestro', 'Director', 'Admin']
+    }
+  },
+  {
+    path: '/admin/reporte-semanal',
+    name: 'AdminReporteSemanal',
+    component: () => import('../modulos/Teachers/view/admin/AdminReporteSemanal.vue'),
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['Maestro', 'Director', 'Admin']
+    }
+  },
   // Ruta para la lista dinámica de actividades según la fecha (ej: /attendance/20250318)
   {
     path: '/attendance/:date(\\d{8})',
@@ -179,13 +198,22 @@ const routes: Array<RouteRecordRaw> = [
       allowedRoles: ['Director', 'Admin']
     }
   },
-  {
-    path: '/classes',
+  {    path: '/classes',
     name: 'Classes',
     component: () => import('../views/ClassesView.vue'),
     meta: { 
       requiresAuth: true,
       allowedRoles: ['Director', 'Admin']
+    }
+  },
+  {
+    path: '/classes/:id',
+    name: 'ClassDetail',
+    component: () => import('../modulos/Classes/view/ClassDetailView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin', 'Maestro']
     }
   },
   {

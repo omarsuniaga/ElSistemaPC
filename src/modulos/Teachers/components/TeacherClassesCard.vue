@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 // ../modulos/Teacher/components/TeacheClassesCard.vue
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -325,11 +325,12 @@ const getDayAbbr = (day) => {
 </script>
 
 <template>
-  <div 
-    @click="handleView" 
-    class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer overflow-hidden text-sm h-full flex flex-col"
-  >
-    <!-- Cabecera con color según día de la semana -->
+  <div v-bind="$attrs">
+    <div 
+      @click="handleView" 
+      class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer overflow-hidden text-sm h-full flex flex-col"
+    >
+      <!-- Cabecera con color según día de la semana -->
     <div 
       class="h-2" 
       :class="{
@@ -428,91 +429,92 @@ const getDayAbbr = (day) => {
           <TrashIcon class="h-5 w-5 sm:h-4 sm:w-4" /> <!-- Larger on mobile -->
         </button>
       </div>    </div>
-  </div>
-  
-  <!-- Modal de estudiantes -->
-  <TransitionRoot appear :show="showStudentsModal" as="template">
-    <Dialog 
-      as="div" 
-      @close="showStudentsModal = false"
-      class="relative z-50"
-      @click.stop
-    >
-      <TransitionChild
-        as="template"
-        enter="duration-300 ease-out"
-        enter-from="opacity-0"
-        enter-to="opacity-100"
-        leave="duration-200 ease-in"
-        leave-from="opacity-100"
-        leave-to="opacity-0"
+    </div>
+    
+    <!-- Modal de estudiantes -->
+    <TransitionRoot appear :show="showStudentsModal" as="template">
+      <Dialog 
+        as="div" 
+        @close="showStudentsModal = false"
+        class="relative z-50"
+        @click.stop
       >
-        <div class="fixed inset-0 bg-black bg-opacity-50" />
-      </TransitionChild>
+        <TransitionChild
+          as="template"
+          enter="duration-300 ease-out"
+          enter-from="opacity-0"
+          enter-to="opacity-100"
+          leave="duration-200 ease-in"
+          leave-from="opacity-100"
+          leave-to="opacity-0"
+        >
+          <div class="fixed inset-0 bg-black bg-opacity-50" />
+        </TransitionChild>
 
-      <div class="fixed inset-0 overflow-y-auto">
-        <div class="flex min-h-full items-center justify-center p-4 text-center">
-          <TransitionChild
-            as="template"
-            enter="duration-300 ease-out"
-            enter-from="opacity-0 scale-95"
-            enter-to="opacity-100 scale-100"
-            leave="duration-200 ease-in"
-            leave-from="opacity-100 scale-100"
-            leave-to="opacity-0 scale-95"
-          >
-            <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 p-4 text-left align-middle shadow-xl transition-all">
-              <div class="flex items-center justify-between mb-3">
-                <DialogTitle class="text-lg font-medium text-gray-900 dark:text-white">
-                  Estudiantes de {{ classData.name }}
-                </DialogTitle>
-                <button @click="showStudentsModal = false" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
-                  <XMarkIcon class="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div class="max-h-96 overflow-y-auto">
-                <!-- Lista de estudiantes -->
-                <div class="divide-y divide-gray-200 dark:divide-gray-700">
-                  <div v-for="student in allStudents" :key="student.id" class="py-2">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <h4 class="text-sm font-medium text-gray-900 dark:text-white">{{ student.name }}</h4>
-                        <div class="flex items-center gap-x-4 mt-1">
-                          <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
-                            <CalendarIcon class="w-3 h-3 mr-1" />
-                            {{ student.age }}
-                          </span>
-                          <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
-                            <MusicalNoteIcon class="w-3 h-3 mr-1" />
-                            {{ student.instrument }}
-                          </span>
+        <div class="fixed inset-0 overflow-y-auto">
+          <div class="flex min-h-full items-center justify-center p-4 text-center">
+            <TransitionChild
+              as="template"
+              enter="duration-300 ease-out"
+              enter-from="opacity-0 scale-95"
+              enter-to="opacity-100 scale-100"
+              leave="duration-200 ease-in"
+              leave-from="opacity-100 scale-100"
+              leave-to="opacity-0 scale-95"
+            >
+              <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 p-4 text-left align-middle shadow-xl transition-all">
+                <div class="flex items-center justify-between mb-3">
+                  <DialogTitle class="text-lg font-medium text-gray-900 dark:text-white">
+                    Estudiantes de {{ classData.name }}
+                  </DialogTitle>
+                  <button @click="showStudentsModal = false" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                    <XMarkIcon class="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div class="max-h-96 overflow-y-auto">
+                  <!-- Lista de estudiantes -->
+                  <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <div v-for="student in allStudents" :key="student.id" class="py-2">
+                      <div class="flex items-center justify-between">
+                        <div>
+                          <h4 class="text-sm font-medium text-gray-900 dark:text-white">{{ student.name }}</h4>
+                          <div class="flex items-center gap-x-4 mt-1">
+                            <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                              <CalendarIcon class="w-3 h-3 mr-1" />
+                              {{ student.age }}
+                            </span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                              <MusicalNoteIcon class="w-3 h-3 mr-1" />
+                              {{ student.instrument }}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
+                  
+                  <!-- Mensaje cuando no hay estudiantes -->
+                  <div v-if="allStudents.length === 0" class="py-8 text-center">
+                    <p class="text-gray-500 dark:text-gray-400">No hay estudiantes inscritos en esta clase</p>
+                  </div>
                 </div>
                 
-                <!-- Mensaje cuando no hay estudiantes -->
-                <div v-if="allStudents.length === 0" class="py-8 text-center">
-                  <p class="text-gray-500 dark:text-gray-400">No hay estudiantes inscritos en esta clase</p>
+                <div class="mt-4 flex justify-end">
+                  <button
+                    @click="showStudentsModal = false"
+                    class="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-900/30 dark:text-blue-100 dark:hover:bg-blue-900/50"
+                  >
+                    Cerrar
+                  </button>
                 </div>
-              </div>
-              
-              <div class="mt-4 flex justify-end">
-                <button
-                  @click="showStudentsModal = false"
-                  class="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-900/30 dark:text-blue-100 dark:hover:bg-blue-900/50"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </DialogPanel>
-          </TransitionChild>
+              </DialogPanel>
+            </TransitionChild>
+          </div>
         </div>
-      </div>
-    </Dialog>
-  </TransitionRoot>
+      </Dialog>
+    </TransitionRoot>
+  </div>
 </template>
 
 <style scoped>

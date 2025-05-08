@@ -29,7 +29,7 @@
 
                     <div v-if="getScheduleForDay(class_, day)?.startTime && getScheduleForDay(class_, day)?.endTime" class="flex items-center">
                       <ClockIcon class="h-5 w-5 mr-2 text-purple-500 flex-shrink-0" />
-                      <span>{{ formatClassDuration(getScheduleForDay(class_, day)!.startTime, getScheduleForDay(class_, day)!.endTime) }}</span>
+                      <span>{{ formatClassDuration(getScheduleForDay(class_, day)?.startTime || '', getScheduleForDay(class_, day)?.endTime || '') }}</span>
                     </div>
 
                     <div v-if="class_.classroom" class="flex items-center">

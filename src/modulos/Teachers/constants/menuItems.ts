@@ -10,8 +10,7 @@ import {
   AcademicCapIcon,
   BookOpenIcon,
   CalendarDaysIcon,
-  DocumentTextIcon,
-  DocumentChartBarIcon
+  ChatBubbleLeftRightIcon
 } from '@heroicons/vue/24/outline'
 
 // Menú para maestros: rutas que comienzan con "/teacher" 
@@ -27,6 +26,12 @@ export const teacherMenuItems = [
     icon: ClipboardDocumentCheckIcon, 
     to: '/teacher/attendance/calendar', 
     ariaLabel: 'Gestionar asistencias'
+  },
+  {
+    name: 'Observaciones',
+    icon: ChatBubbleLeftRightIcon,
+    to: '/teacher/attendance/observations',
+    ariaLabel: 'Ver historial de observaciones'
   },
   { 
     name: 'Horarios', 
@@ -78,6 +83,12 @@ export const adminMenuItems = [
     icon: ClipboardDocumentCheckIcon, 
     to: '/attendance/calendar',
     ariaLabel: 'Gestionar asistencias'
+  },
+  {
+    name: 'Observaciones',
+    icon: ChatBubbleLeftRightIcon,
+    to: '/attendance/observations',
+    ariaLabel: 'Ver todas las observaciones de clase'
   },
   { 
     name: 'Clases', 

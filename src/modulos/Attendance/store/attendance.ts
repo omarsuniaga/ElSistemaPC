@@ -21,7 +21,9 @@ import {
   getObservationsHistoryFirebase,
   getAttendancesFirebase,
   getAttendanceByDateAndClassFirebase,
-  updateObservationsFirebase // Add import for updateObservationsFirebase
+  updateObservationsFirebase, // Add import for updateObservationsFirebase
+  registerAttendanceFirebase, // Import the new Firebase service function
+  updateAttendanceFirebase // Import the new Firebase service function
 } from '../service/attendance'
 import { getFromLocalStorage, saveToLocalStorage, clearLocalStorage } from '../../../utils/localStorageUtils'
 
@@ -833,16 +835,14 @@ getJustification: (state) => {
       } finally {
         this.isLoading = false;
       }
-    },
-
-    /**
+    },    /**
      * Get observations history for a class, optionally filtered by date
      * 
-     * @param classId - Class identifier
+     * @param classId - Optional class identifier, if not provided returns all observations
      * @param specificDate - Optional date filter
      * @returns Promise resolving to array of observation objects
      */
-    async getObservationsHistory(classId: string, specificDate?: string): Promise<any[]> {
+    async getObservationsHistory(classId?: string, specificDate?: string): Promise<any[]> {
       try {
         // Use service function instead of direct Firebase calls
         return await getObservationsHistoryFirebase(classId, specificDate);
@@ -2013,4 +2013,3 @@ async getStudentAbsencesByDateRange(startDate: string, endDate: string, classId?
 function eachDayOfInterval(arg0: { start: Date; end: Date }) {
   throw new Error('Function not implemented.')
 }
-

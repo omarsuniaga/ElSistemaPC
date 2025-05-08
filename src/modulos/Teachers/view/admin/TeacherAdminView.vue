@@ -217,7 +217,7 @@
         </div>
         
         <!-- Action Buttons -->
-        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-750 border-t border-gray-200 dark:border-gray-700 grid grid-cols-4 gap-2">
+        <div class="px-6 py-4  bg-gray-150 dark:bg-gray-750 border-t border-gray-200 dark:border-gray-700 grid grid-cols-4 gap-2">
           <button
             @click="viewTeacherAttendance(teacher.id)"
             class="flex flex-col items-center justify-center py-2 px-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -245,7 +245,7 @@
             <span class="mt-1 text-xs text-gray-600 dark:text-gray-400">Clases</span>
           </button>
           
-          <div class="relative">
+          <div class="relative dark:bg-gray-750">
             <button
               @click="toggleActionMenu(teacher.id)"
               class="flex flex-col items-center justify-center py-2 px-1 w-full rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"

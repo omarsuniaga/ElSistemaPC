@@ -20,10 +20,10 @@ import { useToast } from '@/components/ui/toast/use-toast';
 import { Dialog, DialogPanel, DialogOverlay, TransitionRoot, TransitionChild } from '@headlessui/vue';
 import TeacherWeeklySchedule from '../../components/TeacherWeeklySchedule.vue'; // Componente que acabamos de crear
 import TeacherClassesCard from '../../components/TeacherClassesCard.vue';
-import ClassForm from '@/modulos/Classes/components/ClassForm.vue'; // Componente existente
-import ClassStudentManager from '@/modulos/Classes/components/ClassStudentManager.vue'; // Componente existente
-import ClassActivitiesView from '@/modulos/Classes/views/ClassActivitiesView.vue';
-import StudentAnalytics from '../../../Analytics/components/StudentAnalytics.vue';
+import ClassForm from '../modulos/Classes/components/ClassForm.vue'; // Componente existente
+import ClassStudentManager from '../modulos/Classes/components/ClassStudentManager.vue'; // Componente existente
+import ClassActivitiesView from '../modulos/Classes/views/ClassActivitiesView.vue';
+import StudentAnalytics from '../modulos/Analytics/components/StudentAnalytics.vue';
 
 // Stores
 const classesStore = useClassesStore();
@@ -31,6 +31,9 @@ const teachersStore = useTeachersStore();
 const studentsStore = useStudentsStore();
 const authStore = useAuthStore();
 const { toast } = useToast();
+
+// Referencia al componente de observaciones
+const classActivitiesRef = ref(null);
 
 // Estados
 const loading = ref(true);
@@ -447,6 +450,26 @@ const setActiveTab = (tab) => {
     activeTab.value = tab;
 };
 
+// Función para actualizar las observaciones
+const loadActivities = () => {
+  if (classActivitiesRef.value && typeof classActivitiesRef.value.loadActivities === 'function') {
+    classActivitiesRef.value.loadActivities();
+  } else {
+    console.warn('No se pudo actualizar las observaciones: la referencia o el método no existe');
+    // Mostrar mensaje de feedback al usuario
+    toast({
+      title: "Actualizando...",
+      description: "Recargando observaciones de clases"
+    });
+    // Si no se puede acceder al método del componente hijo, intentar cambiando de tab y volviendo
+    const currentTab = activeTab.value;
+    activeTab.value = 'classes';
+    setTimeout(() => {
+      activeTab.value = currentTab;
+    }, 100);
+  }
+};
+
 // Cargar datos iniciales
 onMounted(async () => {
   loading.value = true;
@@ -684,9 +707,37 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
       </div>
       
       <!-- Vista de observaciones -->
-      <div v-if="activeTab === 'upcoming'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 md:p-4">
-        <h2 class="text-base md:text-lg font-semibold mb-3 md:mb-4">Actividades y Observaciones de Clases</h2>
-        <ClassActivitiesView />
+      <div v-if="activeTab === 'upcoming'" class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <!-- Encabezado con título y botones de acción -->
+        <div class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3 md:p-4 flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+              </svg>
+            </div>
+            <h2 class="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-100">
+              Historial de Observaciones
+            </h2>
+          </div>
+          <!-- Botones de acción (opcional) -->
+          <div class="flex items-center gap-2">
+            <button 
+              @click="loadActivities" 
+              class="flex items-center gap-1 text-xs md:text-sm bg-blue-600 hover:bg-blue-700 text-white px-2 md:px-3 py-1 rounded-md transition-colors"
+              title="Actualizar observaciones"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span class="hidden md:inline">Actualizar</span>
+            </button>
+          </div>
+        </div>
+          <!-- Contenedor del componente con espacio de padding adecuado -->
+        <div class="p-0">
+          <ClassActivitiesView ref="classActivitiesRef" />
+        </div>
       </div>
     </section>
     

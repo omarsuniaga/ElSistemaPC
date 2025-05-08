@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const props = defineProps({
   title: {
@@ -17,23 +19,76 @@ const props = defineProps({
   iconPath: {
     type: String,
     default: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+  },
+  enableDayNavigation: {
+    type: Boolean,
+    default: false
+  },
+  initialDate: {
+    type: [Date, String],
+    default: () => new Date()
   }
 });
 
+const emit = defineEmits(['dayChanged']);
+
 const isMinimized = ref(false);
+const currentDate = ref(new Date());
+
+// Inicializar la fecha actual con la fecha inicial proporcionada
+onMounted(() => {
+  if (props.initialDate) {
+    if (typeof props.initialDate === 'string') {
+      currentDate.value = new Date(props.initialDate);
+    } else {
+      currentDate.value = props.initialDate;
+    }
+  }
+  
+  // Emitir el evento inicial para cargar los datos del día actual
+  if (props.enableDayNavigation) {
+    emit('dayChanged', currentDate.value);
+  }
+  
+  // Restaurar estado desde localStorage
+  const savedState = localStorage.getItem(`panel-${props.panelId}-minimized`);
+  if (savedState) {
+    isMinimized.value = savedState === 'true';
+  }
+});
+
+const formattedDate = computed(() => {
+  return currentDate.value.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+});
+
+// Formato de fecha para uso en consultas (YYYY-MM-DD)
+const formattedDateISO = computed(() => {
+  return format(currentDate.value, 'yyyy-MM-dd');
+});
 
 const toggleMinimize = () => {
   isMinimized.value = !isMinimized.value;
   localStorage.setItem(`panel-${props.panelId}-minimized`, isMinimized.value.toString());
 };
 
-onMounted(() => {
-  // Restore state from localStorage
-  const savedState = localStorage.getItem(`panel-${props.panelId}-minimized`);
-  if (savedState) {
-    isMinimized.value = savedState === 'true';
-  }
-});
+const goToPreviousDay = () => {
+  const newDate = new Date(currentDate.value);
+  newDate.setDate(newDate.getDate() - 1);
+  currentDate.value = newDate;
+  emit('dayChanged', currentDate.value, formattedDateISO.value);
+};
+
+const goToNextDay = () => {
+  const newDate = new Date(currentDate.value);
+  newDate.setDate(newDate.getDate() + 1);
+  currentDate.value = newDate;
+  emit('dayChanged', currentDate.value, formattedDateISO.value);
+};
 </script>
 
 <template>
@@ -50,6 +105,29 @@ onMounted(() => {
           </svg>
         </div>
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ title }}</h3>
+      </div>
+      
+      <!-- Navegación de días (si está habilitada) -->
+      <div v-if="enableDayNavigation" class="flex items-center mr-4">
+        <button 
+          @click.stop="goToPreviousDay" 
+          class="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none"
+          title="Día anterior"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <span class="mx-2 text-sm text-gray-600 dark:text-gray-400">{{ formattedDate }}</span>
+        <button 
+          @click.stop="goToNextDay" 
+          class="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none"
+          title="Día siguiente"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
       
       <!-- Indicator for expandable state -->

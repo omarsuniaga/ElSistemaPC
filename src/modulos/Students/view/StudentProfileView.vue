@@ -2,7 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { ref as vueRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { format } from 'date-fns'
+import { format, isValid } from 'date-fns';
 import { es } from 'date-fns/locale'
 import {
   UserIcon,
@@ -28,7 +28,9 @@ import {
   IdentificationIcon,
   BriefcaseIcon,
   MapPinIcon,
-  ArchiveBoxIcon
+  ArchiveBoxIcon,
+  DocumentArrowUpIcon,
+  ArrowTopRightOnSquareIcon
 } from '@heroicons/vue/24/outline'
 import { useStudentsStore } from '../store/students'
 import { useClassesStore } from '../../Classes/store/classes'
@@ -67,6 +69,64 @@ const teachersStore = useTeachersStore()
 
 const studentId = route.params.id as string
 const student = computed(() => studentsStore.students.find(s => s.id.toString() === studentId))
+
+// Función para calcular la edad basada en la fecha de nacimiento
+const calculatedAge = computed(() => {
+  try {
+    if (!student.value?.nac) return '?';
+    
+    let birthDate;
+    let dateStr = student.value.nac;
+    
+    // Si es un objeto Date, convertirlo a string ISO
+    if (dateStr instanceof Date) {
+      dateStr = dateStr.toISOString().split('T')[0];
+    }
+    
+    // Asegurarnos de que es un string
+    dateStr = String(dateStr);
+    
+    // Limpiar la fecha de caracteres extra
+    dateStr = dateStr.trim().replace(/[^\d/-]/g, '');
+    
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      // Formato YYYY-MM-DD
+      birthDate = new Date(dateStr);
+    } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+      // Formato DD/MM/YYYY
+      const [day, month, year] = dateStr.split('/').map(Number);
+      birthDate = new Date(year, month - 1, day);
+    } else if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+      // Formato DD-MM-YYYY
+      const [day, month, year] = dateStr.split('-').map(Number);
+      birthDate = new Date(year, month - 1, day);
+    } else {
+      // Último intento de parsear la fecha
+      birthDate = new Date(dateStr);
+    }
+    
+    // Validar que la fecha es válida y está en un rango razonable
+    if (isNaN(birthDate.getTime()) || birthDate.getFullYear() < 1900 || birthDate.getFullYear() > new Date().getFullYear()) {
+      console.error('Fecha de nacimiento inválida o fuera de rango:', dateStr);
+      return '?';
+    }
+    
+    // Calcular edad
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    
+    // Ajustar edad si aún no ha llegado el cumpleaños este año
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  } catch (error) {
+    console.error('Error al calcular la edad:', error);
+    return '?';
+  }
+});
 
 // Add the missing classes computed property
 const classes = computed(() => {
@@ -420,11 +480,16 @@ const studentAttendance = computed(() => {
         teachersStore.getTeacherById(classInfo.teacherId) : 
         teachersStore.teachers?.find(t => t.id === classInfo?.teacherId);
       
+      const recordDate = new Date(record.Fecha);
       return {
         ...record,
         className: classInfo?.name || 'Clase desconocida',
         teacherName: teacherInfo?.name || 'Profesor desconocido',
-        formattedDate: record.Fecha ? format(new Date(record.Fecha), 'dd/MM/yyyy') : 'Fecha desconocida'
+        formattedDate: recordDate ? format(recordDate, "EEEE d 'de' MMMM yyyy", { locale: es }) : 'Fecha desconocida',
+        // Format the date day with capitalization for better readability
+        formattedDateCapitalized: recordDate ? 
+          format(recordDate, "EEEE d 'de' MMMM yyyy", { locale: es })
+            .replace(/^\w/, (c) => c.toUpperCase()) : 'Fecha desconocida'
       };
     });
     
@@ -453,26 +518,69 @@ const studentAttendance = computed(() => {
   };
 });
 
+// Variables para actualización de datos
+const isRefreshing = ref(false)
+
+// Función para actualizar los datos de asistencia del estudiante desde Firestore
+const refreshAttendanceData = async () => {
+  if (!studentId) return;
+  
+  try {
+    isRefreshing.value = true;
+    
+    // Obtener fechas para el rango (últimos 3 meses)
+    const today = new Date();
+    const threeMonthsAgo = new Date(today);
+    threeMonthsAgo.setMonth(today.getMonth() - 3);
+    
+    const startDate = format(threeMonthsAgo, 'yyyy-MM-dd');
+    const endDate = format(today, 'yyyy-MM-dd');
+    
+    // Obtener datos directamente desde Firestore para garantizar que estén actualizados
+    await attendanceStore.fetchAttendanceByDateRange(startDate, endDate);
+    
+    // Si hay clases específicas del estudiante, cargar sus documentos de asistencia
+    const studentClassIds = classesStore.classes
+      .filter(c => c.studentIds?.includes(studentId))
+      .map(c => c.id);
+      
+    if (studentClassIds.length > 0) {
+      // Para cada clase, actualizar también los documentos de asistencia
+      for (const classId of studentClassIds) {
+        await attendanceStore.fetchAttendanceDocument(
+          format(today, 'yyyy-MM-dd'), 
+          classId
+        );
+      }
+    }
+    
+    console.log('✅ Datos de asistencia actualizados desde Firestore');
+  } catch (error) {
+    console.error('Error al actualizar los datos de asistencia:', error);
+  } finally {
+    isRefreshing.value = false;
+  }
+}
+
 // Lista reactiva de clases para el estudiante actual
 const studentClasses = computed(() => {
-  console.log('Student ID:', studentId)
   if (!student.value || !studentId) {
     console.log('No hay estudiante seleccionado o ID de estudiante')
     return []
   }
-  
   // Normalizar el ID para asegurar que las comparaciones funcionen
   const normalizedStudentId = String(studentId)
-  console.log('ID de estudiante normalizado:', normalizedStudentId)
   
-  // Verificar si hay clases cargadas en el store
-  console.log('Total de clases en el store:', classesStore.classes.length)
+  // Filtrar clases directamente usando las propiedades disponibles en classesStore.classes
+  // Esto evita conflictos con getters/métodos
+  const classesForStudent = classesStore.classes.filter(classItem => 
+    classItem.studentIds && 
+    Array.isArray(classItem.studentIds) && 
+    classItem.studentIds.includes(normalizedStudentId)
+  )
   
-  // Usar el getter del classesStore para obtener las clases del estudiante
-  const classesForStudent = classesStore.getClassesByStudentId(normalizedStudentId)
-  console.log('Clases encontradas para el estudiante:', classesForStudent)  // Devolver información relevante de las clases
+  // Devolver información relevante de las clases
   return classesForStudent.map(classItem => {
-    // Usar el getter del store para obtener directamente la información del profesor
     const teacherInfo = classItem.teacherId ? teachersStore.getTeacherById(classItem.teacherId) : null;
     const teacherName = teacherInfo ? teacherInfo.name : null;
     
@@ -485,7 +593,7 @@ const studentClasses = computed(() => {
         `${slot.day} ${slot.startTime}-${slot.endTime}`
       ).join(', ') : 'Horario no definido'
     };
-  })
+  });
 })
 
 const chartOptions = {
@@ -720,6 +828,14 @@ const handleCancel = () => {
 
 const handleSave = async () => {
   try {
+    // Actualizar la edad con el valor calculado antes de guardar
+    if (localStudent.value.nac) {
+      const calculatedAgeValue = calculatedAge.value;
+      if (typeof calculatedAgeValue === 'number') {
+        localStudent.value.edad = calculatedAgeValue;
+      }
+    }
+    
     await studentsStore.updateStudent(studentId, localStudent.value)
     isEditing.value = false
   } catch (error) {
@@ -739,6 +855,9 @@ onMounted(async () => {
   // Verificar si tenemos un ID de estudiante válido
   if (studentId) {
     try {
+      isRefreshing.value = true;
+      console.log('🔄 Cargando datos del estudiante:', studentId);
+      
       // Asegurar que los estudiantes estén cargados
       if (studentsStore.students.length === 0) {
         await studentsStore.fetchStudents()
@@ -768,55 +887,193 @@ onMounted(async () => {
           await teachersStore.fetchTeachers()
         }
         
-        // Primero obtenemos todas las clases del estudiante
+        // Obtener todas las clases del estudiante
         const studentClassIds = classesStore.classes
           .filter(c => c.studentIds?.includes(studentId))
-          .map(c => c.id)        // Cargar las asistencias para cada clase
+          .map(c => c.id)
+          
+        // Cargar las asistencias para cada clase
         try {
-          // Usar los métodos disponibles en el attendanceStore para cargar asistencias
-          await attendanceStore.fetchAttendance()
+          // Obtener fechas para el rango (últimos 3 meses)
+          const today = new Date()
+          const threeMonthsAgo = new Date(today)
+          threeMonthsAgo.setMonth(today.getMonth() - 3)
+          
+          const startDate = format(threeMonthsAgo, 'yyyy-MM-dd')
+          const endDate = format(today, 'yyyy-MM-dd')
+          
+          // Cargar todos los registros de asistencia para el rango de fechas
+          await attendanceStore.fetchAttendanceByDateRange(startDate, endDate)
           
           // Si hay clases específicas del estudiante, cargar sus documentos de asistencia
           if (studentClassIds.length > 0) {
+            console.log(`🔄 Obteniendo datos de asistencia para ${studentClassIds.length} clases del estudiante`)
+            
             // Cargar documentos de asistencia para cada clase del estudiante
             for (const classId of studentClassIds) {
               try {
-                // Intentar cargar datos por fecha y clase
-                // Usamos fechas recientes para tener algún dato (último mes)
-                const today = new Date()
-                const lastMonth = new Date(today)
-                lastMonth.setMonth(today.getMonth() - 1)
-                
-                const startDate = format(lastMonth, 'yyyy-MM-dd')
-                const endDate = format(today, 'yyyy-MM-dd')
-                
-                // Usar fetchAttendanceByDateRange si está disponible
-                if (typeof attendanceStore.fetchAttendanceByDateRange === 'function') {
-                  await attendanceStore.fetchAttendanceByDateRange(startDate, endDate)
-                }
-                
-                // También intentar cargar documentos específicos
+                // Intentar cargar documentos específicos de la clase
                 if (typeof attendanceStore.fetchAttendanceByClassAndDate === 'function') {
                   await attendanceStore.fetchAttendanceByClassAndDate(classId, format(today, 'yyyy-MM-dd'))
                 }
               } catch (err) {
-                console.error(`Error al cargar asistencias para la clase ${classId}:`, err)
+                console.error(`⚠️ Error al cargar asistencias para la clase ${classId}:`, err)
               }
             }
           }
         } catch (error) {
-          console.error('Error al cargar registros de asistencia:', error)
+          console.error('❌ Error al cargar registros de asistencia:', error)
         }
       }
       
+      console.log('✅ Datos del estudiante cargados correctamente')
     } catch (error) {
-      console.error('Error al cargar datos del estudiante:', error)
+      console.error('❌ Error al cargar datos del estudiante:', error)
+    } finally {
+      isRefreshing.value = false
     }
   } 
   else {
-    console.error('ID de estudiante no válido:', studentId)
+    console.error('❌ ID de estudiante no válido:', studentId)
   }
 })
+
+// Función para determinar la información de contacto
+const contactInfo = computed(() => {
+  if (!student.value) return null;
+  
+  const contacts = [];
+  
+  // Agregar teléfono del estudiante si existe y es válido
+  if (student.value.tlf && student.value.tlf !== 'Vacio' && student.value.tlf.trim()) {
+    contacts.push({ number: student.value.tlf.trim(), type: 'Personal' });
+  }
+  
+  // Agregar teléfono de la madre si existe y es válido
+  if (student.value.tlf_madre && student.value.tlf_madre !== 'Vacio' && student.value.tlf_madre.trim()) {
+    contacts.push({ number: student.value.tlf_madre.trim(), type: 'Madre' });
+  }
+  
+  // Agregar teléfono del padre si existe y es válido
+  if (student.value.tlf_padre && student.value.tlf_padre !== 'Vacio' && student.value.tlf_padre.trim()) {
+    contacts.push({ number: student.value.tlf_padre.trim(), type: 'Padre' });
+  }
+  
+  return contacts;
+});
+
+// Función para calcular la fecha de inscripción
+const inscriptionDate = computed(() => {
+  if (!student.value) return null;
+  
+  let date = null;
+  
+  // Primero intentar usar la fecha de inscripción explícita si existe
+  if (student.value.fecInscripcion) {
+    const parsedDate = new Date(student.value.fecInscripcion);
+    if (!isNaN(parsedDate.getTime())) {
+      date = parsedDate;
+    }
+  }
+  
+  // Si no hay fecha de inscripción explícita, intentar con createdAt
+  if (!date && student.value.createdAt) {
+    if (typeof student.value.createdAt === 'number') {
+      date = new Date(student.value.createdAt);
+    } else if (typeof student.value.createdAt === 'string') {
+      date = new Date(student.value.createdAt);
+    } else if (student.value.createdAt?.toDate) {
+      date = student.value.createdAt.toDate();
+    }
+  }
+  
+  // Si aún no tenemos fecha, intentar con el ID numérico como último recurso
+  if (!date && /^\d+$/.test(student.value.id)) {
+    const timestamp = parseInt(student.value.id);
+    // Verificar que el timestamp parece válido (después de 2000 y antes de ahora)
+    if (timestamp > 946684800000 && timestamp < Date.now()) {
+      date = new Date(timestamp);
+    }
+  }
+  
+  return date;
+});
+
+// Función para formatear fechas de manera consistente
+const formatDate = (date) => {
+  if (!date || !isValid(new Date(date))) return 'Fecha no disponible';
+  return format(new Date(date), 'dd/MM/yyyy', { locale: es });
+};
+
+const handleDocumentDelete = async (documentType) => {
+  try {
+    const documentos = { ...student.value.documentos };
+    delete documentos[documentType];
+    await studentsStore.updateStudent(studentId, {
+      ...student.value,
+      documentos
+    });
+  } catch (error) {
+    console.error('Error deleting document:', error);
+  }
+};
+
+const isDocumentPDF = (documentType) => {
+  return student.value?.documentos?.[documentType]?.url?.toLowerCase().endsWith('.pdf');
+};
+
+const isDocumentImage = (documentType) => {
+  const url = student.value?.documentos?.[documentType]?.url?.toLowerCase();
+  return url?.endsWith('.jpg') || url?.endsWith('.jpeg') || url?.endsWith('.png');
+};
+
+// Date range for attendance records - default to last month
+const dateRange = ref({
+  start: format(new Date(new Date().setMonth(new Date().getMonth() - 1)), 'yyyy-MM-dd'),
+  end: format(new Date(), 'yyyy-MM-dd')
+});
+
+// Reset date range to initial state (last month to current date)
+const resetDateRange = () => {
+  dateRange.value = {
+    start: format(new Date(new Date().setMonth(new Date().getMonth() - 1)), 'yyyy-MM-dd'),
+    end: format(new Date(), 'yyyy-MM-dd')
+  };
+};
+
+// Filtered attendance records based on date range
+const filteredAttendanceRecords = computed(() => {
+  if (!studentAttendance.value.records) return [];
+  
+  // Use recentRecords for formatting but filter by the date range
+  const filtered = studentAttendance.value.recentRecords.filter(record => {
+    if (!record.Fecha) return false;
+    
+    try {
+      const recordDate = new Date(record.Fecha);
+      const startDate = new Date(dateRange.value.start);
+      const endDate = new Date(dateRange.value.end);
+      
+      // Validate dates
+      if (isNaN(recordDate.getTime())) return false;
+      
+      // Filter by date range
+      if (isValid(startDate) && recordDate < startDate) return false;
+      if (isValid(endDate) && recordDate > endDate) return false;
+      
+      return true;
+    } catch (error) {
+      console.error('Error filtering date:', error);
+      return false;
+    }
+  });
+  
+  // Sort by date (most recent first)
+  return [...filtered].sort((a, b) => {
+    if (!a.Fecha || !b.Fecha) return 0;
+    return new Date(b.Fecha).getTime() - new Date(a.Fecha).getTime();
+  });
+});
 </script>
 
 <style scoped>
@@ -1168,12 +1425,11 @@ onMounted(async () => {
     <div class="card">      <h2 class="profile-section-title">
         <UserIcon class="w-5 h-5 text-blue-600 dark:text-blue-400" />
         Información Personal
-      </h2>
-      <div class="space-y-3" v-if="!isEditing">
+      </h2>      <div class="space-y-3" v-if="!isEditing">
         <div class="animate-slide-up" style="animation-delay: 0.1s;">
           <p class="data-label">Edad</p>
           <p class="data-value flex items-center gap-2">
-            <span class="info-tag info-tag-primary">{{ student.edad }} años</span>
+            <span class="info-tag info-tag-primary">{{ calculatedAge }} años</span>
           </p>
         </div>
         <div class="animate-slide-up" style="animation-delay: 0.15s;">
@@ -1211,13 +1467,17 @@ onMounted(async () => {
             {{ student.padre }} (Padre)
           </p>
         </div>
-        <div class="animate-slide-up" style="animation-delay: 0.3s;">
-          <p class="data-label">Contacto</p>
-          <p class="data-value flex items-center gap-2 mt-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300">
-            <PhoneIcon class="w-4 h-4 text-green-600 dark:text-green-400" />
-            {{ student.tlf }}
-          </p>
-          <p class="data-value flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300">
+        <div class="animate-slide-up" style="animation-delay: 0.3s;">          <p class="data-label">Contacto</p>
+          <div v-if="contactInfo && contactInfo.length > 0" class="space-y-2">
+            <p v-for="contact in contactInfo" :key="contact.number" 
+               class="data-value flex items-center gap-2 mt-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300">
+              <PhoneIcon class="w-4 h-4 text-green-600 dark:text-green-400" />
+              <span>{{ contact.number }}</span>
+              <span class="text-sm text-gray-500">({{ contact.type }})</span>
+            </p>
+          </div>
+          <p v-else class="data-value text-gray-500 italic">No hay números de contacto registrados</p>
+          <p class="data-value flex items-center gap-2 mt-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300">
             <EnvelopeIcon class="w-4 h-4 text-blue-600 dark:text-blue-400" />
             {{ student.email !== 'Vacio' ? student.email : 'No disponible' }}
           </p>
@@ -1239,14 +1499,13 @@ onMounted(async () => {
             class="input w-full"
             required
           />
-        </div>
-        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Edad</label>
+        </div>        <div>
+          <label class="text-sm text-gray-600 dark:text-gray-400">Edad (calculada automáticamente)</label>
           <input
-            v-model="localStudent.edad"
-            class="input w-full"
-            type="number"
-            required
+            :value="calculatedAge + ' años'"
+            class="input w-full bg-gray-100 dark:bg-gray-700"
+            type="text"
+            readonly
           />
         </div>
         <div>
@@ -1284,9 +1543,9 @@ onMounted(async () => {
       </div>
     </div>
     <!-- Información Académica -->
-    <div class="card">
-      <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-        <AcademicCapIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
+    <div class="card lg:col-span-2">
+      <h2 class="profile-section-title">
+        <ChartBarIcon class="w-5 h-5 text-blue-600 dark:text-blue-400" />
         Información Académica
       </h2>
       <div class="space-y-3" v-if="!isEditing">
@@ -1392,9 +1651,9 @@ onMounted(async () => {
       </div>
     </div>
     <!-- Horario y Disponibilidad -->
-    <div class="card">
-      <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-        <ClockIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
+    <div class="card lg:col-span-2">
+      <h2 class="profile-section-title">
+        <ChartBarIcon class="w-5 h-5 text-blue-600 dark:text-blue-400" />
         Horario y Disponibilidad
       </h2>
       <div class="space-y-3" v-if="!isEditing">
@@ -1575,58 +1834,176 @@ onMounted(async () => {
       </div>
 
       <!-- Historial de asistencias recientes -->
-      <div class="animate-slide-up" style="animation-delay: 0.4s;">
-        <h3 class="text-base font-medium mb-3 flex items-center gap-2">
+      <div class="animate-slide-up" style="animation-delay: 0.4s;">        <h3 class="text-base font-medium mb-3 flex items-center gap-2">
           <CalendarIcon class="w-4 h-4 text-blue-600 dark:text-blue-400" />
           Asistencias Recientes
+          <button 
+            @click="refreshAttendanceData" 
+            class="ml-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center"
+            :disabled="isRefreshing"
+          >
+            <ArrowPathIcon class="w-3 h-3 mr-1" :class="{ 'icon-spin': isRefreshing }" />
+            Actualizar
+          </button>
         </h3>
-        
-        <div v-if="studentAttendance.recentRecords && studentAttendance.recentRecords.length > 0">
-          <div class="overflow-hidden overflow-x-auto">
+          <div v-if="studentAttendance.recentRecords && studentAttendance.recentRecords.length > 0">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+            Mostrando registros de asistencia. Use los filtros de fecha para ver registros específicos.
+          </p>
+          <!-- Date Range Selector -->          <div class="mb-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-100 dark:border-blue-900/30 shadow-sm">
+            <h4 class="text-sm font-medium mb-3 flex items-center gap-2 text-blue-700 dark:text-blue-300">
+              <CalendarIcon class="w-4 h-4" />
+              Filtrar por rango de fechas
+            </h4>
+            <div class="flex flex-wrap items-center gap-4">
+              <div class="flex-1 min-w-[160px]">
+                <label class="text-xs text-gray-600 dark:text-gray-400 block mb-1">Desde:</label>
+                <div class="relative">
+                  <CalendarIcon class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
+                  <input 
+                    type="date" 
+                    v-model="dateRange.start" 
+                    class="w-full pl-9 px-3 py-2 rounded-md border border-blue-200 dark:border-blue-800 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-700 focus:border-transparent transition-all"
+                  />
+                </div>
+              </div>
+              <div class="flex-1 min-w-[160px]">
+                <label class="text-xs text-gray-600 dark:text-gray-400 block mb-1">Hasta:</label>
+                <div class="relative">
+                  <CalendarIcon class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
+                  <input 
+                    type="date" 
+                    v-model="dateRange.end" 
+                    class="w-full pl-9 px-3 py-2 rounded-md border border-blue-200 dark:border-blue-800 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-700 focus:border-transparent transition-all"
+                  />
+                </div>
+              </div>
+              <div class="flex-none mt-6">
+                <button 
+                  @click="resetDateRange"
+                  class="px-4 py-2 text-sm text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-800/60 rounded-md flex items-center gap-2 transition-colors shadow-sm"
+                >
+                  <ArrowPathIcon class="w-4 h-4" />
+                  <span>Restablecer</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="overflow-hidden overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead class="bg-gray-50 dark:bg-gray-800">
+              <thead class="bg-blue-50 dark:bg-blue-900/20">
                 <tr>
-                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
-                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Clase</th>
-                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
-                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Justificación</th>
+                  <th class="px-3 py-3 text-left text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Fechas</th>
+                  <th class="px-3 py-3 text-left text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Clases</th>
+                  <th class="px-3 py-3 text-left text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Estado/Justificación</th>
                 </tr>
-              </thead>
-              <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-                <tr v-for="(record, index) in studentAttendance.recentRecords" :key="index" class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <td class="px-3 py-2 text-sm text-gray-900 dark:text-gray-200">{{ record.formattedDate }}</td>
-                  <td class="px-3 py-2 text-sm text-gray-900 dark:text-gray-200">{{ record.className }}</td>
-                  <td class="px-3 py-2 text-sm">
-                    <span v-if="record.status === 'presente'" class="info-tag info-tag-success flex items-center gap-1">
-                      <CheckCircleIcon class="w-3 h-3" />
-                      Presente
-                    </span>
-                    <span v-else-if="record.status === 'ausente' && record.justification" class="info-tag info-tag-warning flex items-center gap-1">
-                      <DocumentTextIcon class="w-3 h-3" />
-                      Justificada
-                    </span>
-                    <span v-else class="info-tag info-tag-danger flex items-center gap-1">
-                      <XCircleIcon class="w-3 h-3" />
-                      Ausente
-                    </span>
+              </thead>              <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                <tr 
+                  v-for="(record, index) in filteredAttendanceRecords" 
+                  :key="index" 
+                  class="transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800 hover:shadow-md"
+                  :class="{
+                    'bg-red-50 dark:bg-red-900/10 border-l-4 border-red-400 dark:border-red-500': record.status && record.status.toLowerCase() === 'ausente',
+                    'bg-green-50 dark:bg-green-900/10 border-l-4 border-green-400 dark:border-green-500': record.status && record.status.toLowerCase() === 'presente',
+                    'bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-400 dark:border-yellow-500': record.status && record.status.toLowerCase() === 'tardanza',
+                                       'bg-blue-50 dark:bg-blue-900/10 border-l-4 border-blue-400 dark:border-blue-500': record.status && record.status.toLowerCase() === 'justificado',
+                    'border-l-4 border-gray-300 dark:border-gray-600': !record.status
+                  }"
+                >                  <td class="px-3 py-2 text-sm">
+                    <div>
+                      <p class="text-gray-900 dark:text-gray-200 font-medium">{{ record.formattedDateCapitalized }}</p>
+                    </div>
                   </td>
-                  <td class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                    <span v-if="record.justification">{{ record.justification }}</span>
-                    <span v-else>-</span>
+                  <td class="px-3 py-2 text-sm">
+                    <div>
+                      <p class="text-gray-900 dark:text-gray-200 font-medium">{{ record.className }}</p>
+                      <p class="text-gray-600 dark:text-gray-400 text-xs">{{ record.teacherName }}</p>
+                    </div>
+                  </td>                  <td class="px-3 py-2 text-sm">
+                    <div class="flex flex-col gap-1">
+                      <span 
+                        v-if="record.status && record.status.toLowerCase() === 'ausente'" 
+                        class="info-tag info-tag-danger flex items-center gap-1 shadow-sm"
+                      >
+                        <XCircleIcon class="w-4 h-4" />
+                        Ausente
+                      </span>
+                      <span 
+                        v-else-if="record.status && record.status.toLowerCase() === 'presente'" 
+                        class="info-tag info-tag-success flex items-center gap-1 shadow-sm"
+                      >
+                        <CheckCircleIcon class="w-4 h-4" />
+                        Presente
+                      </span>
+                      <span 
+                        v-else-if="record.status && record.status.toLowerCase() === 'tardanza'" 
+                        class="info-tag info-tag-warning flex items-center gap-1 shadow-sm"
+                      >
+                        <ClockIcon class="w-4 h-4" />
+                        Tardanza
+                      </span>
+                      <span 
+                        v-else-if="record.status && record.status.toLowerCase() === 'justificado'" 
+                        class="info-tag info-tag-primary flex items-center gap-1 shadow-sm"
+                      >
+                        <DocumentTextIcon class="w-4 h-4" />
+                        Justificado
+                      </span>
+                      <span v-else class="info-tag flex items-center gap-1 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
+                        <span class="w-4 h-4 flex items-center justify-center">?</span>
+                        {{ record.status || 'No registrado' }}
+                      </span>
+                      <span 
+                        v-if="record.justification" 
+                        class="mt-1 text-sm italic text-gray-600 dark:text-gray-400 pl-2 border-l-2 border-amber-400"
+                      >
+                        <DocumentTextIcon class="w-3 h-3 inline mr-1 text-amber-500" />
+                        {{ record.justification }}
+                      </span>
+                    </div>
+                  </td>
+                </tr>                <tr v-if="filteredAttendanceRecords.length === 0">
+                  <td colspan="3" class="px-3 py-8 text-center">
+                    <div class="flex flex-col items-center justify-center space-y-2">
+                      <CalendarIcon class="w-10 h-10 text-gray-300 dark:text-gray-600" />
+                      <p class="text-sm text-gray-500 dark:text-gray-400">
+                        No hay registros de asistencia en el rango de fecha seleccionado
+                      </p>
+                      <button 
+                        @click="resetDateRange" 
+                        class="mt-2 px-3 py-1 text-xs text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                      >
+                        Mostrar último mes
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
-        
-        <div v-else class="text-center py-6 text-gray-500 dark:text-gray-400 italic">
-          No hay registros de asistencia disponibles
+          <div v-else class="text-center py-10 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <div class="flex flex-col items-center justify-center space-y-3">
+            <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-full">
+              <CalendarIcon class="w-10 h-10 text-gray-400 dark:text-gray-500" />
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 font-medium">No hay registros de asistencia disponibles</p>
+            <p class="text-sm text-gray-500 dark:text-gray-500 max-w-md">
+              Los registros de asistencia aparecerán aquí una vez que el estudiante comience a asistir a clases y se registre su asistencia.
+            </p>
+            <button 
+              @click="refreshAttendanceData" 
+              class="mt-2 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-2"
+              :disabled="isRefreshing"
+            >
+              <ArrowPathIcon class="w-4 h-4" :class="{ 'icon-spin': isRefreshing }" />
+              Actualizar datos
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-
-    <!-- Documentos -->
+    </div>    <!-- Documentos -->
     <div class="card">
       <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
         <DocumentTextIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
@@ -1645,19 +2022,57 @@ onMounted(async () => {
                 }}
               </p>
             </div>
-            <FileUpload
-              accept=".pdf,.jpg,.jpeg,.png"
-              @select="files => handleDocumentUpload(files, 'contrato_instrumento')"
-            />
+            <div v-if="!student.documentos?.contrato_instrumento">
+              <FileUpload
+                accept=".pdf,.jpg,.jpeg,.png"
+                @select="files => handleDocumentUpload(files, 'contrato_instrumento')"
+                class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+              >
+                <template #default>
+                  <DocumentArrowUpIcon class="w-5 h-5" />
+                  <span>Subir contrato</span>
+                </template>
+              </FileUpload>
+            </div>
           </div>
-          <a
-            v-if="student.documentos?.contrato_instrumento"
-            :href="student.documentos.contrato_instrumento.url"
-            target="_blank"
-            class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            Ver documento
-          </a>
+
+          <!-- Visor del documento para Contrato -->
+          <div v-if="student.documentos?.contrato_instrumento" class="mt-4">
+            <!-- Vista previa de PDF -->
+            <div v-if="isDocumentPDF('contrato_instrumento')" class="h-96 w-full">
+              <iframe
+                :src="student.documentos.contrato_instrumento.url"
+                class="w-full h-full rounded-lg border dark:border-gray-700"
+                type="application/pdf"
+              ></iframe>
+            </div>
+            <!-- Vista previa de imagen -->
+            <div v-else-if="isDocumentImage('contrato_instrumento')" class="max-h-96 overflow-hidden rounded-lg">
+              <img
+                :src="student.documentos.contrato_instrumento.url"
+                alt="Contrato de Instrumento"
+                class="w-full object-contain"
+              />
+            </div>
+            <!-- Botones de acción -->
+            <div class="flex justify-end mt-2 space-x-2">
+              <a
+                :href="student.documentos.contrato_instrumento.url"
+                target="_blank"
+                class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              >
+                <ArrowTopRightOnSquareIcon class="w-4 h-4" />
+                <span>Abrir en nueva pestaña</span>
+              </a>
+              <button
+                @click="handleDocumentDelete('contrato_instrumento')"
+                class="text-sm text-red-600 dark:text-red-400 hover:underline flex items-center gap-1"
+              >
+                <TrashIcon class="w-4 h-4" />
+                <span>Eliminar</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Términos y Condiciones -->
@@ -1668,72 +2083,60 @@ onMounted(async () => {
               <p class="text-sm text-gray-600 dark:text-gray-400">
                 {{ student.documentos?.terminos_condiciones
                   ? `Subido el ${new Date(student.documentos.terminos_condiciones.fecha).toLocaleDateString()}`
-                  : `Firmado el ${student.fecInscripcion}`
+                  : 'Pendiente de firma'
                 }}
               </p>
             </div>
-            <FileUpload
-              accept=".pdf,.jpg,.jpeg,.png"
-              @select="files => handleDocumentUpload(files, 'terminos_condiciones')"
-            />
+            <div v-if="!student.documentos?.terminos_condiciones">
+              <FileUpload
+                accept=".pdf,.jpg,.jpeg,.png"
+                @select="files => handleDocumentUpload(files, 'terminos_condiciones')"
+                class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+              >
+                <template #default>
+                  <DocumentArrowUpIcon class="w-5 h-5" />
+                  <span>Subir documento</span>
+                </template>
+              </FileUpload>
+            </div>
           </div>
-          <a
-            v-if="student.documentos?.terminos_condiciones"
-            :href="student.documentos.terminos_condiciones.url"
-            target="_blank"
-            class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            Ver documento
-          </a>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <h2 class="text-lg font-semibold mb-4">Información de Contacto</h2>
-      <div class="space-y-3">
-        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Teléfono</label>
-          <input
-            v-if="isEditing"
-            v-model="localStudent.telefono"
-            class="input"
-            type="tel"
-          />
-          <p v-else class="font-medium">{{ localStudent.telefono || 'Sin registrar' }}</p>
-        </div>
-        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Email</label>
-          <input
-            v-if="isEditing"
-            v-model="localStudent.email"
-            class="input"
-            type="email"
-          />
-          <p v-else class="font-medium">{{ localStudent.email || 'Sin registrar' }}</p>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <h2 class="text-lg font-semibold mb-4">Grupos y Clases</h2>
-      <div class="space-y-3">
-        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Grupos</label>
-          <select
-            v-if="isEditing"
-            v-model="localStudent.grupo"
-            class="input"
-            multiple
-          >
-            <option v-for="group in classes" :key="group">{{ group }}</option>
-          </select>
-          <div v-else class="flex flex-wrap gap-2">
-            <span
-              v-for="(group, index) in localStudent.grupo"
-              :key="index"
-              class="badge bg-blue-100 text-blue-800"
-            >
-              {{ group }}
-            </span>
+
+          <!-- Visor del documento para Términos -->
+          <div v-if="student.documentos?.terminos_condiciones" class="mt-4">
+            <!-- Vista previa de PDF -->
+            <div v-if="isDocumentPDF('terminos_condiciones')" class="h-96 w-full">
+              <iframe
+                :src="student.documentos.terminos_condiciones.url"
+                class="w-full h-full rounded-lg border dark:border-gray-700"
+                type="application/pdf"
+              ></iframe>
+            </div>
+            <!-- Vista previa de imagen -->
+            <div v-else-if="isDocumentImage('terminos_condiciones')" class="max-h-96 overflow-hidden rounded-lg">
+              <img
+                :src="student.documentos.terminos_condiciones.url"
+                alt="Términos y Condiciones"
+                class="w-full object-contain"
+              />
+            </div>
+            <!-- Botones de acción -->
+            <div class="flex justify-end mt-2 space-x-2">
+              <a
+                :href="student.documentos.terminos_condiciones.url"
+                target="_blank"
+                class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              >
+                <ArrowTopRightOnSquareIcon class="w-4 h-4" />
+                <span>Abrir en nueva pestaña</span>
+              </a>
+              <button
+                @click="handleDocumentDelete('terminos_condiciones')"
+                class="text-sm text-red-600 dark:text-red-400 hover:underline flex items-center gap-1"
+              >
+                <TrashIcon class="w-4 h-4" />
+                <span>Eliminar</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

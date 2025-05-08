@@ -862,25 +862,41 @@ export async function updateObservationInHistoryFirebase(
  * @returns Promise resolving to array of observation objects
  */
 export async function getObservationsHistoryFirebase(
-  classId: string, 
+  classId?: string, 
   specificDate?: string
 ): Promise<any[]> {
   try {
     let queryRef;
     
-    if (specificDate) {
-      // Get observations for a specific class and date
+    // Case 1: Both classId and specificDate provided
+    if (classId && specificDate) {
       queryRef = query(
         collection(db, OBSERVATIONS_COLLECTION),
         where('classId', '==', classId),
         where('date', '==', specificDate),
         orderBy('createdAt', 'desc')
       );
-    } else {
-      // Get all observations for a class
+    }
+    // Case 2: Only classId provided
+    else if (classId) {
       queryRef = query(
         collection(db, OBSERVATIONS_COLLECTION),
         where('classId', '==', classId),
+        orderBy('createdAt', 'desc')
+      );
+    }
+    // Case 3: Only specificDate provided
+    else if (specificDate) {
+      queryRef = query(
+        collection(db, OBSERVATIONS_COLLECTION),
+        where('date', '==', specificDate),
+        orderBy('createdAt', 'desc')
+      );
+    }
+    // Case 4: No filters, get all observations
+    else {
+      queryRef = query(
+        collection(db, OBSERVATIONS_COLLECTION),
         orderBy('createdAt', 'desc')
       );
     }
