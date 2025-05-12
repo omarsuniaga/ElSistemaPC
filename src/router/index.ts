@@ -330,6 +330,15 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../components/TeacherInformeAttendance.vue'),
     meta: { requiresAuth: true, allowedRoles: ['Maestro'] }
   },
+  {
+    path: '/classes/:classId/add-student',
+    name: 'AddStudentToClass',
+    component: () => import('../modulos/Students/view/AddStudentToClassView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Añadir Estudiante a Clase'
+    }
+  },
   ...instrumentsRoutes,
   ...studentRoutes,
   // ...attendanceRoutes,

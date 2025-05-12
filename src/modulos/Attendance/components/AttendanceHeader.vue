@@ -1,77 +1,105 @@
 <!-- src/modulos/attendance/components/AttendanceHeader.vue -->
 <script setup lang="ts">
-import { computed } from 'vue'
-import { format, parseISO } from 'date-fns'
-import { es } from 'date-fns/locale'
-import { useRouter } from 'vue-router'               // <–– nuevo
-import HeaderActions from './HeaderActions.vue'
-import { useHeaderActions } from '../composables/useHeaderActions'
+import {
+  ViewColumnsIcon,
+  ChatBubbleLeftRightIcon,
+  ArrowDownOnSquareIcon,
+  ArrowDownTrayIcon
+} from '@heroicons/vue/24/outline'
+import ClassObservationBadge from './ClassObservationBadge.vue'
 
-const router = useRouter()                             // <–– nuevo
-
-/** Props actualizados */
 const props = defineProps<{
-  selectedDate: string
-  selectedClass: string
-  role: 'admin' | 'director' | 'maestro'
+  className?: string;
+  pendingChangesCount: number;
+  isDisabled?: boolean;
+  observations?: string;
+  shouldAnimateObservationsButton?: boolean;
 }>()
 
-/** Emitir eventos hacia la vista */
 const emit = defineEmits<{
-  (e: 'analytics'): void
-  (e: 'report'): void
-  (e: 'export'): void
-  (e: 'createEmergency'): void
-  (e: 'emergency'): void
-  (e: 'changeView', view: 'calendar' | 'class-select' | 'attendance-form'): void
+  (e: 'navigate-to-workspace'): void;
+  (e: 'save'): void;
+  (e: 'open-export'): void;
+  (e: 'open-observation'): void;
 }>()
-
-/** Composable centralizado de acciones */
-const { open, canExport, canCreateEmergency, userName } = useHeaderActions({
-  role: props.role
-})
-
-/** Fecha formateada bonito */
-const formattedDate = computed(() =>
-  props.selectedDate
-    ? format(parseISO(props.selectedDate), "d 'de' MMMM yyyy", { locale: es })
-    : 'Sin fecha'
-)
 </script>
 
 <template>
-  <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white dark:bg-gray-800 shadow rounded-lg p-4">
-    <div class="space-y-1">
-      <h1 class="text-xl font-bold text-primary-600 dark:text-primary-400">
-        {{ props.selectedClass || 'Seleccione clase' }}
-      </h1>
-      <p class="text-sm text-gray-600 dark:text-gray-400">{{ formattedDate }}</p>
-      <p class="text-xs text-gray-400 dark:text-gray-500">{{ userName }}</p>
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+    <div class="flex items-center space-x-2">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
+        {{ props.className || 'Lista de asistencia' }}
+      </h2>
+      <ClassObservationBadge 
+        :observations="props.observations"
+        @click="emit('open-observation')"
+        class="sm:text-base text-sm"
+      />
     </div>
-
-    <!--  botón para informe profesional -->
-    <button
-      class="btn btn-secondary w-full sm:w-auto mb-2 sm:mb-0"
-      @click="router.push({ name: 'TeacherInformeAttendance' })"
-    >
-      Informe Profesional
-    </button>
-
-    <button
-      class="btn btn-secondary w-full sm:w-auto mb-2 sm:mb-0"
-      @click="emit('changeView', 'calendar')"
-    >
-      Calendario
-    </button>
-
-    <HeaderActions
-      :role="props.role"
-      @analytics="() => emit('analytics')"
-      @report="() => emit('report')"
-      @export="() => canExport && emit('export')"
-      @emergency="() => canCreateEmergency && emit('emergency')"
-    />
-  </header>
+    
+    <div class="flex flex-wrap justify-end gap-2 w-full sm:w-auto">
+      <!-- Workspace Button -->
+      <button 
+        @click="emit('navigate-to-workspace')"
+        class="px-2 sm:px-3 py-1 sm:py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md shadow-sm text-xs sm:text-sm flex items-center gap-1 flex-1 sm:flex-initial justify-center"
+      >
+        <ViewColumnsIcon class="w-4 h-4" />
+        <span class="hidden xs:inline">Area de Trabajo</span>
+        <span class="xs:hidden">Área</span>
+      </button>
+      
+      <!-- Save Button -->
+      <button 
+        @click="emit('save')"
+        :disabled="props.isDisabled || props.pendingChangesCount === 0"
+        :class="[
+          'px-2 sm:px-3 py-1 sm:py-1.5 rounded-md shadow-sm text-xs sm:text-sm flex items-center gap-1 flex-1 sm:flex-initial justify-center', 
+          props.pendingChangesCount > 0 
+            ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+        ]"
+      >
+        <ArrowDownOnSquareIcon class="w-4 h-4" />
+        <span class="hidden xs:inline">Guardar{{props.pendingChangesCount ? ` (${props.pendingChangesCount})` : ''}}</span>
+        <span class="xs:hidden">Guardar</span>
+      </button>
+      
+      <!-- Export Button -->
+      <button 
+        @click="emit('open-export')"
+        class="px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-sm text-xs sm:text-sm flex items-center gap-1 flex-1 sm:flex-initial justify-center"
+      >
+        <ArrowDownTrayIcon class="w-4 h-4" />
+        <span class="hidden xs:inline">Exportar</span>
+        <span class="xs:hidden">Exp</span>
+      </button>
+      
+      <!-- Observations Button -->
+      <button 
+        @click="emit('open-observation')"
+        :disabled="props.isDisabled"
+        :class="[
+          'px-2 sm:px-3 py-1 sm:py-1.5 rounded-md shadow-sm text-xs sm:text-sm flex items-center gap-1 flex-1 sm:flex-initial justify-center relative',
+          props.isDisabled 
+            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+            : 'bg-amber-600 hover:bg-amber-700 text-white'
+        ]"
+      >
+        <ChatBubbleLeftRightIcon class="w-4 h-4" />
+        <span class="hidden xs:inline">Observaciones</span>
+        <span class="xs:hidden">Obs</span>
+        
+        <!-- Animation indicator when observations are missing -->
+        <span 
+          v-if="props.shouldAnimateObservationsButton" 
+          class="absolute -top-1 -left-1 flex h-3 w-3"
+        >
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+        </span>
+      </button>
+    </div>
+  </div>
 </template>
 
 <style scoped>

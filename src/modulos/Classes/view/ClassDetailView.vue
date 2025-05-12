@@ -232,10 +232,35 @@ const studentsCardData = computed(() => {
     instrument: s.instrumento // Assuming student object from store has 'instrumento' for instrument
   }));
 });
+
+const addStudentToClass = () => {
+  try {
+    router.push({ 
+      name: 'AddStudentToClass', 
+      params: { classId: classId.value } 
+    }).catch((error) => {
+      console.error('Navigation error:', error);
+      // Try an alternative route
+      router.push({ 
+        name: 'Students/Add', 
+        query: { classId: classId.value } 
+      }).catch((navError) => {
+        console.error('Second navigation error:', navError);
+        alert('No se puede navegar a la página para añadir estudiantes. La ruta no está configurada correctamente.');
+      });
+    });
+  } catch (error) {
+    console.error('Error navigating to add student page:', error);
+  }
+};
+
+const showAddStudentInfo = () => {
+  alert('Esta función será implementada próximamente. Por ahora, utilice la interfaz de administración de estudiantes para añadir nuevos estudiantes a la clase.');
+};
 </script>
 
 <template>
-  <div class="class-detail-view p-2  bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-300">
+  <div class="class-detail-view bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-300">
     <!-- Toast Notifications -->
     <div v-if="toastMessage" class="fixed top-4 right-4 z-50">
       <Toast
@@ -245,167 +270,417 @@ const studentsCardData = computed(() => {
       />
     </div>
 
-    <!-- Header -->
-    <header class="mb-6">
-      <button @click="goBack" class="text-blue-600 dark:text-blue-400 hover:underline mb-2 inline-flex items-center">
-        &lt; Volver a Clases
-      </button>      <div class="flex items-center">
-        <h1 v-if="classData" class="text-3xl font-bold text-gray-800 dark:text-gray-100">{{ classData.name }}</h1>
-        <h1 v-else-if="!isLoading" class="text-3xl font-bold text-gray-800 dark:text-gray-100">Detalle de Clase</h1>
+    <!-- Header with breadcrumbs and actions -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm mb-6">
+      <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex items-center space-x-2">
+            <button @click="goBack" class="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 p-2 rounded-full transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+            <nav class="flex">
+              <ol class="flex items-center space-x-1">
+                <li>
+                  <router-link to="/" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                    Inicio
+                  </router-link>
+                </li>
+                <li>
+                  <span class="text-gray-500 dark:text-gray-400 mx-1">/</span>
+                </li>
+                <li>
+                  <router-link :to="{ name: 'ClassList' }" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                    Clases
+                  </router-link>
+                </li>
+                <li>
+                  <span class="text-gray-500 dark:text-gray-400 mx-1">/</span>
+                </li>
+                <li v-if="classData" class="text-blue-600 dark:text-blue-400 font-medium truncate max-w-[150px] sm:max-w-xs">
+                  {{ classData.name }}
+                </li>
+                <li v-else class="text-blue-600 dark:text-blue-400 font-medium">
+                  Detalles
+                </li>
+              </ol>
+            </nav>
+          </div
+          >
+          <div v-if="!isLoading && classData" class="flex items-center space-x-3 mt-4 sm:mt-0">
+            <button @click="editClass" class="inline-flex items-center px-3.5 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+              </svg>
+              Editar
+            </button>
+            <button @click="openDeleteModal" class="inline-flex items-center px-3.5 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+              Eliminar
+            </button>
+          </div>
+        </div>
       </div>
     </header>
 
     <!-- Loading State -->
-    <div v-if="isLoading" class="mt-4">
+    <div v-if="isLoading" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <ClassDetailSkeleton />
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="mt-4">
+    <div v-else-if="error" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <ErrorState :message="error" @retry="fetchClassDetails" />
     </div>
 
-    <!-- Content Loaded - Improved Layout -->
-    <div v-else-if="classData" class="max-w-5xl mx-auto">
-      <div class="class-content-grid">
-        <!-- Class Details Card -->
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow overflow-hidden">
-          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Información de la Clase</h2>
-          
-          <!-- Main Content Grid -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+    <!-- Content Loaded -->
+    <div v-else-if="classData" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <!-- Class Title Header -->
+      <div class="mb-8 text-center sm:text-left">
+        <h1 class="text-3xl font-extrabold text-gray-800 dark:text-gray-100 tracking-tight">
+          {{ classData.name }}
+        </h1>
+        <p class="mt-2 flex items-center justify-center sm:justify-start text-lg text-gray-500 dark:text-gray-400">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 mr-2">
+            {{ classData.instrument || 'Sin instrumento' }}
+          </span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+            Nivel: {{ classData.level || 'No especificado' }}
+          </span>
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left column - Class & Schedule info -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Class Details Card -->
+          <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden transition-all hover:shadow-md">
+            <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+              <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-500 dark:text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 005.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+                </svg>
+                Información de la Clase
+              </h2>
+            </div>
             
-            <!-- Left Column - Class Details -->
-            <div class="space-y-6">
-              <!-- Basic Class Info -->
-              <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-                <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-3">Datos Generales</h3>
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Instrumento</p>
-                    <p class="text-gray-800 dark:text-gray-200">{{ classData.instrument || 'No especificado' }}</p>
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Nivel</p>
-                    <p class="text-gray-800 dark:text-gray-200">{{ classData.level || 'No especificado' }}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Schedule Info - Highlighted Section -->
-              <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md border-l-4 border-blue-500 dark:border-blue-600">
-                <h3 class="text-lg font-medium text-blue-700 dark:text-blue-300 mb-3">Información de Horario</h3>
-                
-                <!-- If schedule is available in slots -->
-                <div v-if="classSummaryData.schedule && classSummaryData.schedule.days && classSummaryData.schedule.days.length > 0" 
-                    class="space-y-3">
-                  <div v-for="(slot, index) in classSummaryData.schedule.days" :key="index" 
-                      class="bg-white dark:bg-gray-700 p-3 rounded shadow-sm">
-                    <div class="flex justify-between items-center">
-                      <span class="font-medium text-gray-800 dark:text-gray-200">{{ slot.day }}</span>
-                      <span class="text-sm bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
-                        {{ slot.duration }} min
-                      </span>
-                    </div>
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {{ slot.startTime || '?' }} - {{ slot.endTime || '?' }}
-                    </div>
-                  </div>
+            <div class="px-6 py-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                <div>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Instrumento</h3>
+                  <p class="mt-1 text-base text-gray-900 dark:text-gray-100">
+                    {{ classData.instrument || 'No especificado' }}
+                  </p>
                 </div>
                 
-                <!-- If no schedule is available -->
-                <div v-else class="space-y-4">
-                  <div class="p-3 bg-white dark:bg-gray-700 rounded-md">
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Horario</p>
-                    <p class="text-gray-800 dark:text-gray-200">
-                      <span class="italic text-gray-500 dark:text-gray-400">No hay detalles disponibles</span>
-                    </p>
-                  </div>
-                  
-                  <div class="p-3 bg-white dark:bg-gray-700 rounded-md">
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Duración por Sesión</p>
-                    <p class="text-gray-800 dark:text-gray-200">
-                      <span v-if="classData.durationMinutes">{{ classData.durationMinutes }} minutos</span>
-                      <span v-else class="italic text-gray-500 dark:text-gray-400">No especificada</span>
-                    </p>
-                  </div>
+                <div>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Nivel</h3>
+                  <p class="mt-1 text-base text-gray-900 dark:text-gray-100">
+                    {{ classData.level || 'No especificado' }}
+                  </p>
                 </div>
-                  <!-- Hours Summary - Always Visible -->
-                <div class="mt-4 bg-blue-100 dark:bg-blue-800/40 p-3 rounded-md">
-                  <div class="grid grid-cols-2 gap-4">
-                    <!-- Weekly Hours -->
-                    <div>
-                      <p class="text-sm font-medium text-blue-700 dark:text-blue-300">Horas Semanales</p>
-                      <p class="text-lg font-semibold text-blue-800 dark:text-blue-200">
-                        {{ classSummaryData.hoursPerWeek > 0 ? classSummaryData.hoursPerWeek + ' hrs' : 'No especificado' }}
-                      </p>
-                    </div>
-                    <!-- Monthly Hours -->
-                    <div>
-                      <p class="text-sm font-medium text-blue-700 dark:text-blue-300">Horas Mensuales</p>
-                      <p class="text-lg font-semibold text-blue-800 dark:text-blue-200">
-                        {{ classSummaryData.hoursPerWeek > 0 ? (classSummaryData.hoursPerWeek * 4) + ' hrs' : 'No especificado' }}
-                      </p>
-                    </div>
-                  </div>
+                
+                <div>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Horas Semanales</h3>
+                  <p class="mt-1 text-base text-gray-900 dark:text-gray-100">
+                    {{ classSummaryData.hoursPerWeek > 0 ? classSummaryData.hoursPerWeek + ' hrs' : 'No especificado' }}
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Horas Mensuales</h3>
+                  <p class="mt-1 text-base text-gray-900 dark:text-gray-100">
+                    {{ classSummaryData.hoursPerWeek > 0 ? (classSummaryData.hoursPerWeek * 4) + ' hrs' : 'No especificado' }}
+                  </p>
                 </div>
               </div>
             </div>
+          </div>
+          
+          <!-- Schedule Card -->
+          <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden transition-all hover:shadow-md">
+            <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+              <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-indigo-500 dark:text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                </svg>
+                Horario
+              </h2>
+            </div>
             
-            <!-- Right Column - Teacher Info -->
-            <div>
-              <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-3">Profesor</h3>
-              <div v-if="teacher" class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-                <div class="flex items-center space-x-4">
-                  <img v-if="teacherCardData?.photoUrl" :src="teacherCardData.photoUrl" alt="Foto del Profesor" 
-                    class="w-20 h-20 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600">
-                  <div v-else class="w-20 h-20 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400 dark:text-gray-300" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-                    </svg>
+            <div class="px-6 py-4">
+              <!-- Schedule Slots -->
+              <div v-if="classSummaryData.schedule && classSummaryData.schedule.days && classSummaryData.schedule.days.length > 0" class="space-y-3">
+                <div v-for="(slot, index) in classSummaryData.schedule.days" :key="index" 
+                    class="flex items-center p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                  <div class="min-w-[80px] h-16 bg-indigo-100 dark:bg-indigo-800 rounded-md flex flex-col items-center justify-center mr-4">
+                    <span class="text-xs uppercase font-bold text-indigo-800 dark:text-indigo-300">{{ slot.day.substring(0,3) }}</span>
+                    <span class="font-bold text-xl text-indigo-700 dark:text-indigo-200">{{ slot.day.substring(0,1) }}</span>
                   </div>
-                  <div>
-                    <p class="text-xl font-medium text-gray-800 dark:text-gray-100">{{ teacher.name || 'Profesor no asignado' }}</p>
-                    <p v-if="teacherCardData?.specialties && teacherCardData.specialties.length" class="text-sm text-gray-600 dark:text-gray-400">
-                      {{ teacherCardData.specialties.join(', ') }}
+                  
+                  <div class="flex-grow">
+                    <div class="flex items-center justify-between">
+                      <span class="text-gray-900 dark:text-gray-100 font-medium">{{ slot.startTime || '?' }} - {{ slot.endTime || '?' }}</span>
+                      <span class="bg-indigo-100 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200 text-xs font-bold px-2.5 py-1 rounded-full">
+                        {{ slot.duration }} min
+                      </span>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      Clase de {{ classData.name }} - {{ classData.instrument }}
                     </p>
                   </div>
                 </div>
-                <div v-if="teacherCardData?.email" class="mt-3 text-sm text-gray-600 dark:text-gray-400">
-                  <span class="font-medium">Email:</span> {{ teacherCardData.email }}
-                </div>
-                <div v-if="teacherCardData?.contactInfo" class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  <span class="font-medium">Contacto:</span> {{ teacherCardData.contactInfo }}
-                </div>
-              </div>
-              <div v-else class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-                <p class="text-gray-500 dark:text-gray-400">Profesor no asignado</p>
               </div>
               
-              <!-- Class Stats -->
-              <div class="mt-6 grid grid-cols-2 gap-3">
-                <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md text-center">
-                  <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ students.length }}</p>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Estudiantes</p>
+              <!-- No Schedule Available -->
+              <div v-else class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No hay horario disponible</h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  No se ha configurado un horario específico para esta clase.
+                </p>
+                <div class="mt-4">
+                  <button @click="editClass" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                    Configurar horario
+                  </button>
                 </div>
-                <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md text-center">
-                  <p class="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {{ classSummaryData.hoursPerWeek > 0 ? classSummaryData.hoursPerWeek : '-' }}
-                  </p>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Horas/Semana</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Students List -->
+          <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden transition-all hover:shadow-md">
+            <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+              <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-green-500 dark:text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                  </svg>
+                  Estudiantes <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ students.length }})</span>
+                </h2>
+                <!-- Replace RouterLink with button -->
+                <button 
+                  @click="showAddStudentInfo" 
+                  class="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-500 dark:hover:text-indigo-300">
+                  Añadir estudiante
+                </button>
+              </div>
+            </div>
+            
+            <div class="px-6 py-4">
+              <ul v-if="students.length > 0" class="divide-y divide-gray-200 dark:divide-gray-700">
+                <li v-for="student in studentsCardData" :key="student.id" class="py-4 flex items-center">
+                  <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-green-600 dark:text-green-300 mr-4">
+                    {{ student.name.charAt(0) }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {{ student.name }}
+                    </p>
+                    <div class="flex items-center mt-1">
+                      <span v-if="student.age" class="text-xs text-gray-500 dark:text-gray-400 mr-2">
+                        {{ student.age }} años
+                      </span>
+                      <span v-if="student.instrument" class="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-0.5 rounded">
+                        {{ student.instrument }}
+                      </span>
+                    </div>
+                  </div>
+                  <router-link :to="{ name: 'StudentDetail', params: { id: student.id } }" class="ml-3 flex-shrink-0 text-blue-600 dark:text-blue-400 hover:text-blue-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                      <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                    </svg>
+                  </router-link>
+                </li>
+              </ul>
+              
+              <!-- No Students -->
+              <div v-else class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No hay estudiantes</h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Comienza añadiendo un estudiante a esta clase.
+                </p>
+                <div class="mt-4">
+                  <router-link :to="{ name: 'AddStudentToClass', params: { classId: classId } }" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">
+                    Añadir estudiante
+                  </router-link>
                 </div>
               </div>
             </div>
           </div>
         </div>
-          <!-- Students List Card -->
-        <StudentsCard 
-          :students="studentsCardData" 
-          :class-id="classId"
-          :class-name="classData?.name || ''"
-          :teacher-name="teacher?.name || 'No asignado'"
-          :weekly-hours="Number(classSummaryData.hoursPerWeek) || 0"
-        />
+        
+        <!-- Right column - Teacher info -->
+        <div class="lg:col-span-1 space-y-6">
+          <!-- Teacher Card -->
+          <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden transition-all hover:shadow-md">
+            <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+              <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-amber-500 dark:text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                </svg>
+                Profesor
+              </h2>
+            </div>
+            
+            <div class="px-6 py-4">
+              <div v-if="teacher" class="flex flex-col items-center text-center">
+                <div class="relative">
+                  <img v-if="teacherCardData?.photoUrl" :src="teacherCardData.photoUrl" alt="Foto del Profesor" 
+                      class="w-32 h-32 rounded-full object-cover border-4 border-amber-100 dark:border-amber-900">
+                  <div v-else class="w-32 h-32 rounded-full bg-amber-100 dark:bg-amber-800 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-amber-500 dark:text-amber-300" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <div class="absolute -bottom-1 -right-1 bg-green-400 p-1 rounded-full border-2 border-white dark:border-gray-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+                
+                <h3 class="mt-4 text-xl font-medium text-gray-900 dark:text-gray-100">{{ teacher.name }}</h3>
+                
+                <div v-if="teacherCardData?.specialties?.length" class="mt-1 flex flex-wrap justify-center gap-1">
+                  <span v-for="(specialty, idx) in teacherCardData.specialties" :key="idx" 
+                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                    {{ specialty }}
+                  </span>
+                </div>
+                
+                <div class="mt-6 w-full space-y-3">
+                  <div v-if="teacherCardData?.email" class="flex items-center border-t border-gray-200 dark:border-gray-700 pt-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-500 dark:text-amber-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                      <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                    </svg>
+                    <span class="text-sm text-gray-600 dark:text-gray-400">{{ teacherCardData.email }}</span>
+                  </div>
+                  
+                  <div v-if="teacherCardData?.contactInfo" class="flex items-center border-t border-gray-200 dark:border-gray-700 pt-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-500 dark:text-amber-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                    <span class="text-sm text-gray-600 dark:text-gray-400">{{ teacherCardData.contactInfo }}</span>
+                  </div>
+                </div>
+                
+                <div class="mt-6 w-full">
+                  <router-link :to="{ name: 'TeacherDetail', params: { id: teacher.id } }" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-amber-700 bg-amber-100 hover:bg-amber-200 dark:text-amber-200 dark:bg-amber-900 dark:hover:bg-amber-800 transition-colors">
+                    Ver perfil completo
+                  </router-link>
+                </div>
+              </div>
+              
+              <!-- No Teacher Assigned -->
+              <div v-else class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">Sin profesor asignado</h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Esta clase aún no tiene un profesor asignado.
+                </p>
+                <div class="mt-4">
+                  <button @click="editClass" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700">
+                    Asignar profesor
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Stats Card -->
+          <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden transition-all hover:shadow-md">
+            <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+              <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-purple-500 dark:text-purple-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+                  <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+                </svg>
+                Estadísticas
+              </h2>
+            </div>
+            
+            <div class="px-6 py-4">
+              <dl class="grid grid-cols-2 gap-4">
+                <div class="bg-purple-50 dark:bg-purple-900/20 overflow-hidden rounded-lg p-4">
+                  <dt class="text-sm font-medium text-purple-800 dark:text-purple-300 truncate">
+                    Estudiantes
+                  </dt>
+                  <dd class="mt-1 text-3xl font-semibold text-purple-900 dark:text-purple-100">
+                    {{ students.length }}
+                  </dd>
+                </div>
+                
+                <div class="bg-blue-50 dark:bg-blue-900/20 overflow-hidden rounded-lg p-4">
+                  <dt class="text-sm font-medium text-blue-800 dark:text-blue-300 truncate">
+                    Horas/Sem
+                  </dt>
+                  <dd class="mt-1 text-3xl font-semibold text-blue-900 dark:text-blue-100">
+                    {{ classSummaryData.hoursPerWeek }}
+                  </dd>
+                </div>
+                
+                <div class="bg-green-50 dark:bg-green-900/20 overflow-hidden rounded-lg p-4 col-span-2">
+                  <dt class="text-sm font-medium text-green-800 dark:text-green-300 truncate">
+                    Sesiones Semanales
+                  </dt>
+                  <dd class="mt-1 text-3xl font-semibold text-green-900 dark:text-green-100">
+                    {{ classSummaryData.schedule?.days?.length || '0' }}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+          
+          <!-- Quick Actions Card -->
+          <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden transition-all hover:shadow-md">
+            <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+              <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                Acciones rápidas
+              </h2>
+            </div>
+            
+            <div class="px-6 py-4">
+              <div class="space-y-3">
+                <button @click="editClass" class="w-full flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  </svg>
+                  Editar información
+                </button>
+                
+                <router-link :to="{ name: 'AddStudentToClass', params: { classId: classId } }" class="w-full flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+                  </svg>
+                  Añadir estudiante
+                </router-link>
+                
+                <button @click="openDeleteModal" class="w-full flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-red-500 dark:text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                  </svg>
+                  Eliminar clase
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -413,7 +688,7 @@ const studentsCardData = computed(() => {
     <DeleteConfirmationDialog
       :show="showDeleteModal"
       title="Confirmar Eliminación"
-      message="¿Estás seguro de que quieres eliminar esta clase? Esta acción no se puede deshacer."
+      message="¿Estás seguro de que quieres eliminar esta clase? Esta acción no se puede deshacer y afectará a todos los estudiantes inscritos."
       @confirm="confirmDelete"
       @cancel="closeDeleteModal"
     />
@@ -421,29 +696,31 @@ const studentsCardData = computed(() => {
 </template>
 
 <style scoped>
+/* Remove the current max-width restriction to use Tailwind's built-in sizing */
 .class-detail-view {
-  max-width: 80%;
+  max-width: 100%;
   margin: 0 auto;
 }
 
+/* Remove the class-content-grid defined style as we're using Tailwind's grid system */
 .class-content-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.5rem;
 }
 
-/* Transitions for theme switching */
+@media (min-width: 1024px) {
+  .class-content-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+/* Transitions for theme switching and hover effects */
 .transition-colors {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Add hover effects for interactive elements */
-.bg-white:not(button), .bg-gray-50:not(button), .bg-blue-50:not(button) {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.bg-white:not(button):hover, .bg-gray-50:not(button):hover, .bg-blue-50:not(button):hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+.transition-all {
+  transition: all 0.3s ease;
 }
 </style>

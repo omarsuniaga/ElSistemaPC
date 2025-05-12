@@ -764,7 +764,7 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         </div>
       </div>
       
-      <!-- Vista del horario semanal -->
+      <!-- Vista de listado de ausentes -->
       <div v-if="activeTab === 'schedule'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 md:p-4">
         <h2 class="text-base md:text-lg font-semibold mb-3 md:mb-4 flex justify-between items-center">
           <span>Horario Semanal</span>

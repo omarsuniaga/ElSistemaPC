@@ -1,19 +1,9 @@
 // src/type/attendance.ts
-export interface Attendance {
-  id: string; // ID del registro de asistencia
-  studentId: string; // ID del estudiante
-  classId: string; // ID de la clase
-  date: string; // Fecha de la asistencia (ej: 2025-03-18)
-  status: AttendanceStatus; // Estado de asistencia
-  justification?: JustificationData; // Justificación en caso de ausencia
-  createdAt?: Date; // Fecha de creación del registro
-  updatedAt?: Date; // Fecha de última actualización del registro
-}
-
+// Attendance status types
 export type AttendanceStatus = 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
 
 /**
- * Interfaz para justificación de ausencia
+ * Justificación de ausencia
  */
 export interface JustificationData {
   id: string; // ID del estudiante
@@ -23,12 +13,27 @@ export interface JustificationData {
 }
 
 /**
+ * Registro de asistencia
+ */
+export interface AttendanceRecord {
+  id?: string;
+  studentId: string;
+  classId: string;
+  Fecha: string; // Formato: AAAA-MM-DD
+  status: AttendanceStatus;
+  notes?: string;
+  justification?: string | { reason: string };
+  documentUrl?: string;
+}
+
+/**
  * Nueva estructura para el documento de asistencia
  */
 export interface AttendanceDocument {
-  fecha: string; // Fecha seleccionada (ej: 2025-03-18)
+  id?: string;
+  fecha: string; // Fecha en formato AAAA-MM-DD
   classId: string; // Clase seleccionada (ej: teoria-y-solfeo)
-  teacherId?: string; // ID del maestro que registró la asistencia
+  teacherId: string; // ID del maestro que registró la asistencia
   data: {
     presentes: string[]; // Lista de IDs de alumnos presentes
     ausentes: string[]; // Lista de IDs de alumnos ausentes
@@ -36,8 +41,6 @@ export interface AttendanceDocument {
     justificacion: JustificationData[]; // Datos de justificaciones
     observations: string; // Observaciones o criterios de la clase
   };
-  createdAt?: any; // Timestamp de creación
-  updatedAt?: any; // Timestamp de última actualización
 }
 
 /**
@@ -50,26 +53,6 @@ export interface ClassObservation {
   text: string;
   timestamp: number;
   author: string;
-}
-
-/**
- * Interface para compatibilidad con el sistema anterior
- */
-export interface AttendanceRecord {
-  id?: string;
-  studentId: string;
-  classId: string;
-  Fecha: string;
-  status: AttendanceStatus;
-  justification?: {
-    reason?: string;
-    documentUrl?: string;
-    timestamp?: Date;
-  } | string;
-  documentUrl?: string;
-  timestamp?: string;
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 export interface AttendanceFilters {

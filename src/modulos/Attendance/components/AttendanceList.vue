@@ -2,24 +2,18 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import type { AttendanceStatus, JustificationData } from '../types/attendance'
 import type { Student } from '../../Students/types/student'
-import {
-  CheckCircleIcon,
-  XCircleIcon,
-  ViewColumnsIcon,
-  ClockIcon,
-  DocumentCheckIcon,
-  ChatBubbleLeftRightIcon,
-  ArrowDownOnSquareIcon,  ArrowDownTrayIcon
-} from '@heroicons/vue/24/outline'
-import './AttendanceList.css'
 import { useClassesStore } from '../../Classes/store/classes'
 import { useStudentsStore } from '../../Students/store/students'
 import { useAttendanceStore } from '../store/attendance'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../../stores/auth'
-// import { useAttendanceState } from '../composables/useAttendanceState'
-import ClassObservationBadge from './ClassObservationBadge.vue'
 import Toast from '../../../components/Toast.vue'
+
+// Import our new components
+import AttendanceHeader from './AttendanceHeader.vue'
+import AttendanceSummary from './AttendanceSummary.vue'
+import AttendanceTable from './AttendanceTable.vue'
+import LoadingOverlay from './LoadingOverlay.vue'
 
 // Props y emits
 const props = defineProps<{
@@ -367,8 +361,64 @@ const handleUpdateStatus = (studentId: string, status: string) => {
   emit('update-status', studentId, status as AttendanceStatus);
 };
 
+// Store justifications separately until explicitly saved
+const pendingJustifications = ref<Map<string, {reason: string, documentUrl?: string}>>(new Map());
+
+// Modify the existing handleOpenJustification function (replacing the current one)
+const handleOpenJustification = (student: Student) => {
+  if (props.isDisabled) return;
+  
+  // Validar que el estudiante tiene datos completos
+  if (!student || !student.id) {
+    console.error('Error: Datos del estudiante incompletos', student);
+    displayToast('Error: No se puede agregar justificación sin datos del estudiante', 'error');
+    return;
+  }
+
+  // Actualizar el estado de asistencia a Justificado
+  localAttendanceRecords.value[student.id] = 'Justificado';
+  pendingChanges.value.add(student.id);
+  
+  // Guardar el estudiante seleccionado para que esté disponible en el modal
+  selectedStudentForJustification.value = { 
+    id: student.id, 
+    nombre: student.nombre || 'Estudiante',
+    apellido: student.apellido || '' 
+  };
+  
+  // Agregar datos de fecha y clase para recuperar la justificación existente
+  const dateToUse = route.params.date as string || props.date || attendanceStore.selectedDate;
+  const classIdToUse = route.params.classId as string || props.initialClassId;
+  
+  // Emitir evento para abrir justificación en el componente padre con datos adicionales
+  setTimeout(() => emit('open-justification', {
+    ...student,
+    classId: classIdToUse,
+    date: dateToUse
+  }), 300);
+  
+  // Notificar al usuario
+  const studentName = student.nombre || 'Estudiante';
+  displayToast(`Añadiendo justificación para ${studentName}`, 'info');
+};
+
+// Add a new function to handle saving justifications separately
+const handleSaveJustification = (data: { studentId: string, reason: string, documentUrl?: string, file?: File }) => {
+  // Save the justification data for later use when the entire form is saved
+  pendingJustifications.value.set(data.studentId, {
+    reason: data.reason,
+    documentUrl: data.documentUrl
+  });
+  
+  // Notify the user that the justification was saved but attendance changes still need to be saved
+  displayToast('Justificación guardada. Recuerde guardar los cambios de asistencia.', 'info');
+  
+  // We don't call saveAllPendingChanges here - we just store the justification for later
+};
+
 // Función para guardar todos los cambios pendientes
-const saveAllPendingChanges = async () => {  if (pendingChangesCount.value === 0) {
+const saveAllPendingChanges = async () => {  
+  if (pendingChangesCount.value === 0 && pendingJustifications.value.size === 0) {
     displayToast('No hay cambios pendientes para guardar', 'info');
     return;
   }
@@ -663,38 +713,6 @@ const saveAllPendingChanges = async () => {  if (pendingChangesCount.value === 0
   }
 };
 
-const handleOpenJustification = (student: Student) => {
-  if (props.isDisabled) return;
-  
-  // Validar que el estudiante tiene datos completos
-  if (!student || !student.id) {
-    console.error('Error: Datos del estudiante incompletos', student);
-    displayToast('Error: No se puede agregar justificación sin datos del estudiante', 'error');
-    return;
-  }
-
-  // Actualizar el estado de asistencia a Justificado
-  localAttendanceRecords.value[student.id] = 'Justificado';
-  pendingChanges.value.add(student.id);
-  
-  // Guardar el estudiante seleccionado para que esté disponible en el modal
-  selectedStudentForJustification.value = { 
-    id: student.id, 
-    nombre: student.nombre || 'Estudiante',
-    apellido: student.apellido || '' 
-  };
-  
-  // Emitir evento para abrir justificación en el componente padre
-  emit('open-justification', student);
-  
-  // Notificar al usuario
-  const studentName = student.nombre || 'Estudiante';
-  displayToast(`Añadiendo justificación para ${studentName}`, 'info');
-  
-  // También emitir actualización de estado para sincronización
-  emit('update-status', student.id, 'Justificado');
-};
-
 const handleOpenObservation = () => {
   // El prop student es Student | null, así que pasamos null
   emit('open-observation', null);
@@ -722,7 +740,155 @@ const sortedStudents = computed(() => {
   });
 });
 
+// Funciones para marcar a todos los estudiantes con un estado específico
+const markAllAsPresent = () => {
+  if (!props.isDisabled) {
+    effectiveStudents.value.forEach(student => {
+      handleUpdateStatus(student.id, 'Presente');
+    });
+    
+    displayToast('Todos los estudiantes marcados como presentes', 'info');
+  }
+};
+
+const markAllAsAbsent = () => {
+  if (props.isDisabled) return;
+  
+  effectiveStudents.value.forEach(student => {
+    handleUpdateStatus(student.id, 'Ausente');
+  });
+  
+  displayToast('Todos los estudiantes marcados como ausentes', 'info');
+};
+
+const markAllAsLate = () => {
+  if (props.isDisabled) return;
+  
+  effectiveStudents.value.forEach(student => {
+    handleUpdateStatus(student.id, 'Tardanza');
+  });
+  
+  displayToast('Todos los estudiantes marcados con tardanza', 'info');
+};
+
+// Modificar la función resetAllStatuses para recuperar estados almacenados
+const resetAllStatuses = async () => {
+  if (props.isDisabled) return;
+  
+  if (confirm('¿Estás seguro de que quieres reestablecer el estado de todos los estudiantes a su último estado guardado?')) {
+    try {
+      isLoading.value = true;
+      
+      // Obtener la fecha y clase actual
+      const dateToUse = route.params.date as string || props.date || attendanceStore.selectedDate;
+      const classIdToUse = route.params.classId as string || props.initialClassId;
+      
+      if (!dateToUse || !classIdToUse) {
+        displayToast('No se pudo reestablecer: información de fecha o clase no disponible', 'error');
+        return;
+      }
+      
+      // Cargar registros guardados
+      const records = await attendanceStore.getAttendanceByDateAndClass(dateToUse, classIdToUse);
+      
+      // Crear un map con los estados guardados
+      const savedStates: Record<string, AttendanceStatus> = {};
+      records.forEach(record => {
+        if (record.studentId && record.status) {
+          savedStates[record.studentId] = record.status as AttendanceStatus;
+        }
+      });
+      
+      // Reestablecer cada estudiante a su estado guardado o eliminar si no existe
+      effectiveStudents.value.forEach(student => {
+        if (savedStates[student.id]) {
+          // Si existe un estado guardado, usarlo
+          localAttendanceRecords.value[student.id] = savedStates[student.id];
+        } else {
+          // Si no existe estado guardado, eliminar cualquier estado actual
+          delete localAttendanceRecords.value[student.id];
+        }
+        // Marcar como cambio pendiente para que se pueda guardar
+        pendingChanges.value.add(student.id);
+      });
+      
+      // Actualización visual inmediata
+      localAttendanceRecords.value = { ...localAttendanceRecords.value };
+      displayToast('Estados de asistencia reestablecidos a la última versión guardada', 'info');
+    } catch (error) {
+      console.error('Error al reestablecer estados guardados:', error);
+      displayToast('Error al recuperar los estados guardados', 'error');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+};
+
+// Add the reset function to discard pending changes
+const resetToSavedState = async () => {
+  if (props.isDisabled || pendingChangesCount.value === 0) return;
+  
+  if (confirm('¿Estás seguro de que quieres descartar todos los cambios pendientes?')) {
+    // Get the current date and class ID
+    const dateToUse = route.params.date as string || props.date || attendanceStore.selectedDate;
+    const classIdToUse = route.params.classId as string || props.initialClassId;
+    
+    if (!dateToUse || !classIdToUse) {
+      displayToast('No se pudo reestablecer: información de fecha o clase no disponible', 'error');
+      return;
+    }
+    
+    try {
+      isLoading.value = true;
+      
+      // Fetch the original data from database
+      const records = await attendanceStore.getAttendanceByDateAndClass(dateToUse, classIdToUse);
+      
+      // Reset to the original records
+      const formattedRecords: Record<string, AttendanceStatus> = {};
+      records.forEach(record => {
+        if (record.studentId && record.status) {
+          formattedRecords[record.studentId] = record.status as AttendanceStatus;
+        }
+      });
+      
+      // Update local state
+      localAttendanceRecords.value = formattedRecords;
+      
+      // Clear pending changes
+      pendingChanges.value.clear();
+      
+      displayToast('Cambios descartados, estado reestablecido', 'info');
+    } catch (error) {
+      console.error('Error al reestablecer estado original:', error);
+      displayToast('Error al reestablecer el estado original', 'error');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+};
+
+// Add a computed property to check if there are any observations
+const hasObservations = computed(() => {
+  // Check if there are any observations in the current attendance document
+  const observations = attendanceStore.getObservations;
+  return observations && typeof observations === 'string' && observations.trim().length > 0;
+});
+
+// Add a computed property to decide if we should show the animation
+const shouldAnimateObservationsButton = computed(() => {
+  // Only animate if:
+  // 1. There are no observations for the current class and date
+  // 2. We have students loaded (meaning the class exists and requires attendance)
+  return effectiveStudents.value.length > 0 && !hasObservations.value;
+});
+
+// Navigation handler for workspace button
+const navigateToWorkspace = () => {
+  router.push('/workspace');
+};
 </script>
+
 <template>
   <div class="attendance-container">
     <!-- Toast para notificaciones -->
@@ -734,203 +900,53 @@ const sortedStudents = computed(() => {
       @close="showToast = false"
     />
     
-    <div v-if="isLoading" class="loading-overlay">
-      <div class="loader"></div>
-      <p>Cargando datos de asistencia...</p>
-    </div>
+    <LoadingOverlay v-if="isLoading" message="Cargando datos de asistencia..." />
+    
     <div v-else-if="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
       <strong class="font-bold">Error:</strong>
       <span class="block sm:inline">{{ errorMessage }}</span>
     </div>
+    
     <div v-else>
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
-        <div class="flex items-center space-x-2">
-          <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            {{ props.selectedClassName || 'Lista de asistencia' }}
-          </h2>
-          <ClassObservationBadge 
-            :observations="attendanceStore.getObservations"
-            @click="handleOpenObservation"
-            class="sm:text-base text-sm"
-          />
-        </div>
-        
-        <div class="flex flex-wrap justify-end gap-1 sm:gap-2 w-full sm:w-auto">
-          <button 
-            @click="$router.push('/workspace')"
-            class="btn btn-primary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none"
-          >
-            <ViewColumnsIcon class="w-4 h-4 sm:w-5 sm:h-5" />
-            <span class="hidden xs:inline">Area de Trabajo</span>
-            <span class="xs:hidden">Área</span>
-          </button>
-          <button 
-            class="btn btn-primary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none" 
-            @click="handleUpdateStatus('all', 'save')"
-            :disabled="props.isDisabled || !hasPendingChanges"
-            :class="{'opacity-50 cursor-not-allowed': props.isDisabled || !hasPendingChanges}"
-          >
-            <ArrowDownOnSquareIcon class="w-3 h-3 sm:w-4 sm:h-4" />            <span class="hidden xs:inline">Guardar{{hasPendingChanges ? ` (${pendingChangesCount})` : ''}}</span>
-            <span class="xs:hidden">Guardar{{hasPendingChanges ? ` (${pendingChangesCount})` : ''}}</span>
-          </button>
-          <button class="btn btn-secondary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none" @click="emit('open-export')">
-            <ArrowDownTrayIcon class="w-3 h-3 sm:w-4 sm:h-4" />
-            <span class="hidden xs:inline">Exportar</span>
-            <span class="xs:hidden">Export</span>
-          </button>
-          <button 
-            class="btn btn-info btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none" 
-            @click="handleOpenObservation"
-            :disabled="props.isDisabled"
-          >
-            <ChatBubbleLeftRightIcon class="w-3 h-3 sm:w-4 sm:h-4" />
-            <span class="hidden xs:inline">Observaciones</span>
-            <span class="xs:hidden">Observaciones</span>
-          </button>
-        </div>
-      </div>      <div v-if="hasPendingChanges" class="my-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md text-sm">
-        <p class="font-medium text-yellow-800 flex items-center justify-between">          <span>
-            <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse inline-block mr-1"></span>
-            Cambios pendientes: {{ pendingChangesCount }}
-          </span>
-          <button 
-            @click="handleUpdateStatus('all', 'save')" 
-            class="ml-2 px-2 py-1 bg-yellow-200 hover:bg-yellow-300 text-yellow-800 rounded-md">
-            Guardar ahora
-          </button>
-        </p>
-      </div>
-
-      <!-- Resumen de asistencia -->
-      <div v-if="Object.keys(localAttendanceRecords).length > 0" class="mb-4 flex flex-wrap gap-2 text-sm">
-        <div class="bg-green-100 text-green-800 px-3 py-1 rounded-full">
-          Presentes: {{ Object.values(localAttendanceRecords).filter(s => s === 'Presente').length }}
-        </div>
-        <div class="bg-red-100 text-red-800 px-3 py-1 rounded-full">
-          Ausentes: {{ Object.values(localAttendanceRecords).filter(s => s === 'Ausente').length }}
-        </div>
-        <div class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full">
-          Tardanzas: {{ Object.values(localAttendanceRecords).filter(s => s === 'Tardanza').length }}
-        </div>
-        <div class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-          Justificados: {{ Object.values(localAttendanceRecords).filter(s => s === 'Justificado').length }}
-        </div>        <div v-if="hasPendingChanges" class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full flex items-center">
-          <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse mr-1"></span>
-          Cambios pendientes: {{ pendingChangesCount }}
-        </div>
-      </div>
+      <!-- Header with action buttons -->
+      <AttendanceHeader 
+        :class-name="props.selectedClassName" 
+        :pending-changes-count="pendingChangesCount"
+        :is-disabled="props.isDisabled"
+        :observations="attendanceStore.getObservations"
+        :should-animate-observations-button="shouldAnimateObservationsButton"
+        @navigate-to-workspace="navigateToWorkspace"
+        @save="handleUpdateStatus('all', 'save')"
+        @open-export="emit('open-export')"
+        @open-observation="handleOpenObservation"
+      />
       
-      <div v-if="effectiveStudents.length === 0 && !isLoading" class="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
-        <p class="text-gray-500 dark:text-gray-400">
-          {{ props.selectedClassName ? `No hay estudiantes en la clase ${props.selectedClassName}` : 'No hay estudiantes para mostrar o la clase no está seleccionada.' }}
-        </p>
-      </div>
-
-      <div v-else class="w-full overflow-x-auto rounded-lg">
-        <table class="w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead class="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th class="px-1 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/2 sm:w-auto">
-                Estudiante
-              </th>
-              <th class="px-1 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/4 sm:w-auto">
-                Acciones
-              </th>
-            </tr>
-          </thead>
-          <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            <tr v-for="student in sortedStudents" :key="student.id" class="hover:bg-gray-50 dark:hover:bg-gray-800">
-              <td class="px-1 sm:px-2 py-2 sm:py-3">
-                <div class="flex items-center">
-                  <div class="flex-shrink-0 h-7 w-7 sm:h-10 sm:w-10">
-                    <div :class="[
-                      'w-7 h-7 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-xs sm:text-sm', 
-                      getAvatarColor(student.nombre)
-                    ]">
-                      {{ getInitials(student.nombre, student.apellido) }}
-                    </div>
-                  </div>
-                  <div class="ml-2 sm:ml-4">
-                    <div class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2">
-                      {{ student.nombre }} {{ student.apellido }}
-                    </div>
-                  </div>
-                </div>
-              </td>
-              <td class="px-1 sm:px-4 py-2 sm:py-3">                <div class="flex gap-1 sm:mx-2 sm:gap-2 justify-end items-center">
-                  <div v-if="pendingChanges && pendingChanges.has(student.id)" class="flex items-center" title="Cambio pendiente">
-                    <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
-                  </div>
-                  <button 
-                    @click="handleUpdateStatus(student.id, 'Presente')"
-                    :class="[
-                      'btn btn-icon btn-xs sm:btn-sm p-1 sm:p-1.5',
-                      localAttendanceRecords[student.id] === 'Presente' ? 'btn-success-active' : 'btn-success'
-                    ]"
-                    :disabled="props.isDisabled"
-                    title="Presente"
-                  >
-                    <CheckCircleIcon class="w-3 h-3 sm:w-4 sm:h-4" />
-                  </button>
-                  <button 
-                    @click="handleUpdateStatus(student.id, 'Ausente')"
-                    :class="[
-
-                      'btn btn-icon btn-xs sm:btn-sm p-1 sm:p-1.5',
-                      localAttendanceRecords[student.id] === 'Ausente' ? 'btn-danger-active' : 'btn-danger'
-                    ]"
-                    :disabled="props.isDisabled"
-                    title="Ausente"
-                  >
-                    <XCircleIcon class="w-3 h-3 sm:w-4 sm:h-4" />
-                  </button>
-                  <button 
-                    @click="handleUpdateStatus(student.id, 'Tardanza')"
-                    :class="[
-
-                      'btn btn-icon btn-xs sm:btn-sm p-1 sm:p-1.5',
-                      localAttendanceRecords[student.id] === 'Tardanza' ? 'btn-warning-active' : 'btn-warning'
-                    ]"
-                    :disabled="props.isDisabled"
-                    title="Tardanza"
-                  >
-                    <ClockIcon class="w-3 h-3 sm:w-4 sm:h-4" />
-                  </button>
-                  <button
-                    @click="handleOpenJustification(student)"
-                    :class="[
-
-                      'btn btn-icon btn-xs sm:btn-sm p-1 sm:p-1.5',
-                      localAttendanceRecords[student.id] === 'Justificado' ? 'btn-info-active' : 'btn-info'
-                    ]"
-                    :disabled="props.isDisabled"
-                    title="Justificacion"
-                  >
-                    <DocumentCheckIcon class="w-3 h-3 sm:w-4 sm:h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <!-- Pending changes notification and stats -->
+      <AttendanceSummary 
+        :attendance-records="effectiveAttendanceRecords"
+        :pending-changes-count="pendingChangesCount"
+        :has-pending-changes="hasPendingChanges"
+        :on-save="() => handleUpdateStatus('all', 'save')"
+      />
+      
+      <!-- Students attendance table -->
+      <AttendanceTable 
+        :students="effectiveStudents"
+        :attendance-records="effectiveAttendanceRecords"
+        :is-disabled="props.isDisabled"
+        :pending-changes="pendingChanges"
+        @update-status="handleUpdateStatus"
+        @open-justification="handleOpenJustification"
+        @mark-all-present="markAllAsPresent"
+        @mark-all-absent="markAllAsAbsent"
+        @mark-all-late="markAllAsLate"
+        @reset-all="resetAllStatuses"
+      />
     </div>
   </div>
 </template>
 
 <style>
-/* stylelint-disable */
-/* postcss-css-variables: true */
-/* Add a custom breakpoint for extra small screens */
-@media (min-width: 480px) {
-  .xs\:inline {
-    display: inline;
-  }
-  .xs\:hidden {
-    display: none;
-  }
-}
-
 /* Make buttons smaller on mobile */
 .btn-xs {
   padding: 0.15rem 0.3rem;
@@ -944,67 +960,48 @@ const sortedStudents = computed(() => {
   line-height: 1.3;
 }
 
-/* Add overflow handling for tables */
-.overflow-x-auto {
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-}
-
-/* Ensure table doesn't overflow on small screens */
-@media (max-width: 640px) {
-  .min-w-full {
-    min-width: 100%;
+/* Add a custom breakpoint for extra small screens */
+@media (min-width: 480px) {
+  .xs\:inline {
+    display: inline;
   }
-  
-  /* Make table more compact on mobile */
-  table {
-    table-layout: fixed;
-  }
-  
-  /* Adjust button spacing in tight layouts */
-  .btn-icon {
-    min-width: 1.5rem;
-    min-height: 1.5rem;
-  }
-    /* Improve text overflow handling */
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+  .xs\:hidden {
+    display: none;
   }
 }
 
-/* Estilos especiales para el estado Justificado */
-.btn-info-active {
-  background-color: theme('colors.blue.700');
-  color: white;
-  box-shadow: 0 0 0 2px theme('colors.blue.300');
+/* Enhanced responsive styles for buttons */
+@media (max-width: 480px) {
+  .flex-1 {
+    min-width: 0;
+  }
 }
 
-.dark .btn-info-active {
-  box-shadow: 0 0 0 2px theme('colors.blue.700');
+@media (max-width: 350px) {
+  .justify-center {
+    justify-content: center;
+  }
+  .flex-1 {
+    flex-basis: 40%;
+  }
 }
 
-.btn-info {
-  background-color: theme('colors.blue.200');
-  color: theme('colors.blue.700');
+/* Button hover animation */
+button:not(:disabled) {
+  transition: transform 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+button:not(:disabled):active {
+  transform: translateY(0);
 }
 
-.btn-info:hover {
-  background-color: theme('colors.blue.300');
-}
-
-/* Estilos para estados activos */
+/* Define button status classes that will be used by child components */
 .btn-success-active {
   background-color: theme('colors.green.700');
   color: white;
   box-shadow: 0 0 0 2px theme('colors.green.300');
-}
-
-.dark .btn-success-active {
-  box-shadow: 0 0 0 2px theme('colors.green.700');
 }
 
 .btn-success {
@@ -1022,10 +1019,6 @@ const sortedStudents = computed(() => {
   box-shadow: 0 0 0 2px theme('colors.red.300');
 }
 
-.dark .btn-danger-active {
-  box-shadow: 0 0 0 2px theme('colors.red.700');
-}
-
 .btn-danger {
   background-color: theme('colors.red.200');
   color: theme('colors.red.700');
@@ -1041,10 +1034,6 @@ const sortedStudents = computed(() => {
   box-shadow: 0 0 0 2px theme('colors.yellow.300');
 }
 
-.dark .btn-warning-active {
-  box-shadow: 0 0 0 2px theme('colors.yellow.700');
-}
-
 .btn-warning {
   background-color: theme('colors.yellow.200');
   color: theme('colors.yellow.700');
@@ -1052,5 +1041,26 @@ const sortedStudents = computed(() => {
 
 .btn-warning:hover {
   background-color: theme('colors.yellow.300');
+}
+
+.btn-info-active {
+  background-color: theme('colors.blue.700');
+  color: white;
+  box-shadow: 0 0 0 2px theme('colors.blue.300');
+}
+
+.btn-info {
+  background-color: theme('colors.blue.200');
+  color: theme('colors.blue.700');
+}
+
+.btn-info:hover {
+  background-color: theme('colors.blue.300');
+}
+
+/* Button disabled state */
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 </style>
