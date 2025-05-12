@@ -36,6 +36,23 @@ interface AttendanceRecord {
   Fecha: string; // Format: YYYY-MM-DD
   status: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado' | string;
   notes?: string;
+  justification?: string | {reason: string};
+  documentUrl?: string;
+}
+
+// Define the attendance document type
+interface AttendanceDocument {
+  id?: string;
+  fecha: string; // Date in YYYY-MM-DD format
+  classId: string;
+  teacherId: string;
+  data: {
+    presentes: string[];
+    ausentes: string[];
+    tarde: string[];
+    justificacion: Array<{id: string; reason: string; documentURL?: string}>;
+    observations: string;
+  };
 }
 
 // Attendance statistics type
@@ -45,6 +62,38 @@ interface AttendanceStats {
   late: number;
   justified: number;
   total: number;
+}
+
+// Define additional types used throughout the store
+type AttendanceStatus = 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado' | string;
+
+interface AttendanceAnalytics {
+  totalClasses: number;
+  totalStudents: number;
+  averageAttendance: number;
+  absentStudents: any[]; 
+  byClass: Record<string, {
+    present: number;
+    absent: number;
+    delayed: number;
+    justified: number;
+    total: number;
+  }>;
+}
+
+interface ClassObservation {
+  id?: string;
+  classId: string;
+  date: string;
+  text: string;
+  author: string;
+  createdAt?: any;
+}
+
+interface FetchAttendanceRecordsParams {
+  classId?: string;
+  startDate?: string | Date;
+  endDate?: string | Date;
 }
 
 // Student absence record
@@ -272,7 +321,7 @@ export const useAttendanceStore = defineStore('attendance', {
     getStudentStatus: (state) => {
       // Obtener el estado de asistencia de un estudiante
       return (studentId: string, date: string, className: string): AttendanceStatus => {
-        // Buscar primero en la estructura de documento actual
+        // Buscar primero en la estructura de documento currentAttendanceDoc
         if (state.currentAttendanceDoc && 
             state.currentAttendanceDoc.fecha === date && 
             state.currentAttendanceDoc.classId === className) {
@@ -640,6 +689,27 @@ getJustification: (state) => {
       this.error = null;
       
       try {
+        // Log antes de guardar para verificación
+        console.log('Guardando documento con los siguientes datos:', {
+          fecha: document.fecha,
+          classId: document.classId,
+          presentes: document.data.presentes.length,
+          ausentes: document.data.ausentes.length,
+          tarde: document.data.tarde.length,
+          justificacion: document.data.justificacion?.length || 0
+        });
+
+        // Asegurar que no eliminamos estudiantes por error
+        const totalEstudiantes = (
+          (document.data.presentes?.length || 0) +
+          (document.data.ausentes?.length || 0) +
+          (document.data.tarde?.length || 0)
+        );
+
+        if (totalEstudiantes === 0) {
+          console.warn('⚠️ Advertencia: Se intenta guardar un documento sin estudiantes!');
+        }
+        
         // Clean up obsolete justifications
         this._cleanJustifications(document);
         
@@ -1879,27 +1949,34 @@ async fetchRecordsForMultipleEntities({
 
         /**
      * Gets attendance records for a specific class and date
-     * @param date - Date string in YYYY-MM-DD format
+     * @param date - Date string in YYYY-MM-DD or YYYYMMDD format
      * @param classId - Class identifier
      * @returns Array of attendance records
      */
     async getAttendanceByDateAndClass(date: string, classId: string): Promise<AttendanceRecord[]> {
       try {
+        // Normalizar formato de fecha
+        let formattedDate = date;
+        const dateRegexCompact = /^\d{8}$/;
+        if (dateRegexCompact.test(date)) {
+          // Convertir de YYYYMMDD a YYYY-MM-DD
+          formattedDate = `${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}`;
+        }
+        
         // First check if we already have this document in our store
         const existingDoc = this.attendanceDocuments.find(
-          doc => doc.fecha === date && doc.classId === classId
+          doc => doc.fecha === formattedDate && doc.classId === classId
         );
         
         if (existingDoc) {
           // Convert document structure to array of attendance records
           const records: AttendanceRecord[] = [];
-          
-          // Process students present
+            // Process students present
           existingDoc.data.presentes.forEach(studentId => {
             records.push({
               studentId,
               classId,
-              Fecha: date,
+              Fecha: formattedDate,
               status: 'Presente'
             });
           });
@@ -1909,7 +1986,7 @@ async fetchRecordsForMultipleEntities({
             records.push({
               studentId,
               classId,
-              Fecha: date,
+              Fecha: formattedDate,
               status: 'Ausente'
             });
           });
@@ -1920,16 +1997,15 @@ async fetchRecordsForMultipleEntities({
             records.push({
               studentId,
               classId,
-              Fecha: date,
+              Fecha: formattedDate,
               status: isJustified ? 'Justificado' : 'Tardanza'
             });
           });
           
           return records;
         }
-        
-        // If not found in store, fetch from Firebase
-        return await getAttendanceByDateAndClassFirebase(date, classId);
+          // If not found in store, fetch from Firebase
+        return await getAttendanceByDateAndClassFirebase(formattedDate, classId);
       } catch (error) {
         console.error('Error getting attendance by date and class:', error);
         return [];
@@ -2044,4 +2120,3 @@ function eachDayOfInterval(arg0: { start: Date; end: Date }) {
   throw new Error('Function not implemented.')
 }
 
-    

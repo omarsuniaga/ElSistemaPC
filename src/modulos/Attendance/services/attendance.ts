@@ -2,7 +2,7 @@
 
 /**
  * Get attendance records by date and class ID
- * @param date The date in 'YYYY-MM-DD' format
+ * @param date The date in 'YYYY-MM-DD' or 'YYYYMMDD' format
  * @param classId The class ID
  * @returns Promise resolving to array of attendance records
  */
@@ -11,6 +11,14 @@ export async function getAttendanceByDateAndClassFirebase(
   classId: string
 ): Promise<AttendanceRecord[]> {
   try {
+    // Normalizar formato de fecha
+    let formattedDate = date;
+    const dateRegexCompact = /^\d{8}$/;
+    if (dateRegexCompact.test(date)) {
+      // Convertir de YYYYMMDD a YYYY-MM-DD
+      formattedDate = `${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}`;
+    }
+
     // Get Firestore references
     const db = getFirestore();
     const attendancesCollection = collection(db, 'attendances');
@@ -18,7 +26,7 @@ export async function getAttendanceByDateAndClassFirebase(
     // Query for attendance records matching date and class
     const q = query(
       attendancesCollection,
-      where('Fecha', '==', date),
+      where('Fecha', '==', formattedDate),
       where('classId', '==', classId)
     );
     

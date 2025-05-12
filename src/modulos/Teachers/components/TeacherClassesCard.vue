@@ -230,7 +230,46 @@ const formatSchedule = computed(() => {
 
 // Manejadores de eventos
 const handleView = () => {
-  emit('view', props.classData.id);
+  // Acceder a la información del usuario de manera segura
+  try {
+    // Obtener información de rol de usuario desde localStorage o del store de autenticación
+    let userRole;
+    try {
+      const userDataStr = localStorage.getItem('user');
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr);
+        userRole = userData.role;
+      }
+    } catch (e) {
+      console.warn('No se pudo obtener el rol de usuario desde localStorage');
+    }
+    
+    // Si es maestro, utilizar la ruta específica para evitar problemas
+    if (userRole === 'Maestro') {
+      router.push({
+        name: 'TeacherClassDetail',
+        params: { id: props.classData.id }
+      }).catch(error => {
+        console.error('Error al navegar a vista de maestro:', error);
+        // Como fallback, emitir el evento original
+        emit('view', props.classData.id);
+      });
+    } else {
+      // Para directores y admin, usar la vista regular de clase
+      router.push({
+        name: 'ClassDetail',
+        params: { id: props.classData.id }
+      }).catch(error => {
+        console.error('Error al navegar a vista general:', error);
+        // Como fallback, emitir el evento original
+        emit('view', props.classData.id);
+      });
+    }
+  } catch (error) {
+    console.error('Error al manejar navegación:', error);
+    // En caso de cualquier error, usar el método de emisión de evento
+    emit('view', props.classData.id);
+  }
 };
 
 const handleEdit = (e) => {

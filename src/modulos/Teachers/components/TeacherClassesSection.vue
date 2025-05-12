@@ -34,8 +34,58 @@ const emit = defineEmits([
 const router = useRouter(); // <-- Inicializamos router
 
 // Handler para el clic principal en la tarjeta (escucha el evento 'view' de TeacherClassesCard)
-const handleCardView = (classId: string) => {
-    router.push(`/classes/${classId}`);
+const handleCardView = async (classId: string) => {
+    // Importar el utilitario de manejo de errores
+    try {
+        // Para maestros, siempre usar la vista específica para maestros
+        const userDataStr = localStorage.getItem('user');
+        let userRole = '';
+        
+        if (userDataStr) {
+            try {
+                const userData = JSON.parse(userDataStr);
+                userRole = userData.role;
+            } catch (e) {
+                console.warn('Error al parsear datos de usuario:', e);
+            }
+        }
+        
+        if (userRole === 'Maestro') {
+            await router.push({
+                name: 'TeacherClassDetail',
+                params: { id: classId }
+            });
+        } else {
+            // Para otros roles, usar la vista general de detalles
+            await router.push({
+                name: 'ClassDetail',
+                params: { id: classId }
+            });
+        }
+    } catch (error) {
+        console.error('Error al navegar a vista detallada:', error);
+        
+        // Importar dinámicamente el manejador de errores para evitar problemas de circular imports
+        import('../../../utils/errorHandling').then(({ handleModuleLoadingError }) => {
+            // Si la función de manejo específico no resuelve el problema
+            if (!handleModuleLoadingError(error, router)) {
+                // Intentar la navegación de respaldo
+                try {
+                    router.push({
+                        name: 'TeacherClassDetail',
+                        params: { id: classId }
+                    });
+                } catch (secondError) {
+                    console.error('Error en navegación de fallback:', secondError);
+                    alert('Hubo un problema al cargar los detalles de la clase.');
+                    router.push('/dashboard');
+                }
+            }
+        }).catch(() => {
+            // En caso de error al importar el manejador
+            router.push('/dashboard');
+        });
+    }
 };
 
 // Handlers para las otras acciones emitidas por TeacherClassesCard (edit, delete, manage-students)
