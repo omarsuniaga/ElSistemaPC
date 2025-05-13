@@ -184,11 +184,15 @@ const downloadStudentsList = async () => {
 // Descargar PDF detallado con información de la clase
 const downloadDetailedPDF = async () => {
   try {
+    // Get current date for the attendance report
+    const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    
     await generateClassDetailsPDF(
       props.className,
       props.teacherName,
       props.weeklyHours,
-      props.students
+      props.students,
+      today // Pass today's date
     );
   } catch (error) {
     console.error('Error generating detailed PDF:', error);

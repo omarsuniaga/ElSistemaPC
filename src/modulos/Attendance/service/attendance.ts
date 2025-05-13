@@ -68,10 +68,38 @@ export const saveAttendanceDocumentFirebase = async (
     const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
     const docSnap = await getDoc(docRef);
     
+    // Función auxiliar para eliminar valores undefined recursivamente
+    const removeUndefined = (obj: any): any => {
+      if (obj === null || obj === undefined) return null;
+      
+      if (typeof obj !== 'object') return obj;
+      
+      if (Array.isArray(obj)) {
+        return obj.map(item => removeUndefined(item)).filter(item => item !== undefined);
+      }
+      
+      const result: any = {};
+      
+      Object.keys(obj).forEach(key => {
+        const value = removeUndefined(obj[key]);
+        if (value !== undefined) {
+          result[key] = value;
+        }
+      });
+      
+      return result;
+    };
+    
+    // Limpiar el documento de valores undefined
+    const cleanedDoc = removeUndefined(attendanceDoc);
+    
+    // Añadir timestamp para la actualización
     const updates = {
-      ...attendanceDoc,
+      ...cleanedDoc,
       updatedAt: serverTimestamp()
     };
+    
+    console.log('Documento limpio a guardar:', JSON.stringify(updates).substring(0, 200) + '...');
     
     if (docSnap.exists()) {
       await updateDoc(docRef, updates);
@@ -139,16 +167,16 @@ export const addJustificationToAttendanceFirebase = async (
         data.data.justificacion.push(justification);
       }
       
-      // Asegurarse de que el estudiante está en el array tarde y no en ausentes/presentes
+      // Asegurarse de que el estudiante está en el array ausentes y no en presentes/tarde
       if (!data.data.presentes.includes(justification.id) && 
           !data.data.tarde.includes(justification.id)) {
         
-        // Quitar de ausentes si está ahí
-        data.data.ausentes = data.data.ausentes.filter(id => id !== justification.id);
+        // Quitar de tarde si está ahí
+        data.data.tarde = data.data.tarde.filter(id => id !== justification.id);
         
-        // Añadir a tarde si no está ya
-        if (!data.data.tarde.includes(justification.id)) {
-          data.data.tarde.push(justification.id);
+        // Añadir a ausentes si no está ya (porque justificado es una ausencia justificada)
+        if (!data.data.ausentes.includes(justification.id)) {
+          data.data.ausentes.push(justification.id);
         }
       }
       
@@ -162,10 +190,11 @@ export const addJustificationToAttendanceFirebase = async (
       const newDoc: AttendanceDocument = {
         fecha,
         classId,
+        teacherId: auth.currentUser?.uid || '',
         data: {
           presentes: [],
-          ausentes: [],
-          tarde: [justification.id],
+          ausentes: [justification.id], // Justificado va en ausentes
+          tarde: [],
           justificacion: [justification],
           observations: ''
         }
@@ -224,6 +253,7 @@ export const updateObservationsFirebase = async (
       const newDoc: AttendanceDocument = {
         fecha,
         classId,
+        teacherId: auth.currentUser?.uid || '',
         data: {
           presentes: [],
           ausentes: [],
@@ -1050,3 +1080,20 @@ export async function getTeacherAttendanceDocsFirebase(teacherId: string, fromDa
  * Re-exportamos la función para mantener la consistencia
  */
 export const fetchAttendanceByDateFirebase = fetchByDate;
+/**
+ * Obtiene la asistencia de un estudiante en una fecha específica
+ * @param studentId El ID del estudiante
+ * @param date La fecha en formato YYYY-MM-DD
+ * @returns El estado de asistencia del estudiante
+ */
+export async function getStudentAttendanceByDate(studentId: string, date: string): Promise<AttendanceStatus | null> {
+  try {
+    const snapshot = await getDocs(query(attendanceCollection, where('studentId', '==', studentId), where('Fecha', '==', date)));
+    if (snapshot.empty) return null;
+    const data = snapshot.docs[0].data();
+    return data.status as AttendanceStatus;
+  } catch (error) {
+    console.error('Error fetching student attendance:', error);
+    throw error;
+  }
+}

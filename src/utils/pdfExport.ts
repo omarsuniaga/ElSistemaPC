@@ -1,11 +1,11 @@
 // src/utils/pdfExport.ts
-// Usando la importación específica recomendada para jsPDF v3+
 import { jsPDF } from 'jspdf';
-// Importar autoTable como plugin
 import autoTable from 'jspdf-autotable';
 import type { Student } from '../modulos/Students/types/student';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useTeachersStore } from '../modulos/Teachers/store/teachers';
+import { useAuthStore } from '../stores/auth';
 
 /**
  * Genera un PDF con la lista de asistencia de una clase específica
@@ -28,11 +28,49 @@ export const generateAttendancePDF = async (
   justifications: Record<string, string> = {}
 ): Promise<void> => {
   try {
-    // Formatear fecha para mostrar
-    const formattedDate = format(new Date(date), "d 'de' MMMM yyyy", { locale: es });
+    // If teacherName is missing or looks like a date, try to get it from the store
+    if (!teacherName || teacherName.match(/^\d{4}-\d{2}-\d{2}/)) {
+      try {
+        const teachersStore = useTeachersStore();
+        const authStore = useAuthStore();
+        
+        if (authStore.user?.uid) {
+          const teacher = await teachersStore.fetchTeacherByAuthUid(authStore.user.uid);
+          if (teacher) {
+            teacherName = teacher.name;
+          }
+        }
+      } catch (error) {
+        console.warn('Error obtaining teacher name from store:', error);
+      }
+    }
     
-    // Crear instancia de jsPDF
-    const doc = new jsPDF();
+    // Formatear fecha para mostrar - con validación para evitar errores
+    let formattedDate = "Fecha no disponible";
+    let dateObj: Date;
+    
+    try {
+      // Verificar si la fecha es válida
+      if (date && !isNaN(new Date(date).getTime())) {
+        dateObj = new Date(date);
+        formattedDate = format(dateObj, "d 'de' MMMM yyyy", { locale: es });
+      } else {
+        console.warn("Fecha inválida proporcionada:", date);
+        dateObj = new Date();
+        formattedDate = format(dateObj, "d 'de' MMMM yyyy", { locale: es });
+      }
+    } catch (dateError) {
+      console.warn("Error al formatear fecha:", dateError);
+      dateObj = new Date();
+      formattedDate = format(dateObj, "d 'de' MMMM yyyy", { locale: es });
+    }
+    
+    // Crear instancia de jsPDF con tamaño carta (8.5 x 11 pulgadas)
+    const doc = new jsPDF({
+      format: 'letter', // Tamaño carta (215.9 x 279.4 mm)
+      orientation: 'portrait',
+      unit: 'mm'
+    });
     
     // --- Diseño del PDF ---
     
@@ -44,7 +82,10 @@ export const generateAttendancePDF = async (
       const img = new Image();
       await new Promise<void>((resolve, reject) => {
         img.onload = () => resolve();
-        img.onerror = () => reject(new Error('Error al cargar el logo'));
+        img.onerror = () => {
+          console.warn("No se pudo cargar el logo", img.src);
+          reject(new Error('Error al cargar el logo'));
+        };
         img.src = logoPath;
       });
       
@@ -59,7 +100,7 @@ export const generateAttendancePDF = async (
     
     // Identificación de la institución
     doc.setFontSize(16);
-    doc.setTextColor(0, 51, 102); // Azul oscuro institucional
+    doc.setTextColor(0); // Negro
     doc.setFont(undefined, 'bold');
     doc.text('El Sistema Punta Cana', 105, 15, { align: 'center' });
     
@@ -67,13 +108,20 @@ export const generateAttendancePDF = async (
     doc.setFontSize(18);
     doc.text('Reporte de Asistencia', 105, 25, { align: 'center' });
     
-    // Información básica del reporte
+    // Información básica del reporte - asegurar que se muestran correctamente
     doc.setFontSize(11);
     doc.setTextColor(60); // Gris oscuro
     doc.setFont(undefined, 'normal');
-    doc.text(`Fecha: ${formattedDate}`, 14, 40);
-    doc.text(`Clase: ${className}`, 14, 47);
-    doc.text(`Profesor: ${teacherName}`, 14, 54);
+    
+    // Verificar cada parámetro para evitar datos incorrectos
+    const displayDate = formattedDate;
+    const displayClassName = className || "Clase sin nombre";
+    // Use the teacher name we've now ensured is valid
+    const displayTeacherName = teacherName || "Profesor no especificado";
+    
+    doc.text(`Fecha: ${displayDate}`, 14, 40);
+    doc.text(`Clase: ${displayClassName}`, 14, 47);
+    doc.text(`Profesor: ${displayTeacherName}`, 14, 54);
     
     // Calcular estadísticas de asistencia
     const stats = {
@@ -98,41 +146,74 @@ export const generateAttendancePDF = async (
     doc.text('Resumen de Asistencia:', 14, 65);
     doc.setFont(undefined, 'normal');
     
-    // Recuadros con estadísticas
+    // Recuadros con estadísticas en escala de grises
     const boxWidth = 40;
     const boxHeight = 7;
     const boxY = 67;
     const margin = 5;
     
-    // Función helper para dibujar cajas de estadísticas con colores
-    const drawStatBox = (x: number, label: string, value: number, color: number[]) => {
-      doc.setFillColor(color[0], color[1], color[2]);
+    // Función helper para dibujar cajas de estadísticas con escala de grises
+    const drawStatBox = (x: number, label: string, value: number, grayLevel: number) => {
+      doc.setFillColor(grayLevel, grayLevel, grayLevel); // Gris con diferentes niveles
       doc.roundedRect(x, boxY, boxWidth, boxHeight, 1, 1, 'F');
       doc.setTextColor(255); // Texto blanco
       doc.setFontSize(9);
       doc.text(`${label}: ${value}`, x + boxWidth/2, boxY + 4.5, { align: 'center' });
     };
     
-    // Dibujar estadísticas con colores diferentes
-    drawStatBox(14, 'Presentes', stats.presentes, [39, 174, 96]); // Verde
-    drawStatBox(14 + boxWidth + margin, 'Ausentes', stats.ausentes, [231, 76, 60]); // Rojo
-    drawStatBox(14 + (boxWidth + margin) * 2, 'Tardanzas', stats.tardanzas, [243, 156, 18]); // Amarillo
-    drawStatBox(14 + (boxWidth + margin) * 3, 'Justificados', stats.justificados, [52, 152, 219]); // Azul
+    // Dibujar estadísticas con diferentes tonos de gris
+    drawStatBox(14, 'Presentes', stats.presentes, 80); // Gris medio-oscuro
+    drawStatBox(14 + boxWidth + margin, 'Ausentes', stats.ausentes, 40); // Gris oscuro
+    drawStatBox(14 + (boxWidth + margin) * 2, 'Tardanzas', stats.tardanzas, 60); // Gris medio
+    drawStatBox(14 + (boxWidth + margin) * 3, 'Justificados', stats.justificados, 100); // Gris claro
     
-    // Tabla de Asistencia
-    const tableColumn = ["N°", "Lista de Asistencia", "Estado"];
-    const tableRows: (string | number)[][] = [];
-
-    students.forEach((student, index) => {
-      const studentName = `${student.nombre || ''} ${student.apellido || ''}`.trim();
-      const attendanceStatus = records[student.id] || 'No registrado';
+    // Organizar estudiantes por estado y orden alfabético
+    type StudentWithStatus = {
+      student: Student;
+      status: string;
+    };
+    
+    // Crear array con información combinada
+    const studentsWithStatus: StudentWithStatus[] = students.map(student => ({
+      student,
+      status: records[student.id] || 'No registrado'
+    }));
+    
+    // Función para obtener el nombre completo del estudiante
+    const getFullName = (student: Student): string => {
+      return `${student.nombre || ''} ${student.apellido || ''}`.trim();
+    };
+    
+    // Función para determinar la prioridad del estado
+    const getStatusPriority = (status: string): number => {
+      const lowerStatus = status.toLowerCase();
+      if (lowerStatus.includes('presente')) return 1;
+      if (lowerStatus.includes('tarde')) return 2;
+      if (lowerStatus.includes('justificad')) return 3;
+      if (lowerStatus.includes('ausente')) return 4;
+      return 5; // No registrado u otro
+    };
+    
+    // Ordenar primero por estado (según prioridad) y luego alfabéticamente
+    studentsWithStatus.sort((a, b) => {
+      // Primero ordenar por estado (presente, tarde, justificado, ausente)
+      const statusCompare = getStatusPriority(a.status) - getStatusPriority(b.status);
       
-      tableRows.push([
-        index + 1,
-        studentName,
-        attendanceStatus
-      ]);
+      // Si los estados son iguales, ordenar alfabéticamente
+      if (statusCompare === 0) {
+        return getFullName(a.student).localeCompare(getFullName(b.student));
+      }
+      
+      return statusCompare;
     });
+    
+    // Preparar datos para la tabla
+    const tableColumn = ["N°", "Lista de Asistencia", "Estado"];
+    const tableRows: (string | number)[][] = studentsWithStatus.map((item, index) => [
+      index + 1,
+      getFullName(item.student),
+      item.status
+    ]);
 
     // Usar autoTable con estilos mejorados
     autoTable(doc, {
@@ -141,7 +222,7 @@ export const generateAttendancePDF = async (
       startY: boxY + boxHeight + 7, // Posición después de las estadísticas
       theme: 'grid',
       headStyles: {
-        fillColor: [0, 51, 102], // Azul oscuro institucional
+        fillColor: [50, 50, 50], // Gris oscuro
         textColor: 255,
         fontStyle: 'bold',
         halign: 'center'
@@ -157,14 +238,14 @@ export const generateAttendancePDF = async (
         cellPadding: 3
       },
       didDrawCell: (data) => {
-        // Colorear celdas de estado según el valor
+        // Colorear celdas de estado según el valor con escala de grises
         if (data.column.index === 2 && data.section === 'body') {
           const status = String(data.cell.text).toLowerCase();
           
           if (status.includes('presente')) {
-            doc.setFillColor(220, 255, 220); // Verde claro
+            doc.setFillColor(220, 220, 220); // Gris muy claro
             doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
-            doc.setTextColor(20, 120, 20); // Verde oscuro
+            doc.setTextColor(40, 40, 40); // Casi negro
             doc.text(String(data.cell.text), data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, {
               align: 'center',
               baseline: 'middle'
@@ -172,9 +253,9 @@ export const generateAttendancePDF = async (
             return false; // No dibujar el texto original
           } 
           else if (status.includes('ausente')) {
-            doc.setFillColor(255, 220, 220); // Rojo claro
+            doc.setFillColor(180, 180, 180); // Gris intermedio
             doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
-            doc.setTextColor(180, 20, 20); // Rojo oscuro
+            doc.setTextColor(20, 20, 20); // Negro
             doc.text(String(data.cell.text), data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, {
               align: 'center',
               baseline: 'middle'
@@ -182,9 +263,9 @@ export const generateAttendancePDF = async (
             return false; // No dibujar el texto original
           }
           else if (status.includes('tarde')) {
-            doc.setFillColor(255, 243, 200); // Amarillo claro
+            doc.setFillColor(200, 200, 200); // Gris claro
             doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
-            doc.setTextColor(180, 120, 10); // Naranja oscuro
+            doc.setTextColor(30, 30, 30); // Muy oscuro
             doc.text(String(data.cell.text), data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, {
               align: 'center',
               baseline: 'middle'
@@ -192,9 +273,9 @@ export const generateAttendancePDF = async (
             return false; // No dibujar el texto original
           }
           else if (status.includes('justificad')) {
-            doc.setFillColor(210, 230, 255); // Azul claro
+            doc.setFillColor(160, 160, 160); // Gris medio
             doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
-            doc.setTextColor(20, 80, 180); // Azul oscuro
+            doc.setTextColor(10, 10, 10); // Casi negro
             doc.text(String(data.cell.text), data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, {
               align: 'center',
               baseline: 'middle'
@@ -223,7 +304,7 @@ export const generateAttendancePDF = async (
       Object.entries(justifications).forEach(([studentId, justification], index) => {
         const student = students.find(s => s.id === studentId);
         if (student && justification) {
-          const studentName = `${student.nombre || ''} ${student.apellido || ''}`.trim();
+          const studentName = getFullName(student);
           
           // Nombre del estudiante en negrita
           doc.setFont(undefined, 'bold');
@@ -261,18 +342,69 @@ export const generateAttendancePDF = async (
     const splitObservations = doc.splitTextToSize(observations, 180);
     doc.text(splitObservations, 14, finalY + 7);
     
-    // Añadir pie de página con fecha de generación
+    // Ajustar la posición Y para la siguiente sección
+    finalY += 7 + (splitObservations.length * 5);
+    
+    // Sección de Alumnos Justificados (nuevo)
+    const justifiedStudents = students.filter(student => 
+      records[student.id]?.toLowerCase().includes('justificad')
+    );
+    
+    if (justifiedStudents.length > 0) {
+      finalY += 10; // Espacio adicional después de las observaciones
+      
+      doc.setFontSize(12);
+      doc.setTextColor(0); // Negro
+      doc.setFont(undefined, 'bold');
+      doc.text('Alumnos Justificados:', 14, finalY);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(10);
+      
+      finalY += 7;
+      
+      // Listar alumnos justificados con sus razones
+      justifiedStudents.forEach((student, index) => {
+        const studentName = getFullName(student);
+        const justification = justifications[student.id] || 'Sin razón especificada';
+        
+        // Formato: - [Nombre del alumno]: [Razón]
+        doc.setFont(undefined, 'bold');
+        doc.text('- ' + studentName + ':', 14, finalY);
+        doc.setFont(undefined, 'normal');
+        
+        // Manejar textos largos para la justificación
+        const splitJustification = doc.splitTextToSize(justification, 170);
+        doc.text(splitJustification, 24, finalY + 5); // Indentado para mejor legibilidad
+        
+        finalY += 5 + (splitJustification.length * 5);
+        
+        // Espacio entre justificaciones
+        if (index < justifiedStudents.length - 1) {
+          finalY += 3;
+        }
+      });
+    }
+    
+    // Añadir pie de página con fecha de generación (usando la fecha actual)
     const generationDate = format(new Date(), "'Generado el' d 'de' MMMM yyyy 'a las' HH:mm", { locale: es });
     doc.setFontSize(8);
-    doc.setTextColor(100);
+    doc.setTextColor(100); // Gris medio
     doc.text(generationDate, 105, 285, { align: 'center' });
 
     // --- Fin Diseño ---
 
-    // Guardar el PDF - nombre con clase y fecha
+    // Guardar el PDF con la fecha de la asistencia, no la actual
+    let safeDate;
+    try {
+      safeDate = dateObj instanceof Date && !isNaN(dateObj.getTime())
+        ? format(dateObj, 'yyyy-MM-dd')
+        : format(new Date(), 'yyyy-MM-dd');
+    } catch (e) {
+      safeDate = format(new Date(), 'yyyy-MM-dd');
+    }
+    
     const safeClassName = className.replace(/\s+/g, '_');
-    const formattedFileDate = date.split('T')[0] || format(new Date(), 'yyyy-MM-dd');
-    const pdfFileName = `Asistencia_${safeClassName}_${formattedFileDate}.pdf`;
+    const pdfFileName = `Asistencia_${safeClassName}_${safeDate}.pdf`;
     doc.save(pdfFileName);
 
     return Promise.resolve();
@@ -284,26 +416,42 @@ export const generateAttendancePDF = async (
 
 /**
  * Generates a PDF with the class details and student list
- * @param className - Name of the class
- * @param teacherName - Name of the teacher
- * @param weeklyHours - Weekly hours of the class
- * @param students - List of students in the class
- * @returns Promise that resolves when the PDF has been generated and saved
  */
 export const generateClassDetailsPDF = async (
   className: string,
   teacherName: string,
   weeklyHours: number,
-  students: Student[]
+  students: Student[],
+  reportDate: string = new Date().toISOString().split('T')[0] // Default to today
 ): Promise<void> => {
   try {
-    // Create new PDF document
-    const doc = new jsPDF();
-    const currentDate = format(new Date(), "d 'de' MMMM yyyy", { locale: es });
+    // Create new PDF document using letter size paper
+    const doc = new jsPDF({
+      format: 'letter', // Tamaño carta (215.9 x 279.4 mm)
+      orientation: 'portrait',
+      unit: 'mm'
+    });
+    
+    // Format the provided date instead of using current date
+    let dateObj: Date;
+    let formattedDate: string;
+    
+    try {
+      if (reportDate && !isNaN(new Date(reportDate).getTime())) {
+        dateObj = new Date(reportDate);
+        formattedDate = format(dateObj, "d 'de' MMMM yyyy", { locale: es });
+      } else {
+        dateObj = new Date();
+        formattedDate = format(dateObj, "d 'de' MMMM yyyy", { locale: es });
+      }
+    } catch (error) {
+      dateObj = new Date();
+      formattedDate = format(dateObj, "d 'de' MMMM yyyy", { locale: es });
+    }
 
     // Title
     doc.setFontSize(20);
-    doc.setTextColor(41, 128, 185); // Blue color
+    doc.setTextColor(30); // Gris muy oscuro
     doc.text('Detalles de la Clase', 14, 20);
 
     // Class Information
@@ -312,7 +460,9 @@ export const generateClassDetailsPDF = async (
     doc.text(`Clase: ${className}`, 14, 35);
     doc.text(`Profesor: ${teacherName}`, 14, 43);
     doc.text(`Horas semanales: ${weeklyHours}`, 14, 51);
-    doc.text(`Fecha de impresión: ${currentDate}`, 14, 59);    // Students Table
+    doc.text(`Fecha del reporte: ${formattedDate}`, 14, 59);
+    
+    // Students Table
     const tableColumn = ["#", "Nombre del Estudiante", "Email", "Teléfono", "Instrumento"];
     const tableRows = students.map((student, index) => [
       index + 1,
@@ -322,13 +472,17 @@ export const generateClassDetailsPDF = async (
       student.instrumento || 'No especificado'
     ]);
 
-    // Add students table
+    // Add students table with grayscale
     doc.autoTable({
       startY: 70,
       head: [tableColumn],
       body: tableRows,
       theme: 'striped',
-      headStyles: { fillColor: [41, 128, 185] },      styles: {
+      headStyles: { 
+        fillColor: [50, 50, 50], // Gris oscuro
+        textColor: 255 // Blanco
+      },
+      styles: {
         overflow: 'linebreak',
         cellWidth: 'auto',
         fontSize: 9
@@ -339,13 +493,25 @@ export const generateClassDetailsPDF = async (
         2: { cellWidth: 45 },  // Email
         3: { cellWidth: 35 },  // Teléfono
         4: { cellWidth: 40 }   // Instrumento
+      },
+      alternateRowStyles: { 
+        fillColor: [240, 240, 240] // Gris muy claro para filas alternas
       }
     });
 
     // Save the PDF
+    let safeDate;
+    try {
+      safeDate = dateObj instanceof Date && !isNaN(dateObj.getTime())
+        ? format(dateObj, 'yyyy-MM-dd')
+        : format(new Date(), 'yyyy-MM-dd');
+    } catch (e) {
+      safeDate = format(new Date(), 'yyyy-MM-dd');
+    }
+    
     const safeClassName = className.replace(/\s+/g, '_');
-    const formattedDate = format(new Date(), 'yyyy-MM-dd');
-    doc.save(`Lista_Alumnos_${safeClassName}_${formattedDate}.pdf`);
+    const pdfFileName = `Lista_Alumnos_${safeClassName}_${safeDate}.pdf`;
+    doc.save(pdfFileName);
 
   } catch (error) {
     console.error("Error generating class details PDF:", error);

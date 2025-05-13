@@ -1,12 +1,9 @@
 <!-- components/JustifiedAbsenceModal.vue -->
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
-import { useAttendanceStore } from '../modulos/Attendance/store/attendance';
+import { ref } from 'vue';
 
-const props = defineProps<{
-  student: any;
-  classId?: string;
-  date?: string;
+defineProps<{
+  student: any
 }>()
 
 const emit = defineEmits(['close', 'save'])
@@ -16,41 +13,6 @@ const file = ref<File | null>(null)
 const isUploading = ref(false)
 const documentUrl = ref('')
 const errorMessage = ref('')
-const attendanceStore = useAttendanceStore();
-
-// Cargar la justificación existente cuando se abre el modal
-const loadExistingJustification = async () => {
-  if (!props.student || !props.student.id) return;
-  
-  try {
-    // Verificar si hay una justificación existente para este estudiante
-    const justification = attendanceStore.getJustification(props.student.id);
-    
-    if (justification && justification.reason) {
-      // Si hay una justificación existente, mostrarla en el campo
-      reason.value = justification.reason;
-      
-      // Si hay una URL de documento, también establecerla
-      if (justification.documentURL) {
-        documentUrl.value = justification.documentURL;
-      }
-    } else {
-      // Si no hay justificación existente, limpiar los campos
-      reason.value = '';
-      documentUrl.value = '';
-    }
-  } catch (error) {
-    console.error('Error al cargar la justificación existente:', error);
-    errorMessage.value = 'Error al cargar la justificación existente.';
-  }
-}
-
-// Ejecutar cuando se abre el modal o cambia el estudiante
-watch(() => props.student, (newStudent) => {
-  if (newStudent && newStudent.id) {
-    loadExistingJustification();
-  }
-}, { immediate: true });
 
 const handleFileChange = (event: Event) => {
   const input = event.target as HTMLInputElement;
@@ -67,28 +29,21 @@ const save = () => {
   
   // Enviar tanto la razón como el archivo si existe
   emit('save', { 
-    studentId: props.student.id,  // Add studentId explicitly for clarity
     reason: reason.value,
     documentUrl: documentUrl.value,
     file: file.value
   });
   
-  // Don't clear the reason immediately, so it persists for future editing
-  errorMessage.value = '';
-  emit('close');
+  close();
 }
 
 const close = () => {
-  // No limpiamos reason.value para mantener la justificación en caso de reapertura
+  reason.value = '';
   file.value = null;
+  documentUrl.value = '';
   errorMessage.value = '';
   emit('close');
 }
-
-onMounted(() => {
-  // Cargar la justificación existente cuando el componente se monta
-  loadExistingJustification();
-});
 </script>
 
 <template>

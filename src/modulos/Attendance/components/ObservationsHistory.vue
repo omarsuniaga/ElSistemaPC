@@ -81,7 +81,7 @@
                 <div v-if="observation.text.text" class="observation-text" v-html="processTextForDisplay(observation.text.text).__html"></div>
               </div>
               <!-- Detectar y mostrar imágenes por referencias en el texto -->
-              <div v-if="hasImageReferences(observation.text)" class="mt-4">
+              <div v-if="observation.text && hasImageReferences(observation.text)" class="mt-4">
                 <div class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-1">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -122,7 +122,7 @@
         </div>
       </div>
     </div>
-  </div>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -130,6 +130,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAttendanceStore } from '../store/attendance';
+import * as _ from 'lodash'; // Import full lodash library instead of just debounce
 
 interface Timestamp {
   seconds: number;
@@ -137,7 +138,7 @@ interface Timestamp {
 }
 
 interface Observation {
-  text: string;
+  text: string | any; // Make text support both string and object types
   createdAt: string | Timestamp;
   timestamp?: Timestamp;
   author?: string;
@@ -337,7 +338,7 @@ const hasImageReferences = (text: string | any): boolean => {
   
   // Check if text is an object with images property
   if (typeof text === 'object' && text !== null) {
-    if ('images' in text && Array.isArray(text.images) && text.images.length > 0) {
+    if ('images' in text && Array.isArray((text as any).images) && (text as any).images.length > 0) {
       return true;
     }
   }
@@ -359,10 +360,12 @@ const getObservationText = (observation: Observation): string => {
   
   // Handle nested text object
   if (observation.text && typeof observation.text === 'object') {
-    if ('text' in observation.text && typeof observation.text.text === 'string') {
-      return formatObservationText(observation.text.text);
-    } else if ('formattedText' in observation.text && typeof observation.text.formattedText === 'string') {
-      return observation.text.formattedText;
+    const textObj = observation.text as any; // Cast to any to avoid TypeScript errors
+    
+    if (textObj && 'text' in textObj && typeof textObj.text === 'string') {
+      return formatObservationText(textObj.text);
+    } else if (textObj && 'formattedText' in textObj && typeof textObj.formattedText === 'string') {
+      return textObj.formattedText;
     }
   }
   
@@ -386,7 +389,8 @@ const fetchObservations = async () => {
       observations.value = [];
     }
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    // Fix: Use toString() instead of String() constructor
+    const errorMsg = err instanceof Error ? err.message : (err ? err.toString() : 'Unknown error');
     console.error('Error fetching observations:', errorMsg);
     error.value = 'Error al cargar las observaciones: ' + errorMsg;
     observations.value = [];
@@ -396,6 +400,33 @@ const fetchObservations = async () => {
 };
 
 // Watch for changes in props to refetch data
+watch(() => [props.classId, props.date], fetchObservations);
+
+// Also watch for changes in the observationsHistory from the store
+// This ensures that when new observations are added from other components,
+// this component refreshes automatically
+const updateObservationsFromStore = _.debounce((newObservations: any[]) => {
+  if (newObservations && newObservations.length > 0) {
+    // Filter to only include observations matching our classId if specified
+    if (props.classId) {
+      observations.value = newObservations.filter(obs => obs.classId === props.classId);
+    } else {
+      observations.value = [...newObservations];
+    }
+    console.log('Updated observations from store watch:', observations.value);
+  }
+}, 500);
+
+watch(
+  () => attendanceStore.observationsHistory,
+  (newObservations) => {
+    if (newObservations) {
+      updateObservationsFromStore(newObservations);
+    }
+  },
+  { deep: true }
+);
+
 // Image viewer functions
 const openImageViewer = (imageSrc: string) => {
   currentViewedImage.value = imageSrc;

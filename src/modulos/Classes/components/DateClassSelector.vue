@@ -195,9 +195,26 @@ watch(localDate, async () => {
 const selectClass = (c: any) => {
   emit('update:modelValue', c.id);
   const datePath = localDate.value.replace(/-/g, '');
+  
+  // Construir la ruta de destino
+  const targetRoute = { name: 'attendance', params: { date: datePath, classId: c.id } };
+  
   try {
-    router.push({ name: 'AttendanceList', params: { date: datePath, classId: c.id } });
-  } catch {
+    // Verificar si estamos intentando navegar a la misma ruta donde ya estábamos
+    const isSameRoute = router.currentRoute.value.name === targetRoute.name && 
+                       router.currentRoute.value.params.date === targetRoute.params.date &&
+                       router.currentRoute.value.params.classId === targetRoute.params.classId;
+    
+    if (isSameRoute) {
+      // Si es la misma ruta, usar replace con reload para forzar la recarga
+      router.replace({ ...targetRoute, query: { _reload: Date.now() } });
+    } else {
+      // Si es una ruta diferente, navegación normal
+      router.push(targetRoute);
+    }
+  } catch (error) {
+    console.error('Error en la navegación:', error);
+    // Fallback a navegación directa por URL
     router.push(`/attendance/${datePath}/${c.id}`);
   }
 };

@@ -1,5 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { format } from 'date-fns';
+import es from 'date-fns/locale/es';
 
 // Simple date formatting function
 const formatDate = (date: Date): string => {
@@ -91,10 +93,11 @@ export const generateClassDetailsPDF = async (
   className: string,
   teacherName: string,
   weeklyHours: number,
-  students: Student[]
+  students: Student[],
+  reportDate: string = new Date().toISOString().split('T')[0] // Default to today
 ): Promise<void> => {
   try {
-    // Create a new PDF document
+    // Create new PDF document
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     
@@ -204,7 +207,18 @@ export const generateClassDetailsPDF = async (
     }
     
     // Save the PDF
-    doc.save(`reporte_clase_${className.replace(/\s+/g, '_')}.pdf`);
+    // Use the date from the parameter for the filename
+    let safeDate;
+    try {
+      safeDate = new Date(reportDate) instanceof Date && !isNaN(new Date(reportDate).getTime())
+        ? format(new Date(reportDate), 'yyyy-MM-dd')
+        : format(new Date(), 'yyyy-MM-dd');
+    } catch (e) {
+      safeDate = format(new Date(), 'yyyy-MM-dd');
+    }
+    
+    let safeClassName = className.replace(/\s+/g, '_');
+    doc.save(`Lista_Alumnos_${safeClassName}_${safeDate}.pdf`);
   } catch (error) {
     console.error('Error generating class details PDF:', error);
     alert('Hubo un error al generar el PDF. Verifica que todas las dependencias estén instaladas.');

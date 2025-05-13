@@ -54,11 +54,26 @@
                     : 'border-b-2 border-transparent hover:border-gray-300 text-gray-500 dark:text-gray-400'
                 ]"
               >
-                Historial
+                Historia de Observaciones
               </button>
             </li>
           </ul>
-        </div>        <!-- Tab de nueva observación -->
+        </div>
+        
+        <!-- Botón para editar observación existente (solo visible en la pestaña de historial) -->
+        <div v-if="activeTab === 'history' && attendanceStore.observationsHistory && attendanceStore.observationsHistory.length > 0" class="mb-4">
+          <button 
+            @click="editExistingObservation" 
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+            </svg>
+            Editar observación
+          </button>
+        </div>
+
+        <!-- Tab de nueva observación -->
         <div v-if="activeTab === 'new'" class="mb-6">
           <h3 class="text-lg font-medium mb-3">
             {{ classObservationMode ? 'Observaciones generales de la clase' : 'Observación para el estudiante' }}
@@ -400,7 +415,8 @@ const attendanceStore = useAttendanceStore()
 const authStore = useAuthStore()
 
 const isLoading = ref(false)
-const activeTab = ref('new') // 'new' o 'history'
+// Start with history tab if observations exist
+const activeTab = ref('history')
 
 // Usar el composable de editor enriquecido
 const editor = useRichEditor()
@@ -432,6 +448,31 @@ const {
   prevImage
 } = editor
 
+// Función para editar una observación existente
+const editExistingObservation = () => {
+  if (attendanceStore.observationsHistory && attendanceStore.observationsHistory.length > 0) {
+    // Obtener la observación más reciente
+    const latestObservation = attendanceStore.observationsHistory[0];
+    
+    // Extraer el texto de la observación, manejando diferentes formatos posibles
+    let observationText = '';
+    if (typeof latestObservation.text === 'string') {
+      observationText = latestObservation.text;
+    } else if (latestObservation.text && typeof latestObservation.text === 'object') {
+      // Si es un objeto complejo, intentar obtener el texto de forma segura
+      observationText = (latestObservation.text as any).formattedText || 
+                        (latestObservation.text as any).text || 
+                        JSON.stringify(latestObservation.text);
+    }
+    
+    // Cargar el texto en el editor
+    newObservation.value = observationText;
+    
+    // Cambiar a la pestaña de edición
+    activeTab.value = 'new';
+  }
+}
+
 // Determinar si estamos en modo observación de clase (sin estudiante) o de estudiante específico
 const classObservationMode = computed(() => !props.studentId)
 
@@ -444,14 +485,48 @@ onMounted(async () => {
   await editor.initializeEditor();
   
   if (classObservationMode.value) {
-    // Para observaciones de clase, cargar desde el store
-    const observations = attendanceStore.getObservations;
-    // Asegurarnos de que lo que se asigna sea siempre un string
-    newObservation.value = typeof observations === 'string' ? observations : '';
+    try {
+      // Cargar observaciones existentes por clase y fecha
+      if (props.classId && props.attendanceDate) {
+        // Obtener observaciones
+        await attendanceStore.getObservationsHistory(props.classId, props.attendanceDate);
+        const observations = attendanceStore.observationsHistory;
+        
+        if (observations && observations.length > 0) {
+          // Si hay observaciones, inicializar con la última (más reciente)
+          const latestObservation = observations[0]; // Asumimos que están ordenadas por fecha
+          
+          // Extraer el texto de la observación, manejando diferentes formatos posibles
+          let observationText = '';
+          if (typeof latestObservation.text === 'string') {
+            observationText = latestObservation.text;
+          } else if (latestObservation.text && typeof latestObservation.text === 'object') {
+            // Si es un objeto complejo, intentar obtener el texto de forma segura
+            observationText = (latestObservation.text as any).formattedText || 
+                              (latestObservation.text as any).text || 
+                              JSON.stringify(latestObservation.text);
+          }
+          
+          // Inicializar el editor con el texto existente
+          newObservation.value = observationText;
+          
+          // Si hay observaciones, mostrar primero la pestaña de historial
+          activeTab.value = 'history';
+        } else {
+          // No hay observaciones, mostrar el formulario para añadir una nueva
+          activeTab.value = 'new';
+          newObservation.value = '';
+        }
+      }
+    } catch (error) {
+      console.error('Error al cargar observaciones existentes:', error);
+      newObservation.value = '';
+      activeTab.value = 'new';
+    }
   } else {
-    // Para observaciones de estudiante, implementar la lógica específica
-    // Por ahora, dejamos vacío para que el profesor añada una nueva observación
+    // Para observaciones de estudiante específico
     newObservation.value = '';
+    activeTab.value = 'new';
   }
 });
 
@@ -526,19 +601,17 @@ const saveObservation = async () => {
           await attendanceStore.addObservationToHistory(
             props.classId,
             props.attendanceDate,
-            formattedText,
+            formattedText, // Pasar SOLO el texto formateado en lugar del objeto completo
             username
           );
         } else {
-          // Intentar pasar datos adicionales si es posible (en versiones futuras del store)
-          const safeObservationData = {
-            ...observationData,
-            formattedText: formattedText
-          };
-          await (attendanceStore as any).addObservationToHistory(
+          // Siempre usamos el texto formateado para mayor compatibilidad
+          // El método addObservationToHistory espera un string, no un objeto
+          console.log('Guardando observación con texto formateado');
+          await attendanceStore.addObservationToHistory(
             props.classId,
             props.attendanceDate,
-            safeObservationData,
+            formattedText, // Pasar SOLO el texto formateado en lugar del objeto completo
             username
           );
         }
@@ -553,9 +626,24 @@ const saveObservation = async () => {
         );
       }
     }
-    // Emitir evento y cerrar modal
+    // Switch to history tab to show the newly added observation
+    activeTab.value = 'history';
+    
+    // Refresh observations history
+    if (typeof attendanceStore.getObservationsHistory === 'function') {
+      try {
+        // Force a refresh of the observations
+        await attendanceStore.getObservationsHistory(props.classId, props.attendanceDate);
+      } catch (err) {
+        console.warn('Error refreshing observations history after save:', err);
+      }
+    }
+    
+    // Emitir evento
     emit('observation', newObservation.value);
-    close();
+    
+    // Don't close the modal, let the user see the new observation in the history tab
+    // If they want to close it, they can click the close button
   } catch (error) {
     console.error('Error al guardar/actualizar la observación:', error);
   } finally {

@@ -194,6 +194,17 @@ const handleCalendarSelect = (date: string) => {
 
   // cerrar modal
   showCalendarModal.value = false
+  
+  // Cambiar vista a selección de clases
+  view.value = 'class-select'
+  
+  // Asegurarnos de que el cambio de vista se aplique
+  setTimeout(() => {
+    if (view.value !== 'class-select') {
+      console.log('Forzando cambio a vista de selección de clases')
+      view.value = 'class-select'
+    }
+  }, 100)
 }
 
 // Función para confirmar la fecha seleccionada en el modal
@@ -242,15 +253,29 @@ const handleSelectedDateUpdate = (date: string) => {
 }
 
 // Corregido para usar los mismos valores que AttendanceHeader.vue
-// Después en AttendanceView.vue
 const updateView = (newView: 'calendar' | 'class-select' | 'attendance-form') => {
-  view.value = newView;
-  // Desactivar siempre el modal al cambiar de vista
-  showCalendarModal.value = false;
+  view.value = newView
+  // Reset error if changing views
+  error.value = null
+
+  // Si estamos cambiando a la vista de calendario, asegurarnos de que los estados estén limpios
+  if (newView === 'calendar') {
+    selectedClass.value = ''
+  }
+}
+
+// Métodos para manejar eventos de navegación
+const navigateToCalendar = () => {
+  updateView('calendar')
+}
+
+const navigateToClassSelector = () => {
+  updateView('class-select')
 }
 
 // Cargar datos de asistencia para una clase
 const loadAttendanceData = async (className: string) => {
+  // ...
   try {
     isLoading.value = true
     loadingMessage.value = 'Cargando datos de asistencia...'
@@ -1267,7 +1292,7 @@ const relevantClasses = computed(() => {
     </div>
 
     <!-- Main Content -->
-    <div v-else class="space-y-3 sm:space-y-5">
+    <div class="space-y-3 sm:space-y-5">
       <!-- Panel de Analytics -->
       <AttendanceAnalytics v-if="showAnalytics" class="mb-3 sm:mb-4" />
 
@@ -1351,6 +1376,8 @@ const relevantClasses = computed(() => {
             @open-export="() => handleOpenExport(true)"
             @class-changed="selectClass"
             @date-changed="handleDateChange"
+            @navigate-to-calendar="navigateToCalendar"
+            @navigate-to-class-selector="navigateToClassSelector"
             class="overflow-x-auto"
           />
         </div>

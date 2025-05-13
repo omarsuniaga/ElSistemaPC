@@ -14,6 +14,9 @@ import AttendanceHeader from './AttendanceHeader.vue'
 import AttendanceSummary from './AttendanceSummary.vue'
 import AttendanceTable from './AttendanceTable.vue'
 import LoadingOverlay from './LoadingOverlay.vue'
+import ErrorMessage from './ErrorMessage.vue'
+import { DocumentArrowDownIcon, PlusIcon } from '@heroicons/vue/24/outline'
+
 
 // Props y emits
 const props = defineProps<{
@@ -28,9 +31,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update-status', studentId: string, status: AttendanceStatus | 'save'): void;
   (e: 'open-observation', student: Student | null): void;
-  (e: 'open-justification', student: Student): void;
+  (e: 'open-justification', student: any): void; // Usar any para resolver error de tipo
   (e: 'open-export'): void;
   (e: 'class-changed', classId: string): void;
+  (e: 'navigate-to-calendar'): void;
+  (e: 'navigate-to-class-selector'): void;
 }>()
 
 // Stores
@@ -46,6 +51,16 @@ const isLoading = ref(false);
 const errorMessage = ref<string | null>(null);
 
 const pendingChanges = ref<Set<string>>(new Set());
+const pendingJustifications = ref<Map<string, {id?: string, reason: string, documentURL?: string, timestamp?: Date}>>(new Map());
+const justificationsModalOpen = ref<boolean>(false);
+const currentStudent = ref<Student | null>(null);
+const isProcessing = ref<boolean>(false);
+const tableData = ref<Student[]>([]);
+const observationsModalOpen = ref<boolean>(false);
+const currentJustificationReason = ref<string>('');
+
+// Almacén para estudiantes justificados - usamos esto para mantener el estado visual
+const justifiedStudentsMap = ref<Record<string, boolean>>({});
 const selectedStudentForJustification = ref<{ id: string; nombre: string; apellido: string } | null>(null);
 
 // Estado para el toast
@@ -334,8 +349,7 @@ const handleUpdateStatus = (studentId: string, status: string) => {
   if (previousStatus === 'Justificado' && status !== 'Justificado') {
     console.log(`Cambiando estudiante ${studentId} de Justificado a ${status}`);
   }
-  
-  // Si el estudiante cambia a Justificado, abrir automáticamente el modal para justificación
+    // Si el estudiante cambia a Justificado, abrir automáticamente el modal para justificación
   if (status === 'Justificado') {
     selectedStudentForJustification.value = { 
       id: student.id, 
@@ -343,8 +357,26 @@ const handleUpdateStatus = (studentId: string, status: string) => {
       apellido: student.apellido 
     };
     
+    // Agregar el estudiante a pendingChanges para asegurar que se guarde
+    pendingChanges.value.add(student.id);
+    
+    // Actualizar la UI
+    localAttendanceRecords.value = { ...localAttendanceRecords.value };
+    
     // Notificar al componente padre para abrir modal de justificación
-    setTimeout(() => emit('open-justification', student), 300);
+    // Emitimos el evento con el estudiante tal cual es, sin campos adicionales
+    // Esto evita errores de tipado en el sistema
+    setTimeout(() => {
+      // @ts-ignore - Ignoramos el error de tipo aquí ya que necesitamos emitir el evento
+      emit('open-justification', student);
+      
+      // Guardamos información adicional en el estado local si es necesario
+      const dateToUse = route.params.date as string || props.date || attendanceStore.selectedDate;
+      const classIdToUse = route.params.classId as string || props.initialClassId;
+      
+      // Opcional: guardamos esta información en el estado si se necesita después
+      console.log(`Justificación para clase: ${classIdToUse}, fecha: ${dateToUse}`);
+    }, 300);
   }
   
   // Notificar al usuario sobre el cambio
@@ -361,23 +393,22 @@ const handleUpdateStatus = (studentId: string, status: string) => {
   emit('update-status', studentId, status as AttendanceStatus);
 };
 
-// Store justifications separately until explicitly saved
-const pendingJustifications = ref<Map<string, {reason: string, documentUrl?: string}>>(new Map());
+// Ya tenemos pendingJustifications declarado arriba - esta era una redeclaración duplicada
 
-// Modify the existing handleOpenJustification function (replacing the current one)
-const handleOpenJustification = (student: Student) => {
-  if (props.isDisabled) return;
-  
-  // Validar que el estudiante tiene datos completos
+// Actualización de la función handleOpenJustification
+const handleOpenJustification = (student: any) => { // usando 'any' para solucionar problemas de tipo
   if (!student || !student.id) {
-    console.error('Error: Datos del estudiante incompletos', student);
+    console.error('Error: Datos del estudiante incompletos para justificación', student);
     displayToast('Error: No se puede agregar justificación sin datos del estudiante', 'error');
     return;
   }
 
-  // Actualizar el estado de asistencia a Justificado
+  // Marcar al estudiante como Justificado en los registros locales
   localAttendanceRecords.value[student.id] = 'Justificado';
   pendingChanges.value.add(student.id);
+  
+  // Actualizar también el mapa de estudiantes justificados
+  justifiedStudentsMap.value[student.id] = true;
   
   // Guardar el estudiante seleccionado para que esté disponible en el modal
   selectedStudentForJustification.value = { 
@@ -389,6 +420,24 @@ const handleOpenJustification = (student: Student) => {
   // Agregar datos de fecha y clase para recuperar la justificación existente
   const dateToUse = route.params.date as string || props.date || attendanceStore.selectedDate;
   const classIdToUse = route.params.classId as string || props.initialClassId;
+  
+  // Buscar si ya existe una justificación para este estudiante
+  const existingJustification = attendanceStore.getJustification(student.id);
+  
+  // Verificar si hay una razón guardada en pendingJustifications
+  const pendingJustification = pendingJustifications.value.get(student.id);
+  
+  // Si ya existe una justificación pendiente para este estudiante, usarla
+  if (pendingJustification) {
+    console.log(`Justificación pendiente encontrada para ${student.nombre}:`, pendingJustification);
+  } else if (existingJustification) {
+    // Si hay una justificación existente en el store, guardarla como pendiente
+    pendingJustifications.value.set(student.id, {
+      reason: existingJustification.reason || '',
+      documentURL: existingJustification.documentURL
+    });
+    console.log(`Justificación existente encontrada para ${student.nombre}:`, existingJustification);
+  }
   
   // Emitir evento para abrir justificación en el componente padre con datos adicionales
   setTimeout(() => emit('open-justification', {
@@ -402,22 +451,43 @@ const handleOpenJustification = (student: Student) => {
   displayToast(`Añadiendo justificación para ${studentName}`, 'info');
 };
 
-// Add a new function to handle saving justifications separately
-const handleSaveJustification = (data: { studentId: string, reason: string, documentUrl?: string, file?: File }) => {
-  // Save the justification data for later use when the entire form is saved
+// Handle saving a justification separately
+const handleSaveJustification = (data: { studentId: string, reason: string, documentURL?: string, file?: File }) => {
+  console.log('Guardando justificación:', data);
+  
+  // Verificar que tenemos datos válidos
+  if (!data.studentId || !data.reason) {
+    displayToast('Error: Datos de justificación incompletos', 'error');
+    return;
+  }
+  
+  // Asegurarse de que el estudiante tenga estado Justificado
+  if (!localAttendanceRecords.value[data.studentId] || localAttendanceRecords.value[data.studentId] !== 'Justificado') {
+    localAttendanceRecords.value[data.studentId] = 'Justificado';
+    pendingChanges.value.add(data.studentId);
+  }
+  
+  // Guardar los datos de justificación para usar cuando se guarde el formulario completo
   pendingJustifications.value.set(data.studentId, {
-    reason: data.reason,
-    documentUrl: data.documentUrl
+    reason: data.reason || 'Justificación proporcionada',
+    documentURL: data.documentURL
   });
   
-  // Notify the user that the justification was saved but attendance changes still need to be saved
-  displayToast('Justificación guardada. Recuerde guardar los cambios de asistencia.', 'info');
+  console.log(`Justificación registrada para estudiante ${data.studentId}:`, {
+    justificacion: pendingJustifications.value.get(data.studentId),
+    estado: localAttendanceRecords.value[data.studentId],
+    pendiente: pendingChanges.value.has(data.studentId)
+  });
   
-  // We don't call saveAllPendingChanges here - we just store the justification for later
+  // Actualizar la UI inmediatamente para mostrar el estado "Justificado"
+  localAttendanceRecords.value = { ...localAttendanceRecords.value };
+  
+  // Notificar al usuario que la justificación fue guardada pero los cambios de asistencia aún deben guardarse
+  displayToast('Justificación guardada. Recuerde guardar los cambios generales de asistencia.', 'info');
 };
 
 // Función para guardar todos los cambios pendientes
-const saveAllPendingChanges = async () => {  
+const saveAllPendingChanges = async () => {
   if (pendingChangesCount.value === 0 && pendingJustifications.value.size === 0) {
     displayToast('No hay cambios pendientes para guardar', 'info');
     return;
@@ -480,31 +550,59 @@ const saveAllPendingChanges = async () => {
         presentes: [] as string[],
         ausentes: [] as string[],
         tarde: [] as string[],
-        justificacion: existingDoc && existingDoc.length > 0 && 'data' in existingDoc[0] && existingDoc[0].data && 
-                     (existingDoc[0].data as any).justificacion ? 
-                      [...((existingDoc[0].data as any).justificacion as JustificationData[])] : [],
-        observations: existingDoc && existingDoc.length > 0 && 'data' in existingDoc[0] && existingDoc[0].data && 
-                    (existingDoc[0].data as any).observations ? 
-                    ((existingDoc[0].data as any).observations as string) : ''
+        justificacion: [],
+        observations: ''
       }
-    };    // 3. Primero preservar TODOS los estados existentes (incluso los no modificados)
+    };    // Registrar el contenido de las observaciones para depuración
+    if (existingDoc && existingDoc.length > 0 && 'data' in existingDoc[0] && existingDoc[0].data) {
+      console.log('Observaciones originales:', {
+        tipo: typeof (existingDoc[0].data as any).observations,
+        valor: (existingDoc[0].data as any).observations
+      });
+    }
+
+    // 3. Primero preservar TODOS los estados existentes (incluso los no modificados)
     if (existingDoc && existingDoc.length > 0 && 'data' in existingDoc[0]) {
       const existingData = existingDoc[0].data as any;
+      console.log('Datos existentes que se van a preservar:', existingData);
       
       // Copiar todos los estados existentes como base
       if (Array.isArray(existingData.presentes)) {
         attendanceDoc.data.presentes = [...existingData.presentes];
+        console.log(`Preservando ${attendanceDoc.data.presentes.length} estudiantes presentes`);
       }
       if (Array.isArray(existingData.ausentes)) {
         attendanceDoc.data.ausentes = [...existingData.ausentes];
+        console.log(`Preservando ${attendanceDoc.data.ausentes.length} estudiantes ausentes`);
       }
       if (Array.isArray(existingData.tarde)) {
         attendanceDoc.data.tarde = [...existingData.tarde];
+        console.log(`Preservando ${attendanceDoc.data.tarde.length} estudiantes con tardanza`);
       }
       
       // Copiar también las justificaciones completas si existen
-      if (Array.isArray(existingData.justificacion)) {
-        attendanceDoc.data.justificacion = [...existingData.justificacion];
+      if (existingData.justificacion && Array.isArray(existingData.justificacion)) {
+        // Asegurarnos de que cada justificación tenga los campos necesarios
+        const justificacionesValidas = existingData.justificacion.filter((j: any) => j && j.id).map((j: any) => ({
+          id: j.id,
+          reason: j.reason || 'Justificación registrada',
+          documentURL: j.documentURL || null,
+          timestamp: j.timestamp || new Date()
+        }));
+        
+        attendanceDoc.data.justificacion = justificacionesValidas;
+        console.log(`Preservando ${attendanceDoc.data.justificacion.length} justificaciones existentes`);
+      } else {
+        console.log('No se encontraron justificaciones previas para preservar');
+      }
+      
+      // Asegurarnos de preservar correctamente las observaciones
+      if (existingData.observations !== undefined) {
+        attendanceDoc.data.observations = existingData.observations;
+        console.log('Observaciones preservadas:', {
+          tipo: typeof attendanceDoc.data.observations,
+          valor: attendanceDoc.data.observations
+        });
       }
     }
 
@@ -520,8 +618,57 @@ const saveAllPendingChanges = async () => {
     const originalAusentes = new Set(attendanceDoc.data.ausentes);
     const originalTarde = new Set(attendanceDoc.data.tarde);
 
-    // 4. Procesar SOLO los registros modificados (pendingChanges)
-    // Esta es la clave de la corrección: solo procesar los registros que han sido
+
+    // 4. Procesar las justificaciones pendientes que no están en pendingChanges
+    // Es posible que el usuario sólo haya modificado la razón de justificación sin cambiar el estado
+    if (pendingJustifications.value.size > 0) {
+      console.log(`Procesando ${pendingJustifications.value.size} justificaciones pendientes...`);
+      pendingJustifications.value.forEach((justData, studentId) => {
+        // Si no está en pendingChanges pero tiene justificación pendiente,
+        // necesitamos asegurarnos de que se guarde
+        if (!pendingChanges.value.has(studentId)) {
+          // Verificar si el estudiante ya está marcado como justificado
+          if (localAttendanceRecords.value[studentId] === 'Justificado') {
+            console.log(`Procesando justificación pendiente para ${studentId} que no está en pendingChanges`);
+            
+            // Verificar si ya existe una justificación
+            const existingIndex = attendanceDoc.data.justificacion.findIndex(j => j.id === studentId);
+            
+            if (existingIndex >= 0) {
+              // Actualizar la justificación existente
+              console.log(`Actualizando justificación existente para ${studentId} con razón: ${justData.reason}`);
+              attendanceDoc.data.justificacion[existingIndex].reason = justData.reason;
+              if (justData.documentURL) {
+                attendanceDoc.data.justificacion[existingIndex].documentURL = justData.documentURL;
+              }
+              // Actualizar timestamp
+              attendanceDoc.data.justificacion[existingIndex].timestamp = new Date();
+            } else {
+              // Crear nueva justificación
+              console.log(`Creando nueva justificación para ${studentId} con razón: ${justData.reason}`);
+              attendanceDoc.data.justificacion.push({
+                id: studentId,
+                reason: justData.reason,
+                documentURL: justData.documentURL,
+                timestamp: new Date()
+              } as JustificationData);
+            }
+            
+            // Asegurarnos de que el estudiante esté en la lista de ausentes (requerido para justificados)
+            if (!attendanceDoc.data.ausentes.includes(studentId)) {
+              // Eliminar de otras listas si está presente
+              attendanceDoc.data.presentes = attendanceDoc.data.presentes.filter(id => id !== studentId);
+              attendanceDoc.data.tarde = attendanceDoc.data.tarde.filter(id => id !== studentId);
+              // Añadir a ausentes
+              attendanceDoc.data.ausentes.push(studentId);
+            }
+          }
+        }
+      });
+    }
+
+    // 5. Procesar los registros modificados (pendingChanges)
+    // Ahora procesamos los registros que han sido
     // modificados por el usuario (que están en pendingChanges), manteniendo el resto intactos
     Object.entries(localAttendanceRecords.value).forEach(([studId, stat]) => {
       // Validar que el ID del estudiante existe
@@ -546,24 +693,58 @@ const saveAllPendingChanges = async () => {
         } else if (stat === 'Ausente') {
           attendanceDoc.data.ausentes.push(studId);
         } else if (stat === 'Tardanza') {
-          attendanceDoc.data.tarde.push(studId);
-        } else if (stat === 'Justificado') {
-          // Primero aseguramos que esté en una categoría de ausencia para justificar (tarde o ausente)
-          // Priorizamos 'ausente' para las justificaciones
-          attendanceDoc.data.ausentes.push(studId);
-          
-          // Luego aseguramos que tenga una justificación
-          const existingJustification = attendanceDoc.data.justificacion.findIndex(j => j.id === studId);
-          if (existingJustification >= 0) {
-            // Si ya existe una justificación, la mantenemos
-          } else {            // Si no existe, creamos una nueva
-            attendanceDoc.data.justificacion.push({ 
-              id: studId, 
-              reason: 'Justificación pendiente',
-              timestamp: new Date()
-            } as JustificationData);
+          attendanceDoc.data.tarde.push(studId);          } else if (stat === 'Justificado') {
+            // IMPORTANTE: Para estado Justificado, necesitamos ponerlo en la lista de 'ausentes'
+            // De acuerdo con la implementación en attendance.ts, pero lo marcamos para restaurarlo después
+            attendanceDoc.data.ausentes.push(studId);
+            
+            // Asegurarnos de que el estudiante no esté en presentes o tarde (para evitar inconsistencias)
+            attendanceDoc.data.presentes = attendanceDoc.data.presentes.filter(id => id !== studId);
+            attendanceDoc.data.tarde = attendanceDoc.data.tarde.filter(id => id !== studId);
+            
+            // Conservar estado para fines de UI
+            // Esto es crucial para restaurar correctamente el estado visual después de guardar
+            justifiedStudentsMap.value[studId] = true;
+            
+            // Registrar para seguimiento
+            console.log(`Marcando ${studId} como justificado para restaurar después de guardar en memoria local`);
+            
+            // Procesar la justificación
+            const existingJustification = attendanceDoc.data.justificacion.findIndex(j => j.id === studId);
+            const pendingJustification = pendingJustifications.value.get(studId);
+            
+            if (existingJustification >= 0) {
+              // Si ya existe una justificación, actualizamos su razón si hay una pendiente
+              if (pendingJustification) {
+                console.log(`Actualizando justificación existente para ${studId} con razón: ${pendingJustification.reason}`);
+                attendanceDoc.data.justificacion[existingJustification].reason = pendingJustification.reason;
+                if (pendingJustification.documentURL) {
+                  attendanceDoc.data.justificacion[existingJustification].documentURL = pendingJustification.documentURL;
+                }
+                // Asegurarnos de que el timestamp se actualice
+                attendanceDoc.data.justificacion[existingJustification].timestamp = new Date();
+              }
+            } else {
+              // Si no existe, creamos una nueva con la razón proporcionada o una por defecto
+              const justReason = pendingJustification ? pendingJustification.reason : 'Justificación pendiente';
+              console.log(`Creando nueva justificación para ${studId} con razón: ${justReason}`);
+              
+              attendanceDoc.data.justificacion.push({ 
+                id: studId, 
+                reason: justReason,
+                documentURL: pendingJustification?.documentURL,
+                timestamp: new Date()
+              } as JustificationData);
+            }
+            
+            // Añadimos un log para verificar que la justificación quedó correctamente registrada
+            const justIndex = attendanceDoc.data.justificacion.findIndex(j => j.id === studId);
+            if (justIndex >= 0) {
+              console.log(`Verificado: Justificación para ${studId} registrada con razón: ${attendanceDoc.data.justificacion[justIndex].reason}`);
+            } else {
+              console.error(`Error: No se pudo encontrar la justificación para ${studId} después de intentar crearla/actualizarla`);
+            }
           }
-        }
       }
     });
       // Ya no necesitamos preservar registros existentes no modificados,
@@ -615,18 +796,30 @@ const saveAllPendingChanges = async () => {
           } else if (stat === 'Ausente') {
             attendanceDoc.data.ausentes.push(studId);
           } else if (stat === 'Tardanza') {
-            attendanceDoc.data.tarde.push(studId);
-          } else if (stat === 'Justificado') {
+            attendanceDoc.data.tarde.push(studId);          } else if (stat === 'Justificado') {
             attendanceDoc.data.ausentes.push(studId);
             
             // Verificar si ya tiene justificación
             const existingJustification = attendanceDoc.data.justificacion.findIndex(j => j.id === studId);
+            const pendingJustification = pendingJustifications.value.get(studId);
+            
             if (existingJustification < 0) {
-              attendanceDoc.data.justificacion.push({
-                id: studId,
-                reason: 'Justificación pendiente',
-                timestamp: new Date()
-              } as JustificationData);
+              // Si no tiene justificación pero tenemos una pendiente, usar los datos pendientes
+              if (pendingJustification) {
+                attendanceDoc.data.justificacion.push({
+                  id: studId,
+                  reason: pendingJustification.reason,
+                  documentURL: pendingJustification.documentURL,
+                  timestamp: new Date()
+                } as JustificationData);
+              } else {
+                // Si no hay justificación pendiente, crear una genérica
+                attendanceDoc.data.justificacion.push({
+                  id: studId,
+                  reason: 'Justificación pendiente',
+                  timestamp: new Date()
+                } as JustificationData);
+              }
             }
           }
         }
@@ -645,22 +838,51 @@ const saveAllPendingChanges = async () => {
     const updatedAllStudentIds = new Set([
       ...attendanceDoc.data.presentes,
       ...attendanceDoc.data.ausentes,
-      ...attendanceDoc.data.tarde
+      ...attendanceDoc.data.tarde,
+      ...attendanceDoc.data.justificacion.map((j: JustificationData) => j.id)
     ]);
-    
-    console.log('Verificación final antes de guardar:', {
+      console.log('Verificación final antes de guardar:', {
       totalEstudiantes: effectiveStudents.value.length,
       totalRegistros: updatedAllStudentIds.size,
       presentes: attendanceDoc.data.presentes.length,
       ausentes: attendanceDoc.data.ausentes.length,
       tarde: attendanceDoc.data.tarde.length,
-      justificaciones: attendanceDoc.data.justificacion.length
+      justificaciones: attendanceDoc.data.justificacion.length,
+      observaciones: {
+        tipo: typeof attendanceDoc.data.observations,
+        valor: attendanceDoc.data.observations,
+        longitud: typeof attendanceDoc.data.observations === 'string' ? attendanceDoc.data.observations.length : 'N/A'
+      }
     });    
+    
+    // Antes de guardar, asegurémonos de registrar TODOS los estudiantes justificados
+    console.log('Registrando estudiantes justificados antes de guardar:');
+    const justifiedBeforeSave = new Set<string>();
+    
+    // 1. Estudiantes actualmente marcados como justificados en la UI
+    Object.entries(localAttendanceRecords.value).forEach(([id, status]) => {
+      if (status === 'Justificado') {
+        justifiedBeforeSave.add(id);
+        justifiedStudentsMap.value[id] = true;
+        console.log(`- Desde UI: Estudiante ${id} está justificado`);
+      }
+    });
+    
+    // 2. Estudiantes con justificaciones guardadas (incluso si no están en la UI)
+    attendanceDoc.data.justificacion.forEach((j: JustificationData) => {
+      if (j && j.id) {
+        justifiedBeforeSave.add(j.id);
+        justifiedStudentsMap.value[j.id] = true;
+        console.log(`- Desde justificaciones: Estudiante ${j.id} tiene justificación`);
+      }
+    });
+    
+    console.log(`Total de ${justifiedBeforeSave.size} estudiantes justificados identificados`);
     
     // 6. Guardar y verificar el resultado
     console.log('Guardando documento de asistencia:', attendanceDoc);
     try {
-      await attendanceStore.saveAttendanceDocument(attendanceDoc);
+      await attendanceStore.saveAttendanceDocument(attendanceDoc);      
       // 7. Recargar datos para verificar que se guardaron correctamente
       console.log('Verificando resultados guardados...');
       const savedDoc = await attendanceStore.getAttendanceByDateAndClass(dateToUse, classIdToSave);
@@ -676,10 +898,126 @@ const saveAllPendingChanges = async () => {
           (docWithData.data?.tarde?.length || 0)
         ) : 0;
         
+        // Verificar específicamente que las justificaciones se guardaron
+        const savedJustifications = hasData ? docWithData.data?.justificacion?.length || 0 : 0;
+        const expectedJustifications = pendingJustifications.value.size;
+        
+        if (savedJustifications < expectedJustifications) {
+          console.warn(`Advertencia: Solo se guardaron ${savedJustifications} de ${expectedJustifications} justificaciones`);
+        } else {
+          console.log(`Justificaciones guardadas correctamente: ${savedJustifications}`);
+          // Limpiar la colección de justificaciones pendientes ya que se guardaron correctamente
+          pendingJustifications.value.clear();
+        }
+        
+        // IMPORTANTE: Restaurar correctamente el estado de los alumnos justificados en la UI
+        try {
+          console.log('Estructura de datos recibida:', docWithData);
+          
+          // IMPORTANTE: Ya no reseteamos todos los estados, solo actualizamos los que cambiaron
+          // 1. Recopilar todos los IDs de estudiantes justificados de diferentes fuentes
+          // Este conjunto tendrá todos los estudiantes que deben aparecer como "Justificado" en la UI
+          const allJustifiedStudentIds = new Set<string>();
+          
+          // A. Añadir estudiantes marcados como justificados durante este ciclo de edición
+          Object.keys(justifiedStudentsMap.value).forEach(id => {
+            if (id) allJustifiedStudentIds.add(id);
+          });
+          console.log(`Encontrados ${allJustifiedStudentIds.size} estudiantes justificados en la memoria persistente`);
+          
+          // B. Añadir estudiantes con justificaciones desde Firestore
+          const justificaciones = docWithData?.data?.justificacion || [];
+          justificaciones.forEach((justification: any) => {
+            if (justification && justification.id) {
+              allJustifiedStudentIds.add(justification.id);
+            }
+          });
+          console.log(`Total ${allJustifiedStudentIds.size} estudiantes justificados después de consultar Firestore`);
+          
+          // C. Añadir estudiantes desde la variable justifiedBeforeSave (capturada antes de guardar)
+          if (justifiedBeforeSave && justifiedBeforeSave.size > 0) {
+            justifiedBeforeSave.forEach(id => {
+              if (id) allJustifiedStudentIds.add(id);
+            });
+            console.log(`Añadidos ${justifiedBeforeSave.size} estudiantes justificados desde el registro previo al guardado`);
+          }
+          console.log(`Total final: ${allJustifiedStudentIds.size} estudiantes justificados`);
+          
+          // Obtener datos de Firestore para validar
+          const presentes = docWithData?.data?.presentes || [];
+          const tarde = docWithData?.data?.tarde || [];
+          const ausentes = docWithData?.data?.ausentes || [];
+          
+          // SOLO ACTUALIZAR LOS ESTADOS DE LOS ESTUDIANTES QUE CAMBIARON
+          // Usamos pendingChanges (que contiene los IDs de los estudiantes cuyo estado cambió)
+          if (pendingChanges.value && pendingChanges.value.size > 0) {
+            console.log(`Actualizando solo ${pendingChanges.value.size} estados que cambiaron:`);
+            
+            pendingChanges.value.forEach(studentId => {
+              // Para cada estudiante que cambió, actualizar su estado según los datos de Firestore
+              if (allJustifiedStudentIds.has(studentId)) {
+                // Si está justificado, actualizarlo así
+                localAttendanceRecords.value[studentId] = 'Justificado';
+                justifiedStudentsMap.value[studentId] = true;
+                console.log(`- Actualizando: ${studentId} como Justificado`);
+              } else if (presentes.includes(studentId)) {
+                localAttendanceRecords.value[studentId] = 'Presente';
+                console.log(`- Actualizando: ${studentId} como Presente`);
+              } else if (tarde.includes(studentId)) {
+                localAttendanceRecords.value[studentId] = 'Tardanza';
+                console.log(`- Actualizando: ${studentId} como Tardanza`);
+              } else if (ausentes.includes(studentId)) {
+                localAttendanceRecords.value[studentId] = 'Ausente';
+                console.log(`- Actualizando: ${studentId} como Ausente`);
+              }
+            });
+          }
+          
+          // Actualizar el mapa de justificados con los valores actuales
+          // Solo procesamos los justificados que no están en pendingChanges
+          // porque los de pendingChanges ya se actualizaron arriba
+          justifiedStudentsMap.value = {}; // Reiniciamos y reconstruimos
+          
+          allJustifiedStudentIds.forEach(studentId => {
+            if (!pendingChanges.value.has(studentId)) {
+              // Solo para los que no cambiaron, actualizamos el estado
+              localAttendanceRecords.value[studentId] = 'Justificado';
+            }
+            // Para todos los justificados, actualizamos el mapa
+            justifiedStudentsMap.value[studentId] = true;
+          });
+
+          console.log('Estados actualizados selectivamente en la UI');
+          console.log('Mapa final de estudiantes justificados:', Object.keys(justifiedStudentsMap.value).length);
+          
+          // 4. Forzar actualización de la UI
+          localAttendanceRecords.value = { ...localAttendanceRecords.value };
+          console.log('Estados restaurados en la UI:', localAttendanceRecords.value);
+          console.log('Mapa final de estudiantes justificados:', justifiedStudentsMap.value);
+        } catch (error) {
+          console.error('Error al restaurar estados de la UI:', error);
+          
+          // En caso de error, restaurar al menos los estudiantes que sabíamos que estaban justificados
+          if (justifiedBeforeSave && justifiedBeforeSave.size > 0) {
+            console.log(`Recuperando ${justifiedBeforeSave.size} estudiantes justificados en caso de error`);
+            
+            justifiedBeforeSave.forEach(studentId => {
+              if (localAttendanceRecords.value[studentId] !== 'Justificado') {
+                localAttendanceRecords.value[studentId] = 'Justificado';
+                justifiedStudentsMap.value[studentId] = true;
+                console.log(`Restaurando en caso de error: ${studentId} como Justificado`);
+              }
+            });
+            // Forzar actualización de UI
+            localAttendanceRecords.value = { ...localAttendanceRecords.value };
+          }
+        }
+        
         console.log('Registros guardados:', {
           presentes: hasData ? (docWithData.data?.presentes?.length || 0) : 0,
           ausentes: hasData ? (docWithData.data?.ausentes?.length || 0) : 0,
           tarde: hasData ? (docWithData.data?.tarde?.length || 0) : 0,
+          justificaciones: hasData ? (docWithData.data?.justificacion?.length || 0) : 0,
           total: totalSaved,
           esperados: updatedAllStudentIds.size  // Changed from allStudentIds to updatedAllStudentIds
         });
@@ -698,6 +1036,7 @@ const saveAllPendingChanges = async () => {
       
       // Recargar datos y actualizar interfaz
       await attendanceStore.fetchAttendanceDocuments(); // Refrescar datos globales
+      
       window.dispatchEvent(new Event('attendance-updated'));
       
       displayToast(`¡Asistencia guardada! ${pendingChangesCount.value} registro(s) actualizados.`, 'success');
@@ -883,9 +1222,10 @@ const shouldAnimateObservationsButton = computed(() => {
   return effectiveStudents.value.length > 0 && !hasObservations.value;
 });
 
-// Navigation handler for workspace button
+// Función para manejar la navegación al espacio de trabajo
 const navigateToWorkspace = () => {
-  router.push('/workspace');
+  // Emitir evento para navegar a la selección de clases
+  emit('navigate-to-class-selector');
 };
 </script>
 
@@ -907,7 +1247,7 @@ const navigateToWorkspace = () => {
       <span class="block sm:inline">{{ errorMessage }}</span>
     </div>
     
-    <div v-else>
+    <div>
       <!-- Header with action buttons -->
       <AttendanceHeader 
         :class-name="props.selectedClassName" 
@@ -915,10 +1255,13 @@ const navigateToWorkspace = () => {
         :is-disabled="props.isDisabled"
         :observations="attendanceStore.getObservations"
         :should-animate-observations-button="shouldAnimateObservationsButton"
+        :has-observations="hasObservations"
         @navigate-to-workspace="navigateToWorkspace"
         @save="handleUpdateStatus('all', 'save')"
         @open-export="emit('open-export')"
         @open-observation="handleOpenObservation"
+        @navigate-to-calendar="emit('navigate-to-calendar')"
+        @navigate-to-class-selector="emit('navigate-to-class-selector')"
       />
       
       <!-- Pending changes notification and stats -->

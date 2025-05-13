@@ -52,6 +52,17 @@ const createRipple = (event: MouseEvent) => {
   ripple.style.animation = 'ripple-out 0.6s ease-out';
 };
 
+// Método para manejar la justificación
+const handleJustification = () => {
+  // Primero marcamos como Justificado para un cambio inmediato
+  emit('update-status', props.student.id, 'Justificado');
+  // Luego abrimos el modal de justificación después de un breve retraso
+  // para que el estado se actualice primero
+  setTimeout(() => {
+    emit('open-justification', props.student);
+  }, 100);
+};
+
 // Initialize on component mount
 onMounted(() => {
   if (typeof window !== 'undefined') {
@@ -156,18 +167,20 @@ onBeforeUnmount(() => {
           </div>
         </button>
         
-        <!-- Justified Button -->
-        <button
-          @click="emit('open-justification', student)"
+        <!-- Justification Button -->
+        <button 
+          @click="handleJustification"
           :class="[
             'attendance-btn',
             attendanceStatus === 'Justificado' ? 'active-justified' : 'btn-justified'
           ]"
           :disabled="isDisabled"
+          title="Registrar ausencia justificada"
         >
-          <span class="tooltip">Justificación</span>
+          <span class="tooltip">{{ attendanceStatus === 'Justificado' ? 'Justificado' : 'Justificar' }}</span>
           <div class="btn-content">
             <DocumentCheckIcon class="w-3 h-3 sm:w-4 sm:h-4" />
+            <span v-if="attendanceStatus === 'Justificado'" class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
             <span class="ripple"></span>
           </div>
         </button>
