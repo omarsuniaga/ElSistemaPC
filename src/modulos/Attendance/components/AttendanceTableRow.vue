@@ -15,12 +15,16 @@ const props = defineProps<{
   attendanceStatus: AttendanceStatus | undefined;
   isDisabled: boolean;
   isPending: boolean;
+  pendingChanges?: Set<string>; // Añadimos prop de pendingChanges para mejor tracking
 }>();
 
 const emit = defineEmits<{
   (e: 'update-status', studentId: string, status: AttendanceStatus): void;
   (e: 'open-justification', student: Student): void;
 }>();
+
+// Añadir un console.log para debug de cambios de estado
+console.log(`[AttendanceTableRow] Dibujando estado ${props.attendanceStatus || 'sin definir'} para ${props.student.nombre}`);
 
 // Use the imported StudentAvatar component
 const studentName = computed(() => `${props.student.nombre} ${props.student.apellido}`);
@@ -54,13 +58,16 @@ const createRipple = (event: MouseEvent) => {
 
 // Método para manejar la justificación
 const handleJustification = () => {
+  console.log('[Justificación] Iniciando proceso de justificación para estudiante:', props.student.id);
+  
   // Primero marcamos como Justificado para un cambio inmediato
   emit('update-status', props.student.id, 'Justificado');
-  // Luego abrimos el modal de justificación después de un breve retraso
-  // para que el estado se actualice primero
-  setTimeout(() => {
-    emit('open-justification', props.student);
-  }, 100);
+  console.log('[Justificación] Emitido evento update-status con estado Justificado');
+  
+  // Luego abrimos el modal de justificación de inmediato
+  // El retraso puede estar causando problemas
+  console.log('[Justificación] Emitiendo evento open-justification con estudiante:', props.student);
+  emit('open-justification', props.student);
 };
 
 // Initialize on component mount
@@ -169,7 +176,7 @@ onBeforeUnmount(() => {
         
         <!-- Justification Button -->
         <button 
-          @click="handleJustification"
+          @click="handleJustification()"
           :class="[
             'attendance-btn',
             attendanceStatus === 'Justificado' ? 'active-justified' : 'btn-justified'

@@ -1216,7 +1216,8 @@ const relevantClasses = computed(() => {
 });
 </script>
 
-<template>  <div class="p-2 sm:p-4 md:p-6 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 max-w-full overflow-x-hidden">
+<template> 
+ <div class="p-2 sm:p-4 md:p-6 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 max-w-full overflow-x-hidden">
     <!-- Toast Messages -->
     <div v-if="showMessage" class="fixed top-4 right-20 z-50 p-3 sm:p-4 rounded-lg shadow-lg text-white transition-all duration-300 text-sm sm:text-base max-w-[90vw] sm:max-w-md" :class="messageType === 'success' ? 'bg-green-500' : 'bg-red-500'">
       {{ message }}
@@ -1440,6 +1441,8 @@ const relevantClasses = computed(() => {
             @select="handleCalendarSelect"
             @month-change="handleMonthChange"
             class="max-w-full overflow-x-auto"
+            @close="showCalendarModal = false"
+            @navigate-to-calendar="navigateToCalendar"
           />
         </div>
       </div>

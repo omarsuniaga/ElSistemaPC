@@ -4,6 +4,7 @@ defineProps<{
 }>();
 </script>
 
+
 <template>
   <div class="loading-overlay">
     <div class="loader"></div>

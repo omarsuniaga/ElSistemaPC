@@ -44,39 +44,69 @@ const getCurrentUserFromFirestore = async (): Promise<any | null> => {
  */
 export const fetchClassesFirestore = async (): Promise<Class[]> => {
   try {
-    const currentUser = await getCurrentUserFromFirestore();
+    // Obtener datos del usuario desde el store de autenticación
+    const { getAuth } = await import('firebase/auth');
+    const { useAuthStore } = await import('../../../stores/auth');
+    
+    const authStore = useAuthStore();
+    const currentUser = authStore.user;
+    const role = currentUser?.role || '';
+    const uid = currentUser?.uid || '';
+    
+    // Generar clave para caché específica por usuario/rol
+    const cacheKey = `classes_${role}_${uid}`;
+    
+    // Intentar obtener del caché primero
+    const cachedData = localStorage.getItem(cacheKey);
+    if (cachedData) {
+      try {
+        const cached = JSON.parse(cachedData);
+        // Verificar si el caché es reciente (menos de 5 minutos)
+        if (cached.timestamp && (Date.now() - cached.timestamp < 5 * 60 * 1000)) {
+          console.log('[Caché] Usando clases en caché');
+          return cached.data;
+        }
+      } catch (e) {
+        console.warn('Error al leer caché de clases:', e);
+      }
+    }
+    
+    // Referencia a la colección de clases
     const classesCollection = collection(db, CLASSES_COLLECTION);
     let classesSnapshot;
     
-    // En desarrollo, siempre devolver todas las clases para facilitar pruebas
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    
-    if (isDevelopment) {
-      classesSnapshot = await getDocs(classesCollection);
-    }
-    else if (currentUser) {
-      const role = currentUser.role;
-      if (role === 'Maestro' || role === 'teacher') {
-        const q = query(classesCollection, where("teacherId", "==", currentUser.uid));
-        classesSnapshot = await getDocs(q);
-      } else if (role === 'Alumno' || role === 'student') {
-        const q = query(classesCollection, where("studentIds", "array-contains", currentUser.uid));
-        classesSnapshot = await getDocs(q);
-      } else if (role === 'Admin' || role === 'Director') {
-        classesSnapshot = await getDocs(classesCollection);
-      } else {
-        classesSnapshot = await getDocs(classesCollection);
-      }
+    // Aplicar filtrado según el rol
+    if (['Maestro', 'Teacher', 'teacher'].includes(role) && uid) {
+      console.log(`[Filtro] Obteniendo clases para maestro: ${uid}`);
+      const q = query(classesCollection, where("teacherId", "==", uid));
+      classesSnapshot = await getDocs(q);
+    } else if (['Alumno', 'Student', 'student'].includes(role) && uid) {
+      console.log(`[Filtro] Obteniendo clases para alumno: ${uid}`);
+      const q = query(classesCollection, where("studentIds", "array-contains", uid));
+      classesSnapshot = await getDocs(q);
     } else {
-      // Si no hay usuario, obtenemos todas las clases (útil para desarrollo/pruebas)
+      // Si es director, admin o no hay rol definido, obtener todas las clases
+      console.log('[Filtro] Obteniendo todas las clases (rol admin/director)');
       classesSnapshot = await getDocs(classesCollection);
     }
     
+    // Procesar resultados
     const classes = classesSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Class[];
     
+    // Guardar en caché
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({
+        timestamp: Date.now(),
+        data: classes
+      }));
+    } catch (e) {
+      console.warn('Error al guardar caché de clases:', e);
+    }
+    
+    console.log(`[Firebase] Obtenidas ${classes.length} clases`);
     return classes;
   } catch (error) {
     console.error("Error fetching classes:", error);

@@ -31,6 +31,17 @@ const emit = defineEmits<{
   (e: 'navigate-to-class-selector'): void;
 }>()
 
+// Funciones para navegar directamente
+const handleNavigateToCalendar = () => {
+  console.log('Navegando al calendario desde AttendanceHeader');
+  emit('navigate-to-calendar');
+}
+
+const handleNavigateToClassSelector = () => {
+  console.log('Navegando a la selección de clases desde AttendanceHeader');
+  emit('navigate-to-class-selector');
+}
+
 // Computed property to determine button text based on whether observations exist
 const observationButtonText = computed(() => {
   return props.hasObservations ? 'Consultar' : 'Agregar';
@@ -50,7 +61,7 @@ const observationTooltip = computed(() => {
       <!-- Botones de navegación-->
       <div class="flex gap-2 mb-2 sm:mb-0">
         <button 
-          @click="emit('navigate-to-calendar')"
+          @click="handleNavigateToCalendar"
           class="px-2 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md shadow-sm text-xs flex items-center gap-1"
           title="Volver al calendario"
         >
@@ -59,7 +70,7 @@ const observationTooltip = computed(() => {
         </button>
         
         <button 
-          @click="emit('navigate-to-class-selector')"
+          @click="handleNavigateToClassSelector"
           class="px-2 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md shadow-sm text-xs flex items-center gap-1"
           title="Volver a la selección de clases"
         >

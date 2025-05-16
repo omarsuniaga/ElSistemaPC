@@ -58,6 +58,11 @@ const sortedStudents = computed(() => {
           :is-pending="pendingChanges.has(student.id)"
           @update-status="(studentId, status) => emit('update-status', studentId, status)"
           @open-justification="emit('open-justification', $event)"
+          @mark-all-present="emit('mark-all-present')"
+          @mark-all-absent="emit('mark-all-absent')"
+          @mark-all-late="emit('mark-all-late')"
+          @reset-all="emit('reset-all')"
+          :pending-changes="pendingChanges"
         />
       </tbody>
     </table>

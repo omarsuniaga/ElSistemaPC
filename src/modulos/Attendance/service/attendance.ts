@@ -12,7 +12,9 @@ import {
   addDoc,
   orderBy,
   Timestamp,
-  deleteDoc
+  deleteDoc,
+  DocumentData,
+  CollectionReference
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../firebase';
@@ -24,15 +26,44 @@ import type {
 } from '../types/attendance';
 import { auth } from '../../../firebase'; // Asegúrate de importar auth desde tu configuración de Firebase
 import { fetchAttendanceByDateFirebase as fetchByDate } from './attendance/fetchByDate';
+import { applyTeacherFilter, hasAccessToDocument, generateCacheKey } from '../../../utils/roleBasedAccess';
+import { useAuthStore } from '../../../stores/auth';
+
+// Configuración de caché
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutos en milisegundos
 
 // Constants
 const ATTENDANCE_COLLECTION = 'ASISTENCIAS';
 const OBSERVATIONS_COLLECTION = 'OBSERVACIONES';
+const CLASSES_COLLECTION = 'CLASES';
+
+/**
+ * Función para obtener las clases de un maestro directamente sin importación dinámica
+ * para evitar referencias circulares con classes.ts
+ */
+const getTeacherClassesLocal = async (teacherId: string): Promise<any[]> => {
+  try {
+    const classesCollection = collection(db, CLASSES_COLLECTION);
+    const teacherQuery = query(classesCollection, where('teacherId', '==', teacherId));
+    const querySnapshot = await getDocs(teacherQuery);
+    
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      studentIds: doc.data().studentIds || []
+    }));
+  } catch (error) {
+    console.error('Error obteniendo clases del maestro:', error);
+    return [];
+  }
+};
 
 /**
  * Genera un ID de documento consistente para documentos de asistencia
  */
 const getAttendanceDocId = (fecha: string, classId: string): string => `${fecha}_${classId}`;
+
+
 
 /**
  * Obtiene un documento de asistencia por fecha y clase
@@ -278,53 +309,70 @@ export const updateObservationsFirebase = async (
 };
 
 /**
- * Obtiene todos los documentos de asistencia por maestro
+ * Obtiene todos los documentos de asistencia filtrados por rol de usuario
  */
-export const getAllAttendanceDocumentsFirebase = async (
-  teacherId?: string
-): Promise<AttendanceDocument[]> => {
+export const getAllAttendanceDocumentsFirebase = async (): Promise<AttendanceDocument[]> => {
   try {
+    // Verificar el rol del usuario actual para aplicar filtrado si es necesario
+    const authStore = useAuthStore();
+    const userId = authStore.user?.uid;
+    const isTeacher = ['Teacher', 'Maestro'].includes(authStore.user?.role || '');
+    
+    // Generar clave de caché basada en el rol y usuario
+    const cacheKey = generateCacheKey('attendance_all');
+    
+    // Intentar recuperar del caché
+    const cachedData = localStorage.getItem(cacheKey);
+    if (cachedData) {
+      const parsed = JSON.parse(cachedData);
+      
+      // Verificar si el caché aún es válido
+      if (parsed.timestamp && (Date.now() - parsed.timestamp < CACHE_DURATION)) {
+        console.log('[Caché] Usando datos en caché para todos los documentos de asistencia');
+        return parsed.data;
+      }
+    }
+    
     // Referencia a la colección de asistencias en Firestore
     const attendanceCollection = collection(db, ATTENDANCE_COLLECTION);
+    let queryRef;
 
-    // Si se proporciona teacherId, filtramos por ese campo
-    if (teacherId) {
-      const teacherQuery = query(
+    // Si es maestro, filtrar por teacherId
+    if (isTeacher && userId) {
+      console.log(`[Filtro] Aplicando filtro de maestro: teacherId == ${userId}`);
+      queryRef = query(
         attendanceCollection,
-        where('teacherId', '==', teacherId)
+        where('teacherId', '==', userId)
       );
-
-      // Ejecutamos la consulta filtrada
-      const querySnapshot = await getDocs(teacherQuery);
-
-      // Mappeamos cada documento al tipo AttendanceDocument
-      // e incluimos el ID del documento en la propiedad 'id'
-      return querySnapshot.docs.map(doc => {
-        const data = doc.data() as AttendanceDocument;
-        return {
-          ...data,
-          id: doc.id
-        };
-      });
     } else {
-      // Si no se pasa teacherId, traemos todos los documentos
-      const querySnapshot = await getDocs(attendanceCollection);
-
-      // Convertimos cada documento al tipo AttendanceDocument
-      const res = querySnapshot.docs.map(doc =>
-        doc.data() as AttendanceDocument
-      );
-
-      // Mostramos en consola los datos para fines de depuración
-      return res;
+      console.log('[Filtro] Usuario Admin/Director - sin filtro de maestro');
+      queryRef = attendanceCollection;
     }
+
+    // Ejecutamos la consulta
+    const querySnapshot = await getDocs(queryRef);
+    
+    // Procesamos los resultados
+    const documents = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as AttendanceDocument));
+    
+    // Guardar en caché
+    localStorage.setItem(cacheKey, JSON.stringify({
+      timestamp: Date.now(),
+      data: documents
+    }));
+    
+    console.log(`[Firestore] Obtenidos ${documents.length} documentos de asistencia`);
+    return documents;
+     
   } catch (error) {
     // En caso de error, lo registramos y lo volvemos a lanzar
     console.error('Error al obtener documentos de asistencia:', error);
     throw error;
   }
 };
-
 
 /**
  * Convierte documentos al formato antiguo para compatibilidad
@@ -342,14 +390,34 @@ export const convertDocumentToRecords = (document: AttendanceDocument): Attendan
     });
   });
   
-  // Mapear estudiantes ausentes
-  document.data.ausentes.forEach(studentId => {
-    records.push({
-      studentId,
-      classId: document.classId,
-      Fecha: document.fecha,
-      status: 'Ausente'
+  // Crear un conjunto (Set) de IDs de estudiantes con justificaciones para búsqueda rápida
+  const justifiedStudentIds = new Set<string>();
+  if (document.data.justificacion && Array.isArray(document.data.justificacion)) {
+    document.data.justificacion.forEach((justification) => {
+      if (justification && justification.id) {
+        justifiedStudentIds.add(justification.id);
+      }
     });
+  }
+  
+  // Mapear estudiantes ausentes (verificar si tienen justificación)
+  document.data.ausentes.forEach(studentId => {
+    // Si el estudiante tiene una justificación, marcarlo como Justificado en lugar de Ausente
+    if (justifiedStudentIds.has(studentId)) {
+      records.push({
+        studentId,
+        classId: document.classId,
+        Fecha: document.fecha,
+        status: 'Justificado'
+      });
+    } else {
+      records.push({
+        studentId,
+        classId: document.classId,
+        Fecha: document.fecha,
+        status: 'Ausente'
+      });
+    }
   });
   
   // Mapear estudiantes con tardanza/justificados
@@ -416,90 +484,145 @@ export const addClassObservationFirebase = async (
 
 export const getAllObservationsFirebase = async (): Promise<ClassObservation[]> => {
   try {
-    const observationsCollection = collection(db, OBSERVATIONS_COLLECTION);
-    const querySnapshot = await getDocs(observationsCollection);
+    const authStore = useAuthStore();
+    const currentUser = authStore.user;
+    const role = currentUser?.role || '';
+    const uid = currentUser?.uid || '';
     
-    return querySnapshot.docs.map(doc => {
-      const data = doc.data() as ClassObservation;
-      return {
-        ...data,
-        id: doc.id
-      };
-    });
+    // Generar clave para caché específica por usuario/rol
+    const cacheKey = `observations_${role}_${uid}`;
+    
+    // Intentar obtener del caché primero
+    const cachedData = localStorage.getItem(cacheKey);
+    if (cachedData) {
+      try {
+        const cached = JSON.parse(cachedData);
+        // Verificar si el caché es reciente (menos de 30 minutos)
+        if (cached.timestamp && (Date.now() - cached.timestamp < CACHE_DURATION)) {
+          console.log('[Caché] Usando observaciones en caché');
+          return cached.data;
+        }
+      } catch (e) {
+        console.warn('Error al leer caché de observaciones:', e);
+      }
+    }
+    
+    console.log('Obteniendo observaciones de Firestore...');
+    const observationsCollection = collection(db, OBSERVATIONS_COLLECTION);
+    
+    // Aplicar filtrado según el rol del usuario
+    if (['Maestro', 'Teacher', 'teacher'].includes(role) && uid) {
+      // Si es maestro, obtener las clases asignadas
+      console.log(`[Filtro] Obteniendo observaciones para el maestro ${uid}`);
+      
+      // Obtener clases directamente sin importación dinámica para evitar referencias circulares
+      const teacherClasses = await getTeacherClassesLocal(uid);
+      
+      if (teacherClasses.length === 0) {
+        console.log('[Filtro] El maestro no tiene clases asignadas');
+        return [];
+      }
+      
+      // Extraer los IDs de las clases del profesor
+      const classIds = teacherClasses.map(clase => clase.id);
+      console.log(`[Filtro] Maestro tiene ${classIds.length} clases asignadas`);
+      
+      // Si el maestro tiene pocas clases, podemos usar la cláusula 'in'
+      let observations: ClassObservation[] = [];
+      
+      if (classIds.length < 10) {
+        // Consulta directa usando 'in' (eficiente para pocos valores)
+        const q = query(
+          observationsCollection,
+          where('classId', 'in', classIds)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        observations = querySnapshot.docs.map(doc => {
+          const data = doc.data() as ClassObservation;
+          return {
+            ...data,
+            id: doc.id
+          };
+        });
+      } else {
+        // Para muchas clases, obtenemos todas las observaciones y filtramos en memoria
+        const querySnapshot = await getDocs(observationsCollection);
+        observations = querySnapshot.docs
+          .map(doc => {
+            const data = doc.data() as ClassObservation;
+            return {
+              ...data,
+              id: doc.id
+            };
+          })
+          .filter(obs => classIds.includes(obs.classId));
+      }
+      
+      console.log(`[Filtro] Encontradas ${observations.length} observaciones para el maestro`);
+      
+      // Ordenar por fecha y timestamp
+      const sortedObservations = observations.sort((a, b) => {
+        // Primero ordenar por fecha (más reciente primero)
+        const dateComparison = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (dateComparison !== 0) return dateComparison;
+        
+        // Si las fechas son iguales, ordenar por timestamp
+        const timestampA = typeof a.timestamp === 'number' ? a.timestamp : 0;
+        const timestampB = typeof b.timestamp === 'number' ? b.timestamp : 0;
+        return timestampB - timestampA;
+      });
+      
+      // Guardar en caché
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          timestamp: Date.now(),
+          data: sortedObservations
+        }));
+      } catch (e) {
+        console.warn('Error al guardar caché de observaciones:', e);
+      }
+      
+      return sortedObservations;
+    } else {
+      // Para roles administrativos: obtener todas las observaciones
+      console.log('[Filtro] Obteniendo todas las observaciones (rol admin/director)');
+      const querySnapshot = await getDocs(observationsCollection);
+      
+      const observations = querySnapshot.docs.map(doc => {
+        const data = doc.data() as ClassObservation;
+        return {
+          ...data,
+          id: doc.id
+        };
+      });
+      
+      // Ordenar por fecha y timestamp
+      const sortedObservations = observations.sort((a, b) => {
+        // Primero ordenar por fecha (más reciente primero)
+        const dateComparison = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (dateComparison !== 0) return dateComparison;
+        
+        // Si las fechas son iguales, ordenar por timestamp
+        const timestampA = typeof a.timestamp === 'number' ? a.timestamp : 0;
+        const timestampB = typeof b.timestamp === 'number' ? b.timestamp : 0;
+        return timestampB - timestampA;
+      });
+      
+      // Guardar en caché
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          timestamp: Date.now(),
+          data: sortedObservations
+        }));
+      } catch (e) {
+        console.warn('Error al guardar caché de observaciones:', e);
+      }
+      
+      return sortedObservations;
+    }
   } catch (error) {
     console.error('Error al obtener observaciones:', error);
-    throw error;
-  }
-} ;
-
-
-// Modificar la función getClassObservationsHistoryFirebase para evitar problemas de índices
-export async function getClassObservationsHistoryFirebase(uid: string): Promise<ClassObservation[]> {
-  try {
-    // En lugar de usar una consulta compuesta que requiere un índice
-    // primero obtenemos todas las observaciones para la clase
-    const observationsQuery = query(
-      collection(db, 'ASISTENCIAS'),
-      where('uid', '==', uid),
-    );
-    
-    const querySnapshot = await getDocs(observationsQuery);
-    
-    // Después ordenamos manualmente los resultados
-    const observations = querySnapshot.docs.map(doc => {
-      const data = doc.data() as ClassObservation;
-      return data;
-    });
-    
-    // ordenar por .fecha descendente
-    return observations.sort((a, b) => {
-      const dateA = new Date(a.fecha).getTime();
-      const dateB = new Date(b.fecha).getTime();
-      return dateB - dateA;
-    });
-
-  } catch (error) {
-    console.error('Error al obtener historial de observaciones:', error);
-    throw error;
-  }
-}
-
-// Modificar la función getClassObservationsByDateFirebase para evitar problemas de índices
-export async function getClassObservationsByDateFirebase(classId: string, date: string): Promise<ClassObservation[]> {
-  try {
-    console.log('Consultando observaciones para clase y fecha:', classId, date);
-    
-    // Primero filtramos por classId y date, sin ordenar (no requiere índice compuesto)
-    const observationsQuery = query(
-      collection(db, 'classObservations'),
-      where('classId', '==', classId),
-      where('date', '==', date)
-    );
-    
-    const querySnapshot = await getDocs(observationsQuery);
-    
-    // Procesamos y ordenamos manualmente
-    const observations = querySnapshot.docs.map(doc => {
-      const data = doc.data() as ClassObservation;
-      return {
-        id: doc.id,
-        classId: data.classId,
-        date: data.date,
-        text: data.text || '',
-        author: data.author || 'Sistema',
-        timestamp: typeof data.timestamp === 'string' ? new Date(data.timestamp).getTime() : data.timestamp || Date.now()
-      };
-    });
-    
-    // Ordenamos por timestamp (descendente)
-    return observations.sort((a, b) => {
-      const timestampA = typeof a.timestamp === 'number' ? a.timestamp : 0;
-      const timestampB = typeof b.timestamp === 'number' ? b.timestamp : 0;
-      return timestampB - timestampA;
-    });
-    
-  } catch (error) {
-    console.error('Error al obtener observaciones por fecha:', error);
     throw error;
   }
 }
@@ -541,7 +664,34 @@ export const getAttendanceByDateAndClassFirebase = async (
       return [];
     }
     
-    return convertDocumentToRecords(document);
+    // Crear un conjunto de IDs de estudiantes con justificaciones para búsqueda rápida
+    const justifiedStudentIds = new Set<string>();
+    if (document.data?.justificacion && Array.isArray(document.data.justificacion)) {
+      document.data.justificacion.forEach((justification) => {
+        if (justification && justification.id) {
+          justifiedStudentIds.add(justification.id);
+          console.log(`[Procesando] Estudiante ${justification.id} tiene justificación: ${justification.reason}`);
+        }
+      });
+    }
+    
+    console.log(`[Asistencia] Encontrados ${justifiedStudentIds.size} estudiantes con justificación`);
+    
+    // Procesar todos los registros con la función convertDocumentToRecords
+    const records = convertDocumentToRecords(document);
+    
+    // Asegurarnos que los estudiantes con justificación se marquen correctamente
+    return records.map(record => {
+      // Si el estudiante tiene justificación y está ausente, cambiarlo a Justificado
+      if (record.status === 'Ausente' && justifiedStudentIds.has(record.studentId)) {
+        console.log(`[Asistencia] Corrigiendo estado de ${record.studentId} de Ausente a Justificado`);
+        return {
+          ...record,
+          status: 'Justificado'
+        };
+      }
+      return record;
+    });
   } catch (error) {
     console.error('Error al obtener asistencia por fecha y clase:', error);
     throw error;
@@ -556,16 +706,19 @@ export const updateAttendanceFirebase = async (attendanceData: AttendanceRecord)
     // Obtener o crear el documento
     const docId = getAttendanceDocId(attendanceData.Fecha, attendanceData.classId);
     const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
-    const docSnap = await getDoc(docRef);
-    
     let document: AttendanceDocument;
+    
+    // Verificar si ya existe un documento para esta fecha y clase
+    const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
       document = docSnap.data() as AttendanceDocument;
     } else {
+      // Crear el documento de asistencia
       document = {
         fecha: attendanceData.Fecha,
         classId: attendanceData.classId,
+        teacherId: user?.uid || '', // Usar el ID del usuario actual como teacherId
         data: {
           presentes: [],
           ausentes: [],
@@ -833,7 +986,7 @@ export async function addObservationToHistoryFirebase(
     // Check if an observation already exists for this class and date
     const existingQuery = query(
       collection(db, OBSERVATIONS_COLLECTION),
-      where('classId', '==', classId),
+      where('classId', '==', classId), // classId is correct here as it's the property name in OBSERVATIONS_COLLECTION
       where('date', '==', date)
     );
     
@@ -903,7 +1056,7 @@ export async function getObservationsHistoryFirebase(
     if (classId && specificDate) {
       queryRef = query(
         collection(db, OBSERVATIONS_COLLECTION),
-        where('classId', '==', classId),
+        where('classId', '==', classId), // classId is correct here as it's the property name in OBSERVATIONS_COLLECTION
         where('date', '==', specificDate),
         orderBy('createdAt', 'desc')
       );
@@ -912,7 +1065,7 @@ export async function getObservationsHistoryFirebase(
     else if (classId) {
       queryRef = query(
         collection(db, OBSERVATIONS_COLLECTION),
-        where('classId', '==', classId),
+        where('classId', '==', classId), // classId is correct here as it's the property name in OBSERVATIONS_COLLECTION
         orderBy('createdAt', 'desc')
       );
     }
@@ -1086,14 +1239,17 @@ export const fetchAttendanceByDateFirebase = fetchByDate;
  * @param date La fecha en formato YYYY-MM-DD
  * @returns El estado de asistencia del estudiante
  */
-export async function getStudentAttendanceByDate(studentId: string, date: string): Promise<AttendanceStatus | null> {
+export async function getStudentAttendanceByDate(studentId: string, date: string): Promise<string | null> {
   try {
     const snapshot = await getDocs(query(attendanceCollection, where('studentId', '==', studentId), where('Fecha', '==', date)));
-    if (snapshot.empty) return null;
-    const data = snapshot.docs[0].data();
-    return data.status as AttendanceStatus;
+    if (snapshot.empty) {
+      return null;
+    }
+    
+    const doc = snapshot.docs[0];
+    return doc.data().status || null;
   } catch (error) {
-    console.error('Error fetching student attendance:', error);
+    console.error('Error getting student attendance by date:', error);
     throw error;
   }
 }

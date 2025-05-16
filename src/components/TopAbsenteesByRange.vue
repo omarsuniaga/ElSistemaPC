@@ -40,8 +40,20 @@
       </div>
     </div>
     
+    <!-- Indicador de carga -->
+    <div v-if="isLoading" class="flex justify-center items-center py-8">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+      <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">Cargando datos...</span>
+    </div>
+    
+    <!-- Mensaje de error -->
+    <div v-else-if="error" class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-200 p-4 rounded mb-4">
+      {{ error }}
+      <button @click="calcularTopAbsentees" class="ml-2 underline">Reintentar</button>
+    </div>
+
     <!-- Vista de tabla para pantallas medianas y grandes -->
-    <div class="hidden md:block overflow-x-auto">
+    <div v-else class="hidden md:block overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-700">
           <tr>
@@ -153,7 +165,7 @@
     </div>
     
     <!-- Vista de tarjetas para dispositivos móviles -->
-    <div class="md:hidden space-y-4">
+    <div v-else class="md:hidden space-y-4">
       <div class="flex justify-start mb-2 text-sm">
         <button 
           @click="setSort('student')" 
@@ -448,6 +460,11 @@ import { useAuthStore } from "../stores/auth";
 const props = defineProps<{ limit?: number }>();
 const authStore = useAuthStore();
 
+// Agregar las variables faltantes
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+const selectedClass = ref<string>('');
+
 // Modal de ausencias detalladas
 const showAbsencesModal = ref(false);
 const selectedAbsentee = ref<any>(null);
@@ -546,50 +563,27 @@ const pdfAmonestacionFormateado = computed(() => {
 const pdfRetiroFormateado = computed(() => {
   return formatearTextoParaPDF(pdfRetiroData.value.mensaje);
 });
-
-async function calcularTopAbsentees(startDate: string, endDate: string) {
+// En TopAbsenteesByRange.vue, alrededor de la línea 555
+async function calcularTopAbsentees() {
   try {
-    await attendanceStore.fetchAttendanceByDateRange(startDate, endDate);
+    isLoading.value = true;
+    error.value = null;
     
-    // 1. Obtener todos los estudiantes con ausencias
-    const absentStudents = attendanceStore.calculateAbsentStudents(props.limit || 10);
-    
-    // 2. Para cada estudiante, calcular correctamente su porcentaje de asistencia
-    const processedStudents = absentStudents.map(student => {
-      // Obtener todos los registros de asistencia para este estudiante en el rango
-      const studentRecords = attendanceStore.records.filter(
-        r => r.studentId === student.studentId
-      );
-      
-      // Total de clases a las que debería haber asistido
-      const totalClasses = studentRecords.length;
-      
-      // Clases a las que realmente asistió (no ausentes)
-      const attendedClasses = studentRecords.filter(
-        r => r.status !== "Ausente" && r.status !== "Ausencia"
-      ).length;
-      
-      // Recalcular el porcentaje de asistencia correctamente
-      const attendanceRate = totalClasses > 0 
-        ? (attendedClasses / totalClasses) * 100 
-        : 0;
-      
-      return {
-        ...student,
-        totalClasses,
-        attendedClasses,
-        // Sobreescribir el porcentaje de asistencia con el cálculo correcto
-        attendanceRate
-      };
+    const result = await attendanceStore.calculateAbsentStudents({
+      startDate: formattedStartDate.value,
+      endDate: formattedEndDate.value,
+      classId: selectedClass.value,
+      limit: props.limit || 10
     });
     
-    topAbsentees.value = processedStudents;
-  } catch (error) {
-    console.error("Error al obtener datos de asistencia:", error);
-    // Mostrar mensaje amigable al usuario
-    alert("Hubo un problema al cargar los datos de asistencia. Por favor, intente nuevamente más tarde.");
-    // Proporcionar array vacío como fallback
-    topAbsentees.value = [];
+    // Procesamiento adicional si es necesario
+    topAbsentees.value = result;
+  } catch (err: any) {
+    console.error('Error al obtener datos de asistencia:', err);
+    error.value = `Error al obtener datos de asistencia: ${err.message || err}`;
+    topAbsentees.value = []; // Asegurar que no haya datos parciales
+  } finally {
+    isLoading.value = false;
   }
 }
 
@@ -695,14 +689,20 @@ async function setSort(
   await guardarFiltroUsuario();
 }
 
+// Computed para fechas formateadas
+const formattedStartDate = computed(() => absenceRange.value?.start || '');
+const formattedEndDate = computed(() => absenceRange.value?.end || '');
+
+// Función para filtrar ausencias por rango de fechas
+async function filtrarAusenciasPorRango() {
+  await calcularTopAbsentees();
+  await guardarFiltroUsuario();
+}
+
 // Inicialización
 onMounted(async () => {
   await restaurarFiltroUsuario();
-  // Proteger acceso a absenceRange
-  calcularTopAbsentees(
-    absenceRange.value?.start ?? "",
-    absenceRange.value?.end ?? ""
-  );
+  await calcularTopAbsentees();
 });
 
 const showWhatsappModal = ref(false);

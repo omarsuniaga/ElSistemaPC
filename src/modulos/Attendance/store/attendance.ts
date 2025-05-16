@@ -29,15 +29,20 @@ import {
 import { getFromLocalStorage, saveToLocalStorage, clearLocalStorage } from '../../../utils/localStorageUtils'
 
 // Define the attendance record type
-interface AttendanceRecord {
+export interface AttendanceRecord {
   id?: string;
   studentId: string;
   classId: string;
   Fecha: string; // Format: YYYY-MM-DD
   status: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado' | string;
   notes?: string;
-  justification?: string | {reason: string};
-  documentUrl?: string;
+  justification?: { 
+    reason: string; 
+    documentURL?: string; 
+    timestamp: string; 
+  };
+  createdAt?: string; // Added: Timestamp for creation
+  updatedAt?: string; // Added: Timestamp for last update
 }
 
 // Define the attendance document type
@@ -172,6 +177,23 @@ export const useAttendanceStore = defineStore('attendance', {
   }),
   
   getters: {
+    /**
+     * Devuelve un mapa de studentId a status para la fecha y clase seleccionadas actualmente.
+     * Este es el formato que la UI (ej. AttendanceTable) espera.
+     */
+    getAttendanceMapForSelectedScope: (state): Record<string, AttendanceStatus> => {
+      if (!state.selectedDate || !state.selectedClass) {
+        return {};
+      }
+      const attendanceMap: Record<string, AttendanceStatus> = {};
+      state.records
+        .filter(record => record.Fecha === state.selectedDate && record.classId === state.selectedClass)
+        .forEach(record => {
+          attendanceMap[record.studentId] = record.status;
+        });
+      return attendanceMap;
+    },
+
      getMarkedDatesForCalendar: (state) => {
       return state.datesWithRecords
 },
@@ -197,7 +219,7 @@ export const useAttendanceStore = defineStore('attendance', {
       
       // Find the class in the classes store
       const classesStore = useClassesStore();
-      const classData = classesStore.classes.find(c => c.id === classId);
+      const classData = classesStore.classes.find(c => c.id === classId); // Using id to match with database
       
       // If class not found or no schedule, return empty array
       if (!classData || !classData.schedule || !classData.schedule.slots) {
@@ -241,7 +263,7 @@ export const useAttendanceStore = defineStore('attendance', {
       // 1) Filtrar solo los docs de clases del maestro actual
       const teacherClassIds = classesStore.classes
         .filter(c => c.teacherId === teacherId)
-        .map(c => c.id)
+        .map(c => c.id) // Using id to match with database
 
       // 2) Agrupar docs por fecha solo si pertenecen al maestro
       const byDate: Record<string, string[]> = {}
@@ -387,8 +409,8 @@ getJustification: (state) => {
         const observations = state.currentAttendanceDoc.data.observations;
         return typeof observations === 'string' ? observations : '';
       }
-      // Asegurar que siempre devuelve un string cuando usa observations del state
-      return typeof state.observations === 'string' ? state.observations : '';
+      // Si no hay observaciones en el documento actual, devolver una cadena vacía.
+      return '';
     },
 
     // IMPORTANT: Move getStudentAttendanceRate from actions to getters
@@ -454,7 +476,100 @@ getJustification: (state) => {
     setSelectedDate(date: string): void {
       this.selectedDate = date;
     },
-     async loadAttendanceDataForCalendar(teacherId: string) {
+     async addAttendanceRecord(recordInput: Omit<AttendanceRecord, 'id'>) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        // Asegurarse de que el servicio addAttendanceRecord (de firebase) esté importado y exista.
+        // Este servicio debería encargarse de añadir el registro a Firebase.
+        // Asumimos que addAttendanceRecordFirebase devuelve el ID del nuevo registro o el registro completo con ID.
+        // La función de servicio addAttendanceRecord ahora toma Omit<AttendanceRecord, 'id'>
+        // y se espera que devuelva el registro completo con id, createdAt, updatedAt de Firebase.
+        const savedRecord = await addAttendanceRecord(recordInput); // Esta es la llamada al servicio de Firebase
+
+        // Actualizar el estado local `records` con el registro guardado (que debería incluir un ID de Firebase)
+        const recordIndex = this.records.findIndex(r => r.id === savedRecord.id);
+        if (recordIndex !== -1) {
+          this.records[recordIndex] = savedRecord;
+        } else {
+          this.records.push(savedRecord);
+        }
+
+        // Actualizar el estado local `attendanceRecords` (para la UI)
+        // si el registro añadido corresponde a la fecha y clase seleccionadas.
+        if (this.selectedDate === savedRecord.Fecha && this.selectedClass === savedRecord.classId) {
+          this.attendanceRecords[savedRecord.studentId] = savedRecord.status;
+        }
+
+        // Opcional: Actualizar `currentAttendanceDoc` o llamar a `fetchAttendanceDocument`
+        // para asegurar que todo el documento de asistencia esté sincronizado.
+        if (this.currentAttendanceDoc && this.currentAttendanceDoc.fecha === savedRecord.Fecha && this.currentAttendanceDoc.classId === savedRecord.classId) {
+           await this.fetchAttendanceDocument(savedRecord.Fecha, savedRecord.classId);
+        } else if (this.selectedDate === savedRecord.Fecha && this.selectedClass === savedRecord.classId) {
+          await this.fetchAttendanceDocument(savedRecord.Fecha, savedRecord.classId);
+        }
+
+        // Opcional: Limpiar caché si es necesario
+        if (process.env.NODE_ENV === 'development') {
+          clearLocalStorage(LOCAL_STORAGE_KEYS.ATTENDANCE_DOCUMENTS);
+        }
+        return savedRecord; 
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.error = `Error adding attendance record: ${errorMessage}`;
+        console.error('Error adding attendance record:', error);
+        throw error;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async updateAttendanceRecord(recordToUpdate: AttendanceRecord) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        if (!recordToUpdate.id) {
+          throw new Error("Record ID is required for updates.");
+        }
+        // Call the service function to update in Firebase
+        // This service should handle the actual update and return the updated record
+        const updatedRecord = await updateAttendanceRecordFirebase(recordToUpdate); // Use the imported Firebase service function
+
+        // Update the local 'records' array
+        const index = this.records.findIndex(r => r.id === updatedRecord.id);
+        if (index !== -1) {
+          this.records[index] = updatedRecord;
+        } else {
+          this.records.push(updatedRecord);
+          console.warn(`Updated record with ID ${updatedRecord.id} was not found in local cache, added it.`);
+        }
+
+        // Update 'attendanceRecords' for the UI if it matches the selected scope
+        if (this.selectedDate === updatedRecord.Fecha && this.selectedClass === updatedRecord.classId) {
+          this.attendanceRecords[updatedRecord.studentId] = updatedRecord.status;
+        }
+
+        // Update 'currentAttendanceDoc' if it's the one being modified
+        // This assumes 'updatedRecord' might carry information about its parent document ID, or you fetch based on Fecha/classId
+        if (this.currentAttendanceDoc && this.currentAttendanceDoc.fecha === updatedRecord.Fecha && this.currentAttendanceDoc.classId === updatedRecord.classId ) {
+          await this.fetchAttendanceDocument(updatedRecord.Fecha, updatedRecord.classId);
+        }
+        
+        if (process.env.NODE_ENV === 'development') {
+          clearLocalStorage(LOCAL_STORAGE_KEYS.ATTENDANCE_DOCUMENTS);
+        }
+        return updatedRecord;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.error = `Error updating attendance record: ${errorMessage}`;
+        console.error('Error updating attendance record:', error);
+        throw error;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async loadAttendanceDataForCalendar(teacherId: string) {
        this.isLoading = true;
        this.error = null;
        try {
@@ -1411,6 +1526,92 @@ getJustification: (state) => {
         this.isLoading = false;
       }
     },
+    /**
+   * Calcula los estudiantes con más ausencias en un rango de fechas
+   * 
+   * @param startDate Fecha inicial en formato YYYY-MM-DD
+   * @param endDate Fecha final en formato YYYY-MM-DD
+   * @param classId ID de clase opcional para filtrar resultados
+   * @param limit Número máximo de estudiantes a retornar (default: 15)
+   * @returns Array de objetos con id de estudiante y número de ausencias
+   */
+async calculateAbsentStudents(params: { 
+    startDate: string, 
+    endDate: string, 
+    classId?: string, 
+    limit?: number 
+  }) {
+    try {
+      const { startDate, endDate, classId, limit = 15 } = params;
+      
+      // Verificar parámetros
+      if (!startDate || !endDate) {
+        console.error('Se requieren fechas de inicio y fin para calcular ausencias');
+        return [];
+      }
+      
+      // Cargar registros de asistencia para el rango de fechas
+      const records = await this.fetchAttendanceByDateRange(startDate, endDate);
+      
+      // Filtrar por clase si se proporciona classId
+      const filteredRecords = classId 
+        ? records.filter(record => record.classId === classId)
+        : records;
+      
+      // Contar ausencias por estudiante
+      const absencesByStudent: Record<string, { count: number, lastDate: string, totalClasses: number, attendedClasses: number }> = {};
+      
+      filteredRecords.forEach(record => {
+        // Inicializar datos del estudiante si no existen
+        if (!absencesByStudent[record.studentId]) {
+          absencesByStudent[record.studentId] = { 
+            count: 0, 
+            lastDate: '', 
+            totalClasses: 0,
+            attendedClasses: 0
+          };
+        }
+        
+        // Incrementar total de clases para este estudiante
+        absencesByStudent[record.studentId].totalClasses++;
+        
+        // Si es ausencia, incrementar contador
+        if (record.status === 'Ausente') {
+          absencesByStudent[record.studentId].count++;
+          
+          // Actualizar la fecha de la última ausencia si es más reciente
+          if (!absencesByStudent[record.studentId].lastDate || 
+              record.Fecha > absencesByStudent[record.studentId].lastDate) {
+            absencesByStudent[record.studentId].lastDate = record.Fecha;
+          }
+        } else if (record.status === 'Presente') {
+          // Contar asistencias para calcular porcentaje
+          absencesByStudent[record.studentId].attendedClasses++;
+        }
+      });
+      
+      // Convertir a array y ordenar por número de ausencias (descendente)
+      const result = Object.entries(absencesByStudent)
+        .map(([studentId, data]) => ({
+          studentId,
+          absences: data.count,
+          lastAttendance: data.lastDate,
+          totalClasses: data.totalClasses,
+          attendedClasses: data.attendedClasses,
+          attendanceRate: data.totalClasses > 0 
+            ? (data.attendedClasses / data.totalClasses) * 100 
+            : 0
+        }))
+        .sort((a, b) => b.absences - a.absences);
+      
+      // Limitar resultados
+      return result.slice(0, limit);
+      
+    } catch (error) {
+      console.error('Error al calcular estudiantes ausentes:', error);
+      return [];
+    }
+  },
     // Método para obtener la asistencia de un estudiante en una fecha específica
     async generateProfessionalReport (params: {
       classId?: string;
@@ -1663,7 +1864,7 @@ async getStudentAbsencesByDateRange(startDate: string, endDate: string, classId?
      * This analyzes attendance records and calculates statistics
      * @returns Promise that resolves when analytics have been updated
      */
-    async updateAnalytics(): Promise<void> {
+    async    updateAnalytics(): Promise<void> {
       try {
         this.isLoading = true;
         
@@ -1783,4 +1984,3 @@ async getStudentAbsencesByDateRange(startDate: string, endDate: string, classId?
       }
     }  }
 });
-

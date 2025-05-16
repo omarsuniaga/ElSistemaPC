@@ -1,15 +1,31 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
-import type { AttendanceStatus, JustificationData } from '../types/attendance'
+/*******************************************************
+ * AttendanceList Component
+ * 
+ * Este componente maneja la gestión de asistencia diaria,
+ * incluyendo estados de estudiantes (presente, ausente, tardanza, justificado)
+ * y la persistencia de estos datos en Firebase.
+ *******************************************************/
+
+// Importaciones de Vue y tipos
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import type { JustificationData } from '../types/attendance'
 import type { Student } from '../../Students/types/student'
+
+// Definimos el tipo AttendanceStatus explícitamente para evitar problemas de importación
+type AttendanceStatus = 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
+
+// Stores y router
 import { useClassesStore } from '../../Classes/store/classes'
 import { useStudentsStore } from '../../Students/store/students'
 import { useAttendanceStore } from '../store/attendance'
 import { useRoute } from 'vue-router'
-import { useAuthStore } from '../../../stores/auth'
-import Toast from '../../../components/Toast.vue'
 
-// Import our new components
+// Importamos el composable de acciones de asistencia
+import { useAttendanceActions } from '../composables/useAttendanceActions'
+
+// Componentes
+import Toast from '../../../components/Toast.vue'
 import AttendanceHeader from './AttendanceHeader.vue'
 import AttendanceSummary from './AttendanceSummary.vue'
 import AttendanceTable from './AttendanceTable.vue'
@@ -17,26 +33,26 @@ import LoadingOverlay from './LoadingOverlay.vue'
 import ErrorMessage from './ErrorMessage.vue'
 import { DocumentArrowDownIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
-
 // Props y emits
 const props = defineProps<{
   selectedClassName?: string;
   initialClassId?: string; // Usado para cargar datos si se accede por URL
   date?: string; // Usado para cargar datos si se accede por URL
-  students?: Student[]; // Ahora opcional, con default
-  attendanceRecords?: Record<string, AttendanceStatus>; // Ahora opcional, con default
+  students?: Student[]; // Opcional, con default
+  attendanceRecords?: Record<string, AttendanceStatus>; // Opcional, con default
   isDisabled?: boolean;
 }>()
 
-const emit = defineEmits<{
-  (e: 'update-status', studentId: string, status: AttendanceStatus | 'save'): void;
-  (e: 'open-observation', student: Student | null): void;
-  (e: 'open-justification', student: any): void; // Usar any para resolver error de tipo
-  (e: 'open-export'): void;
-  (e: 'class-changed', classId: string): void;
-  (e: 'navigate-to-calendar'): void;
-  (e: 'navigate-to-class-selector'): void;
-}>()
+const emit = defineEmits([
+  'navigate-to-class-selector',
+  'navigate-to-calendar',
+  'open-justification',
+  'save-justification',
+  'update-status',
+  'open-observation',
+  'save-observation',
+  'open-export'
+])
 
 // Stores
 const classesStore = useClassesStore();
@@ -68,237 +84,6 @@ const showToast = ref(false);
 const toastMessage = ref('');
 const toastType = ref<'success' | 'error' | 'warning' | 'info'>('success');
 
-// Computed para obtener el tamaño del set pendingChanges de forma segura
-// IMPORTANTE: Definimos pendingChangesCount antes de usarlo en cualquier otro lugar
-const pendingChangesCount = computed(() => {
-  return pendingChanges && pendingChanges.value ? pendingChanges.value.size : 0;
-});
-const hasPendingChanges = computed(() => pendingChangesCount.value > 0);
-
-// Usar props si están disponibles, de lo contrario, usar datos locales
-const effectiveStudents = computed(() => {
-  return props.students && props.students.length > 0 ? props.students : localStudents.value;
-});
-
-const effectiveAttendanceRecords = computed(() => {
-  // Prioriza los cambios locales no guardados, luego los props, luego los datos locales cargados
-  if (pendingChangesCount.value > 0) {
-    return localAttendanceRecords.value;
-  }
-  return props.attendanceRecords && Object.keys(props.attendanceRecords).length > 0
-    ? props.attendanceRecords
-    : localAttendanceRecords.value;
-});
-
-// Watch para inicializar el estado local cuando cambian los attendanceRecords de las props
-// y no hay cambios pendientes
-watch(
-  () => props.attendanceRecords,
-  (newRecords) => {
-    if (pendingChangesCount.value === 0 && newRecords) {
-      console.log('Recibiendo nuevos registros de asistencia vía props');
-      
-      // Hacer una copia profunda para evitar referencias compartidas
-      localAttendanceRecords.value = { ...newRecords };
-      
-      // Limpiar pendingChanges al recibir nuevos registros
-      pendingChanges.value.clear();
-      
-      // Verificar si hay estudiantes sin estado de asistencia asignado
-      if (props.students && props.students.length > 0) {
-        let missingStudents = 0;
-        let studentsWithStatus = 0;
-        
-        props.students.forEach(student => {
-          if (!localAttendanceRecords.value[student.id]) {
-            // Si no hay un estado asignado para este estudiante, lo dejamos en blanco
-            // en lugar de asignar uno automáticamente
-            missingStudents++;
-          } else {
-            studentsWithStatus++;
-          }
-        });
-        
-        // Notificar sobre el estado de los registros
-        console.log(`Estado de registros de asistencia: ${studentsWithStatus} con estado, ${missingStudents} sin estado`);
-        
-        // Notificar si hay estudiantes sin estado de asistencia
-        if (missingStudents > 0) {
-          console.warn(`Advertencia: ${missingStudents} estudiantes no tienen estado de asistencia asignado`);
-        }
-      }
-    } else if (pendingChangesCount.value > 0) {
-      console.log(`No se actualizarán los registros porque hay ${pendingChangesCount.value} cambios pendientes`);
-    }
-  },
-  { immediate: false, deep: true } // Cambiado a immediate: false para evitar la referencia temprana
-);
-
-// Watch para inicializar los estudiantes locales cuando cambian las props
-// y no hay carga activa (para evitar sobrescribir datos cargados por URL)
-watch(
-  () => props.students,
-  (newStudents) => {
-    if (!isLoading.value && newStudents) {
-      localStudents.value = [...newStudents];
-    }
-  },
-  { immediate: true, deep: true }
-);
-
-
-const fetchDataForComponent = async (dateParam: string, classIdParam: string) => {
-  // Normalizar formato de fecha si es necesario
-  let normalizedDate = dateParam;
-  if (dateParam && /^\d{8}$/.test(dateParam)) {
-    normalizedDate = `${dateParam.substring(0, 4)}-${dateParam.substring(4, 6)}-${dateParam.substring(6, 8)}`;
-  }
-  try {
-    isLoading.value = true;
-    errorMessage.value = null;
-    // Resetear estados previos
-    localStudents.value = [];
-    localAttendanceRecords.value = {};    console.log(`Fetching data for date: ${normalizedDate} (original: ${dateParam}), classId: ${classIdParam}`);
-
-    // Cargar estudiantes para la clase
-    const classData = await classesStore.getClassById(classIdParam);
-    if (classData && classData.studentIds && classData.studentIds.length > 0) {
-      if (studentsStore.students.length === 0) {
-        await studentsStore.fetchStudents();
-      }
-      localStudents.value = studentsStore.students.filter(student =>
-        classData.studentIds.includes(student.id)
-      );
-    } else {
-      localStudents.value = [];
-      console.warn(`No students found for class ${classIdParam}`);
-    }    // Cargar registros de asistencia
-    const records = await attendanceStore.getAttendanceByDateAndClass(normalizedDate, classIdParam);
-    console.log('Registros obtenidos:', records);
-    
-    // Reconstruir el formato Record<string, AttendanceStatus>
-    const formattedRecords: Record<string, AttendanceStatus> = {};
-    
-    // Limpiar pendingChanges al cargar datos nuevos
-    pendingChanges.value.clear();
-    
-    if (records && records.length > 0) {
-        // Determinar el formato de los datos recibidos
-        const firstRecord = records[0] as any; // Usar any para inspección inicial
-        
-        // Si los datos vienen como AttendanceDocument (tienen propiedad data)
-        if (firstRecord.data && 
-           (Array.isArray(firstRecord.data.presentes) || 
-            Array.isArray(firstRecord.data.ausentes) || 
-            Array.isArray(firstRecord.data.tarde))) {
-            
-            console.log('Procesando datos en formato AttendanceDocument');
-            
-            // Procesar registros por categoría
-            if (Array.isArray(firstRecord.data.presentes)) {
-                firstRecord.data.presentes.forEach((id: string) => formattedRecords[id] = 'Presente');
-            }
-            if (Array.isArray(firstRecord.data.ausentes)) {
-                firstRecord.data.ausentes.forEach((id: string) => formattedRecords[id] = 'Ausente');
-            }
-            if (Array.isArray(firstRecord.data.tarde)) {
-                firstRecord.data.tarde.forEach((id: string) => formattedRecords[id] = 'Tardanza');
-            }
-            
-            // Procesar justificaciones
-            if (Array.isArray(firstRecord.data.justificacion)) {
-                firstRecord.data.justificacion.forEach((justification: JustificationData) => {
-                    if (!formattedRecords[justification.id]) { 
-                        formattedRecords[justification.id] = 'Justificado';
-                    } else if (formattedRecords[justification.id] === 'Tardanza' || 
-                              formattedRecords[justification.id] === 'Ausente') {
-                        formattedRecords[justification.id] = 'Justificado';
-                    }
-                });
-            }        } else {
-            // Si los datos vienen como un array de AttendanceRecord individuales
-            console.log('Procesando datos en formato AttendanceRecord');
-            
-            // Recorrer cada registro y añadirlo al mapa formattedRecords
-            records.forEach(record => {
-                if (record.studentId && record.status) {
-                    formattedRecords[record.studentId] = record.status as AttendanceStatus;
-                }
-            });
-        }
-        
-        console.log('Registros formateados:', formattedRecords);
-        localAttendanceRecords.value = formattedRecords;
-    } else {
-        localAttendanceRecords.value = {};
-    }
-
-    console.log('Data fetched:', { students: localStudents.value.length, records: Object.keys(localAttendanceRecords.value).length });
-
-  } catch (error) {
-    console.error("Error fetching data for AttendanceList:", error);
-    errorMessage.value = "Error al cargar los datos de asistencia.";
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-onMounted(async () => {  let dateParam = route.params.date as string || props.date;
-  
-  // Formato normalizado de fecha (YYYYMMDD -> YYYY-MM-DD)
-  if (dateParam && /^\d{8}$/.test(dateParam)) {
-    dateParam = `${dateParam.substring(0, 4)}-${dateParam.substring(4, 6)}-${dateParam.substring(6, 8)}`;
-  }
-  
-  const classIdParam = route.params.classId as string || props.initialClassId;
-
-  if (dateParam && classIdParam) {
-    // Solo cargar datos si las props no los proveyeron inicialmente
-    const studentsProvided = props.students && props.students.length > 0;
-    const recordsProvided = props.attendanceRecords && Object.keys(props.attendanceRecords).length > 0;
-
-    if (!studentsProvided || !recordsProvided) {
-      await fetchDataForComponent(dateParam, classIdParam);
-    } else {
-      // Si las props ya tienen datos, los usamos y actualizamos el estado local
-      if (props.students) localStudents.value = [...props.students];
-      if (props.attendanceRecords) localAttendanceRecords.value = { ...props.attendanceRecords };
-    }
-  } else {
-    // Si no hay parámetros de ruta ni props iniciales, usar props si existen
-     if (props.students) localStudents.value = [...props.students];
-     if (props.attendanceRecords) localAttendanceRecords.value = { ...props.attendanceRecords };
-     if (!props.students && !props.initialClassId) {
-        console.warn("AttendanceList: No classId or students provided.");
-        errorMessage.value = "No se especificó una clase para mostrar la asistencia.";
-     }
-  }
-});
-
-// Watch para cambios en la ruta si el componente permanece montado
-watch(
-  () => [route.params.date, route.params.classId],
-  async ([newDate, newClassId]) => {
-    if (newDate && newClassId) {
-      await fetchDataForComponent(newDate.toString(), newClassId.toString());
-      // Forzar actualización de datos locales
-      localStudents.value = [...localStudents.value];
-      localAttendanceRecords.value = {...localAttendanceRecords.value};
-    }
-  },
-  { immediate: false, deep: true } // Cambiado a immediate: false para evitar la referencia temprana
-);
-watch(
-  () => props.attendanceRecords,
-  (newRecords) => {
-    // Only update from props if no local unsaved changes AND not currently fetching data
-    if (pendingChangesCount.value === 0 && !isLoading.value && newRecords) { // Added !isLoading.value
-      localAttendanceRecords.value = { ...newRecords };
-    }
-  },
-  { immediate: false, deep: true } // Cambiado a immediate: false para evitar la referencia temprana
-);
-
 // Función para mostrar el toast
 const displayToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
   toastMessage.value = message;
@@ -306,177 +91,849 @@ const displayToast = (message: string, type: 'success' | 'error' | 'warning' | '
   showToast.value = true;
 };
 
-// Manejar actualización de estado de asistencia
+// Función para verificar la existencia de una clase en Firestore
+const verifyClassExists = async (classId: string) => {
+  if (!classId) {
+    console.error('No se puede verificar la existencia de una clase sin ID');
+    return false;
+  }
+  
+  try {
+    console.log(`[ClassDebug] Verificando existencia de clase con ID=${classId}`);
+    console.log(`[ClassDebug] Store selectedClass=${attendanceStore.selectedClass}, Route classId=${route.params.classId}`);
+    
+    // Primero intentamos obtener la clase del store (caché)
+    const classFromStore = classesStore.getClassById(classId);
+    if (classFromStore) {
+      console.log(`[ClassDebug] Clase encontrada en el store con ID=${classId}:`, classFromStore);
+      return true;
+    } else {
+      console.log(`[ClassDebug] Clase no encontrada en store con ID=${classId}`);
+    }
+    
+    // Si no está en el store, intentamos cargar todas las clases
+    console.log(`[ClassDebug] Refrescando clases desde Firestore...`);
+    await classesStore.fetchClasses();
+    const classAfterFetch = classesStore.getClassById(classId);
+    
+    if (classAfterFetch) {
+      console.log(`[ClassDebug] Clase encontrada en Firestore con ID=${classId}:`, classAfterFetch);
+      return true;
+    }
+    
+    // Intenta con el classId alternativo del store
+    if (attendanceStore.selectedClass && attendanceStore.selectedClass !== classId) {
+      console.log(`[ClassDebug] Intentando con classId alternativo del store=${attendanceStore.selectedClass}`);
+      const altClass = classesStore.getClassById(attendanceStore.selectedClass);
+      if (altClass) {
+        console.log(`[ClassDebug] Clase alternativa encontrada con ID=${attendanceStore.selectedClass}:`, altClass);
+        return true;
+      }
+    }
+    
+    console.error(`[ClassDebug] Clase con ID=${classId} no encontrada en Firestore ni en el store`);
+    return false;
+  } catch (error) {
+    console.error(`[ClassDebug] Error al verificar la existencia de la clase ${classId}:`, error);
+    return false;
+  }
+};
+
+// Integración con el composable de acciones de asistencia
+const currentSelectedDate = computed(() => {
+  return props.date || (route.params.date as string) || attendanceStore.selectedDate || '';
+});
+
+const currentSelectedClass = computed(() => {
+  return props.initialClassId || (route.params.classId as string) || (route.params.id as string) || attendanceStore.selectedClass || '';
+});
+
+// Debug computed property to help identify where the class ID comes from
+const debugClassIdSource = computed(() => {
+  return {
+    propsInitialClassId: props.initialClassId,
+    routeParamsClassId: route.params.classId,
+    routeParamsId: route.params.id,
+    storeSelectedClass: attendanceStore.selectedClass,
+    resultingValue: currentSelectedClass.value
+  };
+});
+
+const attendanceActions = useAttendanceActions({
+  localStudents,
+  localAttendanceRecords,
+  pendingChanges,
+  pendingJustifications,
+  displayToast,
+  isProcessing,
+  selectedDate: currentSelectedDate,
+  selectedClass: currentSelectedClass
+});
+
+// Computed para obtener el tamaño del set pendingChanges
+const pendingChangesCount = computed(() => attendanceActions.pendingChangesCount.value);
+const hasPendingChanges = computed(() => attendanceActions.hasPendingChanges.value);
+
+// Computed properties para observaciones
+const hasObservations = computed(() => {
+  const observations = attendanceStore.getObservations;
+  return observations && typeof observations === 'string' && observations.trim().length > 0;
+});
+
+const shouldAnimateObservationsButton = computed(() => {
+  // Animar botón de observaciones solo si:
+  // 1. No hay observaciones para la clase y fecha actual
+  // 2. Hay estudiantes cargados (significa que la clase existe y requiere asistencia)
+  return effectiveStudents.value.length > 0 && !hasObservations.value;
+});
+
+// Usando props si están disponibles, de lo contrario, usando datos locales
+const effectiveStudents = computed(() => {
+  return props.students && props.students.length > 0 ? props.students : localStudents.value;
+});
+
+const effectiveAttendanceRecords = computed(() => {
+  // PRIORIDAD CLARA DE DATOS:
+  // 1. Cambios locales pendientes
+  // 2. Datos cargados localmente del documento de asistencia
+  // 3. Datos del store de asistencia
+  // 4. Datos de props (como último recurso)
+
+  // Registrar tamaños para depuración
+  const localSize = Object.keys(localAttendanceRecords.value).length;
+  const storeSize = Object.keys(attendanceStore.attendanceRecords).length;
+  const propsSize = props.attendanceRecords ? Object.keys(props.attendanceRecords).length : 0;
+  const pendingSize = pendingChangesCount.value;
+  
+  console.log(`[AttendanceDebug] Fuentes disponibles: local=${localSize}, store=${storeSize}, props=${propsSize}, pendientes=${pendingSize}`);
+  
+  // CASO 1: Si tenemos cambios pendientes, siempre usar los datos locales
+  if (pendingChangesCount.value > 0) {
+    console.log(`[AttendanceDebug] PRIORIDAD 1: Usando registros locales (cambios pendientes: ${pendingChangesCount.value})`);
+    return {...localAttendanceRecords.value};
+  }
+  
+  // CASO 2: Si hay datos locales cargados (ya sea por fetchAttendanceDocument o por actualización manual)
+  if (localSize > 0) {
+    console.log('[AttendanceDebug] PRIORIDAD 2: Usando registros locales');
+    return {...localAttendanceRecords.value};
+  }
+
+  // CASO 3: Si hay datos en el store de asistencia, usarlos y actualizar local para futuras referencias
+  if (storeSize > 0) {
+    console.log('[AttendanceDebug] PRIORIDAD 3: Usando registros del store');
+    // Actualizar también los datos locales
+    localAttendanceRecords.value = {...attendanceStore.attendanceRecords};
+    
+    // Forzar actualización reactiva
+    setTimeout(() => {
+      localAttendanceRecords.value = {...localAttendanceRecords.value};
+    }, 0);
+    
+    return {...attendanceStore.attendanceRecords};
+  }
+  
+  // CASO 4: Como último recurso, comprobar si las props tienen datos
+  if (propsSize > 0) {
+    console.log('[AttendanceDebug] PRIORIDAD 4: Usando registros de props');
+    // Actualizar también los datos locales
+    localAttendanceRecords.value = {...props.attendanceRecords};
+    
+    // Forzar actualización reactiva
+    setTimeout(() => {
+      localAttendanceRecords.value = {...localAttendanceRecords.value};
+    }, 0);
+    
+    return {...props.attendanceRecords};
+  }
+  
+  // Si no hay nada, retornar objeto vacío
+  console.log('[AttendanceDebug] Sin datos disponibles, retornando objeto vacío');
+  return {};
+});
+
+// Función para cargar datos para el componente
+const fetchDataForComponent = async (dateParam: string, classIdParam: string) => {
+  if (!dateParam || !classIdParam) {
+    console.warn('No hay fecha o clase para cargar datos', { date: dateParam, classId: classIdParam });
+    return;
+  }
+  
+  console.log(`[AttendanceDebug] fetchDataForComponent: Cargando datos para fecha=${dateParam} y classId=${classIdParam}`);
+  
+  try {
+    // Mostrar indicador de carga
+    isLoading.value = true;
+    
+    // PASO 1: INICIAR DESDE EL STORE - Asegurarnos que la fecha y clase estén establecidas
+    attendanceStore.selectedDate = dateParam;
+    attendanceStore.selectedClass = classIdParam;
+    
+    // PASO 2: Cargamos información de la clase y estudiantes simultáneamente para optimizar
+    console.log(`[AttendanceDebug] Verificando información de la clase y estudiantes`);
+    
+    // Ejecutar ambas promesas en paralelo
+    const [classesResult, studentsResult] = await Promise.all([
+      classesStore.fetchClasses(),
+      studentsStore.fetchStudents()
+    ]);
+    
+    // Verificar si la clase existe
+    const classInfo = classesStore.getClassById(classIdParam);
+    if (!classInfo) {
+      console.error(`[AttendanceDebug] No se encontró la clase con ID=${classIdParam}`);
+      errorMessage.value = `No se encontró la clase con ID ${classIdParam}`;
+      return;
+    }
+    
+    // Filtrar estudiantes de esta clase
+    const allStudents = studentsStore.activeStudents;
+    const studentIdsInClass = classInfo.studentIds || [];
+    console.log(`[AttendanceDebug] Total estudiantes en la clase: ${studentIdsInClass.length}`);
+    
+    const studentsInClass = allStudents.filter(student => 
+      studentIdsInClass.includes(student.id)
+    );
+    
+    localStudents.value = [...studentsInClass];
+    console.log(`[AttendanceDebug] ${studentsInClass.length} estudiantes cargados para la clase`);
+    
+    // PASO 3: PRIORIDAD DE FUENTES DE DATOS
+    console.log(`[AttendanceDebug] Cargando datos de asistencia para fecha=${dateParam}, clase=${classIdParam}`);
+    
+    // Limpiar datos antiguos antes de cargar nuevos para evitar mezclas
+    // localAttendanceRecords.value = {}; // Comentado para evitar borrar datos válidos
+    
+    // 1. PRIORIDAD: Props (si existen)
+    const propsRecords = props.attendanceRecords || {};
+    const propsSize = Object.keys(propsRecords).length;
+    console.log(`[AttendanceDebug] ✓ REGISTROS DE PROPS DISPONIBLES: ${propsSize}`);
+    
+    // 2. PRIORIDAD: Store (si existen)
+    const storeRecords = attendanceStore.attendanceRecords || {};
+    const storeSize = Object.keys(storeRecords).length;
+    console.log(`[AttendanceDebug] ✓ REGISTROS DEL STORE DISPONIBLES: ${storeSize}`);
+    
+    // Establecer prioridad clara: Props > Store > Firebase
+    if (propsSize > 0) {
+      console.log('[AttendanceDebug] ✓ USANDO REGISTROS DE PROPS COMO FUENTE PRINCIPAL');
+      localAttendanceRecords.value = { ...propsRecords };
+    } else if (storeSize > 0) {
+      console.log('[AttendanceDebug] ✓ USANDO REGISTROS DEL STORE COMO FUENTE PRINCIPAL');
+      localAttendanceRecords.value = { ...storeRecords };
+    }
+    
+    // PASO 4: Cargar documento de asistencia desde Firebase como último recurso
+    console.log('[AttendanceDebug] 🔄 CARGANDO DOCUMENTO DE ASISTENCIA DE FIRESTORE');
+    const attendanceDoc = await attendanceStore.fetchAttendanceDocument(dateParam, classIdParam);
+    
+    if (attendanceDoc) {
+      console.log('[AttendanceDebug] ✓ DOCUMENTO ENCONTRADO EN FIRESTORE:', attendanceDoc);
+      
+      // Solo usamos datos de Firestore si no hay datos locales o si hay inconsistencias
+      const localSize = Object.keys(localAttendanceRecords.value).length;
+      const freshStoreRecords = { ...attendanceStore.attendanceRecords };
+      const freshStoreSize = Object.keys(freshStoreRecords).length;
+      
+      if (localSize === 0 || (freshStoreSize > 0 && freshStoreSize >= localSize)) {
+        console.log('[AttendanceDebug] ✓ ACTUALIZANDO REGISTROS LOCALES DESDE STORE ACTUALIZADO');
+        localAttendanceRecords.value = { ...freshStoreRecords };
+      }
+    } else if (Object.keys(localAttendanceRecords.value).length === 0) {
+      // Inicializar un documento vacío para estudiantes sin registros
+      console.log('[AttendanceDebug] ⚠️ NO HAY DOCUMENTO DE ASISTENCIA - INICIALIZANDO ESTADOS PREDETERMINADOS');
+      
+      // Opción: Inicializar con "Ausente" para todos los estudiantes si se desea un estado predeterminado
+      // const defaultAttendance = {};
+      // studentsInClass.forEach(student => {
+      //   defaultAttendance[student.id] = 'Ausente';
+      // });
+      // localAttendanceRecords.value = defaultAttendance;
+    }
+    
+    // PASO 5: ASEGURAR SINCRONIZACIÓN BIDIRECCIONAL
+    // Asegurarse de que el store tenga los mismos datos que el componente local
+    // (Importante para continuidad entre vistas)
+    if (Object.keys(localAttendanceRecords.value).length > 0) {
+      attendanceStore.attendanceRecords = { ...localAttendanceRecords.value };
+    }
+    
+    // PASO 6: Forzar actualización del renderizado utilizando nextTick
+    await nextTick();
+    console.log('[AttendanceDebug] Total de registros tras cargar:', Object.keys(localAttendanceRecords.value).length);
+    
+    // Un doble-check final con timeout para asegurar renderizado
+    if (Object.keys(localAttendanceRecords.value).length > 0) {
+      setTimeout(() => {
+        console.log('[AttendanceDebug] Comprobando estado final de los registros');
+        const recordCount = Object.keys(localAttendanceRecords.value).length;
+        console.log(`[AttendanceDebug] Registros finales: ${recordCount}`);
+        
+        if (recordCount === 0) {
+          // Último intento si aún no hay registros
+          localAttendanceRecords.value = { ...attendanceStore.attendanceRecords };
+        }
+      }, 100);
+    }
+  } catch (error) {
+    console.error('[AttendanceDebug] Error al cargar datos:', error);
+    errorMessage.value = 'Error al cargar datos de asistencia';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Inicializar cuando cambian las props
+watch(
+  () => [props.date, props.initialClassId],
+  async ([newDate, newClassId]) => {
+    console.log(`AttendanceList Watcher: Date='${newDate}', ClassId='${newClassId}'`); // For debugging
+    console.log('Debug Class ID Sources:', debugClassIdSource.value);
+    
+    // Try to get the class ID from any available source
+    const effectiveClassId = newClassId || 
+                            route.params.classId || 
+                            route.params.id || 
+                            attendanceStore.selectedClass || '';
+    
+    console.log(`Using effective ClassId='${effectiveClassId}'`);
+    
+    if (newDate && effectiveClassId) {
+      try {
+        // Verify that the class exists
+        const classExists = await verifyClassExists(effectiveClassId);
+        
+        if (classExists) {
+          // Valid date and existing classId, proceed to fetch data
+          await fetchDataForComponent(newDate as string, effectiveClassId);
+        } else {
+          console.error(`No se encontró la clase con ID=${effectiveClassId}`);
+          errorMessage.value = `No se encontró la clase con ID=${effectiveClassId}`;
+          isLoading.value = false;
+        }
+      } catch (error) {
+        console.error('Error al verificar la clase:', error);
+        errorMessage.value = 'Error al verificar información de la clase';
+        isLoading.value = false;
+      }
+    } else {
+      // Date or classId is missing or invalid, clear existing data
+      // console.log('AttendanceList Watcher: Invalid date or classId. Clearing data.'); // For debugging
+      isLoading.value = true; // Indicate a change is happening
+      localStudents.value = [];
+      localAttendanceRecords.value = {};
+      if (pendingChanges.value && typeof pendingChanges.value.clear === 'function') {
+        pendingChanges.value.clear();
+      }
+      if (pendingJustifications.value && typeof pendingJustifications.value.clear === 'function') {
+        pendingJustifications.value.clear();
+      }
+      // Optionally, inform the user that a valid selection is needed
+      // displayToast("Por favor, seleccione una fecha y clase válidas.", "info");
+      isLoading.value = false;
+    }
+  },
+  { immediate: true }
+);
+
+// Hook onMounted optimizado para garantizar carga de datos
+onMounted(async () => {
+  console.log('[AttendanceDebug] ⚡ COMPONENTE MONTADO - Iniciando carga crítica de datos');
+  
+  // Obtener la fecha y clase de todas las fuentes posibles
+  const dateToUse = props.date || (route.params.date as string) || attendanceStore.selectedDate;
+  const classIdToUse = props.initialClassId || (route.params.classId as string) || (route.params.id as string) || attendanceStore.selectedClass;
+  
+  if (!dateToUse || !classIdToUse) {
+    console.error('[AttendanceDebug] ❌ Falta fecha o clase para cargar datos');
+    return;
+  }
+  
+  console.log(`[AttendanceDebug] 📅 Fecha=${dateToUse}, Clase=${classIdToUse}`);
+  
+  try {
+    // IMPORTANTE: Establecer selección en el store ANTES DE CUALQUIER OPERACIÓN
+    attendanceStore.selectedDate = dateToUse;
+    attendanceStore.selectedClass = classIdToUse;
+    
+    // PASO 1: Intentar cargar datos desde el store inmediatamente
+    const initialStoreRecords = { ...attendanceStore.attendanceRecords };
+    const initialStoreSize = Object.keys(initialStoreRecords).length;
+    
+    if (initialStoreSize > 0) {
+      console.log(`[AttendanceDebug] ✅ DATOS INICIALES DEL STORE: ${initialStoreSize} registros`);
+      localAttendanceRecords.value = { ...initialStoreRecords };
+      
+      // Forzar actualización reactiva inmediata
+      await nextTick();
+    }
+    
+    // PASO 2: Realizar carga completa (incluso si ya hay datos)
+    await fetchDataForComponent(dateToUse, classIdToUse);
+    
+    // PASO 3: Comprobar si hay datos en el componente después de la carga
+    const localSize = Object.keys(localAttendanceRecords.value).length;
+    const storeSize = Object.keys(attendanceStore.attendanceRecords).length;
+    
+    console.log(`[AttendanceDebug] 📊 Después de carga inicial: Registros locales=${localSize}, Store=${storeSize}`);
+    
+    // PASO 4: VERIFICACIÓN CRÍTICA - Si no hay datos locales pero hay en store, sincronizar
+    if (localSize === 0 && storeSize > 0) {
+      console.log('[AttendanceDebug] ⚠️ ESTADO CRÍTICO: Sincronizando manualmente datos del store al componente');
+      localAttendanceRecords.value = { ...attendanceStore.attendanceRecords };
+      
+      // Forzar actualización inmediata
+      await nextTick();
+    } else if (localSize > 0) {
+      // Si hay datos locales, asegurarse que el store también los tenga
+      attendanceStore.attendanceRecords = { ...localAttendanceRecords.value };
+    }
+    
+    // PASO 5: SECUENCIA DE ACTUALIZACIÓN garantizada con intervalos
+    // Esto fuerza una actualización reactiva completa en varios momentos para asegurar la visualización
+    
+    // Primera actualización inmediata
+    localAttendanceRecords.value = { ...localAttendanceRecords.value };
+    
+    // Segunda actualización con breve retraso
+    setTimeout(() => {
+      console.log('[AttendanceDebug] 🔄 Actualizando UI después del montaje (1/2)');
+      
+      // Verificar estado actual
+      const totalStudents = localStudents.value.length;
+      const totalRecords = Object.keys(localAttendanceRecords.value).length;
+      console.log(`[AttendanceDebug] 📊 Estudiantes=${totalStudents}, Registros=${totalRecords}`);
+      
+      // Forzar actualización reactiva
+      localAttendanceRecords.value = { ...localAttendanceRecords.value };
+      
+      // Tercera actualización para casos extremos
+      setTimeout(() => {
+        console.log('[AttendanceDebug] 🔄 Actualizando UI después del montaje (2/2)');
+        
+        // Última verificación de sincronización
+        const finalStoreSize = Object.keys(attendanceStore.attendanceRecords).length;
+        const finalLocalSize = Object.keys(localAttendanceRecords.value).length;
+        
+        // Si hay inconsistencia, priorizar los datos con más información
+        if (finalStoreSize > finalLocalSize) {
+          console.log('[AttendanceDebug] 🔄 Sincronización final: store → local');
+          localAttendanceRecords.value = { ...attendanceStore.attendanceRecords };
+        } else if (finalLocalSize > finalStoreSize) {
+          console.log('[AttendanceDebug] 🔄 Sincronización final: local → store');
+          attendanceStore.attendanceRecords = { ...localAttendanceRecords.value };
+        }
+      }, 250);
+    }, 50);
+  } catch (error) {
+    console.error('[AttendanceDebug] ❌ Error en la inicialización del componente:', error);
+    errorMessage.value = 'Error al inicializar el componente de asistencia';
+  }
+});
+
+// Watch mejorado para sincronizar cambios en attendanceRecords
+watch(
+  [
+    () => props.attendanceRecords, 
+    () => attendanceStore.attendanceRecords
+  ],
+  ([propsRecords, storeRecords], [oldPropsRecords, oldStoreRecords]) => {
+    console.log('[AttendanceDebug] 🔍 WATCH DETECTÓ CAMBIOS EN REGISTROS');
+    
+    // No hacer nada si tenemos cambios locales pendientes para evitar sobreescribirlos
+    if (pendingChangesCount.value > 0) {
+      console.log(`[AttendanceDebug] ⚠️ PROTECCIÓN DE CAMBIOS: Ignorando cambios externos porque hay ${pendingChangesCount.value} cambios pendientes`);
+      return;
+    }
+    
+    // Función para verificar cambios reales comparando objetos
+    const hasRealChanges = (newObj: any, oldObj: any) => {
+      // Si alguno es undefined o null, considerar cambio si son diferentes
+      if (!newObj || !oldObj) return newObj !== oldObj;
+      
+      // Comparar tamaños
+      const newKeys = Object.keys(newObj);
+      const oldKeys = Object.keys(oldObj || {});
+      if (newKeys.length !== oldKeys.length) return true;
+      
+      // Verificar si algún valor cambió
+      return newKeys.some(key => newObj[key] !== oldObj?.[key]);
+    };
+    
+    // Obtener dimensiones para toma de decisiones
+    const localSize = Object.keys(localAttendanceRecords.value).length;
+    const storeSize = storeRecords ? Object.keys(storeRecords).length : 0;
+    const propsSize = propsRecords ? Object.keys(propsRecords).length : 0;
+    
+    // CASO 1: Cambios en props con contenido significativo
+    const hasPropsChanges = propsRecords && hasRealChanges(propsRecords, oldPropsRecords);
+    
+    if (hasPropsChanges && propsSize > 0) {
+      console.log(`[AttendanceDebug] 📥 ACTUALIZACIÓN DESDE PROPS: ${propsSize} registros`);
+      
+      // IMPORTANTE: Solo actualizar si props tiene más datos o si no tenemos datos locales
+      if (propsSize > localSize || localSize === 0) {
+        localAttendanceRecords.value = { ...propsRecords };
+        
+        // Sincronizar con store si es necesario
+        if (propsSize > storeSize) {
+          attendanceStore.attendanceRecords = { ...propsRecords };
+          console.log('[AttendanceDebug] ↗️ Sincronizando store desde props');
+        }
+        
+        // Forzar actualización
+        setTimeout(() => {
+          localAttendanceRecords.value = { ...localAttendanceRecords.value };
+        }, 0);
+      }
+      return;
+    }
+    
+    // CASO 2: Cambios en store con contenido significativo
+    const hasStoreChanges = storeRecords && hasRealChanges(storeRecords, oldStoreRecords);
+    
+    if (hasStoreChanges && storeSize > 0) {
+      console.log(`[AttendanceDebug] 🗄️ ACTUALIZACIÓN DESDE STORE: ${storeSize} registros`);
+      
+      // IMPORTANTE: Solo actualizar si store tiene más datos o no tenemos datos locales
+      if (storeSize > localSize || localSize === 0) {
+        localAttendanceRecords.value = { ...storeRecords };
+        
+        // Forzar actualización
+        setTimeout(() => {
+          localAttendanceRecords.value = { ...localAttendanceRecords.value };
+        }, 0);
+      } else if (localSize > storeSize) {
+        // Si los datos locales tienen más información, actualizamos el store
+        attendanceStore.attendanceRecords = { ...localAttendanceRecords.value };
+        console.log('[AttendanceDebug] ↗️ Sincronizando store desde componente local');
+      }
+    }
+  },
+  { immediate: true, deep: true }
+);
+
+// Función para refrescar datos de asistencia desde Firebase
+const refreshAttendanceData = async () => {
+  try {
+    displayToast('Actualizando datos de asistencia...', 'info');
+    
+    // Obtener la fecha y clase actual
+    const dateToUse = route.params.date as string || props.date || attendanceStore.selectedDate;
+    const classIdToUse = route.params.classId as string || route.params.id as string || props.initialClassId || attendanceStore.selectedClass;
+    
+    if (!dateToUse || !classIdToUse) {
+      displayToast('Error: No hay fecha o clase seleccionada', 'error');
+      return;
+    }
+    
+    console.log(`[AttendanceDebug] Refrescando datos para fecha=${dateToUse}, clase=${classIdToUse}`);
+    
+    // Forzar recarga desde Firebase
+    await attendanceStore.fetchAttendanceDocument(dateToUse, classIdToUse);
+    
+    // Actualizar datos locales con los nuevos datos del store
+    localAttendanceRecords.value = { ...attendanceStore.attendanceRecords as Record<string, AttendanceStatus> };
+    
+    displayToast('Datos actualizados correctamente', 'success');
+  } catch (error) {
+    console.error('[AttendanceDebug] Error al refrescar datos:', error);
+    displayToast('Error al actualizar datos', 'error');
+  }
+};
+
+// Watch para inicializar estudiantes locales cuando cambian props
+watch(
+  () => props.students,
+  (newStudents) => {
+    console.log('[AttendanceDebug] Watch detectó cambio en props.students:', 
+      newStudents ? `Estudiantes: ${newStudents.length}` : 'No hay estudiantes');
+    
+    if (newStudents) {
+      // Siempre actualizar estudiantes locales cuando cambian props, incluso si está cargando
+      localStudents.value = [...newStudents];
+      
+      // Si hay registros de asistencia cargados, verificar que todos los estudiantes tengan un estado
+      if (Object.keys(localAttendanceRecords.value).length > 0) {
+        console.log('[AttendanceDebug] Verificando estados de asistencia para nuevos estudiantes');
+        
+        // Identificar estudiantes sin estado de asistencia
+        const studentsWithoutStatus = newStudents.filter(student => 
+          !localAttendanceRecords.value[student.id]
+        );
+        
+        if (studentsWithoutStatus.length > 0) {
+          console.log(`[AttendanceDebug] ${studentsWithoutStatus.length} estudiantes sin estado de asistencia`);
+          
+          // Forzar actualización de la UI después de un retraso mínimo
+          setTimeout(() => {
+            console.log('[AttendanceDebug] Actualizando UI tras cambio en estudiantes');
+            localAttendanceRecords.value = { ...localAttendanceRecords.value };
+          }, 0);
+        }
+      }
+    }
+  },
+  { immediate: true, deep: true }
+);
+
+// Función para obtener el estado actual de un estudiante
+const getStudentStatus = (studentId: string): AttendanceStatus | undefined => {
+  return localAttendanceRecords.value?.[studentId];
+};
+
+// Validar estados de asistencia antes de guardar
+const validateAttendanceStates = () => {
+  let valid = true;
+  const invalidStudents: string[] = [];
+  const missingStatusStudents: string[] = [];
+  
+  // Verificar que todos los estudiantes en la lista tengan un estado y que sea válido
+  localStudents.value.forEach(student => {
+    const status = getStudentStatus(student.id);
+    
+    // Verificar si el estudiante tiene un estado definido
+    if (status === undefined) {
+      missingStatusStudents.push(student.id);
+      console.warn(`[AttendanceDebug] Estudiante ${student.id} sin estado definido`);
+    } else if (!['Presente', 'Ausente', 'Tardanza', 'Justificado'].includes(status)) {
+      // Si tiene estado pero no es válido
+      valid = false;
+      invalidStudents.push(student.id);
+      console.error(`[AttendanceDebug] Estado inválido para estudiante ${student.id}: ${status}`);
+    }
+    
+    // Si está justificado, verificar que tenga una justificación
+    if (status === 'Justificado' && !pendingJustifications.value.has(student.id)) {
+      console.warn(`[AttendanceDebug] Estudiante ${student.id} marcado como justificado pero sin justificación`);
+      // Crear justificación vacía para evitar problemas
+      pendingJustifications.value.set(student.id, {
+        reason: 'Justificación pendiente',
+        timestamp: new Date()
+      });
+    }
+  });
+  
+  // Si hay estudiantes sin estado, notificar al usuario
+  if (missingStatusStudents.length > 0) {
+    displayToast(
+      `Hay ${missingStatusStudents.length} estudiante(s) sin un estado registrado. 
+      Por favor, marque la asistencia para todos los estudiantes antes de guardar.`, 
+      'warning'
+    );
+    valid = false;
+  }
+  
+  return { valid, invalidStudents, missingStatusStudents };
+};
+
 const handleUpdateStatus = (studentId: string, status: string) => {
   if (studentId === 'all' && status === 'save') {
-    saveAllPendingChanges();
-    return;
-  }
-  
-  if (!studentId || !status) return;
-  
-  // Validar que el estudiante existe
-  const student = effectiveStudents.value.find(s => s.id === studentId);
-  if (!student) {
-    console.error(`Error: Estudiante no encontrado con ID ${studentId}`);
-    displayToast(`Error: No se pudo actualizar el estado del estudiante`, 'error');
-    return;
-  }
-  
-  const previousStatus = localAttendanceRecords.value[studentId];
-  
-  // Solo registrar como cambio pendiente si realmente cambió el estado
-  if (previousStatus !== status) {
-    console.log(`Actualizando estado de estudiante ${student.nombre} ${student.apellido} (${studentId}):`, 
-      previousStatus ? `${previousStatus} -> ${status}` : `ninguno -> ${status}`);
+    // Validar estados antes de guardar
+    const { valid, invalidStudents, missingStatusStudents } = validateAttendanceStates();
     
-    // Actualizar el estado en los registros locales
-    localAttendanceRecords.value[studentId] = status as AttendanceStatus;
-    pendingChanges.value.add(studentId);
-    
-    // Actualización visual inmediata
-    localAttendanceRecords.value = { ...localAttendanceRecords.value };
-  } else {
-    console.log(`Estado sin cambios para ${student.nombre} ${student.apellido} (${studentId}): ${status}`);
-    // Si ya estaba en pendingChanges pero realmente no hubo cambio, lo eliminamos
-    if (pendingChanges.value.has(studentId)) {
-      pendingChanges.value.delete(studentId);
-      console.log(`Eliminado de pendingChanges: ${studentId} (no hay cambio real)`);
+    if (!valid && invalidStudents.length > 0) {
+      console.error(`[AttendanceDebug] Se encontraron ${invalidStudents.length} estudiantes con estados inválidos`);
+      displayToast(`Error: Hay ${invalidStudents.length} estudiantes con estados inválidos`, 'error');
+      return;
     }
+    
+    // Si solo hay estudiantes sin estado asignado, mostrar advertencia pero permitir guardar
+    if (!valid && missingStatusStudents.length > 0 && invalidStudents.length === 0) {
+      const message = `ADVERTENCIA: Hay ${missingStatusStudents.length} estudiante(s) sin estado asignado. ¿Desea continuar?`;
+      if (!confirm(message)) {
+        return;
+      }
+      console.warn(`[AttendanceDebug] Guardando a pesar de ${missingStatusStudents.length} estudiantes sin estado`);
+    }
+    
+    // Guardar todos los cambios pendientes
+    const dateToSave = route.params.date as string || props.date || attendanceStore.selectedDate || '';
+    const classIdToSave = route.params.classId as string || route.params.id as string || props.initialClassId as string || '';
+    
+    console.log(`[AttendanceDebug] Guardando cambios para fecha=${dateToSave}, clase=${classIdToSave}`);
+    console.log(`[AttendanceDebug] Total cambios pendientes: ${pendingChanges.value.size}`);
+    attendanceActions.saveAllPendingChanges(dateToSave, classIdToSave);
+    return;
   }
+  
+  // Delegar al composable para actualizar estado
+  attendanceActions.updateStudentStatus(studentId, status);
   
   // Si el estudiante estaba justificado y ahora cambia a otro estado, mantener registro
+  const previousStatus = localAttendanceRecords.value[studentId];
   if (previousStatus === 'Justificado' && status !== 'Justificado') {
     console.log(`Cambiando estudiante ${studentId} de Justificado a ${status}`);
   }
-    // Si el estudiante cambia a Justificado, abrir automáticamente el modal para justificación
+  
+  // Si el estudiante cambia a Justificado, manejar la justificación
   if (status === 'Justificado') {
-    selectedStudentForJustification.value = { 
-      id: student.id, 
-      nombre: student.nombre, 
-      apellido: student.apellido 
-    };
-    
-    // Agregar el estudiante a pendingChanges para asegurar que se guarde
-    pendingChanges.value.add(student.id);
-    
-    // Actualizar la UI
-    localAttendanceRecords.value = { ...localAttendanceRecords.value };
-    
-    // Notificar al componente padre para abrir modal de justificación
-    // Emitimos el evento con el estudiante tal cual es, sin campos adicionales
-    // Esto evita errores de tipado en el sistema
-    setTimeout(() => {
-      // @ts-ignore - Ignoramos el error de tipo aquí ya que necesitamos emitir el evento
-      emit('open-justification', student);
-      
-      // Guardamos información adicional en el estado local si es necesario
-      const dateToUse = route.params.date as string || props.date || attendanceStore.selectedDate;
-      const classIdToUse = route.params.classId as string || props.initialClassId;
-      
-      // Opcional: guardamos esta información en el estado si se necesita después
-      console.log(`Justificación para clase: ${classIdToUse}, fecha: ${dateToUse}`);
-    }, 300);
-  }
-  
-  // Notificar al usuario sobre el cambio
-  const studentName = `${student.nombre} ${student.apellido}`;
-  let message = `${studentName}: ${status}`;
-  
-  if (status === 'Justificado') {
-    message = `${studentName}: ${status} (Por favor agregue una razón)`;
-  }
-  
-  displayToast(message, status === 'Justificado' ? 'warning' : 'info');
-  
-  // Notificar al componente padre del cambio de estado (si lo usa)
-  emit('update-status', studentId, status as AttendanceStatus);
-};
-
-// Ya tenemos pendingJustifications declarado arriba - esta era una redeclaración duplicada
-
-// Actualización de la función handleOpenJustification
-const handleOpenJustification = (student: any) => { // usando 'any' para solucionar problemas de tipo
-  if (!student || !student.id) {
-    console.error('Error: Datos del estudiante incompletos para justificación', student);
-    displayToast('Error: No se puede agregar justificación sin datos del estudiante', 'error');
-    return;
-  }
-
-  // Marcar al estudiante como Justificado en los registros locales
-  localAttendanceRecords.value[student.id] = 'Justificado';
-  pendingChanges.value.add(student.id);
-  
-  // Actualizar también el mapa de estudiantes justificados
-  justifiedStudentsMap.value[student.id] = true;
-  
-  // Guardar el estudiante seleccionado para que esté disponible en el modal
-  selectedStudentForJustification.value = { 
-    id: student.id, 
-    nombre: student.nombre || 'Estudiante',
-    apellido: student.apellido || '' 
-  };
-  
-  // Agregar datos de fecha y clase para recuperar la justificación existente
-  const dateToUse = route.params.date as string || props.date || attendanceStore.selectedDate;
-  const classIdToUse = route.params.classId as string || props.initialClassId;
-  
-  // Buscar si ya existe una justificación para este estudiante
-  const existingJustification = attendanceStore.getJustification(student.id);
-  
-  // Verificar si hay una razón guardada en pendingJustifications
-  const pendingJustification = pendingJustifications.value.get(student.id);
-  
-  // Si ya existe una justificación pendiente para este estudiante, usarla
-  if (pendingJustification) {
-    console.log(`Justificación pendiente encontrada para ${student.nombre}:`, pendingJustification);
-  } else if (existingJustification) {
-    // Si hay una justificación existente en el store, guardarla como pendiente
-    pendingJustifications.value.set(student.id, {
-      reason: existingJustification.reason || '',
-      documentURL: existingJustification.documentURL
+    handleOpenJustification({
+      id: studentId,
+      ...localStudents.value.find(s => s.id === studentId)
     });
-    console.log(`Justificación existente encontrada para ${student.nombre}:`, existingJustification);
   }
-  
-  // Emitir evento para abrir justificación en el componente padre con datos adicionales
-  setTimeout(() => emit('open-justification', {
-    ...student,
-    classId: classIdToUse,
-    date: dateToUse
-  }), 300);
-  
-  // Notificar al usuario
-  const studentName = student.nombre || 'Estudiante';
-  displayToast(`Añadiendo justificación para ${studentName}`, 'info');
 };
 
-// Handle saving a justification separately
+// Función para gestionar la apertura del modal de justificación
+const handleOpenJustification = async (student: any) => {
+  try {
+    console.log('[Justificación] Iniciando proceso de justificación para estudiante:', student);
+    
+    // Verificar si tenemos toda la información necesaria
+    if (!student || !student.id) {
+      console.error('[Justificación] Error: Datos de estudiante inválidos', student);
+      displayToast('Error: Datos de estudiante inválidos', 'error');
+      return;
+    }
+
+    // Obtener la fecha y clase actual
+    const dateToUse = route.params.date as string || props.date || attendanceStore.selectedDate;
+    const classIdToUse = route.params.classId as string || route.params.id as string || props.initialClassId || attendanceStore.selectedClass;
+
+    if (!dateToUse || !classIdToUse) {
+      console.error('[Justificación] Error: Fecha o clase no disponible', {
+        date: dateToUse,
+        classId: classIdToUse
+      });
+      displayToast('Error: Información de fecha o clase no disponible', 'error');
+      return;
+    }
+
+    // Actualizar el estado local
+    selectedStudentForJustification.value = {
+      id: student.id,
+      nombre: student.nombre || 'Estudiante',
+      apellido: student.apellido || ''
+    };
+
+    console.log('[Justificación] Estado local actualizado:', selectedStudentForJustification.value);
+
+    // Marcar al estudiante como justificado en el mapa local
+    justifiedStudentsMap.value[student.id] = true;
+
+    // Actualizar el estado de asistencia local a 'Justificado'
+    if (localAttendanceRecords.value) {
+      const previousStatus = localAttendanceRecords.value[student.id];
+      localAttendanceRecords.value[student.id] = 'Justificado';
+      console.log(`[Justificación] Estado de asistencia actualizado localmente de ${previousStatus} a Justificado`);
+
+      // Si el estudiante no tenía un estado previo o era diferente de 'Justificado',
+      // agregarlo a los cambios pendientes
+      if (!previousStatus || previousStatus !== 'Justificado') {
+        pendingChanges.value.add(student.id);
+        console.log('[Justificación] Cambio pendiente registrado');
+        
+        // Crear una justificación pendiente si no existe
+        if (!pendingJustifications.value.has(student.id)) {
+          pendingJustifications.value.set(student.id, {
+            reason: '',
+            timestamp: new Date()
+          });
+          console.log('[Justificación] Justificación pendiente creada automáticamente');
+        }
+      }
+    } else {
+      // Si no hay registros locales, crear uno nuevo
+      localAttendanceRecords.value = { [student.id]: 'Justificado' };
+      pendingChanges.value.add(student.id);
+      console.log('[Justificación] Nuevo registro local creado');
+      
+      // Asegurar que exista una justificación pendiente
+      if (!pendingJustifications.value.has(student.id)) {
+        pendingJustifications.value.set(student.id, {
+          reason: '',
+          timestamp: new Date()
+        });
+        console.log('[Justificación] Justificación pendiente creada para nuevo registro');
+      }
+    }
+
+    // Buscar si ya existe una justificación para este estudiante
+    const existingJustification = attendanceStore.getJustification(student.id);
+
+    // Si ya existe una justificación, usarla como pendiente
+    if (existingJustification) {
+      console.log(`[Justificación] Justificación existente encontrada para ${student.nombre}:`, existingJustification);
+      
+      // Manejo correcto de los diferentes formatos de justificación
+      let justificationReason = '';
+      let documentURL = '';
+      
+      if (typeof existingJustification === 'string') {
+        justificationReason = existingJustification;
+      } else if (typeof existingJustification === 'object') {
+        justificationReason = existingJustification.reason || '';
+        documentURL = existingJustification.documentURL || existingJustification.documentUrl || '';
+      }
+      
+      pendingJustifications.value.set(student.id, {
+        reason: justificationReason,
+        documentURL: documentURL,
+        timestamp: new Date()
+      });
+      
+      console.log(`[Justificación] Justificación procesada: ${justificationReason}`);
+    } else if (!pendingJustifications.value.has(student.id)) {
+      // Si no hay justificación existente ni pendiente, crear una nueva
+      pendingJustifications.value.set(student.id, {
+        reason: '',
+        timestamp: new Date()
+      });
+      console.log('[Justificación] Nueva justificación pendiente creada');
+    }
+
+    // Emitir el evento al componente padre
+    console.log('[Modal] Emitiendo evento open-justification al componente padre');
+    emit('open-justification', {
+      ...student,
+      id: classIdToUse, // This can remain as classId for the emitted event if expected by parent
+      date: dateToUse
+    });
+
+    // Notificar al usuario
+    displayToast(`Añadiendo justificación para ${student.nombre || 'Estudiante'}`, 'info');
+
+  } catch (error) {
+    console.error('[Justificación] Error en el proceso de justificación:', error);
+    displayToast('Error al procesar la justificación', 'error');
+  }
+};
+
 const handleSaveJustification = (data: { studentId: string, reason: string, documentURL?: string, file?: File }) => {
   console.log('Guardando justificación:', data);
   
-  // Verificar que tenemos datos válidos
+  // Verificar que tenemos los datos necesarios
   if (!data.studentId || !data.reason) {
-    displayToast('Error: Datos de justificación incompletos', 'error');
+    console.error('Datos incompletos para guardar justificación:', data);
+    displayToast('Error: Datos incompletos para la justificación', 'error');
     return;
   }
-  
-  // Asegurarse de que el estudiante tenga estado Justificado
-  if (!localAttendanceRecords.value[data.studentId] || localAttendanceRecords.value[data.studentId] !== 'Justificado') {
+
+  // Guardar la justificación en el mapa de justificaciones pendientes
+  pendingJustifications.value.set(data.studentId, {
+    reason: data.reason,
+    documentURL: data.documentURL,
+    timestamp: new Date()
+  });
+
+  // Asegurarse de que el estudiante esté marcado como justificado
+  if (localAttendanceRecords.value) {
     localAttendanceRecords.value[data.studentId] = 'Justificado';
     pendingChanges.value.add(data.studentId);
   }
-  
-  // Guardar los datos de justificación para usar cuando se guarde el formulario completo
-  pendingJustifications.value.set(data.studentId, {
-    reason: data.reason || 'Justificación proporcionada',
+
+  // Notificar al usuario
+  displayToast('Justificación guardada correctamente', 'success');
+
+  // Limpiar el estado de justificación actual
+  selectedStudentForJustification.value = null;
+  currentJustificationReason.value = '';
+
+  console.log('Justificación guardada:', {
+    studentId: data.studentId,
+    reason: data.reason,
     documentURL: data.documentURL
-  });
-  
-  console.log(`Justificación registrada para estudiante ${data.studentId}:`, {
-    justificacion: pendingJustifications.value.get(data.studentId),
-    estado: localAttendanceRecords.value[data.studentId],
-    pendiente: pendingChanges.value.has(data.studentId)
   });
   
   // Actualizar la UI inmediatamente para mostrar el estado "Justificado"
@@ -486,591 +943,58 @@ const handleSaveJustification = (data: { studentId: string, reason: string, docu
   displayToast('Justificación guardada. Recuerde guardar los cambios generales de asistencia.', 'info');
 };
 
-// Función para guardar todos los cambios pendientes
-const saveAllPendingChanges = async () => {
-  if (pendingChangesCount.value === 0 && pendingJustifications.value.size === 0) {
-    displayToast('No hay cambios pendientes para guardar', 'info');
-    return;
-  }
-
-  console.log(`Guardando ${pendingChangesCount.value} cambios pendientes...`);
-  displayToast(`Guardando ${pendingChangesCount.value} cambios...`, 'info');
-
-  // 1. Validar datos esenciales antes de comenzar
-  const dateToSave = route.params.date as string || props.date || attendanceStore.selectedDate || new Date().toISOString().split('T')[0];
-  const classIdToSave = route.params.classId as string || props.initialClassId || attendanceStore.currentAttendanceDoc?.classId;
-
-  if (!dateToSave || !classIdToSave) {
-    displayToast('Error: Fecha o ID de clase no definidos para guardar.', 'error');
-    console.error('Error: Fecha o ID de clase no definidos para guardar.', { dateToSave, classIdToSave });
-    return;
-  }
-  // Validar que la fecha tenga formato correcto YYYY-MM-DD o YYYYMMDD
-  let formattedDate = dateToSave;
-  const dateRegexHyphen = /^\d{4}-\d{2}-\d{2}$/;
-  const dateRegexCompact = /^\d{8}$/;
-  
-  // Si es formato YYYYMMDD, convertir a YYYY-MM-DD
-  if (dateRegexCompact.test(dateToSave)) {
-    formattedDate = `${dateToSave.substring(0, 4)}-${dateToSave.substring(4, 6)}-${dateToSave.substring(6, 8)}`;
-  } else if (!dateRegexHyphen.test(dateToSave)) {
-    displayToast('Error: Formato de fecha inválido', 'error');
-    console.error('Error: Formato de fecha inválido', dateToSave);
-    return;
-  }
-  
-  // Reemplazar dateToSave con la versión formateada
-  const dateToUse = formattedDate;
-
-  // Validar que la clase existe
-  const classData = classesStore.getClassById(classIdToSave);
-  if (!classData) {
-    displayToast('Error: La clase seleccionada no existe', 'error');
-    console.error('Error: La clase seleccionada no existe', classIdToSave);
-    return;
-  }
-  // 2. Preparar el documento con comprobaciones adicionales
-  try {    console.log('Preparando datos para guardar asistencia:', {
-      fecha: dateToUse,
-      classId: classIdToSave,
-      estudiantes: effectiveStudents.value.length,
-      registros: Object.keys(localAttendanceRecords.value).length,
-      cambiosPendientes: pendingChangesCount.value
-    });
-
-    // Recuperar el documento actual para preservar datos existentes
-    const existingDoc = await attendanceStore.getAttendanceByDateAndClass(dateToUse, classIdToSave);
-      const attendanceDoc = {
-      fecha: dateToUse,
-      classId: classIdToSave,
-      teacherId: attendanceStore.currentAttendanceDoc?.teacherId || 
-                classData.teacherId || 
-                useAuthStore().user?.uid || '',
-      timestamp: new Date(),      data: {
-        presentes: [] as string[],
-        ausentes: [] as string[],
-        tarde: [] as string[],
-        justificacion: [],
-        observations: ''
-      }
-    };    // Registrar el contenido de las observaciones para depuración
-    if (existingDoc && existingDoc.length > 0 && 'data' in existingDoc[0] && existingDoc[0].data) {
-      console.log('Observaciones originales:', {
-        tipo: typeof (existingDoc[0].data as any).observations,
-        valor: (existingDoc[0].data as any).observations
-      });
-    }
-
-    // 3. Primero preservar TODOS los estados existentes (incluso los no modificados)
-    if (existingDoc && existingDoc.length > 0 && 'data' in existingDoc[0]) {
-      const existingData = existingDoc[0].data as any;
-      console.log('Datos existentes que se van a preservar:', existingData);
-      
-      // Copiar todos los estados existentes como base
-      if (Array.isArray(existingData.presentes)) {
-        attendanceDoc.data.presentes = [...existingData.presentes];
-        console.log(`Preservando ${attendanceDoc.data.presentes.length} estudiantes presentes`);
-      }
-      if (Array.isArray(existingData.ausentes)) {
-        attendanceDoc.data.ausentes = [...existingData.ausentes];
-        console.log(`Preservando ${attendanceDoc.data.ausentes.length} estudiantes ausentes`);
-      }
-      if (Array.isArray(existingData.tarde)) {
-        attendanceDoc.data.tarde = [...existingData.tarde];
-        console.log(`Preservando ${attendanceDoc.data.tarde.length} estudiantes con tardanza`);
-      }
-      
-      // Copiar también las justificaciones completas si existen
-      if (existingData.justificacion && Array.isArray(existingData.justificacion)) {
-        // Asegurarnos de que cada justificación tenga los campos necesarios
-        const justificacionesValidas = existingData.justificacion.filter((j: any) => j && j.id).map((j: any) => ({
-          id: j.id,
-          reason: j.reason || 'Justificación registrada',
-          documentURL: j.documentURL || null,
-          timestamp: j.timestamp || new Date()
-        }));
-        
-        attendanceDoc.data.justificacion = justificacionesValidas;
-        console.log(`Preservando ${attendanceDoc.data.justificacion.length} justificaciones existentes`);
-      } else {
-        console.log('No se encontraron justificaciones previas para preservar');
-      }
-      
-      // Asegurarnos de preservar correctamente las observaciones
-      if (existingData.observations !== undefined) {
-        attendanceDoc.data.observations = existingData.observations;
-        console.log('Observaciones preservadas:', {
-          tipo: typeof attendanceDoc.data.observations,
-          valor: attendanceDoc.data.observations
-        });
-      }
-    }
-
-    console.log('Base de documento después de copiar existentes:', {
-      presentes: attendanceDoc.data.presentes.length,
-      ausentes: attendanceDoc.data.ausentes.length,
-      tarde: attendanceDoc.data.tarde.length,
-      justificacion: attendanceDoc.data.justificacion.length
-    });
-
-    // Guardar una copia de los IDs antes de aplicar cambios para verificar después
-    const originalPresentes = new Set(attendanceDoc.data.presentes);
-    const originalAusentes = new Set(attendanceDoc.data.ausentes);
-    const originalTarde = new Set(attendanceDoc.data.tarde);
-
-
-    // 4. Procesar las justificaciones pendientes que no están en pendingChanges
-    // Es posible que el usuario sólo haya modificado la razón de justificación sin cambiar el estado
-    if (pendingJustifications.value.size > 0) {
-      console.log(`Procesando ${pendingJustifications.value.size} justificaciones pendientes...`);
-      pendingJustifications.value.forEach((justData, studentId) => {
-        // Si no está en pendingChanges pero tiene justificación pendiente,
-        // necesitamos asegurarnos de que se guarde
-        if (!pendingChanges.value.has(studentId)) {
-          // Verificar si el estudiante ya está marcado como justificado
-          if (localAttendanceRecords.value[studentId] === 'Justificado') {
-            console.log(`Procesando justificación pendiente para ${studentId} que no está en pendingChanges`);
-            
-            // Verificar si ya existe una justificación
-            const existingIndex = attendanceDoc.data.justificacion.findIndex(j => j.id === studentId);
-            
-            if (existingIndex >= 0) {
-              // Actualizar la justificación existente
-              console.log(`Actualizando justificación existente para ${studentId} con razón: ${justData.reason}`);
-              attendanceDoc.data.justificacion[existingIndex].reason = justData.reason;
-              if (justData.documentURL) {
-                attendanceDoc.data.justificacion[existingIndex].documentURL = justData.documentURL;
-              }
-              // Actualizar timestamp
-              attendanceDoc.data.justificacion[existingIndex].timestamp = new Date();
-            } else {
-              // Crear nueva justificación
-              console.log(`Creando nueva justificación para ${studentId} con razón: ${justData.reason}`);
-              attendanceDoc.data.justificacion.push({
-                id: studentId,
-                reason: justData.reason,
-                documentURL: justData.documentURL,
-                timestamp: new Date()
-              } as JustificationData);
-            }
-            
-            // Asegurarnos de que el estudiante esté en la lista de ausentes (requerido para justificados)
-            if (!attendanceDoc.data.ausentes.includes(studentId)) {
-              // Eliminar de otras listas si está presente
-              attendanceDoc.data.presentes = attendanceDoc.data.presentes.filter(id => id !== studentId);
-              attendanceDoc.data.tarde = attendanceDoc.data.tarde.filter(id => id !== studentId);
-              // Añadir a ausentes
-              attendanceDoc.data.ausentes.push(studentId);
-            }
-          }
-        }
-      });
-    }
-
-    // 5. Procesar los registros modificados (pendingChanges)
-    // Ahora procesamos los registros que han sido
-    // modificados por el usuario (que están en pendingChanges), manteniendo el resto intactos
-    Object.entries(localAttendanceRecords.value).forEach(([studId, stat]) => {
-      // Validar que el ID del estudiante existe
-      if (!studId || typeof studId !== 'string') {
-        console.warn('ID de estudiante inválido, omitiendo:', studId);
-        return;
-      }
-
-      // Aplicar SOLO los cambios que están en pendingChanges
-      if (pendingChanges.value.has(studId)) {
-        console.log(`Aplicando cambio para estudiante ${studId}: ${stat}`);
-        
-        // Asegurarse de que el estudiante no esté en más de una lista
-        // (limpieza previa para evitar inconsistencias)
-        attendanceDoc.data.presentes = attendanceDoc.data.presentes.filter(id => id !== studId);
-        attendanceDoc.data.ausentes = attendanceDoc.data.ausentes.filter(id => id !== studId);
-        attendanceDoc.data.tarde = attendanceDoc.data.tarde.filter(id => id !== studId);
-        
-        // Añadir a la lista correspondiente según el estado modificado
-        if (stat === 'Presente') {
-          attendanceDoc.data.presentes.push(studId);
-        } else if (stat === 'Ausente') {
-          attendanceDoc.data.ausentes.push(studId);
-        } else if (stat === 'Tardanza') {
-          attendanceDoc.data.tarde.push(studId);          } else if (stat === 'Justificado') {
-            // IMPORTANTE: Para estado Justificado, necesitamos ponerlo en la lista de 'ausentes'
-            // De acuerdo con la implementación en attendance.ts, pero lo marcamos para restaurarlo después
-            attendanceDoc.data.ausentes.push(studId);
-            
-            // Asegurarnos de que el estudiante no esté en presentes o tarde (para evitar inconsistencias)
-            attendanceDoc.data.presentes = attendanceDoc.data.presentes.filter(id => id !== studId);
-            attendanceDoc.data.tarde = attendanceDoc.data.tarde.filter(id => id !== studId);
-            
-            // Conservar estado para fines de UI
-            // Esto es crucial para restaurar correctamente el estado visual después de guardar
-            justifiedStudentsMap.value[studId] = true;
-            
-            // Registrar para seguimiento
-            console.log(`Marcando ${studId} como justificado para restaurar después de guardar en memoria local`);
-            
-            // Procesar la justificación
-            const existingJustification = attendanceDoc.data.justificacion.findIndex(j => j.id === studId);
-            const pendingJustification = pendingJustifications.value.get(studId);
-            
-            if (existingJustification >= 0) {
-              // Si ya existe una justificación, actualizamos su razón si hay una pendiente
-              if (pendingJustification) {
-                console.log(`Actualizando justificación existente para ${studId} con razón: ${pendingJustification.reason}`);
-                attendanceDoc.data.justificacion[existingJustification].reason = pendingJustification.reason;
-                if (pendingJustification.documentURL) {
-                  attendanceDoc.data.justificacion[existingJustification].documentURL = pendingJustification.documentURL;
-                }
-                // Asegurarnos de que el timestamp se actualice
-                attendanceDoc.data.justificacion[existingJustification].timestamp = new Date();
-              }
-            } else {
-              // Si no existe, creamos una nueva con la razón proporcionada o una por defecto
-              const justReason = pendingJustification ? pendingJustification.reason : 'Justificación pendiente';
-              console.log(`Creando nueva justificación para ${studId} con razón: ${justReason}`);
-              
-              attendanceDoc.data.justificacion.push({ 
-                id: studId, 
-                reason: justReason,
-                documentURL: pendingJustification?.documentURL,
-                timestamp: new Date()
-              } as JustificationData);
-            }
-            
-            // Añadimos un log para verificar que la justificación quedó correctamente registrada
-            const justIndex = attendanceDoc.data.justificacion.findIndex(j => j.id === studId);
-            if (justIndex >= 0) {
-              console.log(`Verificado: Justificación para ${studId} registrada con razón: ${attendanceDoc.data.justificacion[justIndex].reason}`);
-            } else {
-              console.error(`Error: No se pudo encontrar la justificación para ${studId} después de intentar crearla/actualizarla`);
-            }
-          }
-      }
-    });
-      // Ya no necesitamos preservar registros existentes no modificados,
-    // porque copiamos todos los estados originales al inicio y solo modificamos el que está en pendingChanges
-    
-    // Verificación adicional: confirmar que solo los estudiantes en pendingChanges
-    // han sido modificados, el resto debe mantener su estado original
-    const finalPresentes = new Set(attendanceDoc.data.presentes);
-    const finalAusentes = new Set(attendanceDoc.data.ausentes);
-    const finalTarde = new Set(attendanceDoc.data.tarde);
-    
-    // Revisar estudiantes que cambiaron de lista (deberían ser solo los de pendingChanges)
-    const removedFromPresentes = [...originalPresentes].filter(id => !finalPresentes.has(id));
-    const removedFromAusentes = [...originalAusentes].filter(id => !finalAusentes.has(id));
-    const removedFromTarde = [...originalTarde].filter(id => !finalTarde.has(id));
-    
-    // Verificar que solo los IDs en pendingChanges fueron modificados
-    const modifiedIds = new Set([
-      ...removedFromPresentes,
-      ...removedFromAusentes,
-      ...removedFromTarde,
-      ...[...finalPresentes].filter(id => !originalPresentes.has(id)),
-      ...[...finalAusentes].filter(id => !originalAusentes.has(id)),
-      ...[...finalTarde].filter(id => !originalTarde.has(id))
-    ]);
-    
-    // Comparación para verificar
-    if (modifiedIds.size !== pendingChanges.value.size) {
-      console.warn(`Advertencia: El número de IDs modificados (${modifiedIds.size}) no coincide con pendingChanges (${pendingChanges.value.size})`);
-    }
-    
-    // Actualizar los estudiantes que están en localAttendanceRecords pero no en pendingChanges
-    // para asegurar que todos estén incluidos en el documento final
-    Object.entries(localAttendanceRecords.value).forEach(([studId, stat]) => {
-      // Solo procesar estudiantes que NO están en pendingChanges
-      if (!pendingChanges.value.has(studId)) {
-        // Verificar que el estudiante esté en al menos una lista
-        const isInAnyList = 
-          attendanceDoc.data.presentes.includes(studId) ||
-          attendanceDoc.data.ausentes.includes(studId) ||
-          attendanceDoc.data.tarde.includes(studId);
-          
-        if (!isInAnyList) {
-          console.log(`Añadiendo estudiante no modificado ${studId} con estado ${stat}`);
-          
-          // Añadir a la lista correspondiente según su estado actual
-          if (stat === 'Presente') {
-            attendanceDoc.data.presentes.push(studId);
-          } else if (stat === 'Ausente') {
-            attendanceDoc.data.ausentes.push(studId);
-          } else if (stat === 'Tardanza') {
-            attendanceDoc.data.tarde.push(studId);          } else if (stat === 'Justificado') {
-            attendanceDoc.data.ausentes.push(studId);
-            
-            // Verificar si ya tiene justificación
-            const existingJustification = attendanceDoc.data.justificacion.findIndex(j => j.id === studId);
-            const pendingJustification = pendingJustifications.value.get(studId);
-            
-            if (existingJustification < 0) {
-              // Si no tiene justificación pero tenemos una pendiente, usar los datos pendientes
-              if (pendingJustification) {
-                attendanceDoc.data.justificacion.push({
-                  id: studId,
-                  reason: pendingJustification.reason,
-                  documentURL: pendingJustification.documentURL,
-                  timestamp: new Date()
-                } as JustificationData);
-              } else {
-                // Si no hay justificación pendiente, crear una genérica
-                attendanceDoc.data.justificacion.push({
-                  id: studId,
-                  reason: 'Justificación pendiente',
-                  timestamp: new Date()
-                } as JustificationData);
-              }
-            }
-          }
-        }
-      }
-    });
-
-    // 5. Verificación final antes de guardar: solo para estudiantes verdaderamente nuevos
-    // Obtener todos los estudiantes que tienen un estado asignado en el documento que estamos por guardar
-    const allStudentIds = new Set([
-      ...attendanceDoc.data.presentes,
-      ...attendanceDoc.data.ausentes,
-      ...attendanceDoc.data.tarde
-    ]);
-    
-    // Actualizar conjunto de IDs después de las asignaciones por defecto
-    const updatedAllStudentIds = new Set([
-      ...attendanceDoc.data.presentes,
-      ...attendanceDoc.data.ausentes,
-      ...attendanceDoc.data.tarde,
-      ...attendanceDoc.data.justificacion.map((j: JustificationData) => j.id)
-    ]);
-      console.log('Verificación final antes de guardar:', {
-      totalEstudiantes: effectiveStudents.value.length,
-      totalRegistros: updatedAllStudentIds.size,
-      presentes: attendanceDoc.data.presentes.length,
-      ausentes: attendanceDoc.data.ausentes.length,
-      tarde: attendanceDoc.data.tarde.length,
-      justificaciones: attendanceDoc.data.justificacion.length,
-      observaciones: {
-        tipo: typeof attendanceDoc.data.observations,
-        valor: attendanceDoc.data.observations,
-        longitud: typeof attendanceDoc.data.observations === 'string' ? attendanceDoc.data.observations.length : 'N/A'
-      }
-    });    
-    
-    // Antes de guardar, asegurémonos de registrar TODOS los estudiantes justificados
-    console.log('Registrando estudiantes justificados antes de guardar:');
-    const justifiedBeforeSave = new Set<string>();
-    
-    // 1. Estudiantes actualmente marcados como justificados en la UI
-    Object.entries(localAttendanceRecords.value).forEach(([id, status]) => {
-      if (status === 'Justificado') {
-        justifiedBeforeSave.add(id);
-        justifiedStudentsMap.value[id] = true;
-        console.log(`- Desde UI: Estudiante ${id} está justificado`);
-      }
-    });
-    
-    // 2. Estudiantes con justificaciones guardadas (incluso si no están en la UI)
-    attendanceDoc.data.justificacion.forEach((j: JustificationData) => {
-      if (j && j.id) {
-        justifiedBeforeSave.add(j.id);
-        justifiedStudentsMap.value[j.id] = true;
-        console.log(`- Desde justificaciones: Estudiante ${j.id} tiene justificación`);
-      }
-    });
-    
-    console.log(`Total de ${justifiedBeforeSave.size} estudiantes justificados identificados`);
-    
-    // 6. Guardar y verificar el resultado
-    console.log('Guardando documento de asistencia:', attendanceDoc);
-    try {
-      await attendanceStore.saveAttendanceDocument(attendanceDoc);      
-      // 7. Recargar datos para verificar que se guardaron correctamente
-      console.log('Verificando resultados guardados...');
-      const savedDoc = await attendanceStore.getAttendanceByDateAndClass(dateToUse, classIdToSave);
-      
-      if (savedDoc && savedDoc.length > 0) {
-        // Verificar que los datos se guardaron correctamente
-        const docWithData = savedDoc[0] as any;
-        const hasData = docWithData && 'data' in docWithData;
-        
-        const totalSaved = hasData ? (
-          (docWithData.data?.presentes?.length || 0) + 
-          (docWithData.data?.ausentes?.length || 0) + 
-          (docWithData.data?.tarde?.length || 0)
-        ) : 0;
-        
-        // Verificar específicamente que las justificaciones se guardaron
-        const savedJustifications = hasData ? docWithData.data?.justificacion?.length || 0 : 0;
-        const expectedJustifications = pendingJustifications.value.size;
-        
-        if (savedJustifications < expectedJustifications) {
-          console.warn(`Advertencia: Solo se guardaron ${savedJustifications} de ${expectedJustifications} justificaciones`);
-        } else {
-          console.log(`Justificaciones guardadas correctamente: ${savedJustifications}`);
-          // Limpiar la colección de justificaciones pendientes ya que se guardaron correctamente
-          pendingJustifications.value.clear();
-        }
-        
-        // IMPORTANTE: Restaurar correctamente el estado de los alumnos justificados en la UI
-        try {
-          console.log('Estructura de datos recibida:', docWithData);
-          
-          // IMPORTANTE: Ya no reseteamos todos los estados, solo actualizamos los que cambiaron
-          // 1. Recopilar todos los IDs de estudiantes justificados de diferentes fuentes
-          // Este conjunto tendrá todos los estudiantes que deben aparecer como "Justificado" en la UI
-          const allJustifiedStudentIds = new Set<string>();
-          
-          // A. Añadir estudiantes marcados como justificados durante este ciclo de edición
-          Object.keys(justifiedStudentsMap.value).forEach(id => {
-            if (id) allJustifiedStudentIds.add(id);
-          });
-          console.log(`Encontrados ${allJustifiedStudentIds.size} estudiantes justificados en la memoria persistente`);
-          
-          // B. Añadir estudiantes con justificaciones desde Firestore
-          const justificaciones = docWithData?.data?.justificacion || [];
-          justificaciones.forEach((justification: any) => {
-            if (justification && justification.id) {
-              allJustifiedStudentIds.add(justification.id);
-            }
-          });
-          console.log(`Total ${allJustifiedStudentIds.size} estudiantes justificados después de consultar Firestore`);
-          
-          // C. Añadir estudiantes desde la variable justifiedBeforeSave (capturada antes de guardar)
-          if (justifiedBeforeSave && justifiedBeforeSave.size > 0) {
-            justifiedBeforeSave.forEach(id => {
-              if (id) allJustifiedStudentIds.add(id);
-            });
-            console.log(`Añadidos ${justifiedBeforeSave.size} estudiantes justificados desde el registro previo al guardado`);
-          }
-          console.log(`Total final: ${allJustifiedStudentIds.size} estudiantes justificados`);
-          
-          // Obtener datos de Firestore para validar
-          const presentes = docWithData?.data?.presentes || [];
-          const tarde = docWithData?.data?.tarde || [];
-          const ausentes = docWithData?.data?.ausentes || [];
-          
-          // SOLO ACTUALIZAR LOS ESTADOS DE LOS ESTUDIANTES QUE CAMBIARON
-          // Usamos pendingChanges (que contiene los IDs de los estudiantes cuyo estado cambió)
-          if (pendingChanges.value && pendingChanges.value.size > 0) {
-            console.log(`Actualizando solo ${pendingChanges.value.size} estados que cambiaron:`);
-            
-            pendingChanges.value.forEach(studentId => {
-              // Para cada estudiante que cambió, actualizar su estado según los datos de Firestore
-              if (allJustifiedStudentIds.has(studentId)) {
-                // Si está justificado, actualizarlo así
-                localAttendanceRecords.value[studentId] = 'Justificado';
-                justifiedStudentsMap.value[studentId] = true;
-                console.log(`- Actualizando: ${studentId} como Justificado`);
-              } else if (presentes.includes(studentId)) {
-                localAttendanceRecords.value[studentId] = 'Presente';
-                console.log(`- Actualizando: ${studentId} como Presente`);
-              } else if (tarde.includes(studentId)) {
-                localAttendanceRecords.value[studentId] = 'Tardanza';
-                console.log(`- Actualizando: ${studentId} como Tardanza`);
-              } else if (ausentes.includes(studentId)) {
-                localAttendanceRecords.value[studentId] = 'Ausente';
-                console.log(`- Actualizando: ${studentId} como Ausente`);
-              }
-            });
-          }
-          
-          // Actualizar el mapa de justificados con los valores actuales
-          // Solo procesamos los justificados que no están en pendingChanges
-          // porque los de pendingChanges ya se actualizaron arriba
-          justifiedStudentsMap.value = {}; // Reiniciamos y reconstruimos
-          
-          allJustifiedStudentIds.forEach(studentId => {
-            if (!pendingChanges.value.has(studentId)) {
-              // Solo para los que no cambiaron, actualizamos el estado
-              localAttendanceRecords.value[studentId] = 'Justificado';
-            }
-            // Para todos los justificados, actualizamos el mapa
-            justifiedStudentsMap.value[studentId] = true;
-          });
-
-          console.log('Estados actualizados selectivamente en la UI');
-          console.log('Mapa final de estudiantes justificados:', Object.keys(justifiedStudentsMap.value).length);
-          
-          // 4. Forzar actualización de la UI
-          localAttendanceRecords.value = { ...localAttendanceRecords.value };
-          console.log('Estados restaurados en la UI:', localAttendanceRecords.value);
-          console.log('Mapa final de estudiantes justificados:', justifiedStudentsMap.value);
-        } catch (error) {
-          console.error('Error al restaurar estados de la UI:', error);
-          
-          // En caso de error, restaurar al menos los estudiantes que sabíamos que estaban justificados
-          if (justifiedBeforeSave && justifiedBeforeSave.size > 0) {
-            console.log(`Recuperando ${justifiedBeforeSave.size} estudiantes justificados en caso de error`);
-            
-            justifiedBeforeSave.forEach(studentId => {
-              if (localAttendanceRecords.value[studentId] !== 'Justificado') {
-                localAttendanceRecords.value[studentId] = 'Justificado';
-                justifiedStudentsMap.value[studentId] = true;
-                console.log(`Restaurando en caso de error: ${studentId} como Justificado`);
-              }
-            });
-            // Forzar actualización de UI
-            localAttendanceRecords.value = { ...localAttendanceRecords.value };
-          }
-        }
-        
-        console.log('Registros guardados:', {
-          presentes: hasData ? (docWithData.data?.presentes?.length || 0) : 0,
-          ausentes: hasData ? (docWithData.data?.ausentes?.length || 0) : 0,
-          tarde: hasData ? (docWithData.data?.tarde?.length || 0) : 0,
-          justificaciones: hasData ? (docWithData.data?.justificacion?.length || 0) : 0,
-          total: totalSaved,
-          esperados: updatedAllStudentIds.size  // Changed from allStudentIds to updatedAllStudentIds
-        });
-        
-        if (totalSaved < updatedAllStudentIds.size) {  // Changed from allStudentIds to updatedAllStudentIds
-          console.warn('Advertencia: No todos los registros fueron guardados correctamente', {
-            guardados: totalSaved,
-            esperados: updatedAllStudentIds.size  // Changed from allStudentIds to updatedAllStudentIds
-          });
-          displayToast(`Atención: Solo se guardaron ${totalSaved} de ${updatedAllStudentIds.size} registros esperados.`, 'warning');  // Changed from allStudentIds to updatedAllStudentIds
-        }
-      } else {
-        console.error('No se encontró el documento después de guardar');
-        displayToast('Error: No se pudo verificar que los datos se guardaron correctamente', 'warning');
-      }
-      
-      // Recargar datos y actualizar interfaz
-      await attendanceStore.fetchAttendanceDocuments(); // Refrescar datos globales
-      
-      window.dispatchEvent(new Event('attendance-updated'));
-      
-      displayToast(`¡Asistencia guardada! ${pendingChangesCount.value} registro(s) actualizados.`, 'success');
-      pendingChanges.value.clear();
-    } catch (error) {
-      console.error('Error al guardar asistencia:', error);
-      displayToast(`Error al guardar. Por favor intente nuevamente.`, 'error');
-    }
-    
-  } catch (error) {
-    displayToast('Error al guardar los cambios de asistencia', 'error');
-    console.error("Error al guardar los cambios de asistencia:", error);
-  }
-};
-
+// Función para manejar el clic en el botón de guardar observación
 const handleOpenObservation = () => {
-  // El prop student es Student | null, así que pasamos null
-  emit('open-observation', null);
+  emit('open-observation');
 };
 
-const getInitials = (firstName: string, lastName: string) => {
-  return `${firstName?.charAt(0) ?? ''}${lastName?.charAt(0) ?? ''}`.toUpperCase();
-}
+// Funciones para navegación
+const navigateToWorkspace = () => {
+  console.log('Emitiendo navigate-to-class-selector desde AttendanceList');
+  emit('navigate-to-class-selector');
+};
 
-const getAvatarColor = (name: string) => {
-  if (!name) return 'bg-gray-500';
-  const colors = [
-    'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500',
-    'bg-purple-500', 'bg-pink-500', 'bg-indigo-500'
-  ];
-  const hash = name.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
-  return colors[hash % colors.length];
-}
+const handleNavigateToCalendar = () => {
+  console.log('Emitiendo navigate-to-calendar desde AttendanceList');
+  emit('navigate-to-calendar');
+};
 
+const handleNavigateToClassSelector = () => {
+  console.log('Emitiendo navigate-to-class-selector desde AttendanceList');
+  emit('navigate-to-class-selector');
+};
+
+// Funciones simplificadas para marcar todos los estudiantes
+const markAllAsPresent = () => {
+  if (props.isDisabled) return;
+  attendanceActions.markAllAsPresent(effectiveStudents.value);
+};
+
+const markAllAsAbsent = () => {
+  if (props.isDisabled) return;
+  attendanceActions.markAllAsAbsent(effectiveStudents.value);
+};
+
+const markAllAsLate = () => {
+  if (props.isDisabled) return;
+  attendanceActions.markAllAsLate(effectiveStudents.value);
+};
+
+// Función simplificada para resetear todos los estados
+const resetAllStatuses = async () => {
+  if (props.isDisabled) return;
+  
+  if (confirm('¿Estás seguro de que quieres reestablecer el estado de todos los estudiantes a su último estado guardado?')) {
+    // Obtener la fecha y clase actual
+    const dateToUse = route.params.date as string || props.date || attendanceStore.selectedDate;
+    const classIdToUse = route.params.classId as string || route.params.id as string || props.initialClassId;
+    
+    // Usar el composable para reestablecer estados
+    await attendanceActions.resetAllStatuses(dateToUse, classIdToUse);
+  }
+};
+
+// Estudiantes ordenados por nombre
 const sortedStudents = computed(() => {
   return [...effectiveStudents.value].sort((a, b) => {
     const nameA = `${a.nombre} ${a.apellido}`.toLowerCase();
@@ -1078,166 +1002,15 @@ const sortedStudents = computed(() => {
     return nameA.localeCompare(nameB);
   });
 });
-
-// Funciones para marcar a todos los estudiantes con un estado específico
-const markAllAsPresent = () => {
-  if (!props.isDisabled) {
-    effectiveStudents.value.forEach(student => {
-      handleUpdateStatus(student.id, 'Presente');
-    });
-    
-    displayToast('Todos los estudiantes marcados como presentes', 'info');
-  }
-};
-
-const markAllAsAbsent = () => {
-  if (props.isDisabled) return;
-  
-  effectiveStudents.value.forEach(student => {
-    handleUpdateStatus(student.id, 'Ausente');
-  });
-  
-  displayToast('Todos los estudiantes marcados como ausentes', 'info');
-};
-
-const markAllAsLate = () => {
-  if (props.isDisabled) return;
-  
-  effectiveStudents.value.forEach(student => {
-    handleUpdateStatus(student.id, 'Tardanza');
-  });
-  
-  displayToast('Todos los estudiantes marcados con tardanza', 'info');
-};
-
-// Modificar la función resetAllStatuses para recuperar estados almacenados
-const resetAllStatuses = async () => {
-  if (props.isDisabled) return;
-  
-  if (confirm('¿Estás seguro de que quieres reestablecer el estado de todos los estudiantes a su último estado guardado?')) {
-    try {
-      isLoading.value = true;
-      
-      // Obtener la fecha y clase actual
-      const dateToUse = route.params.date as string || props.date || attendanceStore.selectedDate;
-      const classIdToUse = route.params.classId as string || props.initialClassId;
-      
-      if (!dateToUse || !classIdToUse) {
-        displayToast('No se pudo reestablecer: información de fecha o clase no disponible', 'error');
-        return;
-      }
-      
-      // Cargar registros guardados
-      const records = await attendanceStore.getAttendanceByDateAndClass(dateToUse, classIdToUse);
-      
-      // Crear un map con los estados guardados
-      const savedStates: Record<string, AttendanceStatus> = {};
-      records.forEach(record => {
-        if (record.studentId && record.status) {
-          savedStates[record.studentId] = record.status as AttendanceStatus;
-        }
-      });
-      
-      // Reestablecer cada estudiante a su estado guardado o eliminar si no existe
-      effectiveStudents.value.forEach(student => {
-        if (savedStates[student.id]) {
-          // Si existe un estado guardado, usarlo
-          localAttendanceRecords.value[student.id] = savedStates[student.id];
-        } else {
-          // Si no existe estado guardado, eliminar cualquier estado actual
-          delete localAttendanceRecords.value[student.id];
-        }
-        // Marcar como cambio pendiente para que se pueda guardar
-        pendingChanges.value.add(student.id);
-      });
-      
-      // Actualización visual inmediata
-      localAttendanceRecords.value = { ...localAttendanceRecords.value };
-      displayToast('Estados de asistencia reestablecidos a la última versión guardada', 'info');
-    } catch (error) {
-      console.error('Error al reestablecer estados guardados:', error);
-      displayToast('Error al recuperar los estados guardados', 'error');
-    } finally {
-      isLoading.value = false;
-    }
-  }
-};
-
-// Add the reset function to discard pending changes
-const resetToSavedState = async () => {
-  if (props.isDisabled || pendingChangesCount.value === 0) return;
-  
-  if (confirm('¿Estás seguro de que quieres descartar todos los cambios pendientes?')) {
-    // Get the current date and class ID
-    const dateToUse = route.params.date as string || props.date || attendanceStore.selectedDate;
-    const classIdToUse = route.params.classId as string || props.initialClassId;
-    
-    if (!dateToUse || !classIdToUse) {
-      displayToast('No se pudo reestablecer: información de fecha o clase no disponible', 'error');
-      return;
-    }
-    
-    try {
-      isLoading.value = true;
-      
-      // Fetch the original data from database
-      const records = await attendanceStore.getAttendanceByDateAndClass(dateToUse, classIdToUse);
-      
-      // Reset to the original records
-      const formattedRecords: Record<string, AttendanceStatus> = {};
-      records.forEach(record => {
-        if (record.studentId && record.status) {
-          formattedRecords[record.studentId] = record.status as AttendanceStatus;
-        }
-      });
-      
-      // Update local state
-      localAttendanceRecords.value = formattedRecords;
-      
-      // Clear pending changes
-      pendingChanges.value.clear();
-      
-      displayToast('Cambios descartados, estado reestablecido', 'info');
-    } catch (error) {
-      console.error('Error al reestablecer estado original:', error);
-      displayToast('Error al reestablecer el estado original', 'error');
-    } finally {
-      isLoading.value = false;
-    }
-  }
-};
-
-// Add a computed property to check if there are any observations
-const hasObservations = computed(() => {
-  // Check if there are any observations in the current attendance document
-  const observations = attendanceStore.getObservations;
-  return observations && typeof observations === 'string' && observations.trim().length > 0;
-});
-
-// Add a computed property to decide if we should show the animation
-const shouldAnimateObservationsButton = computed(() => {
-  // Only animate if:
-  // 1. There are no observations for the current class and date
-  // 2. We have students loaded (meaning the class exists and requires attendance)
-  return effectiveStudents.value.length > 0 && !hasObservations.value;
-});
-
-// Función para manejar la navegación al espacio de trabajo
-const navigateToWorkspace = () => {
-  // Emitir evento para navegar a la selección de clases
-  emit('navigate-to-class-selector');
-};
 </script>
 
 <template>
-  <div class="attendance-container">
-    <!-- Toast para notificaciones -->
+  <div class="attendance-list">
     <Toast 
       :show="showToast" 
       :message="toastMessage" 
       :type="toastType" 
-      position="top-right"
-      @close="showToast = false"
+      @close="showToast = false" 
     />
     
     <LoadingOverlay v-if="isLoading" message="Cargando datos de asistencia..." />
@@ -1251,7 +1024,7 @@ const navigateToWorkspace = () => {
       <!-- Header with action buttons -->
       <AttendanceHeader 
         :class-name="props.selectedClassName" 
-        :pending-changes-count="pendingChangesCount"
+        :pending-changes-count="attendanceActions.pendingChangesCount.value"
         :is-disabled="props.isDisabled"
         :observations="attendanceStore.getObservations"
         :should-animate-observations-button="shouldAnimateObservationsButton"
@@ -1260,19 +1033,113 @@ const navigateToWorkspace = () => {
         @save="handleUpdateStatus('all', 'save')"
         @open-export="emit('open-export')"
         @open-observation="handleOpenObservation"
-        @navigate-to-calendar="emit('navigate-to-calendar')"
-        @navigate-to-class-selector="emit('navigate-to-class-selector')"
+        @navigate-to-calendar="handleNavigateToCalendar"
+        @navigate-to-class-selector="handleNavigateToClassSelector"
       />
       
-      <!-- Pending changes notification and stats -->
+      <div class="flex flex-wrap gap-2 md:gap-4 mb-4 items-center">
+        <!-- Contador de estudiantes -->
+        <div class="px-3 py-1 bg-gray-100 text-gray-700 rounded-md flex items-center text-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          {{ effectiveStudents.length }} estudiantes
+        </div>
+        
+        <!-- Indicador de registros -->
+        <div :class="`px-3 py-1 rounded-md flex items-center text-sm ${Object.keys(effectiveAttendanceRecords).length > 0 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          {{ Object.keys(effectiveAttendanceRecords).length }} registros
+        </div>
+      </div>
+      
+      <!-- Funciones para marcación rápida -->
+      <div class="flex flex-wrap gap-2 md:gap-4 mb-4 justify-between items-center">
+        <!-- Botones de acción rápida para asistencia -->
+        <div class="flex gap-2">
+          <button 
+            @click="markAllAsPresent" 
+            class="px-3 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-md flex items-center text-sm"
+            :disabled="props.isDisabled"
+            title="Marcar todos como presentes"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            Presente
+          </button>
+
+          <button 
+            @click="markAllAsAbsent" 
+            class="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded-md flex items-center text-sm"
+            :disabled="props.isDisabled"
+            title="Marcar todos como ausentes"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 13l-4-4-4 4m0 0l4 4 4-4m-8 0V5m0 18v-7" />
+            </svg>
+            Ausente
+          </button>
+
+          <button 
+            @click="markAllAsLate" 
+            class="px-3 py-1 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 rounded-md flex items-center text-sm"
+            :disabled="props.isDisabled"
+            title="Marcar todos como tardanza"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9h4v4h-4z" />
+            </svg>
+            Tardanza
+          </button>
+        </div>
+        
+        <!-- Botón para reestablecer todos los estados -->
+        <button 
+          @click="resetAllStatuses" 
+          class="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-md flex items-center text-sm"
+          :disabled="props.isDisabled"
+          title="Reestablecer estados a los últimos guardados"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10H9v4h6v-4zm0 8H9v-4h6v4z" />
+          </svg>
+          Reestablecer
+        </button>
+        
+        <!-- Botones de depuración -->
+        <button 
+          @click="refreshAttendanceData" 
+          class="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md flex items-center text-sm"
+          title="Actualizar datos desde Firebase"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Actualizar datos
+        </button>
+        
+        <button 
+          @click="() => { localAttendanceRecords.value = {...attendanceStore.attendanceRecords as Record<string, AttendanceStatus>}; }" 
+          class="px-3 py-1 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-md flex items-center text-sm"
+          title="Forzar sincronización con el store"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+          </svg>
+          Forzar visualización
+        </button>
+      </div>
+      
       <AttendanceSummary 
         :attendance-records="effectiveAttendanceRecords"
-        :pending-changes-count="pendingChangesCount"
-        :has-pending-changes="hasPendingChanges"
+        :pending-changes-count="attendanceActions.pendingChangesCount.value"
+        :has-pending-changes="attendanceActions.hasPendingChanges.value"
         :on-save="() => handleUpdateStatus('all', 'save')"
       />
       
-      <!-- Students attendance table -->
       <AttendanceTable 
         :students="effectiveStudents"
         :attendance-records="effectiveAttendanceRecords"
@@ -1280,10 +1147,10 @@ const navigateToWorkspace = () => {
         :pending-changes="pendingChanges"
         @update-status="handleUpdateStatus"
         @open-justification="handleOpenJustification"
-        @mark-all-present="markAllAsPresent"
-        @mark-all-absent="markAllAsAbsent"
-        @mark-all-late="markAllAsLate"
-        @reset-all="resetAllStatuses"
+        @mark-all-present="() => markAllAsPresent()"
+        @mark-all-absent="() => markAllAsAbsent()"
+        @mark-all-late="() => markAllAsLate()"
+        @reset-all="() => resetAllStatuses()"
       />
     </div>
   </div>

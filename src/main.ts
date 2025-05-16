@@ -3,6 +3,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import router from './router'
 import App from './App.vue'
+import { registerServiceWorker } from './registerServiceWorker'
 
 import './style.css'
 
@@ -27,3 +28,6 @@ app.use(router)
 
 // Finalmente montar la app
 app.mount('#app')
+
+// Registrar el Service Worker para PWA
+registerServiceWorker()

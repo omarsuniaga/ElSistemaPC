@@ -1,22 +1,105 @@
 {
-  "name": "El Sistema PC",
-  "short_name": "El_Sistema",
-  "description": "Gestión y asistencia para la academia de música.",
-  "start_url": ".",
+  "name": "Academia de Música Manager",
+  "short_name": "Acad Música",
+  "description": "Sistema integral de gestión para academias de música: asistencia, estudiantes, clases y reportes.",
+  "start_url": "/",
+  "scope": "/",
+  "id": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#ffffff",
   "theme_color": "#1a202c",
-  "orientation": "portrait-primary",
+  "orientation": "any",
+  "categories": ["education", "productivity", "utilities"],
+  "lang": "es",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "vite.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
+      "src": "icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "vite.svg",
+      "src": "icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "apple touch icon"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/mobile-1.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "Pantalla de asistencia en la Academia de Música"
+    },
+    {
+      "src": "screenshots/desktop-1.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Panel de control de la Academia de Música"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Registrar Asistencia",
+      "short_name": "Asistencia",
+      "description": "Ir directamente a la página de registro de asistencia",
+      "url": "/attendance",
+      "icons": [{ "src": "icons/attendance.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Ver Estudiantes",
+      "short_name": "Estudiantes",
+      "description": "Ver lista de estudiantes",
+      "url": "/students",
+      "icons": [{ "src": "icons/students.png", "sizes": "96x96" }]
     }
   ]
 }

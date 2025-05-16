@@ -1,58 +1,77 @@
-// src/type/attendance.ts
-// Attendance status types
-export type AttendanceStatus = 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
+import firebase from 'firebase/app';
 
-/**
- * Justificación de ausencia
- */
-export interface JustificationData {
-  id: string; // ID del estudiante
-  reason: string; // Causa de la ausencia
-  documentURL?: string; // URL de la imagen subida al storage
-  timestamp?: Date;
-}
-
-/**
- * Registro de asistencia
- */
+// Interfaces completas para el módulo de asistencia
 export interface AttendanceRecord {
-  id?: string;
+  id: string;
   studentId: string;
   classId: string;
-  Fecha: string; // Formato: AAAA-MM-DD
-  status: AttendanceStatus;
-  notes?: string;
-  justification?: string | { reason: string };
-  documentUrl?: string;
-}
-
-/**
- * Nueva estructura para el documento de asistencia
- */
-export interface AttendanceDocument {
-  id?: string;
-  fecha: string; // Fecha en formato AAAA-MM-DD
-  classId: string; // Clase seleccionada (ej: teoria-y-solfeo)
-  teacherId: string; // ID del maestro que registró la asistencia
-  data: {
-    presentes: string[]; // Lista de IDs de alumnos presentes
-    ausentes: string[]; // Lista de IDs de alumnos ausentes
-    tarde: string[]; // Lista de IDs de alumnos con tardanza o justificados
-    justificacion: JustificationData[]; // Datos de justificaciones
-    observations: string; // Observaciones o criterios de la clase
+  Fecha: string;
+  status: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
+  createdAt: string;
+  updatedAt: string;
+  justification?: {
+    reason: string;
+    documentURL?: string;
+    approved?: boolean;
   };
 }
 
-/**
- * Estructura para observaciones de clase con historial
- */
-export interface ClassObservation {
-  id: string;
+export interface AttendanceDocument {
+  id?: string;
+  fecha: string;
+  classId: string;
+  teacherId: string;
+  data: {
+    presentes: string[];
+    ausentes: string[];
+    tarde: string[];
+    justificacion: Array<{
+      id: string;
+      reason: string;
+      documentURL?: string;
+      approved?: boolean;
+    }>;
+    observations: string;
+  };
+  created_at?: firebase.firestore.Timestamp;
+  updated_at?: firebase.firestore.Timestamp;
+}
+
+export interface AttendanceAnalytics {
+  dateRange: string;
+  totalClasses: number;
+  averageAttendance: number;
+  trends: {
+    date: string;
+    present: number;
+    absent: number;
+  }[];
+  studentPerformance: Array<{
+    studentId: string;
+    attendanceRate: number;
+    lastObservation: string;
+  }>;
+}
+
+export interface ObservationRecord {
+  id?: string;
   classId: string;
   date: string;
-  text: string;
-  timestamp: number;
-  author: string;
+  type: 'general' | 'comportamiento' | 'logro';
+  content: string;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+export interface AttendanceExportConfig {
+  format: 'pdf' | 'csv';
+  dateRange: {
+    start: string;
+    end: string;
+  };
+  includeObservations: boolean;
+  includeJustifications: boolean;
 }
 
 export interface AttendanceFilters {
@@ -60,7 +79,7 @@ export interface AttendanceFilters {
   endDate: string;
   class?: string;
   student?: string;
-  status?: AttendanceStatus;
+  status?: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
   instrument?: string;
   level?: string;
   teacherId?: string;
@@ -75,43 +94,27 @@ export interface AttendanceFiltersType {
   teacherId?: string;
   studentId?: string;
   classId?: string;
-  status?: AttendanceStatus;
-  // Define el tipo para los filtros de asistencia
-  startDate?: string; // Fecha de inicio para el rango de reporte
-  endDate?: string;   // Fecha de fin para el rango de reporte
-
-// Define el tipo para un documento de asistencia individual
+  status?: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
+  startDate?: string;
+  endDate?: string;
 }
 
-export interface AttendanceAnalytics {
-  totalClasses: number;
-  totalStudents: number;
-  averageAttendance: number;
-  absentStudents: {
-    studentId: string;
-    absences: number;
-    lastAttendance: string;
-    attendanceRate: number;
-  }[];
-  byClass: Record<
-    string,
-    {
-      present: number;
-      absent: number;
-      delayed: number;
-      justified: number;
-      total: number;
-    }
-  >;
-}
-
-export interface StatusChange {
-  studentId: number;
+export interface EmergencyClassStatus {
+  id: string;
+  classId: string;
+  className: string;
+  teacherId: string;
+  teacherName: string;
   date: string;
-  clase: string;
-  oldStatus: AttendanceStatus | null;
-  newStatus: AttendanceStatus;
-  timestamp: string;
+  createdAt: string;
+  reason?: string;
+  status: 'Pendiente' | 'Aceptada' | 'Rechazada' | 'Ignorada';
+  responder?: {
+    id: string;
+    name: string;
+    timestamp: string;
+  };
+  attendanceDocumentId?: string;
 }
 
 export interface FetchAttendanceRecordsParams {
@@ -121,22 +124,11 @@ export interface FetchAttendanceRecordsParams {
   studentId?: string;
 }
 
-export type EmergencyClassStatus = 'Pendiente' | 'Aceptada' | 'Rechazada' | 'Ignorada';
-
-export interface EmergencyClass {
-  id: string;
-  classId: string;
-  className: string;
-  teacherId: string;
-  teacherName: string;
+export interface StatusChange {
+  studentId: number;
   date: string;
-  createdAt: string;
-  reason?: string;
-  status: EmergencyClassStatus;
-  responder?: {
-    id: string;
-    name: string;
-    timestamp: string;
-  };
-  attendanceDocumentId?: string; // Referencia al documento de asistencia relacionado
+  clase: string;
+  oldStatus: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado' | null;
+  newStatus: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
+  timestamp: string;
 }
