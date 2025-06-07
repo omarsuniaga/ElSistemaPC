@@ -7,6 +7,7 @@ export interface AttendanceRecord {
   classId: string;
   fecha: string;
   status: AttendanceStatus;
+  justification?: string;
   createdAt: Date;
   updatedAt?: Date;
 }

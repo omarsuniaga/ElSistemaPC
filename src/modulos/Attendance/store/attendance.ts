@@ -981,7 +981,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       const documents = await fetchAttendanceDocuments(startDate, endDate);
       
       // Procesar documentos para extraer registros del estudiante
-      const studentRecords = [];
+      const studentRecords: AttendanceRecord[] = [];
       
       documents.forEach(doc => {
         // Verificar si hay filtro de clase
@@ -993,7 +993,6 @@ export const useAttendanceStore = defineStore('attendance', () => {
         if (doc.data.presentes?.includes(studentId)) {
           studentRecords.push({
             id: `${doc.fecha}_${doc.classId}_${studentId}_presente`,
-            Fecha: doc.fecha,
             fecha: doc.fecha,
             classId: doc.classId,
             studentId,
@@ -1007,7 +1006,6 @@ export const useAttendanceStore = defineStore('attendance', () => {
           const justification = doc.data.justificacion?.find(j => j.id === studentId);
           studentRecords.push({
             id: `${doc.fecha}_${doc.classId}_${studentId}_ausente`,
-            Fecha: doc.fecha,
             fecha: doc.fecha,
             classId: doc.classId,
             studentId,
@@ -1022,7 +1020,6 @@ export const useAttendanceStore = defineStore('attendance', () => {
           const justification = doc.data.justificacion?.find(j => j.id === studentId);
           studentRecords.push({
             id: `${doc.fecha}_${doc.classId}_${studentId}_tarde`,
-            Fecha: doc.fecha,
             fecha: doc.fecha,
             classId: doc.classId,
             studentId,
@@ -1035,7 +1032,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       
       // Ordenar por fecha (más reciente primero)
       studentRecords.sort((a, b) => {
-        return new Date(b.Fecha).getTime() - new Date(a.Fecha).getTime();
+        return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
       });
       
       console.log(`[Attendance] Found ${studentRecords.length} records for student ${studentId}`);
