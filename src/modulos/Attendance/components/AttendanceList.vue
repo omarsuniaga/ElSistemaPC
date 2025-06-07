@@ -17,6 +17,8 @@ import { useRoute } from 'vue-router'
 
 // Utilidades para exportar PDF
 import { generateAttendancePDF } from '../../../utils/pdfExport'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
 // Importamos el composable de acciones de asistencia
 import { useAttendanceActionsSimple } from '../composables/useAttendanceActionsSimple'
@@ -1092,6 +1094,8 @@ const handleNavigateToClassSelector = () => {
 // Función para exportar la asistencia a PDF
 const handleExportToPDF = async () => {
   try {
+    isLoading.value = true; // Mostrar indicador de carga
+    
     const currentDate = props.date || attendanceStore.selectedDate;
     const currentClass = props.initialClassId || props.classId || attendanceStore.selectedClass;
     const currentClassName = props.selectedClassName || classesStore.getClassById(currentClass)?.name || 'Clase sin nombre';
@@ -1124,9 +1128,10 @@ const handleExportToPDF = async () => {
       console.warn('Error obteniendo nombre del maestro:', error);
     }
 
-    // Obtener información adicional de la clase
+    // Obtener información detallada de la clase
     const classInfo = classesStore.getClassById(currentClass);
     let classSchedule = 'Horario no especificado';
+    let classDescription = '';
     
     if (classInfo?.schedule?.slots && classInfo.schedule.slots.length > 0) {
       classSchedule = classInfo.schedule.slots
@@ -1134,13 +1139,63 @@ const handleExportToPDF = async () => {
         .join(', ');
     }
     
-    // Crear observaciones detalladas que incluyan el horario
-    let detailedObservations = `Horario de la clase: ${classSchedule}\n\n`;
-    const basicObservations = attendanceStore.getObservations || 'Sin observaciones adicionales registradas.';
-    detailedObservations += `Observaciones del maestro: ${basicObservations}`;
+    if (classInfo?.description) {
+      classDescription = classInfo.description;
+    }
+    
+    // Obtener observaciones de la clase específica
+    let classObservations = 'Sin observaciones adicionales registradas.';
+    try {
+      // Intentar obtener observaciones específicas de la clase
+      const observationsForClass = await attendanceStore.fetchObservationsForClass(currentClass);
+      if (observationsForClass && observationsForClass.length > 0) {
+        // Filtrar por fecha si es necesario, ya que fetchObservationsForClass devuelve todas las observaciones
+        const observationsForDate = observationsForClass.filter(obs => {
+          const obsDate = obs.date || obs.fecha;
+          return obsDate === currentDate;
+        });
+        
+        if (observationsForDate.length > 0) {
+          classObservations = observationsForDate
+            .map(obs => {
+              // Verificar si obs.content es string u objeto
+              const content = typeof obs.content === 'string' ? obs.content : obs.content?.text || 'Observación sin contenido';
+              const author = obs.author || 'Maestro';
+              return `${content} (${author})`;
+            })
+            .join('\n');
+        }
+      }
+    } catch (error) {
+      console.warn('Error obteniendo observaciones específicas:', error);
+      // Fallback a observaciones generales
+      const basicObservations = attendanceStore.getObservations;
+      if (basicObservations && basicObservations.trim()) {
+        classObservations = basicObservations;
+      }
+    }
+    
+    // Crear observaciones detalladas que incluyan toda la información de contexto
+    let detailedObservations = '';
+    
+    // Información de la clase
+    detailedObservations += `INFORMACIÓN DE LA CLASE:\n`;
+    detailedObservations += `Clase: ${currentClassName}\n`;
+    detailedObservations += `Maestro: ${teacherName}\n`;
+    detailedObservations += `Fecha: ${format(new Date(currentDate), "d 'de' MMMM yyyy", { locale: es })}\n`;
+    detailedObservations += `Horario: ${classSchedule}\n`;
+    
+    if (classDescription) {
+      detailedObservations += `Descripción: ${classDescription}\n`;
+    }
+    
+    detailedObservations += `\nOBSERVACIONES DEL MAESTRO:\n${classObservations}\n`;
 
     // Obtener justificaciones
     const justifications = attendanceStore.getJustificationsByStudent || {};
+    
+    // Generar mensaje de estado para el usuario
+    displayToast('Generando PDF con información completa de la clase...', 'info');
 
     await generateAttendancePDF(
       students,
@@ -1156,7 +1211,9 @@ const handleExportToPDF = async () => {
     
   } catch (error) {
     console.error('Error al generar PDF:', error);
-    displayToast('Error al generar el PDF', 'error');
+    displayToast('Error al generar el PDF. Por favor, inténtelo de nuevo.', 'error');
+  } finally {
+    isLoading.value = false; // Ocultar indicador de carga
   }
 };
 

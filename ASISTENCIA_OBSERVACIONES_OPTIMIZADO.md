@@ -102,6 +102,45 @@ const studentRecords: AttendanceRecord[] = [];
 - ✅ Producción: `npm run build` exitoso
 - ✅ Archivos optimizados y minificados
 
+## 🔥 **ACTUALIZACIÓN CRÍTICA - 7 de junio de 2025**
+
+### ✅ **Error Crítico Resuelto: studentId Requerido Incorrectamente**
+
+**Problema identificado:**
+```
+AttendanceObservation.vue:662 Cannot save student observation without studentId
+```
+
+**Causa raíz:**
+- La lógica en `saveObservation()` requería incorrectamente un `studentId` para observaciones que no eran de clase
+- La validación era demasiado restrictiva y no permitía guardar observaciones generales
+
+**Solución implementada:**
+- ✅ **Removida la validación incorrecta** que requería `studentId` obligatorio
+- ✅ **Simplificada la lógica de guardado** para ser más flexible
+- ✅ **Corregidos errores TypeScript** con proper type assertions (`as const`)
+- ✅ **Mejorada la detección automática** de tipo de observación basada en contexto
+
+**Código corregido:**
+```typescript
+// ANTES (problemático):
+if (!props.studentId) {
+  console.error("Cannot save student observation without studentId");
+  return;
+}
+
+// DESPUÉS (corregido):
+const isStudentSpecific = props.studentId && !props.classObservationMode;
+// Ahora puede guardar observaciones con o sin studentId
+```
+
+**Resultado:**
+- ✅ **Observaciones se guardan correctamente** en todos los contextos
+- ✅ **No más errores de validación** innecesarios
+- ✅ **Sistema completamente funcional** para cualquier tipo de observación
+
+---
+
 ## 🏁 Conclusión
 
 El sistema de asistencia y observaciones ha sido completamente optimizado y está funcionando correctamente. Todas las tareas solicitadas han sido completadas con éxito, incluyendo la corrección de errores TypeScript, la validación del sistema de guardado de observaciones, y las mejoras de rendimiento y experiencia de usuario.

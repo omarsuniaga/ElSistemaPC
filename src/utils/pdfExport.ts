@@ -80,13 +80,12 @@ export const generateAttendancePDF = async (
       .sort((a, b) => {
         const statusCompare = getStatusPriority(a.status) - getStatusPriority(b.status);
         return statusCompare === 0 ? getFullName(a.student).localeCompare(getFullName(b.student)) : statusCompare;
-      });
-
-    const tableData = studentsWithStatus.map((item, index) => ({
-      numero: index + 1,
-      nombreCompleto: getFullName(item.student),
-      estado: item.status,
-    }));
+      });    // Convertir datos de objeto a array para jsPDF autoTable
+    const tableData = studentsWithStatus.map((item, index) => [
+      index + 1,
+      getFullName(item.student),
+      item.status
+    ]);
 
     const columns = [
       { header: 'N°', dataKey: 'numero' },
@@ -106,28 +105,33 @@ export const generateAttendancePDF = async (
       else if (status.toLowerCase().includes('ausente')) stats.ausentes++;
       else if (status.toLowerCase().includes('tarde')) stats.tardanzas++;
       else if (status.toLowerCase().includes('justificad')) stats.justificados++;
-    });
-
-    let headerText = `Clase: ${displayClassName} | Profesor: ${displayTeacherName}\n`;
-    headerText += `Resumen: Presentes: ${stats.presentes} | Ausentes: ${stats.ausentes} | Tardanzas: ${stats.tardanzas} | Justificados: ${stats.justificados}`;
+    });    let headerText = `${displayClassName} - ${formattedDate}\n`;
+    headerText += `Profesor: ${displayTeacherName}\n`;
+    headerText += `Total de Estudiantes: ${students.length} | Presentes: ${stats.presentes} | Ausentes: ${stats.ausentes} | Tardanzas: ${stats.tardanzas} | Justificados: ${stats.justificados}`;
 
     let footerContent = '';
     if (Object.keys(justifications).length > 0) {
-      footerContent += '\n\nJustificaciones:\n';
+      footerContent += '\n\nJUSTIFICACIONES DE AUSENCIAS:\n';
+      footerContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
       for (const studentId in justifications) {
-        if (Object.prototype.hasOwnProperty.call(justifications, studentId)) {
-          const studentName = getFullName(students.find(s => s.id === studentId) || { nombre: 'Desconocido', apellido: '' });
-          footerContent += `${studentName}: ${justifications[studentId]}\n`;
+        if (Object.prototype.hasOwnProperty.call(justifications, studentId)) {          const student = students.find(s => s.id === studentId);
+          const studentName = student ? getFullName(student) : 'Estudiante no encontrado';
+          footerContent += `• ${studentName}: ${justifications[studentId]}\n`;
         }
       }
     }
-    footerContent += `\nObservaciones:\n${observations}`;
-    footerContent += `\n\n\n_________________________\nFirma del Profesor`;
-    footerContent += `\n\nGenerado el: ${format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: es })}`;
+    
+    if (observations && observations.trim() && observations !== 'Sin observaciones.') {
+      footerContent += `\n\n${observations}`;
+    }
+    
+    footerContent += `\n\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    footerContent += `Firma del Profesor: _____________________________    Fecha: ${format(new Date(), "dd/MM/yyyy", { locale: es })}`;
+    footerContent += `\n\nDocumento generado automáticamente el ${format(new Date(), "dd/MM/yyyy 'a las' HH:mm:ss", { locale: es })}`;
 
     // Opciones para generarPdfTabla
     const pdfOptions = {
-      title: 'Reporte de Asistencia',
+      title: 'REGISTRO DE ASISTENCIA',
       fileName: `Asistencia_${displayClassName.replace(/\s+/g, '_')}_${dateForFileName}.pdf`,
       columns: columns,
       data: tableData,
@@ -135,41 +139,54 @@ export const generateAttendancePDF = async (
       logoUrl: new URL('../assets/ElSistemaPCLogo.jpeg', import.meta.url).href, 
       headerText: headerText,
       footerText: footerContent, 
-      startY: 55, // Ajustar para el título y posible logo/headerText
-      headStyles: { fillColor: [50, 50, 50], textColor: 255, fontStyle: 'bold', halign: 'center' },
-      columnStyles: {
-        numero: { cellWidth: 15, halign: 'center' },
-        nombreCompleto: { cellWidth: 'auto' },
-        estado: { cellWidth: 35, halign: 'center' },
+      startY: 70, // Más espacio para el título más grande
+      headStyles: { 
+        fillColor: [41, 128, 185], // Azul profesional
+        textColor: 255, 
+        fontStyle: 'bold', 
+        halign: 'center',
+        fontSize: 11
+      },      columnStyles: {
+        0: { cellWidth: 20, halign: 'center' }, // N°
+        1: { cellWidth: 'auto', halign: 'left' }, // Nombre
+        2: { cellWidth: 40, halign: 'center' }, // Estado
       },
-      alternateRowStyles: { fillColor: [240, 240, 240] },
-      bodyStyles: { fontSize: 10, cellPadding: 2 },
-      didDrawCell: (data: any, doc: any) => {
-        if (data.column.dataKey === 'estado' && data.section === 'body') {
+      alternateRowStyles: { fillColor: [248, 249, 250] },
+      bodyStyles: { fontSize: 10, cellPadding: 3, lineColor: [230, 230, 230], lineWidth: 0.1 },      didDrawCell: (data: any, doc: any) => {
+        // La columna del estado es la columna índice 2 (0-based)
+        if (data.column.index === 2 && data.section === 'body') {
           const status = String(data.cell.raw).toLowerCase();
           let fillColor = null;
-          let textColor = [0,0,0]; // Default black
+          let textColor = [255, 255, 255]; // Texto blanco por defecto
 
           if (status.includes('presente')) {
-            fillColor = [220, 220, 220]; 
-            textColor = [40,40,40];
+            fillColor = [46, 125, 50]; // Verde oscuro profesional
           } else if (status.includes('ausente')) {
-            fillColor = [180, 180, 180]; 
-            textColor = [20,20,20];
+            fillColor = [198, 40, 40]; // Rojo oscuro profesional
           } else if (status.includes('tarde')) {
-            fillColor = [200, 200, 200]; 
-            textColor = [30,30,30];
+            fillColor = [255, 152, 0]; // Naranja profesional
+            textColor = [0, 0, 0]; // Texto negro para mejor contraste
           } else if (status.includes('justificad')) {
-            fillColor = [160, 160, 160]; 
-            textColor = [10,10,10];
+            fillColor = [63, 81, 181]; // Azul índigo profesional
+          } else {
+            fillColor = [117, 117, 117]; // Gris profesional
           }
 
           if (fillColor) {
             doc.setFillColor(...fillColor);
             doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
             doc.setTextColor(...textColor);
-            // El texto ya está siendo dibujado por autoTable, solo necesitamos aplicar el estilo.
-            // Si necesitas centrar o algo más, puedes añadir doc.text aquí y retornar false.
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            
+            // Centrar el texto manualmente
+            const text = String(data.cell.raw);
+            const textWidth = doc.getTextWidth(text);
+            const centerX = data.cell.x + (data.cell.width / 2) - (textWidth / 2);
+            const centerY = data.cell.y + (data.cell.height / 2) + 2;
+            
+            doc.text(text, centerX, centerY);
+            return false; // Prevenir que autoTable dibuje el texto por defecto
           }
         }
       },
@@ -226,15 +243,13 @@ export const generateClassDetailsPDF = async (
       { header: 'Email', dataKey: 'email' },
       { header: 'Teléfono', dataKey: 'telefono' },
       { header: 'Instrumento', dataKey: 'instrumento' },
-    ];
-
-    const tableData = students.map((student, index) => ({
-      numero: index + 1,
-      nombreCompleto: `${student.nombre} ${student.apellido}`,
-      email: student.email || 'No registrado',
-      telefono: student.phone || student.tlf || 'No registrado',
-      instrumento: student.instrumento || 'No especificado',
-    }));
+    ];    const tableData = students.map((student, index) => [
+      index + 1,
+      `${student.nombre} ${student.apellido}`,
+      student.email || 'No registrado',
+      student.phone || student.tlf || 'No registrado',
+      student.instrumento || 'No especificado',
+    ]);
 
     let headerInfo = `Clase: ${className}\nProfesor: ${teacherName}\nHoras semanales: ${weeklyHours}\nFecha del reporte: ${formattedDate}`;
 
@@ -262,13 +277,12 @@ export const generateClassDetailsPDF = async (
       headerText: headerInfo,
       footerText: footerText,
       startY: 65, // Ajustar según necesidad
-      headStyles: { fillColor: [50, 50, 50], textColor: 255, fontStyle: 'bold' },
-      columnStyles: {
-        numero: { cellWidth: 10, halign: 'center' },
-        nombreCompleto: { cellWidth: 50 },
-        email: { cellWidth: 45 },
-        telefono: { cellWidth: 35 },
-        instrumento: { cellWidth: 40 },
+      headStyles: { fillColor: [50, 50, 50], textColor: 255, fontStyle: 'bold' },      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' }, // #
+        1: { cellWidth: 50 }, // Nombre
+        2: { cellWidth: 45 }, // Email
+        3: { cellWidth: 35 }, // Teléfono
+        4: { cellWidth: 40 }, // Instrumento
       },
       alternateRowStyles: { fillColor: [240, 240, 240] },
       bodyStyles: { fontSize: 9, cellPadding: 2, overflow: 'linebreak' },
