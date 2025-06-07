@@ -1,1256 +1,11 @@
-<script setup lang="ts">
-// Augment the Window interface for jsPDF and jspdf (if loaded via CDN)
-declare global {
-  interface Window {
-    jsPDF: any; // You might want to install @types/jspdf for better typing
-    jspdf: any; // For jspdf-autotable plugin
-  }
-}
-
-import '@vuepic/vue-datepicker/dist/main.css'
-import { ref, computed, onMounted, watch } from 'vue'
-import { 
-  parseISO, 
-  format, 
-} from 'date-fns'
-import { es } from 'date-fns/locale'
-
-// Componentes importados
-import AttendanceHeader from '../modulos/Attendance/components/AttendanceHeader.vue'
-import AttendanceList from '../modulos/Attendance/components/AttendanceList.vue'
-import AttendanceReportModal from '../modulos/Attendance/components/AttendanceReportModal.vue'
-import AttendanceObservation from '../modulos/Attendance/components/AttendanceObservation.vue'
-import AttendanceAnalytics from '../modulos/Attendance/components/AttendanceAnalytics.vue'
-import AttendanceTrends from '../modulos/Attendance/components/AttendanceTrends.vue'
-import AttendanceExportModal from '../modulos/Attendance/components/AttendanceExportModal.vue'
-import Calendar from '../components/Calendar.vue'
-import DateClassSelector from '../modulos/Classes/components/DateClassSelector.vue'
-import JustifiedAbsenceModal from '../components/JustifiedAbsenceModal.vue'
-import { CalendarDaysIcon } from '@heroicons/vue/24/outline'
-import EmergencyClassModal from '../modulos/Attendance/components/EmergencyClassModal.vue'
-import type { Student } from '../modulos/Students/types/student'
-import { generateAttendancePDF } from '../utils/pdfExport' 
-import { sendWebhook, sendToMake } from '../utils/webhook'
-import { useConfigStore } from '../stores/config'
-
-// Router
-import { useRouter, useRoute } from 'vue-router'
-const router = useRouter()
-const route = useRoute()
-
-// Stores
-import { useAttendanceStore } from '../modulos/Attendance/store/attendance'
-import { useStudentsStore } from '../modulos/Students/store/students'
-import { useClassesStore } from '../modulos/Classes/store/classes'
-import { useEmergencyClassStore } from '../modulos/Attendance/store/emergencyClass'
-import { getCurrentDate } from '../utils/dateUtils'
-import type { SelectedStudent } from '../modulos/Students/types/student'
-import type { AttendanceFiltersType } from '../modulos/Attendance/types/attendance'
-// Agregar importación del store de auth
-import { useAuthStore } from '../stores/auth'
-
-// Agregar esto después de las otras declaraciones de stores
-const authStore = useAuthStore()
-const configStore = useConfigStore()
-
-// Define an interface for the attendance records structure
-interface AttendanceRecord {
-  [studentId: string]: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado' | string;
-}
-
-  // Modificar la función de verificación para fechas disponibles
-const availableClassDates = computed(() => {
-  if (!selectedClass.value) return []
-  
-  // Obtener el ID del maestro actual
-  const currentTeacherId = authStore.user?.uid
-  
-  // Solo obtener días programados para clases
-  const scheduledDays = attendanceStore.getClassScheduleDays(selectedClass.value)
-  
-  // Filtrar días por maestro actual
-  return scheduledDays.filter(day => {
-    const classesForDay = classesStore.getClassesByDayAndTeacherId(day, currentTeacherId || '')
-    return classesForDay && classesForDay.length > 0
-  })
-})
-const markedDates = computed(() => attendanceStore.getMarkedDatesForCalendar);
-// Props para recibir fecha y clase desde la URL
-const props = defineProps({
-  date: String,
-  classId: String
-})
-
-// Estado global (stores)
-const attendanceStore = useAttendanceStore()
-const studentsStore = useStudentsStore()
-const classesStore = useClassesStore()
-const emergencyClassStore = useEmergencyClassStore()
-
-// Estados de vista y UI
-const filteredStudents = ref<any[]>([])
-const view = ref<'calendar' | 'class-select' | 'attendance-form'>('calendar')
-const selectedDate = ref(getCurrentDate())
-const currentMonth = ref(new Date())
-const selectedClass = ref('')
-// Utilizamos computed para derivar el nombre de la clase desde el store
-const selectedClassName = computed(() => {
-  const cls = classesStore.classes.find(c => c.id === selectedClass.value || c.name === selectedClass.value)
-  return cls ? cls.name : selectedClass.value
-})
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-const loadingMessage = ref<string>('')
-
-// Referencia para el correo del destinatario
-const recipientEmail = ref(authStore.user?.email || '')
-
-// Estados para modales y mensajes
-const showAnalytics = ref(false)
-const showTrends = ref(false)
-const showReportModal = ref(false)
-const showExportModal = ref(false)
-const showObservationsModal = ref(false)
-const selectedStudentForObs = ref<SelectedStudent | null>(null)
-const showJustifiedAbsenceModal = ref(false)
-const selectedStudentForJustification = ref<SelectedStudent | null>(null)
-const showCalendarModal = ref(false)
-const showEmergencyClassModal = ref(false)
-const warningMessage = ref('')
-const errorMessage = ref('')
-
-// Report filters
-const reportFilters = ref<AttendanceFiltersType>({
-  instrument: '',
-  level: '',
-  teacherId: '',
-  startDate: '', // Add default value
-  endDate: ''    // Add default value
-})
-
-// Control para evitar bucles reactivos
-const isUpdating = ref(false)
-
-// Toast (mensajes emergentes)
-const showMessage = ref(false)
-const message = ref('')
-const messageType = ref<'success' | 'error'>('success')
-const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
-  message.value = msg
-  messageType.value = type
-  showMessage.value = true
-  setTimeout(() => { showMessage.value = false }, 3000)
-}
-
-// Este computed ya está definido arriba con filtrado por maestro
-
-// Computed para contar observaciones (si existen)
-const getObservationsCount = computed(() => {
-  return attendanceStore.currentAttendanceDoc?.data.observations ? 1 : 0
-})
-
-// Computed para mostrar la fecha seleccionada formateada en el título
-const formattedSelectedDate = computed(() => {
-  return format(parseISO(selectedDate.value), "d 'de' MMMM yyyy", { locale: es })
-})
-
-// Helper para navegar a la URL de detalle de asistencia
-const navigateToAttendanceDetailUrl = (date: string, classId: string) => {
-  const formattedDate = date.replace(/-/g, '')
-  router.push(`/attendance/${formattedDate}/${classId}`)
-}
-
-// Seleccionar fecha (ya sea desde el calendario o Datepicker)
-const selectDate = async (date: string | { date: string }) => {
-  if (isUpdating.value) return
-  isUpdating.value = true
-  console.log("Selected date:", date)
-  try {
-    if (typeof date === 'string') {
-      selectedDate.value = date
-    } else if (date && date.date) {
-      selectedDate.value = date.date
-    }
-    if (selectedClass.value) {
-      navigateToAttendanceDetailUrl(selectedDate.value, selectedClass.value)
-      await loadAttendanceData(selectedClass.value)
-    } else {
-      view.value = 'class-select'
-    }
-  } catch (err) {
-    console.error('Error al seleccionar fecha:', err)
-  } finally {
-    setTimeout(() => { isUpdating.value = false }, 0)
-  }
-}
-
-// Manejo de la selección desde el modal del calendario
-const handleCalendarSelect = (date: string) => {
-  if (typeof date === 'string') {
-    selectedDate.value = date
-  } else if (date && date.date) {
-    selectedDate.value = date.date
-  }
-
-  // cerrar modal
-  showCalendarModal.value = false
-  
-  // Cambiar vista a selección de clases
-  view.value = 'class-select'
-  
-  // Asegurarnos de que el cambio de vista se aplique
-  setTimeout(() => {
-    if (view.value !== 'class-select') {
-      console.log('Forzando cambio a vista de selección de clases')
-      view.value = 'class-select'
-    }
-  }, 100)
-}
-
-// Función para confirmar la fecha seleccionada en el modal
-const confirmDateSelection = () => {
-  selectDate(selectedDate.value)
-  showCalendarModal.value = false
-}
-
-// Manejar cambio de mes en el calendario
-const handleMonthChange = (newMonth: Date) => {
-  currentMonth.value = newMonth
-  attendanceStore.fetchAttendanceRecords({
-    classId: selectedClass.value || 'all',
-    startDate: newMonth,
-    endDate: new Date()
-  })
-}
-
-// Actualización de fecha desde DateClassSelector
-const handleDateChange = async (newDate: string) => {
-  if (isUpdating.value) return
-  isUpdating.value = true
-  try {
-    selectedDate.value = newDate
-    if (!attendanceStore.validateAttendanceDate(selectedDate.value)) {
-      warningMessage.value = "No se puede registrar asistencia para fechas futuras"
-      return
-    }
-    if (selectedClass.value) {
-      navigateToAttendanceDetailUrl(selectedDate.value, selectedClass.value)
-      await loadAttendanceData(selectedClass.value)
-    }
-  } finally {
-    setTimeout(() => { isUpdating.value = false }, 0)
-  }
-}
-
-// Actualizar la fecha sin entrar en ciclo reactivo
-const handleSelectedDateUpdate = (date: string) => {
-  if (isUpdating.value) return
-  isUpdating.value = true
-  setTimeout(() => {
-    selectedDate.value = date
-    isUpdating.value = false
-  }, 0)
-}
-
-// Corregido para usar los mismos valores que AttendanceHeader.vue
-const updateView = (newView: 'calendar' | 'class-select' | 'attendance-form') => {
-  view.value = newView
-  // Reset error if changing views
-  error.value = null
-
-  // Si estamos cambiando a la vista de calendario, asegurarnos de que los estados estén limpios
-  if (newView === 'calendar') {
-    selectedClass.value = ''
-  }
-}
-
-// Métodos para manejar eventos de navegación
-const navigateToCalendar = () => {
-  updateView('calendar')
-}
-
-const navigateToClassSelector = () => {
-  updateView('class-select')
-}
-
-// Cargar datos de asistencia para una clase
-const loadAttendanceData = async (className: string) => {
-  // ...
-  try {
-    isLoading.value = true
-    loadingMessage.value = 'Cargando datos de asistencia...'
-    attendanceStore.attendanceRecords = {}
-    attendanceStore.selectedClass = className
-    attendanceStore.selectedDate = selectedDate.value
-    await attendanceStore.fetchAttendanceDocument(selectedDate.value, className)
-    const students = studentsStore.getStudentsByClass(className)
-    filteredStudents.value = students
-    students.forEach(student => {
-      if (!attendanceStore.attendanceRecords[student.id]) {
-        attendanceStore.attendanceRecords[student.id] = 'Ausente'
-      }
-    })
-    await attendanceStore.updateAnalytics()
-  } catch (err) {
-    console.error('Error al cargar asistencia:', err)
-  } finally {
-    isLoading.value = false
-    loadingMessage.value = ''
-  }
-}
-
-// Seleccionar una clase y cargar sus estudiantes
-const selectClass = async (className: string) => {
-  try {
-    selectedClass.value = className
-    attendanceStore.selectedClass = className
-    let students = studentsStore.getStudentsByClass(className)
-    if (!students.length) {
-      // Búsqueda alternativa si no se encuentran con el método por defecto
-      students = studentsStore.students.filter(s =>
-        (s.clase && (Array.isArray(s.clase) ? s.clase.includes(className) : s.clase === className)) ||
-        (s.grupo && (Array.isArray(s.grupo) ? s.grupo.includes(className) : s.grupo === className))
-      )
-    }
-    filteredStudents.value = students
-    navigateToAttendanceDetailUrl(selectedDate.value, className)
-    await loadAttendanceData(className)
-    view.value = 'attendance-form'
-  } catch (error) {
-    console.error('Error al seleccionar clase:', error)
-    errorMessage.value = 'Error al cargar los estudiantes de la clase'
-  }
-}
-
-// Verificar si la fecha está en el horario programado de la clase
-const isDateInClassSchedule = (date: string, classId: string): boolean => {
-  try {
-    const scheduledDays = attendanceStore.getClassScheduleDays(classId)
-    if (!scheduledDays || scheduledDays.length === 0) return false
-    const dayName = format(parseISO(date), 'EEEE', { locale: es }).toLowerCase()
-    return scheduledDays.includes(dayName)
-  } catch (error) {
-    console.error('Error al verificar horario de clase:', error)
-    return false
-  }
-}
-
-// Guardar cambios pendientes en la asistencia
-const saveAllAttendanceChanges = async () => {
-  try {
-    const isRegularSchedule = isDateInClassSchedule(selectedDate.value, selectedClass.value)
-    if (!isRegularSchedule) {
-      const hasExistingAttendance = await attendanceStore.fetchAttendanceDocument(selectedDate.value, selectedClass.value)
-      if (!hasExistingAttendance) {
-        const sessionKey = `emergency_shown_${selectedDate.value}_${selectedClass.value}`
-        if (!sessionStorage.getItem(sessionKey)) {
-          showEmergencyClassModal.value = true
-          sessionStorage.setItem(sessionKey, 'true')
-          return false
-        }
-      }
-    }
-    
-    isLoading.value = true
-    loadingMessage.value = 'Guardando asistencia...'
-    
-    // Crear documento de asistencia con la estructura correcta
-    const attendanceDoc = {
-      fecha: selectedDate.value,
-      classId: selectedClass.value,
-      teacherId: authStore.user?.uid, // Agregar ID del maestro para facilitar consultas
-      timestamp: new Date().toISOString(), // Añadir timestamp para ordenación
-      data: {
-        presentes: [] as string[],
-        ausentes: [] as string[],
-        tarde: [] as string[],
-        // Mantener todas las justificaciones existentes en el documento actual
-        justificacion: attendanceStore.currentAttendanceDoc?.data.justificacion || [],
-        observations: attendanceStore.currentAttendanceDoc?.data.observations || ''
-      }
-    }
-    
-    // Procesar cada estudiante según su estado
-    Object.entries(attendanceStore.attendanceRecords).forEach(([studentId, status]) => {
-      if (status === 'Presente') {
-        attendanceDoc.data.presentes.push(studentId)
-      } else if (status === 'Ausente') {
-        attendanceDoc.data.ausentes.push(studentId)
-      } else if (status === 'Tardanza') {
-        attendanceDoc.data.tarde.push(studentId)
-      } else if (status === 'Justificado') {
-        // Los justificados deben estar tanto en tarde como en justificación
-        if (!attendanceDoc.data.tarde.includes(studentId)) {
-          attendanceDoc.data.tarde.push(studentId)
-        }
-        
-        // Verificar que este estudiante tenga una justificación registrada
-        const existingJust = attendanceDoc.data.justificacion.find(j => j.id === studentId)
-        if (!existingJust) {
-          // Si no existe una justificación registrada para este estudiante, creamos una básica
-          attendanceDoc.data.justificacion.push({ 
-            id: studentId, 
-            reason: 'Justificación pendiente de detalles' 
-          })
-        }
-      }
-    })
-    
-    // Guardar el documento y asegurarnos de que se actualiza la caché local
-    await attendanceStore.saveAttendanceDocument(attendanceDoc)
-    
-    // Actualizar la lista de fechas con registros para que el calendario se actualice
-    await attendanceStore.fetchAllAttendanceDates()
-    
-    // Actualizar analíticas
-    await attendanceStore.updateAnalytics()
-    
-    showToast('Asistencia guardada correctamente', 'success')
-    return true
-  } catch (err) {
-    error.value = 'Error al guardar la asistencia'
-    console.error('Error guardando asistencia:', err)
-    showToast('Error al guardar la asistencia', 'error')
-    return false
-  } finally {
-    isLoading.value = false
-    loadingMessage.value = ''
-  }
-}
-
-// Manejar observación añadida
-const handleObservationAdded = async (observations: string) => {
-  try {
-    isLoading.value = true
-    loadingMessage.value = 'Guardando observación...'
-    await attendanceStore.updateObservations(selectedDate.value, selectedClass.value, observations)
-    showToast('Observación guardada correctamente', 'success')
-    showObservationsModal.value = false
-  } catch (err) {
-    error.value = 'Error al actualizar observaciones'
-    console.error('Error actualizando observaciones:', err)
-    showToast('Error al guardar la observación', 'error')
-  } finally {
-    isLoading.value = false
-    loadingMessage.value = ''
-  }
-}
-
-// Abrir modal de observaciones
-const handleOpenObservation = (student: any) => {
-  selectedStudentForObs.value = student
-  showObservationsModal.value = true
-}
-
-// Guardar justificación
-const handleJustificationSave = async (data: { reason: string, documentUrl?: string, file?: File }) => {
-  try {
-    if (!selectedStudentForJustification.value) return
-    isLoading.value = true
-    loadingMessage.value = 'Guardando justificación...'
-    const studentId = selectedStudentForJustification.value.id
-    
-    // Actualizar el estado local del estudiante a "Justificado"
-    attendanceStore.attendanceRecords[studentId] = 'Justificado'
-    
-    // Guardar temporalmente la justificación en el documento de asistencia actual
-    // Si no existe el documento o el array de justificaciones, los creamos
-    if (!attendanceStore.currentAttendanceDoc) {
-      attendanceStore.currentAttendanceDoc = {
-        fecha: selectedDate.value,
-        classId: selectedClass.value,
-        data: {
-          presentes: [],
-          ausentes: [],
-          tarde: [],
-          justificacion: [],
-          observations: ''
-        }
-      }
-    }
-    
-    if (!attendanceStore.currentAttendanceDoc.data.justificacion) {
-      attendanceStore.currentAttendanceDoc.data.justificacion = []
-    }
-    
-    // Buscar si ya existe una justificación para este estudiante
-    const existingIndex = attendanceStore.currentAttendanceDoc.data.justificacion.findIndex(
-      j => j.id === studentId
-    )
-    
-    // Crear el objeto de justificación
-    const justification = {
-      id: studentId,
-      reason: data.reason,
-      documentUrl: data.documentUrl || ''
-    }
-    
-    // Si ya existe, la actualizamos; si no, la añadimos
-    if (existingIndex >= 0) {
-      attendanceStore.currentAttendanceDoc.data.justificacion[existingIndex] = justification
-    } else {
-      attendanceStore.currentAttendanceDoc.data.justificacion.push(justification)
-    }
-    
-    // Si hay un archivo adjunto, lo subimos
-    if (data.file) {
-      await attendanceStore.addJustificationToAttendance(
-        studentId,
-        selectedDate.value,
-        selectedClass.value,
-        data.reason,
-        data.file
-      )
-    }
-    
-    showJustifiedAbsenceModal.value = false
-    showToast('Justificación guardada correctamente', 'success')
-    
-    // No cargamos de nuevo los datos para no perder los cambios pendientes
-    // Solo actualizamos el UI para reflejar que la justificación está guardada temporalmente
-  } catch (err) {
-    error.value = 'Error al guardar la justificación'
-    console.error('Error guardando justificación:', err)
-    showToast('Error al guardar la justificación', 'error')
-  } finally {
-    isLoading.value = false
-    loadingMessage.value = ''
-  }
-}
-
-// Función para generar el template HTML de asistencia
-const generateAttendanceHTML = (
-  students: Student[],
-  records: Record<string, string>,
-  observations: string = 'Sin observaciones.',
-  className: string,
-  date: string
-): string => {
-  const formattedDate = format(parseISO(date), "d 'de' MMMM yyyy", { locale: es });
-  
-  // Prepara el nombre del maestro
-  const teacherName = authStore.user?.displayName || authStore.user?.email || 'Profesor Desconocido';
-  
-  // Calcular el sumario de asistencia
-  const presentCount = Object.values(records).filter(status => status === 'Presente').length;
-  const lateCount = Object.values(records).filter(status => status === 'Tardanza').length;
-  const justifiedCount = Object.values(records).filter(status => status === 'Justificado').length;
-  const absentCount = Object.values(records).filter(status => status === 'Ausente').length;
-  const totalCount = students.length;
-  
-  // Ordenar estudiantes: primero alfabéticamente
-  const sortedStudents = [...students].sort((a, b) => {
-    const nameA = `${a.nombre} ${a.apellido}`.toLowerCase();
-    const nameB = `${b.nombre} ${b.apellido}`.toLowerCase();
-    return nameA.localeCompare(nameB);
-  });
-  
-  // Luego agrupar por estado de asistencia (presentes, tardes, justificados, ausentes)
-  const presentStudents = sortedStudents.filter(student => records[student.id] === 'Presente');
-  const lateStudents = sortedStudents.filter(student => records[student.id] === 'Tardanza');
-  const justifiedStudents = sortedStudents.filter(student => records[student.id] === 'Justificado');
-  const absentStudents = sortedStudents.filter(student => records[student.id] === 'Ausente');
-  const otherStudents = sortedStudents.filter(student => 
-    !['Presente', 'Tardanza', 'Justificado', 'Ausente'].includes(records[student.id] || '')
-  );
-  
-  // Combinar en el orden deseado
-  const orderedStudents = [
-    ...presentStudents,
-    ...lateStudents,
-    ...justifiedStudents,
-    ...absentStudents,
-    ...otherStudents
-  ];
-  
-  // Generar filas de estudiantes
-  let studentRows = '';
-  orderedStudents.forEach((student, index) => {
-    // Aplicar color según estado de asistencia
-    let statusClass = '';
-    const status = records[student.id] || 'No registrado';
-    
-    // Obtener la justificación si el estado es "Justificado"
-    let studentObservation = '';
-    if (status === 'Justificado' && attendanceStore.currentAttendanceDoc?.data?.justificacion) {
-      // Buscar la justificación correspondiente al estudiante
-      const justification = attendanceStore.currentAttendanceDoc.data.justificacion.find(j => j.id === student.id);
-      if (justification && justification.reason) {
-        studentObservation = justification.reason;
-      }
-    }
-    
-    switch(status) {
-      case 'Presente':
-        statusClass = 'color: #10b981;'; // Verde
-        break;
-      case 'Ausente':
-        statusClass = 'color: #ef4444;'; // Rojo
-        break;
-      case 'Tardanza':
-        statusClass = 'color: #f59e0b;'; // Amarillo
-        break;
-      case 'Justificado':
-        statusClass = 'color: #3b82f6;'; // Azul
-        break;
-      default:
-        statusClass = 'color: #6b7280;'; // Gris
-    }
-    
-    studentRows += `
-      <tr>
-        <td style="border: 1px solid #ddd; padding: 8px;">${index + 1}</td>
-        <td style="border: 1px solid #ddd; padding: 8px;">${student.nombre} ${student.apellido}</td>
-        <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold; ${statusClass}">${status}</td>
-        <td style="border: 1px solid #ddd; padding: 8px;">${status === 'Justificado' ? `${studentObservation || 'No especificada'}` : ''}</td>
-      </tr>
-    `;
-  });
-  // Generar el HTML completo
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>Reporte de Asistencia - ${className}</title>
-      <style>
-        body { 
-          font-family: 'Segoe UI', Arial, sans-serif; 
-          line-height: 1.6;
-          color: #333;
-          max-width: 800px;
-          margin: 0 auto;
-          padding: 20px;
-          background-color: #f9fafb;
-        }
-        .header {
-          text-align: center;
-          margin-bottom: 30px;
-          background-color: #ffffff;
-          border-radius: 8px;
-          padding: 20px;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-        .header h1 {
-          color: #16a34a;
-          margin-bottom: 5px;
-          font-size: 28px;
-        }
-        .header h2 {
-          color: #4b5563;
-          font-size: 18px;
-          font-weight: normal;
-          margin: 5px 0;
-        }
-        .summary-container {
-          display: flex;
-          justify-content: space-between;
-          margin: 20px 0;
-          flex-wrap: wrap;
-        }
-        .summary-box {
-          background-color: white;
-          border-radius: 8px;
-          padding: 15px;
-          margin: 10px 0;
-          flex-basis: calc(25% - 15px);
-          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-          text-align: center;
-        }
-        .summary-box h3 {
-          margin: 0;
-          font-size: 14px;
-          color: #6b7280;
-        }
-        .summary-box p {
-          margin: 10px 0 0;
-          font-size: 24px;
-          font-weight: bold;
-        }
-        .presente { color: #10b981; }
-        .tarde { color: #f59e0b; }
-        .justificado { color: #3b82f6; }
-        .ausente { color: #ef4444; }
-        
-        table { 
-          width: 100%; 
-          border-collapse: collapse; 
-          margin: 25px 0;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-          background-color: white;
-          border-radius: 8px;
-          overflow: hidden;
-        }
-        th { 
-          background-color: #16a34a; 
-          color: white;
-          text-align: left; 
-          padding: 12px; 
-          font-weight: 600;
-        }
-        td {
-          border-bottom: 1px solid #f2f2f2; 
-          padding: 12px 8px;
-        }
-        tr:last-child td {
-          border-bottom: none;
-        }
-        tr:hover {
-          background-color: #f9fafb;
-        }
-        
-        .observations {
-          background-color: white;
-          border-radius: 8px;
-          padding: 20px;
-          margin: 20px 0;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-        .observations h3 {
-          color: #16a34a;
-          margin-top: 0;
-          border-bottom: 2px solid #e5e7eb;
-          padding-bottom: 10px;
-        }
-        
-        .footer {
-          text-align: center;
-          font-size: 14px;
-          color: #6b7280;
-          margin-top: 40px;
-          padding-top: 20px;
-          border-top: 1px solid #e5e7eb;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h1>Reporte de Asistencia</h1>
-        <h2>Clase: ${className}</h2>
-        <h2>Fecha: ${formattedDate}</h2>
-        <h2>Maestro: ${teacherName}</h2>
-      </div>
-      
-      <div class="summary-container">
-        <div class="summary-box">
-          <h3>Presentes</h3>
-          <p class="presente">${presentCount}</p>
-        </div>
-        <div class="summary-box">
-          <h3>Tardes</h3>
-          <p class="tarde">${lateCount}</p>
-        </div>
-        <div class="summary-box">
-          <h3>Justificados</h3>
-          <p class="justificado">${justifiedCount}</p>
-        </div>
-        <div class="summary-box">
-          <h3>Ausentes</h3>
-          <p class="ausente">${absentCount}</p>
-        </div>
-      </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Alumno</th>
-            <th>Estado</th>
-            <th>Justificación</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${studentRows}
-        </tbody>
-      </table>
-
-      <div class="observations">
-        <h3>Observaciones del Maestro:</h3>
-        <p>${observations}</p>
-      </div>
-      
-      <div class="footer">
-        Este reporte fue generado automáticamente desde El Sistema PC - ${new Date().toLocaleDateString()}
-      </div>
-    </body>
-    </html>
-  `;
-};
-
-// Función para enviar el reporte de asistencia por correo electrónico
-const sendAttendanceEmail = async () => {
-  if (!selectedClass.value || !selectedDate.value) {
-    showToast('Seleccione una clase y fecha para enviar el correo.', 'error');
-    return;
-  }
-  
-  if (!authStore.user || !authStore.user.email) {
-    showToast('No se pudo obtener el correo del usuario para enviar el reporte.', 'error');
-    return;
-  }
-
-  isLoading.value = true;
-  loadingMessage.value = 'Enviando correo...';
-
-  try {
-    const students = studentsStore.getStudentsByClass(selectedClass.value);
-    const records = attendanceStore.attendanceRecords;
-    const observations = attendanceStore.currentAttendanceDoc?.data.observations || 'Sin observaciones.';
-    const className = selectedClassName.value;
-    const date = selectedDate.value;
-
-    // Generar contenido HTML para el correo
-    const htmlContent = generateAttendanceHTML(students, records, observations, className, date);
-
-    // Preparar payload para el webhook
-    // Importante: Para la estructura del webhook, incluimos los datos directamente en el objeto data
-    // const payload = {
-    //   date: date,
-    //   class: className,
-    //   data: {
-    //     recipient: authStore.user.email,
-    //     classId: selectedClass.value,
-    //     date: date,
-    //     className: className,
-    //     observations: observations,
-    //     teacherId: authStore.user.uid || '',
-    //     teacherName: authStore.user.displayName || '',
-    //     teacherEmail: authStore.user.email || '',
-    //     studentsCount: students.length,
-    //     // Incluimos un resumen de estadísticas para el correo
-    //     summary: {
-    //       total: students.length,
-    //       presentes: Object.values(records).filter(status => status === 'Presente').length,
-    //       ausentes: Object.values(records).filter(status => status === 'Ausente').length,
-    //       tardanzas: Object.values(records).filter(status => status === 'Tardanza').length,
-    //       justificados: Object.values(records).filter(status => status === 'Justificado').length
-    //     }
-    //   }
-    // };    // Validar que se haya ingresado un correo destinatario
-    if (!recipientEmail.value) {
-      showToast('Por favor ingrese un correo electrónico de destinatario', 'error');
-      return;
-    }
-      // Usar la URL del webhook desde la configuración en Firestore
-    const makeWebhookUrl = configStore.attendanceWebhookUrl || 'https://hook.us2.make.com/t2ockuc1vne58yqc68rjqp94njv1i3uo'      // Preparar un array formateado de estudiantes para Google Sheets, agrupados por estado
-    // Primero dividimos los estudiantes en categorías según su estado de asistencia
-    const presentStudents = [];
-    const lateStudents = [];
-    const justifiedStudents = [];
-    const absentStudents = [];
-    const otherStudents = [];
-    
-    students.forEach(student => {      const attendanceStatus = records[student.id] || 'No registrado';
-      // Obtener justificación si está disponible
-      let justificationReason = '';
-      
-      // Si el estado es Justificado, buscar la razón en el array de justificaciones
-      if (attendanceStatus === 'Justificado' && attendanceStore.currentAttendanceDoc?.data?.justificacion) {
-        // Buscar la justificación correspondiente al estudiante
-        const justification = attendanceStore.currentAttendanceDoc.data.justificacion.find(j => j.id === student.id);
-        if (justification && justification.reason) {
-          justificationReason = `Justificación: ${justification.reason}`;
-        }
-      }
-      
-      const studentData = {
-        Num: 0, // Se asignará después
-        Nombre: student.nombre || '',
-        Apellido: student.apellido || '',
-        Estado: attendanceStatus,
-        Observaciones: attendanceStatus === 'Justificado' ? justificationReason : observations,
-        Maestro: authStore.user?.email || 'Profesor Desconocido',
-        Fecha: format(parseISO(date), 'yyyy-MM-dd'),
-        Clase: className
-      };
-      
-      // Agrupar por estado
-      switch (attendanceStatus) {
-        case 'Presente':
-          presentStudents.push(studentData);
-          break;
-        case 'Tardanza':
-          lateStudents.push(studentData);
-          break;
-        case 'Justificado':
-          justifiedStudents.push(studentData);
-          break;
-        case 'Ausente':
-          absentStudents.push(studentData);
-          break;
-        default:
-          otherStudents.push(studentData);
-      }
-    });
-    
-    // Combinar los arrays en el orden deseado: Presentes, Tardanzas, Justificados, Ausentes, Otros
-    const formattedStudents = [
-      ...presentStudents,
-      ...lateStudents,
-      ...justifiedStudents,
-      ...absentStudents,
-      ...otherStudents
-    ].map((student, index) => {
-      // Asignar el número secuencial después de ordenar
-      student.Num = index + 1;
-      return student;
-    });
-
-    // Preparar payload para Make.com
-    const makePayload = {
-      subject: `Reporte de Asistencia - ${className} - ${format(parseISO(date), 'yyyy-MM-dd')}`,
-      format: 'email',
-      type: 'attendance_report',
-      action: 'send_attendance_email',
-      htmlBody: htmlContent,
-      date: selectedDate.value,
-      class: selectedClass.value,
-      className: selectedClassName.value,
-      students: studentsStore.getStudentsByClass(selectedClass.value),
-      // Añadir el array formateado para Google Sheets
-      formattedStudents: formattedStudents,
-      attendanceRecords: attendanceStore.attendanceRecords,
-      observations: attendanceStore.currentAttendanceDoc?.data.observations,
-      teacherId: authStore.user?.uid,
-      teacherName: authStore.user?.email || 'Profesor Desconocido',
-      teacherEmail: authStore.user?.email,
-      recipient: recipientEmail.value,
-      // Incluimos un resumen de estadísticas para el correo
-      summary: {
-        total: students.length,
-        presentes: Object.values(records).filter(status => status === 'Presente').length,
-        ausentes: Object.values(records).filter(status => status === 'Ausente').length,
-        tardanza: Object.values(records).filter(status => status === 'Tardanza').length,
-        justificados: Object.values(records).filter(status => status === 'Justificado').length
-      }
-    };
-      // Enviar los datos a Make.com
-    await sendToMake(makeWebhookUrl, makePayload);
-
-    showToast('Datos enviados a Make.com correctamente. Se procesará el envío del correo.', 'success');
-  } catch (err: any) {
-    console.error("Error enviando datos a Make.com:", err);
-    showToast(`Error al enviar datos a Make.com: ${err.message || 'Error desconocido'}`, 'error');
-    error.value = 'No se pudieron enviar los datos a Make.com.';
-  } finally {
-    isLoading.value = false;
-    loadingMessage.value = '';
-  }
-};
-
-// Función para exportar la asistencia actual a PDF
-const exportCurrentClassAttendanceToPDF = async (): Promise<void> => {
-  if (!selectedClass.value || !selectedDate.value) {
-    showToast('Seleccione una clase y fecha para exportar.', 'error');
-    return;
-  }
-
-  isLoading.value = true
-  loadingMessage.value = 'Generando PDF...'
-
-  try {
-    // Obtener datos necesarios
-    const students = studentsStore.getStudentsByClass(selectedClass.value)
-    const records = attendanceStore.attendanceRecords
-    const observations = attendanceStore.currentAttendanceDoc?.data.observations || 'Sin observaciones.'
-    const className = selectedClassName.value
-    const date = selectedDate.value // Fecha para nombre de archivo
-
-    // Llamar a la función de utilidad para generar el PDF
-    await generateAttendancePDF(
-      students,
-      records,
-      observations,
-      className,
-      date
-    );
-
-    showToast('PDF generado correctamente.', 'success')
-  } catch (err: any) {
-    console.error("Error generando PDF:", err)
-    showToast('Error al generar el PDF. Intente de nuevo más tarde.', 'error')
-    error.value = 'No se pudo generar el PDF.'
-  } finally {
-    isLoading.value = false
-    loadingMessage.value = ''
-  }
-}
-
-// Funciones para modales
-const toggleAnalytics = () => {
-  showAnalytics.value = !showAnalytics.value;
-  if (showAnalytics.value && showTrends.value) {
-    showTrends.value = false;
-  }
-};
-
-const toggleTrends = () => {
-  showTrends.value = !showTrends.value;
-  if (showTrends.value && showAnalytics.value) {
-    showAnalytics.value = false;
-  }
-};
-
-const openReportModal = () => { 
-  showReportModal.value = true
-  showAnalytics.value = false
-  showTrends.value = false
-  router.push({ name: 'TeacherInformeAttendance' })
-};
-
-const handleGenerateReport = async (filters: AttendanceFiltersType) => {
-  try {
-    isLoading.value = true;
-    loadingMessage.value = 'Generando informe...';
-    reportFilters.value = filters;
-    await attendanceStore.generateReport(filters);
-    showToast('Informe generado correctamente', 'success');
-    showReportModal.value = false;
-  } catch (err) {
-    error.value = 'Error al generar el informe';
-    console.error('Error generando informe:', err);
-    showToast('Error al generar el informe', 'error');
-  } finally {
-    isLoading.value = false;
-    loadingMessage.value = '';
-  }
-};
-
-const openExportModal = () => { showExportModal.value = true}
-const createNewAttendance = () => { selectedDate.value = getCurrentDate(); view.value = 'class-select' }
-const handleOpenJustification = (student: any) => {
-  selectedStudentForJustification.value = student ? { id: student.id, nombre: student.nombre, apellido: student.apellido } : null
-  showJustifiedAbsenceModal.value = true
-}
-// Función modificada para manejar diferentes opciones de exportación
-const handleOpenExport = (fromAttendanceList = false) => {
-  console.log("Exportar asistencia a PDF")
-  // Si la exportación es desde la lista de asistencia, generamos el PDF directamente
-  if (fromAttendanceList) {
-    exportCurrentClassAttendanceToPDF()
-  } else {
-    // Si es desde el botón general, abrimos el modal de configuración
-    showExportModal.value = true 
-  }
-}
-
-const handleEmergencyClassSubmitted = async (success: boolean) => {
-  if (success) {
-    showToast('Clase emergente registrada correctamente. Pendiente de aprobación.', 'success')
-    await saveAllAttendanceChanges()
-  } else {
-    showToast('Error al registrar la clase emergente', 'error')
-  }
-}
-const handleEmergencyClassCancelled = () => { showToast('Registro de clase emergente cancelado', 'success') }
-
-// Manejar actualización de estado de asistencia
-const handleUpdateStatus = (studentId: string, status: string) => {
-  // Asegúrate de que el ID del estudiante y el estado sean válidos
-  if (!studentId || !status) return;
-  attendanceStore.attendanceRecords[studentId] = status as any; // Asegúrate de que el tipo sea correcto
-  console.log("Estado actualizado:", studentId, status)
-}
-
-const checkExistingAttendance = async (date: string, classId: string): Promise<boolean> => {
- // Este metodo chequea la existencia de la asistencia
-  try {
-    const existingInMemory = attendanceStore.attendanceDocuments.some(
-      doc => doc.fecha === date && doc.classId === classId
-    )
-    if (existingInMemory) return true
-    const docResult = await attendanceStore.fetchAttendanceDocument(date, classId)
-    const hasExistingData = docResult && (
-      docResult.data.presentes.length > 0 ||
-      docResult.data.ausentes.length > 0 ||
-      docResult.data.tarde.length > 0
-    )
-    return !!hasExistingData
-  } catch (error) {
-    console.error('Error verificando asistencia existente:', error)
-    return false
-  }
-}
-
-
-// Función para cerrar todos los modales
-
-const closeAllModals = () => {
-  showAnalytics.value = false
-  showTrends.value = false
-  showReportModal.value = false
-  showExportModal.value = false
-  showObservationsModal.value = false
-  showJustifiedAbsenceModal.value = false
-  showCalendarModal.value = false
-  showEmergencyClassModal.value = false
-}
-
-// Carga inicial de datos
-const fetchInitialData = async () => {
-  try {
-    isLoading.value = true
-    loadingMessage.value = 'Cargando datos iniciales...'
-    
-    // Cerrar todos los modales para asegurar una experiencia limpia
-    closeAllModals()
-    
-    console.log('Iniciando carga de datos iniciales...');
-    
-    // Cargar todos los documentos de asistencia (sin filtros de fecha)
-    // Esto es esencial para que el calendario pueda marcar todas las fechas con actividades
-    await Promise.all([
-      classesStore.fetchClasses(),
-      studentsStore.fetchStudents(),
-      attendanceStore.fetchAttendanceDocuments() // Carga todos los documentos
-    ])
-    
-    // Verificar si estamos navegando desde el menú principal de asistencia
-    // Las rutas /attendance/calendar o /teacher/attendance/calendar indican navegación desde el menú
-    if (route.path.endsWith('/attendance/calendar')) {
-      // Si viene desde el menú principal, siempre mostrar el calendario
-      view.value = 'calendar'
-      selectedDate.value = getCurrentDate()
-      selectedClass.value = ''
-    }
-    // Si hay parámetros específicos en la URL, cargar el detalle de asistencia
-    else if (props.date && props.classId) {
-      const dateStr = props.date
-      const formattedDate = dateStr.length === 8
-        ? `${dateStr.substring(0,4)}-${dateStr.substring(4,6)}-${dateStr.substring(6,8)}`
-        : dateStr
-      selectedDate.value = formattedDate
-      selectedClass.value = props.classId
-      attendanceStore.selectedDate = formattedDate
-      attendanceStore.selectedClass = props.classId
-      await selectClass(props.classId)
-    } else if (route.query.class) {
-      selectedClass.value = route.query.class as string
-      attendanceStore.selectedClass = selectedClass.value
-      await loadAttendanceData(selectedClass.value)
-      view.value = 'attendance-form'
-    }
-    error.value = null
-  } catch (err) {
-    error.value = 'Error al cargar los datos iniciales'
-    console.error('Error al cargar datos iniciales:', err)
-  } finally {
-    isLoading.value = false
-    loadingMessage.value = ''
-  }
-}
-
-onMounted(async () => {
-  // Cargar configuraciones de la aplicación
-  await configStore.fetchConfigs()
-  const dates = await attendanceStore.loadAttendanceDataForCalendar();
-  
-  console.log("Fechas de actividades registradas: ", dates);
-  await fetchInitialData()
-})
-
-// Actualizar datos si cambian los parámetros de la URL o la ruta completa
-watch(() => [route.params.date, route.params.classId, route.path], async ([newDate, newClassId, path]) => {
-  // Si la ruta termina con /calendar, siempre mostrar la vista de calendario
-  // Asegurarse de que path es un string antes de usar endsWith
-  if (typeof path === 'string' && (path.endsWith('/attendance/calendar') || path.endsWith('/teacher/attendance/calendar'))) {
-    view.value = 'calendar'
-    selectedDate.value = getCurrentDate()
-    selectedClass.value = ''
-    closeAllModals()
-    return
-  }
-  
-  // Si hay parámetros de URL específicos, cargar el detalle de asistencia
-  if (newDate && newClassId) {
-    const dateStr = newDate as string
-    const formattedDate = dateStr.length === 8
-      ? `${dateStr.substring(0,4)}-${dateStr.substring(4,6)}-${dateStr.substring(6,8)}`
-      : dateStr
-    selectedDate.value = formattedDate
-    selectedClass.value = newClassId as string
-    attendanceStore.selectedDate = formattedDate
-    attendanceStore.selectedClass = newClassId as string
-    await selectClass(newClassId as string)
-  }
-})
-
-// Computed property to filter classes with attendance records for selected date
-const classesWithRecordsForSelectedDate = computed(() => {
-  return attendanceStore.attendanceDocuments
-    .filter(doc => doc.fecha === selectedDate.value)
-    .map(doc => doc.classId);
-});
-
-// Ensure we refresh attendance docs when date changes
-watch(() => selectedDate.value, async (newDate) => {
-  if (newDate) {
-    console.log("AttendanceView: Fecha seleccionada cambiada a:", newDate);
-    // En lugar de volver a cargar todos los documentos (lo que podría ser costoso),
-    // solo actualizamos los filtros locales si ya tenemos documentos cargados
-    if (attendanceStore.attendanceDocuments.length === 0) {
-      console.log("AttendanceView: Cargando documentos de asistencia para la fecha:", newDate);
-      await attendanceStore.fetchAttendanceDocuments();
-    }
-  }
-}, { immediate: true });
-
-// Watch especial para monitorear cambios en los documentos de asistencia
-// Este watch se activará cuando se añadan/eliminen/modifiquen documentos
-watch(() => attendanceStore.attendanceDocuments.length, (newLength) => {
-  console.log(`AttendanceView: Cambio detectado en documentos de asistencia. Nuevo total: ${newLength}`);
-  // No necesitamos hacer nada explícitamente aquí, 
-  // ya que la computed property markedDates se recalculará automáticamente
-});
-
-const dayNumber = ref(1); // Ejemplo: día 1 del mes
-const teacherId = ref(authStore.user?.uid || ''); // ID del maestro actual
-
-const relevantClasses = computed(() => {
-  // Defensive check to prevent errors
-  if (!classesStore.getClassesByDayAndTeacherId) {
-    console.error('getClassesByDayAndTeacherId method not found in classesStore - check imports');
-    return [];
-  }
-  return classesStore.getClassesByDayAndTeacherId(dayNumber.value, teacherId.value);
-});
-</script>
-
-<template> 
- <div class="p-2 sm:p-4 md:p-6 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 max-w-full overflow-x-hidden">
+<template>
+  <div class="p-2 sm:p-4 md:p-6 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 max-w-full overflow-x-hidden">
     <!-- Toast Messages -->
     <div v-if="showMessage" class="fixed top-4 right-20 z-50 p-3 sm:p-4 rounded-lg shadow-lg text-white transition-all duration-300 text-sm sm:text-base max-w-[90vw] sm:max-w-md" :class="messageType === 'success' ? 'bg-green-500' : 'bg-red-500'">
       {{ message }}
     </div>
 
-    
-    <!-- Botones adicionales -->
-    <div class="flex flex-wrap gap-2 mb-4 justify-center sm:justify-start">
-      <button @click="toggleAnalytics" class="btn text-xs sm:text-sm" :class="showAnalytics ? 'btn-primary' : 'btn-secondary'">
-        <i class="fas fa-chart-pie mr-1 sm:mr-2"></i>
-        <span class="hidden xs:inline">Análisis</span>
-        <span class="xs:hidden">A</span>
-      </button>
-      <button @click="toggleTrends" class="btn text-xs sm:text-sm" :class="showTrends ? 'btn-primary' : 'btn-secondary'">
-        <i class="fas fa-chart-line mr-1 sm:mr-2"></i>
-        <span class="hidden xs:inline">Tendencias</span>
-        <span class="xs:hidden">T</span>
-      </button>
-      <button @click="openReportModal" class="btn btn-secondary text-xs sm:text-sm">
-        <i class="fas fa-file-alt mr-1 sm:mr-2"></i>
-        <span class="hidden xs:inline">Informe</span>
-        <span class="xs:hidden">I</span>
-      </button>      <button @click="openExportModal" class="btn btn-secondary text-xs sm:text-sm">
-        <i class="fas fa-file-export mr-1 sm:mr-2"></i>
-        <span class="hidden xs:inline">Exportar</span>
-        <span class="xs:hidden">E</span>
-      </button>
-      <button @click="exportCurrentClassAttendanceToPDF" class="btn btn-secondary text-xs sm:text-sm">
-        <i class="fas fa-file-pdf mr-1 sm:mr-2"></i>
-        <span class="hidden xs:inline">Exportar PDF</span>
-        <span class="xs:hidden">PDF</span>
-      </button>
-    </div>
+
     
     <!-- Campo para ingresar el correo del destinatario -->
     <div class="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
@@ -1301,6 +56,15 @@ const relevantClasses = computed(() => {
       <AttendanceTrends v-if="showTrends" class="mb-3 sm:mb-4" />
 
       <!-- Vista principal según estado -->
+      <!-- Modal que muestra las clases disponibles para la fecha seleccionada -->
+      <ClassesModal
+        :is-open="showClassesModal"
+        :date="modalDate"
+        :classes="classesForDate"
+        @close="showClassesModal = false"
+        @select-class="handleClassSelect"
+      />
+      
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 sm:p-4 md:p-6 overflow-hidden">
         <!-- Vista de Calendario -->
         <div v-if="view === 'calendar'" class="max-w-3xl mx-auto">
@@ -1319,9 +83,6 @@ const relevantClasses = computed(() => {
         <div v-else-if="view === 'class-select'" class="max-w-3xl mx-auto">
           <div class="flex justify-between items-center mb-3">
             <h2 class="text-lg font-semibold">Seleccionar Clase</h2>
-            <button @click="updateView('calendar')" class="btn btn-secondary btn-sm">
-              Volver
-            </button>
           </div>
           <DateClassSelector 
             v-model="selectedClass" 
@@ -1329,7 +90,7 @@ const relevantClasses = computed(() => {
             :dayFilter="true"
             :isLoading="isLoading"
             :classesWithRecords="classesWithRecordsForSelectedDate"
-            :marked-dates="markedDates"
+            :marked-dates="simpleMarkedDates"
             @continue="() => selectClass(selectedClass)"
             @date-change="handleDateChange"
             @update:selectedDate="handleSelectedDateUpdate"
@@ -1343,13 +104,17 @@ const relevantClasses = computed(() => {
           <div class="flex justify-between items-center mb-2">
             <h2 class="text-base sm:text-lg font-semibold">Lista de Asistencia</h2>
             <!-- mostrar la fecha seleccionada -->
-            <span class="text-sm sm
-:text-base text-gray-600 dark:text-gray-400">
+            <span class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
               {{ selectedDate ? format(parseISO(selectedDate), 'dd/MM/yyyy') : 'Fecha no seleccionada' }}
             </span>
-          <button @click="updateView('class-select')" class="btn btn-secondary btn-sm">
-              Volver
-            </button>
+            <div class="flex gap-2">
+              <button @click="forceReloadAttendanceData" class="btn btn-info btn-sm" title="Recargar datos de asistencia">
+                🔄 Recargar
+              </button>
+              <button @click="updateView('class-select')" class="btn btn-secondary btn-sm">
+                Volver
+              </button>
+            </div>
           </div>
           <div class="flex flex-col sm:flex-row flex-wrap justify-between items-center gap-2 mb-3 sm:mb-4">
             <div v-if="attendanceStore.getObservations" class="flex items-center justify-center sm:justify-start w-full sm:w-auto mt-2 sm:mt-0">
@@ -1360,10 +125,23 @@ const relevantClasses = computed(() => {
                 Ver/Editar
               </button>
             </div>
+            <!-- Botones de control de datos -->
+            <div class="flex gap-2 flex-wrap justify-center sm:justify-end">
+              <button @click="forceReloadAttendanceData" class="btn btn-warning btn-xs sm:btn-sm" :disabled="isLoading" title="Recargar datos de asistencia">
+                <i class="fas fa-sync-alt mr-1"></i>
+                <span class="hidden sm:inline">Recargar</span>
+                <span class="sm:hidden">R</span>
+              </button>
+              <button @click="runAttendanceDebug" class="btn btn-info btn-xs sm:btn-sm" :disabled="isLoading" title="Ejecutar debugging del sistema">
+                <i class="fas fa-bug mr-1"></i>
+                <span class="hidden sm:inline">Debug</span>
+                <span class="sm:hidden">D</span>
+              </button>
+            </div>
           </div>
 
-          
           <AttendanceList 
+            v-if="view === 'attendance-form' && selectedClassName"
             :students="studentsStore.getStudentsByClass(selectedClass)" 
             :attendanceRecords="attendanceStore.attendanceRecords"
             :selectedClassName="selectedClassName"
@@ -1403,25 +181,26 @@ const relevantClasses = computed(() => {
       @update:modelValue="showExportModal = $event"
       @close="showExportModal = false"
     />
-    <AttendanceObservation 
-      v-if="showObservationsModal" 
-      :modelValue="showObservationsModal"
+    <AttendanceObservation
+      v-model="showObservationsModal"
       :studentId="selectedStudentForObs?.id"
       :studentName="selectedStudentForObs ? `${selectedStudentForObs.nombre} ${selectedStudentForObs.apellido}` : ''"
       :classId="selectedClass"
-      :className="selectedClassName || selectedClass"
-      :attendanceId="selectedDate"
+      :className="selectedClassName || selectedClass" 
       :attendanceDate="selectedDate"
-      @update:modelValue="showObservationsModal = $event"
-      @observation="handleObservationAdded"
+      :initialObservation="observationToEdit"
+      :classObservationMode="!selectedStudentForObs"
+      @observation-saved="handleObservationAdded"
+      @close="showObservationsModal = false"
     />
     <JustifiedAbsenceModal 
-      v-if="showJustifiedAbsenceModal" 
-      :student="selectedStudentForJustification"
-      @close="showJustifiedAbsenceModal = false"
-      @save="handleJustificationSave"
-    />  
-      <!-- Modal de calendario personalizado que usa directamente Calendar.vue -->
+      :show="true" 
+      :student="selectedStudentForJustification" 
+      :initialJustification="initialJustificationText"
+      @close="showJustificationModal = false"
+      @save="handleSaveJustification"
+    />
+    <!-- Modal de calendario personalizado que usa directamente Calendar.vue -->
     <div v-if="showCalendarModal" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="absolute inset-0 bg-black/50" @click="showCalendarModal = false"></div>
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md z-10">
@@ -1458,3 +237,1240 @@ const relevantClasses = computed(() => {
     />
   </div>
 </template>
+
+<script setup lang="ts">
+import '@vuepic/vue-datepicker/dist/main.css'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { parseISO, format } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { useRouter, useRoute } from 'vue-router'
+
+// Stores
+import { useAttendanceStore } from '../modulos/Attendance/store/attendance'
+import { useStudentsStore } from '../modulos/Students/store/students'
+import { useClassesStore } from '../modulos/Classes/store/classes'
+import { useAuthStore } from '../stores/auth'
+import { useConfigStore } from '../stores/config'
+
+// Componentes
+import AttendanceList from '../modulos/Attendance/components/AttendanceList.vue'
+import AttendanceReportModal from '../modulos/Attendance/components/AttendanceReportModal.vue'
+import AttendanceObservation from '../modulos/Attendance/components/AttendanceObservation.vue'
+import AttendanceAnalytics from '../modulos/Attendance/components/AttendanceAnalytics.vue'
+import AttendanceTrends from '../modulos/Attendance/components/AttendanceTrends.vue'
+import AttendanceExportModal from '../modulos/Attendance/components/AttendanceExportModal.vue'
+import Calendar from '../components/Calendar.vue'
+import DateClassSelector from '../modulos/Classes/components/DateClassSelector.vue'
+import JustifiedAbsenceModal from '../components/JustifiedAbsenceModal.vue'
+import EmergencyClassModal from '../modulos/Attendance/components/EmergencyClassModal.vue'
+import ClassesModal from '../modulos/Attendance/components/ClassesModal.vue'
+
+const showJustifiedAbsenceModal = ref(false)
+// Router
+const router = useRouter()
+const route = useRoute()
+
+// Utils
+import { getCurrentDate } from '../utils/dateUtils'
+import { generateAttendancePDF } from '../utils/pdfExport'
+import { sendToMake } from '../utils/webhook'
+
+// Types
+import type { SelectedStudent } from '../modulos/Students/types/student'
+import type { AttendanceFiltersType, AttendanceDocument, AttendanceStatus, ClassObservation } from '../modulos/Attendance/types/attendance'
+
+// Initialize stores
+const authStore = useAuthStore()
+const configStore = useConfigStore()
+const attendanceStore = useAttendanceStore()
+const studentsStore = useStudentsStore()
+const classesStore = useClassesStore()
+
+// Props
+const props = defineProps<{
+  date?: string
+  classId?: string
+}>()
+
+// ============= REACTIVE STATE =============
+const view = ref<'calendar' | 'class-select' | 'attendance-form'>('calendar')
+const selectedDate = ref(getCurrentDate())
+const currentMonth = ref(new Date())
+const selectedClass = ref('')
+const isLoading = ref(false)
+const error = ref<string | null>(null)
+const loadingMessage = ref('')
+
+// Modal states
+const showObservationsModal = ref(false)
+const showObservationAlert = ref(false)
+const selectedStudentForObs = ref<SelectedStudent | null>(null)
+const showJustificationModal = ref(false)
+const selectedStudentForJustification = ref<SelectedStudent | null>(null)
+const initialJustificationText = ref<string>('')
+const showReportModal = ref(false)
+const showExportModal = ref(false)
+const showAnalytics = ref(false)
+const showTrends = ref(false)
+const showCalendarModal = ref(false)
+const showEmergencyClassModal = ref(false)
+const currentObservationText = ref<string>('')
+const observationToEdit = ref<ClassObservation | null>(null);
+
+// Messages
+const showMessage = ref(false)
+const message = ref('')
+const messageType = ref<'success' | 'error'>('success')
+const recipientEmail = ref(authStore.user?.email || '')
+
+// Report filters
+const reportFilters = ref<AttendanceFiltersType>({
+  instrument: '',
+  level: '',
+  teacherId: '',
+  startDate: '',
+  endDate: ''
+})
+
+// Control flag to prevent reactive loops
+const isUpdating = ref(false)
+
+// Selected date information
+const selectedDateInfo = ref<{
+  hasRegistrations: boolean
+  registeredClasses: string[]
+  unregisteredClasses: string[]
+}>({
+  hasRegistrations: false,
+  registeredClasses: [],
+  unregisteredClasses: []
+})
+
+// Modal state
+const showClassesModal = ref<boolean>(false)
+const modalDate = ref<string>('')
+const classesForDate = ref<any[]>([])
+
+// ============= COMPUTED PROPERTIES =============
+// Calendar marks for dates with attendance records
+const markedDates = computed(() => {
+  return attendanceStore.datesWithRecords.map(date => ({
+    date,
+    type: 'attendance',
+    count: attendanceStore.getRegisteredClassesForDate(date).length,
+    userId: authStore.user?.uid || ''
+  }))
+})
+
+// Selected class name
+const selectedClassName = computed(() => {
+  const cls = classesStore.classes.find(c => c.id === selectedClass.value || c.name === selectedClass.value)
+  const name = cls ? cls.name : selectedClass.value
+  console.log('[AttendanceView] selectedClassName computed:', name)
+  return name
+})
+
+// Classes with records for selected date
+const classesWithRecordsForSelectedDate = computed(() => {
+  const classIds = attendanceStore.getRegisteredClassesForDate(selectedDate.value)
+  return classIds.map(classId => ({
+    classId,
+    date: selectedDate.value
+  }))
+})
+
+// Simple marked dates for DateClassSelector (string[])
+const simpleMarkedDates = computed(() => {
+  return attendanceStore.datesWithRecords
+})
+
+// Available class dates based on schedule
+const availableClassDates = computed(() => {
+  if (!selectedClass.value) return []
+  
+  const currentTeacherId = authStore.user?.uid
+  const classInfo = classesStore.getClassById(selectedClass.value)
+  
+  let scheduledDays: (string | number)[] = []
+  if (classInfo?.schedule?.slots) {
+    const days = classInfo.schedule.slots.map(slot => slot.day)
+    scheduledDays = [...new Set(days)]
+  }
+  
+  if (!currentTeacherId || scheduledDays.length === 0) return []
+  
+  return scheduledDays.filter(day => {
+    const classesForDay = classesStore.getClassesByDayAndTeacherId(day, currentTeacherId)
+    return classesForDay && classesForDay.length > 0
+  })
+})
+
+// Observations count
+const getObservationsCount = computed(() => {
+  return attendanceStore.currentAttendanceDoc?.data.observación ? 1 : 0
+})
+
+// ============= TOAST NOTIFICATIONS =============
+const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+  message.value = msg
+  messageType.value = type
+  showMessage.value = true
+  setTimeout(() => { showMessage.value = false }, 3000)
+}
+
+// ============= DATE AND CLASS MANAGEMENT =============
+// Update view while preserving state
+const updateView = (newView: 'calendar' | 'class-select' | 'attendance-form') => {
+  view.value = newView
+  error.value = null
+  
+  if (newView === 'calendar') {
+    selectedClass.value = ''
+  }
+}
+
+// Navigate back to calendar from any view
+const navigateToCalendar = () => {
+  updateView('calendar')
+}
+
+const navigateToClassSelector = () => {
+  if (!selectedDate.value) {
+    selectedDate.value = getCurrentDate()
+  }
+  // En vez de ir directamente al selector de clases, ahora mostramos el modal
+  selectDate(selectedDate.value)
+}
+
+// Select date with proper state management
+const selectDate = async (date: string | { date: string } | { date: string, [key: string]: any }) => {
+  console.log('Selecting date:', date)
+  try {
+    if (isUpdating.value) return
+    isUpdating.value = true
+    
+    let dateStr: string
+    
+    if (typeof date === 'string') {
+      dateStr = date
+    } else if (date && typeof date === 'object' && 'date' in date) {
+      dateStr = date.date
+    } else {
+      throw new Error('Invalid date format')
+    }
+    
+    selectedDate.value = dateStr
+    modalDate.value = dateStr
+    
+    console.log(`[AttendanceView] Fecha seleccionada: ${dateStr}`)
+    
+    // Update selected date info
+    await updateSelectedDateInfo(dateStr)
+    
+    // Fetch classes for the selected date
+    await fetchClassesForDate(dateStr)
+    
+    console.log(`[AttendanceView] Clases encontradas para ${dateStr}:`, classesForDate.value.length)
+    
+    // IMPORTANTE: Mostrar el modal con las clases disponibles
+    showClassesModal.value = true
+  } catch (err) {
+    console.error('Error selecting date:', err)
+    showToast('Error al seleccionar fecha', 'error')
+  } finally {
+    isUpdating.value = false
+  }
+}
+
+// Fetch classes for the selected date
+const fetchClassesForDate = async (dateStr: string) => {
+  // esta funcion se encarga de obtener las clases para la fecha seleccionada
+  try {
+    const date = parseISO(dateStr)
+    const dayOfWeek = format(date, 'EEEE', { locale: es })
+    
+    const teacherId = authStore.user?.uid
+    if (!teacherId) {
+      console.error('No hay un usuario logueado con uid')
+      return []
+    }
+    
+    // Obtener clases del maestro utilizando el store de clases
+    console.log(`[AttendanceView] Buscando clases para el maestro ${teacherId} en el día ${dayOfWeek}`)
+    
+    // Usamos el getter específico del store de clases para obtener clases por día y profesor
+    const classes = classesStore.getClassesByDayAndTeacherId(dayOfWeek, teacherId) || []
+    
+    if (classes.length === 0) {
+      console.log(`[AttendanceView] No se encontraron clases para el día ${dayOfWeek}`)
+      return []
+    }
+    console.log(`[AttendanceView] Se encontraron ${classes.length} clases para el día ${dayOfWeek}`, classes)
+    
+    // Verificar en Firestore si existen registros de asistencia para cada clase
+    const classesWithStatus = await Promise.all(classes.map(async (cls) => {
+      // Verificar registro de asistencia en la fecha seleccionada
+      const hasAttendance = attendanceStore.isClassRegistered(dateStr, cls.id)
+      
+      // Conseguir información del profesor
+      // Para mostrar un nombre más amigable que solo el ID
+      let teacherInfo = ''
+      
+      // Usamos el nombre de la clase como identificador principal
+      if (cls.name) {
+        teacherInfo = cls.name
+      }
+      
+      // Si tenemos el ID del profesor, intentar conseguir más información
+      if (cls.teacherId) {
+        // Si es el usuario actual, usar su email como información adicional
+        if (cls.teacherId === authStore.user?.uid && authStore.user?.email) {
+          teacherInfo += ` (${authStore.user.email})`
+        } 
+        // Si no, mostrar un ID corto como referencia
+        else if (teacherInfo) {
+          teacherInfo += ` (ID: ${cls.teacherId.substring(0, 5)}...)`
+        } else {
+          teacherInfo = `Profesor ${cls.teacherId.substring(0, 6)}...` 
+        }
+      }
+      
+      // Obtener horario formateado usando la estructura de datos del store de clases
+      let horarioFormateado = 'Horario no especificado'
+      
+      if (cls.schedule?.slots && cls.schedule.slots.length > 0) {
+        // Buscar el slot correspondiente al día de la semana
+        const slot = cls.schedule.slots.find(s => {
+          // Comparamos ignorando acentos y en minúsculas para mayor robustez
+          const slotDay = s.day.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          const currentDay = dayOfWeek.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          return slotDay === currentDay
+        })
+        
+        if (slot) {
+          // Formateamos el horario para mostrar en formato 12h
+          horarioFormateado = formatearHorario(slot.startTime, slot.endTime)
+        }
+      }
+      
+      // Función para formatear horario en formato 12 horas
+      function formatearHorario(inicio: string, fin: string): string {
+        try {
+          // Función para convertir formato 24h a 12h (HH:MM a h:MM AM/PM)
+          const formato12h = (timeStr: string) => {
+            if (!timeStr) return ''
+            if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr
+            
+            // Si es formato HH:MM, convertirlo a 12h
+            if (timeStr.includes(':')) {
+              const [hours, minutes] = timeStr.split(':')
+              const hour = parseInt(hours, 10)
+              const ampm = hour >= 12 ? 'PM' : 'AM'
+              const hour12 = hour % 12 || 12
+              return `${hour12}:${minutes} ${ampm}`
+            }
+            return timeStr
+          }
+          
+          return `${formato12h(inicio)} - ${formato12h(fin)}`
+        } catch (e) {
+          console.error('Error al formatear horario:', e)
+          return `${inicio} - ${fin}`
+        }
+      }
+      
+      // Devolver objeto con todos los datos necesarios para el modal
+      return {
+        ...cls,
+        registered: hasAttendance,
+        status: hasAttendance ? 'Registrada' : 'Pendiente',
+        teacher: teacherInfo, // Nombre más amigable del profesor/clase
+        horario: horarioFormateado, // Horario formateado en formato 12h
+        studentCount: cls.studentIds?.length || 0
+      }
+    }))
+    
+    classesForDate.value = classesWithStatus
+  } catch (error) {
+    console.error('[AttendanceView] Error al obtener las clases:', error)
+    classesForDate.value = []
+  }
+}
+
+// Función para manejar la selección de clase desde el modal
+function handleClassSelect(classId: string) {
+  showClassesModal.value = false
+  // Actualizar la clase seleccionada en el store para mantener coherencia
+  attendanceStore.selectedClass = classId
+  // Navegar al formulario de asistencia con un formato de ruta adecuado
+  router.push(`/attendance/${selectedDate.value}/${classId}`)
+  console.log(`[AttendanceView] Navegando a la clase ${classId} en la fecha ${selectedDate.value}`)
+  loadAttendanceData(classId)
+  updateView('attendance-form')
+}
+
+// Update selected date information
+const updateSelectedDateInfo = async (date: string) => {
+  try {
+    const teacherId = authStore.user?.uid || ''
+    if (!teacherId) {
+      console.warn('No teacher ID available')
+      return
+    }
+
+    // Usar la nueva función del store que maneja mejor la lógica
+    const dateInfo = attendanceStore.getDateClassInfo(date, teacherId)
+    
+    selectedDateInfo.value = {
+      hasRegistrations: dateInfo.hasRegistrations,
+      registeredClasses: dateInfo.registeredClasses.map(rc => rc.classId),
+      unregisteredClasses: dateInfo.unregisteredClasses.map(uc => uc.classId)
+    }
+  } catch (err) {
+    console.error('Error updating date info:', err)
+  }
+}
+
+// Select class and load attendance data
+const selectClass = async (className: string) => {
+  try {
+    isLoading.value = true
+    loadingMessage.value = 'Cargando datos de clase...'
+    
+    selectedClass.value = className
+    await loadAttendanceData(className)
+    updateView('attendance-form')
+    
+    // Update URL for deep linking
+    const formattedDate = selectedDate.value.replace(/-/g, '')
+    router.push(`/attendance/${formattedDate}/${className}`)
+  } catch (err) {
+    console.error('Error selecting class:', err)
+    showToast('Error al cargar la clase', 'error')
+  } finally {
+    isLoading.value = false
+    loadingMessage.value = ''
+  }
+}
+
+// Load attendance data for selected class and date
+const loadAttendanceData = async (className: string) => {
+  try {
+    console.log('[AttendanceView] loadAttendanceData:', { className, selectedDate: selectedDate.value })
+    isLoading.value = true
+    loadingMessage.value = 'Cargando asistencia...'
+    
+    // Reset attendance records
+    attendanceStore.attendanceRecords = {}
+    attendanceStore.selectedClass = className
+    attendanceStore.selectedDate = selectedDate.value
+    
+    console.log('[AttendanceView] Before fetchAttendanceDocument')
+    
+    // Fetch attendance document
+    const attendanceDoc = await attendanceStore.fetchAttendanceDocument(selectedDate.value, className)
+    
+    console.log('[AttendanceView] After fetchAttendanceDocument, document:', attendanceDoc ? 'FOUND' : 'NOT FOUND')
+    console.log('[AttendanceView] Attendance records:', attendanceStore.attendanceRecords)
+    
+    // Load students for the class
+    const students = studentsStore.getStudentsByClass(className)
+    console.log('[AttendanceView] Students for class:', students.length)
+    
+    // Only initialize attendance records for students not already in the document
+    // This preserves existing attendance data from Firestore
+    students.forEach(student => {
+      if (!(student.id in attendanceStore.attendanceRecords)) {
+        // Solo asignar 'Ausente' a estudiantes que NO tienen registro en Firestore
+        attendanceStore.attendanceRecords[student.id] = 'Ausente'
+      }
+    })
+    
+    // Only log final records in development or when debugging is needed
+    if (process.env.NODE_ENV === 'development' && window.localStorage.getItem('attendance-debug') === 'true') {
+      console.log('[AttendanceView] Final attendance records after initialization:', attendanceStore.attendanceRecords)
+    }
+    
+    // Only run automatic debugging if explicitly enabled and document not found
+    if (!attendanceDoc && students.length > 0 && window.localStorage.getItem('attendance-auto-debug') === 'true') {
+      console.warn('[AttendanceView] No se encontró documento de asistencia - ejecutando debugging automático')
+      try {
+        await attendanceStore.debugAttendanceSystem(selectedDate.value, className, authStore.user?.uid ?? '')
+      } catch (debugErr) {
+        console.error('[AttendanceView] Error en debugging automático:', debugErr)
+      }
+    }
+    
+    // Verify data integrity
+    verifyAttendanceDataIntegrity()
+    
+    // Only update analytics if needed (with caching)
+    if (window.localStorage.getItem('attendance-analytics-enabled') === 'true') {
+      await attendanceStore.updateAnalytics(true) // Skip if recently updated
+    }
+  } catch (err) {
+    console.error('Error loading attendance data:', err)
+    showToast('Error al cargar datos de asistencia', 'error')
+  } finally {
+    isLoading.value = false
+    loadingMessage.value = ''
+  }
+}
+
+// Force reload attendance data with verification
+const forceReloadAttendanceData = async () => {
+  try {
+    console.log('[AttendanceView] Forzando recarga de datos de asistencia...')
+    isLoading.value = true
+    loadingMessage.value = 'Recargando datos de asistencia...'
+    
+    // Clear current data
+    attendanceStore.attendanceRecords = {}
+    attendanceStore.currentAttendanceDoc = null
+    
+    // Reload with force flag
+    await attendanceStore.fetchAttendanceDocument(selectedDate.value, selectedClass.value, true)
+    
+    // Reinitialize student records
+    const students = studentsStore.getStudentsByClass(selectedClass.value)
+    students.forEach(student => {
+      if (!(student.id in attendanceStore.attendanceRecords)) {
+        attendanceStore.attendanceRecords[student.id] = 'Ausente'
+      }
+    })
+    
+    // Verify integrity after reload
+    verifyAttendanceDataIntegrity()
+    
+    showToast('Datos de asistencia recargados correctamente', 'success')
+  } catch (err) {
+    console.error('Error recargando datos:', err)
+    showToast('Error al recargar datos de asistencia', 'error')
+  } finally {
+    isLoading.value = false
+    loadingMessage.value = ''
+  }
+}
+
+// Debug function to diagnose attendance system issues
+const runAttendanceDebug = async () => {
+  try {
+    if (!selectedClass.value || !selectedDate.value) {
+      showToast('Selecciona una clase y fecha para hacer debugging', 'error')
+      return
+    }
+    
+    isLoading.value = true
+    loadingMessage.value = 'Ejecutando debugging del sistema de asistencia...'
+    
+    console.log('[AttendanceView] Ejecutando debugging avanzado...')
+    
+    // Run the advanced debugging function
+    const debugResults = await attendanceStore.debugAttendanceSystem(selectedDate.value, selectedClass.value, authStore.user?.uid ?? '')
+    
+    // Show results in console and UI
+    if (debugResults?.targetDocument) {
+      showToast('✅ Documento encontrado - revisar consola para detalles', 'success')
+      console.log('[AttendanceView] Debugging completado - documento encontrado')
+    } else {
+      showToast('❌ No se encontró documento - revisar consola para detalles', 'error')
+      console.log('[AttendanceView] Debugging completado - documento NO encontrado')
+    }
+    
+    // Also verify current state
+    verifyAttendanceDataIntegrity()
+    
+  } catch (err) {
+    console.error('[AttendanceView] Error en debugging:', err)
+    showToast('Error ejecutando debugging', 'error')
+  } finally {
+    isLoading.value = false
+    loadingMessage.value = ''
+  }
+}
+
+// ============= DEBUGGING HELPERS =============
+// Optimized verification - only detailed logs when debugging enabled
+const verifyAttendanceDataIntegrity = () => {
+  const debugEnabled = window.localStorage.getItem('attendance-debug') === 'true'
+  
+  if (!debugEnabled) {
+    // Quick verification without detailed logs
+    if (attendanceStore.currentAttendanceDoc) {
+      const doc = attendanceStore.currentAttendanceDoc
+      const totalInArrays = (doc.data.presentes?.length || 0) + 
+                           (doc.data.ausentes?.length || 0) + 
+                           (doc.data.tarde?.length || 0)
+      const totalInRecords = Object.keys(attendanceStore.attendanceRecords).length
+      
+      if (totalInArrays !== totalInRecords) {
+        console.warn('[AttendanceView] ⚠️ Data inconsistency detected - enable debug mode for details')
+      }
+    }
+    return
+  }
+  
+  // Detailed debugging when enabled
+  console.log('=== VERIFICACIÓN DE INTEGRIDAD DE DATOS ===')
+  console.log('Fecha seleccionada:', selectedDate.value)
+  console.log('Clase seleccionada:', selectedClass.value)
+  console.log('Documento actual en store:', attendanceStore.currentAttendanceDoc ? JSON.parse(JSON.stringify(attendanceStore.currentAttendanceDoc)) : null)
+  console.log('Registros de asistencia en store:', JSON.parse(JSON.stringify(attendanceStore.attendanceRecords)))
+  
+  if (attendanceStore.currentAttendanceDoc) {
+    const doc = attendanceStore.currentAttendanceDoc
+    console.log('Arrays de Firestore:')
+    console.log('- Presentes:', doc.data.presentes)
+    console.log('- Ausentes:', doc.data.ausentes)  
+    console.log('- Tarde:', doc.data.tarde)
+    console.log('- Justificaciones:', doc.data.justificacion)
+    
+    // Verificar consistencia
+    const totalInArrays = (doc.data.presentes?.length || 0) + 
+                         (doc.data.ausentes?.length || 0) + 
+                         (doc.data.tarde?.length || 0)
+    const totalInRecords = Object.keys(attendanceStore.attendanceRecords).length
+    
+    console.log(`Total en arrays de Firestore: ${totalInArrays}`)
+    console.log(`Total en registros de asistencia: ${totalInRecords}`)
+    
+    if (totalInArrays !== totalInRecords) {
+      console.warn('⚠️ INCONSISTENCIA DETECTADA: Los totales no coinciden')
+    } else {
+      console.log('✅ Datos consistentes')
+    }
+  }
+  console.log('=== FIN VERIFICACIÓN ===')
+}
+
+// ============= ATTENDANCE MANAGEMENT =============
+// Handle attendance status updates
+const handleUpdateStatus = (studentId: string, status: string) => {
+  // Type assertion to ensure status is valid AttendanceStatus
+  const validStatus = status as AttendanceStatus
+  const previousStatus = attendanceStore.attendanceRecords[studentId]
+  
+  console.log(`[AttendanceView] Actualizando estado de asistencia:`)
+  console.log(`- Estudiante: ${studentId}`)
+  console.log(`- Estado anterior: ${previousStatus}`)
+  console.log(`- Estado nuevo: ${validStatus}`)
+  
+  attendanceStore.attendanceRecords[studentId] = validStatus
+  
+  // Verify data after update
+  setTimeout(() => verifyAttendanceDataIntegrity(), 100)
+  
+  // Show observation alert if needed
+  if (status === 'Ausente' || status === 'Tardanza') {
+    showObservationAlert.value = true
+    setTimeout(() => { showObservationAlert.value = false }, 3000)
+  }
+}
+
+// Check if date is in class schedule
+const isDateInClassSchedule = (date: string, classId: string): boolean => {
+  try {
+    const scheduledDays = attendanceStore.getClassScheduleDays(classId)
+    if (!scheduledDays?.length) return false
+    
+    const dayName = format(parseISO(date), 'EEEE', { locale: es }).toLowerCase()
+    return scheduledDays.includes(dayName)
+  } catch (err) {
+    console.error('Error checking class schedule:', err)
+    return false
+  }
+}
+
+// ============= MODAL HANDLERS =============
+// Open observation modal
+const handleOpenObservation = async (student: SelectedStudent | null, observation?: ClassObservation | null) => {
+  console.log('[Aqui] handleOpenObservation llamado con estudiante:', student, 'y observación:', observation)
+  console.log('[Aqui] Estado anterior de showObservationsModal:', showObservationsModal.value)
+  
+  selectedStudentForObs.value = student
+  observationToEdit.value = observation || null; // Set the observation to edit/view
+  showObservationsModal.value = true
+  
+  console.log('[AttendanceView] Estado después de setear showObservationsModal:', showObservationsModal.value)
+  console.log('[AttendanceView] selectedStudentForObs:', selectedStudentForObs.value)
+  console.log('[AttendanceView] observationToEdit:', observationToEdit.value)
+  console.log('[AttendanceView] selectedClass:', selectedClass.value)
+  console.log('[AttendanceView] selectedDate:', selectedDate.value)
+  
+  await nextTick()
+  
+  console.log('[AttendanceView] Después de nextTick, showObservationsModal:', showObservationsModal.value)
+}
+
+// Handle observation save
+const handleObservationAdded = async (observations: string) => {
+  try {
+    isLoading.value = true
+    loadingMessage.value = 'Guardando observación...'
+    
+    console.log(`[AttendanceView] Guardando observación para clase ${selectedClass.value} - fecha ${selectedDate.value}:`, observations)
+    
+    await attendanceStore.updateObservations(selectedDate.value, selectedClass.value, observations)
+    
+    // Verify data after saving observation
+    setTimeout(() => verifyAttendanceDataIntegrity(), 100)
+    
+    showToast('Observación guardada correctamente', 'success')
+    showObservationsModal.value = false
+  } catch (err) {
+    console.error('Error saving observation:', err)
+    showToast('Error al guardar la observación', 'error')
+  } finally {
+    isLoading.value = false
+    loadingMessage.value = ''
+  }
+}
+
+// Open justification modal
+const handleOpenJustification = (student: SelectedStudent) => {
+  const studentData = studentsStore.getStudentsByClass(selectedClass.value).find((s: any) => s.id === student.id)
+  selectedStudentForJustification.value = studentData
+  showJustificationModal.value = true
+}
+
+// Handle justification save
+const handleSaveJustification = async (data: { reason: string; documentUrl?: string; file?: File }) => {
+  try {
+    if (!selectedStudentForJustification.value) return
+    
+    isLoading.value = true
+    loadingMessage.value = 'Guardando justificación...'
+    
+    const studentId = selectedStudentForJustification.value.id
+    const previousStatus = attendanceStore.attendanceRecords[studentId]
+    
+    console.log(`[AttendanceView] Guardando justificación para estudiante ${studentId}:`)
+    console.log(`- Estado anterior: ${previousStatus}`)
+    console.log(`- Razón: ${data.reason}`)
+    
+    // Update attendance status to justified
+    attendanceStore.attendanceRecords[studentId] = 'Justificado'
+    
+    // Save justification
+    if (data.file) {
+      await attendanceStore.addJustificationToAttendance(
+        studentId,
+        selectedDate.value,
+        selectedClass.value,
+        data.reason,
+        data.file
+      )
+    } else {
+      // Create JustificationData object for the store function
+      const justificationData = {
+        studentId,
+        classId: selectedClass.value,
+        fecha: selectedDate.value,
+        reason: data.reason,
+        documentUrl: data.documentUrl || '',
+        approvalStatus: 'pending' as const,
+        createdAt: new Date(),
+        timeLimit: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      }
+      await attendanceStore.addJustification(justificationData)
+    }
+    
+    // Verify data integrity after justification
+    setTimeout(() => verifyAttendanceDataIntegrity(), 100)
+    
+    showJustifiedAbsenceModal.value = false
+    showToast('Justificación guardada correctamente', 'success')
+  } catch (err) {
+    console.error('Error saving justification:', err)
+    showToast('Error al guardar la justificación', 'error')
+    
+    // Restore previous status if error occurred
+    if (selectedStudentForJustification.value) {
+      const studentId = selectedStudentForJustification.value.id
+      // Try to restore from current document or set to absent
+      const currentDoc = attendanceStore.currentAttendanceDoc
+      if (currentDoc) {
+        if (currentDoc.data.presentes?.includes(studentId)) {
+          attendanceStore.attendanceRecords[studentId] = 'Presente'
+        } else if (currentDoc.data.tarde?.includes(studentId)) {
+          attendanceStore.attendanceRecords[studentId] = 'Tardanza'
+        } else {
+          attendanceStore.attendanceRecords[studentId] = 'Ausente'
+        }
+      }
+    }
+  } finally {
+    isLoading.value = false
+    loadingMessage.value = ''
+  }
+}
+
+// ============= EXPORT AND ANALYTICS =============
+const toggleAnalytics = () => { showAnalytics.value = !showAnalytics.value }
+const toggleTrends = () => { showTrends.value = !showTrends.value }
+const openReportModal = () => { showReportModal.value = true }
+const openExportModal = () => { showExportModal.value = true }
+
+const handleOpenExport = (value: boolean) => {
+  showExportModal.value = value
+}
+
+const handleGenerateReport = (filters: AttendanceFiltersType) => {
+  reportFilters.value = filters
+  console.log('Generating report with filters:', filters)
+}
+
+// Emergency class handlers
+const handleEmergencyClassSubmitted = async () => {
+  showEmergencyClassModal.value = false
+}
+
+const handleEmergencyClassCancelled = () => {
+  showEmergencyClassModal.value = false
+}
+
+// Calendar modal handlers
+const handleCalendarSelect = (date: string | { date: string }) => {
+  let dateStr: string
+  if (typeof date === 'string') {
+    dateStr = date
+  } else if (date && typeof date === 'object' && 'date' in date) {
+    dateStr = date.date
+  } else {
+    console.error('Invalid date parameter:', date)
+    return
+  }
+  selectedDate.value = dateStr
+  showCalendarModal.value = false
+  updateView('class-select')
+}
+
+const handleMonthChange = (newMonth: Date) => {
+  currentMonth.value = newMonth
+  console.log('Month changed to:', newMonth)
+}
+
+const handleDateChange = async (newDate: string) => {
+  if (isUpdating.value) return
+  isUpdating.value = true
+  
+  try {
+    selectedDate.value = newDate
+    if (!attendanceStore.validateAttendanceDate(newDate)) {
+      showToast('No se puede registrar asistencia para fechas futuras', 'error')
+      return
+    }
+    
+    if (selectedClass.value) {
+      await loadAttendanceData(selectedClass.value)
+    }
+  } finally {
+    isUpdating.value = false
+  }
+}
+
+const handleSelectedDateUpdate = (newDate: string) => {
+  selectedDate.value = newDate
+}
+
+// PDF Export
+const exportCurrentClassAttendanceToPDF = async () => {
+  try {
+    if (!selectedClass.value || !selectedDate.value) {
+      showToast('Seleccione una clase y fecha primero', 'error')
+      return
+    }
+    
+    const students = studentsStore.getStudentsByClass(selectedClass.value)
+    const teacherName = authStore.user?.email || 'Profesor'
+    const justifications = attendanceStore.getJustificationsByStudent || {}
+    await generateAttendancePDF(
+      students,
+      attendanceStore.attendanceRecords,
+      attendanceStore.getObservations,
+      selectedClassName.value,
+      teacherName,
+      selectedDate.value,
+      justifications
+    )
+    
+    showToast('PDF generado correctamente', 'success')
+  } catch (err) {
+    console.error('Error generating PDF:', err)
+    showToast('Error al generar PDF', 'error')
+  }
+}
+
+// Función para generar HTML del reporte
+const generateAttendanceHTML = (students: any[], records: any, observations: string, className: string, date: string) => {
+  const presentCount = Object.values(records).filter(status => status === 'Presente').length
+  const lateCount = Object.values(records).filter(status => status === 'Tardanza').length
+  const justifiedCount = Object.values(records).filter(status => status === 'Justificado').length
+  const absentCount = Object.values(records).filter(status => status === 'Ausente').length
+  
+  const studentRows = students.map((student, index) => {
+    const status = records[student.id] || 'No registrado'
+    const statusClass = status.toLowerCase().replace(' ', '-')
+    return `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${student.nombre} ${student.apellido}</td>
+        <td class="${statusClass}">${status}</td>
+        <td>${status === 'Justificado' ? 'Sí' : 'No'}</td>
+      </tr>
+    `
+  }).join('')
+  
+  const formattedDate = format(parseISO(date), "d 'de' MMMM yyyy", { locale: es })
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Reporte de Asistencia - ${className}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #2563eb; margin-bottom: 10px; }
+        .header h2 { color: #64748b; margin: 5px 0; }
+        .summary-container { display: flex; justify-content: space-around; margin: 20px 0; }
+        .summary-box { text-align: center; padding: 15px; border-radius: 8px; background-color: #f8fafc; }
+        .summary-box h3 { margin: 0 0 10px 0; color: #374151; }
+        .presente { color: #16a34a; font-size: 24px; font-weight: bold; }
+        .tarde { color: #d97706; font-size: 24px; font-weight: bold; }
+        .justificado { color: #2563eb; font-size: 24px; font-weight: bold; }
+        .ausente { color: #dc2626; font-size: 24px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #e5e7eb; padding: 12px; text-align: left; }
+        th { background-color: #f3f4f6; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9fafb; }
+        .observations { background-color: white; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .footer { text-align: center; font-size: 14px; color: #6b7280; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>Reporte de Asistencia</h1>
+        <h2>Clase: ${className}</h2>
+        <h2>Fecha: ${formattedDate}</h2>
+        <h2>Maestro: ${authStore.user?.email || 'Profesor'}</h2>
+      </div>
+      
+      <div class="summary-container">
+        <div class="summary-box">
+          <h3>Presentes</h3>
+          <p class="presente">${presentCount}</p>
+        </div>
+        <div class="summary-box">
+          <h3>Tardes</h3>
+          <p class="tarde">${lateCount}</p>
+        </div>
+        <div class="summary-box">
+          <h3>Justificados</h3>
+          <p class="justificado">${justifiedCount}</p>
+        </div>
+        <div class="summary-box">
+          <h3>Ausentes</h3>
+          <p class="ausente">${absentCount}</p>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Alumno</th>
+            <th>Estado</th>
+            <th>Justificación</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${studentRows}
+        </tbody>
+      </table>
+
+      <div class="observations">
+        <h3>Observaciones del Maestro:</h3>
+        <p>${observations}</p>
+      </div>
+      
+      <div class="footer">
+        Este reporte fue generado automáticamente desde El Sistema PC - ${new Date().toLocaleDateString()}
+      </div>
+    </body>
+    </html>
+  `
+}
+
+// Email report
+const sendAttendanceEmail = async () => {
+  if (!selectedClass.value || !selectedDate.value) {
+    showToast('Seleccione una clase y fecha para enviar el correo.', 'error')
+    return
+  }
+  
+  if (!authStore.user || !authStore.user.email) {
+    showToast('No se pudo obtener el correo del usuario para enviar el reporte.', 'error')
+    return
+  }
+
+  if (!recipientEmail.value) {
+    showToast('Por favor ingrese un correo electrónico de destinatario', 'error')
+    return
+  }
+
+  isLoading.value = true
+  loadingMessage.value = 'Enviando correo...'
+
+  try {
+    const students = studentsStore.getStudentsByClass(selectedClass.value)
+    const records = attendanceStore.attendanceRecords
+    const rawObservations = attendanceStore.currentAttendanceDoc?.data.observación || 'Sin observaciones.'
+    const observations = Array.isArray(rawObservations) ? rawObservations.join('\n') : rawObservations
+    const className = selectedClassName.value
+    const date = selectedDate.value
+
+    // Generar contenido HTML para el correo
+    const htmlContent = generateAttendanceHTML(students, records, observations, className, date)
+
+    // Usar la URL del webhook desde la configuración en Firestore
+    const makeWebhookUrl = configStore.attendanceWebhookUrl || 'https://hook.us2.make.com/t2ockuc1vne58yqc68rjqp94njv1i3uo'
+    
+    // Preparar un array formateado de estudiantes para Google Sheets
+    const formattedStudents = students.map((student, index) => {
+      const attendanceStatus = records[student.id] || 'No registrado'
+      let justificationReason = ''
+      
+      if (attendanceStatus === 'Justificado' && attendanceStore.currentAttendanceDoc?.data?.justificacion) {
+        const justification = attendanceStore.currentAttendanceDoc.data.justificacion.find(j => j.id === student.id)
+        if (justification && justification.reason) {
+          justificationReason = `Justificación: ${justification.reason}`
+        }
+      }
+      
+      return {
+        Num: index + 1,
+        Nombre: student.nombre || '',
+        Apellido: student.apellido || '',
+        Estado: attendanceStatus,
+        Observaciones: attendanceStatus === 'Justificado' ? justificationReason : observations,
+        Maestro: authStore.user?.email || 'Profesor Desconocido',
+        Fecha: format(parseISO(date), 'yyyy-MM-dd'),
+        Clase: className
+      }
+    })
+
+    // Preparar payload para Make.com
+    const makePayload = {
+      subject: `Reporte de Asistencia - ${className} - ${format(parseISO(date), 'yyyy-MM-dd')}`,
+      format: 'email',
+      type: 'attendance_report',
+      action: 'send_attendance_email',
+      htmlBody: htmlContent,
+      date: selectedDate.value,
+      class: selectedClass.value,
+      className: selectedClassName.value,
+      students: studentsStore.getStudentsByClass(selectedClass.value),
+      formattedStudents: formattedStudents,
+      attendanceRecords: attendanceStore.attendanceRecords,
+      observations: attendanceStore.currentAttendanceDoc?.data.observación,
+      teacherId: authStore.user?.uid,
+      teacherName: authStore.user?.email || 'Profesor Desconocido',
+      teacherEmail: authStore.user?.email,
+      recipient: recipientEmail.value,
+      summary: {
+        total: students.length,
+        presentes: Object.values(records).filter(status => status === 'Presente').length,
+        ausentes: Object.values(records).filter(status => status === 'Ausente').length,
+        tardanza: Object.values(records).filter(status => status === 'Tardanza').length,
+        justificados: Object.values(records).filter(status => status === 'Justificado').length
+      }
+    }
+
+    // Enviar los datos a Make.com
+    await sendToMake(makeWebhookUrl, makePayload)
+
+    showToast('Datos enviados a Make.com correctamente. Se procesará el envío del correo.', 'success')
+  } catch (err: any) {
+    console.error("Error enviando datos a Make.com:", err)
+    showToast(`Error al enviar datos a Make.com: ${err.message || 'Error desconocido'}`, 'error')
+    error.value = 'No se pudieron enviar los datos a Make.com.'
+  } finally {
+    isLoading.value = false
+    loadingMessage.value = ''
+  }
+}
+
+// Close all modals
+const closeAllModals = () => {
+  showObservationsModal.value = false
+  showJustifiedAbsenceModal.value = false
+  showReportModal.value = false
+  showExportModal.value = false
+  showCalendarModal.value = false
+  showEmergencyClassModal.value = false
+}
+
+// ============= INITIALIZATION =============
+const fetchInitialData = async () => {
+  try {
+    isLoading.value = true
+    loadingMessage.value = 'Cargando datos iniciales...'
+    
+    // Load all required data
+    console.log('[AttendanceView] fetchInitialData: Starting data fetch...')
+    await Promise.all([
+      studentsStore.fetchStudents(),
+      classesStore.fetchClasses(),
+      attendanceStore.fetchAllAttendanceDates()
+    ])
+    console.log('[AttendanceView] fetchInitialData: Initial data fetched.')
+    console.log('[AttendanceView] Classes loaded:', classesStore.classes.length)
+    
+    // Handle URL parameters
+    if (props.date && props.classId) {
+      console.log(`[AttendanceView] fetchInitialData: URL params detected - date: ${props.date}, classId: ${props.classId}`)
+      const formattedDate = props.date.length === 8
+        ? `${props.date.substring(0,4)}-${props.date.substring(4,6)}-${props.date.substring(6,8)}`
+        : props.date
+      
+      selectedDate.value = formattedDate
+      selectedClass.value = props.classId
+      console.log(`[AttendanceView] fetchInitialData: selectedDate: ${selectedDate.value}, selectedClass: ${selectedClass.value}`)
+      await selectClass(props.classId)
+    } else if (route.query.class) {
+      console.log(`[AttendanceView] fetchInitialData: URL query class detected: ${route.query.class}`)
+      selectedClass.value = route.query.class as string
+      console.log(`[AttendanceView] fetchInitialData: selectedClass: ${selectedClass.value}`)
+      await loadAttendanceData(selectedClass.value)
+      updateView('attendance-form')
+    }
+    
+    error.value = null
+  } catch (err) {
+    error.value = 'Error al cargar los datos iniciales'
+    console.error('Error loading initial data:', err)
+  } finally {
+    isLoading.value = false
+    loadingMessage.value = ''
+  }
+}
+
+// ============= LIFECYCLE HOOKS =============
+onMounted(async () => {
+  await configStore.fetchConfigs()
+  await fetchInitialData()
+})
+
+// ============= WATCHERS =============
+// Watch for route changes
+watch(() => [route.params.date, route.params.classId, route.path], async ([newDate, newClassId, path]) => {
+  if (typeof path === 'string' && (path.endsWith('/attendance/calendar') || path.endsWith('/teacher/attendance/calendar'))) {
+    updateView('calendar')
+    selectedDate.value = getCurrentDate()
+    selectedClass.value = ''
+    closeAllModals()
+    return
+  }
+  
+  if (newDate && newClassId) {
+    const dateStr = newDate as string
+    const formattedDate = dateStr.length === 8
+      ? `${dateStr.substring(0,4)}-${dateStr.substring(4,6)}-${dateStr.substring(6,8)}`
+      : dateStr
+    
+    selectedDate.value = formattedDate
+    selectedClass.value = newClassId as string
+    await selectClass(newClassId as string)
+  }
+})
+
+// Watch for date changes
+watch(() => selectedDate.value, async (newDate) => {
+  if (newDate) {
+    await updateSelectedDateInfo(newDate)
+  }
+}, { immediate: true })
+
+// Watch for changes in attendance records - only log when debugging enabled
+watch(() => attendanceStore.attendanceRecords, (newRecords, oldRecords) => {
+  if (window.localStorage.getItem('attendance-debug') === 'true') {
+    console.log('[AttendanceView] Attendance records changed:')
+    console.log('- Registros anteriores:', oldRecords ? JSON.parse(JSON.stringify(oldRecords)) : null)
+    console.log('- Registros nuevos:', newRecords ? JSON.parse(JSON.stringify(newRecords)) : null)
+  }
+  
+  // Quick integrity check without detailed logs
+  verifyAttendanceDataIntegrity()
+}, { deep: true })
+
+// Watch for changes in current attendance document - only log when debugging enabled
+watch(() => attendanceStore.currentAttendanceDoc, (newDoc, oldDoc) => {
+  if (window.localStorage.getItem('attendance-debug') === 'true') {
+    console.log('[AttendanceView] Current attendance document changed:')
+    console.log('- Documento anterior:', oldDoc ? JSON.parse(JSON.stringify(oldDoc)) : null)
+    console.log('- Documento nuevo:', newDoc ? JSON.parse(JSON.stringify(newDoc)) : null)
+  }
+}, { deep: true })
+</script>
+
+<style scoped>
+.btn {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary {
+  background-color: #2563eb;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.btn-secondary {
+  background-color: #4b5563;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #374151;
+}
+
+.btn-info {
+  background-color: #0891b2;
+  color: white;
+}
+
+.btn-info:hover {
+  background-color: #0e7490;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.btn-xs {
+  padding: 0.125rem 0.375rem;
+  font-size: 0.75rem;
+}
+
+.btn-error {
+  background-color: #dc2626;
+  color: white;
+}
+
+.btn-error:hover {
+  background-color: #b91c1c;
+}
+</style>

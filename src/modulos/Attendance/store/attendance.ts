@@ -1,82 +1,38 @@
 // src/stores/attendance.ts
-import { defineStore } from 'pinia'
-import { format, parseISO, isValid, isWithinInterval } from 'date-fns'
-import { db } from '../../../firebase'
-import { useClassesStore } from '../../Classes/store/classes'
-import { useAuthStore } from '../../../stores/auth'
+import { defineStore } from 'pinia';
+import { query, collection, where, getDocs, DocumentData, doc, getDoc } from 'firebase/firestore';
+import { db } from "../../../firebase"; // Assuming firebase.ts is in src/
+import { ATTENDANCE_COLLECTION } from '../service/attendance'; // Adjusted path
+import { format } from 'date-fns';
+import { useAuthStore } from '../../Auth/store/auth';
+import { useClassesStore } from '../../Classes/store/classes';
+import { ref, computed } from 'vue';
+
+// Importar tipos desde el archivo central de tipos
+import type { 
+  AttendanceRecord, 
+  ClassObservation, 
+  JustificationData,
+  AttendanceStatus,
+  AttendanceDocument 
+} from '../types/attendance';
+
+// Importar el servicio centralizado
+import * as attendanceService from '../../../service/attendance';
+import { useStudentsStore } from '../../Students/store/students'; // Assuming path to students store
+
 import { 
-  // fetchAttendanceRecords, 
-  addAttendanceRecord, 
-  updateAttendanceRecord, 
-  deleteAttendanceRecord,
-  getAttendanceDocumentFirebase,
-  saveAttendanceDocumentFirebase,
-  addJustificationToAttendanceFirebase,
-  getAllObservationsFirebase,
-  getAttendanceStatusFirebase,
-  fetchAttendanceByDateRangeFirebase,
-  getAllAttendanceDocumentsFirebase,
-  addObservationToHistoryFirebase,
-  updateObservationInHistoryFirebase,
-  getObservationsHistoryFirebase,
-  getAttendancesFirebase,
-  getAttendanceByDateAndClassFirebase,
-  updateObservationsFirebase, // Add import for updateObservationsFirebase
-  registerAttendanceFirebase, // Import the new Firebase service function
-  updateAttendanceFirebase, // Import the new Firebase service function
-  fetchAttendanceByDateFirebase // Import the new Firebase service function
-} from '../service/attendance'
-import { getFromLocalStorage, saveToLocalStorage, clearLocalStorage } from '../../../utils/localStorageUtils'
-
-// Define the attendance record type
-export interface AttendanceRecord {
-  id?: string;
-  studentId: string;
-  classId: string;
-  Fecha: string; // Format: YYYY-MM-DD
-  status: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado' | string;
-  notes?: string;
-  justification?: { 
-    reason: string; 
-    documentURL?: string; 
-    timestamp: string; 
-  };
-  createdAt?: string; // Added: Timestamp for creation
-  updatedAt?: string; // Added: Timestamp for last update
-}
-
-// Define the attendance document type
-interface AttendanceDocument {
-  id?: string;
-  fecha: string; // Date in YYYY-MM-DD format
-  classId: string;
-  teacherId: string;
-  data: {
-    presentes: string[];
-    ausentes: string[];
-    tarde: string[];
-    justificacion: Array<{id: string; reason: string; documentURL?: string}>;
-    observations: string;
-  };
-}
-
-// Attendance statistics type
-interface AttendanceStats {
-  present: number;
-  absent: number;
-  late: number;
-  justified: number;
-  total: number;
-}
-
-// Define additional types used throughout the store
-type AttendanceStatus = 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado' | string;
+  addClassObservationFirebase, 
+  addJustificationFirebase, 
+  getClassObservationsFirebase,
+  updateClassObservationFirebase
+} from '../services/attendance';
 
 interface AttendanceAnalytics {
   totalClasses: number;
   totalStudents: number;
   averageAttendance: number;
-  absentStudents: any[]; 
+  absentStudents: any[];
   byClass: Record<string, {
     present: number;
     absent: number;
@@ -84,1903 +40,1361 @@ interface AttendanceAnalytics {
     justified: number;
     total: number;
   }>;
+  lastUpdated?: Date; // Optional for caching optimization
 }
 
-interface ClassObservation {
-  id?: string;
-  classId: string;
-  date: string;
-  text: string;
-  author: string;
-  createdAt?: any;
-}
+// Interface definitions moved to types file to avoid duplication
 
-interface FetchAttendanceRecordsParams {
-  classId?: string;
-  startDate?: string | Date;
-  endDate?: string | Date;
-}
+// Re-export types from action files - these might be reviewed later
+export type { AttendanceStoreState as FetchActionsState } from './actions/fetchActions';
+export type { AttendanceStoreState as ReportActionsState, AbsentStudentInfo, AttendanceReport } from './actions/reportActions';
 
-// Student absence record
-interface StudentAbsenceRecord {
-  studentId: string;
-  absences: number;
-  lastAttendance: string;
-}
 
-const LOCAL_STORAGE_KEYS = {
-  ATTENDANCE: 'attendance',
-  ATTENDANCE_DOCUMENTS: 'attendance_documents'
-};
+export const useAttendanceStore = defineStore('attendance', () => {
+  // Estado
+  const attendanceRecords = ref<Record<string, AttendanceStatus>>({});
+  const records = ref<AttendanceRecord[]>([]);
+  const observations = ref<ClassObservation[]>([]);
+  const observationsHistory = ref<ClassObservation[]>([]);
+  const justifications = ref<JustificationData[]>([]);
+  const loading = ref(false);
+  const error = ref<string | null>(null);
+  const selectedDate = ref<string>('');
+  const selectedClass = ref<string>('');
+  const attendanceDocuments = ref<AttendanceDocument[]>([]);
+  const currentAttendanceDoc = ref<AttendanceDocument | null>(null);
+  const datesWithRecords = ref<string[]>([]);
+  const analytics = ref<AttendanceAnalytics | null>(null);
+  // Nuevo: cache de observaciones por clase y usuario
+  const observationsCache = ref<Record<string, { data: ClassObservation[]; lastFetch: number }>>({});
 
-// Tipo para el mapeo de días
-type DayMap = Record<string, number>;
-const DAY_MAP: DayMap = { 
-  'lunes': 1, 
-  'martes': 2, 
-  'miércoles': 3, 
-  'jueves': 4, 
-  'viernes': 5, 
-  'sábado': 6, 
-  'domingo': 0 
-};
-
-// Helper function to fetch attendance items with optional filtering
-interface FetchItemsOptions {
-  classId?: string;
-  studentId?: string;
-  date?: string;
-  startDate?: string;
-  endDate?: string;
-  status?: AttendanceStatus;
-  refresh?: boolean;
-}
-
-/**
- * Attendance Store - Manages attendance records, documents, and analytics.
- * 
- * This store handles:
- * - Loading/saving attendance records from Firebase
- * - Managing attendance status for students
- * - Tracking observations and justifications
- * - Generating attendance reports and analytics
- */
-export const useAttendanceStore = defineStore('attendance', {
-  state: () => ({
-    // Records are individual attendance entries (student-date-class)
-    records: [] as AttendanceRecord[],
-    // Documents are grouped attendance data by class and date
-    attendanceDocuments: [] as AttendanceDocument[],
-    selectedDate: format(new Date(), 'yyyy-MM-dd'),
-    selectedClass: '',
-    currentAttendanceDoc: null as AttendanceDocument | null,
-    isLoading: false,
-    error: null as string | null,
-    analytics: null as AttendanceAnalytics | null,
-    // Current attendance status for UI display
-    attendanceRecords: {} as Record<string, AttendanceStatus>,
-    levelOptions: ['Básico', 'Intermedio', 'Avanzado'],
-    cachedJustifications: {} as Record<string, {
-      reason: string,
-      file: File | null,
-      documentUrl?: string
-    }>,
-    // Storing calendar dates with records for efficient display
-    datesWithRecords: [] as string[],
-    observationsHistory: [] as ClassObservation[],
-    activeStudents: [] as string[] // Array of active student IDs
-
-    // Add cache indicators 
-    ,lastFetch: null as Date | null,
-    lastFetchParams: null as any | null,
-    cacheExpiryMinutes: 10, // Cache expires after 10 minutes
-  }),
-  
-  getters: {
-    /**
-     * Devuelve un mapa de studentId a status para la fecha y clase seleccionadas actualmente.
-     * Este es el formato que la UI (ej. AttendanceTable) espera.
-     */
-    getAttendanceMapForSelectedScope: (state): Record<string, AttendanceStatus> => {
-      if (!state.selectedDate || !state.selectedClass) {
-        return {};
-      }
-      const attendanceMap: Record<string, AttendanceStatus> = {};
-      state.records
-        .filter(record => record.Fecha === state.selectedDate && record.classId === state.selectedClass)
-        .forEach(record => {
-          attendanceMap[record.studentId] = record.status;
-        });
-      return attendanceMap;
-    },
-
-     getMarkedDatesForCalendar: (state) => {
-      return state.datesWithRecords
-},
-    getAttendanceStats: (state) => {
-      const totalClasses = state.attendanceDocuments.length;
-      const totalStudents = new Set(state.records.map(record => record.studentId)).size;
-      const averageAttendance = state.analytics?.averageAttendance || 0;
-      
-      return {
-        totalClasses,
-        totalStudents,
-        averageAttendance
-      };
-    },
-    /**
-     * Returns the days of the week when a class is scheduled
-     * @param classId - The ID of the class to check
-     * @returns Array of day numbers (0-6, where 0 = Sunday)
-     */
-    getClassScheduleDays: (state) => (classId: string): number[] => {
-      // If no classId provided, return empty array
-      if (!classId) return [];
-      
-      // Find the class in the classes store
-      const classesStore = useClassesStore();
-      const classData = classesStore.classes.find(c => c.id === classId); // Using id to match with database
-      
-      // If class not found or no schedule, return empty array
-      if (!classData || !classData.schedule || !classData.schedule.slots) {
-        return [];
-      }
-      
-      // Extract day numbers from the schedule
-      const days = classData.schedule.slots.map(slot => {
-        // Handle both numeric days and string days
-        if (typeof slot.day === 'number') {
-          return slot.day;
-        } else if (typeof slot.day === 'string') {
-          // Convert day name to number (0 = Sunday, 1 = Monday, etc.)
-          const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-          return dayNames.findIndex(d => d.toLowerCase() === slot.day.toLowerCase());
-        }
-        return -1;
-      }).filter(day => day >= 0);
-      
-      return days;
-  },
-    
-    // Getters mejorados con tipado explícito
-    getAttendanceByClass: (state) => {
-      // obtener asistencias por clase
-      return (className: string): AttendanceRecord[] => 
-        state.records.filter(record => record.classId === className);
-    },
-    getClassNameByClassId: (state) => {
-      return (classId: string): string => {
-        const classesStore = useClassesStore()
-        const classItem = classesStore.classes.find(c => c.id === classId)
-        return classItem ? classItem.name : 'Clase no encontrada'
-      }
-    },
-    dateAttendanceStatuses: (state) => {
-      const auth = useAuthStore()
-      const classesStore = useClassesStore()
-      const teacherId = auth.user?.uid
-
-      // 1) Filtrar solo los docs de clases del maestro actual
-      const teacherClassIds = classesStore.classes
-        .filter(c => c.teacherId === teacherId)
-        .map(c => c.id) // Using id to match with database
-
-      // 2) Agrupar docs por fecha solo si pertenecen al maestro
-      const byDate: Record<string, string[]> = {}
-      state.attendanceDocuments.forEach(doc => {
-        if (
-          typeof doc.fecha === 'string' &&
-          doc.fecha.trim() &&
-          teacherClassIds.includes(doc.classId)
-        ) {
-          byDate[doc.fecha] = byDate[doc.fecha] || []
-          if (!byDate[doc.fecha].includes(doc.classId)) {
-            byDate[doc.fecha].push(doc.classId)
-          }
-        }
-      })
-
-      // 3) Para cada fecha, comparar clases programadas vs registradas
-      return Object.entries(byDate).map(([fecha, recordedClassIds]) => {
-        const d = new Date(`${fecha}T00:00:00`)
-        if (isNaN(d.getTime())) {
-          return { date: fecha, status: 'none' as const }
-        }
-        const dayIndex = d.getDay()
-        // Clases programadas para el maestro ese día
-        const scheduled = classesStore.classes.filter(c => {
-          if (c.teacherId !== teacherId || !c.schedule?.slots) return false
-          return c.schedule.slots.some(slot => {
-            if (typeof slot.day === 'number') {
-              return slot.day === dayIndex
-            } else if (typeof slot.day === 'string') {
-              return slot.day.toLowerCase() === ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'][dayIndex]
-            }
-            return false
-          })
-        })
-        const total = scheduled.length
-        const recorded = recordedClassIds.length
-        let status: 'registered' | 'none' | 'partial' = 'none'
-        if (recorded === 0) status = 'none'
-        else if (recorded >= total && total > 0) status = 'registered'
-        else if (recorded > 0 && recorded < total) status = 'partial'
-        return { date: fecha, status }
-      })
-    },
-
-    getAttendanceByStudent: (state) => {
-      // obtener asistencias por estudiante
-      return (studentId: string): AttendanceRecord[] => 
-        state.records.filter(record => record.studentId === studentId);
-    },
-    
-    getAttendanceByDate: (state) => {
-      // obtener asistencias por fecha
-      return (date: string): AttendanceRecord[] => 
-        state.records.filter(record => record.Fecha === date);
-    },
-    
-    getRecordsByDate: (state) => {
-      // obtener registros por fecha
-      return (date: string): AttendanceRecord[] => 
-        state.records.filter(record => record.Fecha === date);
-    },
-    
-    getRecordsByDateAndClass: (state) => {
-      // obtener registros por fecha y clase
-      return (date: string, className: string): AttendanceRecord[] => 
-        state.records.filter(record => 
-          record.Fecha === date && record.classId === className
-        );
-    },
-    
-    getDatesWithRecords: (state): string[] => {
-      // Obtener fechas únicas de los registros
-      return [...new Set(state.records.map(record => record.Fecha))];
-    },
-    
-    getStudentStatus: (state) => {
-      // Obtener el estado de asistencia de un estudiante
-      return (studentId: string, date: string, className: string): AttendanceStatus => {
-        // Buscar primero en la estructura de documento currentAttendanceDoc
-        if (state.currentAttendanceDoc && 
-            state.currentAttendanceDoc.fecha === date && 
-            state.currentAttendanceDoc.classId === className) {
-          
-          // Verificar si tiene justificación
-          const hasJustification = state.currentAttendanceDoc.data.justificacion?.some(j => j.id === studentId);
-          if (hasJustification) {
-            return 'Justificado';
-          }
-          if (state.currentAttendanceDoc.data.presentes.includes(studentId)) {
-            return 'Presente';
-          }
-          if (state.currentAttendanceDoc.data.ausentes.includes(studentId)) {
-            return 'Ausente';
-          }
-          if (state.currentAttendanceDoc.data.tarde.includes(studentId)) {
-            return 'Tardanza';
-          }
-          // Si no está en ninguna lista, considerarlo ausente por defecto
-          return 'Ausente';
-        }
-        // Buscar en el registro antiguo como respaldo
-        const record = state.records.find(r => 
-          r.studentId === studentId && 
-          r.Fecha === date && 
-          r.classId === className
-        );
-        return record?.status || 'Ausente';
-      }
-    },
-    classWithRecords: (state) => {
-      // Obtener clases con registros de asistencia
-      return (className: string): AttendanceRecord[] => {
-        return state.records.filter(record => record.classId === className);
-      }
-    },
-
-    // Check if a student has a justification
-    hasJustification: (state) => {
-      return (studentId: string): boolean => {
-    if (!state.currentAttendanceDoc) return false;
-    
-    return state.currentAttendanceDoc.data.justificacion?.some(
-      j => j.id === studentId
-    ) || false;
-  }
-},
-
-// Get justification for a student
-getJustification: (state) => {
-  return (studentId: string) => {
-    if (!state.currentAttendanceDoc) return null;
-    
-    return state.currentAttendanceDoc.data.justificacion?.find(
-      j => j.id === studentId
-    ) || null;
-  }
-},
-      getObservations: (state): string => {
-      // Get observations for current class date
-      if (state.currentAttendanceDoc && state.currentAttendanceDoc.data && state.currentAttendanceDoc.data.observations) {
-        // Asegurar que siempre devuelve un string
-        const observations = state.currentAttendanceDoc.data.observations;
-        return typeof observations === 'string' ? observations : '';
-      }
-      // Si no hay observaciones en el documento actual, devolver una cadena vacía.
-      return '';
-    },
-
-    // IMPORTANT: Move getStudentAttendanceRate from actions to getters
-    // This fixes the 'set on proxy' error
-    getStudentAttendanceRate: (state) => {
-      return (studentId: string, classId?: string, startDate?: string, endDate?: string): number => {
-        try {
-          // Filter records by student
-          let records = state.records.filter(record => record.studentId === studentId);
-          
-          // Filter by class if specified
-          if (classId) {
-            records = records.filter(record => record.classId === classId);
-          }
-          
-          // Further filter by date range if provided
-          if (startDate && endDate) {
-            records = records.filter(record => {
-              const recordDate = record.Fecha;
-              return recordDate >= startDate && recordDate <= endDate;
-            });
-          }
-          
-          // No records means no attendance
-          if (records.length === 0) return 0;
-          
-          // Count present days (including late arrivals and justified absences)
-          const presentDays = records.filter(record => 
-            record.status === 'Presente' || 
-            record.status === 'Tardanza' || 
-            record.status === 'Justificado'
-          ).length;
-          
-          // Calculate percentage
-          return Math.round((presentDays / records.length) * 100);
-        } catch (error) {
-          console.error('Error calculating student attendance rate:', error);
-          return 0;
-        }
-      }
-    },
-    
-    // Add a getter to safely access activeStudents array
-    getActiveStudents: (state) => {
-      return state.activeStudents || [];
-    },
-    isCacheValid: (state) => {
-      if (!state.lastFetch) return false;
-      const now = new Date();
-      const diffMs = now.getTime() - state.lastFetch.getTime();
-      const diffMins = Math.floor(diffMs / 60000);
-      return diffMins < state.cacheExpiryMinutes;
-    }
-  },
-  
-  actions: {
-
-    // Basic setters
-    setSelectedClass(classId: string): void {
-      this.selectedClass = classId;
-    },
-
-    setSelectedDate(date: string): void {
-      this.selectedDate = date;
-    },
-     async addAttendanceRecord(recordInput: Omit<AttendanceRecord, 'id'>) {
-      this.isLoading = true;
-      this.error = null;
-      try {
-        // Asegurarse de que el servicio addAttendanceRecord (de firebase) esté importado y exista.
-        // Este servicio debería encargarse de añadir el registro a Firebase.
-        // Asumimos que addAttendanceRecordFirebase devuelve el ID del nuevo registro o el registro completo con ID.
-        // La función de servicio addAttendanceRecord ahora toma Omit<AttendanceRecord, 'id'>
-        // y se espera que devuelva el registro completo con id, createdAt, updatedAt de Firebase.
-        const savedRecord = await addAttendanceRecord(recordInput); // Esta es la llamada al servicio de Firebase
-
-        // Actualizar el estado local `records` con el registro guardado (que debería incluir un ID de Firebase)
-        const recordIndex = this.records.findIndex(r => r.id === savedRecord.id);
-        if (recordIndex !== -1) {
-          this.records[recordIndex] = savedRecord;
-        } else {
-          this.records.push(savedRecord);
-        }
-
-        // Actualizar el estado local `attendanceRecords` (para la UI)
-        // si el registro añadido corresponde a la fecha y clase seleccionadas.
-        if (this.selectedDate === savedRecord.Fecha && this.selectedClass === savedRecord.classId) {
-          this.attendanceRecords[savedRecord.studentId] = savedRecord.status;
-        }
-
-        // Opcional: Actualizar `currentAttendanceDoc` o llamar a `fetchAttendanceDocument`
-        // para asegurar que todo el documento de asistencia esté sincronizado.
-        if (this.currentAttendanceDoc && this.currentAttendanceDoc.fecha === savedRecord.Fecha && this.currentAttendanceDoc.classId === savedRecord.classId) {
-           await this.fetchAttendanceDocument(savedRecord.Fecha, savedRecord.classId);
-        } else if (this.selectedDate === savedRecord.Fecha && this.selectedClass === savedRecord.classId) {
-          await this.fetchAttendanceDocument(savedRecord.Fecha, savedRecord.classId);
-        }
-
-        // Opcional: Limpiar caché si es necesario
-        if (process.env.NODE_ENV === 'development') {
-          clearLocalStorage(LOCAL_STORAGE_KEYS.ATTENDANCE_DOCUMENTS);
-        }
-        return savedRecord; 
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        this.error = `Error adding attendance record: ${errorMessage}`;
-        console.error('Error adding attendance record:', error);
-        throw error;
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    async updateAttendanceRecord(recordToUpdate: AttendanceRecord) {
-      this.isLoading = true;
-      this.error = null;
-      try {
-        if (!recordToUpdate.id) {
-          throw new Error("Record ID is required for updates.");
-        }
-        // Call the service function to update in Firebase
-        // This service should handle the actual update and return the updated record
-        const updatedRecord = await updateAttendanceRecordFirebase(recordToUpdate); // Use the imported Firebase service function
-
-        // Update the local 'records' array
-        const index = this.records.findIndex(r => r.id === updatedRecord.id);
-        if (index !== -1) {
-          this.records[index] = updatedRecord;
-        } else {
-          this.records.push(updatedRecord);
-          console.warn(`Updated record with ID ${updatedRecord.id} was not found in local cache, added it.`);
-        }
-
-        // Update 'attendanceRecords' for the UI if it matches the selected scope
-        if (this.selectedDate === updatedRecord.Fecha && this.selectedClass === updatedRecord.classId) {
-          this.attendanceRecords[updatedRecord.studentId] = updatedRecord.status;
-        }
-
-        // Update 'currentAttendanceDoc' if it's the one being modified
-        // This assumes 'updatedRecord' might carry information about its parent document ID, or you fetch based on Fecha/classId
-        if (this.currentAttendanceDoc && this.currentAttendanceDoc.fecha === updatedRecord.Fecha && this.currentAttendanceDoc.classId === updatedRecord.classId ) {
-          await this.fetchAttendanceDocument(updatedRecord.Fecha, updatedRecord.classId);
-        }
-        
-        if (process.env.NODE_ENV === 'development') {
-          clearLocalStorage(LOCAL_STORAGE_KEYS.ATTENDANCE_DOCUMENTS);
-        }
-        return updatedRecord;
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        this.error = `Error updating attendance record: ${errorMessage}`;
-        console.error('Error updating attendance record:', error);
-        throw error;
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    async loadAttendanceDataForCalendar(teacherId: string) {
-       this.isLoading = true;
-       this.error = null;
-       try {
-        //  console.log('⏳ Loading attendance data for calendar...');
-         // Ensure attendance documents are loaded
-         const data = await getAllAttendanceDocumentsFirebase(teacherId);
-        //  iterar y obtener un array de fechas
-          const dates = data.map(doc => doc.fecha);
-          // filtrar fechas únicas
-          const uniqueDates = [...new Set(dates)];
-          // filtrar fechas válidas
-          const validDates = uniqueDates.filter(date => {
-            const parsedDate = parseISO(date);
-            return isValid(parsedDate) && parsedDate <= new Date(); // Solo fechas pasadas o presentes
-          });
-          // mostrar en consola resultado
-          // Guardar fechas en el estado
-          this.datesWithRecords = validDates;
-          // Guardar en localStorage (solo desarrollo)
-          if (process.env.NODE_ENV === 'development') {
-            saveToLocalStorage(LOCAL_STORAGE_KEYS.ATTENDANCE_DOCUMENTS, validDates);
-          }
-          // Devolver fechas válidas
-       } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : (error ? error.toString() : 'Unknown error');
-          this.error = `Error loading data for calendar: ${errorMessage}`;
-          console.error('Error loading data for calendar:', error);
-          throw error; // Re-throw
-        } finally {
-         this.isLoading = false;
-       }
-     },
-
-    /**
-     * Fetch attendance documents from Firebase or local storage cache
-     * 
-     * @returns Promise resolving to array of AttendanceDocument objects
-     */
-    async fetchAttendanceDocuments(): Promise<AttendanceDocument[]> {
-      this.isLoading = true;
-      this.error = null;
-      try {
-        console.log('📂 Iniciando fetchAttendanceDocuments()');
-        
-        // FORZAR CARGA DESDE FIREBASE - IGNORAR CACHÉ
-        const documents = await getAttendancesFirebase() as any;
-        
-        console.log(`📊 Documentos obtenidos: ${documents?.length || 0}`);
-        if (documents && documents.length > 0) {
-          // Guardar en localStorage si estamos en desarrollo
-          if (process.env.NODE_ENV === 'development') {
-            saveToLocalStorage(LOCAL_STORAGE_KEYS.ATTENDANCE_DOCUMENTS, documents);
-          }
-        }
-        
-        // Asegurar que tenemos un array válido
-        this.attendanceDocuments = Array.isArray(documents) ? documents : [];
-        
-        // Initialize active students list
-        try {
-          this.initActiveStudents();
-        } catch (e) {
-          console.error('Error inicializando estudiantes activos:', e);
-        }
-        
-        return this.attendanceDocuments;
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : (error ? error.toString() : 'Unknown error');
-        this.error = `Error al cargar los documentos de asistencia: ${errorMessage}`;
-        console.error('❌ Error al obtener documentos de asistencia:', error);
-        
-        // Devolver un array vacío en lugar de lanzar error
-        return [];
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    /**
-     * Initialize active students array from attendance records
-     * Collects unique student IDs from all attendance documents
-     */
-    initActiveStudents(): void {
-      // Set of unique student IDs that have attendance records
-      const activeStudentIds = new Set<string>();
-      
-      // Add student IDs from attendance documents
-      this.attendanceDocuments.forEach(doc => {
-        if (doc.data) {
-          // Add all present students
-          if (Array.isArray(doc.data.presentes)) {
-            doc.data.presentes.forEach(studentId => activeStudentIds.add(studentId));
-          }
-          
-          // Add all absent students
-          if (Array.isArray(doc.data.ausentes)) {
-            doc.data.ausentes.forEach(studentId => activeStudentIds.add(studentId));
-          }
-          
-          // Add all late students
-          if (Array.isArray(doc.data.tarde)) {
-            doc.data.tarde.forEach(studentId => activeStudentIds.add(studentId));
-          }
-          
-          // Add all justified students
-          if (Array.isArray(doc.data.justificacion)) {
-            doc.data.justificacion.forEach(justification => {
-              if (justification && justification.id) {
-                activeStudentIds.add(justification.id);
-              }
-            });
-          }
-        }
-      });
-      
-      // Add student IDs from older record format
-      this.records.forEach(record => {
-        if (record.studentId) {
-          activeStudentIds.add(record.studentId);
-        }
-      });
-      
-      // Convert set to array and update state
-      this.activeStudents = Array.from(activeStudentIds);
-    },
-
-    /**
-     * Fetch a specific attendance document by date and class
-     * 
-     * @param fecha - Date string in YYYY-MM-DD format
-     * @param classId - Class identifier
-     * @returns The attendance document or null if not found
-     */
-    async fetchAttendanceDocument(fecha: string, classId: string) {
-      this.isLoading = true;
-      this.error = null;
-      try {
-        // Check if document is already in local state
-        let document = this.attendanceDocuments.find(
-          doc => doc.fecha === fecha && doc.classId === classId
-        );
-        
-        // If not found locally, fetch from Firebase
-        if (!document) {
-          const result = await getAttendanceDocumentFirebase(fecha, classId);
-          document = result || undefined;
-        }
-        
-        if (document) {
-          // Update current document and populate attendance records for UI
-          this.currentAttendanceDoc = document;
-          this._updateAttendanceRecordsFromDocument(document);
-          return document;
-        }
-        
-        // Create an empty document if none exists
-        this.currentAttendanceDoc = {
-          fecha,
-          classId,
-          teacherId: useAuthStore().user?.uid || '',
-          data: {
-            presentes: [],
-            ausentes: [],
-            tarde: [],
-            justificacion: [],
-            observations: ''
-          }
-        };
-        
-        this.attendanceRecords = {};
-        return null;
-      } catch (error) {
-        this.error = 'Error al cargar el documento de asistencia';
-        console.error('Error al obtener documento de asistencia:', error);
-        return null;
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    /**
-     * Helper method to update attendance records from a document
-     * Centralizes the logic for consistent state updates
-     * 
-     * @param document - The attendance document to process
-     */
-    _updateAttendanceRecordsFromDocument(document: AttendanceDocument) {
-      this.attendanceRecords = {};
-      
-      // Process justifications first (they take precedence)
-      if (document.data.justificacion && Array.isArray(document.data.justificacion)) {
-        document.data.justificacion.forEach(justification => {
-          if (justification && justification.id) {
-            this.attendanceRecords[justification.id] = 'Justificado';
-          }
-        });
-      }
-      
-      // Then process other statuses
-      document.data.presentes.forEach(studentId => {
-        if (!this.attendanceRecords[studentId]) {
-          this.attendanceRecords[studentId] = 'Presente';
-        }
-      });
-      
-      document.data.ausentes.forEach(studentId => {
-        if (!this.attendanceRecords[studentId]) {
-          this.attendanceRecords[studentId] = 'Ausente';
-        }
-      });
-      
-      document.data.tarde.forEach(studentId => {
-        const hasJustification = document.data.justificacion?.some(j => j.id === studentId);
-        if (!this.attendanceRecords[studentId]) {
-          this.attendanceRecords[studentId] = hasJustification ? 'Justificado' : 'Tardanza';
-        }
-      });
-    },
-
-    /**
-     * Save attendance document to Firebase and update local state
-     * 
-     * @param document - The document to save
-     * @returns The saved document
-     */
-    async saveAttendanceDocument(document: AttendanceDocument) {
-      // Get and assign current teacher ID
-      const currentTeacherId = useAuthStore().user?.uid;
-      document.teacherId = currentTeacherId || '';
-      
-      this.isLoading = true;
-      this.error = null;
-      
-      try {
-        // Log antes de guardar para verificación
-        console.log('Guardando documento con los siguientes datos:', {
-          fecha: document.fecha,
-          classId: document.classId,
-          presentes: document.data.presentes.length,
-          ausentes: document.data.ausentes.length,
-          tarde: document.data.tarde.length,
-          justificacion: document.data.justificacion?.length || 0
-        });
-
-        // Asegurar que no eliminamos estudiantes por error
-        const totalEstudiantes = (
-          (document.data.presentes?.length || 0) +
-          (document.data.ausentes?.length || 0) +
-          (document.data.tarde?.length || 0)
-        );
-
-        if (totalEstudiantes === 0) {
-          console.warn('⚠️ Advertencia: Se intenta guardar un documento sin estudiantes!');
-        }
-        
-        // Clean up obsolete justifications
-        this._cleanJustifications(document);
-        
-        // Asegurar que todos los campos del documento estén inicializados correctamente
-        // Firebase rechaza valores undefined
-        if (!document.data.presentes) document.data.presentes = [];
-        if (!document.data.ausentes) document.data.ausentes = [];
-        if (!document.data.tarde) document.data.tarde = [];
-        if (!document.data.justificacion) document.data.justificacion = [];
-        
-        // Inicializar otros campos que pueden ser undefined
-        if (!document.teacherId) document.teacherId = '';
-        if (!document.observations) document.observations = '';
-        if (!document.data.observations) document.data.observations = '';
-        
-        // Save to Firebase via service layer
-        await saveAttendanceDocumentFirebase(document);
-        
-        // Update local state
-        this.currentAttendanceDoc = document;
-        this._updateAttendanceRecordsFromDocument(document);
-        
-        // Update document collection
-        this._updateAttendanceDocumentsArray(document);
-        
-        // Clear cache in development mode
-        if (process.env.NODE_ENV === 'development') {
-          clearLocalStorage(LOCAL_STORAGE_KEYS.ATTENDANCE_DOCUMENTS);
-        }
-        
-        return document;
-      } catch (error) {
-        this.error = 'Error al guardar el documento de asistencia';
-        console.error('Error al guardar documento de asistencia:', error);
-        throw error;
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    _cleanJustifications(document: AttendanceDocument) {
-      if (document.data.justificacion && document.data.justificacion.length > 0) {
-        document.data.justificacion = document.data.justificacion.filter(justificacion => {
-          // Solo mantener justificaciones para estudiantes que:
-          // 1. Están en la lista 'ausentes' (esto es lo correcto)
-          // 2. Tienen estado 'Justificado' en attendanceRecords
-          const isInAusentes = document.data.ausentes.includes(justificacion.id);
-          const isJustificado = this.attendanceRecords[justificacion.id] === 'Justificado';
-          
-          return isInAusentes && isJustificado;
-        });
-      }
-    },
-
-    /**
-     * Helper method to update the attendanceDocuments array with a document
-     * Adds new or updates existing document
-     * 
-     * @param document - The document to update or add
-     */
-    _updateAttendanceDocumentsArray(document: AttendanceDocument) {
-      const index = this.attendanceDocuments.findIndex(
-        doc => doc.fecha === document.fecha && doc.classId === document.classId
+  // Getters
+  const getAttendanceByDateAndClass = computed(() => {
+    return (fecha: string, classId: string) => {
+      const doc = attendanceDocuments.value.find(doc => 
+        doc.fecha === fecha && doc.classId === classId
       );
-      
-      if (index !== -1) {
-        this.attendanceDocuments[index] = document;
-      } else {
-        this.attendanceDocuments.push(document);
-      }
-    },
+      return doc ? [doc] : [];
+    };
+  });
 
-    /**
-     * Add a justification to an attendance record
-     * 
-     * @param studentId - Student identifier
-     * @param date - Date string in YYYY-MM-DD format
-     * @param classId - Class identifier
-     * @param reason - Justification reason
-     * @param file - Optional file attachment
-     * @returns Promise resolving to boolean success indicator
-     */
-    async addJustificationToAttendance(
-      studentId: string,
-      date: string,
-      classId: string,
-      reason: string,
-      file: File | null
-    ) {
-      this.isLoading = true;
-      this.error = null;
-      
-      try {
-        const justification = { id: studentId, reason };
-        
-        // Save to Firebase via service layer
-        await addJustificationToAttendanceFirebase(date, classId, justification, file);
-        
-        // Update local state immediately for responsive UI
-        this.attendanceRecords[studentId] = 'Justificado';
-        
-        // Update current document if it matches
-        if (this.currentAttendanceDoc &&
-            this.currentAttendanceDoc.fecha === date &&
-            this.currentAttendanceDoc.classId === classId) {
-          
-          // Ensure student is in the tarde list
-          if (!this.currentAttendanceDoc.data.tarde.includes(studentId)) {
-            this.currentAttendanceDoc.data.tarde.push(studentId);
-          }
-          
-          // Remove from other lists
-          this.currentAttendanceDoc.data.ausentes = 
-            this.currentAttendanceDoc.data.ausentes.filter(id => id !== studentId);
-          
-          this.currentAttendanceDoc.data.presentes = 
-            this.currentAttendanceDoc.data.presentes.filter(id => id !== studentId);
-          
-          // Add or update justification
-          if (!this.currentAttendanceDoc.data.justificacion) {
-            this.currentAttendanceDoc.data.justificacion = [];
-          }
-          
-          const existingJustIndex = this.currentAttendanceDoc.data.justificacion.findIndex(j => j.id === studentId);
-          if (existingJustIndex !== -1) {
-            this.currentAttendanceDoc.data.justificacion[existingJustIndex].reason = reason;
-          } else {
-            this.currentAttendanceDoc.data.justificacion.push(justification);
-          }
-          
-          // Update documents array
-          this._updateAttendanceDocumentsArray(this.currentAttendanceDoc);
-        }
-        
-        // Clear cache
-        if (process.env.NODE_ENV === 'development') {
-          clearLocalStorage(LOCAL_STORAGE_KEYS.ATTENDANCE_DOCUMENTS);
-        }
-        
-        return true;
-      } catch (error) {
-        this.error = 'Error al añadir justificación';
-        console.error('Error al añadir justificación:', error);
-        throw error;
-      } finally {
-        this.isLoading = false;
-      }
-    },
+  const getObservationsByClass = computed(() => {
+    return (classId: string, fecha?: string) => {
+      return observations.value.filter(obs => 
+        obs.classId === classId && (!fecha || obs.fecha === fecha)
+      );
+    };
+  });
 
-    /**
-     * Add a class observation to history
-     * 
-     * @param classId - Class identifier
-     * @param date - Date string in YYYY-MM-DD format
-     * @param text - Observation text or object with formatted text
-     * @param author - Author name or identifier
-     */
-    async addObservationToHistory(classId: string, date: string, text: string | any, author: string): Promise<void> {
-      // Manejar tanto texto como objetos
-      let textToSave: string;
-      
-      if (typeof text === 'string') {
-        textToSave = text;
-      } else if (text && typeof text === 'object') {
-        // Si es un objeto, intentar extraer el texto formateado
-        textToSave = text.formattedText || text.text || JSON.stringify(text);
-      } else {
-        console.warn('Se recibió un tipo de dato no válido para la observación');
-        return;
-      }
-      
-      // Verificar que tenemos texto para guardar
-      if (!textToSave || !textToSave.trim()) {
-        console.warn('No hay texto válido para guardar como observación');
-        return;
-      }
-      
-      try {
-        console.log('Guardando observación:', { classId, date, textToSave, author });
-        // Use service function instead of direct Firebase calls
-        await addObservationToHistoryFirebase(classId, date, textToSave, author);
-        
-        // Update current document if it exists
-        if (this.currentAttendanceDoc && 
-            this.currentAttendanceDoc.fecha === date &&
-            this.currentAttendanceDoc.classId === classId) {
-          
-          this.currentAttendanceDoc.data.observations = textToSave;
-          await this.saveAttendanceDocument(this.currentAttendanceDoc);
-        }
-      } catch (error) {
-        console.error('Error adding observation to history:', error);
-        throw error;
-      }
-    },
+  const getJustificationsByStudent = computed(() => {
+    return (studentId: string, classId?: string, fecha?: string) => {
+      return justifications.value.filter(just => 
+        just.studentId === studentId && 
+        (!classId || just.classId === classId) && 
+        (!fecha || just.fecha === fecha)
+      );
+    };
+  });
+
+  // Getter para las fechas con actividades registradas
+  const dateAttendanceStatuses = computed(() => {
+    const statusMap = new Map<string, { type: string; count: number }>();
     
-    /**
-     * Update an existing observation
-     * 
-     * @param observationId - Observation document ID
-     * @param text - Updated observation text
-     */
-    async updateObservationInHistory(observationId: string, text: string): Promise<void> {
-      this.isLoading = true;
-      this.error = null;
-      try {
-        // Use service function instead of direct Firebase calls
-        await updateObservationInHistoryFirebase(observationId, text);
-        
-        // Reflect the change in current attendance document if relevant
-        if (this.currentAttendanceDoc) {
-          // Update the observations in the current attendance document if it needs to change
-          this.currentAttendanceDoc.data.observations = text;
-        }
-      } catch (error) {
-        console.error('Error al actualizar observaciones:', error);
-        this.error = 'Error al actualizar las observaciones';
-        throw error;
-      } finally {
-        this.isLoading = false;
+    attendanceDocuments.value.forEach(doc => {
+      if (doc.fecha) {
+        const status = statusMap.get(doc.fecha) || { type: 'attendance', count: 0 };
+        status.count++;
+        statusMap.set(doc.fecha, status);
       }
-    },
-    
-    /**
-     * Update the observations for a specific class and date
-     * 
-     * @param classId - The class ID
-     * @param date - The date in YYYY-MM-DD format
-     * @param observations - The observations text
-     * @returns Promise that resolves when observations have been updated
-     */
-    async updateObservations(classId: string, date: string, observations: string): Promise<void> {
-      this.isLoading = true;
-      this.error = null;
-      
-      try {
-        // Call the Firebase service to update observations
-        await updateObservationsFirebase(date, classId, observations);
-        
-        // If we have the current attendance document loaded and it matches this class/date
-        // update it in local state as well
-        if (this.currentAttendanceDoc && 
-            this.currentAttendanceDoc.classId === classId && 
-            this.currentAttendanceDoc.fecha === date) {
-          this.currentAttendanceDoc.data.observations = observations;
-        }
-      } catch (error) {
-        console.error('Error actualizando observaciones:', error);
-        this.error = 'Error al actualizar las observaciones';
-        throw error;
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    /**
-     * Fetch attendance records for a specific class and date
-     * 
-     * @param classId - The class ID to fetch records for
-     * @param date - The date to fetch records for in format 'YYYY-MM-DD'
-     * @returns Promise with the attendance records
-     */
-    async fetchAttendanceByClassAndDate(classId: string, date: string): Promise<Record<string, string>> {
-      this.isLoading = true;
-      this.error = null;
-      
-      try {
-        // First get the attendance document directly
-        const document = await getAttendanceDocumentFirebase(date, classId);
-        
-        if (document) {
-          // Document exists, update our local state with it
-          this.currentAttendanceDoc = document;
-          this._updateAttendanceRecordsFromDocument(document);
-          return this.attendanceRecords;
-        }
-        
-        // If no document was found, initialize empty records
-        this.attendanceRecords = {};
-        return this.attendanceRecords;
-      } catch (error) {
-        console.error('Error fetching attendance by class and date:', error);
-        this.error = 'Error al cargar los datos de asistencia';
-        return {};
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    /**
-     * Get observations history for a specific class, optionally filtered by date
-     * 
-     * @param classId - Optional class identifier, if not provided returns all observations
-     * @param date - Optional date filter in YYYY-MM-DD format
-     * @returns Observations history
-     */
-    async getObservationsHistory(classId?: string, date?: string) {
-      this.isLoading = true;
-      this.error = null;
-      
-      try {
-        // Use the service function to get observations history
-        const observations = await getObservationsHistoryFirebase(classId, date);
-        
-        // Store the observations in the store for access elsewhere
-        this.observationsHistory = observations;
-        
-        return observations;
-      } catch (error) {
-        console.error('Error getting observations history:', error);
-        this.error = 'Error al cargar las observaciones';
-        return [];
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    /**
-     * Validates if a date is valid for attendance registration (not in the future)
-     * @param date The date to validate in YYYY-MM-DD format
-     * @returns Boolean indicating if the date is valid for attendance
-     */
-    validateAttendanceDate(date: string): boolean {
-      if (!date || typeof date !== 'string') {
-        console.error('Formato de fecha inválido:', date);
-        return false;
-      }
-      
-      // Convert to a Date object
-      const parsedDate = parseISO(date);
-      
-      // Check if date is valid using isValid from date-fns
-      if (!isValid(parsedDate)) {
-        return false;
-      }
-      
-      // Compare with current date
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const dateIsValid = date <= today;
-      
-      if (!dateIsValid) {
-        console.warn(`La fecha ${date} es posterior a hoy (${today})`);
-      }
-      
-      return dateIsValid;
-    },
-    
-    /**
-     * Generates an attendance report based on provided criteria.
-     * @param params - Report parameters including date range, optional classId, optional studentId.
-     * @returns A structured report object or throws an error.
-     */
-    async generateReport(params: { 
-      classId?: string; 
-      studentId?: string; 
-      startDate: string; 
-      endDate: string; 
-    }): Promise<any> { // Consider defining a specific Report interface later
-      this.isLoading = true;
-      this.error = null;
-      
-      try {
-      const { classId, studentId, startDate, endDate } = params;
-      
-      // 1. Fetch relevant attendance data & related info
-      // Ensure attendance documents are loaded. A more robust implementation 
-      // might fetch specifically for the date range if data isn't guaranteed locally.
-      if (this.attendanceDocuments.length === 0) {
-        await this.fetchAttendanceDocuments(); 
-      }
-      
-      // Fetch class details for names
-      const classesStore = useClassesStore();
-      if (!classesStore.classes.length) {
-        await classesStore.fetchClasses();
-      }
-      const classNameMap = new Map(classesStore.classes.map(c => [c.id, c.name]));
-
-      // Placeholder for student names - requires integrating useStudentsStore
-      // const studentsStore = useStudentsStore(); 
-      // if (!studentsStore.students.length) { 
-      //   await studentsStore.fetchStudents(); 
-      // }
-      // const studentNameMap = new Map(studentsStore.students.map(s => [s.id, s.name]));
-
-      // 2. Filter documents based on parameters
-      const start = parseISO(startDate);
-      const end = parseISO(endDate);
-
-      if (!isValid(start) || !isValid(end)) {
-        throw new Error('Invalid start or end date provided for the report.');
-      }
-
-      const filteredDocs = this.attendanceDocuments.filter(doc => {
-        const docDate = parseISO(doc.fecha);
-        if (!isValid(docDate)) return false; // Skip invalid document dates
-        
-        const isWithinDateRange = docDate >= start && docDate <= end;
-        const matchesClass = !classId || doc.classId === classId;
-        
-        return isWithinDateRange && matchesClass;
-      });
-
-      // 3. Process filtered data to build the report details
-      const reportDetails: Array<{ 
-        date: string; 
-        studentId: string; 
-        studentName?: string; // Placeholder
-        classId: string; 
-        className?: string; 
-        status: AttendanceStatus; 
-        justification?: string 
-      }> = [];
-      
-      let presentCount = 0;
-      let absentCount = 0;
-      let tardyCount = 0; // Non-justified tardiness
-      let justifiedCount = 0; // Justified tardiness counts as attended but tracked separately
-      const uniqueClassDays = new Set<string>(); // Track unique class instances within the scope
-
-      filteredDocs.forEach(doc => {
-         uniqueClassDays.add(`${doc.fecha}-${doc.classId}`); // Count each class held on a specific day
-         const className = classNameMap.get(doc.classId) || doc.classId;
-
-         // Helper to process each student status within the document
-         const processStudent = (sId: string, status: AttendanceStatus, justification?: { reason?: string }) => {
-         // Filter by studentId if provided
-         if (!studentId || sId === studentId) {
-          // Replace placeholder when student store is available
-          // const studentName = studentNameMap.get(sId) || `Unknown (${sId.substring(0,5)})`; 
-          const studentName = `Student (${sId.substring(0, 5)}...)`; // Placeholder name
-
-          reportDetails.push({
-            date: doc.fecha,
-            studentId: sId,
-            studentName: studentName, 
-            classId: doc.classId,
-            className: className,
-            status: status,
-            justification: justification?.reason
-          });
-
-          // Increment summary counts
-          switch (status) {
-            case 'Presente': presentCount++; break;
-            case 'Ausente': absentCount++; break;
-            case 'Tardanza': tardyCount++; break; // Non-justified
-            case 'Justificado': justifiedCount++; break; // Justified
-          }
-         }
-         };
-
-         // Iterate through student lists in the document data
-         doc.data.presentes?.forEach(sId => processStudent(sId, 'Presente'));
-         doc.data.ausentes?.forEach(sId => processStudent(sId, 'Ausente'));
-         doc.data.tarde?.forEach(sId => {
-         const just = doc.data.justificacion?.find(j => j.id === sId);
-         if (just) {
-           processStudent(sId, 'Justificado', just); // Process as Justified
-         } else {
-           processStudent(sId, 'Tardanza'); // Process as Tardy (non-justified)
-         }
-         });
-      });
-
-      // 4. Calculate summary statistics
-      const totalRecordsProcessed = reportDetails.length; // Total entries matching criteria
-      // Attendance rate considers Presente + Justificado as attended for rate calculation
-      const attendedCount = presentCount + justifiedCount; 
-      // Avoid division by zero if no relevant records found
-      const attendanceRate = totalRecordsProcessed > 0 ? (attendedCount / totalRecordsProcessed) * 100 : 0;
-
-      // 5. Structure the final report object
-      const report = {
-        parameters: { 
-        startDate, 
-        endDate, 
-        classId: classId || 'All', 
-        className: classId ? (classNameMap.get(classId) || classId) : 'All Classes',
-        studentId: studentId || 'All',
-        // studentName: studentId ? studentNameMap.get(studentId) : 'All Students' // Add when available
-        },
-        summary: {
-        totalClassInstancesInScope: uniqueClassDays.size, // Number of unique class sessions in the date range/filter
-        totalAttendanceRecords: totalRecordsProcessed, // Total individual student records in the report
-        presentCount: presentCount,
-        absentCount: absentCount,
-        tardyCount: tardyCount, // Non-justified tardiness
-        justifiedTardyCount: justifiedCount, // Justified tardiness
-        overallAttendanceRate: parseFloat(attendanceRate.toFixed(2)), // Percentage
-        },
-        // Sort details for readability
-        details: reportDetails.sort((a, b) => { 
-         if (a.date !== b.date) return a.date.localeCompare(b.date);
-         if (a.className !== b.className) return (a.className || '').localeCompare(b.className || '');
-         return (a.studentName || '').localeCompare(b.studentName || '');
-        }),
-      };
-
-      // console.log('Generated Report:', report);
-      return report;
-
-      } catch (error) {
-      console.error('Error generating attendance report:', error);
-      this.error = `Failed to generate report: ${error instanceof Error ? error.message : (error ? error.toString() : 'Unknown error')}`;
-      throw error; // Re-throw the error for the calling component to handle
-      } finally {
-      this.isLoading = false;
-      }
-    },
-    
-   
-    /**
-     * Fetch attendance records within a specific date range.
-     * 
-     * @param startDate - Start date in 'YYYY-MM-DD' format
-     * @param endDate - End date in 'YYYY-MM-DD' format
-     * @returns Array of AttendanceRecord objects
-     */
-    async fetchAttendanceByDateRange(startDate: string, endDate: string) {
-      this.isLoading = true;
-      this.error = null;
-      
-      try {
-        // Use service layer to fetch data - centralize Firebase interactions
-        const records = await fetchAttendanceByDateRangeFirebase(startDate, endDate);
-        
-        // Update the records in the store
-        this.records = records;
-        
-        // Reconstruct attendance documents from records to maintain consistency
-        // between the two data sources
-        const documentMap = new Map<string, AttendanceDocument>();
-        
-        // Group by date and class to rebuild attendance documents
-        records.forEach(record => {
-          const key = `${record.Fecha}_${record.classId}`;
-          
-          // Create a new document if this combination doesn't exist yet
-          if (!documentMap.has(key)) {
-            documentMap.set(key, {
-              fecha: record.Fecha,
-              classId: record.classId,
-              teacherId: useAuthStore().user?.uid || '',
-              data: {
-                presentes: [],
-                ausentes: [],
-                tarde: [],
-                justificacion: [],
-                observations: ''
-              }
-            });
-          }
-          
-          const doc = documentMap.get(key)!;
-          
-          // Add student to the appropriate list based on attendance status
-          switch (record.status) {
-            case 'Presente':
-              if (!doc.data.presentes.includes(record.studentId)) {
-                doc.data.presentes.push(record.studentId);
-              }
-              break;
-            case 'Ausente':
-              if (!doc.data.ausentes.includes(record.studentId)) {
-                doc.data.ausentes.push(record.studentId);
-              }
-              break;
-            case 'Tardanza':
-              if (!doc.data.tarde.includes(record.studentId)) {
-                doc.data.tarde.push(record.studentId);
-              }
-              break;
-            case 'Justificado':
-              if (!doc.data.tarde.includes(record.studentId)) {
-                doc.data.tarde.push(record.studentId);
-              }
-              
-              // Add justification if it exists
-              if (record.justification) {
-                doc.data.justificacion.push({
-                  id: record.studentId,
-                  reason: typeof record.justification === 'string' ? 
-                    record.justification : 
-                    record.justification.reason || ''
-                });
-              }
-              break;
-          }
-        });
-        
-        // Update attendance documents
-        this.attendanceDocuments = Array.from(documentMap.values());
-        
-        return records;
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : (error ? error.toString() : 'Unknown error');
-        this.error = `Error al cargar los datos de asistencia: ${errorMessage}`;
-        console.error('Error al obtener asistencias por rango de fechas:', error);
-        throw error;
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    // Add a new method to get attendance status directly
-    async getStudentAttendanceStatus(studentId: string, date: string, classId?: string): Promise<string> {
-      try {
-        // First check if we already have this data in our store
-        if (this.records.length > 0) {
-          const existing = this.records.find(r => 
-            r.studentId === studentId && 
-            r.Fecha === date && 
-            (!classId || r.classId === classId)
-          );
-          
-          if (existing) {
-            return existing.status;
-          }
-        }
-        
-        // Otherwise fetch from Firebase
-        return await getAttendanceStatusFirebase(studentId, date, classId);
-      } catch (error) {
-        console.error('Error getting student attendance status:', error);
-        return 'Ausente'; // Default fallback
-      }
-    },
-    // Método para obtener registros de asistencia por clase y fecha
-    async fetchAttendanceRecords(params: FetchAttendanceRecordsParams | string): Promise<Record<string, AttendanceStatus>> {
-      this.isLoading = true;
-      this.error = null;
-      try {
-        // Si recibimos solo un string (forma antigua de llamar a la función), manejarlo como formato 'yyyy-MM'
-        if (typeof params === 'string') {
-          // console.log('fetchAttendanceRecords recibido como string:', params);
-          // Si solo tenemos un string 'yyyy-MM', convertirlo a objeto de parámetros
-          return this.fetchAttendanceRecords({
-            classId: this.selectedClass || 'all',
-            startDate: `${params}-01`, // Añadir día 01 para formar una fecha válida
-            endDate: new Date()
-          });
-        }
-        
-        // Manejo de objeto params
-        const { classId, startDate } = params;
-        
-        // Si no tenemos classId, utilizar el classId seleccionado actualmente o 'all'
-        const effectiveClassId = classId || this.selectedClass || 'all';
-        
-        // Si startDate es undefined o nulo, usar la fecha actual
-        if (!startDate) {
-          console.warn('startDate es undefined, usando fecha actual');
-          const today = new Date();
-          const formattedDate = format(today, 'yyyy-MM-dd');
-          await this.fetchAttendanceByClassAndDate(effectiveClassId, formattedDate);
-          return this.attendanceRecords;
-        }
-
-        // Si startDate es un string, necesitamos procesarlo
-        if (typeof startDate === 'string') {
-          let parsedDate;
-          
-          // Detectar si es formato 'yyyy-MM' o 'yyyy-MM-dd'
-          if (startDate.match(/^\d{4}-\d{2}$/)) {
-            // Formato año-mes, añadir día 01
-            parsedDate = parseISO(`${startDate}-01`);
-          } else {
-            // Asumir que es formato completo yyyy-MM-dd
-            parsedDate = parseISO(startDate);
-          }
-          
-          if (!isValid(parsedDate)) {
-            throw new Error(`Formato de fecha inválido: ${startDate}`);
-          }
-          
-          const formattedDate = format(parsedDate, 'yyyy-MM-dd');
-          await this.fetchAttendanceByClassAndDate(effectiveClassId, formattedDate);
-          return this.attendanceRecords;
-        } 
-        // Si startDate es un objeto Date
-        if (startDate instanceof Date) {
-          if (!isValid(startDate)) {
-            throw new Error(`Objeto de fecha inválido: ${startDate}`);
-          }
-          
-          const formattedDate = format(startDate, 'yyyy-MM-dd');
-          await this.fetchAttendanceByClassAndDate(effectiveClassId, formattedDate);
-          return this.attendanceRecords;
-        }
-        
-        throw new Error(`Tipo de fecha no soportado: ${typeof startDate}`);
-        
-      } catch (error) {
-        this.error = 'Error al cargar los registros de asistencia';
-        console.error('Error loading attendance records:', error);
-        throw error;
-      } finally {
-        this.isLoading = false;
-      }
-    },
-    /**
-   * Calcula los estudiantes con más ausencias en un rango de fechas
-   * 
-   * @param startDate Fecha inicial en formato YYYY-MM-DD
-   * @param endDate Fecha final en formato YYYY-MM-DD
-   * @param classId ID de clase opcional para filtrar resultados
-   * @param limit Número máximo de estudiantes a retornar (default: 15)
-   * @returns Array de objetos con id de estudiante y número de ausencias
-   */
-async calculateAbsentStudents(params: { 
-    startDate: string, 
-    endDate: string, 
-    classId?: string, 
-    limit?: number 
-  }) {
-    try {
-      const { startDate, endDate, classId, limit = 15 } = params;
-      
-      // Verificar parámetros
-      if (!startDate || !endDate) {
-        console.error('Se requieren fechas de inicio y fin para calcular ausencias');
-        return [];
-      }
-      
-      // Cargar registros de asistencia para el rango de fechas
-      const records = await this.fetchAttendanceByDateRange(startDate, endDate);
-      
-      // Filtrar por clase si se proporciona classId
-      const filteredRecords = classId 
-        ? records.filter(record => record.classId === classId)
-        : records;
-      
-      // Contar ausencias por estudiante
-      const absencesByStudent: Record<string, { count: number, lastDate: string, totalClasses: number, attendedClasses: number }> = {};
-      
-      filteredRecords.forEach(record => {
-        // Inicializar datos del estudiante si no existen
-        if (!absencesByStudent[record.studentId]) {
-          absencesByStudent[record.studentId] = { 
-            count: 0, 
-            lastDate: '', 
-            totalClasses: 0,
-            attendedClasses: 0
-          };
-        }
-        
-        // Incrementar total de clases para este estudiante
-        absencesByStudent[record.studentId].totalClasses++;
-        
-        // Si es ausencia, incrementar contador
-        if (record.status === 'Ausente') {
-          absencesByStudent[record.studentId].count++;
-          
-          // Actualizar la fecha de la última ausencia si es más reciente
-          if (!absencesByStudent[record.studentId].lastDate || 
-              record.Fecha > absencesByStudent[record.studentId].lastDate) {
-            absencesByStudent[record.studentId].lastDate = record.Fecha;
-          }
-        } else if (record.status === 'Presente') {
-          // Contar asistencias para calcular porcentaje
-          absencesByStudent[record.studentId].attendedClasses++;
-        }
-      });
-      
-      // Convertir a array y ordenar por número de ausencias (descendente)
-      const result = Object.entries(absencesByStudent)
-        .map(([studentId, data]) => ({
-          studentId,
-          absences: data.count,
-          lastAttendance: data.lastDate,
-          totalClasses: data.totalClasses,
-          attendedClasses: data.attendedClasses,
-          attendanceRate: data.totalClasses > 0 
-            ? (data.attendedClasses / data.totalClasses) * 100 
-            : 0
-        }))
-        .sort((a, b) => b.absences - a.absences);
-      
-      // Limitar resultados
-      return result.slice(0, limit);
-      
-    } catch (error) {
-      console.error('Error al calcular estudiantes ausentes:', error);
-      return [];
-    }
-  },
-    // Método para obtener la asistencia de un estudiante en una fecha específica
-    async generateProfessionalReport (params: {
-      classId?: string;
-      studentId?: string;
-      startDate: string;
-      endDate: string;
-    }): Promise<any> {
-      this.isLoading = true;
-      this.error = null;
-      try {
-        const { classId, studentId, startDate, endDate } = params;
-        
-        // Validar fechas
-        if (!isValid(parseISO(startDate)) || (endDate && !isValid(parseISO(endDate)))) {
-          throw new Error('Fechas inválidas proporcionadas para el reporte.');
-        }
-        
-        // Obtener registros de asistencia filtrados por clase y fecha
-        const records = await this.fetchAttendanceRecords({ classId, startDate, endDate });
-        
-        // Filtrar por studentId si se proporciona
-        const filteredRecords = studentId 
-          ? records.filter(record => record.studentId === studentId)
-          : records;
-        
-        // Procesar los registros para generar el reporte
-        const reportData = filteredRecords.map((record: AttendanceRecord) => {
-          // Ensure proper type handling for justification
-          let justificationText = '';
-          
-          if (record.justification) {
-            justificationText = typeof record.justification === 'string' 
-              ? record.justification 
-              : (record.justification.reason || '');
-          }
-          
-          return {
-            studentId: record.studentId,
-            status: record.status,
-            date: record.Fecha,
-            classId: record.classId,
-            justification: justificationText
-          };
-        });
-        
-        return reportData;
-      } catch (error) {
-        this.error = 'Error al generar el reporte profesional';
-        console.error('Error generating professional report:', error);
-        throw error;
-      } finally {
-        this.isLoading = false;
-      }
-    },
-    
-    /**
-     * Fetch all observations from the database
-     * 
-     * @returns Promise resolving to array of ClassObservation objects
-     */
-    async fetchObservations() {
-      this.isLoading = true;
-      this.error = null;
-      try {
-        // Get all observations via service layer
-        const observations = await getAllObservationsFirebase();
-        
-        // Update local state
-        this.observationsHistory = observations;
-        
-        return observations;
-      } catch (error) {
-        this.error = 'Error al cargar observaciones';
-        console.error('Error al cargar observaciones:', error);
-        return [];
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-        /**
-     * Gets attendance records for a specific class and date
-     * @param date - Date string in YYYY-MM-DD or YYYYMMDD format
-     * @param classId - Class identifier
-     * @returns Array of attendance records
-     */
-    async getAttendanceByDateAndClass(date: string, classId: string): Promise<AttendanceRecord[]> {
-      try {
-        // Normalizar formato de fecha
-        let formattedDate = date;
-        const dateRegexCompact = /^\d{8}$/;
-        if (dateRegexCompact.test(date)) {
-          // Convertir de YYYYMMDD a YYYY-MM-DD
-          formattedDate = `${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}`;
-        }
-        
-        // First check if we already have this document in our store
-        const existingDoc = this.attendanceDocuments.find(
-          doc => doc.fecha === formattedDate && doc.classId === classId
-        );
-        
-        if (existingDoc) {
-          // Convert document structure to array of attendance records
-          const records: AttendanceRecord[] = [];
-            // Process students present
-          existingDoc.data.presentes.forEach(studentId => {
-            records.push({
-              studentId,
-              classId,
-              Fecha: formattedDate,
-              status: 'Presente'
-            });
-          });
-          
-          // Process students absent
-          existingDoc.data.ausentes.forEach(studentId => {
-            records.push({
-              studentId,
-              classId,
-              Fecha: formattedDate,
-              status: 'Ausente'
-            });
-          });
-          
-          // Process students late
-          existingDoc.data.tarde.forEach(studentId => {
-            const isJustified = existingDoc.data.justificacion?.some(j => j.id === studentId);
-            records.push({
-              studentId,
-              classId,
-              Fecha: formattedDate,
-              status: isJustified ? 'Justificado' : 'Tardanza'
-            });
-          });
-          
-          return records;
-        }
-          // If not found in store, fetch from Firebase
-        return await getAttendanceByDateAndClassFirebase(formattedDate, classId);
-      } catch (error) {
-        console.error('Error getting attendance by date and class:', error);
-        return [];
-      }
-    },
-
-    // Nueva acción para obtener las ausencias de los estudiantes en un rango de fechas
-async getStudentAbsencesByDateRange(startDate: string, endDate: string, classId?: string, limit: number = 15) {
-  try {
-    // Get all attendance records within this date range if not already loaded
-    if (!this.lastFetch || this.records.length === 0) {
-      await this.fetchAttendanceByDateRange(startDate, endDate);
-    }
-    
-    // Track absences per student
-    const studentAbsences: Record<string, number> = {};
-    const studentLastAttendance: Record<string, string> = {};
-    
-    // Filter records to the requested date range
-    const filteredRecords = this.records.filter(record => {
-      const recordDate = record.Fecha;
-      return recordDate >= startDate && recordDate <= endDate;
     });
     
-    // Go through all the records and count absences
-    for (const record of filteredRecords) {
-      // Skip if we're filtering by classId and this record is for a different class
-      if (classId && record.classId !== classId) continue;
-      
-      const { studentId, Fecha: date, status } = record;
-      
-      // Initialize student tracking if not exists
-      if (!studentAbsences[studentId]) {
-        studentAbsences[studentId] = 0;
-        studentLastAttendance[studentId] = date;
-      }
-      
-      // Count absences
-      if (status === 'Ausente') {
-        studentAbsences[studentId]++;
-      } else {
-        // Update last attendance date if this is a present record and newer
-        if ((status === 'Presente' || status === 'Tardanza' || status === 'Justificado') && 
-            date > studentLastAttendance[studentId]) {
-          studentLastAttendance[studentId] = date;
-        }
-      }
-    }
-    
-    // Update active students list - ensure it's an array even if empty
-    this.activeStudents = this.activeStudents || [];
-    this.activeStudents = Object.keys(studentAbsences);
-    
-    // Convert to array and sort by absences (descending)
-    const result: StudentAbsenceRecord[] = Object.keys(studentAbsences).map(studentId => ({
-      studentId,
-      absences: studentAbsences[studentId],
-      lastAttendance: studentLastAttendance[studentId] || startDate
-    }));
-    
-    // Sort by number of absences (most first)
-    result.sort((a, b) => b.absences - a.absences);
-    
-    // Return limited number of results
-    return result.slice(0, limit);
-  } catch (error) {
-    console.error('Error getting student absences by date range:', error);
-    this.activeStudents = this.activeStudents || []; // Ensure it's never undefined
-    throw error;
-  }
-},    // REMOVE THIS FUNCTION FROM ACTIONS - It's now in getters
-    /* 
-    getStudentAttendanceRate(studentId: string, classId?: string, startDate?: string, endDate?: string): number {
-      // This version should be removed - it's now in getters
-    }
-    */
-    
-    /**
-     * Obtiene documentos de asistencia para una fecha específica
-     * 
-     * @param date - Fecha en formato 'yyyy-MM-dd'
-     * @returns Promise que resuelve a un array de documentos de asistencia
-     */
-    async fetchAttendanceByDate(date: string) {
-      this.isLoading = true;
-      this.error = null;
-      
-      try {
-        // Obtener documentos de asistencia solo para la fecha específica
-        const documents = await fetchAttendanceByDateFirebase(date);
-        
-        // Actualizar solo los documentos para esta fecha específica
-        // Mantendremos los documentos existentes para otras fechas
-        const existingDocs = this.attendanceDocuments.filter(doc => doc.fecha !== date);
-        this.attendanceDocuments = [...existingDocs, ...documents];
-        
-        // Actualizar la variable attendanceDocs para que esté disponible en los componentes
-        const attendanceDocs = documents;
-        
-        return attendanceDocs;
-      } catch (error) {
-        console.error('Error obteniendo asistencia por fecha:', error);
-        this.error = 'Error al obtener registros de asistencia para esta fecha';
-        return [];      } finally {
-        this.isLoading = false;
-      }
-    },
+    return Object.fromEntries(statusMap);
+  });
 
-    /**
-     * Updates the attendance analytics metrics
-     * This analyzes attendance records and calculates statistics
-     * @returns Promise that resolves when analytics have been updated
-     */
-    async    updateAnalytics(): Promise<void> {
-      try {
-        this.isLoading = true;
+  // Getter para observaciones del documento actual
+  const getObservations = computed(() => {
+    const observacion = currentAttendanceDoc.value?.data?.observación;
+    if (!observacion) return '';
+    
+    // Si es un array, unir con saltos de línea
+    if (Array.isArray(observacion)) {
+      return observacion.join('\n');
+    }
+    
+    // Si es string, devolverlo directamente
+    return observacion;
+  });
+
+  // Acciones
+  const normalizeDate = (date: string): string => {
+    try {
+      // Si la fecha está en formato YYYYMMDD
+      if (/^\d{8}$/.test(date)) {
+        return `${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}`;
+      }
+      // Si ya está en formato YYYY-MM-DD
+      if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return date;
+      }
+      // Si es una fecha válida, formatearla
+      const dateObj = new Date(date);
+      if (!isNaN(dateObj.getTime())) {
+        return format(dateObj, 'yyyy-MM-dd');
+      }
+      throw new Error('Formato de fecha inválido');
+    } catch (error) {
+      console.error('Error al normalizar fecha:', error);
+      throw error;
+    }
+  };
+
+  // Método de compatibilidad - alias para fetchAttendanceDocuments
+  const fetchAttendance = async (startDate?: string, endDate?: string) => {
+    return await fetchAttendanceDocuments(startDate, endDate);
+  };
+
+  const fetchAttendanceDocuments = async (startDate?: string, endDate?: string) => {
+    try {
+      loading.value = true;
+      error.value = null;
+
+      const authStore = useAuthStore();
+      const teacherId = authStore.user?.uid;
+
+      if (!teacherId) {
+        throw new Error('No hay usuario autenticado');
+      }
+
+      let documents: AttendanceDocument[] = [];
+      
+      if (startDate && endDate) {
+        // Usar el servicio centralizado para obtener documentos por rango de fechas
+        documents = await attendanceService.getAttendanceDocumentsByDateRange(
+          startDate, 
+          endDate, 
+          teacherId
+        );
+      } else {
+        // Para compatibilidad, obtener todas las fechas registradas
+        const registeredDates = await attendanceService.getRegisteredAttendanceDates(teacherId);
         
-        if (!this.attendanceDocuments || this.attendanceDocuments.length === 0) {
-          await this.fetchAttendanceDocuments();
+        // Filtrar solo fechas válidas (no IDs) 
+        const validDates = registeredDates.filter(date => {
+          // Verificar que es una fecha válida en formato YYYY-MM-DD
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (!dateRegex.test(date)) {
+            console.warn(`Fecha inválida encontrada: ${date}`);
+            return false;
+          }
+          return true;
+        });
+        
+        if (validDates.length === 0) {
+          documents = [];
+        } else {
+          // Obtener documentos para todas las fechas válidas
+          const promises = validDates.map(date => 
+            attendanceService.getAttendanceDocumentsByDate(date, teacherId)
+          );
+          
+          const results = await Promise.all(promises);
+          documents = results.flat();
+        }
+      }
+
+      attendanceDocuments.value = documents;
+      return documents;
+    } catch (err) {
+      error.value = 'Error al cargar los documentos de asistencia';
+      console.error('Error en fetchAttendanceDocuments:', err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchAttendanceDocument = async (date: string, classId: string, _forceReload = false) => {
+    try {
+      const formattedDate = normalizeDate(date);
+      const debugEnabled = typeof window !== 'undefined' && window.localStorage.getItem('attendance-debug') === 'true';
+      
+      if (debugEnabled) {
+        console.log('[AttendanceDebug] fetchAttendanceDocument: Buscando documento para fecha:', formattedDate, 'clase:', classId);
+      }
+      
+      // Obtener el teacherId del usuario autenticado
+      const authStore = useAuthStore();
+      const teacherId = authStore.user?.uid;
+      
+      if (!teacherId) {
+        throw new Error('No hay usuario autenticado para cargar asistencia');
+      }
+      
+      if (debugEnabled) {
+        console.log('[AttendanceDebug] fetchAttendanceDocument: TeacherId:', teacherId);
+      }
+      
+      // Usar el servicio centralizado con teacherId
+      const document = await attendanceService.getAttendanceDocument(formattedDate, classId, teacherId);
+      
+      if (document) {
+        if (debugEnabled) {
+          console.log('[AttendanceDebug] fetchAttendanceDocument: Documento encontrado:', JSON.parse(JSON.stringify(document)));
         }
         
-        // Calculate basic stats
-        const totalClasses = this.attendanceDocuments.length;
-        const uniqueStudents = new Set();
-        let totalPresentCount = 0;
+        // Verificar que el documento pertenece al profesor correcto
+        if (document.teacherId !== teacherId) {
+          console.warn('[AttendanceDebug] fetchAttendanceDocument: Documento pertenece a otro profesor:', document.teacherId, 'vs', teacherId);
+          currentAttendanceDoc.value = null;
+          attendanceRecords.value = {};
+          records.value = [];
+          return null;
+        }
         
-        // Per-class analytics
-        const byClass: Record<string, {
+        // Convertir los arrays de IDs a un objeto de estados de manera más precisa
+        const attendanceRecordsData: Record<string, AttendanceStatus> = {};
+        
+        // Primero, procesar todos los estudiantes con justificación para identificarlos
+        const justifiedStudents = new Set<string>();
+        document.data.justificacion?.forEach((justification: any) => {
+          if (justification.id || justification.studentId) {
+            const studentId = justification.id || justification.studentId;
+            justifiedStudents.add(studentId);
+            attendanceRecordsData[studentId] = 'Justificado';
+          }
+        });
+        
+        // Procesar presentes (solo si no están justificados)
+        document.data.presentes?.forEach((studentId: string) => {
+          if (!justifiedStudents.has(studentId)) {
+            attendanceRecordsData[studentId] = 'Presente';
+          }
+        });
+        
+        // Procesar tardanzas (solo si no están justificados)
+        document.data.tarde?.forEach((studentId: string) => {
+          if (!justifiedStudents.has(studentId)) {
+            attendanceRecordsData[studentId] = 'Tardanza';
+          }
+        });
+        
+        // Procesar ausentes (solo si no están justificados ni tienen otro estado)
+        document.data.ausentes?.forEach((studentId: string) => {
+          if (!justifiedStudents.has(studentId) && !attendanceRecordsData[studentId]) {
+            attendanceRecordsData[studentId] = 'Ausente';
+          }
+        });
+        
+        console.log('[AttendanceDebug] fetchAttendanceDocument: Registros de asistencia procesados:', attendanceRecordsData);
+        
+        // Actualizar el documento actual y los registros de asistencia
+        currentAttendanceDoc.value = document;
+        attendanceRecords.value = attendanceRecordsData;
+        
+        // Convertir a formato AttendanceRecord[] para compatibilidad con useAttendanceActions
+        const recordsData: AttendanceRecord[] = Object.entries(attendanceRecordsData).map(([studentId, status]) => ({
+          id: `${formattedDate}_${classId}_${studentId}`,
+          studentId,
+          classId,
+          fecha: formattedDate,
+          status,
+          createdAt: document.createdAt || new Date(),
+          updatedAt: document.updatedAt || new Date()
+        }));
+        
+        records.value = recordsData;
+        
+        // Registros finales con debugging condicional
+        if (debugEnabled) {
+          console.log('[AttendanceDebug] fetchAttendanceDocument: Records finales:', recordsData);
+        }
+        
+        // Esto permite que los componentes accedan a los datos normalizados
+        return document;
+      } else {
+        if (debugEnabled) {
+          console.log('[AttendanceDebug] fetchAttendanceDocument: No se encontró documento - limpiando datos');
+        }
+        // Limpiar datos si no se encuentra documento
+        currentAttendanceDoc.value = null;
+        attendanceRecords.value = {};
+        records.value = [];
+        return null;
+      }
+    } catch (error) {
+      console.error('[AttendanceDebug] fetchAttendanceDocument: Error:', error);
+      throw error;
+    }
+  };
+
+  const loadAttendanceDataForCalendar = async (startDate: string, endDate: string) => {
+    try {
+      loading.value = true;
+      error.value = null;
+      const authStore = useAuthStore();
+      if (!authStore.user?.uid) {
+        throw new Error('Usuario no autenticado');
+      }
+
+      // Obtener documentos de asistencia
+      await fetchAttendanceDocuments(startDate, endDate);
+
+      // Retornar las fechas con actividades usando el getter
+      return Object.entries(dateAttendanceStatuses.value).map(([date, status]) => ({
+        date,
+        type: status.type,
+        count: status.count
+      }));
+    } catch (err) {
+      error.value = 'Error al cargar los datos de asistencia';
+      console.error(err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const addObservationToHistory = async (observation: Omit<ClassObservation, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      loading.value = true;
+      error.value = null;
+      const newObservation = await addClassObservationFirebase(observation);
+      observations.value.push(newObservation);
+      return newObservation;
+    } catch (err) {
+      error.value = 'Error al agregar la observación';
+      console.error(err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const addJustification = async (justification: Omit<JustificationData, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      loading.value = true;
+      error.value = null;
+      const newJustification = await addJustificationFirebase(justification);
+      justifications.value.push(newJustification);
+      return newJustification;
+    } catch (err) {
+      error.value = 'Error al agregar la justificación';
+      console.error(err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchClassObservations = async (classId: string, date?: string) => {
+    try {
+      loading.value = true;
+      error.value = null;
+      const fetchedObservations = await getClassObservationsFirebase(classId, date);
+      observations.value = fetchedObservations;
+      return fetchedObservations;
+    } catch (err) {
+      error.value = 'Error al cargar las observaciones';
+      console.error(err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+  
+  const updateClassObservation = async (observation: ClassObservation) => {
+    try {
+      loading.value = true;
+      error.value = null;
+      const updatedObservation = await updateClassObservationFirebase(observation);
+      
+      // Actualiza la observación en el array local
+      const index = observations.value.findIndex(obs => obs.id === observation.id);
+      if (index !== -1) {
+        observations.value[index] = updatedObservation;
+      }
+      
+      return updatedObservation;
+    } catch (err) {
+      error.value = 'Error al actualizar la observación';
+      console.error(err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchJustifications = async (studentId: string, classId?: string, date?: string) => {
+    try {
+      loading.value = true;
+      error.value = null;
+      // Aquí iría la llamada al servicio para obtener las justificaciones
+      // Por ahora retornamos un array vacío
+      console.log('Fetching justifications for:', studentId, classId, date);
+      return [];
+    } catch (err) {
+      error.value = 'Error al cargar las justificaciones';
+      console.error(err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // Función para validar la fecha de asistencia
+  const validateAttendanceDate = (date: string): boolean => {
+    try {
+      const selectedDate = new Date(date);
+      const today = new Date();
+      
+      // La fecha no puede ser en el futuro
+      if (selectedDate > today) {
+        return false;
+      }
+      
+      // La fecha debe ser válida
+      if (isNaN(selectedDate.getTime())) {
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error al validar fecha:', error);
+      return false;
+    }
+  };
+
+  // Función optimizada para actualizar las analíticas - solo cuando se necesite
+  const updateAnalytics = async (skipIfRecentlyUpdated = true): Promise<void> => {
+    try {
+      // Check if analytics were recently updated to avoid redundant calls
+      if (skipIfRecentlyUpdated && analytics.value) {
+        const lastUpdate = analytics.value.lastUpdated;
+        if (lastUpdate && (Date.now() - lastUpdate.getTime()) < 300000) { // 5 minutes
+          return; // Skip update if analytics are fresh
+        }
+      }
+
+      loading.value = true;
+      error.value = null;
+
+      // Use cached documents if available instead of fetching again
+      if (attendanceDocuments.value.length === 0) {
+        // Only fetch if we don't have documents
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 30);
+
+        const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+        const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+
+        // Use simpler query without teacherId filter to avoid index issues
+        try {
+          await fetchAttendanceDocuments(formattedStartDate, formattedEndDate);
+        } catch (fetchError) {
+          console.warn('[Analytics] Error fetching documents for analytics, using cached data:', fetchError);
+          // Continue with existing cached data
+        }
+      }
+
+      // Calcular estadísticas usando documentos disponibles
+      const stats = {
+        totalClasses: 0,
+        totalStudents: 0,
+        averageAttendance: 0,
+        absentStudents: [],
+        lastUpdated: new Date(),
+        byClass: {} as Record<string, {
           present: number;
           absent: number;
           delayed: number;
           justified: number;
           total: number;
-        }> = {};
+        }>
+      };
+
+      // Procesar documentos para obtener estadísticas
+      attendanceDocuments.value.forEach(doc => {
+        if (doc.data) {
+          stats.totalClasses++;
+          
+          const classStats = stats.byClass[doc.classId] || {
+            present: 0,
+            absent: 0,
+            delayed: 0,
+            justified: 0,
+            total: 0
+          };
+
+          // Contar presentes
+          classStats.present += doc.data.presentes?.length || 0;
+          
+          // Contar ausentes
+          classStats.absent += doc.data.ausentes?.length || 0;
+          
+          // Contar tardanzas
+          classStats.delayed += doc.data.tarde?.length || 0;
+          
+          // Contar justificados
+          classStats.justified += doc.data.justificacion?.length || 0;
+          
+          // Total de estudiantes
+          classStats.total = classStats.present + classStats.absent + classStats.delayed + classStats.justified;
+          
+          stats.byClass[doc.classId] = classStats;
+        }
+      });
+
+      // Calcular promedio de asistencia
+      if (stats.totalClasses > 0) {
+        const totalPresent = Object.values(stats.byClass).reduce((sum, classStat) => sum + classStat.present, 0);
+        const totalStudents = Object.values(stats.byClass).reduce((sum, classStat) => sum + classStat.total, 0);
+        stats.averageAttendance = totalStudents > 0 ? (totalPresent / totalStudents) * 100 : 0;
+      }
+
+      // Actualizar el estado
+      analytics.value = stats;
+    } catch (err) {
+      error.value = 'Error al actualizar analíticas';
+      console.error('Error en updateAnalytics:', err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // Función para guardar documento de asistencia
+  const saveAttendanceDocument = async (attendanceDoc: AttendanceDocument): Promise<string> => {
+    try {
+      loading.value = true;
+      error.value = null;
+      
+      const authStore = useAuthStore();
+      const teacherId = authStore.user?.uid;
+      
+      if (!teacherId) {
+        throw new Error('Usuario no autenticado');
+      }
+      
+      // Asegurar que el documento tiene teacherId y uid
+      const documentToSave = {
+        ...attendanceDoc,
+        teacherId,
+        uid: teacherId
+      };
+      
+      // Usar el servicio centralizado para guardar
+      const docId = await attendanceService.saveAttendanceDocument(documentToSave);
+      
+      // Actualizar el store local
+      const existingIndex = attendanceDocuments.value.findIndex(
+        doc => doc.fecha === attendanceDoc.fecha && doc.classId === attendanceDoc.classId
+      );
+      
+      if (existingIndex !== -1) {
+        attendanceDocuments.value[existingIndex] = documentToSave;
+      } else {
+        attendanceDocuments.value.push(documentToSave);
+      }
+      
+      return docId;
+    } catch (err) {
+      error.value = 'Error al guardar documento de asistencia';
+      console.error('Error en saveAttendanceDocument:', err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // Función para actualizar observaciones
+  const updateObservations = async (fecha: string, classId: string, observations: string): Promise<string> => {
+    try {
+      loading.value = true;
+      error.value = null;
+      
+      const authStore = useAuthStore();
+      const teacherId = authStore.user?.uid;
+      
+      if (!teacherId) {
+        throw new Error('Usuario no autenticado');
+      }
+      
+      // Usar el servicio centralizado
+      const docId = await attendanceService.updateObservations(fecha, classId, observations, teacherId);
+      
+      // Actualizar el store local
+      const existingIndex = attendanceDocuments.value.findIndex(
+        doc => doc.fecha === fecha && doc.classId === classId
+      );
+      
+      if (existingIndex !== -1) {
+        // Actualizar documento existente
+        if (!attendanceDocuments.value[existingIndex].data.observación) {
+          attendanceDocuments.value[existingIndex].data.observación = [];
+        }
+        // Si observación es un array, añadir la nueva observación
+        if (Array.isArray(attendanceDocuments.value[existingIndex].data.observación)) {
+          (attendanceDocuments.value[existingIndex].data.observación as any[]).push({
+            text: observations,
+            timestamp: new Date().toISOString(),
+            author: authStore.user?.displayName || authStore.user?.email || 'Usuario'
+          });
+        } else {
+          // Si es string, convertir a array
+          attendanceDocuments.value[existingIndex].data.observación = [observations];
+        }
+      } else {
+        // Crear nuevo documento local si no existe
+        const newDoc: AttendanceDocument = {
+          id: docId,
+          fecha,
+          classId,
+          teacherId,
+          uid: teacherId,
+          data: {
+            presentes: [],
+            ausentes: [],
+            tarde: [],
+            justificacion: [],
+            observación: [observations]
+          },
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        attendanceDocuments.value.push(newDoc);
+      }
+      
+      return docId;
+    } catch (err) {
+      error.value = 'Error al actualizar observaciones';
+      console.error('Error en updateObservations:', err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // Función para obtener fechas con registros
+  const fetchAllAttendanceDates = async (): Promise<string[]> => {
+    try {
+      const authStore = useAuthStore();
+      const teacherId = authStore.user?.uid;
+      
+      const dates = await attendanceService.getRegisteredAttendanceDates(teacherId);
+      datesWithRecords.value = dates;
+      return dates;
+    } catch (err) {
+      console.error('Error al obtener fechas registradas:', err);
+      return [];
+    }
+  };
+
+  // Función para verificar si una clase está registrada en una fecha
+  const isClassRegistered = (fecha: string, classId: string): boolean => {
+    return attendanceDocuments.value.some(
+      doc => doc.fecha === fecha && doc.classId === classId
+    );
+  };
+  
+  // Función que verifica en Firestore si existe un registro de asistencia
+  // para una fecha y clase específicas
+  const checkAttendanceExists = async (fecha: string, classId: string): Promise<boolean> => {
+    try {
+      console.log(`[AttendanceStore] Verificando existencia de registro para fecha ${fecha} y clase ${classId}`)
+      // Primero verificamos en el store si ya tenemos el documento cargado
+      const existsInStore = isClassRegistered(fecha, classId)
+      if (existsInStore) {
+        console.log('[AttendanceStore] Registro encontrado en el store local')
+        return true
+      }
+      
+      // Si no está en el store, consultamos directamente a Firestore
+      const docId = `${fecha}_${classId}`
+      const docRef = doc(db, ATTENDANCE_COLLECTION, docId)
+      const docSnap = await getDoc(docRef)
+      
+      const exists = docSnap.exists()
+      console.log(`[AttendanceStore] Verificación en Firestore: ${exists ? 'Registro encontrado' : 'No hay registro'}`)
+      return exists
+    } catch (error) {
+      console.error('Error al verificar existencia de registro de asistencia:', error)
+      return false
+    }
+  };
+
+  // Función para obtener clases registradas en una fecha
+  const getRegisteredClassesForDate = (fecha: string): string[] => {
+    return attendanceDocuments.value
+      .filter(doc => doc.fecha === fecha)
+      .map(doc => doc.classId);
+  };
+
+  // Función para obtener estadísticas de una clase
+  const getClassStats = async (classId: string, startDate: string, endDate: string) => {
+    try {
+      return await attendanceService.getAttendanceStats(classId, startDate, endDate);
+    } catch (err) {
+      console.error('Error al obtener estadísticas de clase:', err);
+      throw err;
+    }
+  };
+
+  // Función para obtener información completa de clases en una fecha
+  const getDateClassInfo = (fecha: string, teacherId: string) => {
+    // Normalizar la fecha
+    const normalizedDate = fecha.replace(/\//g, '-');
+    
+    // Obtener clases registradas en esta fecha
+    const registeredClasses = attendanceDocuments.value
+      .filter(doc => doc.fecha === normalizedDate && doc.teacherId === teacherId)
+      .map(doc => ({ 
+        classId: doc.classId, 
+        hasRecord: true,
+        document: doc 
+      }));
+
+    // Obtener todas las clases del profesor desde classesStore
+    const classesStore = useClassesStore();
+    const allTeacherClasses = classesStore.getClassesByTeacherId?.(teacherId) || [];
+    
+    // Determinar clases no registradas
+    const registeredClassIds = registeredClasses.map(rc => rc.classId);
+    const unregisteredClasses = allTeacherClasses
+      .filter(cls => !registeredClassIds.includes(cls.id || cls.name))
+      .map(cls => ({ 
+        classId: cls.id || cls.name, 
+        hasRecord: false,
+        className: cls.name 
+      }));
+
+    return {
+      registeredClasses,
+      unregisteredClasses,
+      totalClasses: registeredClasses.length + unregisteredClasses.length,
+      hasRegistrations: registeredClasses.length > 0
+    };
+  };
+
+  // Función para obtener los días programados de una clase
+  const getClassScheduleDays = (classId: string): string[] => {
+    // Esta función debería obtener los días desde el store de clases
+    const classesStore = useClassesStore();
+    const classData = classesStore.getClassById?.(classId);
+    return classData?.schedule?.slots?.map(slot => slot.day) || [];
+  };
+
+  // Función para agregar justificación con archivo
+  const addJustificationToAttendance = async (
+    studentId: string,
+    fecha: string,
+    classId: string,
+    reason: string,
+    _file?: File // TODO: Implementar subida de archivo (prefixed with _ to indicate unused)
+  ) => {
+    try {
+      const authStore = useAuthStore();
+      const teacherId = authStore.user?.uid;
+      
+      if (!teacherId) {
+        throw new Error('Usuario no autenticado');
+      }
+      
+      // Crear objeto JustificationData
+      const justificationData: JustificationData = {
+        id: studentId,
+        studentId,
+        classId,
+        fecha,
+        reason,
+        documentUrl: '', // Se actualizará después de subir el archivo
+        approvalStatus: 'pending',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        timeLimit: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 días desde ahora
+      };
+      
+      // Implementar subida de archivo y guardado de justificación
+      await attendanceService.addJustification(fecha, classId, justificationData, teacherId);
+      console.log('Justificación guardada correctamente');
+    } catch (err) {
+      console.error('Error al guardar justificación:', err);
+    }
+  };
+
+  // Función de debugging avanzado para el sistema de asistencia
+  const debugAttendanceSystem = async (date: string, classId: string, teacherId: string) => {
+    try {
+      console.log('  - ClassId:', classId);
+      console.log('  - TeacherId:', teacherId);
+      
+      if (!teacherId) {
+        console.error('❌ No hay teacherId - usuario no autenticado');
+        return;
+      }
+      
+      // Probar el método original
+      console.log('\n1. Probando método original getAttendanceDocument...');
+      const originalResult = await attendanceService.getAttendanceDocument(normalizeDate(date), classId, teacherId);
+      console.log('   Resultado:', originalResult ? 'ENCONTRADO' : 'NO ENCONTRADO');
+      if (originalResult) {
+        console.log('   Documento ID:', originalResult.id);
+        console.log('   TeacherId del documento:', originalResult.teacherId);
+        console.log('   Datos de asistencia:', {
+          presentes: originalResult.data.presentes?.length || 0,
+          ausentes: originalResult.data.ausentes?.length || 0,
+          tarde: originalResult.data.tarde?.length || 0,
+          justificacion: originalResult.data.justificacion?.length || 0
+        });
+      }
+      
+      // Probar búsqueda por todos los documentos de la fecha
+    
+      console.log('\n2. Probando búsqueda por fecha sin filtros...');
+      const dateDocuments = await attendanceService.getAttendanceDocumentsByDate(normalizeDate(date));
+      console.log(`   Documentos encontrados para la fecha: ${dateDocuments.length}`);
+      dateDocuments.forEach((doc, index) => {
+        console.log(`   Documento ${index + 1}:`, {
+          id: doc.id,
+          classId: doc.classId,
+          teacherId: doc.teacherId,
+          fecha: doc.fecha,
+          estudiantesTotal: (doc.data.presentes?.length || 0) + (doc.data.ausentes?.length || 0) + (doc.data.tarde?.length || 0) + (doc.data.justificacion?.length || 0)
+        });
+      });
+      
+      // Probar búsqueda por profesor
+      console.log('\n3. Probando búsqueda por teacherId...');
+      const teacherDocuments = await attendanceService.getAttendanceDocumentsByDate(normalizeDate(date), teacherId);
+      console.log(`   Documentos encontrados para el profesor: ${teacherDocuments.length}`);
+      teacherDocuments.forEach((doc, index) => {
+        console.log(`   Documento ${index + 1}:`, {
+          id: doc.id,
+          classId: doc.classId,
+          teacherId: doc.teacherId,
+          esLaClaseCorrecta: doc.classId === classId
+        });
+      });
+      
+      // Verificar si existe un documento para esta clase específica del profesor
+      const targetDocument = teacherDocuments.find(doc => doc.classId === classId);
+      if (targetDocument) {
+        console.log('\n✅ DOCUMENTO OBJETIVO ENCONTRADO:');
+        console.log('   ID:', targetDocument.id);
+        console.log('   Estados de estudiantes:', {
+          presentes: targetDocument.data.presentes,
+          ausentes: targetDocument.data.ausentes,
+          tarde: targetDocument.data.tarde,
+          justificados: targetDocument.data.justificacion?.map((j: any) => j.id || j.studentId)
+        });
+      } else {
+        console.log('\n❌ NO SE ENCONTRÓ DOCUMENTO PARA ESTA COMBINACIÓN ESPECÍFICA');
+        console.log('   Verificar que existe un documento de asistencia para:');
+        console.log('   - Fecha:', normalizeDate(date));
+        console.log('   - Clase:', classId);
+        console.log('   - Profesor:', teacherId);
+      }
+      
+      console.log('=== FIN DEBUG ===\n');
+      
+      return {
+        originalResult,
+        dateDocuments,
+        teacherDocuments,
+        targetDocument
+      };
+    } 
+    catch (error) {
+      console.error('Error en debugging:', error);
+      throw error;
+    } finally {
+      // Intentionally empty finally block to satisfy parser
+    }
+    
+  }
+
+  /**
+   * Función para obtener todas las ausencias de un estudiante en un rango de fechas
+   */
+  const getStudentAbsencesByDateRange = async (studentId: string, startDate: string, endDate: string) => {
+    try {
+      loading.value = true;
+      error.value = null;
+      
+      console.log(`[Attendance] Fetching absences for student ${studentId} from ${startDate} to ${endDate}`);
+      
+      // Get all attendance documents in date range
+      const attendanceDocs = await fetchAttendanceDocuments(startDate, endDate);
+      
+      // Filter for absences for this student
+      const absences = attendanceDocs.filter(doc => {
+        const studentRecord = doc.students?.[studentId];
+        return studentRecord && 
+               (studentRecord.status === 'Ausente' || 
+                studentRecord.status === 'Justificado');
+      });
+      
+      // Format the results
+      const result = absences.map(doc => {
+        const studentRecord = doc.students?.[studentId];
+        if (!studentRecord) return null;
         
-        // Calculate absences by student
-        const absencesByStudent: Record<string, number> = {};
-        const lastAttendanceByStudent: Record<string, string> = {};
+        return {
+          id: doc.id,
+          date: doc.fecha,
+          classId: doc.classId,
+          status: studentRecord.status,
+          reason: studentRecord.justification || null,
+          createdAt: doc.createdAt || null
+        };
+      }).filter(Boolean); // Remove any null entries
+      
+      console.log(`[Attendance] Found ${result.length} absences for student ${studentId}`);
+      return result;
+      
+    } catch (err) {
+      error.value = 'Error fetching student absences';
+      console.error('[Attendance] Error in getStudentAbsencesByDateRange:', err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  /**
+   * Obtiene registros de asistencia de un estudiante específico en un rango de fechas
+   * usando consulta optimizada a Firestore
+   */
+  const getStudentAttendanceByDateRange = async (
+    studentId: string, 
+    startDate: string, 
+    endDate: string, 
+    classId?: string
+  ) => {
+    try {
+      loading.value = true;
+      error.value = null;
+      
+      console.log(`[Attendance] Fetching attendance for student ${studentId} from ${startDate} to ${endDate}`);
+      
+      // Usar consulta optimizada por rango de fechas
+      const documents = await fetchAttendanceDocuments(startDate, endDate);
+      
+      // Procesar documentos para extraer registros del estudiante
+      const studentRecords = [];
+      
+      documents.forEach(doc => {
+        // Verificar si hay filtro de clase
+        if (classId && doc.classId !== classId) {
+          return;
+        }
         
-        // Process attendance documents to build analytics
-        for (const doc of this.attendanceDocuments) {
-          if (!doc.data) continue;
-          
-          // Initialize class stats if not exists
-          if (!byClass[doc.classId]) {
-            byClass[doc.classId] = {
-              present: 0,
-              absent: 0,
-              delayed: 0,
-              justified: 0,
-              total: 0
-            };
-          }
-          
-          // Count present students
-          const presentCount = doc.data.presentes?.length || 0;
-          byClass[doc.classId].present += presentCount;
-          byClass[doc.classId].total += presentCount;
-          totalPresentCount += presentCount;
-          
-          // Add to unique students
-          doc.data.presentes?.forEach(id => uniqueStudents.add(id));
-          
-          // Count late students
-          const lateCount = (doc.data.tarde?.length || 0);
-          byClass[doc.classId].delayed += lateCount;
-          byClass[doc.classId].total += lateCount;
-          
-          // Add to unique students
-          doc.data.tarde?.forEach(id => uniqueStudents.add(id));
-          
-          // Track justified students
-          const justifiedStudentIds = new Set(
-            (doc.data.justificacion || []).map(j => j.id)
-          );
-          
-          // Count absent students (including justified)
-          const absentCount = doc.data.ausentes?.length || 0;
-          byClass[doc.classId].absent += absentCount;
-          byClass[doc.classId].total += absentCount;
-          
-          // Track justified count separately
-          const justifiedCount = doc.data.ausentes?.filter(id => justifiedStudentIds.has(id)).length || 0;
-          byClass[doc.classId].justified += justifiedCount;
-          
-          // Add to unique students
-          doc.data.ausentes?.forEach(id => {
-            uniqueStudents.add(id);
-            
-            // Track absences by student
-            absencesByStudent[id] = (absencesByStudent[id] || 0) + 1;
-            
-            // Track last attendance date
-            if (!lastAttendanceByStudent[id] || doc.fecha > lastAttendanceByStudent[id]) {
-              lastAttendanceByStudent[id] = doc.fecha;
-            }
+        // Verificar en presentes
+        if (doc.data.presentes?.includes(studentId)) {
+          studentRecords.push({
+            id: `${doc.fecha}_${doc.classId}_${studentId}_presente`,
+            Fecha: doc.fecha,
+            fecha: doc.fecha,
+            classId: doc.classId,
+            studentId,
+            status: 'Presente',
+            createdAt: doc.createdAt || new Date()
           });
         }
         
-        // Calculate top absent students
-        const absentStudents = Object.entries(absencesByStudent)
-          .map(([studentId, absences]) => ({
+        // Verificar en ausentes
+        if (doc.data.ausentes?.includes(studentId)) {
+          const justification = doc.data.justificacion?.find(j => j.id === studentId);
+          studentRecords.push({
+            id: `${doc.fecha}_${doc.classId}_${studentId}_ausente`,
+            Fecha: doc.fecha,
+            fecha: doc.fecha,
+            classId: doc.classId,
             studentId,
-            absences,
-            lastAttendance: lastAttendanceByStudent[studentId] || ''
-          }))
-          .sort((a, b) => b.absences - a.absences)
-          .slice(0, 10); // Top 10 absent students
+            status: justification ? 'Justificado' : 'Ausente',
+            justification: justification?.reason,
+            createdAt: doc.createdAt || new Date()
+          });
+        }
         
-        // Calculate average attendance
-        const totalStudents = uniqueStudents.size;
-        const averageAttendance = totalStudents > 0 
-          ? Math.round((totalPresentCount / (totalClasses * totalStudents)) * 100) 
-          : 0;
-        
-        // Set analytics in store
-        this.analytics = {
-          totalClasses,
-          totalStudents,
-          averageAttendance,
-          absentStudents,
-          byClass
-        };
-        
-        console.log('Analytics updated:', this.analytics);
-      } catch (error) {
-        console.error('Error updating analytics:', error);
-        throw error;
-      } finally {
-        this.isLoading = false;
+        // Verificar en tarde
+        if (doc.data.tarde?.includes(studentId)) {
+          const justification = doc.data.justificacion?.find(j => j.id === studentId);
+          studentRecords.push({
+            id: `${doc.fecha}_${doc.classId}_${studentId}_tarde`,
+            Fecha: doc.fecha,
+            fecha: doc.fecha,
+            classId: doc.classId,
+            studentId,
+            status: justification ? 'Justificado' : 'Tardanza',
+            justification: justification?.reason,
+            createdAt: doc.createdAt || new Date()
+          });
+        }
+      });
+      
+      // Ordenar por fecha (más reciente primero)
+      studentRecords.sort((a, b) => {
+        return new Date(b.Fecha).getTime() - new Date(a.Fecha).getTime();
+      });
+      
+      console.log(`[Attendance] Found ${studentRecords.length} records for student ${studentId}`);
+      return studentRecords;
+      
+    } catch (err) {
+      error.value = 'Error fetching student attendance by date range';
+      console.error('[Attendance] Error in getStudentAttendanceByDateRange:', err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  /**
+   * Función para obtener todas las observaciones de un maestro
+   * Usa el servicio de attendance para obtener observaciones estructuradas
+   */
+  const fetchAllObservationsForTeacher = async (teacherId: string, classId?: string, force = false) => {
+    try {
+      loading.value = true;
+      error.value = null;
+      const cacheKey = classId ? `${teacherId}_${classId}` : `${teacherId}_ALL`;
+      const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+      const now = Date.now();
+
+      // Si hay datos en caché y no han expirado, usarlos
+      if (!force && observationsCache.value[cacheKey] && (now - observationsCache.value[cacheKey].lastFetch < CACHE_TTL)) {
+        observationsHistory.value = observationsCache.value[cacheKey].data;
+        console.log(`[AttendanceStore] Usando observaciones cacheadas para ${cacheKey}`);
+        return observationsCache.value[cacheKey].data;
       }
-    }  }
+
+      console.log(`[AttendanceStore] Fetching all observations for teacher: ${teacherId}${classId ? ', class: ' + classId : ''}`);
+      // Obtener todas las observaciones usando el servicio mejorado
+      const allDocuments = await attendanceService.findAttendanceDocuments({
+        teacherId: teacherId,
+        ...(classId ? { classId } : {})
+      });
+      console.log(`[AttendanceStore] Found ${allDocuments.length} attendance documents for teacher`);
+      const allObservations: ClassObservation[] = [];
+      for (const doc of allDocuments) {
+        try {
+          const structuredObs = await attendanceService.getStructuredObservations(
+            doc.fecha, 
+            doc.classId, 
+            teacherId
+          );
+          const classObservations: ClassObservation[] = structuredObs.map(obs => ({
+            id: obs.id || `obs-${Date.now()}-${Math.random()}`,
+            classId: doc.classId,
+            date: doc.fecha, // Campo obligatorio
+            fecha: doc.fecha,
+            type: (obs.type as 'general' | 'comportamiento' | 'logro' | 'contenido' | 'dinamica') || 'general',
+            content: {
+              text: obs.content || '',
+              bulletPoints: [],
+              taggedStudents: obs.tags || [],
+              works: [],
+              classDynamics: []
+            },
+            author: obs.author,
+            authorId: teacherId, // Campo obligatorio
+            createdAt: obs.timestamp || new Date(),
+            updatedAt: obs.timestamp || new Date(),
+            priority: 'media' as const,
+            requiresFollowUp: false,
+            text: obs.content || '' // Campo obligatorio
+          }));
+          allObservations.push(...classObservations);
+        } catch (obsError) {
+          console.warn(`[AttendanceStore] Error processing observations for document ${doc.id}:`, obsError);
+          if (doc.data.observación && typeof doc.data.observación === 'string') {
+            const legacyObservation: ClassObservation = {
+              id: `legacy-${doc.id}`,
+              classId: doc.classId,
+              date: doc.fecha, // Campo obligatorio
+              fecha: doc.fecha,
+              type: 'general',
+              content: {
+                text: doc.data.observación,
+                bulletPoints: [],
+                taggedStudents: [],
+                works: [],
+                classDynamics: []
+              },
+              author: teacherId,
+              authorId: teacherId, // Campo obligatorio
+              createdAt: doc.createdAt || new Date(),
+              updatedAt: doc.updatedAt || new Date(),
+              priority: 'media',
+              requiresFollowUp: false,
+              text: doc.data.observación // Campo obligatorio
+            };
+            allObservations.push(legacyObservation);
+          }
+        }
+      }
+      console.log(`[AttendanceStore] Processed ${allObservations.length} total observations`);
+      // Actualizar el estado y el caché
+      observationsHistory.value = allObservations;
+      observationsCache.value[cacheKey] = {
+        data: allObservations,
+        lastFetch: now
+      };
+      return allObservations;
+    } catch (err) {
+      error.value = 'Error al cargar el historial de observaciones del maestro';
+      console.error('[AttendanceStore] Error in fetchAllObservationsForTeacher:', err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  /**
+   * Función para obtener todas las observaciones de una clase específica
+   * Obtiene observaciones de TODOS los profesores para esa clase
+   */
+  const fetchObservationsForClass = async (classId: string, force = false) => {
+    try {
+      loading.value = true;
+      error.value = null;
+      const cacheKey = `CLASS_${classId}`;
+      const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+      const now = Date.now();
+
+      // Si hay datos en caché y no han expirado, usarlos
+      if (!force && observationsCache.value[cacheKey] && (now - observationsCache.value[cacheKey].lastFetch < CACHE_TTL)) {
+        const cachedData = observationsCache.value[cacheKey].data;
+        console.log(`[AttendanceStore] Usando observaciones cacheadas para clase ${classId}:`, cachedData);
+        return cachedData;
+      }
+
+      console.log(`[AttendanceStore] Fetching ALL observations for class: ${classId}`);
+      
+      // Obtener todas las observaciones de la clase usando el servicio mejorado
+      const allDocuments = await attendanceService.findAttendanceDocuments({
+        classId: classId
+        // No filtrar por teacherId para obtener observaciones de todos los profesores
+      });
+      
+      console.log(`[AttendanceStore] Found ${allDocuments.length} attendance documents for class ${classId}`);
+      
+      const allObservations: ClassObservation[] = [];
+      for (const doc of allDocuments) {
+        try {
+          const structuredObs = await attendanceService.getStructuredObservations(
+            doc.fecha, 
+            doc.classId, 
+            doc.teacherId
+          );
+          if (structuredObs && Array.isArray(structuredObs)) {
+            // Transformar las observaciones estructuradas para cumplir con la interfaz ClassObservation
+            const transformedObs: ClassObservation[] = structuredObs.map(obs => ({
+              id: obs.id || `${doc.fecha}-${doc.classId}-${Date.now()}`,
+              classId: obs.classId || doc.classId,
+              date: obs.fecha || doc.fecha, // Campo obligatorio
+              fecha: obs.fecha || doc.fecha, // Compatibilidad
+              type: obs.type || 'general',
+              content: obs.content || { text: obs.text || '' },
+              author: obs.author || 'Usuario del Sistema',
+              authorId: obs.authorId || doc.teacherId || 'sistema', // Campo obligatorio
+              authorName: obs.author || 'Usuario del Sistema',
+              createdAt: obs.createdAt || new Date(),
+              updatedAt: obs.updatedAt || new Date(),
+              priority: obs.priority || 'media',
+              requiresFollowUp: obs.requiresFollowUp || false,
+              text: obs.content?.text || obs.text || '', // Campo obligatorio
+              studentId: obs.studentId,
+              studentName: obs.studentName,
+              tags: obs.tags,
+              images: obs.images || []
+            }));
+            allObservations.push(...transformedObs);
+          }
+        } catch (obsErr) {
+          console.warn(`[AttendanceStore] Error getting observations from document ${doc.fecha}-${doc.classId}-${doc.teacherId}:`, obsErr);
+          // Continuar con el siguiente documento en caso de error
+        }
+      }
+
+      // Ordenar por fecha/hora de creación
+      allObservations.sort((a, b) => {
+        const getDate = (obs: ClassObservation): Date => {
+          if (obs.createdAt) {
+            if (typeof obs.createdAt === 'string') return new Date(obs.createdAt);
+            if (obs.createdAt instanceof Date) return obs.createdAt;
+            if (typeof obs.createdAt === 'object' && 'seconds' in obs.createdAt) {
+              return new Date((obs.createdAt as any).seconds * 1000);
+            }
+          }
+          if (obs.fecha) return new Date(obs.fecha);
+          return new Date();
+        };
+        return getDate(b).getTime() - getDate(a).getTime();
+      });
+
+      console.log(`[AttendanceStore] Successfully processed ${allObservations.length} total observations for class ${classId}`);
+
+      // Guardar en caché
+      observationsCache.value[cacheKey] = {
+        data: allObservations,
+        lastFetch: now
+      };
+
+      return allObservations;
+    } catch (err) {
+      error.value = 'Error al cargar las observaciones de la clase';
+      console.error('[AttendanceStore] Error in fetchObservationsForClass:', err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchTopAbsentStudentsByRange = async(
+    startDate: string,
+    endDate: string,
+    limit: number,
+    classId?: string
+  ): Promise<Array<{ studentId: string; studentName: string; absences: number; percentage: number; totalPossibleClasses: number }>> => {
+    loading.value = true;
+    error.value = null;
+    try {
+      console.log(`[AttendanceStore] Fetching top absent students for range: ${startDate} - ${endDate}, class: ${classId || 'all'}, limit: ${limit}`);
+      const normalizedStartDate = normalizeDate(startDate);
+      const normalizedEndDate = normalizeDate(endDate);
+
+      let queryRef = query(
+        collection(db, ATTENDANCE_COLLECTION),
+        where('fecha', '>=', normalizedStartDate),
+        where('fecha', '<=', normalizedEndDate)
+      );
+
+      if (classId) {
+        queryRef = query(queryRef, where('classId', '==', classId));
+      }
+
+      const querySnapshot = await getDocs(queryRef);
+      const attendanceDocs: AttendanceDocument[] = [];
+      querySnapshot.forEach((doc: DocumentData) => {
+        attendanceDocs.push({ id: doc.id, ...doc.data() } as AttendanceDocument);
+      });
+
+      console.log(`[AttendanceStore] Found ${attendanceDocs.length} attendance documents for the range.`);
+
+      const studentAbsenceMap: Map<string, { absences: number; totalPossibleClasses: number }> = new Map();
+      const classDatesMap = new Map<string, Set<string>>(); // classId -> Set<date>
+
+      attendanceDocs.forEach(doc => {
+        if (!classDatesMap.has(doc.classId)) {
+          classDatesMap.set(doc.classId, new Set());
+        }
+        classDatesMap.get(doc.classId)!.add(doc.fecha);
+
+        doc.data.ausentes?.forEach(studentId => {
+          const current = studentAbsenceMap.get(studentId) || { absences: 0, totalPossibleClasses: 0 };
+          studentAbsenceMap.set(studentId, { ...current, absences: current.absences + 1 });
+        });
+      });
+      
+      let totalUniqueClassSessions = 0;
+      classDatesMap.forEach(dates => {
+        totalUniqueClassSessions += dates.size;
+      });
+
+      studentAbsenceMap.forEach((stats, studentId) => {
+          if (classId && classDatesMap.has(classId)) {
+             studentAbsenceMap.set(studentId, { ...stats, totalPossibleClasses: classDatesMap.get(classId)!.size });
+          } else if (!classId) {
+            // If no specific classId, this is complex. For now, use total sessions as a proxy.
+            // This needs refinement based on actual student enrollment per class.
+            studentAbsenceMap.set(studentId, { ...stats, totalPossibleClasses: totalUniqueClassSessions });
+          } else {
+            // classId provided, but no records for it, so student couldn't have attended.
+            studentAbsenceMap.set(studentId, { ...stats, totalPossibleClasses: 0 });
+          }
+      });
+
+      const studentsStore = useStudentsStore();
+      const topAbsentees = Array.from(studentAbsenceMap.entries())
+        .map(([studentId, stats]) => {
+          const student = studentsStore.getStudentById(studentId);
+          const studentName = student ? `${student.nombre} ${student.apellido}` : 'Unknown Student';
+          const percentage = stats.totalPossibleClasses > 0 ? (stats.absences / stats.totalPossibleClasses) * 100 : 0;
+          return {
+            studentId,
+            studentName,
+            absences: stats.absences,
+            percentage: parseFloat(percentage.toFixed(2)),
+            totalPossibleClasses: stats.totalPossibleClasses
+          };
+        })
+        .filter(s => s.absences > 0)
+        .sort((a, b) => b.absences - a.absences || b.percentage - a.percentage)
+        .slice(0, limit);
+
+      console.log('[AttendanceStore] Top absent students:', topAbsentees);
+      return topAbsentees;
+    } catch (err) {
+      console.error('[AttendanceStore] Error in fetchTopAbsentStudentsByRange:', err);
+      error.value = 'Error al calcular los estudiantes más ausentes.';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  return {
+    // Estado
+    attendanceRecords,
+    records,
+    observations,
+    observationsHistory,
+    justifications,
+    loading,
+    error,
+    selectedDate,
+    selectedClass,
+    attendanceDocuments,
+    currentAttendanceDoc,
+    datesWithRecords,
+    analytics,
+
+    // Getters
+    getAttendanceByDateAndClass,
+    getObservationsByClass,
+    getJustificationsByStudent,
+    dateAttendanceStatuses,
+    getObservations,
+
+    // Acciones
+    fetchAttendance,
+    fetchAttendanceDocuments,
+    fetchAttendanceDocument,
+    getStudentAbsencesByDateRange,
+    loadAttendanceDataForCalendar,
+    addObservationToHistory,
+    addJustification,
+    fetchClassObservations,
+    updateClassObservation,
+    fetchAllObservationsForTeacher,
+    fetchObservationsForClass,
+    fetchJustifications,
+    validateAttendanceDate,
+    updateAnalytics,
+    saveAttendanceDocument,
+    updateObservations,
+    fetchAllAttendanceDates,
+    isClassRegistered,
+    checkAttendanceExists,
+    getRegisteredClassesForDate,
+    getClassStats,
+    getDateClassInfo,
+    getClassScheduleDays,
+    addJustificationToAttendance,
+    debugAttendanceSystem,
+    fetchTopAbsentStudentsByRange,
+    getStudentAttendanceByDateRange
+  };
 });
