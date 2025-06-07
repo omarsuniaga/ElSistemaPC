@@ -28,14 +28,16 @@ import { auth } from '../../../firebase'; // Asegúrate de importar auth desde t
 import { fetchAttendanceByDateFirebase as fetchByDate } from './attendance/fetchByDate';
 import { applyTeacherFilter, hasAccessToDocument, generateCacheKey } from '../../../utils/roleBasedAccess';
 import { useAuthStore } from '../../../stores/auth';
+import { getAllAttendanceDocumentsFirebase } from '../services/firebase'; // Importando la función necesaria
 
 // Configuración de caché
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutos en milisegundos
 
 // Constants
-const ATTENDANCE_COLLECTION = 'ASISTENCIAS';
+export const ATTENDANCE_COLLECTION = 'ASISTENCIAS';
 const OBSERVATIONS_COLLECTION = 'OBSERVACIONES';
 const CLASSES_COLLECTION = 'CLASES';
+const INDIVIDUAL_RECORDS_COLLECTION = 'REGISTROS_ASISTENCIA_INDIVIDUAL'; // Nueva colección para registros individuales
 
 /**
  * Función para obtener las clases de un maestro directamente sin importación dinámica
@@ -63,10 +65,11 @@ const getTeacherClassesLocal = async (teacherId: string): Promise<any[]> => {
  */
 const getAttendanceDocId = (fecha: string, classId: string): string => `${fecha}_${classId}`;
 
-
+/* Local interface removed to use the imported AttendanceDocument type */
+// Note: Using the interface from the types file
 
 /**
- * Obtiene un documento de asistencia por fecha y clase
+ * Obtiene un documento de asistencia por date y clase
  */
 export const getAttendanceDocumentFirebase = async (
   fecha: string,
@@ -76,11 +79,14 @@ export const getAttendanceDocumentFirebase = async (
     const docId = getAttendanceDocId(fecha, classId);
     const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
     const docSnap = await getDoc(docRef);
-    
+
     if (docSnap.exists()) {
-      return docSnap.data() as AttendanceDocument;
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        ...data
+      } as AttendanceDocument;
     }
-    
     return null;
   } catch (error) {
     console.error('Error al obtener documento de asistencia:', error);
@@ -95,52 +101,13 @@ export const saveAttendanceDocumentFirebase = async (
   attendanceDoc: AttendanceDocument
 ): Promise<string> => {
   try {
-    const docId = getAttendanceDocId(attendanceDoc.fecha, attendanceDoc.classId);
+    const docId = attendanceDoc.id || getAttendanceDocId(attendanceDoc.fecha, attendanceDoc.classId);
     const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
-    const docSnap = await getDoc(docRef);
-    
-    // Función auxiliar para eliminar valores undefined recursivamente
-    const removeUndefined = (obj: any): any => {
-      if (obj === null || obj === undefined) return null;
-      
-      if (typeof obj !== 'object') return obj;
-      
-      if (Array.isArray(obj)) {
-        return obj.map(item => removeUndefined(item)).filter(item => item !== undefined);
-      }
-      
-      const result: any = {};
-      
-      Object.keys(obj).forEach(key => {
-        const value = removeUndefined(obj[key]);
-        if (value !== undefined) {
-          result[key] = value;
-        }
-      });
-      
-      return result;
-    };
-    
-    // Limpiar el documento de valores undefined
-    const cleanedDoc = removeUndefined(attendanceDoc);
-    
-    // Añadir timestamp para la actualización
-    const updates = {
-      ...cleanedDoc,
-      updatedAt: serverTimestamp()
-    };
-    
-    console.log('Documento limpio a guardar:', JSON.stringify(updates).substring(0, 200) + '...');
-    
-    if (docSnap.exists()) {
-      await updateDoc(docRef, updates);
-    } else {
-      await setDoc(docRef, {
-        ...updates,
-        createdAt: serverTimestamp()
-      });
-    }
-    
+    await setDoc(docRef, { 
+      ...attendanceDoc, 
+      updatedAt: serverTimestamp(),
+      id: docId // Asegurar que el ID es parte de los datos del documento
+    }, { merge: true });
     return docId;
   } catch (error) {
     console.error('Error al guardar documento de asistencia:', error);
@@ -162,7 +129,7 @@ export const addJustificationToAttendanceFirebase = async (
     if (file) {
       const storageRef = ref(storage, `justificaciones/${fecha}_${classId}_${justification.id}`);
       await uploadBytes(storageRef, file);
-      justification.documentURL = await getDownloadURL(storageRef);
+      justification.documentUrl = await getDownloadURL(storageRef);
     }
 
     // Obtener o crear el documento
@@ -276,360 +243,30 @@ export const updateObservationsFirebase = async (
       }
       
       await updateDoc(docRef, {
-        data: data.data,
-        updatedAt: serverTimestamp()
+        'data.observations': observations
       });
     } else {
-      // Crear nuevo documento
-      const newDoc: AttendanceDocument = {
+      // Documento no existe, crear uno nuevo con observaciones
+      await setDoc(docRef, {
+        id: docId,
         fecha,
         classId,
-        teacherId: auth.currentUser?.uid || '',
         data: {
           presentes: [],
           ausentes: [],
           tarde: [],
           justificacion: [],
           observations
-        }
-      };
-      
-      await setDoc(docRef, {
-        ...newDoc,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        },
+        createdAt: serverTimestamp()
       });
     }
-    
     return docId;
   } catch (error) {
     console.error('Error al actualizar observaciones:', error);
     throw error;
   }
-};
-
-/**
- * Obtiene todos los documentos de asistencia filtrados por rol de usuario
- */
-export const getAllAttendanceDocumentsFirebase = async (): Promise<AttendanceDocument[]> => {
-  try {
-    // Verificar el rol del usuario actual para aplicar filtrado si es necesario
-    const authStore = useAuthStore();
-    const userId = authStore.user?.uid;
-    const isTeacher = ['Teacher', 'Maestro'].includes(authStore.user?.role || '');
-    
-    // Generar clave de caché basada en el rol y usuario
-    const cacheKey = generateCacheKey('attendance_all');
-    
-    // Intentar recuperar del caché
-    const cachedData = localStorage.getItem(cacheKey);
-    if (cachedData) {
-      const parsed = JSON.parse(cachedData);
-      
-      // Verificar si el caché aún es válido
-      if (parsed.timestamp && (Date.now() - parsed.timestamp < CACHE_DURATION)) {
-        console.log('[Caché] Usando datos en caché para todos los documentos de asistencia');
-        return parsed.data;
-      }
-    }
-    
-    // Referencia a la colección de asistencias en Firestore
-    const attendanceCollection = collection(db, ATTENDANCE_COLLECTION);
-    let queryRef;
-
-    // Si es maestro, filtrar por teacherId
-    if (isTeacher && userId) {
-      console.log(`[Filtro] Aplicando filtro de maestro: teacherId == ${userId}`);
-      queryRef = query(
-        attendanceCollection,
-        where('teacherId', '==', userId)
-      );
-    } else {
-      console.log('[Filtro] Usuario Admin/Director - sin filtro de maestro');
-      queryRef = attendanceCollection;
-    }
-
-    // Ejecutamos la consulta
-    const querySnapshot = await getDocs(queryRef);
-    
-    // Procesamos los resultados
-    const documents = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as AttendanceDocument));
-    
-    // Guardar en caché
-    localStorage.setItem(cacheKey, JSON.stringify({
-      timestamp: Date.now(),
-      data: documents
-    }));
-    
-    console.log(`[Firestore] Obtenidos ${documents.length} documentos de asistencia`);
-    return documents;
-     
-  } catch (error) {
-    // En caso de error, lo registramos y lo volvemos a lanzar
-    console.error('Error al obtener documentos de asistencia:', error);
-    throw error;
-  }
-};
-
-/**
- * Convierte documentos al formato antiguo para compatibilidad
- */
-export const convertDocumentToRecords = (document: AttendanceDocument): AttendanceRecord[] => {
-  const records: AttendanceRecord[] = [];
-  
-  // Mapear estudiantes presentes
-  document.data.presentes.forEach(studentId => {
-    records.push({
-      studentId,
-      classId: document.classId,
-      Fecha: document.fecha,
-      status: 'Presente'
-    });
-  });
-  
-  // Crear un conjunto (Set) de IDs de estudiantes con justificaciones para búsqueda rápida
-  const justifiedStudentIds = new Set<string>();
-  if (document.data.justificacion && Array.isArray(document.data.justificacion)) {
-    document.data.justificacion.forEach((justification) => {
-      if (justification && justification.id) {
-        justifiedStudentIds.add(justification.id);
-      }
-    });
-  }
-  
-  // Mapear estudiantes ausentes (verificar si tienen justificación)
-  document.data.ausentes.forEach(studentId => {
-    // Si el estudiante tiene una justificación, marcarlo como Justificado en lugar de Ausente
-    if (justifiedStudentIds.has(studentId)) {
-      records.push({
-        studentId,
-        classId: document.classId,
-        Fecha: document.fecha,
-        status: 'Justificado'
-      });
-    } else {
-      records.push({
-        studentId,
-        classId: document.classId,
-        Fecha: document.fecha,
-        status: 'Ausente'
-      });
-    }
-  });
-  
-  // Mapear estudiantes con tardanza/justificados
-  document.data.tarde.forEach(studentId => {
-    const justification = document.data.justificacion?.find(j => j.id === studentId);
-    const isJustified = !!justification;
-    
-    records.push({
-      studentId,
-      classId: document.classId,
-      Fecha: document.fecha,
-      status: isJustified ? 'Justificado' : 'Tardanza',
-      justification: isJustified ? {
-        reason: justification.reason,
-        documentUrl: justification.documentURL
-      } : undefined,
-      documentUrl: justification?.documentURL
-    });
-  });
-  
-  return records;
-};
-
-/**
- * Añade una observación al historial de una clase
- */
-export const addClassObservationFirebase = async (
-  classId: string,
-  date: string,
-  text: string,
-  author: string
-): Promise<string> => {
-  try {
-    const observationsCollection = collection(db, OBSERVATIONS_COLLECTION);
-    
-    const newObservation: ClassObservation = {
-      id: '',
-      classId,
-      date,
-      text,
-      timestamp: Date.now(),
-      author
-    };
-    
-    const docRef = await addDoc(observationsCollection, {
-      ...newObservation,
-      createdAt: serverTimestamp()
-    });
-
-    
-    await updateDoc(docRef, {
-      id: docRef.id
-    });
-    
-    // Actualizar también la observación actual en el documento de asistencia
-    await updateObservationsFirebase(date, classId, text);
-    
-    return docRef.id;
-  } catch (error) {
-    console.error('Error al añadir observación:', error);
-    throw error;
-  }
 }
-
-export const getAllObservationsFirebase = async (): Promise<ClassObservation[]> => {
-  try {
-    const authStore = useAuthStore();
-    const currentUser = authStore.user;
-    const role = currentUser?.role || '';
-    const uid = currentUser?.uid || '';
-    
-    // Generar clave para caché específica por usuario/rol
-    const cacheKey = `observations_${role}_${uid}`;
-    
-    // Intentar obtener del caché primero
-    const cachedData = localStorage.getItem(cacheKey);
-    if (cachedData) {
-      try {
-        const cached = JSON.parse(cachedData);
-        // Verificar si el caché es reciente (menos de 30 minutos)
-        if (cached.timestamp && (Date.now() - cached.timestamp < CACHE_DURATION)) {
-          console.log('[Caché] Usando observaciones en caché');
-          return cached.data;
-        }
-      } catch (e) {
-        console.warn('Error al leer caché de observaciones:', e);
-      }
-    }
-    
-    console.log('Obteniendo observaciones de Firestore...');
-    const observationsCollection = collection(db, OBSERVATIONS_COLLECTION);
-    
-    // Aplicar filtrado según el rol del usuario
-    if (['Maestro', 'Teacher', 'teacher'].includes(role) && uid) {
-      // Si es maestro, obtener las clases asignadas
-      console.log(`[Filtro] Obteniendo observaciones para el maestro ${uid}`);
-      
-      // Obtener clases directamente sin importación dinámica para evitar referencias circulares
-      const teacherClasses = await getTeacherClassesLocal(uid);
-      
-      if (teacherClasses.length === 0) {
-        console.log('[Filtro] El maestro no tiene clases asignadas');
-        return [];
-      }
-      
-      // Extraer los IDs de las clases del profesor
-      const classIds = teacherClasses.map(clase => clase.id);
-      console.log(`[Filtro] Maestro tiene ${classIds.length} clases asignadas`);
-      
-      // Si el maestro tiene pocas clases, podemos usar la cláusula 'in'
-      let observations: ClassObservation[] = [];
-      
-      if (classIds.length < 10) {
-        // Consulta directa usando 'in' (eficiente para pocos valores)
-        const q = query(
-          observationsCollection,
-          where('classId', 'in', classIds)
-        );
-        
-        const querySnapshot = await getDocs(q);
-        observations = querySnapshot.docs.map(doc => {
-          const data = doc.data() as ClassObservation;
-          return {
-            ...data,
-            id: doc.id
-          };
-        });
-      } else {
-        // Para muchas clases, obtenemos todas las observaciones y filtramos en memoria
-        const querySnapshot = await getDocs(observationsCollection);
-        observations = querySnapshot.docs
-          .map(doc => {
-            const data = doc.data() as ClassObservation;
-            return {
-              ...data,
-              id: doc.id
-            };
-          })
-          .filter(obs => classIds.includes(obs.classId));
-      }
-      
-      console.log(`[Filtro] Encontradas ${observations.length} observaciones para el maestro`);
-      
-      // Ordenar por fecha y timestamp
-      const sortedObservations = observations.sort((a, b) => {
-        // Primero ordenar por fecha (más reciente primero)
-        const dateComparison = new Date(b.date).getTime() - new Date(a.date).getTime();
-        if (dateComparison !== 0) return dateComparison;
-        
-        // Si las fechas son iguales, ordenar por timestamp
-        const timestampA = typeof a.timestamp === 'number' ? a.timestamp : 0;
-        const timestampB = typeof b.timestamp === 'number' ? b.timestamp : 0;
-        return timestampB - timestampA;
-      });
-      
-      // Guardar en caché
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify({
-          timestamp: Date.now(),
-          data: sortedObservations
-        }));
-      } catch (e) {
-        console.warn('Error al guardar caché de observaciones:', e);
-      }
-      
-      return sortedObservations;
-    } else {
-      // Para roles administrativos: obtener todas las observaciones
-      console.log('[Filtro] Obteniendo todas las observaciones (rol admin/director)');
-      const querySnapshot = await getDocs(observationsCollection);
-      
-      const observations = querySnapshot.docs.map(doc => {
-        const data = doc.data() as ClassObservation;
-        return {
-          ...data,
-          id: doc.id
-        };
-      });
-      
-      // Ordenar por fecha y timestamp
-      const sortedObservations = observations.sort((a, b) => {
-        // Primero ordenar por fecha (más reciente primero)
-        const dateComparison = new Date(b.date).getTime() - new Date(a.date).getTime();
-        if (dateComparison !== 0) return dateComparison;
-        
-        // Si las fechas son iguales, ordenar por timestamp
-        const timestampA = typeof a.timestamp === 'number' ? a.timestamp : 0;
-        const timestampB = typeof b.timestamp === 'number' ? b.timestamp : 0;
-        return timestampB - timestampA;
-      });
-      
-      // Guardar en caché
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify({
-          timestamp: Date.now(),
-          data: sortedObservations
-        }));
-      } catch (e) {
-        console.warn('Error al guardar caché de observaciones:', e);
-      }
-      
-      return sortedObservations;
-    }
-  } catch (error) {
-    console.error('Error al obtener observaciones:', error);
-    throw error;
-  }
-}
-
-/**
- * Métodos de compatibilidad con el sistema anterior
- */
 
 /**
  * Obtiene todos los registros de asistencia
@@ -639,7 +276,7 @@ export const getAttendancesFirebase = async (): Promise<AttendanceRecord[]> => {
     const documents = await getAllAttendanceDocumentsFirebase();
     // Convertir todos los documentos a registros
     const res = documents.flatMap(doc => convertDocumentToRecords(doc));
-    return res
+    return res;
   } catch (error) {
     console.error('Error al obtener registros de asistencia:', error);
     throw error;
@@ -647,7 +284,65 @@ export const getAttendancesFirebase = async (): Promise<AttendanceRecord[]> => {
 };
 
 /**
- * Obtiene registros de asistencia por fecha y clase
+ * Convierte un documento de asistencia en registros individuales
+ * @param doc Documento de asistencia
+ * @returns Array de registros de asistencia
+ */
+const convertDocumentToRecords = (doc: any): AttendanceRecord[] => {
+  const records: AttendanceRecord[] = [];
+  
+  // Si no hay datos, retornar array vacío
+  if (!doc.data) return records;
+  
+  const { fecha, classId } = doc;
+  
+  // Procesar presentes
+  if (doc.data.presentes && Array.isArray(doc.data.presentes)) {
+    doc.data.presentes.forEach((studentId: string) => {
+      records.push({
+        id: `${fecha}_${classId}_${studentId}`,
+        fecha: fecha,
+        classId,
+        studentId,
+        status: 'Presente',
+        createdAt: new Date()
+      });
+    });
+  }
+  
+  // Procesar ausentes
+  if (doc.data.ausentes && Array.isArray(doc.data.ausentes)) {
+    doc.data.ausentes.forEach((studentId: string) => {
+      records.push({
+        id: `${fecha}_${classId}_${studentId}`,
+        fecha: fecha,
+        classId,
+        studentId,
+        status: 'Ausente',
+        createdAt: new Date()
+      });
+    });
+  }
+  
+  // Procesar tarde
+  if (doc.data.tarde && Array.isArray(doc.data.tarde)) {
+    doc.data.tarde.forEach((studentId: string) => {
+      records.push({
+        id: `${fecha}_${classId}_${studentId}`,
+        fecha: fecha,
+        classId,
+        studentId,
+        status: 'Tardanza',
+        createdAt: new Date()
+      });
+    });
+  }
+  
+  return records;
+};
+
+/**
+ * Obtiene registros de asistencia por date y clase
  */
 export const getAttendanceByDateAndClassFirebase = async (
   fecha?: string, 
@@ -655,7 +350,7 @@ export const getAttendanceByDateAndClassFirebase = async (
 ): Promise<AttendanceRecord[]> => {
   try {
     if (!fecha || !classId) {
-      throw new Error("Fecha y classId son requeridos");
+      throw new Error("fecha y classId son requeridos");
     }
     
     const document = await getAttendanceDocumentFirebase(fecha, classId);
@@ -693,7 +388,7 @@ export const getAttendanceByDateAndClassFirebase = async (
       return record;
     });
   } catch (error) {
-    console.error('Error al obtener asistencia por fecha y clase:', error);
+    console.error('Error al obtener asistencia por date y clase:', error);
     throw error;
   }
 };
@@ -704,11 +399,11 @@ export const getAttendanceByDateAndClassFirebase = async (
 export const updateAttendanceFirebase = async (attendanceData: AttendanceRecord): Promise<string> => {
   try {
     // Obtener o crear el documento
-    const docId = getAttendanceDocId(attendanceData.Fecha, attendanceData.classId);
+    const docId = getAttendanceDocId(attendanceData.date, attendanceData.classId);
     const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
     let document: AttendanceDocument;
     
-    // Verificar si ya existe un documento para esta fecha y clase
+    // Verificar si ya existe un documento para esta date y clase
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
@@ -716,17 +411,23 @@ export const updateAttendanceFirebase = async (attendanceData: AttendanceRecord)
     } else {
       // Crear el documento de asistencia
       document = {
-        fecha: attendanceData.Fecha,
+        fecha: attendanceData.fecha, 
         classId: attendanceData.classId,
-        teacherId: user?.uid || '', // Usar el ID del usuario actual como teacherId
+        teacherId: auth.currentUser?.uid || '', 
+        uid: auth.currentUser?.uid || '',
+        // Convertimos serverTimestamp a Date para cumplir con el tipo AttendanceDocument
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        id: docId,
         data: {
           presentes: [],
           ausentes: [],
           tarde: [],
           justificacion: [],
-          observations: ''
+          observación: '', // Campo requerido según la interfaz
+          observations: [] // Array de observaciones estructuradas
         }
-      };
+      } as AttendanceDocument;
     }
     
     // Remover el estudiante de todos los arrays
@@ -743,35 +444,83 @@ export const updateAttendanceFirebase = async (attendanceData: AttendanceRecord)
         document.data.ausentes.push(attendanceData.studentId);
         break;
       case 'Tardanza':
-      case 'Justificado':
         document.data.tarde.push(attendanceData.studentId);
+        break;
+      case 'Justificado':
+        // For justified students, ONLY add them to the ausentes array
+        // We will identify them as justified by their presence in the justificacion array
+        document.data.ausentes.push(attendanceData.studentId);
         break;
     }
     
     // Manejar justificación si es necesario
-    if (attendanceData.status === 'Justificado' && attendanceData.justification) {
+    if (attendanceData.status === 'Justificado') {
+      // Ensure justificacion array exists
+      if (!document.data.justificacion) {
+        document.data.justificacion = [];
+      }
+      
+      // Extract justification details
+      const justificationData = attendanceData.justification || {};
+      
+      // Get reason from the justification object
+      const justificationReason = typeof justificationData === 'string' 
+        ? justificationData 
+        : (justificationData.reason || 'Justificación registrada');
+      
+      // Get document URL (use null instead of undefined)
+      const documentUrl = attendanceData.documentUrl || 
+                         (typeof justificationData !== 'string' ? justificationData.documentUrl : null) || 
+                         null;
+      
+      // Check if justification already exists
+      const justIndex = document.data.justificacion.findIndex(j => j.id === attendanceData.studentId);
+      
+      if (justIndex !== -1) {
+        // Update existing justification
+        document.data.justificacion[justIndex].reason = justificationReason;
+        document.data.justificacion[justIndex].documentUrl = documentUrl;
+      } else {
+        // Add new justification
+        document.data.justificacion.push({
+          id: attendanceData.studentId,
+          studentId: attendanceData.studentId,
+          classId: attendanceData.classId,
+          fecha: attendanceData.date, 
+          reason: justificationReason,
+          documentUrl: documentUrl,
+          approvalStatus: 'pending',
+          createdAt: new Date(),
+          timeLimit: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+        });
+      }
+    } else if (attendanceData.justification) {
+      // If there's justification data but status is not Justificado,
+      // Make sure it's preserved for historical purposes
       if (!document.data.justificacion) {
         document.data.justificacion = [];
       }
       
       const justIndex = document.data.justificacion.findIndex(j => j.id === attendanceData.studentId);
-      const justificationReason = typeof attendanceData.justification === 'string' 
-        ? attendanceData.justification 
-        : attendanceData.justification.reason || '';
-      
-      if (justIndex !== -1) {
-        document.data.justificacion[justIndex].reason = justificationReason;
-        if (attendanceData.documentUrl) {
-          document.data.justificacion[justIndex].documentURL = attendanceData.documentUrl;
-        }
-      } else {
+      if (justIndex === -1) {
+        // Only add if it doesn't exist yet
+        const justificationData = attendanceData.justification;
         document.data.justificacion.push({
           id: attendanceData.studentId,
-          reason: justificationReason,
-          documentURL: attendanceData.documentUrl
+          studentId: attendanceData.studentId,
+          classId: attendanceData.classId,
+          fecha: attendanceData.date, 
+          reason: typeof justificationData === 'string' ? justificationData : (justificationData.reason || ''),
+          documentUrl: (typeof justificationData !== 'string' ? justificationData.documentUrl : null) || null,
+          approvalStatus: 'pending',
+          createdAt: new Date(),
+          timeLimit: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
         });
       }
     }
+    
+    // Make sure the justification is preserved even when status is changed
+    // Don't remove justification when status changes to something else
     
     // Guardar el documento
     await saveAttendanceDocumentFirebase(document);
@@ -794,8 +543,15 @@ export const updateAttendanceWithJustificationFirebase = async (
   file: File | null
 ): Promise<string> => {
   const justification: JustificationData = {
-    id: studentId,
-    reason
+    id: `${studentId}_${classId}_${date}`, // ID único formado por los valores
+    studentId: studentId,
+    classId: classId,
+    fecha: date,
+    reason: reason,
+    documentUrl: undefined, // Se actualizará si hay archivo
+    approvalStatus: 'pending',
+    createdAt: new Date(),
+    timeLimit: new Date(new Date().getTime() + 48 * 60 * 60 * 1000) // 48 horas desde ahora
   };
   
   return addJustificationToAttendanceFirebase(date, classId, justification, file);
@@ -834,9 +590,9 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
     // Create a query against the attendance collection
     const attendanceQuery = query(
       collection(db, 'ASISTENCIAS'),
-      where('fecha', '>=', startDate),
-      where('fecha', '<=', endDate),
-      orderBy('fecha', 'asc')
+      where('date', '>=', startDate),
+      where('date', '<=', endDate),
+      orderBy('date', 'asc')
     );
 
     const snapshot = await getDocs(attendanceQuery);
@@ -848,7 +604,7 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
       // Process each document into a normalized attendance record format
       if (data.data) {
         // Handle newer document format
-        const { fecha, classId, data: attendanceData } = data;
+        const { date, classId, data: attendanceData } = data;
         
         // Process presente students
         if (attendanceData.presentes && Array.isArray(attendanceData.presentes)) {
@@ -857,7 +613,7 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
               id: doc.id + '_' + studentId,
               studentId,
               classId,
-              Fecha: fecha,
+              date: date,
               status: 'Presente'
             });
           });
@@ -870,7 +626,7 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
               id: doc.id + '_' + studentId,
               studentId,
               classId,
-              Fecha: fecha,
+              date: date,
               status: 'Ausente'
             });
           });
@@ -887,7 +643,7 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
               id: doc.id + '_' + studentId,
               studentId,
               classId,
-              Fecha: fecha,
+              date: date,
               status: justification ? 'Justificado' : 'Tardanza',
               justification: justification ? justification.reason : undefined
             });
@@ -899,7 +655,7 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
           id: doc.id,
           studentId: data.studentId,
           classId: data.classId,
-          Fecha: data.Fecha,
+          date: data.date,
           status: data.status,
           justification: data.justification
         });
@@ -980,14 +736,32 @@ export async function addObservationToHistoryFirebase(
   classId: string, 
   date: string, 
   text: string, 
-  author: string
+  author: string,
+  studentId?: string
 ): Promise<void> {
   try {
-    // Check if an observation already exists for this class and date
+    console.log(`[addObservationToHistoryFirebase] Adding ${studentId ? 'student-specific' : 'class-level'} observation`);
+    console.log(`[addObservationToHistoryFirebase] Class: ${classId}, Date: ${date}, StudentId: ${studentId || 'N/A'}`);
+    
+    // Create query conditions based on whether this is a class or student observation
+    const queryConditions = [
+      where('classId', '==', classId),
+      where('date', '==', date)
+    ];
+    
+    // If studentId is provided, add it to the query conditions for student-specific observation
+    if (studentId) {
+      queryConditions.push(where('studentId', '==', studentId));
+    } else {
+      // For class-level observations, we want to find ones without a studentId
+      // Firebase doesn't support direct "where field is null" so we use approach below
+      queryConditions.push(where('studentId', '==', null));
+    }
+    
+    // Check if an observation already exists for this class/date/student combination
     const existingQuery = query(
       collection(db, OBSERVATIONS_COLLECTION),
-      where('classId', '==', classId), // classId is correct here as it's the property name in OBSERVATIONS_COLLECTION
-      where('date', '==', date)
+      ...queryConditions
     );
     
     const querySnapshot = await getDocs(existingQuery);
@@ -1117,8 +891,8 @@ export async function fetchAttendanceRecords(startDate?: string, endDate?: strin
     if (startDate && endDate) {
       q = query(
         attendanceCollection,
-        where('Fecha', '>=', startDate),
-        where('Fecha', '<=', endDate)
+        where('date', '>=', startDate),
+        where('date', '<=', endDate)
       );
     }
     
@@ -1130,7 +904,7 @@ export async function fetchAttendanceRecords(startDate?: string, endDate?: strin
         id: doc.id,
         studentId: data.studentId,
         classId: data.classId,
-        Fecha: formatDate(data.Fecha) || data.Fecha,
+        date: formatDate(data.date) || data.date,
         status: data.status,
         notes: data.notes
       };
@@ -1142,10 +916,35 @@ export async function fetchAttendanceRecords(startDate?: string, endDate?: strin
 }
 
 // Add a new attendance record
-export async function addAttendanceRecord(record) {
+export async function addAttendanceRecord(record: Omit<AttendanceRecord, 'id'>): Promise<AttendanceRecord> {
   try {
-    const docRef = await addDoc(attendanceCollection, record);
-    return { id: docRef.id, ...record };
+    // Clean the record before sending to Firestore by replacing undefined values with null
+    // Using JSON.parse/stringify to recursively clean all undefined values
+    const cleanedRecord = JSON.parse(JSON.stringify(record));
+    
+    // Additionally, specifically handle justification.documentUrl if it exists and is undefined
+    // This is important as Firebase doesn't accept undefined values
+    if (cleanedRecord.justification && cleanedRecord.justification.documentUrl === undefined) {
+      cleanedRecord.justification.documentUrl = null;
+    }
+    
+    // Extra check for any nested undefined values that might have been missed
+    const sanitizeUndefined = (obj: any) => {
+      if (!obj || typeof obj !== 'object') return;
+      
+      Object.keys(obj).forEach(key => {
+        if (obj[key] === undefined) {
+          obj[key] = null;
+        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+          sanitizeUndefined(obj[key]);
+        }
+      });
+    };
+    
+    sanitizeUndefined(cleanedRecord);
+    
+    const docRef = await addDoc(attendanceCollection, cleanedRecord);
+    return { id: docRef.id, ...record } as AttendanceRecord;
   } catch (error) {
     console.error('Error adding attendance record:', error);
     throw error;
@@ -1153,10 +952,33 @@ export async function addAttendanceRecord(record) {
 }
 
 // Update an attendance record
-export async function updateAttendanceRecord(id, updates) {
+export async function updateAttendanceRecord(id: string, updates: any) {
   try {
+    // Clean the updates before sending to Firestore
+    const cleanedUpdates = JSON.parse(JSON.stringify(updates));
+    
+    // Specifically handle justification.documentUrl if it exists and is undefined
+    if (cleanedUpdates.justification && cleanedUpdates.justification.documentUrl === undefined) {
+      cleanedUpdates.justification.documentUrl = null;
+    }
+    
+    // Extra check for any nested undefined values that might have been missed
+    const sanitizeUndefined = (obj: any) => {
+      if (!obj || typeof obj !== 'object') return;
+      
+      Object.keys(obj).forEach(key => {
+        if (obj[key] === undefined) {
+          obj[key] = null;
+        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+          sanitizeUndefined(obj[key]);
+        }
+      });
+    };
+    
+    sanitizeUndefined(cleanedUpdates);
+    
     const docRef = doc(attendanceCollection, id);
-    await updateDoc(docRef, updates);
+    await updateDoc(docRef, cleanedUpdates);
     return { id, ...updates };
   } catch (error) {
     console.error('Error updating attendance record:', error);
@@ -1165,7 +987,7 @@ export async function updateAttendanceRecord(id, updates) {
 }
 
 // Delete an attendance record
-export async function deleteAttendanceRecord(id) {
+export async function deleteAttendanceRecord(id: string): Promise<{ success: boolean }> {
   try {
     const docRef = doc(attendanceCollection, id);
     await deleteDoc(docRef);
@@ -1198,7 +1020,7 @@ export async function getTeacherAttendanceDocsFirebase(teacherId: string, fromDa
     
     // Add date range filters if provided
     if (fromDate && toDate) {
-      q = query(q, where('fecha', '>=', fromDate), where('fecha', '<=', toDate));
+      q = query(q, where('date', '>=', fromDate), where('date', '<=', toDate));
     }
     
     const querySnapshot = await getDocs(q);
@@ -1208,7 +1030,7 @@ export async function getTeacherAttendanceDocsFirebase(teacherId: string, fromDa
       const data = doc.data();
       documents.push({
         id: doc.id,
-        fecha: data.fecha,
+        date: data.date,
         classId: data.classId,
         teacherId: data.teacherId,
         data: {
@@ -1229,27 +1051,30 @@ export async function getTeacherAttendanceDocsFirebase(teacherId: string, fromDa
 }
 
 /**
- * Obtiene documentos de asistencia para una fecha específica
+ * Obtiene documentos de asistencia para una date específica
  * Re-exportamos la función para mantener la consistencia
  */
 export const fetchAttendanceByDateFirebase = fetchByDate;
 /**
- * Obtiene la asistencia de un estudiante en una fecha específica
+ * Obtiene la asistencia de un estudiante en una date específica
  * @param studentId El ID del estudiante
- * @param date La fecha en formato YYYY-MM-DD
+ * @param date La date en formato YYYY-MM-DD
  * @returns El estado de asistencia del estudiante
  */
 export async function getStudentAttendanceByDate(studentId: string, date: string): Promise<string | null> {
   try {
-    const snapshot = await getDocs(query(attendanceCollection, where('studentId', '==', studentId), where('Fecha', '==', date)));
-    if (snapshot.empty) {
-      return null;
+    const snapshot = await getDocs(query(attendanceCollection, where('studentId', '==', studentId), where('date', '==', date)));
+    if (!snapshot.empty && snapshot.docs.length > 0) {
+      const doc = snapshot.docs[0];
+      // Ensure AttendanceRecord is imported and matches the expected structure
+      // Ensure studentId and date are available in this scope (e.g., as function parameters)
+      return { id: doc.id, ...doc.data() } as AttendanceRecord;
+    } else {
+      return null; // No record found
     }
-    
-    const doc = snapshot.docs[0];
-    return doc.data().status || null;
-  } catch (error) {
-    console.error('Error getting student attendance by date:', error);
-    throw error;
+  } catch (error: any) {
+    // Log with more context if studentId and date are available function parameters
+    console.error(`Error fetching student attendance by date:`, error);
+    throw error; // Re-throw the error to be handled by the caller
   }
-}
+};

@@ -14,6 +14,14 @@ ChartJS.register(ArcElement, Tooltip, Legend)
 defineProps<{
   data: ChartData<'pie'>
 }>()
+
+// Make sure the component is exported as default
+defineExpose({});
+if (import.meta.env?.PROD === false) {
+  // @ts-ignore - This ensures the component has a default export
+  // which helps with certain bundlers and IDE tooling
+  const _default = {};
+}
 </script>
 
 <template>
@@ -24,7 +32,7 @@ defineProps<{
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          position: 'right' as const
+          position: 'right'
         }
       }
     }"

@@ -89,15 +89,13 @@
             :key="observation.id"
             class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border-l-4 border-blue-500"
           >
-            <div class="flex justify-between mb-2">
-              <span class="text-sm font-medium text-gray-600 dark:text-gray-300">
-                {{ formatDate(observation.date) }}
-              </span>
-              <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded-full">
-                {{ observation.author || 'Usuario no registrado' }}
+            <div class="flex justify-between mb-2">              <span class="text-sm font-medium text-gray-600 dark:text-gray-300">
+                {{ formatDate(observation.fecha) }}
+              </span>              <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded-full">
+                {{ getTeacherName(observation.author) }}
               </span>
             </div>
-            <p class="text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ observation.text }}</p>
+            <p class="text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ observation.content.text }}</p>
           </div>
         </div>
       </div>
@@ -123,11 +121,36 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAttendanceStore } from '../store/attendance';
 import { useClassesStore } from '../../Classes/store/classes';
+import { useTeachersStore } from '../../Teachers/store/teachers'; // Import teachers store
 import type { ClassObservation } from '../types/attendance';
 
 // Stores
 const attendanceStore = useAttendanceStore();
 const classesStore = useClassesStore();
+const teachersStore = useTeachersStore(); // Instantiate teachers store
+
+// Function to get teacher name from teacher ID
+const getTeacherName = (teacherId: string): string => {
+  if (!teacherId) return 'Usuario no registrado';
+  
+  // If it's 'Sistema', return as is
+  if (teacherId === 'Sistema') return 'Sistema';
+  
+  // Try to find teacher by ID in the teachers store
+  const teacher = teachersStore.getTeacherById(teacherId);
+  if (teacher) {
+    return teacher.name;
+  }
+  
+  // If not found, try to find by auth UID (fallback)
+  const teacherByUid = teachersStore.teachers.find(t => t.uid === teacherId);
+  if (teacherByUid) {
+    return teacherByUid.name;
+  }
+  
+  // Return the original ID if no teacher found
+  return teacherId || 'Usuario no registrado';
+};
 
 // State
 const observations = ref<ClassObservation[]>([]);
@@ -152,9 +175,8 @@ async function fetchAllObservations() {
     if (classesStore.classes.length === 0) {
       await classesStore.fetchClasses();
     }
-    
-    // Fetch all observations in one call
-    const allObservations = await attendanceStore.fetchObservations();
+      // Fetch all observations in one call
+    const allObservations = await attendanceStore.fetchAllObservationsForTeacher('');
     if (allObservations.length > 0) {
       observations.value = allObservations;
     }
@@ -180,9 +202,8 @@ const filteredObservations = computed(() => {
     if (selectedClassFilter.value) {
       matchesClass = obs.classId === selectedClassFilter.value;
     }
-    
-    if (selectedDateFilter.value) {
-      matchesDate = obs.date === selectedDateFilter.value;
+      if (selectedDateFilter.value) {
+      matchesDate = obs.fecha === selectedDateFilter.value;
     }
     
     return matchesClass && matchesDate;
@@ -199,11 +220,10 @@ const groupedObservations = computed(() => {
     }
     grouped[obs.classId].push(obs);
   });
-  
-  // Sort observations by date (newest first)
+    // Sort observations by date (newest first)
   for (const classId in grouped) {
     grouped[classId].sort((a, b) => {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
+      return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
     });
   }
   

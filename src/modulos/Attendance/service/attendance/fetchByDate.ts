@@ -1,3 +1,6 @@
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../../../firebase';
+
 /**
  * Fetch attendance records for a specific date
  * 
@@ -6,10 +9,6 @@
  */
 export async function fetchAttendanceByDateFirebase(date: string): Promise<any[]> {
   try {
-    // Import required Firestore functions
-    const { collection, query, where, getDocs } = require('firebase/firestore');
-    const { db } = require('../../../firebase');
-    
     // Consulta los documentos de asistencia que coincidan con la fecha específica
     const querySnapshot = await getDocs(
       query(

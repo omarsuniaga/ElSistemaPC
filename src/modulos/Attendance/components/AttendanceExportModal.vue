@@ -164,13 +164,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAttendanceStore } from '../store/attendance'
 import { useStudentsStore } from '../../Students/store/students'
 import { useClassesStore } from '../../Classes/store/classes'
+import { useOptimizedAttendance } from '../composables/useOptimizedAttendance'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import ExcelJS from 'exceljs'
+import * as ExcelJS from 'exceljs'
 import jspdf from 'jspdf'
 import 'jspdf-autotable'
 import html2pdf from 'html2pdf.js'
@@ -190,14 +191,40 @@ const close = () => {
 }
 
 // Stores
-
 const attendanceStore = useAttendanceStore()
 const studentsStore = useStudentsStore()
 const classesStore = useClassesStore()
 
+// Composable optimizado
+const {
+  loading: optimizedLoading,
+  error: optimizedError,
+  getFilteredRecords,
+  searchByDateRange,
+  getStats
+} = useOptimizedAttendance()
+
+// Estado local combinado con composable
+const isLoading = computed(() => optimizedLoading.value || isExporting.value)
+const error = computed(() => optimizedError.value || localError.value)
+const localError = ref<string | null>(null)
+
+// Watcher para cargar datos cuando cambien los filtros
+watch([
+  () => filters.value.startDate,
+  () => filters.value.endDate
+], async ([newStartDate, newEndDate]) => {
+  if (newStartDate && newEndDate) {
+    try {
+      await searchByDateRange(newStartDate, newEndDate)
+      localError.value = null
+    } catch (err: any) {
+      localError.value = `Error al cargar datos: ${err.message || err}`
+    }
+  }
+}, { immediate: true })
+
 // Estado local
-const isLoading = ref(false)
-const error = ref<string | null>(null)
 const isExporting = ref(false)
 const exportFormat = ref('excel')
 const includeStats = ref(true)
@@ -210,7 +237,8 @@ const filters = ref({
   startDate: format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'),
   endDate: format(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), 'yyyy-MM-dd'),
   class: '',
-  student: ''
+  student: '',
+  status: ''
 })
 
 // Nombre del formato seleccionado
@@ -234,48 +262,34 @@ const filteredStudents = computed(() => {
   
   return students.value.filter(student => {
     const foundClass = classesStore.classes.find(c => c.name === filters.value.class)
-    return foundClass && foundClass.studentIds && foundClass.studentIds.includes(Number(student.id))
+    return foundClass && foundClass.studentIds && foundClass.studentIds.includes(String(student.id))
   })
 })
 
-// Registros filtrados
+// Registros filtrados - ahora usando composable optimizado
 const filteredRecords = computed(() => {
-  let records = attendanceStore.records
-
-  // Filtro por rango de fechas
-  records = records.filter(record => {
-    return record.Fecha >= filters.value.startDate && record.Fecha <= filters.value.endDate
+  const records = getFilteredRecords.value({
+    classId: filters.value.class,
+    studentId: filters.value.student,
+    status: filters.value.status
   })
-  
-  // Filtro por clase
-  if (filters.value.class) {
-    records = records.filter(record => record.classId === filters.value.class)
-  }
-  
-  // Filtro por estudiante
-  if (filters.value.student) {
-    records = records.filter(record => record.studentId === filters.value.student)
-  }
-  
-  // Ordenar por fecha
-  return [...records].sort((a, b) => {
-    return new Date(a.Fecha).getTime() - new Date(b.Fecha).getTime()
-  })
+  return Array.isArray(records) ? records : []
 })
 
 // Estadísticas calculadas
 const stats = computed(() => {
-  const present = filteredRecords.value.filter(r => r.status === 'Presente').length
-  const absent = filteredRecords.value.filter(r => r.status === 'Ausente').length
-  const late = filteredRecords.value.filter(r => r.status === 'Tardanza').length
-  const justified = filteredRecords.value.filter(r => r.status === 'Justificado').length
+  const records = filteredRecords.value
+  const present = records.filter(r => r.status === 'Presente').length
+  const absent = records.filter(r => r.status === 'Ausente').length
+  const late = records.filter(r => r.status === 'Tardanza').length
+  const justified = records.filter(r => r.status === 'Justificado').length
   
   return {
     present,
     absent,
     late,
     justified,
-    total: filteredRecords.value.length,
+    total: records.length,
     attendanceRate: filteredRecords.value.length > 0 
       ? Math.round((present / filteredRecords.value.length) * 100) 
       : 0
@@ -301,12 +315,12 @@ const getStudentName = (studentId: string): string => {
 // Exportar datos
 const exportData = async () => {
   if (filteredRecords.value.length === 0) {
-    error.value = 'No hay datos para exportar'
+    localError.value = 'No hay datos para exportar'
     return
   }
   
   isExporting.value = true
-  error.value = null
+  localError.value = null
   
   try {
     const reportTitle = `Reporte de Asistencias - ${formatDate(filters.value.startDate)} a ${formatDate(filters.value.endDate)}`
@@ -331,7 +345,7 @@ const exportData = async () => {
     }
   } catch (err) {
     console.error('Error al exportar:', err)
-    error.value = `Ocurrió un error durante la exportación: ${err.message || err}`
+    localError.value = `Ocurrió un error durante la exportación: ${err.message || err}`
   } finally {
     isExporting.value = false
   }
@@ -403,12 +417,11 @@ const exportToPdf = (data, title) => {
         doc.setTextColor(255);
         doc.text(statsData[0][0], 25, y + 7);
         doc.text(statsData[0][1], 120, y + 7);
-        
-        // Dibujar cuerpo
+          // Dibujar cuerpo
         doc.setTextColor(0);
         for (let i = 1; i < statsData.length; i++) {
           y += 10;
-          doc.setFillColor(i % 2 === 0 ? 240 : 255);
+          doc.setFillColor(i % 2 === 0 ? 240 : 255, i % 2 === 0 ? 240 : 255, i % 2 === 0 ? 240 : 255);
           doc.rect(20, y, 170, 10, 'F');
           doc.text(statsData[i][0], 25, y + 7);
           doc.text(statsData[i][1], 120, y + 7);
@@ -455,10 +468,10 @@ const exportToPdf = (data, title) => {
       doc.setFontSize(14);
       doc.text('Observaciones por Estudiante', 14, currentY);
       currentY += 10;
-      
-      Object.entries(studentGroups).forEach(([studentId, records]) => {
+        Object.entries(studentGroups).forEach(([studentId, records]) => {
         const studentName = getStudentName(studentId);
-        const observations = records.filter(r => r.observaciones && r.observaciones.trim() !== '');
+        const recordsArray = Array.isArray(records) ? records : [];
+        const observations = recordsArray.filter((r: any) => r.observaciones && r.observaciones.trim() !== '');
         
         if (observations.length > 0) {
           doc.setFontSize(12);
@@ -507,20 +520,20 @@ const exportToPdf = (data, title) => {
         doc.setFontSize(12);
         doc.text(className, 14, currentY);
         currentY += 5;
-        
-        // Estadísticas por clase
+          // Estadísticas por clase
+        const recordsArray = Array.isArray(records) ? records : [];
         const classStats = {
-          present: records.filter(r => r.status === 'Presente').length,
-          absent: records.filter(r => r.status === 'Ausente').length,
-          late: records.filter(r => r.status === 'Tardanza').length,
-          justified: records.filter(r => r.status === 'Justificado').length
+          present: recordsArray.filter((r: any) => r.status === 'Presente').length,
+          absent: recordsArray.filter((r: any) => r.status === 'Ausente').length,
+          late: recordsArray.filter((r: any) => r.status === 'Tardanza').length,
+          justified: recordsArray.filter((r: any) => r.status === 'Justificado').length
         };
         
         (doc as any).autoTable({
           startY: currentY,
           head: [['Total', 'Presentes', 'Ausentes', 'Tardanzas', 'Justificados']],
           body: [[
-            records.length,
+            recordsArray.length,
             classStats.present,
             classStats.absent,
             classStats.late,
@@ -605,10 +618,10 @@ const exportToExcel = (data, title) => {
           { header: 'Fecha', key: 'Fecha', width: 15 },
           { header: 'Estado', key: 'Estado', width: 15 },
           { header: 'Justificacion', key: 'Justificacion', width: 30 },
-          { header: 'Observaciones', key: 'Observaciones', width: 30 }
-        ];
+          { header: 'Observaciones', key: 'Observaciones', width: 30 }        ];
         
-        records.forEach(record => {
+        const recordsArray = Array.isArray(records) ? records : [];
+        recordsArray.forEach((record: any) => {
           classSheet.addRow({
             Estudiante: getStudentName(record.studentId),
             Fecha: formatDate(record.Fecha),
@@ -638,10 +651,10 @@ const exportToExcel = (data, title) => {
           { header: 'Fecha', key: 'Fecha', width: 15 },
           { header: 'Estado', key: 'Estado', width: 15 },
           { header: 'Justificacion', key: 'Justificacion', width: 30 },
-          { header: 'Observaciones', key: 'Observaciones', width: 30 }
-        ];
+          { header: 'Observaciones', key: 'Observaciones', width: 30 }        ];
         
-        records.forEach(record => {
+        const recordsArray = Array.isArray(records) ? records : [];
+        recordsArray.forEach((record: any) => {
           studentSheet.addRow({
             Clase: record.classId,
             Fecha: formatDate(record.Fecha),
@@ -734,21 +747,28 @@ const exportToCsv = (data, title) => {
 
 // Cargar datos al montar el componente
 onMounted(async () => {
-  isLoading.value = true
-  error.value = null
-  
-  try {
+  isExporting.value = true
+  localError.value = null
+    try {
     // Asegurarse de que todos los datos estén cargados
     await Promise.all([
       classesStore.fetchClasses(),
       studentsStore.fetchStudents(),
-      attendanceStore.fetchAttendance()
+      attendanceStore.fetchAttendanceDocuments()
     ])
   } catch (err) {
     console.error('Error al cargar datos:', err)
-    error.value = 'Error al cargar los datos para el reporte'
+    localError.value = 'Error al cargar los datos para el reporte'
   } finally {
-    isLoading.value = false
+    isExporting.value = false
   }
 })
+
+// Make sure the component is exported as default
+defineExpose({});
+if (import.meta.env?.PROD === false) {
+  // @ts-ignore - This ensures the component has a default export
+  // which helps with certain bundlers and IDE tooling
+  const _default = {};
+}
 </script>

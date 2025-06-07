@@ -23,8 +23,6 @@ const emit = defineEmits<{
   (e: 'open-justification', student: Student): void;
 }>();
 
-// Añadir un console.log para debug de cambios de estado
-console.log(`[AttendanceTableRow] Dibujando estado ${props.attendanceStatus || 'sin definir'} para ${props.student.nombre}`);
 
 // Use the imported StudentAvatar component
 const studentName = computed(() => `${props.student.nombre} ${props.student.apellido}`);
@@ -61,11 +59,10 @@ const handleJustification = () => {
   console.log('[Justificación] Iniciando proceso de justificación para estudiante:', props.student.id);
   
   // Primero marcamos como Justificado para un cambio inmediato
-  emit('update-status', props.student.id, 'Justificado');
+  emit('update-status', props.student.id, 'Justificado' as AttendanceStatus);
   console.log('[Justificación] Emitido evento update-status con estado Justificado');
   
   // Luego abrimos el modal de justificación de inmediato
-  // El retraso puede estar causando problemas
   console.log('[Justificación] Emitiendo evento open-justification con estudiante:', props.student);
   emit('open-justification', props.student);
 };
@@ -110,6 +107,7 @@ onBeforeUnmount(() => {
             :firstName="student.nombre"
             :lastName="student.apellido"
             :size="isMobile ? 'sm' : 'md'"
+            :imageUrl="student.fotoUrl || student.photoUrl || ''"
           />
         </div>
         <div class="ml-2 sm:ml-4">

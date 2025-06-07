@@ -7,18 +7,7 @@
 <script lang="ts">
 import { defineComponent, ref, onMounted, watch, PropType } from 'vue'
 import Chart from 'chart.js/auto'
-
-interface ChartDataset {
-  label: string;
-  data: number[];
-  borderColor: string;
-  backgroundColor: string;
-}
-
-interface ChartData {
-  labels: string[];
-  datasets: ChartDataset[];
-}
+import { ChartData } from '../types/chartTypes'
 
 export default defineComponent({
   name: 'AttendanceTrendChart',

@@ -211,6 +211,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useAttendanceStore } from '../../Attendance/store/attendance'
 import { useStudentsStore } from '../../Students/store/students'
 import { useClassesStore } from '../../Classes/store/classes'
+import { useOptimizedAttendance } from '../composables/useOptimizedAttendance'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import AttendancePieChart from './AttendancePieChart.vue'
@@ -238,9 +239,20 @@ const attendanceStore = useAttendanceStore()
 const studentsStore = useStudentsStore()
 const classesStore = useClassesStore()
 
-// Estado local
-const isLoading = ref(false)
-const error = ref<string | null>(null)
+// Composable optimizado
+const {
+  loading: optimizedLoading,
+  error: optimizedError,
+  documents: attendanceDocuments,
+  searchByDateRange,
+  getFilteredRecords
+} = useOptimizedAttendance()
+
+// Estado local combinado con composable
+const isLoading = computed(() => optimizedLoading.value)
+const error = computed(() => optimizedError.value || localError.value)
+// Estado local adicional
+const localError = ref<string | null>(null)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const showExportModal = ref(false)
@@ -259,9 +271,9 @@ const classes = computed(() => classesStore.classes)
 const students = computed(() => studentsStore.students)
 
 const isStudentInClass = (studentId: string, classId: string) => {
-  const classItem = classes.value.find(c => c.id === Number(classId))
+  const classItem = classes.value.find(c => c.id.toString() === classId)
   if (!classItem) return false
-  return classItem.studentIds.includes(Number(studentId))
+  return classItem.studentIds.includes(studentId)
 }
 
 const filteredStudents = computed(() => {
@@ -272,29 +284,27 @@ const filteredStudents = computed(() => {
   )
 })
 
+// Registros filtrados usando composable optimizado
 const filteredRecords = computed(() => {
-  let records = attendanceStore.records
-
-  records = records.filter(record => {
-    return record.Fecha >= filters.value.startDate && record.Fecha <= filters.value.endDate
-  })
-  
-  if (filters.value.class) {
-    records = records.filter(record => record.classId === filters.value.class)
-  }
-  
-  if (filters.value.student) {
-    records = records.filter(record => record.studentId === filters.value.student)
-  }
-  
-  if (filters.value.status) {
-    records = records.filter(record => record.status === filters.value.status)
-  }
-  
-  return [...records].sort((a, b) => {
-    return new Date(a.Fecha).getTime() - new Date(b.Fecha).getTime()
+  return getFilteredRecords.value({
+    classId: filters.value.class,
+    studentId: filters.value.student,
+    status: filters.value.status
   })
 })
+
+// Función para cargar registros optimizada por rango de fechas
+const loadFilteredRecords = async () => {
+  try {
+    await searchByDateRange(filters.value.startDate, filters.value.endDate)
+    localError.value = null
+  } catch (err: any) {
+    localError.value = `Error al cargar datos: ${err.message || err}`
+    console.error('Error loading filtered records:', err)
+  }
+}
+
+
 
 const totalPages = computed(() => Math.ceil(filteredRecords.value.length / pageSize.value))
 
@@ -373,10 +383,26 @@ const getStudentName = (studentId: string): string => {
 
 // Obtener nombre de la clase
 const getClassName = (classId: string): string => {
-  const classItem = classesStore.classes.find(c => c.id === Number(classId))
+  const classItem = classesStore.classes.find(c => c.id.toString() === classId)
   if (!classItem) return 'Clase desconocida'
   return classItem.name
 }
+
+// Watcher para cargar datos cuando cambien los filtros de fechas
+watch([
+  () => filters.value.startDate,
+  () => filters.value.endDate
+], async ([newStartDate, newEndDate]) => {
+  if (newStartDate && newEndDate) {
+    try {
+      await searchByDateRange(newStartDate, newEndDate)
+      localError.value = null
+    } catch (err: any) {
+      localError.value = `Error al cargar datos: ${err.message || err}`
+    }
+  }
+  currentPage.value = 1
+}, { immediate: false })
 
 // Aplicar filtros y resetear página
 watch([() => filters.value.class, () => filters.value.student, () => filters.value.status], () => {
@@ -390,21 +416,26 @@ const handleGenerateReport = () => {
 
 // Cargar datos al montar el componente
 onMounted(async () => {
-  isLoading.value = true
-  error.value = null
-  
   try {
     // Asegurarse de que todos los datos estén cargados
     await Promise.all([
       classesStore.fetchClasses(),
-      studentsStore.fetchStudents(),
-      attendanceStore.fetchAttendance()
+      studentsStore.fetchStudents()
     ])
-  } catch (err) {
+    
+    // Cargar registros filtrados usando consulta optimizada
+    await searchByDateRange(filters.value.startDate, filters.value.endDate)
+  } catch (err: any) {
+    localError.value = `Error al cargar datos iniciales: ${err.message || err}`
     console.error('Error al cargar datos:', err)
-    error.value = 'Error al cargar los datos para el informe'
-  } finally {
-    isLoading.value = false
   }
 })
+
+// Make sure the component is exported as default
+defineExpose({});
+if (import.meta.env?.PROD === false) {
+  // @ts-ignore - This ensures the component has a default export
+  // which helps with certain bundlers and IDE tooling
+  const _default = {};
+}
 </script>

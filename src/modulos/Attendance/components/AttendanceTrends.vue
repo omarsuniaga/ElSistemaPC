@@ -88,25 +88,43 @@
   </div>
 </template>
 
-<script>
-import { ref, computed, onMounted, watch } from 'vue'
+<script lang="ts">
+import { defineComponent, ref, computed, onMounted, watch } from 'vue'
 import { format, startOfWeek, startOfMonth, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useAttendanceStore } from '../store/attendance'
 import { useClassesStore } from '../../Classes/store/classes'
+import { useOptimizedAttendance } from '../composables/useOptimizedAttendance'
 import AttendanceTrendChart from './AttendanceTrendChart.vue'
+import { ChartData, TrendData, TrendDataPoint } from '../types/chartTypes'
 
-export default {
+interface AttendanceRecord {
+  id: string;
+  Fecha: string;
+  classId: string;
+  studentId: string;
+  status: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
+}
+
+export default defineComponent({
   name: 'AttendanceTrends',
   components: {
-    AttendanceTrendChart
-  },
+    AttendanceTrendChart  },
   setup() {
     const attendanceStore = useAttendanceStore()
     const classesStore = useClassesStore()
+    
+    // Composable optimizado
+    const {
+      loading: optimizedLoading,
+      error: optimizedError,
+      documents: attendanceDocuments,
+      searchByDateRange
+    } = useOptimizedAttendance()
 
-    const isLoading = ref(false)
-    const error = ref('')
+    const localError = ref<string>('')
+    const isLoading = computed(() => optimizedLoading.value)
+    const error = computed(() => optimizedError.value || localError.value)
 
     // Obtener la fecha actual y restar 3 meses para el rango predeterminado
     const today = new Date()
@@ -119,10 +137,8 @@ export default {
       endDate: format(today, 'yyyy-MM-dd'),
       class: '',
       groupBy: 'week' // 'day', 'week', 'month'
-    })
-
-    // Datos para el gráfico
-    const trendData = ref({
+    })    // Datos para el gráfico
+    const trendData = ref<TrendData>({
       present: [],
       absent: [],
       late: [],
@@ -138,10 +154,8 @@ export default {
       trendData.value.absent.length > 0 || 
       trendData.value.late.length > 0 || 
       trendData.value.justified.length > 0
-    )
-
-    // Datos formateados para el gráfico de líneas
-    const trendChartData = computed(() => {
+    )    // Datos formateados para el gráfico de líneas
+    const trendChartData = computed<ChartData>(() => {
       // Obtener todas las fechas únicas de todos los conjuntos de datos
       const allDates = [
         ...trendData.value.present.map(item => item.date),
@@ -246,46 +260,67 @@ export default {
           return recordMonthStart.getTime() === pointMonthStart.getTime()
         }
       })
-    }
-
-    // Generar tendencias
+    }    // Generar tendencias
     const generateTrends = async () => {
-      try {
-        isLoading.value = true
-        error.value = ''
-        
-        // Validar fechas
+      try {        // Validar fechas
         if (!filters.value.startDate || !filters.value.endDate) {
-          error.value = 'Por favor seleccione un rango de fechas válido'
+          localError.value = 'Por favor seleccione un rango de fechas válido'
           return
         }
-        
-        // Asegurarse de que la fecha de inicio es anterior a la fecha de fin
+          // Asegurarse de que la fecha de inicio es anterior a la fecha de fin
         if (new Date(filters.value.startDate) > new Date(filters.value.endDate)) {
-          error.value = 'La fecha de inicio debe ser anterior a la fecha de fin'
+          localError.value = 'La fecha de inicio debe ser anterior a la fecha de fin'
           return
         }
         
-        // Obtener todos los registros de asistencia
-        await attendanceStore.fetchAttendance()
+        localError.value = '' // Limpiar errores previos
         
-        // Filtrar los registros según los filtros seleccionados
-        let records = attendanceStore.records.filter(record => {
-          // Filtrar por fecha
-          const recordDate = new Date(record.Fecha)
-          const startDate = new Date(filters.value.startDate)
-          const endDate = new Date(filters.value.endDate)
-          
-          if (recordDate < startDate || recordDate > endDate) {
-            return false
+        // Obtener registros de asistencia optimizados por rango de fechas
+        await searchByDateRange(filters.value.startDate, filters.value.endDate)
+        const documents = attendanceDocuments.value
+          // Convertir documentos a registros con filtros aplicados
+        let records: AttendanceRecord[] = []
+        
+        documents.forEach(doc => {
+          // Aplicar filtro de clase si está seleccionado
+          if (filters.value.class && doc.classId !== filters.value.class) {
+            return
           }
           
-          // Filtrar por clase si se ha seleccionado una
-          if (filters.value.class && record.classId !== filters.value.class) {
-            return false
-          }
+          // Procesar presentes
+          doc.data.presentes?.forEach(studentId => {
+            records.push({
+              id: `${doc.fecha}_${doc.classId}_${studentId}_presente`,
+              Fecha: doc.fecha,
+              classId: doc.classId,
+              studentId,
+              status: 'Presente'
+            })
+          })
           
-          return true
+          // Procesar ausentes
+          doc.data.ausentes?.forEach(studentId => {
+            const justification = doc.data.justificacion?.find(j => j.id === studentId)
+            records.push({
+              id: `${doc.fecha}_${doc.classId}_${studentId}_ausente`,
+              Fecha: doc.fecha,
+              classId: doc.classId,
+              studentId,
+              status: justification ? 'Justificado' : 'Ausente'
+            })
+          })
+          
+          // Procesar tarde
+          doc.data.tarde?.forEach(studentId => {
+            const justification = doc.data.justificacion?.find(j => j.id === studentId)
+            records.push({
+              id: `${doc.fecha}_${doc.classId}_${studentId}_tarde`,
+              Fecha: doc.fecha,
+              classId: doc.classId,
+              studentId,
+              status: justification ? 'Justificado' : 'Tardanza'
+            })
+          })
         })
         
         // Generar los puntos de datos según la agrupación seleccionada
@@ -294,12 +329,11 @@ export default {
           new Date(filters.value.endDate),
           filters.value.groupBy
         )
-        
-        // Inicializar los datos de tendencias
-        const present = []
-        const absent = []
-        const late = []
-        const justified = []
+          // Inicializar los datos de tendencias
+        const present: TrendDataPoint[] = []
+        const absent: TrendDataPoint[] = []
+        const late: TrendDataPoint[] = []
+        const justified: TrendDataPoint[] = []
         
         // Calcular los porcentajes para cada punto de fecha
         datePoints.forEach(datePoint => {
@@ -335,26 +369,18 @@ export default {
           absent,
           late,
           justified
-        }
-      } catch (err) {
+        }      } catch (err) {
         console.error('Error generando tendencias:', err)
-        error.value = 'Error al generar las tendencias de asistencia'
-      } finally {
-        isLoading.value = false
       }
     }
 
     // Cargar datos iniciales
     onMounted(async () => {
       try {
-        isLoading.value = true
         await classesStore.fetchClasses()
         await generateTrends()
       } catch (err) {
         console.error('Error cargando datos iniciales:', err)
-        error.value = 'Error al cargar los datos iniciales'
-      } finally {
-        isLoading.value = false
       }
     })
 
@@ -374,8 +400,7 @@ export default {
       classes,
       hasTrendData,
       trendChartData,
-      generateTrends
-    }
+      generateTrends    }
   }
-}
+})
 </script>

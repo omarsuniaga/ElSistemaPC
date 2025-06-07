@@ -148,10 +148,9 @@
                 <div class="max-w-md text-sm text-gray-900 dark:text-gray-200 whitespace-pre-line observation-text">
                   {{ observation.text }}
                 </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+              </td>              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                  {{ observation.author || 'Sistema' }}
+                  {{ getTeacherName(observation.author) }}
                 </span>
               </td>
             </tr>
@@ -274,6 +273,8 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useAttendanceStore } from '../store/attendance';
 import { useClassesStore } from '../../Classes/store/classes';
+import { useTeachersStore } from '../../Teachers/store/teachers'; // Import teachers store
+import { useAuthStore } from '../../../stores/auth'; // Import auth store
 import { format, isValid, parseISO, isAfter, isBefore, isEqual } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -287,6 +288,29 @@ const props = defineProps<Props>();
 // Stores
 const attendanceStore = useAttendanceStore();
 const classesStore = useClassesStore();
+const teachersStore = useTeachersStore(); // Instantiate teachers store
+
+// Function to get teacher name from teacher ID
+const getTeacherName = (teacherId: string): string => {
+  if (!teacherId) return 'Sistema';
+  
+  // If it's 'Sistema', return as is
+  if (teacherId === 'Sistema') return 'Sistema';
+  
+  // Try to find teacher by ID in the teachers store
+  const teacher = teachersStore.getTeacherById(teacherId);
+  if (teacher) {
+    return teacher.name;
+  }
+    // If not found, try to find by auth UID (fallback)
+  const teacherByUid = teachersStore.teachers.find(t => t.uid === teacherId);
+  if (teacherByUid) {
+    return teacherByUid.name;
+  }
+  
+  // Return the original ID if no teacher found
+  return teacherId || 'Sistema';
+};
 
 // States
 const loading = ref(false);
@@ -449,10 +473,10 @@ async function refreshObservations() {
     // Make sure classes are loaded
     if (classesStore.classes.length === 0) {
       await classesStore.fetchClasses();
-    }
-    
-    // Fetch all observations
-    const allObservations = await attendanceStore.fetchObservations();
+    }    // Fetch all observations
+    const authStore = useAuthStore();
+    const teacherId = authStore.user?.uid || '';
+    const allObservations = await attendanceStore.fetchAllObservationsForTeacher(teacherId);
     observations.value = allObservations;
     
     // Reset pagination

@@ -32,7 +32,7 @@
       <p class="text-red-700 dark:text-red-400 font-medium">{{ error }}</p>
     </div>
     
-    <div v-else-if="!observations.length" class="text-center py-12 flex flex-col items-center">
+    <div v-else-if="!localObservations || localObservations.length === 0" class="text-center py-12 flex flex-col items-center">
       <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-full mb-4">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -42,7 +42,7 @@
       <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Las observaciones que agregues aparecerán aquí.</p>
     </div>
       <div v-else class="space-y-6">
-      <div v-for="(observation, index) in sortedObservations" :key="index" 
+      <div v-for="(observation, index) in sortedObservations" :key="observation.id || index"
            class="bg-white dark:bg-gray-800 border-l-4 border-blue-500 dark:border-blue-600 border border-gray-200 dark:border-gray-700 rounded-lg p-5 shadow-sm hover:shadow-md transition-all duration-200">
         <div class="flex justify-between items-start mb-3">
           <div class="flex items-center gap-2">
@@ -52,44 +52,43 @@
               </svg>
             </div>
             <div>
-              <div class="font-medium text-gray-900 dark:text-gray-100">
-                {{ observation.author || 'Usuario desconocido' }}
+              <div class="font-medium text-gray-900 dark:text-gray-100 flex items-center">
+                {{ getTeacherName(observation.author) }}
                 <span v-if="observation.author === 'Sistema'" class="ml-1 text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-400 py-0.5 px-1.5 rounded-full">(sistema)</span>
+                <button 
+                  v-if="typeof editObservation === 'function'"
+                  @click="editObservation(observation)" 
+                  class="ml-3 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                  title="Editar esta observación"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                </button>
               </div>
               <div class="text-xs text-gray-500 dark:text-gray-400">
                 {{ formatDateTime(observation.createdAt) }}
-                
               </div>
             </div>
           </div>
-          <div v-if="date && observation.date && observation.date !== date" 
+          <div v-if="date && observation.fecha && observation.fecha !== date" 
                class="text-xs bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 px-2 py-1 rounded-md">
-            Fecha: {{ formatDate(observation.date) }}
+            Fecha: {{ formatDate(observation.fecha) }}
           </div>
         </div>
           <div class="mt-3 pl-9">
           <div class="prose prose-sm dark:prose-invert max-w-none">
-            <div class="text-gray-700 dark:text-gray-300 leading-relaxed">              <!-- Formatear el texto de la observación con soporte para etiquetas y listas -->
+            <div class="text-gray-700 dark:text-gray-300 leading-relaxed">
               <div 
-                v-if="getObservationText(observation)" 
+                v-if="getObservationDisplayText(observation)" 
                 class="observation-text"
-                v-html="processTextForDisplay(getObservationText(observation)).__html"
+                v-html="processTextForDisplay(getObservationDisplayText(observation)).__html"
               ></div>
               
-              <!-- Mostrar datos adicionales si existen en formato objeto -->
-              <div v-else-if="typeof observation.text === 'object' && observation.text" class="observation-content">
-                <div v-if="observation.text.text" class="observation-text" v-html="processTextForDisplay(observation.text.text).__html"></div>
+              <!-- Fallback for object text if not handled by getObservationDisplayText -->
+              <div v-else-if="typeof observation.text === 'object' && observation.text && observation.text.text" class="observation-content">
+                <div class="observation-text" v-html="processTextForDisplay(observation.text.text).__html"></div>
               </div>
-              <!-- Detectar y mostrar imágenes por referencias en el texto -->
-              <div v-if="observation.text && hasImageReferences(observation.text)" class="mt-4">
-                <div class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  Tiene imágenes adjuntas
-                </div>
-              </div>
-                <!-- Mostrar imágenes del array si están disponibles -->
+
+              <!-- Mostrar imágenes del array si están disponibles -->
               <div v-if="observation.images && observation.images.length" class="mt-4">
                 <div class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-1">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -130,326 +129,246 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAttendanceStore } from '../store/attendance';
-import * as _ from 'lodash'; // Import full lodash library instead of just debounce
+import type { ClassObservation } from '../types/attendance';
+import * as _ from 'lodash';
+import { useAuthStore } from '../../../stores/auth'; // Added to fetch teacherId
+import { useTeachersStore } from '../../Teachers/store/teachers'; // Import teachers store
 
 interface Timestamp {
   seconds: number;
   nanoseconds: number;
 }
 
-interface Observation {
-  text: string | any; // Make text support both string and object types
-  createdAt: string | Timestamp;
-  timestamp?: Timestamp;
-  author?: string;
-  id?: string;
-  classId?: string;
-  date?: string;
-  images?: string[];
-  formattedText?: string;
-}
-
 const props = defineProps<{
   classId: string;
-  date?: string;
+  date?: string; 
 }>();
 
+const emit = defineEmits(['request-edit']);
+
 const attendanceStore = useAttendanceStore();
-const observations = ref<Observation[]>([]);
+const authStore = useAuthStore(); // Instantiate auth store
+const teachersStore = useTeachersStore(); // Instantiate teachers store
+
+// Function to get teacher name from teacher ID
+const getTeacherName = (teacherId: string): string => {
+  if (!teacherId) return 'Usuario desconocido';
+  
+  // If it's 'Sistema', return as is
+  if (teacherId === 'Sistema') return 'Sistema';
+  
+  // Try to find teacher by ID in the teachers store
+  const teacher = teachersStore.getTeacherById(teacherId);
+  if (teacher) {
+    return teacher.name;
+  }
+  
+  // If not found, try to find by auth UID (fallback)
+  const teacherByUid = teachersStore.teachers.find(t => t.uid === teacherId);
+  if (teacherByUid) {
+    return teacherByUid.name;
+  }
+  
+  // Return the original ID if no teacher found
+  return teacherId || 'Usuario desconocido';
+};
+
+const localObservations = ref<ClassObservation[]>([]);
 const loading = ref(true);
 const showImageViewer = ref(false);
 const currentViewedImage = ref('');
 const error = ref<string | null>(null);
 
-// Sort observations by date of la clase (observation.date), most recent first
-const sortedObservations = computed(() => {
-  return [...observations.value].sort((a, b) => {
-    // Si ambos tienen campo 'date', ordenar por ese campo (descendente)
-    if (a.date && b.date) {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    }
-    // Si solo uno tiene 'date', ese va primero
-    if (a.date) return -1;
-    if (b.date) return 1;
-    
-    // Si ninguno tiene 'date', usar createdAt o timestamp
-    let aTime, bTime;
-    
-    // Get timestamp from createdAt (string or timestamp object)
-    if (a.createdAt) {
-      aTime = typeof a.createdAt === 'object' && 'seconds' in a.createdAt 
-        ? new Date(a.createdAt.seconds * 1000).getTime() 
-        : new Date(a.createdAt).getTime();
-    }
-    
-    if (b.createdAt) {
-      bTime = typeof b.createdAt === 'object' && 'seconds' in b.createdAt 
-        ? new Date(b.createdAt.seconds * 1000).getTime() 
-        : new Date(b.createdAt).getTime();
-    }
-    
-    if (!aTime && !bTime) return 0;
-    if (!aTime) return 1;
-    if (!bTime) return -1;
-    return bTime - aTime; // Most recent first
-  });
-});
-
-// Format date and time for display
-const formatDateTime = (dateValue: string | Timestamp | { seconds: number, nanoseconds: number } | any): string => {
-  if (!dateValue) return 'Fecha desconocida';
-  
-  try {
-    let date;
-    
-    // Handle Firebase timestamp format
-    if (typeof dateValue === 'object' && 'seconds' in dateValue && 'nanoseconds' in dateValue) {
-      // Convert seconds to milliseconds
-      date = new Date(dateValue.seconds * 1000);
-    } else if (typeof dateValue === 'string') {
-      date = parseISO(dateValue);
-    } else if (dateValue instanceof Date) {
-      date = dateValue;
-    } else {
-      console.warn('Unknown date format:', dateValue);
-      return 'Fecha desconocida';
-    }
-    
-    if (!isNaN(date.getTime())) {
-      // Format with just hours and minutes, no seconds or nanoseconds
-      return format(date, "d 'de' MMMM yyyy, HH:mm", { locale: es });
-    }
-    
-    // Fallback to string representation
-    return typeof dateValue === 'string' ? dateValue : 'Fecha desconocida';
-  } catch (error) {
-    console.error('Error formatting date:', error, dateValue);
-    return typeof dateValue === 'string' ? dateValue : 'Fecha desconocida';
-  }
-};
-
-// Format just the date portion
-const formatDate = (dateString: string): string => {
-  if (!dateString) return 'Fecha desconocida';
-  
-  try {
-    const date = parseISO(dateString);
-    if (!isNaN(date.getTime())) {
-      return format(date, "d 'de' MMMM yyyy", { locale: es });
-    }
-    return dateString;
-  } catch (error) {
-    console.error('Error formatting date:', error);
-    return dateString;
-  }
-};
-
-// Format observation text to handle image references, bullet points, and student tags
-const formatObservationText = (text: string): string => {
-  if (!text) return '';
-  
-  // If the text has image references marker, split the text and return only the content part
-  const imageSectionMarker = '--- Imágenes adjuntas ---';
-  if (text.includes(imageSectionMarker)) {
-    text = text.split(imageSectionMarker)[0].trim();
-  }
-  
-  return text;
-};
-
-// Process text for displaying, handling bullets and student tags
-const processTextForDisplay = (text: string): { __html: string } => {
-  if (!text) return { __html: '' };
-  
-  // Replace student tags with styled span elements
-  // This handles both @username and full names like @FirstName LastName
-  let processedText = text.replace(/@([A-Za-z0-9]+(?:\s+[A-Za-z0-9]+)*)/g, '<span class="student-tag">@$1</span>');
-  
-  // Also handle any potential "#" tags that might be incorrectly formatted
-  processedText = processedText.replace(/#([A-Za-z0-9]+(?:\s+[A-Za-z0-9]+)*)/g, '<span class="student-tag">#$1</span>');
-  
-  // Add special styling for keywords
-  const keywords = ['importante', 'urgente', 'pendiente', 'completado', 'revisar'];
-  keywords.forEach(keyword => {
-    const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
-    processedText = processedText.replace(regex, `<span class="keyword-tag keyword-${keyword.toLowerCase()}">$&</span>`);
-  });
-  
-  // Process bullet points and lists
-  // Convert "- " or "• " at the beginning of lines to bullet points
-  processedText = processedText.replace(/^[-•] (.+)$/gm, '<li>$1</li>');
-  // Convert "* " at the beginning of lines to bullet points
-  processedText = processedText.replace(/^\* (.+)$/gm, '<li>$1</li>');
-  // Convert "1. ", "2. " etc. at the beginning of lines to numbered list items
-  processedText = processedText.replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
-  
-  // Wrap lists in <ul> or <ol> tags if they contain list items
-  if (processedText.includes('<li>')) {
-    const lines = processedText.split('\n');
-    let inList = false;
-    let isNumberedList = false;
-    let result = '';
-    
-    for (const line of lines) {
-      // Check if this is a numbered list item
-      const isNumbered = /^\d+\.\s/.test(line.trim());
-      
-      if (line.trim().startsWith('<li>') && !inList) {
-        // Start a new list
-        isNumberedList = isNumbered;
-        const listTag = isNumberedList ? 'ol' : 'ul';
-        const listClass = isNumberedList ? 'list-decimal' : 'list-disc';
-        result += `<${listTag} class="${listClass} pl-5 mb-3">\n`;
-        inList = true;
-      } else if (!line.trim().startsWith('<li>') && inList) {
-        // End the current list
-        const listTag = isNumberedList ? 'ol' : 'ul';
-        result += `</${listTag}>\n`;
-        inList = false;
-      }
-      
-      result += line + '\n';
-    }
-    
-    if (inList) {
-      // Close any open list at the end
-      const listTag = isNumberedList ? 'ol' : 'ul';
-      result += `</${listTag}>\n`;
-    }
-    
-    processedText = result;
-  }
-  
-  // Convert line breaks to <br> tags for non-list content
-  processedText = processedText.replace(/\n/g, '<br>');
-  
-  return { __html: processedText };
-};
-
-// Check if text contains image references
-const hasImageReferences = (text: string | any): boolean => {
-  if (!text) return false;
-  
-  if (typeof text === 'string') {
-    // Check if text has the image references marker
-    const imageSectionMarker = '--- Imágenes adjuntas ---';
-    return text.includes(imageSectionMarker);
-  }
-  
-  // Check if text is an object with images property
-  if (typeof text === 'object' && text !== null) {
-    if ('images' in text && Array.isArray((text as any).images) && (text as any).images.length > 0) {
-      return true;
-    }
-  }
-  
-  return false;
-};
-
-// Get the appropriate text from the observation object
-const getObservationText = (observation: Observation): string => {
-  // First try to use formattedText if available
-  if (observation.formattedText && typeof observation.formattedText === 'string') {
-    return observation.formattedText;
-  }
-  
-  // Fall back to text if formattedText is not available
-  if (observation.text && typeof observation.text === 'string') {
-    return formatObservationText(observation.text);
-  }
-  
-  // Handle nested text object
-  if (observation.text && typeof observation.text === 'object') {
-    const textObj = observation.text as any; // Cast to any to avoid TypeScript errors
-    
-    if (textObj && 'text' in textObj && typeof textObj.text === 'string') {
-      return formatObservationText(textObj.text);
-    } else if (textObj && 'formattedText' in textObj && typeof textObj.formattedText === 'string') {
-      return textObj.formattedText;
-    }
-  }
-  
-  // Return empty string as last resort
-  return '';
-};
-// Alias for backward compatibility in template
-const getObservationDisplayText = getObservationText;
-
-// Fetch observations for the class
 const fetchObservations = async () => {
   loading.value = true;
   error.value = null;
   try {
-    // Only attempt to fetch if we have a classId
-    if (props.classId) {
-      observations.value = await attendanceStore.getObservationsHistory(props.classId, props.date);
-      console.log('Fetched observations:', observations.value);
+    console.log(`[ObservationsHistory] Fetching ALL observations for classId: ${props.classId}, date: ${props.date}`);
+    
+    // Obtener TODAS las observaciones de la clase, no solo las del profesor actual
+    // Usar el método que obtiene observaciones de todos los profesores
+    const allObservations = await attendanceStore.fetchObservationsForClass(props.classId);
+    
+    let filteredObservations = allObservations;
+    
+    // Filtrar por fecha solo si se especifica una fecha
+    if (props.date) {
+      filteredObservations = filteredObservations.filter(obs => obs.fecha === props.date);
+      console.log(`[ObservationsHistory] Filtered observations for specific date ${props.date}:`, filteredObservations);
     } else {
-      console.warn('No classId provided, skipping observation fetch');
-      observations.value = [];
+      console.log(`[ObservationsHistory] Fetched all observations for class ${props.classId} (no date filter):`, filteredObservations);
+    }
+    
+    localObservations.value = filteredObservations;
+    
+    if (!localObservations.value || localObservations.value.length === 0) {
+      console.log("[ObservationsHistory] No observations found after fetch/filter.");
+    } else {
+      console.log(`[ObservationsHistory] Found ${localObservations.value.length} observations for display`);
     }
   } catch (err) {
-    // Fix: Use toString() instead of String() constructor
-    const errorMsg = err instanceof Error ? err.message : (err ? err.toString() : 'Unknown error');
-    console.error('Error fetching observations:', errorMsg);
-    error.value = 'Error al cargar las observaciones: ' + errorMsg;
-    observations.value = [];
+    console.error('[ObservationsHistory] Error fetching observations:', err);
+    error.value = 'Error al cargar el historial de observaciones. ' + (err.message || '');
   } finally {
     loading.value = false;
   }
 };
 
-// Watch for changes in props to refetch data
-watch(() => [props.classId, props.date], fetchObservations);
+const sortedObservations = computed(() => {
+  return [...localObservations.value].sort((a, b) => {
+    const getDate = (obs: ClassObservation): Date | null => {
+      if (obs.fecha) return parseISO(obs.fecha);
+      if (obs.createdAt) {
+        if (typeof obs.createdAt === 'string') return parseISO(obs.createdAt);
+        if (typeof obs.createdAt === 'object' && obs.createdAt instanceof Date) {
+          return obs.createdAt;
+        }
+        if (typeof obs.createdAt === 'object' && 'seconds' in obs.createdAt) {
+          return new Date((obs.createdAt as any).seconds * 1000);
+        }
+      }
+      return null;
+    };
+    const dateA = getDate(a);
+    const dateB = getDate(b);
+    if (dateA && dateB) return dateB.getTime() - dateA.getTime();
+    if (dateA) return -1;
+    if (dateB) return 1;
+    return 0;
+  });
+});
 
-// Also watch for changes in the observationsHistory from the store
-// This ensures that when new observations are added from other components,
-// this component refreshes automatically
-const updateObservationsFromStore = _.debounce((newObservations: any[]) => {
-  if (newObservations && newObservations.length > 0) {
-    // Filter to only include observations matching our classId if specified
-    if (props.classId) {
-      observations.value = newObservations.filter(obs => obs.classId === props.classId);
+const formatDateTime = (dateValue: string | Timestamp | Date | any): string => {
+  if (!dateValue) return 'Fecha desconocida';
+  try {
+    let date;
+    if (typeof dateValue === 'object' && dateValue !== null && 'seconds' in dateValue && 'nanoseconds' in dateValue) {
+      date = new Date((dateValue as Timestamp).seconds * 1000);
+    } else if (typeof dateValue === 'string') {
+      date = parseISO(dateValue);
+    } else if (dateValue instanceof Date) {
+      date = dateValue;
     } else {
-      observations.value = [...newObservations];
+      return 'Fecha desconocida';
     }
-    console.log('Updated observations from store watch:', observations.value);
+    return format(date, "d 'de' MMMM yyyy, HH:mm", { locale: es });
+  } catch (error) {
+    return typeof dateValue === 'string' ? dateValue : 'Fecha desconocida';
   }
-}, 500);
+};
 
-watch(
-  () => attendanceStore.observationsHistory,
-  (newObservations) => {
-    if (newObservations) {
-      updateObservationsFromStore(newObservations);
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return 'Fecha desconocida';
+  try {
+    const date = parseISO(dateString);
+    return format(date, "d 'de' MMMM yyyy", { locale: es });
+  } catch (error) {
+    return dateString;
+  }
+};
+
+const processTextForDisplay = (text: string): { __html: string } => {
+  if (!text) return { __html: '' };
+  let processedText = _.escape(text);
+  processedText = processedText.replace(/@([A-Za-z0-9À-ÖØ-öø-ÿ]+(?:\s+[A-Za-z0-9À-ÖØ-öø-ÿ]+)*)/g, '<span class="student-tag">@$1</span>');
+  processedText = processedText.replace(/#([A-Za-z0-9À-ÖØ-öø-ÿ]+(?:\s+[A-Za-z0-9À-ÖØ-öø-ÿ]+)*)/g, '<span class="student-tag">#$1</span>');
+  const keywords = ['importante', 'urgente', 'pendiente', 'completado', 'revisar'];
+  keywords.forEach(keyword => {
+    const regex = new RegExp(`\\b(${keyword})\\b`, 'gi');
+    processedText = processedText.replace(regex, `<span class="keyword-tag keyword-${keyword.toLowerCase()}">$1</span>`);
+  });
+  const lines = processedText.split(/\r\n|\n|\r/);
+  let htmlOutput = '';
+  let inList = false;
+  let listType: 'ul' | 'ol' | null = null;
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    let listItem = null;
+    if (trimmedLine.match(/^[-•*]\s+/)) {
+      listItem = `<li>${trimmedLine.substring(trimmedLine.indexOf(' ') + 1)}</li>`;
+      if (!inList || listType === 'ol') {
+        if (inList && listType === 'ol') htmlOutput += `</ol>`;
+        htmlOutput += `<ul class="list-disc pl-5">`;
+        listType = 'ul';
+        inList = true;
+      }
+    } else if (trimmedLine.match(/^\d+\.\s+/)) {
+      listItem = `<li>${trimmedLine.substring(trimmedLine.indexOf('.') + 2)}</li>`;
+      if (!inList || listType === 'ul') {
+        if (inList && listType === 'ul') htmlOutput += `</ul>`;
+        htmlOutput += `<ol class="list-decimal pl-5">`;
+        listType = 'ol';
+        inList = true;
+      }
+    } else {
+      if (inList) {
+        htmlOutput += listType === 'ul' ? `</ul>` : `</ol>`;
+        inList = false;
+        listType = null;
+      }
+      htmlOutput += line + '\n';
     }
-  },
-  { deep: true }
-);
+    if (listItem) {
+      htmlOutput += listItem;
+    }
+  }
+  if (inList) {
+    htmlOutput += listType === 'ul' ? `</ul>` : `</ol>`;
+  }
+  const finalHtml = htmlOutput.replace(/\n/g, '<br />').replace(/<br \/>(<(ul|ol|li))/g, '$1');
+  return { __html: finalHtml };
+};
 
-// Image viewer functions
+const getObservationDisplayText = (observation: ClassObservation): string => {
+  // Nuevo formato con content.text
+  if (observation.content && observation.content.text) {
+    return observation.content.text;
+  }
+  
+  // Compatibilidad con formato anterior
+  if ((observation as any).formattedText && typeof (observation as any).formattedText === 'string') {
+    return (observation as any).formattedText;
+  }
+  if (typeof (observation as any).text === 'string') {
+    return (observation as any).text;
+  }
+  if (typeof (observation as any).text === 'object' && (observation as any).text !== null) {
+    const textObj = (observation as any).text as any;
+    if (textObj.formattedText && typeof textObj.formattedText === 'string') {
+      return textObj.formattedText;
+    }
+    if (textObj.text && typeof textObj.text === 'string') {
+      return textObj.text;
+    }
+  }
+  
+  console.log('[ObservationsHistory] No se pudo extraer texto de la observación:', observation);
+  return '';
+};
+
 const openImageViewer = (imageSrc: string) => {
   currentViewedImage.value = imageSrc;
   showImageViewer.value = true;
-  
-  // Prevent scrolling when modal is open
   document.body.style.overflow = 'hidden';
-  
-  // Add analytics for tracking (optional)
-  console.log('Image viewer opened:', imageSrc);
 };
 
 const closeImageViewer = () => {
   showImageViewer.value = false;
   currentViewedImage.value = '';
-  
-  // Restore scrolling when modal is closed
   document.body.style.overflow = '';
 };
 
-watch(() => [props.classId, props.date], fetchObservations);
+const editObservation = (observation: ClassObservation) => {
+  console.log("[ObservationsHistory] Requesting edit for:", JSON.parse(JSON.stringify(observation)));
+  emit('request-edit', JSON.parse(JSON.stringify(observation)));
+};
 
-onMounted(fetchObservations);
+watch(() => [props.classId, props.date, authStore.user?.uid], fetchObservations, { immediate: true, deep: true });
+
+onMounted(() => {
+  // Initial fetch handled by watcher
+});
+
 </script>
 
 <style scoped>
@@ -517,74 +436,50 @@ onMounted(fetchObservations);
 .image-gallery {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.5rem; /* 8px */
 }
-
 .image-thumbnail {
-  position: relative;
-  width: 80px;
-  height: 80px;
-  border-radius: 0.375rem;
+  width: 100px; /* Adjust as needed */
+  height: 100px; /* Adjust as needed */
+  border-radius: 0.375rem; /* 6px */
   overflow: hidden;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
+  position: relative;
+  border: 1px solid #e5e7eb; /* Tailwind gray-200 */
 }
-
-.dark .image-thumbnail {
-  border-color: #374151;
+.image-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease-in-out;
 }
-
-.image-thumbnail:hover {
+.image-thumbnail:hover img {
   transform: scale(1.05);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
-
 .thumbnail-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0);
+  inset: 0;
+  background-color: rgba(0,0,0,0.3);
   display: flex;
-  justify-content: center;
   align-items: center;
-  transition: background-color 0.2s ease;
-}
-
-.thumbnail-overlay svg {
+  justify-content: center;
   opacity: 0;
+  transition: opacity 0.2s ease-in-out;
   color: white;
-  transition: opacity 0.2s ease;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
 }
-
 .image-thumbnail:hover .thumbnail-overlay {
-  background-color: rgba(0, 0, 0, 0.3);
-}
-
-.image-thumbnail:hover .thumbnail-overlay svg {
   opacity: 1;
 }
 
-.observation-text {
-  line-height: 1.5;
+.dark .image-thumbnail {
+  border-color: #4b5563; /* Tailwind gray-600 */
 }
 
-.observation-text ul {
+.prose :where(ul):not(:where([class~="not-prose"] *)) {
   list-style-type: disc;
-  padding-left: 1.5rem;
-  margin-bottom: 0.75rem;
+  padding-left: 1.5em; /* Adjust as needed */
 }
-
-.observation-text ol {
+.prose :where(ol):not(:where([class~="not-prose"] *)) {
   list-style-type: decimal;
-  padding-left: 1.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.observation-text li {
-  margin-bottom: 0.25rem;
+  padding-left: 1.5em; /* Adjust as needed */
 }
 </style>

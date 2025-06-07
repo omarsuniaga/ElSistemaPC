@@ -1,37 +1,91 @@
 <script setup lang="ts">
-defineProps<{
-  firstName: string;
-  lastName: string;
-  size?: 'sm' | 'md' | 'lg';
-}>();
+import { computed, ref } from 'vue';
+import AppImage from '@/components/ui/AppImage.vue';
 
-// Helper function to generate initials
-const getInitials = (firstName: string, lastName: string) => {
-  return `${firstName?.charAt(0) ?? ''}${lastName?.charAt(0) ?? ''}`.toUpperCase();
+const props = defineProps({
+  firstName: {
+    type: String,
+    required: true
+  },
+  lastName: {
+    type: String,
+    required: true
+  },
+  imageUrl: {
+    type: String,
+    default: ''
+  },
+  size: {
+    type: String,
+    default: 'md',
+    validator: (value: string) => ['sm', 'md', 'lg'].includes(value)
+  }
+});
+
+const showFallback = ref(false);
+
+const initials = computed(() => {
+  const first = props.firstName?.charAt(0) || '';
+  const last = props.lastName?.charAt(0) || '';
+  return `${first}${last}`.toUpperCase();
+});
+
+const sizeClasses = {
+  sm: 'w-8 h-8 text-xs',
+  md: 'w-10 h-10 text-sm',
+  lg: 'w-16 h-16 text-lg',
 };
 
-// Helper function to determine avatar background color based on name
-const getAvatarColor = (name: string) => {
-  if (!name) return 'bg-gray-500';
+const backgroundColor = computed(() => {
+  const name = `${props.firstName} ${props.lastName}`.toLowerCase();
   const colors = [
-    'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500',
-    'bg-purple-500', 'bg-pink-500', 'bg-indigo-500'
+    'bg-blue-500', 'bg-green-500', 'bg-purple-500', 
+    'bg-pink-500', 'bg-yellow-500', 'bg-indigo-500',
+    'bg-red-500', 'bg-teal-500'
   ];
-  const hash = name.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
-  return colors[hash % colors.length];
+  
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  return colors[Math.abs(hash) % colors.length];
+});
+
+const handleImageError = () => {
+  showFallback.value = true;
 };
 </script>
 
 <template>
-  <div 
-    :class="[
-      'rounded-full flex items-center justify-center text-white',
-      size === 'sm' ? 'w-7 h-7 text-xs' : 
-      size === 'lg' ? 'w-12 h-12 text-base' : 
-      'w-10 h-10 text-sm',
-      getAvatarColor(firstName)
-    ]"
-  >
-    {{ getInitials(firstName, lastName) }}
+  <div class="relative">
+    <!-- Fallback a iniciales cuando no hay imagen o falla la carga -->
+    <div 
+      v-if="!imageUrl || showFallback"
+      :class="[
+        'rounded-full flex items-center justify-center text-white overflow-hidden',
+        sizeClasses[size],
+        backgroundColor
+      ]"
+    >
+      {{ initials }}
+    </div>
+    
+    <!-- Imagen de perfil -->
+    <div v-else :class="['rounded-full overflow-hidden', sizeClasses[size]]">
+      <AppImage 
+        :src="imageUrl"
+        :alt="`Foto de ${firstName} ${lastName}`"
+        :rounded="true"
+        :img-class="'w-full h-full object-cover'"
+        @error="handleImageError"
+      >
+        <template #fallback>
+          <div :class="['w-full h-full flex items-center justify-center', backgroundColor]">
+            <span class="text-white">{{ initials }}</span>
+          </div>
+        </template>
+      </AppImage>
+    </div>
   </div>
 </template>

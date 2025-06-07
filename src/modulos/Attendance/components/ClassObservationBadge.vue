@@ -1,4 +1,5 @@
 <template>
+  asdasdkalsk
   <div 
     v-if="observations" 
     @click="$emit('click')"
