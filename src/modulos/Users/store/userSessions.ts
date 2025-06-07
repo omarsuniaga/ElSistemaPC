@@ -36,7 +36,7 @@ export const useUserSessionsStore = defineStore('userSessions', {
       
       try {
         // Query the teachers collection to find teacher with matching uid
-        const teachersRef = collection(db, 'TEACHERS');
+        const teachersRef = collection(db, 'MAESTROS');
         const q = query(teachersRef, where("uid", "==", uid));
         const snapshot = await getDocs(q);
         

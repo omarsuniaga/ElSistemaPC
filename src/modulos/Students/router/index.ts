@@ -39,12 +39,22 @@ export const studentRoutes: RouteRecordRaw[] = [
     name: 'atRiskStudents',
     component: () => import('../view/AtRiskStudentsView.vue'),
     meta: { requiresAuth: true }
-  },
-  {
+  },  {
     path: '/student-schedule/:id',
     name: 'studentSchedule',
     component: () => import('../view/StudentScheduleView.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/classes/:classId/add-student',
+    name: 'AddStudentToClass',
+    component: () => import('../view/AddStudentToClassView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin', 'Maestro'],
+      title: 'Añadir Estudiante a Clase'
+    }
   }
 ]
 

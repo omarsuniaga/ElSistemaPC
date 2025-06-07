@@ -16,10 +16,9 @@
         <div class="bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-2">
           <div class="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-md">
             <UserIcon class="h-5 w-5 text-primary-600 dark:text-primary-400" />
-          </div>
-          <div>
+          </div>          <div>
             <span class="text-xs text-gray-500 dark:text-gray-400">Total Maestros</span>
-            <p class="font-semibold text-gray-900 dark:text-white">{{ teachers.length }}</p>
+            <p class="font-semibold text-gray-900 dark:text-white">{{ safeArrayLength(teachers) }}</p>
           </div>
         </div>
         
@@ -29,7 +28,7 @@
           </div>
           <div>
             <span class="text-xs text-gray-500 dark:text-gray-400">Clases Activas</span>
-            <p class="font-semibold text-gray-900 dark:text-white">{{ getTotalClasses() }}</p>
+            <p class="font-semibold text-gray-900 dark:text-white">{{ getTotalClassesSafe() }}</p>
           </div>
         </div>
       </div>
@@ -146,38 +145,37 @@
                 <span class="text-lg font-semibold">{{ teacher.name.charAt(0).toUpperCase() }}</span>
               </div>
             </div>
-            
-            <!-- Name and Status -->
+              <!-- Name and Status with safe access -->
             <div class="flex-1 min-w-0">
               <h3 class="text-lg font-medium text-gray-900 dark:text-white truncate">
-                {{ teacher.name }}
+                {{ safeGet(teacher, 'name', 'Nombre no disponible') }}
               </h3>
               <div class="mt-1 flex items-center">
                 <span
                   :class="{
                     'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium': true,
-                    'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200': teacher.status === 'active',
-                    'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200': teacher.status === 'inactive',
-                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200': teacher.status === 'pending'
+                    'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200': safeGet(teacher, 'status') === 'active',
+                    'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200': safeGet(teacher, 'status') === 'inactive',
+                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200': safeGet(teacher, 'status') === 'pending'
                   }"
                 >
-                  {{ getStatusText(teacher.status) }}
+                  {{ getStatusText(safeGet(teacher, 'status')) }}
                 </span>
               </div>
             </div>
           </div>
           
-          <!-- Specialties Tags -->
+          <!-- Specialties Tags with safe access -->
           <div class="mt-4 flex flex-wrap gap-2">
             <span 
-              v-for="specialty in getSpecialtiesArray(teacher.specialties)" 
+              v-for="specialty in getSpecialtiesArraySafe(teacher?.specialties)" 
               :key="specialty" 
               class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
             >
               {{ specialty }}
             </span>
             <span 
-              v-if="getSpecialtiesArray(teacher.specialties).length === 0" 
+              v-if="getSpecialtiesArraySafe(teacher?.specialties).length === 0" 
               class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
             >
               Sin especialidad
@@ -579,12 +577,26 @@ function resetFilters() {
   currentPage.value = 1;
 }
 
+// Safe function to get total classes
+function getTotalClassesSafe() {
+  return safeMath(() => {
+    const teachersArray = safeStoreAccess(teachers, 'value', []);
+    let totalClasses = 0;
+    
+    teachersArray.forEach((teacher: any) => {
+      const teacherId = safeGet(teacher, 'id');
+      if (teacherId) {
+        totalClasses += getTeacherClassCount(teacherId);
+      }
+    });
+    
+    return totalClasses;
+  }, 0);
+}
+
+// Legacy function for compatibility
 function getTotalClasses() {
-  let totalClasses = 0;
-  teachers.value.forEach(teacher => {
-    totalClasses += getTeacherClassCount(teacher.id);
-  });
-  return totalClasses;
+  return getTotalClassesSafe();
 }
 
 function toggleActionMenu(teacherId) {
@@ -656,11 +668,17 @@ function getStatusText(status) {
   }
 }
 
-function getSpecialtiesArray(specialties) {
+// Safe function to get specialties array
+function getSpecialtiesArraySafe(specialties: any): string[] {
   if (!specialties) return [];
-  if (Array.isArray(specialties)) return specialties;
+  if (isValidArray(specialties)) return specialties;
   if (typeof specialties === 'string') return [specialties];
   return [];
+}
+
+// Legacy function for compatibility
+function getSpecialtiesArray(specialties: any) {
+  return getSpecialtiesArraySafe(specialties);
 }
 
 function prevPage() {

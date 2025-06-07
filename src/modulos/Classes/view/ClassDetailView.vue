@@ -3,10 +3,11 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useClassesStore } from '../store/classes';
 import { useTeachersStore } from '../../Teachers/store/teachers';
+import AppImage from '@/components/ui/AppImage.vue';
 import { useStudentsStore } from '../../Students/store/students';
 import type { ClassData } from '../types/class'; // Assuming ClassData is correctly typed
 
-// Import UI components (ensure these paths are correct and components exist)
+// Import UI components
 import ClassDetailSkeleton from '../components/ClassDetailSkeleton.vue';
 import ClassSummary from '../components/ClassSummary.vue';
 import TeacherCard from '../components/TeacherCard.vue';
@@ -84,7 +85,7 @@ const confirmDelete = async () => {
     try {
       await classesStore.deleteClass(classData.value.id);
       showToastHandler('Clase eliminada con éxito', 'success');
-      router.push({ name: 'ClassList' });
+      router.push({ name: 'Classes' });
     } catch (e: any) {
       showToastHandler(`Error al eliminar la clase: ${e.message}`, 'error');
     } finally {
@@ -124,29 +125,59 @@ const closeDeleteModal = () => {
   showDeleteModal.value = false;
 };
 
-// Compute classroom data
-const classSummaryData = computed(() => classData.value ? {
-  title: classData.value.name,
-  instrument: classData.value.instrument,
-  level: classData.value.level,
-  teacherName: teacher.value?.name || 'No asignado',
-  dayOfWeek: classData.value.dayOfWeek || '',
-  startTime: classData.value.startTime || '',
-  durationMinutes: classData.value.durationMinutes,
-  hoursPerWeek: classData.value.hoursPerWeek || calculateHoursPerWeek(),
-  nextSession: classData.value.nextSession || '',
-  // Extraer información de horario del objeto schedule si existe
-  schedule: formatScheduleInfo(classData.value.schedule)
-} : {});
+// Helper function to get first schedule slot or null
+const getFirstScheduleSlot = computed(() => {
+  if (!classData.value?.schedule?.slots?.length) return null;
+  return classData.value.schedule.slots[0];
+});
 
-// Función para formatear la información de horario desde el objeto schedule
-const formatScheduleInfo = (schedule) => {
-  if (!schedule || !schedule.slots || schedule.slots.length === 0) {
-    return { formatted: '', days: [] };
-  }
+// Calculate duration in minutes from time strings
+const calculateDuration = (startTime: string, endTime: string) => {
+  if (!startTime || !endTime) return 0;
+  
+  const [startH, startM] = startTime.split(':').map(Number);
+  const [endH, endM] = endTime.split(':').map(Number);
+  
+  return (endH * 60 + endM) - (startH * 60 + startM);
+};
 
-  // Mapear días para mostrarlos de forma legible
-  const daysMap = {
+// Calculate hours per week based on schedule slots
+const calculateWeeklyHours = computed(() => {
+  if (!classData.value?.schedule?.slots?.length) return 0;
+  
+  const totalMinutes = classData.value.schedule.slots.reduce((total, slot) => {
+    return total + calculateDuration(slot.startTime, slot.endTime);
+  }, 0);
+  
+  return parseFloat((totalMinutes / 60).toFixed(1));
+});
+
+// Compute class summary data
+const classSummaryData = computed(() => {
+  if (!classData.value) return null;
+  
+  const firstSlot = getFirstScheduleSlot.value;
+  const duration = firstSlot 
+    ? calculateDuration(firstSlot.startTime, firstSlot.endTime) 
+    : 0;
+    
+  return {
+    title: classData.value.name,
+    instrument: classData.value.instrument || 'No especificado',
+    level: classData.value.level || 'No especificado',
+    teacherName: teacher.value?.name || 'No asignado',
+    dayOfWeek: firstSlot?.day ? formatDay(firstSlot.day) : 'No programado',
+    startTime: firstSlot?.startTime || '--:--',
+    durationMinutes: duration,
+    hoursPerWeek: calculateWeeklyHours.value,
+    nextSession: 'Próximamente',
+    schedule: formatScheduleInfo(classData.value.schedule)
+  };
+});
+
+// Helper function to format day names
+const formatDay = (day: string): string => {
+  const daysMap: Record<string, string> = {
     'monday': 'Lunes',
     'tuesday': 'Martes', 
     'wednesday': 'Miércoles',
@@ -155,16 +186,37 @@ const formatScheduleInfo = (schedule) => {
     'saturday': 'Sábado',
     'sunday': 'Domingo'
   };
+  return daysMap[day.toLowerCase()] || day;
+};
 
-  const formattedSlots = schedule.slots.map(slot => {
-    const day = daysMap[slot.day.toLowerCase()] || slot.day;
+// Define interface for schedule slot
+interface ScheduleSlot {
+  day: string;
+  startTime: string;
+  endTime: string;
+}
+
+// Define interface for schedule
+interface Schedule {
+  slots: ScheduleSlot[];
+  // Add other schedule properties if they exist
+}
+
+// Función para formatear la información de horario desde el objeto schedule
+const formatScheduleInfo = (schedule: Schedule | undefined) => {
+  if (!schedule?.slots?.length) {
+    return { formatted: '', days: [] };
+  }
+
+  const formattedSlots = schedule.slots.map((slot: ScheduleSlot) => {
+    const day = formatDay(slot.day);
     return `${day} de ${slot.startTime || '?'} a ${slot.endTime || '?'}`;
   });
 
   return {
     formatted: formattedSlots.join(' | '),
-    days: schedule.slots.map(slot => ({
-      day: daysMap[slot.day.toLowerCase()] || slot.day,
+    days: schedule.slots.map((slot: ScheduleSlot) => ({
+      day: formatDay(slot.day),
       startTime: slot.startTime,
       endTime: slot.endTime,
       duration: calculateSlotDuration(slot.startTime, slot.endTime)
@@ -173,7 +225,7 @@ const formatScheduleInfo = (schedule) => {
 };
 
 // Calcular la duración en minutos entre dos horas
-const calculateSlotDuration = (startTime, endTime) => {
+const calculateSlotDuration = (startTime: string, endTime: string): number => {
   if (!startTime || !endTime) return 0;
   
   // Convertir "HH:MM" a minutos
@@ -189,30 +241,7 @@ const calculateSlotDuration = (startTime, endTime) => {
   return endMinutes >= startMinutes ? endMinutes - startMinutes : (24 * 60) - startMinutes + endMinutes;
 };
 
-// Calculate hours per week if not provided directly
-const calculateHoursPerWeek = () => {
-  if (!classData.value) return 0;
-  
-  // If weekly hours is stored directly, use it
-  if (classData.value.hoursPerWeek) return classData.value.hoursPerWeek;
-  
-  // Try to calculate from schedule if available
-  if (classData.value.schedule?.slots && classData.value.schedule.slots.length > 0) {
-    const totalMinutesPerWeek = classData.value.schedule.slots.reduce((total, slot) => {
-      return total + calculateSlotDuration(slot.startTime, slot.endTime);
-    }, 0);
-    
-    return (totalMinutesPerWeek / 60).toFixed(1);
-  }
-  
-  // Otherwise calculate from sessions if available
-  if (classData.value.durationMinutes && classData.value.sessionsPerWeek) {
-    return ((classData.value.durationMinutes * classData.value.sessionsPerWeek) / 60).toFixed(1);
-  }
-  
-  // Default fallback
-  return 0;
-};
+
 
 const teacherCardData = computed(() => teacher.value ? {
   name: teacher.value.name,
@@ -291,7 +320,7 @@ const showAddStudentInfo = () => {
                   <span class="text-gray-500 dark:text-gray-400 mx-1">/</span>
                 </li>
                 <li>
-                  <router-link :to="{ name: 'ClassList' }" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                  <router-link :to="{ name: 'Classes' }" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
                     Clases
                   </router-link>
                 </li>
@@ -368,16 +397,10 @@ const showAddStudentInfo = () => {
             </div>
             
             <div class="px-6 py-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Instrumento</h3>
-                  <p class="mt-1 text-base text-gray-900 dark:text-gray-100">
-                    {{ classData.instrument || 'No especificado' }}
-                  </p>
-                </div>
-                
-                <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Nivel</h3>
+              <div class="space-y-3">
+                <div v-for="stat in stats" :key="stat.label" class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ stat.label }}</span>
+                  <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ stat.value }}</span>
                   <p class="mt-1 text-base text-gray-900 dark:text-gray-100">
                     {{ classData.level || 'No especificado' }}
                   </p>
@@ -491,7 +514,7 @@ const showAddStudentInfo = () => {
                       </span>
                     </div>
                   </div>
-                  <router-link :to="{ name: 'StudentDetail', params: { id: student.id } }" class="ml-3 flex-shrink-0 text-blue-600 dark:text-blue-400 hover:text-blue-500">
+                  <router-link :to="{ name: 'StudentProfile', params: { id: student.id } }" class="ml-3 flex-shrink-0 text-blue-600 dark:text-blue-400 hover:text-blue-500">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                       <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
@@ -535,12 +558,21 @@ const showAddStudentInfo = () => {
             <div class="px-6 py-4">
               <div v-if="teacher" class="flex flex-col items-center text-center">
                 <div class="relative">
-                  <img v-if="teacherCardData?.photoUrl" :src="teacherCardData.photoUrl" alt="Foto del Profesor" 
-                      class="w-32 h-32 rounded-full object-cover border-4 border-amber-100 dark:border-amber-900">
-                  <div v-else class="w-32 h-32 rounded-full bg-amber-100 dark:bg-amber-800 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-amber-500 dark:text-amber-300" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-                    </svg>
+                  <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-amber-100 dark:border-amber-900">
+                    <AppImage 
+                      :src="teacherCardData?.photoUrl || ''"
+                      :alt="`Foto de ${teacher?.name || 'profesor'}`"
+                      :rounded="true"
+                      img-class="w-full h-full object-cover"
+                    >
+                      <template #fallback>
+                        <div class="w-full h-full flex items-center justify-center bg-amber-100 dark:bg-amber-800">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-amber-500 dark:text-amber-300" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                          </svg>
+                        </div>
+                      </template>
+                    </AppImage>
                   </div>
                   <div class="absolute -bottom-1 -right-1 bg-green-400 p-1 rounded-full border-2 border-white dark:border-gray-800">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -602,59 +634,6 @@ const showAddStudentInfo = () => {
           
           <!-- Stats Card -->
           <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden transition-all hover:shadow-md">
-            <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-              <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-purple-500 dark:text-purple-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
-                  <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
-                </svg>
-                Estadísticas
-              </h2>
-            </div>
-            
-            <div class="px-6 py-4">
-              <dl class="grid grid-cols-2 gap-4">
-                <div class="bg-purple-50 dark:bg-purple-900/20 overflow-hidden rounded-lg p-4">
-                  <dt class="text-sm font-medium text-purple-800 dark:text-purple-300 truncate">
-                    Estudiantes
-                  </dt>
-                  <dd class="mt-1 text-3xl font-semibold text-purple-900 dark:text-purple-100">
-                    {{ students.length }}
-                  </dd>
-                </div>
-                
-                <div class="bg-blue-50 dark:bg-blue-900/20 overflow-hidden rounded-lg p-4">
-                  <dt class="text-sm font-medium text-blue-800 dark:text-blue-300 truncate">
-                    Horas/Sem
-                  </dt>
-                  <dd class="mt-1 text-3xl font-semibold text-blue-900 dark:text-blue-100">
-                    {{ classSummaryData.hoursPerWeek }}
-                  </dd>
-                </div>
-                
-                <div class="bg-green-50 dark:bg-green-900/20 overflow-hidden rounded-lg p-4 col-span-2">
-                  <dt class="text-sm font-medium text-green-800 dark:text-green-300 truncate">
-                    Sesiones Semanales
-                  </dt>
-                  <dd class="mt-1 text-3xl font-semibold text-green-900 dark:text-green-100">
-                    {{ classSummaryData.schedule?.days?.length || '0' }}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          </div>
-          
-          <!-- Quick Actions Card -->
-          <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden transition-all hover:shadow-md">
-            <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-              <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                </svg>
-                Acciones rápidas
-              </h2>
-            </div>
-            
             <div class="px-6 py-4">
               <div class="space-y-3">
                 <button @click="editClass" class="w-full flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
@@ -691,7 +670,11 @@ const showAddStudentInfo = () => {
       message="¿Estás seguro de que quieres eliminar esta clase? Esta acción no se puede deshacer y afectará a todos los estudiantes inscritos."
       @confirm="confirmDelete"
       @cancel="closeDeleteModal"
-    />
+    >
+      <template #default>
+        <p>Esta acción no se puede deshacer.</p>
+      </template>
+    </DeleteConfirmationDialog>
   </div>
 </template>
 

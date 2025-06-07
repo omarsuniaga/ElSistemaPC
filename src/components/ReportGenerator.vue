@@ -2,8 +2,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { format, parseISO, eachMonthOfInterval, subMonths, startOfMonth, endOfMonth } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { jsPDF } from 'jspdf'
-import 'jspdf-autotable'
+import { generarPdfTabla } from '@/utils/pdfService';
+// import { jsPDF } from 'jspdf' // Comentado o eliminado si ya no se usa directamente
+// import 'jspdf-autotable' // Comentado o eliminado si ya no se usa directamente
 // Reemplazar XLSX por ExcelJS
 import ExcelJS from 'exceljs'
 import { Line, Bar, Doughnut } from 'vue-chartjs'
@@ -274,79 +275,89 @@ const getStudentsReportData = async () => {
 
 // ... otras funciones para obtener datos específicos
 
-// Generar informe PDF
+// Generar informe PDF usando pdfService
 const generatePDFReport = async (data: any[], title: string) => {
-  // Implementación de generación de PDF con jsPDF
-  const doc = new jsPDF({
-    orientation: pageOrientation.value,
-    unit: 'mm',
-    format: 'a4'
-  })
-  
-  // Añadir título
-  const textColor = colorSchemes.find(cs => cs.id === selectedColorScheme.value)?.primary || '#0ea5e9'
-  doc.setTextColor(textColor)
-  doc.setFontSize(18)
-  doc.text(title, 14, 22)
-  
-  // Añadir fecha
-  doc.setFontSize(10)
-  doc.setTextColor('#666666')
-  doc.text(`Generado: ${format(new Date(), 'PPP', { locale: es })}`, 14, 30)
-  
-  // Configurar tablas y datos
-  if (data.length > 0) {
-    const columns = Object.keys(data[0]).map(key => ({
-      header: key.charAt(0).toUpperCase() + key.slice(1),
-      dataKey: key
-    }))
-    
-    // @ts-ignore - tipo para autoTable
-    doc.autoTable({
-      startY: 40,
-      head: [columns.map(col => col.header)],
-      body: data.map(row => columns.map(col => row[col.dataKey] || '')),
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        cellPadding: 2,
-      },
-      headStyles: {
-        fillColor: textColor,
-        textColor: '#ffffff',
-        fontStyle: 'bold'
-      },
-      alternateRowStyles: {
-        fillColor: '#f8fafc'
+  if (!data || data.length === 0) {
+    error.value = 'No hay datos disponibles para generar el informe PDF.'
+    // Opcionalmente, mostrar un mensaje al usuario en la UI
+    // Por ejemplo, usando un toast o una notificación.
+    // alert('No hay datos disponibles para este informe.');
+    // Si se usa un sistema de notificaciones, sería algo como:
+    // notificationStore.showError('No hay datos disponibles para este informe.');
+    console.warn('generatePDFReport: No data provided.');
+    // Considerar si se debe generar un PDF vacío o simplemente no hacer nada.
+    // Por ahora, simplemente retornamos para evitar errores.
+    // Si se quiere generar un PDF que diga "No hay datos", se puede hacer aquí.
+    // Para este refactor, asumimos que si no hay datos, no se genera el PDF.
+    // O se podría llamar a generarPdfTabla con un mensaje especial.
+    // Por ejemplo:
+    // await generarPdfTabla({
+    //   title: title,
+    //   fileName: `${title.toLowerCase().replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.pdf`,
+    //   columns: [{ header: 'Mensaje', dataKey: 'message' }],
+    //   data: [{ message: 'No hay datos disponibles para este informe.' }],
+    //   institutionName: 'El Sistema Punta Cana', // O obtener de configuración
+    //   headerText: `Generado: ${format(new Date(), 'PPP', { locale: es })}`,
+    //   footerText: includeFooter.value ? footerText.value : undefined,
+    //   pageSettings: { orientation: pageOrientation.value, format: 'a4', unit: 'mm' },
+    //   theme: 'grid',
+    //   headStyles: { fillColor: colorSchemes.find(cs => cs.id === selectedColorScheme.value)?.primary || '#0ea5e9', textColor: '#ffffff', fontStyle: 'bold' },
+    //   alternateRowStyles: { fillColor: '#f8fafc' },
+    //   bodyStyles: { fontSize: 8, cellPadding: 2 },
+    //   showPreview: showPreview.value,
+    //   onPreviewData: (dataUri) => { reportUrl.value = dataUri; }
+    // });
+    return;
+  }
+
+  const reportColumns = Object.keys(data[0]).map(key => ({
+    header: key.charAt(0).toUpperCase() + key.slice(1),
+    dataKey: key
+  })); 
+
+  const pdfOptions = {
+    title: title,
+    fileName: `${title.toLowerCase().replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.pdf`,
+    columns: reportColumns,
+    data: data,
+    institutionName: 'El Sistema Punta Cana', // Esto podría ser configurable
+    // logoUrl: 'URL_DEL_LOGO_SI_APLICA', // Añadir si se tiene un logo global
+    headerText: `Generado: ${format(new Date(), 'PPP', { locale: es })}`,
+    footerText: includeFooter.value ? footerText.value : undefined,
+    pageSettings: {
+      orientation: pageOrientation.value,
+      format: 'a4', // o el formato que se necesite, ej: 'letter'
+      unit: 'mm'
+    },
+    theme: 'grid', // o 'striped', 'plain'
+    headStyles: {
+      fillColor: colorSchemes.find(cs => cs.id === selectedColorScheme.value)?.primary || '#0ea5e9',
+      textColor: '#ffffff',
+      fontStyle: 'bold'
+    },
+    alternateRowStyles: {
+      fillColor: '#f8fafc'
+    },
+    bodyStyles: {
+      fontSize: 8,
+      cellPadding: 2
+    },
+    startY: 35, // Ajustar según el espacio que ocupa el título y la fecha
+    showPreview: showPreview.value, // Pasar el estado de la vista previa
+    onPreviewData: (dataUri: string) => { // Callback para la URL de la vista previa
+      if (showPreview.value) {
+        reportUrl.value = dataUri;
       }
-    })
-  } else {
-    doc.setTextColor('#666666')
-    doc.text('No hay datos disponibles para este informe', 14, 40)
-  }
-  
-  // Añadir pie de página si está habilitado
-  if (includeFooter.value) {
-    const pageCount = doc.internal.getNumberOfPages()
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i)
-      doc.setFontSize(8)
-      doc.setTextColor('#666666')
-      doc.text(
-        footerText.value,
-        14,
-        doc.internal.pageSize.height - 10
-      )
     }
-  }
-  
-  // Guardar/descargar el PDF
-  const pdfOutput = doc.output('datauristring')
-  reportUrl.value = pdfOutput
-  
-  // Si no estamos en vista previa, descargar automáticamente
-  if (!showPreview.value) {
-    doc.save(`${title.toLowerCase().replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.pdf`)
+  };
+
+  try {
+    await generarPdfTabla(pdfOptions);
+    // Si no es vista previa, la descarga se maneja dentro de generarPdfTabla si showPreview es false.
+    // Si es vista previa, reportUrl.value ya se actualizó mediante onPreviewData.
+  } catch (e: any) {
+    console.error('Error al generar PDF con pdfService:', e);
+    error.value = e.message || 'Error al generar el informe PDF con el servicio.';
   }
 }
 

@@ -14,6 +14,17 @@ import ClassesKpi from '../../../../components/dashboard/ClassesKpi.vue'
 import EmergentClassesKpi from '../../../../components/dashboard/EmergentClassesKpi.vue'
 import TeachersKpi from '../../../../components/dashboard/TeachersKpi.vue'
 import MinimizablePanel from '../../../../components/dashboard/MinimizablePanel.vue'
+import { 
+  safeGet, 
+  safeArrayLength, 
+  safeStoreAccess, 
+  safeFilter, 
+  safeFind, 
+  safeMath,
+  isValidArray,
+  isValidObject 
+} from '@/utils/safeAccess'
+import { useAdminErrorHandling } from '@/composables/useAdminErrorHandling'
 
 // Estado reactivo
 const attendanceStore = useAttendanceStore()
@@ -21,6 +32,9 @@ const studentsStore = useStudentsStore()
 const classesStore = useClassesStore()
 const teachersStore = useTeachersStore()
 const todayClassesPanel = ref<InstanceType<typeof TodayClassesPanel> | null>(null)
+
+// Error handling composable
+const { handleAdminError, safeAsyncOperation, validateData } = useAdminErrorHandling()
 
 const isLoading = ref(true)
 const error = ref<string | null>(null)
@@ -152,48 +166,71 @@ async function fetchAttendanceData(skipLoadingState = false) {
     // Set para guardar IDs únicos de estudiantes presentes
     const uniqueStudentIds = new Set<string>()
     
-    // Procesar cada documento de asistencia
+    // Procesar cada documento de asistencia con validaciones seguras
     for (const doc of todayDocuments) {
-      // Obtener la información de la clase
-      const classInfo = classesStore.getClassById(doc.classId)
-      
-      // Procesar estudiantes presentes
-      doc.data.presentes.forEach(studentId => {
-        // Añadir ID al set de estudiantes únicos
-        uniqueStudentIds.add(studentId)
-        
-        // Obtener información del estudiante
-        const student = studentsStore.items.find(s => s.id === studentId)
-        
-        if (student) {
-          presentStudents.push({
-            id: studentId,
-            name: `${student.nombre} ${student.apellido || ''}`.trim(),
-            className: classInfo?.name || 'Clase sin nombre',
-            time: classInfo?.schedule || 'Horario no especificado'
-          })
-        }
-      })
+      // Validar que el documento tenga la estructura correcta
+      if (!doc || !isValidObject(doc.data)) {
+        handleAdminError(
+          new Error('Documento de asistencia con estructura inválida'), 
+          'processTodayAttendance'
+        );
+        continue;
+      }
 
-      // También considerar estudiantes con estado "tarde" como presentes
-      if (doc.data.tarde && Array.isArray(doc.data.tarde)) {
-        doc.data.tarde.forEach(lateStudentId => {
-          // Añadir ID al set de estudiantes únicos
-          uniqueStudentIds.add(lateStudentId)
+      // Obtener la información de la clase con acceso seguro
+      const classInfo = safeStoreAccess(classesStore, `getClassById(${doc.classId})`, null);
+      
+      // Procesar estudiantes presentes con validación segura
+      const presentesArray = safeGet(doc, 'data.presentes', []);
+      if (isValidArray(presentesArray)) {
+        presentesArray.forEach((studentId: string) => {
+          if (!studentId) return;
           
-          // Obtener información del estudiante
-          const student = studentsStore.items.find(s => s.id === lateStudentId)
+          // Añadir ID al set de estudiantes únicos
+          uniqueStudentIds.add(studentId);
+          
+          // Obtener información del estudiante con acceso seguro
+          const students = safeStoreAccess(studentsStore, 'items', []);
+          const student = safeFind(students, (s: any) => safeGet(s, 'id') === studentId);
           
           if (student) {
+            const nombre = safeGet(student, 'nombre', '');
+            const apellido = safeGet(student, 'apellido', '');
+            presentStudents.push({
+              id: studentId,
+              name: `${nombre} ${apellido}`.trim(),
+              className: safeGet(classInfo, 'name', 'Clase sin nombre'),
+              time: safeGet(classInfo, 'schedule', 'Horario no especificado')
+            });
+          }
+        });
+      }
+
+      // También considerar estudiantes con estado "tarde" como presentes con validación
+      const tardeArray = safeGet(doc, 'data.tarde', []);
+      if (isValidArray(tardeArray)) {
+        tardeArray.forEach((lateStudentId: string) => {
+          if (!lateStudentId) return;
+          
+          // Añadir ID al set de estudiantes únicos
+          uniqueStudentIds.add(lateStudentId);
+          
+          // Obtener información del estudiante con acceso seguro
+          const students = safeStoreAccess(studentsStore, 'items', []);
+          const student = safeFind(students, (s: any) => safeGet(s, 'id') === lateStudentId);
+          
+          if (student) {
+            const nombre = safeGet(student, 'nombre', '');
+            const apellido = safeGet(student, 'apellido', '');
             presentStudents.push({
               id: lateStudentId,
-              name: `${student.nombre} ${student.apellido || ''}`.trim(),
-              className: classInfo?.name || 'Clase sin nombre',
-              time: classInfo?.schedule || 'Horario no especificado',
+              name: `${nombre} ${apellido}`.trim(),
+              className: safeGet(classInfo, 'name', 'Clase sin nombre'),
+              time: safeGet(classInfo, 'schedule', 'Horario no especificado'),
               late: true
-            })
+            });
           }
-        })
+        });
       }
 
       // NO incluimos estudiantes justificados o ausentes según el nuevo requerimiento

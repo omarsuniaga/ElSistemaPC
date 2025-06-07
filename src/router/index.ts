@@ -32,8 +32,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/teachers/:id/edit',
-    name: 'TeacherEdit',
-    component: () => import('../modulos/Teachers/view/TeacherEditView.vue'),
+    name: 'TeacherEdit',    component: () => import('../modulos/Teachers/view/TeacherEditView.vue'),
     meta: { requiresAuth: true }
   },
   // Rutas específicas para Maestros y Directores
@@ -44,6 +43,16 @@ const routes: Array<RouteRecordRaw> = [
     meta: { 
       requiresAuth: true,
       allowedRoles: ['Director', 'Admin']
+    }
+  },
+  {
+    path: '/teachers/:id',
+    name: 'TeacherDetail',
+    component: () => import('../modulos/Teachers/view/teacher/TeacherProfileView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin', 'Maestro']
     }
   },
   // Rutas específicas para maestros
@@ -131,7 +140,7 @@ const routes: Array<RouteRecordRaw> = [
     }
   },
   {
-    path: '/admin/reporte-semanal',
+    path: '/admin/reporteSemanal',
     name: 'AdminReporteSemanal',
     component: () => import('../modulos/Teachers/view/admin/AdminReporteSemanal.vue'),
     meta: {
@@ -208,43 +217,21 @@ const routes: Array<RouteRecordRaw> = [
   },  {
     path: '/classes/:id',
     name: 'ClassDetail',
-    component: () => {
-      // Envolver la importación en un try-catch para manejar errores de carga
-      return import('../modulos/Classes/view/ClassDetailView.vue')
-        .catch(err => {
-          console.error('Error cargando ClassDetailView:', err);
-          
-          // Si el usuario es un maestro, redirigir a la vista de maestro
-          const userDataStr = localStorage.getItem('user');
-          if (userDataStr) {
-            try {
-              const userData = JSON.parse(userDataStr);
-              if (userData.role === 'Maestro') {
-                return import('../modulos/Teachers/view/teacher/ClassDetailView.vue');
-              }
-            } catch (e) {
-              console.warn('Error al parsear datos de usuario:', e);
-            }
-          }
-          
-          // Vista de error como fallback
-          return {
-            template: `
-              <div class="p-6">
-                <h2 class="text-xl font-bold mb-4">Error al cargar la vista de clase</h2>
-                <p>Se produjo un error al cargar los detalles de la clase.</p>
-                <button @click="$router.push('/dashboard')" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded">
-                  Volver al Dashboard
-                </button>
-              </div>
-            `
-          };
-        });
-    },
+    component: () => import('../modulos/Classes/view/ClassDetailView.vue'),
     props: true,
     meta: { 
       requiresAuth: true,
       allowedRoles: ['Director', 'Admin', 'Maestro']
+    }
+  },
+  {
+    path: '/classes/:id/edit',
+    name: 'EditClass',
+    component: () => import('../modulos/Classes/view/ClassDetailView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin']
     }
   },
   {
@@ -330,15 +317,6 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../components/TeacherInformeAttendance.vue'),
     meta: { requiresAuth: true, allowedRoles: ['Maestro'] }
   },
-  {
-    path: '/classes/:classId/add-student',
-    name: 'AddStudentToClass',
-    component: () => import('../modulos/Students/view/AddStudentToClassView.vue'),
-    meta: {
-      requiresAuth: true,
-      title: 'Añadir Estudiante a Clase'
-    }
-  },
   ...instrumentsRoutes,
   ...studentRoutes,
   // ...attendanceRoutes,
@@ -410,68 +388,18 @@ router.beforeEach(async (to, _from, next) => {
 
 // Manejador de errores en el enrutamiento (para módulos dinámicos)
 router.onError((error) => {
-  console.error('❌ Error de enrutamiento:', error);
-  
-  // Error de carga de módulos dinámicos (problema común)
-  if (error.message.includes('Failed to fetch dynamically imported module') || 
-      error.message.includes('Unexpected token') ||
-      error.stack?.includes('SyntaxError')) {
-    
-    // Registra el error con más detalles para depuración
-    console.warn('⚠️ Error al cargar módulo dinámico:', {
-      message: error.message,
-      stack: error.stack,
-      to: router.currentRoute.value.fullPath
-    });
-    
-    // Si el error ocurre en la ruta de detalles de clase, redirigir a la vista alternativa
-    if (router.currentRoute.value.path.includes('/classes/')) {
-      const classId = router.currentRoute.value.params.id;
-      if (classId) {
-        console.log('🔄 Redirigiendo a la vista de clase para maestros como fallback');
-        router.push({
-          name: 'TeacherClassDetail',
-          params: { id: classId }
-        }).catch(fallbackError => {
-          console.error('💥 Error en redirección fallback:', fallbackError);
-          // Si aún hay error, intentar recargar la página
-          tryPageReload();
-        });
-        return;
-      }
-    }
-    
-    // Si no es ruta de clase o no tiene ID, intentar recarga como último recurso
-    tryPageReload();
-  }
-});
-
-// Función auxiliar para manejar recargas controladas y evitar bucles
-function tryPageReload() {
-  console.warn('⚠️ Probando una única recarga para resolver el problema...');
-  const reloadCount = parseInt(localStorage.getItem('route_reload_count') || '0');
-  
-  if (reloadCount < 1) {
-    localStorage.setItem('route_reload_count', (reloadCount + 1).toString());
-    
-    // Guardar la ruta actual para restaurarla después de la recarga
-    const currentPath = router.currentRoute.value.fullPath;
-    sessionStorage.setItem('last_route_error_path', currentPath);
-    
-    // Redirigir a una ruta "segura" antes de recargar para evitar bucle
-    if (currentPath !== '/' && currentPath !== '/dashboard' && currentPath !== '/teacher') {
-      router.push('/dashboard').then(() => {
-        setTimeout(() => window.location.reload(), 100);
-      });
+  console.error('❌ Error de enrutamiento:', error)
+  if (error.message.includes('Failed to fetch dynamically imported module')) {
+    console.warn('⚠️ Error al cargar módulo dinámico. Probando una única recarga...')
+    const reloadCount = parseInt(localStorage.getItem('route_reload_count') || '0')
+    if (reloadCount < 1) {
+      localStorage.setItem('route_reload_count', (reloadCount + 1).toString())
+      window.location.reload()
     } else {
-      window.location.reload();
+      console.error('❌ Múltiples errores al cargar módulos. Deteniendo ciclo de recargas.')
+      localStorage.removeItem('route_reload_count')
     }
-  } else {
-    console.error('❌ Múltiples errores al cargar módulos. Deteniendo ciclo de recargas.');
-    localStorage.removeItem('route_reload_count');
-    // Redirigir al dashboard como medida de emergencia
-    router.push('/dashboard');
   }
-}
+})
 
 export default router

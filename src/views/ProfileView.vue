@@ -13,35 +13,15 @@ import { useEmergencyClassStore } from '../modulos/Attendance/store/emergencyCla
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, onSnapshot } from 'firebase/firestore'
 import { getApp } from 'firebase/app'
 import { getAuth, signOut } from 'firebase/auth'
-import {
-  UserCircleIcon,
-  EnvelopeIcon,
-  PhoneIcon,
-  AcademicCapIcon,
-  ArrowRightOnRectangleIcon,
-  BellIcon,
-  LanguageIcon,
-  GlobeAmericasIcon,
-  ComputerDesktopIcon,
-  SunIcon,
-  MoonIcon,
-  CameraIcon,
-  DocumentTextIcon,
-  PencilSquareIcon,
-  XMarkIcon,
-  CheckIcon,
-  ArrowUpTrayIcon,
-  ShieldCheckIcon,
-  KeyIcon,
-  LockClosedIcon,
-  ClockIcon
-} from '@heroicons/vue/24/outline'
+import { safeGet, safeArrayLength, safeStoreAccess } from '../utils/safeAccess'
+import { useAdminErrorHandling } from '../composables/useAdminErrorHandling'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const profileStore = useProfileStore()
 const colorMode = useColorMode()
 const emergencyClassStore = useEmergencyClassStore()
+const { handleError, logError } = useAdminErrorHandling()
 
 // Variables de estado
 const isLoading = ref(false)
@@ -58,7 +38,7 @@ const showEmergencyClassRequests = ref(false)
 const pendingEmergencyClasses = ref(0)
 
 // Get current user UID
-const currentUserUid = computed(() => authStore.user?.uid || '')
+const currentUserUid = computed(() => safeGet(authStore.user, 'uid', ''))
 
 // Datos del formulario
 const formData = ref({
@@ -81,7 +61,8 @@ const unsubscribePendingRequests = shallowRef<(() => void) | null>(null)
 
 // Cálculo del completado del perfil
 const profileCompletion = computed(() => {
-  if (!profileStore.profile) return 0
+  const profile = safeStoreAccess(profileStore, 'profile')
+  if (!profile) return 0
   
   let total = 0
   let completed = 0
@@ -97,7 +78,7 @@ const profileCompletion = computed(() => {
   total += fields.length
   
   fields.forEach(field => {
-    if (profileStore.profile?.[field]) completed++
+    if (safeGet(profile, field)) completed++
   })
   
   // Preferencias
@@ -111,7 +92,7 @@ const profileCompletion = computed(() => {
   total += preferenceFields.length
   
   preferenceFields.forEach(field => {
-    if (profileStore.profile?.preferences?.[field]) completed++
+    if (safeGet(profile, `preferences.${field}`)) completed++
   })
   
   return Math.round((completed / total) * 100)
@@ -140,9 +121,11 @@ const toggleTheme = () => {
   colorMode.value = colorMode.value === 'dark' ? 'light' : 'dark'
   
   // Update theme preference in both local state and Firestore
-  if (profileStore.profile) {
+  const profile = safeStoreAccess(profileStore, 'profile')
+  if (profile) {
+    const currentPreferences = safeGet(profile, 'preferences', {})
     const updatedPreferences = {
-      ...profileStore.profile.preferences,
+      ...currentPreferences,
       theme: colorMode.value
     };
     profileStore.updateSettings(updatedPreferences)
@@ -160,13 +143,14 @@ const toggleTheme = () => {
 
 // Función para iniciar modo de edición
 const startEditing = () => {
-  if (!profileStore.profile) return
+  const profile = safeStoreAccess(profileStore, 'profile')
+  if (!profile) return
   
   formData.value = {
-    displayName: profileStore.profile.displayName,
-    email: profileStore.profile.email,
-    phoneNumber: profileStore.profile.phone || '',
-    preferences: { ...profileStore.profile.preferences }
+    displayName: safeGet(profile, 'displayName', ''),
+    email: safeGet(profile, 'email', ''),
+    phoneNumber: safeGet(profile, 'phone', ''),
+    preferences: { ...safeGet(profile, 'preferences', {}) }
   }
   
   isEditing.value = true
@@ -199,10 +183,9 @@ const handleSubmit = async () => {
     isEditing.value = false
     
     // Registrar actividad
-    addToActivityLog('Perfil actualizado')
-  } catch (err) {
-    error.value = 'Error al actualizar el perfil'
-    console.error('Error updating profile:', err)
+    addToActivityLog('Perfil actualizado')  } catch (err) {
+    error.value = handleError(err, 'Error al actualizar el perfil')
+    logError('Error updating profile', err)
   } finally {
     isLoading.value = false
   }
@@ -224,10 +207,9 @@ const handlePhotoSuccess = async (url) => {
     })
     
     // Registrar actividad
-    addToActivityLog('Foto de perfil actualizada')
-  } catch (err) {
-    error.value = 'Error al actualizar la foto de perfil'
-    console.error('Error updating profile photo:', err)
+    addToActivityLog('Foto de perfil actualizada')  } catch (err) {
+    error.value = handleError(err, 'Error al actualizar la foto de perfil')
+    logError('Error updating profile photo', err)
   }
 }
 
@@ -236,10 +218,9 @@ const handleSignOut = async () => {
   try {
     const auth = getAuth()
     await signOut(auth)
-    router.push('/login')
-  } catch (err) {
-    error.value = 'Error al cerrar sesión'
-    console.error('Error signing out:', err)
+    router.push('/login')  } catch (err) {
+    error.value = handleError(err, 'Error al cerrar sesión')
+    logError('Error signing out', err)
   }
 }
 
@@ -259,9 +240,8 @@ const fetchUserFromFirebase = async () => {
       if (userData) {
         await profileStore.mergeFirebaseData(userData)
       }
-    }
-  } catch (err) {
-    console.error('Error fetching user data from Firebase:', err)
+    }  } catch (err) {
+    logError('Error fetching user data from Firebase', err)
   }
 }
 
@@ -294,12 +274,11 @@ const startWatchingPendingRequests = () => {
     collection(db, 'USERS'),
     where('status', '==', 'pendiente')
   );
-  
-  // Suscribirse en tiempo real pero solo con una suscripción activa
+    // Suscribirse en tiempo real pero solo con una suscripción activa
   unsubscribePendingRequests.value = onSnapshot(pendingRequestsQuery, (snapshot) => {
-    pendingRequests.value = snapshot.docs.length;
+    pendingRequests.value = safeArrayLength(snapshot.docs);
   }, (err) => {
-    console.error('Error al verificar solicitudes pendientes:', err);
+    logError('Error al verificar solicitudes pendientes', err);
   });
 };
 
@@ -343,17 +322,16 @@ const toggleEmergencyClassRequests = () => {
 };
 
 // Cargar las solicitudes pendientes de clases emergentes
-const loadPendingEmergencyClasses = async () => {
-  try {
+const loadPendingEmergencyClasses = async () => {  try {
     await emergencyClassStore.fetchEmergencyClasses('Pendiente');
-    pendingEmergencyClasses.value = emergencyClassStore.getPendingEmergencyClasses.length;
+    pendingEmergencyClasses.value = safeArrayLength(emergencyClassStore.getPendingEmergencyClasses);
   } catch (error) {
-    console.error('Error al cargar clases emergentes pendientes:', error);
+    logError('Error al cargar clases emergentes pendientes', error);
   }
 };
 
 // Observar cambios en el rol de usuario para iniciar/detener suscripciones apropiadamente
-watch(() => authStore.user?.role, (newRole) => {
+watch(() => safeGet(authStore.user, 'role'), (newRole) => {
   if (['Director', 'Administrador'].includes(newRole || '')) {
     startWatchingPendingRequests();
     loadPendingEmergencyClasses();
@@ -382,20 +360,21 @@ onMounted(async () => {
 
   isLoading.value = true
   error.value = ''
-
   try {
     await profileStore.fetchProfile()
     await fetchUserFromFirebase()
-    if (profileStore.profile) {
+    const profile = safeStoreAccess(profileStore, 'profile')
+    if (profile) {
       formData.value = {
-        displayName: profileStore.profile.displayName,
-        email: profileStore.profile.email,
-        phoneNumber: profileStore.profile.phone || '',
-        preferences: { ...profileStore.profile.preferences }
+        displayName: safeGet(profile, 'displayName', ''),
+        email: safeGet(profile, 'email', ''),
+        phoneNumber: safeGet(profile, 'phone', ''),
+        preferences: { ...safeGet(profile, 'preferences', {}) }
       }
       
       // Iniciar vigilancia de solicitudes si es un admin/director
-      if (['Director', 'Administrador'].includes(authStore.user?.role || '')) {
+      const userRole = safeGet(authStore.user, 'role', '')
+      if (['Director', 'Administrador'].includes(userRole)) {
         startWatchingPendingRequests();
       }
       
@@ -405,8 +384,8 @@ onMounted(async () => {
       throw new Error('No se pudo cargar el perfil')
     }
   } catch (err) {
-    error.value = 'Error al cargar el perfil'
-    console.error('Error loading profile:', err)
+    error.value = handleError(err, 'Error al cargar el perfil')
+    logError('Error loading profile', err)
   } finally {
     isLoading.value = false
   }

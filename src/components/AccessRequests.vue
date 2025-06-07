@@ -3,9 +3,12 @@ import { ref, onMounted, watch, onUnmounted, shallowRef } from 'vue'
 import { getFirestore, collection, query, where, getDocs, doc, updateDoc, onSnapshot } from 'firebase/firestore'
 import { useAuthStore } from '../stores/auth'
 import { CheckIcon, XMarkIcon, UserIcon, EnvelopeIcon, PhoneIcon, CalendarIcon } from '@heroicons/vue/24/outline'
+import { safeGet, safeArrayLength } from '../utils/safeAccess'
+import { useAdminErrorHandling } from '../composables/useAdminErrorHandling'
 
 const authStore = useAuthStore()
 const db = getFirestore()
+const { handleError, logError } = useAdminErrorHandling()
 
 interface PendingUser {
   id: string;
@@ -61,13 +64,11 @@ const subscribeToPendingRequests = () => {
     }).sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
-    
-    // Emitir el número actual de solicitudes pendientes
-    emit('pending-count-changed', pendingUsers.value.length);
-    isLoading.value = false;
-  }, (err) => {
-    console.error('Error al obtener usuarios pendientes:', err)
-    error.value = 'Error al cargar las solicitudes'
+      // Emitir el número actual de solicitudes pendientes
+    emit('pending-count-changed', safeArrayLength(pendingUsers.value));
+    isLoading.value = false;  }, (err) => {
+    logError('Error al obtener usuarios pendientes', err)
+    error.value = handleError(err, 'Error al cargar las solicitudes')
     isLoading.value = false
   });
   
@@ -104,10 +105,9 @@ const approveUser = async () => {
     emit('request-processed')
     
     // Cerrar modal y resetear el rol seleccionado
-    closeModals()
-  } catch (err) {
-    console.error('Error al aprobar usuario:', err)
-    error.value = 'Error al aprobar la solicitud'
+    closeModals()  } catch (err) {
+    logError('Error al aprobar usuario', err)
+    error.value = handleError(err, 'Error al aprobar la solicitud')
   } finally {
     isProcessing.value = false
   }
@@ -130,10 +130,9 @@ const rejectUser = async () => {
     emit('request-processed')
     
     // Cerrar modal
-    closeModals()
-  } catch (err) {
-    console.error('Error al rechazar usuario:', err)
-    error.value = 'Error al rechazar la solicitud'
+    closeModals()  } catch (err) {
+    logError('Error al rechazar usuario', err)
+    error.value = handleError(err, 'Error al rechazar la solicitud')
   } finally {
     isProcessing.value = false
   }
@@ -200,7 +199,7 @@ onUnmounted(() => {
 // Observar cambios en el estado de autenticación
 watch(() => authStore.user, (newValue) => {
   if (newValue && ['Director', 'Administrador'].includes(newValue.role || '')) {
-    fetchPendingUsers()
+    subscribeToPendingRequests()
   }
 })
 </script>
@@ -208,9 +207,8 @@ watch(() => authStore.user, (newValue) => {
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-semibold">Solicitudes de Acceso</h2>
-      <button 
-        @click="fetchPendingUsers"
+      <h2 class="text-xl font-semibold">Solicitudes de Acceso</h2>      <button 
+        @click="subscribeToPendingRequests"
         class="px-3 py-1 text-sm text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
       >
         Actualizar
@@ -222,19 +220,17 @@ watch(() => authStore.user, (newValue) => {
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
     </div>
     
-    <!-- Error -->
-    <div v-else-if="error" class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-4 rounded-lg">
-      {{ error }}
-      <button 
-        @click="fetchPendingUsers" 
-        class="text-sm underline ml-2 hover:text-red-800 dark:hover:text-red-300"
-      >
-        Reintentar
-      </button>
-    </div>
-    
-    <!-- Sin solicitudes -->
-    <div v-else-if="pendingUsers.length === 0" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-8 text-center">
+    <!-- Error -->      <div v-else-if="error" class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-4 rounded-lg">
+        {{ error }}
+        <button 
+          @click="subscribeToPendingRequests" 
+          class="text-sm underline ml-2 hover:text-red-800 dark:hover:text-red-300"
+        >
+          Reintentar
+        </button>
+      </div>
+      <!-- Sin solicitudes -->
+    <div v-else-if="safeArrayLength(pendingUsers) === 0" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-8 text-center">
       <UserIcon class="h-12 w-12 mx-auto text-gray-400" />
       <h3 class="mt-2 text-lg font-medium text-gray-900 dark:text-white">No hay solicitudes pendientes</h3>
       <p class="mt-1 text-gray-500 dark:text-gray-400">
@@ -256,63 +252,58 @@ watch(() => authStore.user, (newValue) => {
               <div class="bg-primary-100 dark:bg-primary-900/30 rounded-full p-2">
                 <UserIcon class="h-5 w-5 text-primary-600 dark:text-primary-400" />
               </div>
-              <div>
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white">
-                  {{ user.name || 'Usuario' }}
+              <div>                <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                  {{ safeGet(user, 'name', 'Usuario') }}
                 </h3>
                 <span class="text-sm text-gray-500 dark:text-gray-400">
-                  Rol: {{ user.role || 'No especificado' }}
+                  Rol: {{ safeGet(user, 'role', 'No especificado') }}
                 </span>
               </div>
             </div>
             
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-              <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">              <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                 <EnvelopeIcon class="h-4 w-4 flex-shrink-0" />
-                <span>{{ user.email }}</span>
+                <span>{{ safeGet(user, 'email', 'No disponible') }}</span>
               </div>
               <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                 <PhoneIcon class="h-4 w-4 flex-shrink-0" />
-                <span>{{ user.phone || 'No disponible' }}</span>
-              </div>
-              <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400 sm:col-span-2">
+                <span>{{ safeGet(user, 'phone', 'No disponible') }}</span>
+              </div>              <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400 sm:col-span-2">
                 <CalendarIcon class="h-4 w-4 flex-shrink-0" />
-                <span>Registro: {{ formatDate(user.createdAt) }}</span>
+                <span>Registro: {{ formatDate(safeGet(user, 'createdAt', new Date().toISOString())) }}</span>
               </div>
               <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400 sm:col-span-2">
                 <CalendarIcon class="h-4 w-4 flex-shrink-0" />
                 <span>
                   <span class="font-medium">Disponibilidad:</span> 
-                  {{ user.availability?.type === 'complete' ? 'Tiempo Completo' : 'Tiempo Parcial' }}
+                  {{ safeGet(user, 'availability.type') === 'complete' ? 'Tiempo Completo' : 'Tiempo Parcial' }}
                 </span>
               </div>
-              
-              <div v-if="user.availability?.type === 'partial'" class="sm:col-span-2 mt-1 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                <div v-if="safeGet(user, 'availability.type') === 'partial'" class="sm:col-span-2 mt-1 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
                 <div class="text-xs text-gray-600 dark:text-gray-400">
                   <div class="font-medium mb-1">Horario disponible:</div>
-                  <div v-for="day in user.availability.schedule" :key="day.day" class="flex gap-1">
-                    <template v-if="day.enabled">
-                      <span class="w-20">{{ day.day }}:</span>
-                      <span>{{ day.startTime }} - {{ day.endTime }}</span>
+                  <div v-for="day in safeGet(user, 'availability.schedule', [])" :key="day.day" class="flex gap-1">
+                    <template v-if="safeGet(day, 'enabled', false)">
+                      <span class="w-20">{{ safeGet(day, 'day', '') }}:</span>
+                      <span>{{ safeGet(day, 'startTime', '') }} - {{ safeGet(day, 'endTime', '') }}</span>
                     </template>
                   </div>
-                  <div v-if="!user.availability.schedule.some(d => d.enabled)" class="italic">
+                  <div v-if="!safeGet(user, 'availability.schedule', []).some(d => safeGet(d, 'enabled', false))" class="italic">
                     No especificó días disponibles
                   </div>
                 </div>
               </div>
             </div>
             
-            <div class="flex items-center gap-2">
-              <span 
+            <div class="flex items-center gap-2">              <span 
                 :class="[
                   'px-2 py-1 text-xs rounded-full',
-                  user.profileCompleted 
+                  safeGet(user, 'profileCompleted', false)
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
                     : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
                 ]"
               >
-                {{ user.profileCompleted ? 'Perfil completo' : 'Perfil incompleto' }}
+                {{ safeGet(user, 'profileCompleted', false) ? 'Perfil completo' : 'Perfil incompleto' }}
               </span>
             </div>
           </div>
@@ -353,9 +344,8 @@ watch(() => authStore.user, (newValue) => {
                 <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
                   Asignar rol y aprobar
                 </h3>
-                <div class="mt-2">
-                  <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    Asigne un rol para <span class="font-semibold">{{ selectedUser?.name }}</span> 
+                <div class="mt-2">                  <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    Asigne un rol para <span class="font-semibold">{{ safeGet(selectedUser, 'name', 'Usuario') }}</span> 
                     antes de aprobar su acceso a la plataforma.
                   </p>
                   
@@ -424,10 +414,9 @@ watch(() => authStore.user, (newValue) => {
               <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
                   Rechazar acceso
-                </h3>
-                <div class="mt-2">
+                </h3>                <div class="mt-2">
                   <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                    ¿Estás seguro de que deseas rechazar el acceso de <span class="font-semibold">{{ selectedUser?.name }}</span>?
+                    ¿Estás seguro de que deseas rechazar el acceso de <span class="font-semibold">{{ safeGet(selectedUser, 'name', 'Usuario') }}</span>?
                   </p>
                   <div>
                     <label for="rejection-reason" class="block text-sm font-medium text-gray-700 dark:text-gray-300">

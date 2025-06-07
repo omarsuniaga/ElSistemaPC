@@ -59,19 +59,18 @@
         </div>
         
             </div>
-      
-      <!-- Clases destacadas -->
+        <!-- Clases destacadas con validación segura -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
           <h3 class="text-lg font-medium mb-2">Clase con más alumnos</h3>
-          <p class="text-xl font-bold">{{ claseMasAlumnos.nombre || 'N/A' }}</p>
-          <p v-if="claseMasAlumnos.nombre">{{ claseMasAlumnos.cantidad }} alumnos</p>
+          <p class="text-xl font-bold">{{ safeGet(claseMasAlumnos, 'nombre', 'N/A') }}</p>
+          <p v-if="safeGet(claseMasAlumnos, 'nombre')">{{ safeGet(claseMasAlumnos, 'cantidad', 0) }} alumnos</p>
         </div>
         
         <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
           <h3 class="text-lg font-medium mb-2">Clase con menos alumnos</h3>
-          <p class="text-xl font-bold">{{ claseMenosAlumnos.nombre || 'N/A' }}</p>
-          <p v-if="claseMenosAlumnos.nombre">{{ claseMenosAlumnos.cantidad }} alumnos</p>
+          <p class="text-xl font-bold">{{ safeGet(claseMenosAlumnos, 'nombre', 'N/A') }}</p>
+          <p v-if="safeGet(claseMenosAlumnos, 'nombre')">{{ safeGet(claseMenosAlumnos, 'cantidad', 0) }} alumnos</p>
         </div>
       </div>
       
@@ -92,10 +91,9 @@
             </button>
           </nav>
         </div>
-        
-        <!-- Contenido del día seleccionado -->
+          <!-- Contenido del día seleccionado con validación segura -->
         <div class="mt-4">
-          <div v-if="clasesPorDia[selectedDay]?.length" class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+          <div v-if="safeArrayLength(safeGet(clasesPorDia, selectedDay, [])) > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead class="bg-gray-50 dark:bg-gray-900">
                 <tr>
@@ -108,24 +106,24 @@
                 </tr>
               </thead>
               <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                <tr v-for="clase in clasesPorDia[selectedDay]" :key="clase.id">
+                <tr v-for="clase in safeGet(clasesPorDia, selectedDay, [])" :key="safeGet(clase, 'id', Math.random())">
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="font-medium">{{ clase.name }}</div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ clase.instrument }}</div>
+                    <div class="font-medium">{{ safeGet(clase, 'name', 'Clase sin nombre') }}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ safeGet(clase, 'instrument', 'Sin instrumento') }}</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <div>{{ formatTime(clase.horario?.startTime) }} - {{ formatTime(clase.horario?.endTime) }}</div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ calcularDuracion(clase.horario) }}</div>
+                    <div>{{ formatTime(safeGet(clase, 'horario.startTime')) }} - {{ formatTime(safeGet(clase, 'horario.endTime')) }}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ calcularDuracion(safeGet(clase, 'horario', {})) }}</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <div>{{ clase.studentIds?.length || 0 }} alumnos</div>
+                    <div>{{ safeArrayLength(safeGet(clase, 'studentIds', [])) }} alumnos</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <div>{{ clase.asistencia?.presentes || 0 }} / {{ clase.studentIds?.length || 0 }}</div>
+                    <div>{{ safeGet(clase, 'asistencia.presentes', 0) }} / {{ safeArrayLength(safeGet(clase, 'studentIds', [])) }}</div>
                     <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mt-1">
                       <div 
                         class="bg-primary-600 h-2.5 rounded-full" 
-                        :style="`width: ${calcularPorcentajeAsistencia(clase)}%`"
+                        :style="`width: ${calcularPorcentajeAsistenciaSafe(clase)}%`"
                       ></div>
                     </div>
                   </td>
@@ -234,6 +232,17 @@ import { useClassesStore } from '../../../Classes/store/classes'
 import { useTeachersStore } from '../../store/teachers'
 import { useStudentsStore } from '../../../Students/store/students'
 import { useUserSessionsStore } from '../../../Users/store/userSessions'
+import { 
+  safeGet, 
+  safeArrayLength, 
+  safeStoreAccess, 
+  safeFilter, 
+  safeFind, 
+  safeMath,
+  isValidArray,
+  isValidObject 
+} from '@/utils/safeAccess'
+import { useAdminErrorHandling } from '@/composables/useAdminErrorHandling'
 
 // Stores
 const attendanceStore = useAttendanceStore()
@@ -241,6 +250,9 @@ const classesStore = useClassesStore()
 const teachersStore = useTeachersStore()
 const studentsStore = useStudentsStore()
 const userSessionsStore = useUserSessionsStore()
+
+// Error handling composable
+const { handleAdminError, safeAsyncOperation, validateData } = useAdminErrorHandling()
 
 // Estado reactivo
 const isLoading = ref(true)
@@ -328,23 +340,39 @@ const calcularDuracion = (horario: any) => {
   }
 }
 
-// Calcular porcentaje de asistencia
+// Calcular porcentaje de asistencia de forma segura
+const calcularPorcentajeAsistenciaSafe = (clase: any) => {
+  return safeMath(() => {
+    const studentIds = safeGet(clase, 'studentIds', []);
+    const totalStudents = safeArrayLength(studentIds);
+    
+    if (totalStudents === 0) return 0;
+    
+    const presentes = safeGet(clase, 'asistencia.presentes', 0);
+    return Math.round((presentes * 100) / totalStudents);
+  }, 0);
+}
+
+// Calcular porcentaje de asistencia (versión legacy para compatibilidad)
 const calcularPorcentajeAsistencia = (clase: any) => {
-  if (!clase.studentIds || clase.studentIds.length === 0) return 0
-  return Math.round((clase.asistencia?.presentes || 0) * 100 / clase.studentIds.length)
+  return calcularPorcentajeAsistenciaSafe(clase);
 }
 
-// Obtener nombre del maestro
+// Obtener nombre del maestro de forma segura
 const obtenerNombreMaestro = (teacherId: string) => {
-  if (!teacherId) return 'Sin asignar'
-  const teacher = teachersStore.teachers.find(t => t.id === teacherId)
-  return teacher ? `${teacher.name}`.trim() : 'Desconocido'
+  if (!teacherId) return 'Sin asignar';
+  
+  const teachers = safeStoreAccess(teachersStore, 'teachers', []);
+  const teacher = safeFind(teachers, (t: any) => safeGet(t, 'id') === teacherId);
+  
+  return teacher ? safeGet(teacher, 'name', 'Desconocido').trim() : 'Desconocido';
 }
 
-// Mostrar observaciones de una clase
+// Mostrar observaciones de una clase de forma segura
 const mostrarObservaciones = (clase: any) => {
-  observacionesClaseSeleccionada.value = clase.observaciones || []
-  showObservacionesModal.value = true
+  const observaciones = safeGet(clase, 'observaciones', []);
+  observacionesClaseSeleccionada.value = isValidArray(observaciones) ? observaciones : [];
+  showObservacionesModal.value = true;
 }
 
 // Exportar reporte
@@ -369,7 +397,7 @@ const cargarDatosSemana = async () => {
       classesStore.fetchClasses(),
       teachersStore.fetchTeachers(),
       studentsStore.fetchStudents(),
-      attendanceStore.fetchAttendanceByDateRange(startDate, endDate)
+      attendanceStore.fetchAttendanceDocuments(startDate, endDate)
     ])
     
     // Procesar clases por día de la semana
@@ -458,8 +486,8 @@ const procesarClasesPorDia = () => {
         claseConDatos.maestroAsistio = true
         
         // Obtener observaciones
-        if (doc.observations) {
-          claseConDatos.observaciones = doc.observations
+        if (doc.data.observations) {
+          claseConDatos.observaciones = doc.data.observations
         }
       }
       

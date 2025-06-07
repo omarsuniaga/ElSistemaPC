@@ -4,6 +4,7 @@ import { createPinia } from 'pinia'
 import router from './router'
 import App from './App.vue'
 import { registerServiceWorker } from './registerServiceWorker'
+import { createBrowserDebugFunction } from './utils/testAttendanceSystem'
 
 import './style.css'
 
@@ -25,6 +26,13 @@ app.use(pinia)
 
 // Luego inicializar el router
 app.use(router)
+
+// Crear función de debugging global en desarrollo
+if (import.meta.env.DEV) {
+    createBrowserDebugFunction()
+    console.log('🔧 Modo desarrollo: funciones de debugging disponibles')
+    console.log('   - window.debugObservationIssue() para diagnosticar modal de observaciones')
+}
 
 // Finalmente montar la app
 app.mount('#app')

@@ -1,277 +1,348 @@
 <script setup lang="ts">
-import { ref, watchEffect, watch, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { 
   startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  addDays,
   format,
   isToday,
   isSameMonth,
-  startOfWeek,
-  addDays,
-  getDate,
+  isSameDay,
+  parseISO,
   addMonths,
   subMonths
 } from 'date-fns'
 import { es } from 'date-fns/locale'
 
-// Interfaz para la estructura de una fecha marcada
-interface MarkedDateInfo {
-  date: string; // Formato 'yyyy-MM-dd'
-  userId: number | string; // ID del usuario que registró la actividad
+type MarkedDateStyle = 'dot' | 'circle' | 'highlight' | 'custom'
+
+interface MarkedDate {
+  date: string // Formato 'yyyy-MM-dd'
+  style?: MarkedDateStyle
+  color?: string
+  class?: string
+  tooltip?: string
 }
 
-// Interfaz para la información del usuario actual
-interface UserInfo {
-  id: number | string;
-  role: string; // 'Admin', 'Director', 'Teacher' u otros roles del sistema
-}
-
-// Props: se reciben la fecha actual, las fechas marcadas, la fecha seleccionada, y la información del usuario actual
-const props = defineProps<{
-  currentMonth?: Date,
-  markedDates?: (string | MarkedDateInfo)[],
-  selectedDate?: string,
-  currentUser?: UserInfo,
-  highlightedDates?: string[] // Mantener compatibilidad con otras props existentes
-}>()
+const props = withDefaults(defineProps<{
+  /** Fecha actualmente seleccionada */
+  modelValue?: string | null
+  /** Fechas marcadas con estilos personalizados */
+  markedDates?: (string | MarkedDate)[]
+  /** Mes que se muestra actualmente */
+  currentMonth?: Date
+  /** Primer día de la semana (0: Domingo, 1: Lunes, etc.) */
+  firstDayOfWeek?: number
+  /** Estilo por defecto para fechas marcadas */
+  defaultMarkedStyle?: MarkedDateStyle
+  /** Color por defecto para fechas marcadas */
+  defaultMarkedColor?: string
+  /** Si se permite la navegación entre meses */
+  navigable?: boolean
+  /** Si se muestra el selector de mes/año */
+  showMonthYearSelector?: boolean
+}>(), {
+  modelValue: null,
+  markedDates: () => [],
+  currentMonth: () => new Date(),
+  firstDayOfWeek: 1 as 0 | 1 | 2 | 3 | 4 | 5 | 6, // Lunes por defecto
+  defaultMarkedStyle: 'dot',
+  defaultMarkedColor: '#3b82f6',
+  navigable: true,
+  showMonthYearSelector: false
+})
 
 const emit = defineEmits<{
-  (e: 'select', date: string): void,
-  (e: 'day-click', date: any): void,
+  /** Se dispara cuando se selecciona una fecha */
+  (e: 'update:modelValue', date: string): void
+  /** Se dispara cuando hace clic en un día */
+  (e: 'day-click', date: string, event: Event): void
+  /** Se dispara cuando cambia el mes mostrado */
   (e: 'month-change', date: Date): void
+  /** Se dispara cuando se hace clic en una fecha marcada */
+  (e: 'marked-day-click', date: string, event: Event): void
+  /** Se dispara cuando cambia la fecha (nuevo) */
+  (e: 'date-change', date: string): void
+  /** Se dispara cuando se selecciona una fecha (para AttendanceView) */
+  (e: 'select', date: string): void
 }>()
 
-// Estado del mes mostrado (si no se pasa, se usa el actual)
-const displayedMonth = ref(props.currentMonth || new Date())
+// Estado interno
+const currentMonth = ref<Date>(props.currentMonth || new Date())
+const selectedDate = ref<string | null>(props.modelValue || null)
 
-// Array para almacenar la información de cada día del calendario
-const calendarDays = ref<{
-  date: string,
-  dayOfMonth: number,
-  isCurrentMonth: boolean,
-  isToday: boolean,
-  isMarked: boolean,
-  dayName: string
-}[]>([])
-
-// Nombres de los días de la semana en español
-const weekDays = ref(['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'])
-
-// Etiqueta del mes actual (por ejemplo, "abril 2025")
-const currentMonthLabel = computed(() => {
-  return format(displayedMonth.value, 'MMMM yyyy', { locale: es })
+// Observar cambios en las props
+watch(() => props.currentMonth, (newMonth) => {
+  if (newMonth) currentMonth.value = newMonth
 })
 
-// Función que determina si una fecha está marcada según el rol del usuario
+watch(() => props.modelValue, (newValue) => {
+  selectedDate.value = newValue || null
+})
+
+// Formatear fechas marcadas para un acceso rápido
+const markedDatesMap = computed(() => {
+  const map = new Map<string, MarkedDate>()
+  const dates = Array.isArray(props.markedDates) ? props.markedDates : []
+  
+  dates.forEach(mark => {
+    if (typeof mark === 'string') {
+      map.set(mark, { 
+        date: mark, 
+        style: props.defaultMarkedStyle,
+        color: props.defaultMarkedColor
+      })
+    } else if (mark && typeof mark === 'object') {
+      map.set(mark.date, {
+        date: mark.date,
+        style: mark.style || props.defaultMarkedStyle,
+        color: mark.color || props.defaultMarkedColor,
+        class: mark.class || '',
+        tooltip: mark.tooltip
+      })
+    }
+  })
+  
+  return map
+})
+
+// Verificar si una fecha está marcada
 const isDateMarked = (dateStr: string): boolean => {
-  // Si no hay fechas marcadas, no se marca nada
-  if (!props.markedDates || props.markedDates.length === 0) {
-    return false;
-  }
-
-  // Primero verificamos el formato de markedDates
-  const isLegacyFormat = typeof props.markedDates[0] === 'string';
-
-  // Caso 1: Formato de strings directo
-  if (isLegacyFormat) {
-    return (props.markedDates as string[]).includes(dateStr);
-  }
-  
-  // Caso 2: Formato de objetos con información de usuario
-  // Si no hay usuario actual, mostramos todas las fechas marcadas
-  if (!props.currentUser) {
-    return (props.markedDates as MarkedDateInfo[]).some(item => item.date === dateStr);
-  }
-
-  // Verifica si el usuario tiene rol de administrador o director
-  const isAdminOrDirector = ['Admin', 'Director', 'Administrador'].includes(props.currentUser.role);
-  
-  // Filtra las fechas según el rol:
-  return (props.markedDates as MarkedDateInfo[]).some(markedDate => {
-    // Si la fecha no coincide, retorna falso directamente
-    if (markedDate.date !== dateStr) {
-      return false;
-    }
-    
-    // Si es admin o director, muestra todas las fechas marcadas
-    if (isAdminOrDirector) {
-      return true;
-    }
-    
-    // Si es maestro u otro rol, solo muestra sus propias fechas marcadas
-    return markedDate.userId === props.currentUser.id;
-  });
+  return markedDatesMap.value.has(dateStr)
 }
 
-// Interfaz para los días del calendario
-interface CalendarDay {
-  date: string;
-  dayOfMonth: number;
-  isCurrentMonth: boolean;
-  isToday: boolean;
-  isMarked: boolean;
-  dayName: string;
-}
-
-type DayClickEvent = CalendarDay;
-
-// Función para generar la grilla del calendario (42 días para cubrir 6 semanas)
-const generateCalendar = () => {
-  const firstDayOfMonth = startOfMonth(displayedMonth.value)
-  // Empezamos la semana en lunes (weekStartsOn: 1)
-  const startDate = startOfWeek(firstDayOfMonth, { weekStartsOn: 1 })
-  const days: CalendarDay[] = []
-
-  for (let i = 0; i < 42; i++) {
-    const date = addDays(startDate, i)
-    const dateStr = format(date, 'yyyy-MM-dd')
+// Generar la grilla del calendario
+const calendarDays = computed(() => {
+  const start = startOfWeek(startOfMonth(currentMonth.value), { weekStartsOn: props.firstDayOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6 })
+  const end = endOfWeek(endOfMonth(currentMonth.value), { weekStartsOn: props.firstDayOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6 })
+  
+  const days: {
+    date: string
+    dayOfMonth: number
+    isCurrentMonth: boolean
+    isToday: boolean
+    isSelected: boolean
+    isMarked: boolean
+    markedInfo?: MarkedDate
+  }[] = []
+  
+  let currentDate = start
+  
+  while (currentDate <= end) {
+    const dateStr = format(currentDate, 'yyyy-MM-dd')
+    const markedInfo = markedDatesMap.value.get(dateStr)
+    
     days.push({
       date: dateStr,
-      dayOfMonth: getDate(date),
-      isCurrentMonth: isSameMonth(date, displayedMonth.value),
-      isToday: isToday(date),
-      isMarked: isDateMarked(dateStr),
-      dayName: format(date, 'EEEE', { locale: es })
+      dayOfMonth: currentDate.getDate(),
+      isCurrentMonth: isSameMonth(currentDate, currentMonth.value),
+      isToday: isToday(currentDate),
+      isSelected: selectedDate.value === dateStr,
+      isMarked: markedInfo !== undefined,
+      markedInfo
+    })
+    
+    currentDate = addDays(currentDate, 1)
+  }
+  
+  return days
+})
+
+// Navegación entre meses
+const previousMonth = () => {
+  currentMonth.value = subMonths(currentMonth.value, 1)
+  emit('month-change', currentMonth.value)
+}
+
+const nextMonth = () => {
+  currentMonth.value = addMonths(currentMonth.value, 1)
+  emit('month-change', currentMonth.value)
+}
+
+const goToToday = () => {
+  currentMonth.value = new Date()
+  selectedDate.value = format(new Date(), 'yyyy-MM-dd')
+  emit('update:modelValue', selectedDate.value)
+  emit('month-change', currentMonth.value)
+}
+
+// Manejar clic en un día
+const handleDayClick = (day: typeof calendarDays.value[0], event: Event) => {
+  selectedDate.value = day.date
+  console.log("Calendar: Click en fecha", day.date)
+  
+  // Emitir todos los eventos necesarios incluido select que es el que está escuchando AttendanceView
+  emit('update:modelValue', selectedDate.value)
+  emit('day-click', day.date, event)
+  emit('select', day.date) // IMPORTANTE: Este evento es el que AttendanceView está escuchando
+  
+  if (day.isMarked && day.markedInfo) {
+    emit('marked-day-click', day.date, event)
+  }
+}
+
+// Formatear el mes y año para mostrar
+const formattedMonthYear = computed(() => {
+  return format(currentMonth.value, 'MMMM yyyy', { locale: es })
+})
+
+// Días de la semana
+const weekdays = computed(() => {
+  const start = startOfWeek(new Date(), { weekStartsOn: props.firstDayOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6 })
+  const days = []
+  
+  for (let i = 0; i < 7; i++) {
+    const day = addDays(start, i)
+    days.push({
+      short: format(day, 'EEEEEE', { locale: es }),
+      long: format(day, 'EEEE', { locale: es })
     })
   }
-  calendarDays.value = days
-}
-
-// Funciones para navegar entre meses
-const previousMonth = () => {
-  displayedMonth.value = subMonths(displayedMonth.value, 1)
-  emit('month-change', displayedMonth.value)
-}
-const nextMonth = () => {
-  displayedMonth.value = addMonths(displayedMonth.value, 1)
-  emit('month-change', displayedMonth.value)
-}
-const goToCurrentMonth = () => {
-  displayedMonth.value = new Date()
-  emit('month-change', displayedMonth.value)
-}
-
-// Función de manejo de clic en un día del calendario
-const onClick = (day: CalendarDay): void => {
-  if (!day || !day.date) return
-  emit('select', day.date)
-  emit('day-click', day)
-}
-
-// Generar el calendario cada vez que cambie el mes o las fechas marcadas
-watchEffect(() => {
-  generateCalendar()
+  
+  return days
 })
-watch(() => [props.currentMonth, props.markedDates], ([newMonth]) => {
-  if (newMonth instanceof Date) displayedMonth.value = newMonth
-  generateCalendar()
-}, { deep: true })
 
-// Si se pasa currentMonth como prop, usarlo para el mes mostrado
-if (props.currentMonth) {
-  displayedMonth.value = props.currentMonth
+// Clases CSS para los días del calendario
+const dayClasses = (day: typeof calendarDays.value[0]) => {
+  const classes = [
+    'text-center p-2 rounded-full transition-colors',
+    'hover:bg-gray-100 dark:hover:bg-gray-700',
+    'cursor-pointer select-none',
+    {
+      'text-gray-400 dark:text-gray-500': !day.isCurrentMonth,
+      'font-semibold text-blue-600 dark:text-blue-400': day.isToday,
+      'bg-blue-100 dark:bg-blue-900/30': day.isSelected,
+      'text-blue-600 dark:text-blue-400': day.isSelected
+    }
+  ]
+  
+  if (day.isMarked && day.markedInfo) {
+    const markedClass = getMarkedDayClass(day.markedInfo)
+    if (markedClass) {
+      classes.push(markedClass)
+    }
+  }
+  
+  return classes
+}
+
+// Obtener la clase CSS para un día marcado
+const getMarkedDayClass = (markedInfo: MarkedDate) => {
+  if (markedInfo.class) return markedInfo.class
+  
+  switch (markedInfo.style) {
+    case 'dot':
+      return 'relative after:content-[""] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-blue-500'
+    case 'circle':
+      return 'border-2 border-blue-500'
+    case 'highlight':
+      return 'bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700'
+    case 'custom':
+      return ''
+    default:
+      return 'relative after:content-[""] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-blue-500'
+  }
+}
+
+// Estilo en línea para marcadores personalizados
+const markedDayStyle = (markedInfo: MarkedDate) => {
+  if (markedInfo.style === 'custom' && markedInfo.color) {
+    return { backgroundColor: markedInfo.color }
+  }
+  return {}
+}
+
+// Make sure the component is exported as default
+defineExpose({});
+if (import.meta.env?.PROD === false) {
+  // @ts-ignore - This ensures the component has a default export
+  // which helps with certain bundlers and IDE tooling
+  const _default = {};
 }
 </script>
 
 <template>
-  <div class="calendar">
-    <!-- Encabezado de navegación del mes -->
+  <div class="calendar bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+    <!-- Encabezado con navegación -->
     <div class="flex justify-between items-center mb-4">
-      <button @click="previousMonth" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400" title="Mes anterior">
+      <button 
+        v-if="navigable"
+        @click="previousMonth" 
+        class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
+        title="Mes anterior"
+      >
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
       </button>
+      <div v-else></div>
+      
       <div class="flex items-center">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 capitalize">
-          {{ currentMonthLabel }}
-        </h3>
-        <button @click="goToCurrentMonth" class="ml-2 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs" title="Ir al mes actual">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          {{ formattedMonthYear }}
+        </h2>
+        <button 
+          @click="goToToday" 
+          class="ml-2 px-3 py-1 text-sm rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-800/50"
+        >
           Hoy
         </button>
       </div>
-      <button @click="nextMonth" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400" title="Mes siguiente">
+      
+      <button 
+        v-if="navigable"
+        @click="nextMonth" 
+        class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
+        title="Mes siguiente"
+      >
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
       </button>
+      <div v-else></div>
     </div>
 
-    <!-- Cabecera de los días de la semana -->
-    <div class="grid grid-cols-7 mb-2">
-      <div v-for="day in weekDays" :key="day" class="text-center text-sm font-medium text-gray-500 dark:text-gray-400">
-        {{ day }}
+    <!-- Días de la semana -->
+    <div class="grid grid-cols-7 gap-1 mb-2">
+      <div 
+        v-for="day in weekdays" 
+        :key="day.long"
+        class="text-center text-sm font-medium text-gray-500 dark:text-gray-400"
+        :title="day.long"
+      >
+        {{ day.short }}
       </div>
     </div>
 
-    <!-- Grilla del calendario -->
+    <!-- Días del mes -->
     <div class="grid grid-cols-7 gap-1">
-      <button v-for="day in calendarDays" :key="day.date" 
-        :class="[
-          'p-2 text-center rounded-lg transition-colors relative',
-          {
-            'marked': day.isMarked,
-            'text-gray-400 dark:text-gray-600': !day.isCurrentMonth,
-            'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-100': day.isToday,
-            'hover:bg-gray-100 dark:hover:bg-gray-700': true,
-            'font-bold border-2 border-blue-500 dark:border-blue-400': day.date === props.selectedDate
-          }
-        ]" @click="onClick(day)">
-        <span class="block text-sm">{{ day.dayOfMonth }}</span>      <!-- Indicador para fechas con asistencia -->
-        <div v-if="day.isMarked" class="date-markers">
-          <!-- Punto indicador -->
-          <span 
-            class="absolute bottom-0.5 left-3/4 transform -translate-x-3/4 w-2.5 h-2.5 rounded-full bg-green-500 dark:bg-green-400"
-            :title="`Hay registros de asistencia para ${day.date}`">
-          </span>
-          <!-- Texto "Registrado" -->
-          <span class="marked-text">Registrado</span>
-        </div>
+      <button
+        v-for="day in calendarDays"
+        :key="day.date"
+        type="button"
+        :class="dayClasses(day)"
+        :style="day.markedInfo?.style === 'custom' ? markedDayStyle(day.markedInfo) : {}"
+        :title="day.markedInfo?.tooltip || ''"
+        @click="handleDayClick(day, $event)"
+      >
+        <span class="relative z-10">
+          {{ day.dayOfMonth }}
+        </span>
       </button>
     </div>
   </div>
 </template>
 
 <style scoped>
-.date-markers {
-  position: relative;
+.calendar {
+  min-width: 300px;
+  max-width: 100%;
 }
 
-.marked-text {
-  position: absolute;
-  bottom: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.55rem;
-  padding: 2px 4px;
-  background-color: #4CAF50;
-  color: white;
-  border-radius: 3px;
-  white-space: nowrap;
-  opacity: 0;
-  font-weight: bold;
-  transition: opacity 0.2s ease-in-out;
-  z-index: 10;
-}
-
-.marked {
-  position: relative;
-  border-bottom: 1px solid #4CAF50 !important;
-  background-color: rgba(76, 175, 80, 0.1) !important;
-}
-
-/* Mostrar el texto al pasar el ratón por encima */
-.marked:hover .marked-text {
-  opacity: 1;
-}
-
-/* Efecto de pulso en las fechas marcadas */
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4); }
-  70% { box-shadow: 0 0 0 5px rgba(76, 175, 80, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
-}
-
-.marked span.absolute {
-  animation: pulse 2s infinite;
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

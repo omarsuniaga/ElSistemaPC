@@ -566,8 +566,7 @@ import {
   ClockIcon,
   UserPlusIcon,
   ArrowPathIcon,
-  MagnifyingGlassIcon,
-  ChevronLeftIcon,
+  MagnifyingGlassIcon,  ChevronLeftIcon,
   ChevronRightIcon,
   ChevronDoubleLeftIcon, 
   ChevronDoubleRightIcon,
@@ -581,6 +580,16 @@ import {
   CheckCircleIcon,
   FolderOpenIcon
 } from '@heroicons/vue/24/outline';
+import { 
+  safeGet, 
+  safeArrayLength, 
+  safeStoreAccess, 
+  safeFilter, 
+  safeMap, 
+  safeMath,
+  isValidArray 
+} from '@/utils/safeAccess';
+import { useAdminErrorHandling } from '@/composables/useAdminErrorHandling';
 
 // Store instances
 const attendanceStore = useAttendanceStore();
@@ -588,6 +597,9 @@ const classesStore = useClassesStore();
 const studentsStore = useStudentsStore();
 const usersStore = useUsersStore();
 const router = useRouter();
+
+// Error handling composable
+const { handleAdminError, safeAsyncOperation, validateData } = useAdminErrorHandling();
 
 // State management
 const isLoading = ref(false);
@@ -611,40 +623,48 @@ const teacherSpecialties = ref([]);
 const newSpecialty = ref('');
 const recentAttendance = ref([]);
 
-// Make sure activeStudents is properly accessed via a computed property
+// Make sure activeStudents is properly accessed via a computed property with safe access
 const activeStudents = computed(() => {
-  return attendanceStore.getActiveStudents || [];
+  return safeStoreAccess(attendanceStore, 'getActiveStudents', []);
 });
 
-// Get students without assigned classes
+// Get students without assigned classes with safe validation
 const unassignedStudents = computed(() => {
-  return studentsStore.students.filter(s => !s.classId);
+  const students = safeStoreAccess(studentsStore, 'students', []);
+  return safeFilter(students, (s: any) => !s?.classId, []);
 });
 
-// Get classes without students
+// Get classes without students with safe validation
 const emptyClasses = computed(() => {
-  return classesStore.classes.filter(c => !c.studentIds || c.studentIds.length === 0);
+  const classes = safeStoreAccess(classesStore, 'classes', []);
+  return safeFilter(classes, (c: any) => !c?.studentIds || safeArrayLength(c.studentIds) === 0, []);
 });
 
-// Filter teachers by search term and filter option
+// Filter teachers by search term and filter option with safe access
 const filteredTeachers = computed(() => {
-  let result = [...teachersList.value];
+  const teachersArray = safeStoreAccess(teachersList, 'value', []);
+  let result = [...teachersArray];
   
-  // Apply search filter
+  // Apply search filter with safe property access
   if (teacherSearch.value) {
     const searchTerm = teacherSearch.value.toLowerCase();
-    result = result.filter(teacher => 
-      teacher.name.toLowerCase().includes(searchTerm) ||
-      teacher.email.toLowerCase().includes(searchTerm) ||
-      (teacher.specialties && teacher.specialties.some(s => s.toLowerCase().includes(searchTerm)))
-    );
+    result = safeFilter(result, (teacher: any) => {
+      const name = safeGet(teacher, 'name', '').toLowerCase();
+      const email = safeGet(teacher, 'email', '').toLowerCase();
+      const specialties = safeGet(teacher, 'specialties', []);
+      
+      return name.includes(searchTerm) ||
+             email.includes(searchTerm) ||
+             (isValidArray(specialties) && specialties.some((s: string) => 
+               s.toLowerCase().includes(searchTerm)));
+    }, []);
   }
   
-  // Apply status filter
+  // Apply status filter with safe access
   if (teacherFilter.value === 'active') {
-    result = result.filter(teacher => teacher.active !== false);
+    result = safeFilter(result, (teacher: any) => safeGet(teacher, 'active', true) !== false, []);
   } else if (teacherFilter.value === 'inactive') {
-    result = result.filter(teacher => teacher.active === false);
+    result = safeFilter(result, (teacher: any) => safeGet(teacher, 'active', true) === false, []);
   }
   
   return result;
@@ -687,24 +707,42 @@ function nextPage() {
   }
 }
 
-function getTeacherClassesCount(teacherId) {
-  return classesStore.classes.filter(cls => cls.teacherId === teacherId).length;
+// Safe functions for teacher operations
+function getTeacherClassesCount(teacherId: string): number {
+  return safeMath(() => {
+    const classes = safeStoreAccess(classesStore, 'classes', []);
+    return safeFilter(classes, (cls: any) => safeGet(cls, 'teacherId') === teacherId, []).length;
+  }, 0);
 }
 
-function getTeacherStudentsCount(teacherId) {
-  // Get all classes for this teacher
-  const teacherClassIds = classesStore.classes
-    .filter(cls => cls.teacherId === teacherId)
-    .map(cls => cls.id);
+function getTeacherStudentsCount(teacherId: string): number {
+  return safeMath(() => {
+    const classes = safeStoreAccess(classesStore, 'classes', []);
+    const students = safeStoreAccess(studentsStore, 'students', []);
     
-  // Count unique students in these classes
-  const studentIds = new Set();
-  teacherClassIds.forEach(classId => {
-    const studentsInClass = studentsStore.students.filter(s => s.classId === classId);
-    studentsInClass.forEach(student => studentIds.add(student.id));
-  });
-  
-  return studentIds.size;
+    // Get all classes for this teacher
+    const teacherClassIds = safeMap(
+      safeFilter(classes, (cls: any) => safeGet(cls, 'teacherId') === teacherId, []),
+      (cls: any) => safeGet(cls, 'id'),
+      []
+    );
+    
+    // Count unique students in these classes
+    const studentIds = new Set();
+    teacherClassIds.forEach(classId => {
+      const studentsInClass = safeFilter(
+        students, 
+        (s: any) => safeGet(s, 'classId') === classId, 
+        []
+      );
+      studentsInClass.forEach((student: any) => {
+        const studentId = safeGet(student, 'id');
+        if (studentId) studentIds.add(studentId);
+      });
+    });
+    
+    return studentIds.size;
+  }, 0);
 }
 
 function getTeacherName(teacherId) {

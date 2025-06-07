@@ -1,7 +1,10 @@
-import { ref, computed, type Ref } from 'vue';
-import type { AttendanceStatus } from '../types/attendance';
+import { computed, type Ref } from 'vue';
 import type { Student } from '../../Students/types/student';
 import { useAttendanceStore, type AttendanceRecord as StoreAttendanceRecord } from '../store/attendance';
+import { normalizeDateForStorage } from '@/utils/dateUtils';
+import * as attendanceService from '../service/attendance';
+
+type AttendanceStatus = 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
 
 /**
  * Composable que proporciona toda la lógica de acciones para la gestión de asistencia
@@ -47,6 +50,10 @@ export function useAttendanceActions(options: {
       return;
     }
 
+    const normalizedDate = normalizeDateForStorage(dateToSave);
+    let successCount = 0;
+    let errorCount = 0;
+
     if (!dateToSave || !classIdToSave) {
       displayToast('Error: No se pudo determinar la fecha o clase para guardar', 'error');
       console.error('saveAllPendingChanges: dateToSave or classIdToSave is missing', { dateToSave, classIdToSave });
@@ -61,58 +68,62 @@ export function useAttendanceActions(options: {
       let successCount = 0;
       let errorCount = 0;
 
-      // Process students with status changes
-      for (const studentId of pendingChanges.value) {
-        const student = localStudents.value.find((s: Student) => s.id === studentId);
-        if (!student) {
-          console.warn(`Estudiante con ID ${studentId} no encontrado en localStudents.`);
-          continue;
-        }
+      // Normalize the date to ensure consistent timezone handling
+    const normalizedDate = normalizeDateForStorage(dateToSave);
+    
+    // Process students with status changes
+    for (const studentId of pendingChanges.value) {
+      const student = localStudents.value.find((s: Student) => s.id === studentId);
+      if (!student) {
+        console.warn(`Estudiante con ID ${studentId} no encontrado en localStudents.`);
+        continue;
+      }
 
-        const status = localAttendanceRecords.value[studentId];
-        if (!status) {
-          console.warn(`Estado de asistencia no encontrado para ${studentId} en localAttendanceRecords.`);
-          continue;
-        }
+      const status = localAttendanceRecords.value[studentId];
+      if (!status) {
+        console.warn(`Estado de asistencia no encontrado para ${studentId} en localAttendanceRecords.`);
+        continue;
+      }
 
-        const existingRecord = attendanceStore.records.find(
-          r => r.studentId === studentId && r.Fecha === dateToSave && r.classId === classIdToSave
-        );
+      const existingRecord = attendanceStore.records.find(
+        r => r.studentId === studentId && r.fecha === normalizedDate && r.classId === classIdToSave
+      );
 
-        let justificationPayload: StoreAttendanceRecord['justification'] = undefined;
-        const justificationData = pendingJustifications.value.get(studentId);
+      let justificationPayload: StoreAttendanceRecord['justification'] = undefined;
+      const justificationData = pendingJustifications.value.get(studentId);
 
-        if (status === 'Justificado' || justificationData) {
-          justificationPayload = {
-            reason: justificationData?.reason || (status === 'Justificado' ? 'Justificación registrada' : ''),
-            documentURL: justificationData?.documentURL || undefined,
-            timestamp: new Date().toISOString(),
+      if (status === 'Justificado' || justificationData) {
+        justificationPayload = {
+          reason: justificationData?.reason || (status === 'Justificado' ? 'Justificación registrada' : ''),
+          documentURL: justificationData?.documentURL || null, // Use null instead of undefined for Firebase compatibility
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+
+      try {
+        if (existingRecord && existingRecord.id) {
+          const recordToUpdate: StoreAttendanceRecord = {
+            ...existingRecord,
+            status: status,
+            justification: justificationPayload,
+            updatedAt: new Date().toISOString(),
           };
+          await attendanceStore.updateRecord(recordToUpdate);
+          console.log(`Registro actualizado para ${studentId}:`, recordToUpdate);
+        } else {
+          const recordToAdd: Omit<StoreAttendanceRecord, 'id'> = {
+            classId: classIdToSave,
+            studentId: studentId,
+            fecha: normalizedDate, // Use normalized date here
+            status: status,
+            justification: justificationPayload,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          await attendanceStore.addRecord(recordToAdd);
+          console.log(`Nuevo registro añadido para ${studentId}:`, recordToAdd);
         }
-
-        try {
-          if (existingRecord && existingRecord.id) {
-            const recordToUpdate: StoreAttendanceRecord = {
-              ...existingRecord,
-              status: status,
-              justification: justificationPayload,
-              updatedAt: new Date().toISOString(),
-            };
-            await attendanceStore.updateAttendanceRecord(recordToUpdate);
-            console.log(`Registro actualizado para ${studentId}:`, recordToUpdate);
-          } else {
-            const recordToAdd: Omit<StoreAttendanceRecord, 'id'> = {
-              classId: classIdToSave,
-              studentId: studentId,
-              Fecha: dateToSave,
-              status: status,
-              justification: justificationPayload,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-            await attendanceStore.addAttendanceRecord(recordToAdd);
-            console.log(`Nuevo registro añadido para ${studentId}:`, recordToAdd);
-          }
           successCount++;
         } catch (e) {
           errorCount++;
@@ -127,59 +138,77 @@ export function useAttendanceActions(options: {
 
         const student = localStudents.value.find((s: Student) => s.id === studentId);
         const currentStatusInLocal = localAttendanceRecords.value[studentId];
-
-        const existingRecord = attendanceStore.records.find(
-          r => r.studentId === studentId && r.Fecha === dateToSave && r.classId === classIdToSave
-        );
         
-        const justificationPayloadUpdate: StoreAttendanceRecord['justification'] = {
-            reason: justificationData.reason || '',
-            documentURL: justificationData.documentURL || undefined,
-            timestamp: new Date().toISOString(),
-        };
-
         try {
-            if (existingRecord && existingRecord.id) {
-                const recordToUpdate: StoreAttendanceRecord = {
-                  ...existingRecord,
-                  justification: justificationPayloadUpdate,
-                  status: currentStatusInLocal || existingRecord.status,
-                  updatedAt: new Date().toISOString(),
-              };
-              await attendanceStore.updateAttendanceRecord(recordToUpdate);
-              console.log(`Justificación actualizada para ${studentId} (sin cambio de estado):`, recordToUpdate);
-              successCount++;
-            } else if (currentStatusInLocal) { // New record, but only justification was pending
-                 const recordToAdd: Omit<StoreAttendanceRecord, 'id'> = {
-                    classId: classIdToSave,
-                    studentId: studentId,
-                    Fecha: dateToSave,
-                    status: currentStatusInLocal, // Status from local map
-                    justification: justificationPayloadUpdate,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                };
-                await attendanceStore.addAttendanceRecord(recordToAdd);
-                console.log(`Nuevo registro añadido para ${studentId} (solo con justificación pendiente):`, recordToAdd);
-                successCount++;
-            } else {
-                 console.warn(`No se pudo procesar justificación para ${studentId} sin estado o registro existente.`);
-            }
-        } catch (e) {
+          // Find the existing record for this student and date using normalized date
+          const existingRecords = attendanceStore.records.filter(
+            (r: StoreAttendanceRecord) => r.studentId === studentId && 
+                                       (r.fecha === normalizedDate || (r as any).Fecha === normalizedDate) && 
+                                       r.classId === classIdToSave
+          );
+          
+          // Use the most recent record if multiple exist
+          const existingRecord = existingRecords.sort((a, b) => 
+            new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()
+          )[0];
+          
+          const justificationPayload = {
+            reason: justificationData.reason || '',
+            timestamp: new Date().toISOString(),
+            documentURL: justificationData.documentURL || null
+          };
+
+          if (existingRecord && existingRecord.id) {
+            // Update existing record with justification
+            const recordToUpdate: StoreAttendanceRecord = {
+              ...existingRecord,
+              justification: justificationPayload,
+              status: currentStatusInLocal || existingRecord.status,
+              updatedAt: new Date().toISOString(),
+            };
+            
+            await attendanceService.updateAttendanceFirebase(recordToUpdate);
+            console.log(`Justificación actualizada para ${studentId}:`, recordToUpdate);
+            successCount++;
+          } else if (currentStatusInLocal) {
+            // Create new record with justification
+            const recordToAdd: Omit<StoreAttendanceRecord, 'id'> = {
+              classId: classIdToSave,
+              studentId: studentId,
+              fecha: normalizedDate,
+              status: currentStatusInLocal,
+              justification: justificationPayload,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+            
+            await attendanceService.registerAttendanceFirebase(recordToAdd);
+            console.log(`Nuevo registro con justificación para ${studentId}:`, recordToAdd);
+            successCount++;
+          } else {
+            console.warn(`No se pudo procesar justificación para ${studentId} sin estado o registro existente.`);
             errorCount++;
-            console.error(`Error al guardar justificación para ${studentId}:`, e);
-            displayToast(`Error al guardar justificación para ${student?.nombre || studentId}`, 'error');
+          }
+        } catch (e) {
+          errorCount++;
+          console.error(`Error al guardar justificación para ${studentId}:`, e);
+          displayToast(
+            `Error al guardar justificación para ${student?.nombre || studentId}: ${(e as Error).message}`,
+            'error'
+          );
         }
       }
 
       if (errorCount > 0) {
         displayToast(`${successCount} cambios guardados, ${errorCount} errores.`, 'warning');
       } else if (successCount > 0) {
-        displayToast('Todos los cambios guardados correctamente.', 'success');
+        displayToast('Todos los cambios guardados correctamente en Firestore.', 'success');
+        console.log(`[useAttendanceActions] ${successCount} cambios guardados exitosamente en Firestore.`);
       } else if (pendingChanges.value.size > 0 || pendingJustifications.value.size > 0) {
         displayToast('No se procesaron cambios.', 'info');
       }
 
+      // Clear pending changes since they've been saved (or at least attempted)
       pendingChanges.value.clear();
       pendingJustifications.value.clear();
 
@@ -283,8 +312,8 @@ export function useAttendanceActions(options: {
     isProcessing.value = true;
     try {
       // Fetch fresh records for the current context
-      // This assumes fetchAttendanceRecords updates attendanceStore.records reactively
-      await attendanceStore.fetchAttendanceRecords({ 
+      // This assumes fetchAttendanceDocuments updates attendanceStore.records reactively
+      await attendanceStore.fetchAttendanceDocuments({ 
         classId: selectedClass.value, 
         // Ensure dates are in YYYY-MM-DD or Date objects as expected by the store action
         startDate: selectedDate.value, 
@@ -292,7 +321,14 @@ export function useAttendanceActions(options: {
       });
 
       const freshRecordsForView = attendanceStore.getAttendanceMapForSelectedScope;
-      localAttendanceRecords.value = { ...freshRecordsForView }; // Create a new object for reactivity
+      // Ensure all status values match our AttendanceStatus type
+      const typedRecords: Record<string, AttendanceStatus> = {};
+      Object.entries(freshRecordsForView).forEach(([studentId, status]) => {
+        if (['Presente', 'Ausente', 'Tardanza', 'Justificado'].includes(status as string)) {
+          typedRecords[studentId] = status as AttendanceStatus;
+        }
+      });
+      localAttendanceRecords.value = typedRecords;
 
       pendingChanges.value.clear();
       pendingJustifications.value.clear();

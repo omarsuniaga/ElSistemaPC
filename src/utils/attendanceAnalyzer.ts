@@ -1,8 +1,8 @@
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays } from 'date-fns';
-import { useAttendanceStore } from '../modulos/Attendance/store/attendance';
-import { useClassesStore } from '../modulos/Classes/store/classes';
-import { useStudentsStore } from '../modulos/Students/store/students';
-import type { AttendanceDocument, AttendanceRecord } from '../modulos/Attendance/types/attendance';
+import { useAttendanceStore } from '@/modulos/Attendance/store/attendance';
+import { useClassesStore } from '@/modulos/Classes/store/classes';
+import { useStudentsStore } from '@/modulos/Students/store/students';
+import type { AttendanceDocument, AttendanceRecord } from '@/modulos/Attendance/types/attendance';
 
 // Interfaces para los resultados
 interface StudentAbsences {

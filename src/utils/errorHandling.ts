@@ -61,3 +61,6 @@ export const logError = (context: string, error: any, additionalInfo = {}): void
   
   // Aquí se podría integrar con un servicio como Sentry, LogRocket, etc.
 };
+
+// Re-export del composable de error handling para compatibilidad
+export { useErrorHandling } from '../composables/useErrorHandling';

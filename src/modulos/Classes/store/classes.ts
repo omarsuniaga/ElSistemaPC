@@ -9,8 +9,7 @@ import {
   fetchClassesByStudentIdFirestore
 } from "../service/classes";
 import type { ClassData, ClassCreate } from "../types/class";
-import { useAttendanceStore } from "../../Attendance/store/attendance";
-import { useQualificationStore } from "../../Qualifications/store/qualification";
+import { useQualificationStore } from '../../Qualifications/store/qualification';
 
 export const useClassesStore = defineStore('classes', {
   state: () => ({
@@ -520,8 +519,8 @@ export const useClassesStore = defineStore('classes', {
       if (!classData) throw new Error('Clase no encontrada');
 
       // Get attendance rate from attendance store
-      const attendanceStore = useAttendanceStore();
-      const attendanceRate = attendanceStore.getStudentAttendanceRate(studentId, classId);
+      // const attendanceStore = useAttendanceStore(); // Removed as per modular design
+      // const attendanceRate = attendanceStore.getStudentAttendanceRate(studentId, classId); // Removed as per modular design
 
       // Get performance metrics
       const qualificationStore = useQualificationStore();
@@ -536,23 +535,19 @@ export const useClassesStore = defineStore('classes', {
       }, 0) / (studentQualifications.length || 1); // Avoid division by zero
 
       // Criteria for advancement:
-      // - Attendance rate >= 85%
       // - Average score >= 80%
       // - Minimum number of classes attended
-      const meetsAttendanceCriteria = attendanceRate >= 85;
       const meetsPerformanceCriteria = averageScore >= 80;
       const hasMinimumClasses = studentQualifications.length >= 20;
 
       return {
-        canAdvance: meetsAttendanceCriteria && meetsPerformanceCriteria && hasMinimumClasses,
+        canAdvance: meetsPerformanceCriteria && hasMinimumClasses,
         metrics: {
-          attendanceRate,
           averageScore,
           classesAttended: studentQualifications.length
         }
       };
     },
-
     /**
      * Promote a student to the next level class
      */

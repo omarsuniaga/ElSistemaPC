@@ -44,6 +44,14 @@ const close = () => {
   errorMessage.value = '';
   emit('close');
 }
+
+// Make sure the component is exported as default
+defineExpose({});
+if (import.meta.env?.PROD === false) {
+  // @ts-ignore - This ensures the component has a default export
+  // which helps with certain bundlers and IDE tooling
+  const _default = {};
+}
 </script>
 
 <template>

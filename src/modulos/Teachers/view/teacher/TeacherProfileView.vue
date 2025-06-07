@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
+import AppImage from '@/components/ui/AppImage.vue';
 import { useRouter } from 'vue-router';
 import { useTeachersStore } from '../../store/teachers';
 import { useClassesStore } from '../../../Classes/store/classes';
@@ -204,8 +205,22 @@ const downloadSchedule = async () => {
 
     <!-- Perfil Header -->
     <div class="flex items-center gap-6 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-lg p-6 text-white">
-      <img :src="teacher && teacher.photoURL ? teacher.photoURL : `https://ui-avatars.com/api/?name=${teacher ? teacher.name || 'Teacher' : 'Teacher'}`" alt="teacher photo"
-        class="w-24 h-24 rounded-full shadow-lg border-4 border-white object-cover">
+      <div class="w-24 h-24 rounded-full shadow-lg border-4 border-white overflow-hidden">
+        <AppImage 
+          :src="teacher?.photoURL || ''"
+          :alt="`Foto de ${teacher?.name || 'profesor'}`"
+          :rounded="true"
+          img-class="w-full h-full object-cover"
+        >
+          <template #fallback>
+            <div class="w-full h-full flex items-center justify-center bg-indigo-500">
+              <span class="text-white text-2xl font-bold">
+                {{ teacher?.name?.charAt(0) || 'P' }}
+              </span>
+            </div>
+          </template>
+        </AppImage>
+      </div>
       <div>
         <h1 class="text-2xl font-bold">{{ teacher ? teacher.name : 'Profesor' }} </h1>
         <p class="text-indigo-100">{{ teacher && teacher.instruments ? teacher.instruments : 'Profesor de Música' }}</p>
@@ -310,7 +325,7 @@ const downloadSchedule = async () => {
   </TransitionRoot>
 </template>
 
-<style scoped>
+<style lang="postcss" scoped>
 .btn-indigo {@apply flex items-center bg-indigo-500 text-white py-2 px-4 rounded-lg shadow hover:bg-indigo-600 transition;}
 .btn-red {@apply flex items-center bg-red-500 text-white py-2 px-4 rounded-lg shadow hover:bg-red-600 transition;}
 </style>

@@ -4,6 +4,7 @@ import { useClassesStore } from '../store/classes';
 import { useAttendanceStore } from '../../Attendance/store/attendance';
 import { useAuthStore } from '../../../stores/auth';
 import { format } from 'date-fns';
+
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -118,7 +119,10 @@ async function loadActivities() {
     let allObservations = [];
     try {
       // Obtener todas las observaciones sin especificar classId 
-      allObservations = await attendanceStore.getObservationsHistory();
+      // allObservations = await observationActions.fetchAllObservationsForTeacher(teacherId);
+      // Instead of directly calling observationActions, dispatch an action through the store
+      await attendanceStore.fetchAllObservationsForTeacher(teacherId);
+      allObservations = attendanceStore.observationsHistory; // Assuming observationsHistory is populated by the action
     } catch (err) {
       console.error('Error al obtener observaciones:', err);
       // Continuar con array vacío si hay un error

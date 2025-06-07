@@ -48,3 +48,19 @@ export function isValidDate(date: Date | string): boolean {
   }
   return !isNaN(date.getTime());
 }
+
+/**
+ * Converts a date string to a consistent format for storage
+ * Ensures the date is stored in local timezone without time component
+ * @param dateStr Date string in YYYY-MM-DD format
+ */
+export function normalizeDateForStorage(dateStr: string): string {
+  if (!dateStr) return dateStr;
+  
+  // Parse the date in local timezone
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  
+  // Format back to YYYY-MM-DD to ensure consistent format
+  return format(date, 'yyyy-MM-dd');
+}

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { auth, db } from '../firebase'
+import { auth, db } from '@/firebase'
 import { 
   signInWithEmailAndPassword, 
   signOut as firebaseSignOut, 
@@ -7,12 +7,12 @@ import {
   createUserWithEmailAndPassword 
 } from 'firebase/auth'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { useStudentsStore } from '../modulos/Students/store/students'
-import { useTeachersStore } from '../modulos/Teachers/store/teachers'
-import { useClassesStore } from '../modulos/Classes/store/classes'
-import { useAttendanceStore } from '../modulos/Attendance/store/attendance'
-import { useScheduleStore } from '../modulos/Schedules/store/schedule'
-import { getThemePreference } from '../modulos/Users/service/userPreferences'
+import { useStudentsStore } from '@/modulos/Students/store/students'
+import { useTeachersStore } from '@/modulos/Teachers/store/teachers'
+import { useClassesStore } from '@/modulos/Classes/store/classes'
+import { useAttendanceStore } from '@/modulos/Attendance/store/attendance'
+import { useScheduleStore } from '@/modulos/Schedules/store/schedule'
+import { getThemePreference } from '@/modulos/Users/service/userPreferences'
 
 // Interfaz para el objeto de usuario
 interface User {
@@ -264,7 +264,7 @@ export const useAuthStore = defineStore('auth', {
           studentsStore.fetchStudents(),
           teachersStore.fetchTeachers(),
           classesStore.fetchClasses(),
-          attendanceStore.fetchAttendance(),
+          attendanceStore.fetchAttendanceDocuments(),
           scheduleStore.fetchAllSchedules()
         ])
         this.dataInitialized = true

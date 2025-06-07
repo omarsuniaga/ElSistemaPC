@@ -165,7 +165,7 @@
     </div>
     
     <!-- Vista de tarjetas para dispositivos móviles -->
-    <div v-else class="md:hidden space-y-4">
+    <div class="md:hidden space-y-4">
       <div class="flex justify-start mb-2 text-sm">
         <button 
           @click="setSort('student')" 
@@ -485,9 +485,9 @@ const absencesDetail = computed<AbsenceDetail[]>(() => {
     .filter(
       (r) =>
         r.studentId === selectedAbsentee.value.studentId &&
-        (r.status === "Ausente" || r.status === "Ausencia")
+        r.status === "Ausente"
     )
-    .map((r) => ({ date: r.date || r.Fecha, classId: r.classId }));
+    .map((r) => ({ date: r.fecha, classId: r.classId }));
 });
 
 function openAbsencesModal(student: any) {
@@ -569,12 +569,12 @@ async function calcularTopAbsentees() {
     isLoading.value = true;
     error.value = null;
     
-    const result = await attendanceStore.calculateAbsentStudents({
-      startDate: formattedStartDate.value,
-      endDate: formattedEndDate.value,
-      classId: selectedClass.value,
-      limit: props.limit || 10
-    });
+    const result = await attendanceStore.fetchTopAbsentStudentsByRange(
+      formattedStartDate.value,
+      formattedEndDate.value,
+      parseInt(props.limit || '10', 10),
+      selectedClass.value || undefined
+    );
     
     // Procesamiento adicional si es necesario
     topAbsentees.value = result;

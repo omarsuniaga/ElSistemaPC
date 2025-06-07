@@ -69,14 +69,13 @@
           <div class="notification-content">
             <h3 class="notification-title">{{ notification.title }}</h3>
             <p class="notification-message">{{ notification.message }}</p>
-            <div v-if="isAbsenceNotification(notification)" class="notification-details">
-              <span class="detail-label">Estudiante:</span>
-              <span class="detail-value">{{ notification.details?.studentName }}</span>
+            <div v-if="isAbsenceNotification(notification)" class="notification-details">              <span class="detail-label">Estudiante:</span>
+              <span class="detail-value">{{ safeGet(notification, 'details.studentName', 'N/A') }}</span>
               <span class="detail-label">Instrumento:</span>
-              <span class="detail-value">{{ notification.details?.instrument }}</span>
+              <span class="detail-value">{{ safeGet(notification, 'details.instrument', 'N/A') }}</span>
               <span class="detail-label">Severidad:</span>
-              <span class="severity-badge" :class="getSeverityClass(notification.details?.severity)">
-                {{ notification.details?.severity.toUpperCase() }}
+              <span class="severity-badge" :class="getSeverityClass(safeGet(notification, 'details.severity'))">
+                {{ (safeGet(notification, 'details.severity', 'info') || 'info').toUpperCase() }}
               </span>
             </div>
             <p class="notification-time">{{ formatNotificationTime(notification.createdAt) }}</p>
@@ -101,34 +100,27 @@ import { useNotificationsStore, type Notification } from '../../stores/notificat
 import { formatDistance } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useRouter } from 'vue-router';
-import { 
-  BellIcon, 
-  ExclamationTriangleIcon, 
-  InformationCircleIcon, 
-  CheckCircleIcon,
-  XCircleIcon,
-  RefreshIcon,
-  CheckIcon
-} from '@heroicons/vue/24/outline';
+import { safeGet, safeArrayLength } from '../../utils/safeAccess'
+import { useAdminErrorHandling } from '../../composables/useAdminErrorHandling'
 
 const notificationsStore = useNotificationsStore();
 const router = useRouter();
 const activeFilter = ref('all');
+const { handleError, logError } = useAdminErrorHandling();
 
 // Computed properties
 const isLoading = computed(() => notificationsStore.isLoading);
 const unreadCount = computed(() => notificationsStore.unreadCount);
 
-const filteredNotifications = computed(() => {
-  let notifications = [...notificationsStore.notifications];
+const filteredNotifications = computed(() => {  let notifications = [...notificationsStore.notifications];
   
   // Apply filters
   if (activeFilter.value === 'unread') {
-    notifications = notifications.filter(n => !n.read);
+    notifications = notifications.filter(n => !safeGet(n, 'read', false));
   } else if (activeFilter.value === 'absences') {
     notifications = notifications.filter(n => 
-      n.title.includes('Alerta de Inasistencias') || 
-      (n.details && 'studentId' in n.details)
+      safeGet(n, 'title', '').includes('Alerta de Inasistencias') || 
+      (safeGet(n, 'details') && safeGet(n, 'details.studentId'))
     );
   }
   
@@ -176,12 +168,13 @@ const formatNotificationTime = (createdAt: any) => {
 };
 
 const isAbsenceNotification = (notification: Notification) => {
-  return notification.title.includes('Alerta de Inasistencias') || 
-         (notification.details && 'studentId' in notification.details);
+  return safeGet(notification, 'title', '').includes('Alerta de Inasistencias') || 
+         (safeGet(notification, 'details') && safeGet(notification, 'details.studentId'));
 };
 
 const getSeverityClass = (severity: string) => {
-  switch (severity?.toLowerCase()) {
+  const severityLower = (severity || '').toLowerCase();
+  switch (severityLower) {
     case 'alta': return 'severity-high';
     case 'media': return 'severity-medium';
     case 'baja': return 'severity-low';

@@ -5,7 +5,8 @@ export interface Student {
     email: string;
     phone?: string;
     activo: boolean;
-    clase?: string;
+    clase?: string;      // Campo existente para compatibilidad
+    classId?: string;    // Identificador de la clase para relaciones
     grupo?: string[];
     createdAt: Date;
     updatedAt: Date;

@@ -21,10 +21,11 @@ export const teacherMenuItems = [
     icon: HomeIcon, 
     to: '/teacher', 
     ariaLabel: 'Panel de control del maestro'
-  },  { 
-    name: 'Asistencias', 
+  },
+  { 
+    name: 'Attendance', 
     icon: ClipboardDocumentCheckIcon, 
-    to: '/teacher/attendance/calendar', 
+    to: '/teacher/attendance', 
     ariaLabel: 'Gestionar asistencias'
   },
   { 
@@ -72,10 +73,11 @@ export const adminMenuItems = [
     icon: ChartBarIcon, 
     to: '/analytics', 
     ariaLabel: 'Ver análisis'
-  },  { 
-    name: 'Asistencias', 
+  },
+  { 
+    name: 'Attendance', 
     icon: ClipboardDocumentCheckIcon, 
-    to: '/attendance/calendar',
+    to: '/teacher/attendance',
     ariaLabel: 'Gestionar asistencias'
   },
   {

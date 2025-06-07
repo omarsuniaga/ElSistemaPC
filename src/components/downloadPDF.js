@@ -1,73 +1,57 @@
-// Función para generar PDF con html2pdf
+// src/components/downloadPDF.js
+import { generarPdfDesdeHtml } from '../utils/pdfService';
+
+/**
+ * Genera un PDF a partir de un elemento HTML utilizando el servicio pdfService.
+ * @param {HTMLElement} element - El elemento HTML a convertir.
+ * @param {string} fileName - El nombre del archivo PDF de salida.
+ * @param {object} options - Opciones adicionales para la generación del PDF (ver HtmlToPdfOptions en pdfService.ts).
+ */
 export async function generatePDF(element, fileName, options = {}) {
+  if (!element || !(element instanceof HTMLElement)) {
+    console.error('Error en generatePDF: El primer argumento debe ser un elemento HTML válido.');
+    throw new Error('Elemento HTML no válido proporcionado.');
+  }
+  if (typeof fileName !== 'string' || fileName.trim() === '') {
+    console.error('Error en generatePDF: El segundo argumento debe ser un nombre de archivo válido.');
+    throw new Error('Nombre de archivo no válido proporcionado.');
+  }
+
+  // El ID del elemento es necesario para pdfService
+  // Si el elemento no tiene ID, se le asigna uno temporalmente
+  let tempId = null;
+  if (!element.id) {
+    tempId = `pdf-export-${Date.now()}`;
+    element.id = tempId;
+  }
+
+  const pdfOptions = {
+    elementId: element.id,
+    filename: fileName,
+    // Mapeo de opciones de html2pdf.js a las opciones de pdfService
+    // Las opciones por defecto de pdfService ya cubren la mayoría de los casos
+    margin: options.margin !== undefined ? (Array.isArray(options.margin) ? options.margin.map(m => m / 10) : options.margin / 10) : undefined, // Convertir mm a pt (aprox 1mm ~ 2.83pt, aquí simplificado a 10 para margen)
+    image: options.image,
+    html2canvas: options.html2canvas,
+    jsPDF: options.jsPDF,
+    pagebreak: options.pagebreak,
+    ...options // Permite pasar otras opciones compatibles con HtmlToPdfOptions
+  };
+
   try {
-    // Forzar tema claro eliminando modo oscuro
-    if (typeof document !== 'undefined') {
-      document.documentElement.classList.remove('dark');
-    }
-    // Asegurar que el elemento no tenga clases dark
-    element.classList.remove('dark');
-    // Importar la librería html2pdf dinámicamente
-    const html2pdf = (await import('html2pdf.js')).default;
-
-    // Configuraciones por defecto para PDF
-    const defaultOptions = {
-      margin: [5, 5, 5, 5], // [top, right, bottom, left] en mm
-      filename: fileName,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        letterRendering: true,
-        scrollY: 0,
-        backgroundColor: '#ffffff' // Forzar fondo claro en PDF
-      },
-      jsPDF: {
-        unit: 'mm',
-        format: 'a4',
-        // orientation: 'landscape'
-      },
-      // Configuración mejorada de saltos de página
-      pagebreak: {
-        mode: ['css', 'legacy'],
-        before: '.pdf-page-break',
-        avoid: '.page-break-avoid'
-      }
-    };
-
-    // Fusionar opciones
-    const mergedOptions = { ...defaultOptions, ...options };
-
-    // Preparar el elemento para la exportación - añadir clase temporal
-    element.classList.add('pdf-export');
-    
-    console.log('Iniciando generación del PDF con configuración horizontal...');
-    
-    // Para mejorar el rendimiento y evitar problemas con elementos anidados
-    const worker = html2pdf()
-      .from(element)
-      .set(mergedOptions);
-      
-    // Si hay muchos elementos, usar paginación por lotes
-    if (element.querySelectorAll('table').length > 3) {
-      console.log('Detectadas múltiples tablas. Usando paginación por lotes...');
-      return worker.toPdf().get('pdf').then((pdf) => {
-        pdf.save();
-        element.classList.remove('pdf-export');
-        console.log('PDF generado exitosamente con paginación optimizada');
-        return true;
-      });
-    } else {
-      // Proceso estándar para pocos elementos
-      return worker.save().then(() => {
-        element.classList.remove('pdf-export');
-        console.log('PDF generado exitosamente');
-        return true;
-      });
-    }
-      
+    console.log(`Iniciando generación del PDF: ${fileName}`);
+    await generarPdfDesdeHtml(pdfOptions);
+    console.log(`PDF '${fileName}' generado exitosamente.`);
+    return true;
   } catch (error) {
-    console.error('Error al generar PDF:', error);
-    throw error;
+    console.error(`Error al generar PDF '${fileName}':`, error);
+    // No relanzar el error aquí para mantener la firma original de la función si es necesario,
+    // pero se podría considerar relanzar para un manejo de errores más consistente.
+    return false; // Opcional: devolver false en caso de error
+  } finally {
+    // Si se asignó un ID temporal, se elimina
+    if (tempId && document.getElementById(tempId)) {
+      document.getElementById(tempId).removeAttribute('id');
+    }
   }
 }

@@ -114,53 +114,34 @@ async function searchAbsences() {
     if (studentsStore.students.length === 0) await studentsStore.fetchStudents();
     if (classesStore.classes.length === 0) await classesStore.fetchClasses();
 
-    // 2. Obtener los documentos de asistencia del store
-    //    Idealmente, el fetch ya debería filtrar por rango en Firebase si es posible.
+    // 2. Obtener documentos de asistencia optimizados por rango de fechas
+    const { start, end } = actualDateRange.value;
+    console.log(`Fetching attendance documents for range: ${start} to ${end}`);
+    
+    // Usar consulta optimizada por rango de fechas
+    const documentsInRange = await attendanceStore.fetchAttendanceDocuments(start, end);
+    console.log(`Total documentos en rango: ${documentsInRange.length}`);
 
-    // Obtener TODOS los documentos (o idealmente, usar un fetch por rango si existe)
-    if (attendanceStore.attendanceDocuments.length === 0) {
-        await attendanceStore.fetchAttendanceDocuments(); // Asegura que los documentos estén cargados
-    }
-    const allDocuments = attendanceStore.attendanceDocuments;
-
-    console.log(`Total documentos en store: ${allDocuments.length}`);
-
-    // 3. Procesar los documentos para agregar ausencias DENTRO DEL RANGO
+    // 3. Procesar los documentos para agregar ausencias
     const absencesMap = new Map<string, { count: number, classIds: Set<string>, dates: string[] }>();
 
-    allDocuments.forEach(doc => {
+    documentsInRange.forEach(doc => {
       if (!doc.fecha || !doc.data?.ausentes || !Array.isArray(doc.data.ausentes)) {
-        // console.log("Documento omitido (sin fecha o ausentes):", doc.id || doc.fecha);
         return; // Omitir documentos sin fecha o sin array de ausentes
       }
 
-      // Normalizar la fecha del documento
-      const docDate = normalizeDate(doc.fecha);
+      // Los documentos ya están filtrados por rango, procesamos directamente
+      doc.data.ausentes.forEach((studentId: string) => {
+        if (!studentId) return; // Ignorar IDs vacíos
 
-      // **MODIFICACIÓN:** Verificar si la fecha normalizada es válida y está dentro del rango (comparando YYYY-MM-DD)
-      if (isValid(docDate) && docDate.getTime() !== 0) {
-        const docYYYYMMDD = formatISO(docDate, { representation: 'date' });
-
-        if (docYYYYMMDD >= rangeStartYYYYMMDD && docYYYYMMDD <= rangeEndYYYYMMDD) {
-          // console.log(`Documento ${doc.id || doc.fecha} EN RANGO (${docYYYYMMDD})`);
-
-          doc.data.ausentes.forEach((studentId: string) => {
-            if (!studentId) return; // Ignorar IDs vacíos
-
-            const currentData = absencesMap.get(studentId) || { count: 0, classIds: new Set<string>(), dates: [] };
-            currentData.count += 1;
-            if (doc.classId) {
-              currentData.classIds.add(doc.classId);
-            }
-            currentData.dates.push(doc.fecha); // Guardar la fecha original del registro
-            absencesMap.set(studentId, currentData);
-          });
-        } else {
-           // console.log(`Documento ${doc.id || doc.fecha} FUERA DE RANGO (${docYYYYMMDD})`);
+        const currentData = absencesMap.get(studentId) || { count: 0, classIds: new Set<string>(), dates: [] };
+        currentData.count += 1;
+        if (doc.classId) {
+          currentData.classIds.add(doc.classId);
         }
-      } else {
-         // console.log(`Documento ${doc.id || doc.fecha} con fecha inválida o no normalizable: ${doc.fecha}`);
-      }
+        currentData.dates.push(doc.fecha); // Guardar la fecha original del registro
+        absencesMap.set(studentId, currentData);
+      });
     });
 
     console.log(`Estudiantes con ausencias encontradas en el rango: ${absencesMap.size}`);

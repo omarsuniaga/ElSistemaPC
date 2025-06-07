@@ -23,8 +23,7 @@ onMounted(async () => {
   await fetchData();
   now.value = new Date();
   selectedDate.value = new Date(); // Inicializar con la fecha actual
-  // Cargar datos de asistencia para la fecha actual
-  fetchAttendanceForDate(format(selectedDate.value, 'yyyy-MM-dd'));
+  // Los datos de asistencia se cargan en fetchData y se actualizan con el watch
 });
 onUnmounted(() => {
   if (intervalId) clearInterval(intervalId);
@@ -56,31 +55,38 @@ const formattedSelectedDate = computed(() => {
 // Función para ir al día anterior
 function goToPreviousDay() {
   selectedDate.value = subDays(selectedDate.value, 1)
-  fetchAttendanceForDate(format(selectedDate.value, 'yyyy-MM-dd'))
+  // fetchAttendanceForDate(format(selectedDate.value, 'yyyy-MM-dd')) // Ya no es necesario, el watch se encarga
+  // Podríamos considerar llamar a fetchData() si el rango de fechas cambia significativamente
 }
 
 // Función para ir al día siguiente
 function goToNextDay() {
   selectedDate.value = addDays(selectedDate.value, 1)
-  fetchAttendanceForDate(format(selectedDate.value, 'yyyy-MM-dd'))
+  // fetchAttendanceForDate(format(selectedDate.value, 'yyyy-MM-dd')) // Ya no es necesario, el watch se encarga
+  // Podríamos considerar llamar a fetchData() si el rango de fechas cambia significativamente
 }
 
 // Función para volver al día actual
 function goToToday() {
   selectedDate.value = new Date()
-  fetchAttendanceForDate(format(selectedDate.value, 'yyyy-MM-dd'))
+  // fetchAttendanceForDate(format(selectedDate.value, 'yyyy-MM-dd')) // Ya no es necesario, el watch se encarga
 }
 
 // Función para cargar los datos de asistencia para una fecha específica
-async function fetchAttendanceForDate(date) {
+async function fetchAttendanceForDate(date: string) {
   isLoading.value = true
   try {
     // Asegurarse que tenemos las clases cargadas
     if (classesStore.classes.length === 0) {
       await classesStore.fetchClasses()
     }
-    // Cargar asistencia específicamente para la fecha seleccionada
-    await attendanceStore.fetchAttendanceByDate(date)
+    // Ya no es necesario llamar a una función específica aquí,
+    // fetchData() carga todos los documentos y el watch los filtra.
+    // Si no hay documentos, o si la fecha está fuera del rango cargado,
+    // podríamos necesitar volver a llamar a fetchData o fetchAttendanceDocuments con un rango específico.
+    // Por ahora, asumimos que fetchData() en onMounted y al cambiar de día es suficiente.
+    // Si es necesario, se podría llamar a fetchData() aquí también.
+    // await fetchData(); // Opcional, si se necesita recargar todos los documentos.
   } catch (err) {
     console.error('Error al cargar datos de asistencia para la fecha:', date, err)
     error.value = 'Error al cargar datos de asistencia'

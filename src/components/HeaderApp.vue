@@ -187,8 +187,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth'
 import { useTheme } from '../contexts/ThemeContext'
 import { useStudentsStore } from '../modulos/Students/store/students'
@@ -371,6 +371,7 @@ const formatDate = (dateString: string) => {
 }
 
 // Navegar al perfil según rol
+
 const navigateToProfile = () => {
   showMenu.value = false
   

@@ -35,6 +35,7 @@ import {
 import { useStudentsStore } from '../store/students'
 import { useClassesStore } from '../../Classes/store/classes'
 import { useAttendanceStore } from '../../Attendance/store/attendance'
+import { useOptimizedAttendance } from '../../Attendance/composables/useOptimizedAttendance'
 import { useTeachersStore } from '../../Teachers/store/teachers'
 import { Line } from 'vue-chartjs'
 import {
@@ -66,6 +67,14 @@ const studentsStore = useStudentsStore()
 const classesStore = useClassesStore()
 const attendanceStore = useAttendanceStore()
 const teachersStore = useTeachersStore()
+
+// Composable optimizado para asistencias
+const {
+  loading: attendanceLoading,
+  error: attendanceError,
+  getStudentRecords,
+  searchByDateRange
+} = useOptimizedAttendance()
 
 const studentId = route.params.id as string
 const student = computed(() => studentsStore.students.find(s => s.id.toString() === studentId))
@@ -284,11 +293,8 @@ const studentAttendance = computed(() => {
     recentRecords: [],
     classPerformance: []
   };
-  
-  // Obtener los registros de asistencia del estudiante
-  const attendanceRecords = attendanceStore.getAttendanceByStudent ? 
-    attendanceStore.getAttendanceByStudent(studentId) : 
-    attendanceStore.records.filter(record => record.studentId === studentId);
+    // Obtener los registros de asistencia del estudiante usando el composable optimizado
+  const attendanceRecords = getStudentRecords.value(studentId);
   
   // Si no hay registros, devolvemos un objeto vacío
   if (!attendanceRecords || attendanceRecords.length === 0) {
@@ -532,12 +538,11 @@ const refreshAttendanceData = async () => {
     const today = new Date();
     const threeMonthsAgo = new Date(today);
     threeMonthsAgo.setMonth(today.getMonth() - 3);
-    
-    const startDate = format(threeMonthsAgo, 'yyyy-MM-dd');
+      const startDate = format(threeMonthsAgo, 'yyyy-MM-dd');
     const endDate = format(today, 'yyyy-MM-dd');
     
-    // Obtener datos directamente desde Firestore para garantizar que estén actualizados
-    await attendanceStore.fetchAttendanceByDateRange(startDate, endDate);
+    // Los datos se cargarán automáticamente en el mounted del componente
+    console.log(`📊 Preparando datos de asistencia para el rango ${startDate} al ${endDate}`);
     
     // Si hay clases específicas del estudiante, cargar sus documentos de asistencia
     const studentClassIds = classesStore.classes
@@ -677,7 +682,16 @@ const chartOptions = {
   }
 }
 
-const isUploading = vueRef(false)
+const isUploading = ref(false)
+const showDeleteConfirm = ref(false)
+
+// Función para manejar errores de carga de imágenes
+const handleImageError = (event: Event) => {
+  const imgElement = event.target as HTMLImageElement;
+  const fallbackUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.value?.nombre || 'default'}`;
+  console.log('[StudentProfileView] Error al cargar imagen de avatar, usando fallback:', fallbackUrl);
+  imgElement.src = fallbackUrl;
+}
 
 // Reemplazar la función actual por esta
 const handleProfilePhotoUpload = async (url) => {
@@ -693,7 +707,7 @@ const handleProfilePhotoUpload = async (url) => {
       throw new Error('La URL de la imagen no es válida');
     }
     
-    await studentsStore.updateStudent(studentId, { avatar: url })
+    await studentsStore.updateStudent(studentId, { photoURL: url })
     console.log('[StudentProfileView] Avatar actualizado correctamente');
   } catch (error) {
     console.error('Error actualizando foto de perfil:', error)
@@ -913,8 +927,7 @@ onMounted(async () => {
         const studentClassIds = classesStore.classes
           .filter(c => c.studentIds?.includes(studentId))
           .map(c => c.id)
-          
-        // Cargar las asistencias para cada clase
+            // Cargar las asistencias para cada clase
         try {
           // Obtener fechas para el rango (últimos 3 meses)
           const today = new Date()
@@ -924,25 +937,11 @@ onMounted(async () => {
           const startDate = format(threeMonthsAgo, 'yyyy-MM-dd')
           const endDate = format(today, 'yyyy-MM-dd')
           
-          // Cargar todos los registros de asistencia para el rango de fechas
-          await attendanceStore.fetchAttendanceByDateRange(startDate, endDate)
+          // Cargar registros de asistencia usando el composable optimizado
+          console.log(`🔄 Cargando asistencias del ${startDate} al ${endDate}`)
+          await searchByDateRange(startDate, endDate)
           
-          // Si hay clases específicas del estudiante, cargar sus documentos de asistencia
-          if (studentClassIds.length > 0) {
-            console.log(`🔄 Obteniendo datos de asistencia para ${studentClassIds.length} clases del estudiante`)
-            
-            // Cargar documentos de asistencia para cada clase del estudiante
-            for (const classId of studentClassIds) {
-              try {
-                // Intentar cargar documentos específicos de la clase
-                if (typeof attendanceStore.fetchAttendanceByClassAndDate === 'function') {
-                  await attendanceStore.fetchAttendanceByClassAndDate(classId, format(today, 'yyyy-MM-dd'))
-                }
-              } catch (err) {
-                console.error(`⚠️ Error al cargar asistencias para la clase ${classId}:`, err)
-              }
-            }
-          }
+          console.log('✅ Registros de asistencia cargados correctamente')
         } catch (error) {
           console.error('❌ Error al cargar registros de asistencia:', error)
         }
@@ -1377,7 +1376,8 @@ const filteredAttendanceRecords = computed(() => {
       <div class="flex items-center gap-4">
         <div class="relative">
           <img
-            :src="student.avatar"
+            :src="student.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student?.nombre || 'default'}`"
+            @error="handleImageError"
             :alt="`${student.nombre} ${student.apellido}`"
             class="w-24 h-24 rounded-full object-cover"
           />
