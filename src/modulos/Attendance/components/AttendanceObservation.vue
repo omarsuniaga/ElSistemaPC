@@ -635,55 +635,35 @@ const saveObservation = async () => {
     console.log("Attempting to save observation:", finalObservationData);
 
     try {
-      if (props.classObservationMode) {
-        // This is a class-level observation
-        console.log("Saving class observation using addObservationToHistoryFirebase");
-        await attendanceStore.addObservationToHistory({
-          classId: props.classId,
-          date: props.attendanceDate, // Required field
-          fecha: props.attendanceDate, // For compatibility
-          authorId: currentUserId || '', // Required field
-          author: teacherName, // Using teacher name
-          text: finalObservationData.text || '', // Required field
-          content: {
-            text: finalObservationData.text || '' // Ensure text is at least an empty string
-            // taggedStudents: finalObservationData.taggedStudents, // If applicable from rich editor
-            // bulletPoints: finalObservationData.bulletPoints, // If applicable
-            // works: finalObservationData.works, // If applicable
-            // classDynamics: finalObservationData.classDynamics // If applicable
-          },
-          type: 'general', // Default type, adjust as needed
-          priority: 'media', // Default priority, adjust as needed
-          requiresFollowUp: false // Default, adjust as needed
-        });
-      } else {
-        // This is a student-specific observation for an attendance record
-        if (!props.studentId) {
-          console.error("Cannot save student observation without studentId");
-          isLoading.value = false;
-          return;
-        }
-        console.log("Saving student observation using addObservationToHistoryFirebase");
-        await attendanceStore.addObservationToHistory({
-          classId: props.classId,
-          date: props.attendanceDate, // Required field
-          fecha: props.attendanceDate, // For compatibility
-          authorId: currentUserId || '', // Required field
-          author: teacherName, // Using teacher name
-          text: finalObservationData.text || '', // Required field
-          content: {
-            text: finalObservationData.text || '', // Ensure text is at least an empty string
-            taggedStudents: props.studentId ? [props.studentId] : [],
-            // bulletPoints: finalObservationData.bulletPoints, // If applicable
-            // works: finalObservationData.works, // If applicable
-            // classDynamics: finalObservationData.classDynamics // If applicable
-          },
-          type: 'general', // Default type, adjust as needed
-          priority: 'media', // Default priority, adjust as needed
-          requiresFollowUp: false // Default, adjust as needed
-          // Note: studentId is not a direct property of ClassObservation, it's part of content.taggedStudents
-        });
-      }
+      // Determinar el tipo de observación basado en si tenemos studentId
+      const isStudentSpecific = props.studentId && !props.classObservationMode;
+      
+      console.log(`Saving ${isStudentSpecific ? 'student-specific' : 'class'} observation using addObservationToHistoryFirebase`);
+      
+      // Preparar datos base de la observación
+      const baseObservationData = {
+        classId: props.classId,
+        date: props.attendanceDate, // Required field
+        fecha: props.attendanceDate, // For compatibility
+        authorId: currentUserId || '', // Required field
+        author: teacherName, // Using teacher name
+        text: finalObservationData.text || '', // Required field
+        content: {
+          text: finalObservationData.text || '', // Ensure text is at least an empty string
+          // Si tenemos studentId específico, agregarlo a taggedStudents
+          taggedStudents: isStudentSpecific ? [props.studentId!] : [],
+          // Agregar otros campos del rich editor si están disponibles
+          // bulletPoints: finalObservationData.bulletPoints,
+          // works: finalObservationData.works,
+          // classDynamics: finalObservationData.classDynamics
+        },
+        type: 'general' as const, // Type must be one of the specific values
+        priority: 'media' as const, // Priority must be one of the specific values
+        requiresFollowUp: false // Default, adjust as needed
+      };
+
+      // Guardar la observación usando el store
+      await attendanceStore.addObservationToHistory(baseObservationData);
       console.log("Observation saved successfully");
       
       // Show success message to the user
