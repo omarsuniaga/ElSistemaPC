@@ -61,15 +61,7 @@ export interface AttendanceAnalytics {
   byClass: Record<string, ClassStats>;
 }
 
-// Interfaces para observaciones
-export interface ClassObservation {
-  id?: string;
-  classId: string;
-  date: string;
-  text: string;
-  author: string;
-  createdAt?: Date;
-}
+
 
 // Interfaces para parámetros de búsqueda
 export interface FetchAttendanceRecordsParams {

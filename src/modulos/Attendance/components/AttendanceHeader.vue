@@ -15,11 +15,13 @@ import { computed } from 'vue'
 
 const props = defineProps<{
   className?: string;
-  pendingChangesCount: number;
+  pendingChangesCount?: number;
   isDisabled?: boolean;
   observations?: string;
   shouldAnimateObservationsButton?: boolean;
   hasObservations?: boolean;
+  observationButtonText?: string;
+
 }>()
 
 const emit = defineEmits<{
@@ -27,20 +29,10 @@ const emit = defineEmits<{
   (e: 'save'): void;
   (e: 'open-export'): void;
   (e: 'open-observation'): void;
-  (e: 'navigate-to-calendar'): void;
-  (e: 'navigate-to-class-selector'): void;
+  (e: 'click'): void;
 }>()
 
-// Funciones para navegar directamente
-const handleNavigateToCalendar = () => {
-  console.log('Navegando al calendario desde AttendanceHeader');
-  emit('navigate-to-calendar');
-}
 
-const handleNavigateToClassSelector = () => {
-  console.log('Navegando a la selección de clases desde AttendanceHeader');
-  emit('navigate-to-class-selector');
-}
 
 // Computed property to determine button text based on whether observations exist
 const observationButtonText = computed(() => {
@@ -58,36 +50,13 @@ const observationTooltip = computed(() => {
 <template>
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-      <!-- Botones de navegación-->
-      <div class="flex gap-2 mb-2 sm:mb-0">
-        <button 
-          @click="handleNavigateToCalendar"
-          class="px-2 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md shadow-sm text-xs flex items-center gap-1"
-          title="Volver al calendario"
-        >
-          <CalendarIcon class="w-4 h-4" />
-          <span>Calendario</span>
-        </button>
-        
-        <button 
-          @click="handleNavigateToClassSelector"
-          class="px-2 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md shadow-sm text-xs flex items-center gap-1"
-          title="Volver a la selección de clases"
-        >
-          <ArrowLeftIcon class="w-4 h-4" />
-          <span>Clases</span>
-        </button>
-      </div>
-
+    
       <div class="flex items-center space-x-2">
         <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
-          {{ props.className || 'Lista de asistencia' }}
+          <!-- Mostrar el nombre y dia de la clase como titulo -->
+          {{ props.className }}          
         </h2>
-        <ClassObservationBadge 
-          :observations="props.observations"
-          @click="emit('open-observation')"
-          class="sm:text-base text-sm"
-        />
+        
       </div>
     </div>
     
@@ -105,16 +74,16 @@ const observationTooltip = computed(() => {
       <!-- Save Button -->
       <button 
         @click="emit('save')"
-        :disabled="props.isDisabled || props.pendingChangesCount === 0"
+        :disabled="props.isDisabled || (props.pendingChangesCount || 0) === 0"
         :class="[
           'px-2 sm:px-3 py-1 sm:py-1.5 rounded-md shadow-sm text-xs sm:text-sm flex items-center gap-1 flex-1 sm:flex-initial justify-center', 
-          props.pendingChangesCount > 0 
+          (props.pendingChangesCount || 0) > 0 
             ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
             : 'bg-gray-100 text-gray-400 cursor-not-allowed'
         ]"
       >
         <ArrowDownOnSquareIcon class="w-4 h-4" />
-        <span class="hidden xs:inline">Guardar{{props.pendingChangesCount ? ` (${props.pendingChangesCount})` : ''}}</span>
+        <span class="hidden xs:inline">Guardar{{ (props.pendingChangesCount || 0) > 0 ? ` (${props.pendingChangesCount})` : ''}}</span>
         <span class="xs:hidden">Guardar</span>
       </button>
       
@@ -152,16 +121,16 @@ const observationTooltip = computed(() => {
         
         <!-- Text changes based on whether observations exist -->
         <span class="hidden xs:inline">
-          {{ props.hasObservations ? 'Consultar observaciones' : 'Agregar observación' }}
+          {{ props.hasObservations ? 'Consultar ' : 'Agregar ' }}
         </span>
         <span class="xs:hidden">
-          {{ props.hasObservations ? 'Ver Obs' : 'Add Obs' }}
+          {{ props.hasObservations ? 'Ver' : 'Agregar' }}
         </span>
         
         <!-- Animation indicator when observations are missing -->
         <span 
-          v-if="!props.hasObservations && props.shouldAnimateObservationsButton" 
-          class="absolute -top-1 -left-1 flex h-3 w-3"
+          v-if="!props.hasObservations"
+          class="absolute -bottom-1 -left-1 flex h-3 w-3 "
         >
           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
           <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>

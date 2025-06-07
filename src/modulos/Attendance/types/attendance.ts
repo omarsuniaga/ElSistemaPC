@@ -1,40 +1,41 @@
-import firebase from 'firebase/app';
-
 // Interfaces completas para el módulo de asistencia
+export type AttendanceStatus = 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
+
 export interface AttendanceRecord {
   id: string;
   studentId: string;
   classId: string;
-  Fecha: string;
+  fecha: string;
+  status: AttendanceStatus;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+export interface StudentAttendanceStatus {
   status: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
-  createdAt: string;
-  updatedAt: string;
-  justification?: {
-    reason: string;
-    documentURL?: string;
-    approved?: boolean;
-  };
+  justification?: string;
+  updatedAt?: Date;
+  updatedBy?: string;
 }
 
 export interface AttendanceDocument {
-  id?: string;
-  fecha: string;
+  id: string;
   classId: string;
+  fecha: string;
   teacherId: string;
+  uid: string;
+  createdAt: Date;
+  updatedAt: Date;
   data: {
-    presentes: string[];
     ausentes: string[];
+    presentes: string[];
     tarde: string[];
-    justificacion: Array<{
-      id: string;
-      reason: string;
-      documentURL?: string;
-      approved?: boolean;
-    }>;
-    observations: string;
+    justificacion: JustificationData[];
+    observación: string[] | string; // Para compatibilidad con versión anterior
+    observations?: ClassObservationData[]; // Nuevo array de observaciones estructuradas
   };
-  created_at?: firebase.firestore.Timestamp;
-  updated_at?: firebase.firestore.Timestamp;
+  // Mapa de studentId a su estado de asistencia
+  students?: Record<string, StudentAttendanceStatus>;
 }
 
 export interface AttendanceAnalytics {
@@ -124,6 +125,63 @@ export interface FetchAttendanceRecordsParams {
   studentId?: string;
 }
 
+export interface ClassObservation {
+  id: string;
+  classId: string;
+  date: string;  // Campo necesario para la colección OBSERVACIONES
+  fecha?: string; // Mantenemos para compatibilidad con código existente
+  type?: 'general' | 'comportamiento' | 'logro' | 'contenido' | 'dinamica';
+  content: {
+    text: string;
+    bulletPoints?: string[];
+    taggedStudents?: string[];
+    works?: Array<{
+      title: string;
+      composer?: string;
+      notes?: string;
+    }>;
+    classDynamics?: Array<{
+      type: string;
+      description: string;
+      effectiveness?: 'alta' | 'media' | 'baja';
+    }>;
+  } | any; // Permitimos contenido flexible para migración
+  author?: string;
+  authorId: string;  // ID del autor original
+  authorName?: string; // Nombre del autor original
+  createdAt: Date;
+  updatedAt: Date;
+  lastModified?: Date; // Fecha de última modificación
+  modifiedBy?: string; // ID del usuario que hizo la última modificación
+  modifiedByName?: string; // Nombre del usuario que hizo la última modificación
+  priority?: 'alta' | 'media' | 'baja';
+  requiresFollowUp?: boolean;
+  bulletPoints?: string[]; // Para compatibilidad con componentes
+  studentId?: string; // Para observaciones específicas de estudiantes
+  studentName?: string; // Nombre del estudiante si es específico
+  taggedStudentIds?: string[]; // IDs de estudiantes etiquetados
+  tags?: string[]; // Otras etiquetas
+  text: string; // Contenido principal de texto - ahora obligatorio para OBSERVACIONES
+  category?: string; // Categoría general de la observación
+  categoryId?: string; // ID de categoría, puede ser el mismo que classId
+  images?: string[]; // URLs de imágenes adjuntas
+}
+
+export interface JustificationData {
+  id: string;
+  studentId: string;
+  classId: string;
+  fecha: string;
+  reason: string;
+  documentUrl?: string;
+  approvalStatus: 'pending' | 'approved' | 'rejected';
+  approvedBy?: string;
+  approvedAt?: Date;
+  createdAt: Date;
+  updatedAt?: Date;
+  timeLimit: Date;
+}
+
 export interface StatusChange {
   studentId: number;
   date: string;
@@ -131,4 +189,40 @@ export interface StatusChange {
   oldStatus: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado' | null;
   newStatus: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
   timestamp: string;
+}
+
+// Interface para observaciones de clase estructuradas
+export interface ClassObservationData {
+  id: string;
+  content: string | {
+    text: string;
+    bulletPoints?: string[];
+    taggedStudents?: string[];
+  };
+  text: string; // Campo principal de texto para OBSERVACIONES
+  author?: string;
+  authorId: string; // ID del autor original
+  authorName?: string; // Nombre del autor para mostrar en UI
+  timestamp?: Date; // Campo legacy
+  createdAt: Date; // Fecha de creación 
+  updatedAt?: Date; // Fecha de actualización
+  lastModified?: Date; // Última modificación
+  modifiedBy?: string; // ID de quien modificó últimamente
+  modifiedByName?: string; // Nombre de quien modificó 
+  type?: 'contenido' | 'comportamiento' | 'logro' | 'general';
+  category?: string; // Categoría de la observación
+  categoryId?: string; // ID de la categoría/clase
+  status?: string; // Estado de la observación
+  tags?: string[]; // Estudiantes etiquetados
+  imageUrls?: string[]; // URLs de imágenes adjuntas
+  formattedText?: string; // Texto con formato especial
+  isEdited?: boolean;
+  editedAt?: Date;
+  priority?: 'alta' | 'media' | 'baja';
+  requiresFollowUp?: boolean;
+  bulletPoints?: string[];
+  classId?: string; // ID de la clase
+  date?: string; // Fecha de la clase en formato YYYY-MM-DD
+  studentId?: string;
+  studentName?: string;
 }
