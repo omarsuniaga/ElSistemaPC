@@ -7,7 +7,12 @@ export interface AttendanceRecord {
   classId: string;
   fecha: string;
   status: AttendanceStatus;
-  justification?: string;
+  justification?: string | {
+    reason: string;
+    date?: string;
+    documentUrl?: string;
+  };
+  documentUrl?: string;
   createdAt: Date;
   updatedAt?: Date;
 }

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { useScheduleStore } from '../../Schedules/store/schedule'
 import type { Student } from "../types/student"
-import { getStudentsFirebase, createStudentFirebase, updateStudentFirebase, deleteStudentFirebase } from '../service/students'
+import { getStudentsFirebase, createStudentFirebase, updateStudentFirebase, deleteStudentFirebase, getStudentByIdFirebase } from '../service/students'
 import { getAttendanceReport } from '../../Attendance/service/attendance'
 import { useClassesStore } from '../../Classes/store/classes'
 
@@ -33,7 +33,7 @@ export const useStudentsStore = defineStore('students', {
       return state.students.find(student => student.id === id)
     },
 
-    getStudentSchedule: (state) => async (studentId: string) => {
+    getStudentSchedule: (_state) => async (studentId: string) => {
       const scheduleStore = useScheduleStore()
       await scheduleStore.fetchAllSchedules()
       
@@ -112,30 +112,42 @@ export const useStudentsStore = defineStore('students', {
   
   actions: {
     async fetchStudents() {
+      console.log('[studentsStore] fetchStudents: Start');
       this.loading = true
       this.error = null
       
       try {
-        const students = await getStudentsFirebase()
-        this.students = students
+        const fetchedStudentsData = await getStudentsFirebase()
+        console.log('[studentsStore] fetchStudents: Raw data from Firebase:', JSON.parse(JSON.stringify(fetchedStudentsData)));
+        
+        this.students = fetchedStudentsData
+        console.log('[studentsStore] fetchStudents: Updated this.students state (count:', this.students.length, '):', JSON.parse(JSON.stringify(this.students)));
+        
         this.lastSync = new Date()
+        console.log('[studentsStore] fetchStudents: Sync complete. Last sync:', this.lastSync);
         return this.students
       } catch (error: any) {
-        console.error('Error fetching students:', error)
+        console.error('[studentsStore] fetchStudents: Error fetching students:', error);
         this.error = error.message
         return []
       } finally {
         this.loading = false
+        console.log('[studentsStore] fetchStudents: End. Loading state:', this.loading);
       }
-    },
-
-    async fetchStudentById(id: string) {
+    },    async fetchStudentById(id: string) {
       this.loading = true
       this.error = null
       
       try {
-        const student = await getStudentsFirebase(id)
-        this.students = this.students.map(s => s.id === id ? student : s)
+        const student = await getStudentByIdFirebase(id)
+        if (student) {
+          const index = this.students.findIndex(s => s.id === id)
+          if (index !== -1) {
+            this.students[index] = student
+          } else {
+            this.students.push(student)
+          }
+        }
         return student
       } catch (error: any) {
         console.error('Error fetching student by ID:', error)
@@ -148,8 +160,10 @@ export const useStudentsStore = defineStore('students', {
     // Función de compatibilidad con el patrón BaseStore
     async fetchItems() {
       return this.fetchStudents()
-    },
-      async addStudent(student: Omit<Student, 'id'>) {
+    },      async addStudent(student: Omit<Student, 'id'>) {
+      console.log('[studentsStore] addStudent: Starting process');
+      console.log('[studentsStore] addStudent: Input data:', JSON.stringify(student, null, 2));
+      
       this.loading = true
       try {
         // Asegurarse de que el campo grupo sea siempre un array
@@ -159,15 +173,24 @@ export const useStudentsStore = defineStore('students', {
                 (student.grupo ? [student.grupo] : [])
         }
         
+        console.log('[studentsStore] addStudent: Normalized data:', JSON.stringify(normalizedStudent, null, 2));
+        
         const newStudent = await createStudentFirebase(normalizedStudent)
+        
+        console.log('[studentsStore] addStudent: Student created successfully:', JSON.stringify(newStudent, null, 2));
+        
         this.students.push(newStudent)
+        
+        console.log('[studentsStore] addStudent: Added to local store. Total students:', this.students.length);
+        
         return newStudent
       } catch (error: any) {
-        console.error('Error adding student:', error)
+        console.error('[studentsStore] addStudent: Error adding student:', error)
         this.error = error.message
         throw error
       } finally {
         this.loading = false
+        console.log('[studentsStore] addStudent: Process completed');
       }
     },
     

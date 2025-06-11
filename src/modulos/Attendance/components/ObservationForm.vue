@@ -4,6 +4,7 @@ import type { ClassObservation } from '../types/attendance';
 import { useAttendanceStore } from '../store/attendance';
 import { useAuthStore } from '../../../stores/auth';
 import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useRBACStore } from '../../../stores/rbacStore';
 
 const props = defineProps<{
   classId: string;
@@ -15,6 +16,10 @@ const emit = defineEmits(['saved', 'cancel']);
 const attendanceStore = useAttendanceStore();
 const authStore = useAuthStore();
 const teachersStore = useTeachersStore();
+const rbacStore = useRBACStore();
+
+// RBAC permissions
+const canObserve = computed(() => rbacStore.hasPermission('attendance_observe'));
 
 // Estado del formulario
 const observationType = ref<ClassObservation['type']>('general');
@@ -88,7 +93,7 @@ const removeClassDynamic = (index: number) => {
 };
 
 const saveObservation = async () => {
-  if (!isValid.value) return;
+  if (!isValid.value || !canObserve.value) return;
 
   // Get teacher name instead of UID
   const currentUserId = authStore.user?.uid;
@@ -276,11 +281,11 @@ const saveObservation = async () => {
         class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
       >
         Cancelar
-      </button>
-      <button
+      </button>      <button
         @click="saveObservation"
-        :disabled="!isValid"
+        :disabled="!isValid || !canObserve"
         class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50"
+        :title="!canObserve ? 'No tienes permisos para crear observaciones' : ''"
       >
         Guardar Observación
       </button>

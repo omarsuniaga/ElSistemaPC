@@ -36,10 +36,13 @@
 
           <div>
             <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Estudiantes</h4>
-            <ul class="space-y-1">
-              <li v-for="student in getStudents(class_.studentIds)" :key="student.id"
+            <ul class="space-y-1">              <li v-for="student in getStudents(class_.studentIds)" :key="student.id"
                   class="text-sm flex items-center gap-2">
-                <img :src="student.avatar" :alt="student.nombre" class="w-6 h-6 rounded-full">
+                <StudentAvatar
+                  :first-name="student.nombre || ''"
+                  :last-name="student.apellido || ''"
+                  size="xs"
+                />
                 {{ student.nombre }} {{ student.apellido }}
               </li>
             </ul>
@@ -55,6 +58,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useClassesStore } from '../store/classes'
 import { useTeachersStore } from '../../Teachers/store/teachers'
 import { useStudentsStore } from '../../Students/store/students'
+import StudentAvatar from '../../Students/components/StudentAvatar.vue'
 
 const classesStore = useClassesStore()
 const teachersStore = useTeachersStore()

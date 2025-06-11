@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import type { JustificationData } from '../types/attendance';
 import { useAttendanceStore } from '../store/attendance';
 import { useAuthStore } from '../../../stores/auth';
+import { useRBACStore } from '../../../stores/rbacStore';
 
 const props = defineProps<{
   studentId: string;
@@ -14,6 +15,10 @@ const emit = defineEmits(['saved', 'cancel']);
 
 const attendanceStore = useAttendanceStore();
 const authStore = useAuthStore();
+const rbacStore = useRBACStore();
+
+// RBAC permissions
+const canJustify = computed(() => rbacStore.hasPermission('attendance_justify'));
 
 // Estado del formulario
 const reason = ref('');
@@ -44,16 +49,15 @@ const uploadDocument = async (file: File) => {
 
 // Método para guardar la justificación
 const saveJustification = async () => {
-  if (!isValid.value) return;
-
+  if (!isValid.value || !canJustify.value) return;
   const justification: Omit<JustificationData, 'id' | 'createdAt' | 'updatedAt'> = {
     studentId: props.studentId,
     classId: props.classId,
-    date: props.date,
+    fecha: props.date,
     reason: reason.value,
     documentUrl: documentUrl.value,
     approvalStatus: 'pending',
-    timeLimit: new Date(new Date(props.date).getTime() + 48 * 60 * 60 * 1000).toISOString()
+    timeLimit: new Date(new Date(props.date).getTime() + 48 * 60 * 60 * 1000)
   };
 
   try {
@@ -110,12 +114,16 @@ const saveJustification = async () => {
                 for="file-upload"
                 class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
               >
-                <span>Subir un archivo</span>
-                <input
+                <span>Subir un archivo</span>                <input
                   id="file-upload"
                   type="file"
                   class="sr-only"
-                  @change="(e) => e.target.files && uploadDocument(e.target.files[0])"
+                  @change="(e) => {
+                    const target = e.target as HTMLInputElement;
+                    if (target.files && target.files[0]) {
+                      uploadDocument(target.files[0]);
+                    }
+                  }"
                 >
               </label>
               <p class="pl-1">o arrastrar y soltar</p>
@@ -160,11 +168,11 @@ const saveJustification = async () => {
           class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
         >
           Cancelar
-        </button>
-        <button
+        </button>        <button
           @click="saveJustification"
-          :disabled="!isValid || uploading"
+          :disabled="!isValid || uploading || !canJustify"
           class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50"
+          :title="!canJustify ? 'No tienes permisos para crear justificaciones' : ''"
         >
           Guardar Justificación
         </button>

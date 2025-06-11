@@ -215,10 +215,12 @@
               v-for="student in classStudents" 
               :key="student.id" 
               class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-            >
-              <div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center mr-4 overflow-hidden">
-                <img v-if="student.photoURL" :src="student.photoURL" alt="Foto de estudiante" class="w-full h-full object-cover" />
-                <UserIcon v-else class="h-6 w-6 text-gray-400 dark:text-gray-500" />
+            >              <div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center mr-4 overflow-hidden">
+                <StudentAvatar
+                  :first-name="student.nombre || ''"
+                  :last-name="student.apellido || ''"
+                  size="lg"
+                />
               </div>
               
               <div class="flex-grow">
@@ -275,6 +277,7 @@ import {
   DocumentTextIcon,
   XMarkIcon
 } from '@heroicons/vue/24/outline';
+import StudentAvatar from '../../modulos/Students/components/StudentAvatar.vue';
 
 // Router
 const router = useRouter();

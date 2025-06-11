@@ -24,16 +24,19 @@
 
     <!-- Grupo de Avatares y Promedio -->
     <div class="flex flex-col lg:flex-row justify-between items-center mb-4 space-y-4 lg:space-y-0 pb-4 border-b border-gray-200 dark:border-gray-700">
-      <div class="flex -space-x-3">
-        <template v-for="(student, index) in sortedStudents" :key="student.id">
-          <img
+      <div class="flex -space-x-3">        <template v-for="(student, index) in sortedStudents" :key="student.id">
+          <div
             v-if="index < 6"
-            :src="student.avatar"
-            :alt="student.nombre"
-            class="w-10 h-10 rounded-full border-2 border-white dark:border-gray-800 cursor-pointer"
+            class="cursor-pointer border-2 border-white dark:border-gray-800 rounded-full"
             @click="$emit('remove-student', student)"
             :title="!card.locked ? 'Click para remover: ' + student.nombre : student.nombre"
-          />
+          >
+            <StudentAvatar
+              :first-name="student.nombre || ''"
+              :last-name="student.apellido || ''"
+              size="md"
+            />
+          </div>
         </template>
         <div
           v-if="card.group.length > 6"
@@ -180,6 +183,7 @@ import {
   CheckIcon,
   TrashIcon,
 } from '@heroicons/vue/20/solid'
+import StudentAvatar from './StudentAvatar.vue'
 
 const props = defineProps({
   card: {

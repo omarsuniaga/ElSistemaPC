@@ -65,27 +65,66 @@ export async function getAttendanceByDateAndClassFirebase(
 }
 
 /**
- * Agrega una observación de clase con formato enriquecido
+ * Agrega una observación de clase con formato enriquecido compatible con la estructura de Firestore
  */
 export const addClassObservationFirebase = async (observation: Omit<ClassObservation, 'id' | 'createdAt' | 'updatedAt'>): Promise<ClassObservation> => {
   try {
+    console.log('Saving observation to Firestore:', observation);
     const observationRef = collection(db, 'OBSERVACIONES');
-    const newObservation = {
-      ...observation,
-      // Aseguramos formato de fecha como string ISO para compatibilidad con otras partes del sistema
-      date: observation.date,
+    
+    // Extraer taggedStudents del objeto observation si existe
+    const observationAny = observation as any;
+    const taggedStudents = observationAny.taggedStudents || observationAny.taggedStudentIds || [];
+    
+    // Preparar datos compatibles con la estructura de Firestore
+    const firestoreData = {
+      // Campos principales requeridos
+      classId: observation.classId,
+      date: observation.date, // YYYY-MM-DD format
+      fecha: observation.date, // Para compatibilidad
+      authorId: observation.authorId,
+      author: observation.authorId, // En Firestore author es el ID del usuario
+      text: observation.text,
+      
+      // Estructura content como mapa
+      content: observation.content || {
+        text: observation.text,
+        taggedStudents: taggedStudents
+      },
+      
+      // Array de estudiantes etiquetados
+      taggedStudents: taggedStudents,
+      
+      // Campos de metadata
+      type: observation.type || 'general',
+      priority: observation.priority || 'media',
+      requiresFollowUp: observation.requiresFollowUp || false,
+      
+      // Timestamps de Firestore
       createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-      author: observation.authorId || observation.authorName || ''
+      updatedAt: Timestamp.now()
     };
 
-    const docRef = await addDoc(observationRef, newObservation);
-    const createdObservation = {
-      ...newObservation,
+    console.log('Firestore data to save:', firestoreData);
+    const docRef = await addDoc(observationRef, firestoreData);
+    
+    // Construir el objeto de respuesta
+    const createdObservation: ClassObservation = {
       id: docRef.id,
-      createdAt: newObservation.createdAt.toDate(),
-      updatedAt: newObservation.updatedAt.toDate()
-    } as ClassObservation;
+      classId: firestoreData.classId,
+      date: firestoreData.date,
+      authorId: firestoreData.authorId,
+      text: firestoreData.text,
+      content: firestoreData.content,
+      type: firestoreData.type,
+      priority: firestoreData.priority,
+      requiresFollowUp: firestoreData.requiresFollowUp,
+      createdAt: firestoreData.createdAt.toDate(),
+      updatedAt: firestoreData.updatedAt.toDate(),
+      taggedStudentIds: taggedStudents
+    };
+
+    console.log('Observation saved successfully with ID:', docRef.id);
 
     // Notificar a los profesores si la observación es de alta prioridad o requiere seguimiento
     if (observation.priority === 'alta' || observation.requiresFollowUp) {
@@ -94,7 +133,7 @@ export const addClassObservationFirebase = async (observation: Omit<ClassObserva
 
     return createdObservation;
   } catch (error) {
-    console.error('Error adding class observation:', error);
+    console.error('Error adding class observation to Firestore:', error);
     throw error;
   }
 };
@@ -139,6 +178,7 @@ export const addJustificationFirebase = async (justification: Omit<Justification
  */
 export const getClassObservationsFirebase = async (classId: string, date?: string): Promise<ClassObservation[]> => {
   try {
+    console.log('Fetching observations from Firestore for classId:', classId, 'date:', date);
     const observationsRef = collection(db, 'OBSERVACIONES');
     let q = query(observationsRef, where('classId', '==', classId));
     
@@ -147,37 +187,63 @@ export const getClassObservationsFirebase = async (classId: string, date?: strin
     }
 
     const querySnapshot = await getDocs(q);
+    console.log('Found', querySnapshot.docs.length, 'observations in Firestore');
+    
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
+      console.log('Processing observation document:', doc.id, data);
       
-      // Crear un objeto compatible con ClassObservation a partir de los datos
+      // Extraer texto de diferentes posibles estructuras
+      let text = '';
+      if (data.text) {
+        text = data.text;
+      } else if (data.content && data.content.text) {
+        text = data.content.text;
+      }
+      
+      // Extraer estudiantes etiquetados
+      const taggedStudents = data.taggedStudents || [];
+      
+      // Crear un objeto compatible con ClassObservation
       const observation: ClassObservation = {
         id: doc.id,
         classId: data.classId || '',
         
         // Mapear campos de texto y contenido
-        text: data.text || '',
-        content: { text: data.text || '' },
+        text: text,
+        content: data.content || { text: text },
         
-        // Mapear campos de autor
-        authorId: data.author || '',
+        // Mapear campos de autor - usar authorId como principal
+        authorId: data.authorId || data.author || '',
         authorName: data.authorName || '',
         
         // Manejar campos de fecha
-        date: data.date || '',
-        createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
-        updatedAt: data.updatedAt ? new Date(data.updatedAt) : new Date(),
+        date: data.date || data.fecha || '',
+        createdAt: data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt)) : new Date(),
+        updatedAt: data.updatedAt ? (data.updatedAt.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt)) : new Date(),
         
-        // Campos de historial
-        lastModified: data.lastModified ? new Date(data.lastModified) : undefined,
+        // Campos de historial y metadata
+        lastModified: data.lastModified ? (data.lastModified.toDate ? data.lastModified.toDate() : new Date(data.lastModified)) : undefined,
         modifiedBy: data.modifiedBy || '',
-        modifiedByName: data.modifiedByName || ''
+        modifiedByName: data.modifiedByName || '',
+        
+        // Campos específicos de la estructura de Firestore
+        type: data.type || 'general',
+        priority: data.priority || 'media',
+        requiresFollowUp: data.requiresFollowUp || false,
+        taggedStudentIds: taggedStudents,
+        
+        // Campos adicionales para compatibilidad
+        studentId: data.studentId,
+        studentName: data.studentName,
+        images: data.images || []
       };
       
+      console.log('Mapped observation:', observation);
       return observation;
     });
   } catch (error) {
-    console.error('Error getting class observations:', error);
+    console.error('Error getting class observations from Firestore:', error);
     throw error;
   }
 };
@@ -248,6 +314,24 @@ export const updateClassObservationFirebase = async (observation: ClassObservati
     } as ClassObservation;
   } catch (error) {
     console.error('Error updating class observation:', error);
+    throw error;
+  }
+};
+
+/**
+ * Elimina una observación de clase
+ */
+export const deleteClassObservationFirebase = async (observationId: string): Promise<void> => {
+  try {
+    console.log('Deleting observation from Firestore:', observationId);
+    const observationRef = doc(db, 'OBSERVACIONES', observationId);
+    await updateDoc(observationRef, {
+      deleted: true,
+      deletedAt: Timestamp.now()
+    });
+    console.log('Observation marked as deleted successfully');
+  } catch (error) {
+    console.error('Error deleting class observation from Firestore:', error);
     throw error;
   }
 };

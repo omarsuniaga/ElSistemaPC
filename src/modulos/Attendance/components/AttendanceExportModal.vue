@@ -139,16 +139,16 @@
             </div>
           </div>
         </div>
-        
-        <!-- Botones de acciones -->
+          <!-- Botones de acciones -->
         <div class="mt-8 flex justify-end gap-3">
           <button @click="close" class="btn">
             Cancelar
           </button>
           <button 
             @click="exportData"
-            :disabled="!filteredRecords.length || isExporting"
+            :disabled="!canExport || !filteredRecords.length || isExporting"
             class="btn btn-primary"
+            :title="!canExport ? 'No tienes permisos para exportar' : ''"
           >
             <span v-if="isExporting">
               Exportando...
@@ -169,6 +169,7 @@ import { useAttendanceStore } from '../store/attendance'
 import { useStudentsStore } from '../../Students/store/students'
 import { useClassesStore } from '../../Classes/store/classes'
 import { useOptimizedAttendance } from '../composables/useOptimizedAttendance'
+import { useRBACStore } from '../../../stores/rbacStore'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import * as ExcelJS from 'exceljs'
@@ -194,6 +195,10 @@ const close = () => {
 const attendanceStore = useAttendanceStore()
 const studentsStore = useStudentsStore()
 const classesStore = useClassesStore()
+const rbacStore = useRBACStore()
+
+// RBAC permissions
+const canExport = computed(() => rbacStore.hasPermission('attendance_export'))
 
 // Composable optimizado
 const {

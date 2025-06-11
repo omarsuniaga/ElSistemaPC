@@ -10,8 +10,17 @@ import {
   where 
 } from 'firebase/firestore';
 import { db } from '../../../firebase';
-import type { Class } from '../types/class';
+import { 
+  TeacherRole,
+  type ClassData, 
+  type ClassTeacher, 
+  type TeacherClassView,
+  type InviteAssistantData 
+} from '../types/class';
 import { getAuth } from 'firebase/auth';
+import type { TimeSlot, ScheduleConflict, ScheduleValidationResult } from '../../../utils/scheduleConflicts';
+import { timeSlotsOverlap, formatConflictMessage, timeToMinutes } from '../../../utils/scheduleConflicts';
+import { getStudentByIdFirebase } from '../../Students/service/students';
 
 const auth = getAuth();
 
@@ -19,7 +28,7 @@ const CLASSES_COLLECTION = 'CLASES';
 const USERS_COLLECTION = 'USERS';
 
 /**
- * Obtiene el usuario actual de Firestore basado en su email.
+ * Obtiene el usuario currente de Firestore basado en su email.
  */
 const getCurrentUserFromFirestore = async (): Promise<any | null> => {
   try {
@@ -42,10 +51,8 @@ const getCurrentUserFromFirestore = async (): Promise<any | null> => {
 /**
  * Obtiene todas las clases filtradas según el rol del usuario actual.
  */
-export const fetchClassesFirestore = async (): Promise<Class[]> => {
-  try {
+export const fetchClassesFirestore = async (): Promise<ClassData[]> => {  try {
     // Obtener datos del usuario desde el store de autenticación
-    const { getAuth } = await import('firebase/auth');
     const { useAuthStore } = await import('../../../stores/auth');
     
     const authStore = useAuthStore();
@@ -89,12 +96,11 @@ export const fetchClassesFirestore = async (): Promise<Class[]> => {
       console.log('[Filtro] Obteniendo todas las clases (rol admin/director)');
       classesSnapshot = await getDocs(classesCollection);
     }
-    
-    // Procesar resultados
+      // Procesar resultados
     const classes = classesSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    })) as Class[];
+    })) as ClassData[];
     
     // Guardar en caché
     try {
@@ -117,7 +123,7 @@ export const fetchClassesFirestore = async (): Promise<Class[]> => {
 /**
  * Obtiene una clase por su ID, verificando permisos según el rol del usuario actual.
  */
-export const getClassByIdFirestore = async (id: string): Promise<Class | null> => {
+export const getClassByIdFirestore = async (id: string): Promise<ClassData | null> => {
   try {
     const currentUser = await getCurrentUserFromFirestore();
     const classDoc = doc(db, CLASSES_COLLECTION, id);
@@ -126,7 +132,7 @@ export const getClassByIdFirestore = async (id: string): Promise<Class | null> =
     const classData = {
       id: classSnapshot.id,
       ...classSnapshot.data()
-    } as Class;
+    } as ClassData;
     if (currentUser) {
       const role = currentUser.role;
       if (role === 'teacher' && classData.teacherId !== currentUser.id) return null;
@@ -144,7 +150,7 @@ export const getClassByIdFirestore = async (id: string): Promise<Class | null> =
 /**
  * Añade una nueva clase en Firestore.
  */
-export const addClassFirestore = async (classData: Class): Promise<string> => {
+export const addClassFirestore = async (classData: Omit<ClassData, 'id'>): Promise<string> => {
   try {
     const classesCollection = collection(db, CLASSES_COLLECTION);
     const docRef = await addDoc(classesCollection, classData);
@@ -158,7 +164,7 @@ export const addClassFirestore = async (classData: Class): Promise<string> => {
 /**
  * Actualiza una clase existente en Firestore.
  */
-export const updateClassFirestore = async (id: string, classData: Partial<Class>): Promise<void> => {
+export const updateClassFirestore = async (id: string, classData: Partial<ClassData>): Promise<void> => {
   try {
     const classDoc = doc(db, CLASSES_COLLECTION, id);
     await updateDoc(classDoc, classData);
@@ -184,7 +190,7 @@ export const removeClassFirestore = async (id: string): Promise<void> => {
 /**
  * Obtiene clases filtradas por el ID del profesor, con verificación de permisos.
  */
-export const getClassesByTeacher = async (teacherId: string): Promise<Class[]> => {
+export const getClassesByTeacher = async (teacherId: string): Promise<ClassData[]> => {
   try {
     const currentUser = await getCurrentUserFromFirestore();
     if (currentUser) {
@@ -195,11 +201,10 @@ export const getClassesByTeacher = async (teacherId: string): Promise<Class[]> =
     }
     const classesCollection = collection(db, CLASSES_COLLECTION);
     const q = query(classesCollection, where("teacherId", "==", teacherId));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const querySnapshot = await getDocs(q);    return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    })) as Class[];
+    })) as ClassData[];
   } catch (error) {
     console.error(`Error fetching classes for teacher ${teacherId}:`, error);
     throw error;
@@ -249,4 +254,696 @@ export const fetchClassesByStudentIdFirestore = async (studentId: string): Promi
     console.error("Error fetching classes by student ID:", error);
     return [];
   }
+};
+
+/**
+ * Verifica conflictos de horarios para una nueva clase o actualización
+ */
+export const validateScheduleConflicts = async (
+  classData: {
+    id?: string;
+    teacherId?: string;
+    studentIds?: string[];
+    classroom?: string;
+    schedule?: {
+      slots: TimeSlot[];
+    };
+  }
+): Promise<ScheduleValidationResult> => {
+  const conflicts: ScheduleConflict[] = [];
+  const warnings: ScheduleConflict[] = [];
+
+  if (!classData.schedule?.slots || classData.schedule.slots.length === 0) {
+    return { hasConflicts: false, conflicts: [], warnings: [] };
+  }
+
+  try {
+    // Obtener todas las clases existentes
+    const allClasses = await fetchClassesFirestore();
+    
+    // Filtrar clases excluyendo la clase actual si es una actualización
+    const otherClasses = allClasses.filter(cls => cls.id !== classData.id);
+
+    for (const newSlot of classData.schedule.slots) {
+      // Verificar conflictos con profesores
+      if (classData.teacherId) {
+        const teacherConflicts = await checkTeacherConflicts(newSlot, classData.teacherId, otherClasses);
+        conflicts.push(...teacherConflicts);
+      }
+
+      // Verificar conflictos con estudiantes
+      if (classData.studentIds && classData.studentIds.length > 0) {
+        for (const studentId of classData.studentIds) {
+          const studentConflicts = await checkStudentConflicts(newSlot, studentId, otherClasses);
+          conflicts.push(...studentConflicts);
+        }
+      }
+
+      // Verificar conflictos de aulas
+      if (classData.classroom) {
+        const classroomConflicts = await checkClassroomConflicts(newSlot, classData.classroom, otherClasses);
+        conflicts.push(...classroomConflicts);
+      }
+    }
+
+    return {
+      hasConflicts: conflicts.length > 0,
+      conflicts,
+      warnings
+    };
+
+  } catch (error) {
+    console.error('Error validating schedule conflicts:', error);
+    return { hasConflicts: false, conflicts: [], warnings: [] };
+  }
+};
+
+/**
+ * Verifica conflictos de horarios para un profesor específico
+ */
+export const checkTeacherConflicts = async (
+  newSlot: TimeSlot,
+  teacherId: string,
+  existingClasses?: ClassData[]
+): Promise<ScheduleConflict[]> => {
+  const conflicts: ScheduleConflict[] = [];
+
+  try {
+    const classes = existingClasses || await fetchClassesFirestore();
+    const teacherClasses = classes.filter(cls => cls.teacherId === teacherId);
+
+    for (const existingClass of teacherClasses) {
+      if (existingClass.schedule?.slots) {
+        for (const existingSlot of existingClass.schedule.slots) {
+          if (timeSlotsOverlap(newSlot, existingSlot)) {
+            conflicts.push({
+              type: 'teacher',
+              conflictingEntity: {
+                id: existingClass.id,
+                name: `Profesor`,
+                className: existingClass.name
+              },
+              conflictingSlot: existingSlot,
+              severity: 'error',
+              message: formatConflictMessage({
+                type: 'teacher',
+                conflictingEntity: {
+                  id: existingClass.id,
+                  name: `Profesor`,
+                  className: existingClass.name
+                },
+                conflictingSlot: existingSlot,
+                severity: 'error',
+                message: ''
+              })
+            });
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error checking teacher conflicts:', error);
+  }
+
+  return conflicts;
+};
+
+/**
+ * Verifica conflictos de horarios para un estudiante específico
+ * Enfocado en la perspectiva del estudiante: ningún alumno debe estar en más de una clase al mismo tiempo
+ */
+export const checkStudentConflicts = async (
+  newSlot: TimeSlot,
+  studentId: string,
+  existingClasses?: ClassData[]
+): Promise<ScheduleConflict[]> => {
+  const conflicts: ScheduleConflict[] = [];
+
+  try {
+    const classes = existingClasses || await fetchClassesFirestore();
+    const studentClasses = classes.filter(cls => 
+      cls.studentIds && cls.studentIds.includes(studentId)
+    );
+
+    // Obtener información del estudiante para mensajes más claros
+    let studentName = 'Estudiante';
+    try {
+      const studentData = await getStudentByIdFirebase(studentId);
+      if (studentData) {
+        studentName = `${studentData.nombre} ${studentData.apellido}`.trim();
+      }
+    } catch (error) {
+      console.warn(`No se pudo obtener información del estudiante ${studentId}:`, error);
+    }
+
+    for (const existingClass of studentClasses) {
+      if (existingClass.schedule?.slots) {
+        for (const existingSlot of existingClass.schedule.slots) {
+          if (timeSlotsOverlap(newSlot, existingSlot)) {
+            const conflictMessage = `El estudiante ${studentName} ya tiene clase "${existingClass.name}" los ${existingSlot.day} de ${existingSlot.startTime} a ${existingSlot.endTime}. Ningún alumno puede estar en más de una clase al mismo tiempo.`;
+            
+            conflicts.push({
+              type: 'student',
+              conflictingEntity: {
+                id: existingClass.id,
+                name: studentName,
+                className: existingClass.name
+              },
+              conflictingSlot: existingSlot,
+              severity: 'error',
+              message: conflictMessage
+            });
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error checking student conflicts:', error);
+  }
+
+  return conflicts;
+};
+
+/**
+ * Verifica conflictos de aulas
+ */
+export const checkClassroomConflicts = async (
+  newSlot: TimeSlot,
+  classroom: string,
+  existingClasses?: ClassData[]
+): Promise<ScheduleConflict[]> => {
+  const conflicts: ScheduleConflict[] = [];
+
+  try {
+    const classes = existingClasses || await fetchClassesFirestore();
+    const classroomClasses = classes.filter(cls => cls.classroom === classroom);
+
+    for (const existingClass of classroomClasses) {
+      if (existingClass.schedule?.slots) {
+        for (const existingSlot of existingClass.schedule.slots) {
+          if (timeSlotsOverlap(newSlot, existingSlot)) {
+            conflicts.push({
+              type: 'classroom',
+              conflictingEntity: {
+                id: existingClass.id,
+                name: classroom,
+                className: existingClass.name
+              },
+              conflictingSlot: existingSlot,
+              severity: 'error',
+              message: formatConflictMessage({
+                type: 'classroom',
+                conflictingEntity: {
+                  id: existingClass.id,
+                  name: classroom,
+                  className: existingClass.name
+                },
+                conflictingSlot: existingSlot,
+                severity: 'error',
+                message: ''
+              })
+            });
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error checking classroom conflicts:', error);
+  }
+
+  return conflicts;
+};
+
+/**
+ * Valida específicamente que ningún estudiante esté inscrito en más de una clase al mismo tiempo
+ * Enfoque desde la perspectiva del alumno
+ */
+export const validateStudentScheduleConflicts = async (
+  classData: {
+    id?: string;
+    studentIds?: string[];
+    schedule?: {
+      slots: TimeSlot[];
+    };
+  }
+): Promise<{
+  hasConflicts: boolean;
+  conflictsByStudent: Map<string, ScheduleConflict[]>;
+  summary: string[];
+}> => {
+  const conflictsByStudent = new Map<string, ScheduleConflict[]>();
+  const summary: string[] = [];
+
+  if (!classData.schedule?.slots || !classData.studentIds || classData.studentIds.length === 0) {
+    return { hasConflicts: false, conflictsByStudent, summary };
+  }
+
+  try {
+    // Obtener todas las clases existentes
+    const allClasses = await fetchClassesFirestore();
+    const otherClasses = allClasses.filter(cls => cls.id !== classData.id);
+
+    // Validar cada estudiante individualmente
+    for (const studentId of classData.studentIds) {
+      const studentConflicts: ScheduleConflict[] = [];
+      
+      // Obtener información del estudiante
+      let studentName = 'Estudiante';
+      try {
+        const studentData = await getStudentByIdFirebase(studentId);
+        if (studentData) {
+          studentName = `${studentData.nombre} ${studentData.apellido}`.trim();
+        }
+      } catch (error) {
+        console.warn(`No se pudo obtener información del estudiante ${studentId}:`, error);
+      }
+
+      // Verificar cada slot de la nueva clase contra las clases existentes del estudiante
+      for (const newSlot of classData.schedule.slots) {
+        const conflicts = await checkStudentConflicts(newSlot, studentId, otherClasses);
+        studentConflicts.push(...conflicts);
+      }
+
+      if (studentConflicts.length > 0) {
+        conflictsByStudent.set(studentId, studentConflicts);
+        summary.push(`${studentName}: ${studentConflicts.length} conflicto(s) de horario`);
+      }
+    }
+
+    return {
+      hasConflicts: conflictsByStudent.size > 0,
+      conflictsByStudent,
+      summary
+    };
+
+  } catch (error) {
+    console.error('Error validating student schedule conflicts:', error);
+    return { hasConflicts: false, conflictsByStudent, summary };
+  }
+};
+
+/**
+ * Obtiene un resumen de todas las clases de un estudiante para análisis de horarios
+ */
+export const getStudentScheduleSummary = async (studentId: string): Promise<{
+  studentName: string;
+  classes: Array<{
+    classId: string;
+    className: string;
+    schedule: TimeSlot[];
+  }>;
+  totalHours: number;
+}> => {
+  try {
+    // Obtener información del estudiante
+    let studentName = 'Estudiante';
+    const studentData = await getStudentByIdFirebase(studentId);
+    if (studentData) {
+      studentName = `${studentData.nombre} ${studentData.apellido}`.trim();
+    }
+
+    // Obtener todas las clases del estudiante
+    const allClasses = await fetchClassesFirestore();
+    const studentClasses = allClasses.filter(cls => 
+      cls.studentIds && cls.studentIds.includes(studentId)
+    );
+
+    const classes = studentClasses.map(cls => ({
+      classId: cls.id,
+      className: cls.name,
+      schedule: cls.schedule?.slots || []
+    }));
+
+    // Calcular horas totales
+    let totalMinutes = 0;
+    classes.forEach(cls => {
+      cls.schedule.forEach(slot => {
+        const startMinutes = timeToMinutes(slot.startTime);
+        const endMinutes = timeToMinutes(slot.endTime);
+        totalMinutes += (endMinutes - startMinutes);
+      });
+    });
+
+    return {
+      studentName,
+      classes,
+      totalHours: totalMinutes / 60
+    };
+
+  } catch (error) {
+    console.error('Error getting student schedule summary:', error);
+    return {
+      studentName: 'Estudiante',
+      classes: [],
+      totalHours: 0
+    };
+  }
+};
+
+/**
+ * ===== GESTIÓN DE MAESTROS ENCARGADOS Y ASISTENTES =====
+ */
+
+/**
+ * Obtiene todas las clases donde un maestro es encargado o asistente
+ */
+export const getTeacherClasses = async (teacherId: string): Promise<TeacherClassView[]> => {
+  try {
+    const classesCollection = collection(db, CLASSES_COLLECTION);
+    
+    // Buscar clases donde el maestro es el encargado principal (teacherId)
+    const leadQuery = query(classesCollection, where("teacherId", "==", teacherId));
+    const leadSnapshot = await getDocs(leadQuery);
+    
+    // Buscar clases donde el maestro es asistente
+    const allClassesSnapshot = await getDocs(classesCollection);
+    const allClasses = allClassesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as ClassData[];
+    
+    const assistantClasses = allClasses.filter(classData => 
+      classData.teachers?.some(teacher => 
+        teacher.teacherId === teacherId && teacher.role === TeacherRole.ASSISTANT
+      )
+    );
+    
+    // Combinar clases donde es encargado y asistente
+    const leadClasses = leadSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as ClassData[];
+    
+    // Procesar clases para incluir información específica del maestro
+    const processedClasses: TeacherClassView[] = [];
+    
+    // Procesar clases donde es encargado
+    for (const classData of leadClasses) {
+      const leadTeacher = await getTeacherInfo(classData.teacherId!);
+      const assistantTeachers = await getAssistantTeachersInfo(classData.teachers || []);
+      
+      processedClasses.push({
+        ...classData,
+        myRole: TeacherRole.LEAD,
+        myPermissions: {
+          canTakeAttendance: true,
+          canAddObservations: true,
+          canViewAttendanceHistory: true,
+          canEditClass: true,
+          canManageTeachers: true
+        },
+        leadTeacher,
+        assistantTeachers
+      });
+    }
+    
+    // Procesar clases donde es asistente
+    for (const classData of assistantClasses) {
+      const myTeacherData = classData.teachers?.find(t => t.teacherId === teacherId);
+      const leadTeacher = await getTeacherInfo(classData.teacherId!);
+      const assistantTeachers = await getAssistantTeachersInfo(classData.teachers || []);
+      
+      processedClasses.push({
+        ...classData,
+        myRole: TeacherRole.ASSISTANT,
+        myPermissions: myTeacherData?.permissions,
+        leadTeacher,
+        assistantTeachers
+      });
+    }
+    
+    return processedClasses;
+  } catch (error) {
+    console.error('Error fetching teacher classes:', error);
+    throw error;
+  }
+};
+
+/**
+ * Invita un maestro como asistente a una clase
+ */
+export const inviteAssistantTeacher = async (inviteData: InviteAssistantData): Promise<void> => {
+  try {
+    const classRef = doc(db, CLASSES_COLLECTION, inviteData.classId);
+    const classDoc = await getDoc(classRef);
+    
+    if (!classDoc.exists()) {
+      throw new Error('Clase no encontrada');
+    }
+    
+    const classData = classDoc.data() as ClassData;
+    
+    // Verificar que el usuario que invita es el maestro encargado
+    if (classData.teacherId !== inviteData.invitedBy) {
+      throw new Error('Solo el maestro encargado puede invitar asistentes');
+    }
+    
+    // Verificar que el maestro no esté ya asignado
+    const existingTeacher = classData.teachers?.find(t => t.teacherId === inviteData.teacherId);
+    if (existingTeacher) {
+      throw new Error('El maestro ya está asignado a esta clase');
+    }
+      // Crear nuevo registro de maestro asistente
+    const newAssistant: ClassTeacher = {
+      teacherId: inviteData.teacherId,
+      role: TeacherRole.ASSISTANT,
+      assignedAt: new Date(),
+      assignedBy: inviteData.invitedBy,
+      permissions: {
+        ...inviteData.permissions,
+        canEditClass: false,        // Los asistentes no pueden editar clases
+        canManageTeachers: false    // Los asistentes no pueden gestionar maestros
+      }
+    };
+    
+    // Actualizar la clase con el nuevo asistente
+    const updatedTeachers = [...(classData.teachers || []), newAssistant];
+    
+    await updateDoc(classRef, {
+      teachers: updatedTeachers,
+      updatedAt: new Date()
+    });
+    
+    console.log(`Maestro asistente ${inviteData.teacherId} invitado a clase ${inviteData.classId}`);
+  } catch (error) {
+    console.error('Error inviting assistant teacher:', error);
+    throw error;
+  }
+};
+
+/**
+ * Remueve un maestro asistente de una clase
+ */
+export const removeAssistantTeacher = async (classId: string, assistantTeacherId: string, removedBy: string): Promise<void> => {
+  try {
+    const classRef = doc(db, CLASSES_COLLECTION, classId);
+    const classDoc = await getDoc(classRef);
+    
+    if (!classDoc.exists()) {
+      throw new Error('Clase no encontrada');
+    }
+    
+    const classData = classDoc.data() as ClassData;
+    
+    // Verificar que el usuario que remueve es el maestro encargado
+    if (classData.teacherId !== removedBy) {
+      throw new Error('Solo el maestro encargado puede remover asistentes');
+    }
+    
+    // Filtrar el maestro asistente
+    const updatedTeachers = (classData.teachers || []).filter(
+      teacher => !(teacher.teacherId === assistantTeacherId && teacher.role === TeacherRole.ASSISTANT)
+    );
+    
+    await updateDoc(classRef, {
+      teachers: updatedTeachers,
+      updatedAt: new Date()
+    });
+    
+    console.log(`Maestro asistente ${assistantTeacherId} removido de clase ${classId}`);
+  } catch (error) {
+    console.error('Error removing assistant teacher:', error);
+    throw error;
+  }
+};
+
+/**
+ * Actualiza los permisos de un maestro asistente
+ */
+export const updateAssistantPermissions = async (
+  classId: string, 
+  assistantTeacherId: string, 
+  newPermissions: ClassTeacher['permissions'],
+  updatedBy: string
+): Promise<void> => {
+  try {
+    const classRef = doc(db, CLASSES_COLLECTION, classId);
+    const classDoc = await getDoc(classRef);
+    
+    if (!classDoc.exists()) {
+      throw new Error('Clase no encontrada');
+    }
+    
+    const classData = classDoc.data() as ClassData;
+    
+    // Verificar que el usuario que actualiza es el maestro encargado
+    if (classData.teacherId !== updatedBy) {
+      throw new Error('Solo el maestro encargado puede actualizar permisos');
+    }
+    
+    // Actualizar permisos del maestro asistente
+    const updatedTeachers = (classData.teachers || []).map(teacher => {
+      if (teacher.teacherId === assistantTeacherId && teacher.role === TeacherRole.ASSISTANT) {
+        return {
+          ...teacher,
+          permissions: newPermissions
+        };
+      }
+      return teacher;
+    });
+    
+    await updateDoc(classRef, {
+      teachers: updatedTeachers,
+      updatedAt: new Date()
+    });
+    
+    console.log(`Permisos actualizados para maestro asistente ${assistantTeacherId} en clase ${classId}`);
+  } catch (error) {
+    console.error('Error updating assistant permissions:', error);
+    throw error;
+  }
+};
+
+/**
+ * Verifica si un maestro tiene permisos específicos en una clase
+ */
+export const checkTeacherPermission = async (
+  classId: string, 
+  teacherId: string, 
+  permission: keyof ClassTeacher['permissions']
+): Promise<boolean> => {
+  try {
+    const classRef = doc(db, CLASSES_COLLECTION, classId);
+    const classDoc = await getDoc(classRef);
+    
+    if (!classDoc.exists()) {
+      return false;
+    }
+    
+    const classData = classDoc.data() as ClassData;
+    
+    // Si es el maestro encargado, tiene todos los permisos
+    if (classData.teacherId === teacherId) {
+      return true;
+    }
+    
+    // Buscar en maestros asistentes
+    const assistantTeacher = classData.teachers?.find(
+      teacher => teacher.teacherId === teacherId && teacher.role === TeacherRole.ASSISTANT
+    );
+    
+    return assistantTeacher?.permissions[permission] || false;
+  } catch (error) {
+    console.error('Error checking teacher permission:', error);
+    return false;
+  }
+};
+
+/**
+ * Verifica si un maestro puede registrar asistencia para una clase específica
+ */
+export const canTeacherRecordAttendance = async (
+  classId: string,
+  teacherId: string
+): Promise<boolean> => {
+  try {
+    // Verificar permisos para registro de asistencia
+    return await checkTeacherPermission(classId, teacherId, 'canTakeAttendance');
+  } catch (error) {
+    console.error('Error checking attendance permission:', error);
+    return false;
+  }
+};
+
+/**
+ * Verifica si un maestro puede agregar observaciones a una clase específica
+ */
+export const canTeacherAddObservations = async (
+  classId: string,
+  teacherId: string
+): Promise<boolean> => {
+  try {
+    // Verificar permisos para agregar observaciones
+    return await checkTeacherPermission(classId, teacherId, 'canAddObservations');
+  } catch (error) {
+    console.error('Error checking observation permission:', error);
+    return false;
+  }
+};
+
+/**
+ * Verifica si un maestro puede ver el historial de asistencia de una clase específica
+ */
+export const canTeacherViewAttendanceHistory = async (
+  classId: string,
+  teacherId: string
+): Promise<boolean> => {
+  try {    // Verificar permisos para ver historial
+    return await checkTeacherPermission(classId, teacherId, 'canViewAttendanceHistory');
+  } catch (error) {
+    console.error('Error checking history viewing permission:', error);
+    return false;
+  }
+};
+
+// Funciones auxiliares
+
+/**
+ * Obtiene información básica de un maestro
+ */
+const getTeacherInfo = async (teacherId: string) => {
+  try {
+    const teacherRef = doc(db, USERS_COLLECTION, teacherId);
+    const teacherDoc = await getDoc(teacherRef);
+    
+    if (teacherDoc.exists()) {
+      const data = teacherDoc.data();
+      return {
+        id: teacherId,
+        name: data.name || data.displayName || 'Maestro',
+        email: data.email || ''
+      };
+    }
+    
+    return {
+      id: teacherId,
+      name: 'Maestro',
+      email: ''
+    };
+  } catch (error) {
+    console.error('Error fetching teacher info:', error);
+    return {
+      id: teacherId,
+      name: 'Maestro',
+      email: ''
+    };
+  }
+};
+
+/**
+ * Obtiene información de todos los maestros asistentes
+ */
+const getAssistantTeachersInfo = async (teachers: ClassTeacher[]) => {
+  const assistants = teachers.filter(t => t.role === TeacherRole.ASSISTANT);
+  const assistantInfo = [];
+  
+  for (const assistant of assistants) {
+    const info = await getTeacherInfo(assistant.teacherId);
+    assistantInfo.push({
+      ...info,
+      assignedAt: assistant.assignedAt
+    });
+  }
+  
+  return assistantInfo;
 };

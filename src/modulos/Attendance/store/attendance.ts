@@ -19,20 +19,27 @@ import type {
 
 // Importar el servicio centralizado
 import * as attendanceService from '../../../service/attendance';
+import { fetchAttendanceByDateRangeFirebase } from '../service/attendance';
 import { useStudentsStore } from '../../Students/store/students'; // Assuming path to students store
 
 import { 
   addClassObservationFirebase, 
   addJustificationFirebase, 
   getClassObservationsFirebase,
-  updateClassObservationFirebase
+  updateClassObservationFirebase,
+  deleteClassObservationFirebase
 } from '../services/attendance';
 
 interface AttendanceAnalytics {
   totalClasses: number;
   totalStudents: number;
   averageAttendance: number;
-  absentStudents: any[];
+  absentStudents: Array<{
+    id: string;
+    name: string;
+    classId: string;
+    date: string;
+  }>;
   byClass: Record<string, {
     present: number;
     absent: number;
@@ -126,24 +133,37 @@ export const useAttendanceStore = defineStore('attendance', () => {
   });
 
   // Acciones
-  const normalizeDate = (date: string): string => {
+  const normalizeDate = (date: string | undefined | null): string => {
     try {
+      // Validar que la fecha no sea nula o indefinida
+      if (!date || typeof date !== 'string') {
+        throw new Error('Fecha es nula, indefinida o no es string');
+      }
+      
+      // Limpiar espacios en blanco
+      const cleanDate = date.trim();
+      
+      if (!cleanDate) {
+        throw new Error('Fecha vacía después de limpiar espacios');
+      }
+      
       // Si la fecha está en formato YYYYMMDD
-      if (/^\d{8}$/.test(date)) {
-        return `${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}`;
+      if (/^\d{8}$/.test(cleanDate)) {
+        return `${cleanDate.substring(0, 4)}-${cleanDate.substring(4, 6)}-${cleanDate.substring(6, 8)}`;
       }
       // Si ya está en formato YYYY-MM-DD
-      if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        return date;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(cleanDate)) {
+        return cleanDate;
       }
       // Si es una fecha válida, formatearla
-      const dateObj = new Date(date);
+      const dateObj = new Date(cleanDate);
       if (!isNaN(dateObj.getTime())) {
         return format(dateObj, 'yyyy-MM-dd');
       }
-      throw new Error('Formato de fecha inválido');
+      throw new Error(`Formato de fecha inválido: "${cleanDate}"`);
     } catch (error) {
       console.error('Error al normalizar fecha:', error);
+      console.error('Valor recibido:', date, 'Tipo:', typeof date);
       throw error;
     }
   };
@@ -256,7 +276,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
         
         // Primero, procesar todos los estudiantes con justificación para identificarlos
         const justifiedStudents = new Set<string>();
-        document.data.justificacion?.forEach((justification: any) => {
+        document.data.justificacion?.forEach((justification: JustificationData) => {
           if (justification.id || justification.studentId) {
             const studentId = justification.id || justification.studentId;
             justifiedStudents.add(studentId);
@@ -417,6 +437,23 @@ export const useAttendanceStore = defineStore('attendance', () => {
       return updatedObservation;
     } catch (err) {
       error.value = 'Error al actualizar la observación';
+      console.error(err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const deleteObservation = async (observationId: string) => {
+    try {
+      loading.value = true;
+      error.value = null;
+      await deleteClassObservationFirebase(observationId);
+      // Remove from local observations array
+      observations.value = observations.value.filter(obs => obs.id !== observationId);
+      return true;
+    } catch (err) {
+      error.value = 'Error al eliminar la observación';
       console.error(err);
       throw err;
     } finally {
@@ -1048,6 +1085,52 @@ export const useAttendanceStore = defineStore('attendance', () => {
   };
 
   /**
+   * Función para obtener registros de asistencia por rango de fechas
+   * Compatible con fetchActions
+   */
+  const fetchAttendanceByDateRange = async (
+    startDate: string,
+    endDate: string,
+    teacherId?: string
+  ): Promise<AttendanceRecord[]> => {
+    loading.value = true;
+    error.value = null;
+    
+    // Validar que las fechas sean válidas
+    if (new Date(startDate) > new Date(endDate)) {
+      error.value = 'La fecha inicial debe ser anterior o igual a la fecha final';
+      loading.value = false;
+      return [];
+    }
+    
+    try {
+      // Usar el servicio Firebase directo
+      const recordsData = await fetchAttendanceByDateRangeFirebase(startDate, endDate);
+      
+      // Filtrar por profesor si se proporciona teacherId
+      const filteredRecords = teacherId 
+        ? recordsData.filter(record => record.classId && record.classId.includes(teacherId))
+        : recordsData;
+      
+      // Actualizar los registros en el estado del store
+      // Primero eliminar registros existentes en el mismo rango de fechas para evitar duplicados
+      const existingRecords = records.value.filter(
+        record => !(record.fecha >= startDate && record.fecha <= endDate)
+      );
+      
+      // Combinar los registros existentes (de otras fechas) con los nuevos
+      records.value = [...existingRecords, ...filteredRecords];
+      
+      return filteredRecords;
+    } catch (error: any) {
+      error.value = `Error fetching attendance by date range: ${error.message || String(error)}`;
+      return [];
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  /**
    * Función para obtener todas las observaciones de un maestro
    * Usa el servicio de attendance para obtener observaciones estructuradas
    */
@@ -1369,6 +1452,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     fetchAttendance,
     fetchAttendanceDocuments,
     fetchAttendanceDocument,
+    fetchAttendanceByDateRange,
     getStudentAbsencesByDateRange,
     loadAttendanceDataForCalendar,
     addObservationToHistory,
@@ -1392,6 +1476,25 @@ export const useAttendanceStore = defineStore('attendance', () => {
     addJustificationToAttendance,
     debugAttendanceSystem,
     fetchTopAbsentStudentsByRange,
-    getStudentAttendanceByDateRange
+    getStudentAttendanceByDateRange,
+    deleteObservation,
+    
+    // Método para resetear el store (requerido para el logout)
+    $reset() {
+      attendanceRecords.value = {};
+      records.value = [];
+      observations.value = [];
+      observationsHistory.value = [];
+      justifications.value = [];
+      loading.value = false;
+      error.value = null;
+      selectedDate.value = '';
+      selectedClass.value = '';
+      attendanceDocuments.value = [];
+      currentAttendanceDoc.value = null;
+      datesWithRecords.value = [];
+      analytics.value = null;
+      observationsCache.value = {};
+    }
   };
 });

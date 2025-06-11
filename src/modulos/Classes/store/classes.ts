@@ -100,7 +100,39 @@ export const useClassesStore = defineStore('classes', {
           return false;
         });
       });
-    }
+    },
+
+    /* ===== GETTERS PARA COLABORACION ===== */
+
+    /**
+     * Obtiene clases donde el maestro es encargado
+     */
+    getLeadClasses: (state) => (teacherId: string) => {
+      if (!teacherId) return [];
+      return state.classes.filter((c: ClassData) => c.teacherId === teacherId);
+    },
+
+    /**
+     * Obtiene clases donde el maestro es asistente
+     */
+    getAssistantClasses: (state) => (teacherId: string) => {
+      if (!teacherId) return [];
+      return state.classes.filter((c: ClassData) => 
+        c.teachers && 
+        c.teachers.some((teacher: any) => teacher.teacherId === teacherId && teacher.role === 'assistant')
+      );
+    },
+
+    /**
+     * Obtiene todas las clases del maestro (encargado + asistente)
+     */
+    getAllTeacherClasses: (state) => (teacherId: string) => {
+      if (!teacherId) return [];
+      return state.classes.filter((c: ClassData) => 
+        c.teacherId === teacherId || 
+        (c.teachers && c.teachers.some((teacher: any) => teacher.teacherId === teacherId))
+      );
+    },
   },
   // Actions para manejar la lógica de negocio y la comunicación con Firestore
 
@@ -663,7 +695,7 @@ export const useClassesStore = defineStore('classes', {
       return await this.withLoading(async () => {
         if (!teacherId) return [];
         // Si tienes un método Firestore específico, úsalo aquí. Si no, filtra localmente después de fetchClassesFirestore
-        let classes = [];
+        let classes: any[] = [];
         if (typeof fetchClassesFirestore === 'function') {
           classes = await fetchClassesFirestore();
         }
@@ -691,6 +723,102 @@ export const useClassesStore = defineStore('classes', {
         Array.isArray(classItem.studentIds) && 
         classItem.studentIds.includes(studentId)
       );
+    },
+
+    /* ===== COLABORACION ENTRE MAESTROS ===== */
+
+    /**
+     * Obtiene todas las clases del maestro (como encargado y asistente)
+     */
+    async fetchTeacherClasses(teacherId: string) {
+      return await this.withLoading(async () => {
+        if (!teacherId) return [];
+        
+        // Importar función del servicio
+        const { getTeacherClasses } = await import('../service/classes');
+        const teacherClasses = await getTeacherClasses(teacherId);
+        
+        // Actualizar clases en el store
+        teacherClasses.forEach(classView => {
+          const existingIndex = this.classes.findIndex(c => c.id === classView.id);
+          if (existingIndex >= 0) {
+            this.classes[existingIndex] = classView;
+          } else {
+            this.classes.push(classView);
+          }
+        });
+        
+        return teacherClasses;
+      });
+    },
+
+    /**
+     * Invita a un maestro como asistente
+     */
+    async inviteAssistant(inviteData: any) {
+      return await this.withLoading(async () => {
+        const { inviteAssistantTeacher } = await import('../service/classes');
+        await inviteAssistantTeacher(inviteData);
+        
+        // Actualizar la clase en el store
+        const classIndex = this.classes.findIndex(c => c.id === inviteData.classId);
+        if (classIndex >= 0) {
+          // Recargar la clase desde Firestore para obtener los datos actualizados
+          const { getClassByIdFirestore } = await import('../service/classes');
+          const updatedClass = await getClassByIdFirestore(inviteData.classId);
+          if (updatedClass) {
+            this.classes[classIndex] = this.normalizeClassData(updatedClass);
+          }
+        }
+      });
+    },
+
+    /**
+     * Remueve a un maestro asistente
+     */
+    async removeAssistant(classId: string, assistantId: string, removedBy: string) {
+      return await this.withLoading(async () => {
+        const { removeAssistantTeacher } = await import('../service/classes');
+        await removeAssistantTeacher(classId, assistantId, removedBy);
+        
+        // Actualizar la clase en el store
+        const classIndex = this.classes.findIndex(c => c.id === classId);
+        if (classIndex >= 0) {
+          const { getClassByIdFirestore } = await import('../service/classes');
+          const updatedClass = await getClassByIdFirestore(classId);
+          if (updatedClass) {
+            this.classes[classIndex] = this.normalizeClassData(updatedClass);
+          }
+        }
+      });
+    },
+
+    /**
+     * Actualiza permisos de un maestro asistente
+     */
+    async updateAssistantPermissions(classId: string, assistantId: string, permissions: any, updatedBy: string) {
+      return await this.withLoading(async () => {
+        const { updateAssistantPermissions } = await import('../service/classes');
+        await updateAssistantPermissions(classId, assistantId, permissions, updatedBy);
+        
+        // Actualizar la clase en el store
+        const classIndex = this.classes.findIndex(c => c.id === classId);
+        if (classIndex >= 0) {
+          const { getClassByIdFirestore } = await import('../service/classes');
+          const updatedClass = await getClassByIdFirestore(classId);
+          if (updatedClass) {
+            this.classes[classIndex] = this.normalizeClassData(updatedClass);
+          }
+        }
+      });
+    },
+
+    /**
+     * Verifica si un maestro tiene permisos específicos en una clase
+     */
+    async checkTeacherPermission(classId: string, teacherId: string, permission: string) {
+      const { checkTeacherPermission } = await import('../service/classes');
+      return await checkTeacherPermission(classId, teacherId, permission);
     },
   }
 });

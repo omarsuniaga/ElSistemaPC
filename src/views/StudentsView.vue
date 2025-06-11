@@ -59,6 +59,9 @@ const sortOrder = ref<'none' | 'asc' | 'desc'>(
   localStorage.getItem('students-sort-order') as 'none' | 'asc' | 'desc' || 'none'
 )
 
+console.log('[StudentsView] Initializing: sortOrder from localStorage:', sortOrder.value);
+console.log('[StudentsView] Initializing: studentsStore.students count:', studentsStore.students.length);
+
 // Function to toggle sorting order
 const toggleSort = () => {
   if (sortOrder.value === 'none') sortOrder.value = 'asc'
@@ -71,6 +74,10 @@ const toggleSort = () => {
 
 // Computed property para ordenar estudiantes por apellido y filtrar por búsqueda
 const sortedStudents = computed(() => {
+  console.log('[StudentsView] sortedStudents computed: studentsStore.students count:', studentsStore.students.length);
+  console.log('[StudentsView] sortedStudents computed: searchQuery:', searchQuery.value);
+  console.log('[StudentsView] sortedStudents computed: sortOrder:', sortOrder.value);
+
   let filtered = [...studentsStore.students]
   
   // Aplicar filtro de búsqueda si hay texto
@@ -100,6 +107,7 @@ const sortedStudents = computed(() => {
   }
   
   // If no sort order specified, return unsorted
+  console.log('[StudentsView] sortedStudents computed: final filtered count:', filtered.length);
   return filtered;
 })
 
@@ -126,12 +134,19 @@ const handleDeleteFromMenu = (event: Event, id: string): void => {
 }
 
 onMounted(async () => {
+  console.log('[StudentsView] onMounted: Start');
+  isLoading.value = true; // Ensure loading is true at the start
+  error.value = null; // Reset error
   try {
+    console.log('[StudentsView] onMounted: Before fetchStudents. Current students count:', studentsStore.students.length);
     await studentsStore.fetchStudents()
+    console.log('[StudentsView] onMounted: After fetchStudents. New students count:', studentsStore.students.length);
   } catch (err: any) {
+    console.error('[StudentsView] onMounted: Error fetching students:', err);
     error.value = err.message || 'Error al cargar los estudiantes'
   } finally {
     isLoading.value = false
+    console.log('[StudentsView] onMounted: End. isLoading:', isLoading.value);
   }
 })
 
@@ -239,8 +254,17 @@ const reloadStudents = async () => {
 
 // Watch for sortOrder changes to save to localStorage
 watch(sortOrder, (newValue) => {
+  console.log('[StudentsView] watch: sortOrder changed to:', newValue);
   localStorage.setItem('students-sort-order', newValue)
 })
+
+watch(() => studentsStore.students, (newStudents) => {
+  console.log('[StudentsView] watch: studentsStore.students changed. New count:', newStudents.length);
+}, { deep: true });
+
+watch(searchQuery, (newQuery) => {
+  console.log('[StudentsView] watch: searchQuery changed to:', newQuery);
+});
 </script>
 
 <template>

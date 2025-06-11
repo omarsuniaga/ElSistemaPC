@@ -52,12 +52,11 @@
         :key="student.id"
         @click="$emit('select-student', student)"
         class="cursor-pointer p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-3 transition-colors"
-      >
-        <div class="relative">
-          <img
-            :src="student.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.nombre}`"
-            :alt="student.nombre"
-            class="w-10 h-10 rounded-full"
+      >        <div class="relative">
+          <StudentAvatar
+            :first-name="student.nombre || ''"
+            :last-name="student.apellido || ''"
+            size="md"
           />
           <div
             v-if="isSelected(student)"
@@ -86,6 +85,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { XMarkIcon, CheckIcon } from '@heroicons/vue/24/outline'
 import { useStudentsStore } from '../stores/students'
+import StudentAvatar from './StudentAvatar.vue'
 
 const props = defineProps({
   expanded: {

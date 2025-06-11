@@ -4,7 +4,7 @@ import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import type { JustificationData } from '../types/attendance'
 import type { Student } from '../../Students/types/student'
 
-// Definimos el tipo AttendanceStatus explícitamente para evitar problemas de importación
+// Definimos el tipo AttendanceStatus explicitamente para evitar problemas de importacion
 type AttendanceStatus = 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
 
 // Stores y router
@@ -39,7 +39,7 @@ import AttendanceObservation from "./AttendanceObservation.vue"
 const props = defineProps<{
   selectedClassName?: string;
   initialClassId?: string; // Usado para cargar datos si se accede por URL
-  classId?: string;      // Añadido explícitamente para evitar advertencias
+  classId?: string;      // Añadido explicitamente para evitar advertencias
   date?: string; // Usado para cargar datos si se accede por URL
   students?: Student[]; // Opcional, con default
   attendanceRecords?: Record<string, AttendanceStatus>; // Opcional, con default
@@ -82,7 +82,7 @@ const tableData = ref<Student[]>([]);
 const observationsModalOpen = ref<boolean>(false); // Estado para controlar la visibilidad del modal de observaciones
 const currentJustificationReason = ref<string>('');
 
-// Almacén para estudiantes justificados - usamos esto para mantener el estado visual
+// Almacen para estudiantes justificados - usamos esto para mantener el estado visual
 const justifiedStudentsMap = ref<Record<string, boolean>>({});
 const selectedStudentForJustification = ref<{ id: string; nombre: string; apellido: string } | null>(null);
 
@@ -102,14 +102,14 @@ if (import.meta.env?.PROD === false) {
   const _default = {};
 }
 
-// Función para mostrar el toast
+// Funcion para mostrar el toast
 const displayToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
   toastMessage.value = message;
   toastType.value = type;
   showToast.value = true;
 };
 
-// Función para verificar la existencia de una clase en Firestore
+// Funcion para verificar la existencia de una clase en Firestore
 const verifyClassExists = async (classId: string) => {
   if (!classId) {
     console.error('No se puede verificar la existencia de una clase sin ID');
@@ -120,7 +120,7 @@ const verifyClassExists = async (classId: string) => {
     console.log(`[ClassDebug] Verificando existencia de clase con ID=${classId}`);
     console.log(`[ClassDebug] Store selectedClass=${attendanceStore.selectedClass}, Route classId=${route.params.classId}`);
     
-    // Primero intentamos obtener la clase del store (caché)
+    // Primero intentamos obtener la clase del store (cache)
     const classFromStore = classesStore.getClassById(classId);
     if (classFromStore) {
       console.log(`[ClassDebug] Clase encontrada en el store con ID=${classId}:`, classFromStore);
@@ -129,7 +129,7 @@ const verifyClassExists = async (classId: string) => {
       console.log(`[ClassDebug] Clase no encontrada en store con ID=${classId}`);
     }
     
-    // Si no está en el store, intentamos cargar todas las clases
+    // Si no esta en el store, intentamos cargar todas las clases
     console.log(`[ClassDebug] Refrescando clases desde Firestore...`);
     await classesStore.fetchClasses();
     const classAfterFetch = classesStore.getClassById(classId);
@@ -156,7 +156,7 @@ const verifyClassExists = async (classId: string) => {
   }
 };
 
-// Integración con el composable de acciones de asistencia
+// Integracion con el composable de acciones de asistencia
 const currentSelectedDate = computed(() => {
   return props.date || (route.params.date as string) || attendanceStore.selectedDate || '';
 });
@@ -198,13 +198,13 @@ const hasObservations = computed(() => {
 });
 
 const shouldAnimateObservationsButton = computed(() => {
-  // Animar botón de observaciones solo si:
+  // Animar boton de observaciones solo si:
   // 1. No hay observaciones para la clase y fecha actual
   // 2. Hay estudiantes cargados (significa que la clase existe y requiere asistencia)
   return effectiveStudents.value.length > 0 && !hasObservations.value;
 });
 
-// Usando props si están disponibles, de lo contrario, usando datos locales
+// Usando props si estan disponibles, de lo contrario, usando datos locales
 const effectiveStudents = computed(() => {
   return props.students && props.students.length > 0 ? props.students : localStudents.value;
 });
@@ -214,9 +214,9 @@ const effectiveAttendanceRecords = computed(() => {
   // 1. Cambios locales pendientes
   // 2. Datos cargados localmente del documento de asistencia
   // 3. Datos del store de asistencia
-  // 4. Datos de props (como último recurso)
+  // 4. Datos de props (como ultimo recurso)
 
-  // Registrar tamaños para depuración
+  // Registrar tamaños para depuracion
   const localSize = Object.keys(localAttendanceRecords.value).length;
   const storeSize = Object.keys(attendanceStore.attendanceRecords).length;
   const propsSize = props.attendanceRecords ? Object.keys(props.attendanceRecords).length : 0;
@@ -228,7 +228,7 @@ const effectiveAttendanceRecords = computed(() => {
     return {...localAttendanceRecords.value};
   }
   
-  // CASO 2: Si hay datos locales cargados (ya sea por fetchAttendanceDocument o por actualización manual)
+  // CASO 2: Si hay datos locales cargados (ya sea por fetchAttendanceDocument o por actualizacion manual)
   if (localSize > 0) {
     console.log('[AttendanceDebug] PRIORIDAD 2: Usando registros locales');
     return {...localAttendanceRecords.value};
@@ -237,10 +237,10 @@ const effectiveAttendanceRecords = computed(() => {
   // CASO 3: Si hay datos en el store de asistencia, usarlos y actualizar local para futuras referencias
   if (storeSize > 0) {
     console.log('[AttendanceDebug] PRIORIDAD 3: Usando registros del store');
-    // Actualizar también los datos locales
+    // Actualizar tambien los datos locales
     localAttendanceRecords.value = {...attendanceStore.attendanceRecords};
     
-    // Forzar actualización reactiva
+    // Forzar actualizacion reactiva
     setTimeout(() => {
       localAttendanceRecords.value = {...localAttendanceRecords.value};
     }, 0);
@@ -248,13 +248,13 @@ const effectiveAttendanceRecords = computed(() => {
     return {...attendanceStore.attendanceRecords};
   }
   
-  // CASO 4: Como último recurso, comprobar si las props tienen datos
+  // CASO 4: Como ultimo recurso, comprobar si las props tienen datos
   if (propsSize > 0) {
     console.log('[AttendanceDebug] PRIORIDAD 4: Usando registros de props');
-    // Actualizar también los datos locales
+    // Actualizar tambien los datos locales
     localAttendanceRecords.value = {...props.attendanceRecords};
     
-    // Forzar actualización reactiva
+    // Forzar actualizacion reactiva
     setTimeout(() => {
       localAttendanceRecords.value = {...localAttendanceRecords.value};
     }, 0);
@@ -262,20 +262,36 @@ const effectiveAttendanceRecords = computed(() => {
     return {...props.attendanceRecords};
   }
   
-  // Si no hay nada, retornar objeto vacío
-  console.log('[AttendanceDebug] Sin datos disponibles, retornando objeto vacío');
+  // Si no hay nada, retornar objeto vacio
+  console.log('[AttendanceDebug] Sin datos disponibles, retornando objeto vacio');
   return {};
 });
 
-// Función para cargar datos para el componente
+// Funcion para cargar datos para el componente
 const fetchDataForComponent = async (dateParam: string, classIdParam: string) => {
   const debugEnabled = window.localStorage.getItem('attendance-debug') === 'true';
   
-  if (!dateParam || !classIdParam) {
-    console.warn('[AttendanceDebug] fetchDataForComponent: No hay fecha o clase para cargar datos', { date: dateParam, classId: classIdParam });
+  // Validar y normalizar parametros
+  if (!dateParam || !classIdParam || typeof dateParam !== 'string' || typeof classIdParam !== 'string') {
+    console.warn('[AttendanceDebug] fetchDataForComponent: Parametros invalidos', { 
+      date: dateParam, 
+      classId: classIdParam,
+      dateType: typeof dateParam,
+      classType: typeof classIdParam
+    });
     isLoading.value = false;
     return {};
   }
+  
+  // Normalizar fecha si es necesario
+  let normalizedDate = dateParam.trim();
+  if (normalizedDate.length === 8 && !normalizedDate.includes('-')) {
+    normalizedDate = `${normalizedDate.substring(0,4)}-${normalizedDate.substring(4,6)}-${normalizedDate.substring(6,8)}`;
+    if (debugEnabled) {
+      console.log(`[AttendanceDebug] fetchDataForComponent: Date normalized from ${dateParam} to ${normalizedDate}`);
+    }
+  }
+  
   try {
     isLoading.value = true;
     errorMessage.value = null; // Clear previous errors
@@ -302,10 +318,10 @@ const fetchDataForComponent = async (dateParam: string, classIdParam: string) =>
       }
     }
     
-    // Intentar obtener la información de la clase
+    // Intentar obtener la informacion de la clase
     const classInfo = classesStore.getClassById(classIdParam);
     if (!classInfo) {
-      console.error(`[AttendanceDebug] No se encontró la clase con ID=${classIdParam}`);
+      console.error(`[AttendanceDebug] No se encontro la clase con ID=${classIdParam}`);
       
       // Intentar normalizar el ID y buscar de nuevo (por si hay problemas de formato)
       const normalizedId = classIdParam.trim();
@@ -314,13 +330,13 @@ const fetchDataForComponent = async (dateParam: string, classIdParam: string) =>
       );
       
       if (alternativeClass) {
-        console.log(`[AttendanceDebug] Se encontró una clase similar con ID=${alternativeClass.id}`);
+        console.log(`[AttendanceDebug] Se encontro una clase similar con ID=${alternativeClass.id}`);
         // Si encontramos una clase alternativa, usamos esa en su lugar
         return fetchDataForComponent(dateParam, alternativeClass.id);
       }
       
       // Si no encontramos ninguna clase, mostramos el error y continuamos
-      errorMessage.value = `No se encontró la clase. Por favor, verifica el ID o selecciona otra clase.`;
+      errorMessage.value = `No se encontro la clase. Por favor, verifica el ID o selecciona otra clase.`;
       localStudents.value = [];
       localAttendanceRecords.value = {};
       isLoading.value = false;
@@ -331,7 +347,7 @@ const fetchDataForComponent = async (dateParam: string, classIdParam: string) =>
     let studentsInClass = [];
     
     if (!hasCachedStudents) {
-      // Verificar si los estudiantes ya están en el store antes de hacer la solicitud
+      // Verificar si los estudiantes ya estan en el store antes de hacer la solicitud
       if (!studentsStore.students || studentsStore.students.length === 0) {
         await studentsStore.fetchStudents();
       }
@@ -348,7 +364,7 @@ const fetchDataForComponent = async (dateParam: string, classIdParam: string) =>
     // Cargar asistencia solo si es necesario
     if (!hasCachedAttendance) {
       console.log('[AttendanceDebug] fetchDataForComponent: 🔄 CARGANDO DOCUMENTO DE ASISTENCIA DE FIRESTORE');
-      const attendanceDoc = await attendanceStore.fetchAttendanceDocument(dateParam, classIdParam);
+      const attendanceDoc = await attendanceStore.fetchAttendanceDocument(normalizedDate, classIdParam);
       
       console.log('[AttendanceListDebug] fetchDataForComponent: attendanceStore.fetchAttendanceDocument returned:', attendanceDoc);
       
@@ -372,7 +388,7 @@ const fetchDataForComponent = async (dateParam: string, classIdParam: string) =>
       localAttendanceRecords.value = {...effectiveAttendanceRecords.value};
     }
     
-    console.log('[AttendanceDebug] fetchDataForComponent: Usando datos de asistencia en caché');
+    console.log('[AttendanceDebug] fetchDataForComponent: Usando datos de asistencia en cache');
       
     await nextTick(); // Asegurar que el DOM se actualice con los nuevos datos
     
@@ -399,16 +415,34 @@ onMounted(async () => {
   const debugEnabled = window.localStorage.getItem('attendance-debug') === 'true';
   
   if (debugEnabled) {
-    console.log('[AttendanceDebug] ⚡ COMPONENTE MONTADO - Iniciando carga crítica de datos');
+    console.log('[AttendanceDebug] ⚡ COMPONENTE MONTADO - Iniciando carga critica de datos');
   }
   
   // Obtener la fecha y clase de todas las fuentes posibles
   let rawDate = props.date || (route.params.date as string) || attendanceStore.selectedDate;
   let dateToUse = rawDate;
-  if (typeof rawDate === 'string' && rawDate.length === 8 && !rawDate.includes('-')) {
-    dateToUse = `${rawDate.substring(0,4)}-${rawDate.substring(4,6)}-${rawDate.substring(6,8)}`;
+  
+  // Validar y normalizar la fecha
+  if (rawDate) {
+    if (typeof rawDate === 'string' && rawDate.length === 8 && !rawDate.includes('-')) {
+      dateToUse = `${rawDate.substring(0,4)}-${rawDate.substring(4,6)}-${rawDate.substring(6,8)}`;
+      if (debugEnabled) {
+        console.log(`[AttendanceDebug] onMounted: Date normalized from ${rawDate} to ${dateToUse}`);
+      }
+    } else if (typeof rawDate !== 'string' || rawDate.trim() === '') {
+      // Si la fecha no es valida, usar fecha actual
+      const today = new Date();
+      dateToUse = today.toISOString().split('T')[0];
+      if (debugEnabled) {
+        console.log(`[AttendanceDebug] onMounted: Invalid date "${rawDate}", using today: ${dateToUse}`);
+      }
+    }
+  } else {
+    // Si no hay fecha, usar fecha actual
+    const today = new Date();
+    dateToUse = today.toISOString().split('T')[0];
     if (debugEnabled) {
-      console.log(`[AttendanceDebug] onMounted: Date normalized from ${rawDate} to ${dateToUse}`);
+      console.log(`[AttendanceDebug] onMounted: No date provided, using today: ${dateToUse}`);
     }
   }
 
@@ -416,6 +450,7 @@ onMounted(async () => {
   
   if (!dateToUse || !classIdToUse) {
     console.error('[AttendanceDebug] ❌ Falta fecha o clase para cargar datos en onMounted');
+    console.error('[AttendanceDebug] dateToUse:', dateToUse, 'classIdToUse:', classIdToUse);
     isLoading.value = false;
     return;
   }
@@ -434,7 +469,7 @@ onMounted(async () => {
     }
     
     if (debugEnabled) {
-      console.log(`[AttendanceDebug] Verificando información de la clase y estudiantes`);
+      console.log(`[AttendanceDebug] Verificando informacion de la clase y estudiantes`);
     }
     
     // Ejecutar ambas promesas en paralelo
@@ -452,8 +487,8 @@ onMounted(async () => {
     // Verificar si la clase existe
     const classInfo = classesStore.getClassById(classIdToUse);
     if (!classInfo) {
-      console.error(`[AttendanceDebug] No se encontró la clase con ID=${classIdToUse}`);
-      errorMessage.value = `No se encontró la clase con ID ${classIdToUse}`;
+      console.error(`[AttendanceDebug] No se encontro la clase con ID=${classIdToUse}`);
+      errorMessage.value = `No se encontro la clase con ID ${classIdToUse}`;
       isLoading.value = false;
       return;
     }
@@ -474,7 +509,7 @@ onMounted(async () => {
     console.log(`[AttendanceDebug] Cargando datos de asistencia para fecha=${dateToUse}, clase=${classIdToUse}`);
     
     // Limpiar datos antiguos antes de cargar nuevos para evitar mezclas
-    // localAttendanceRecords.value = {}; // Comentado para evitar borrar datos válidos
+    // localAttendanceRecords.value = {}; // Comentado para evitar borrar datos validos
     
     // 1. PRIORIDAD: Props (si existen)
     const propsRecords = props.attendanceRecords || {};
@@ -495,7 +530,7 @@ onMounted(async () => {
       localAttendanceRecords.value = { ...storeRecords };
     }
     
-    // PASO 4: Cargar documento de asistencia desde Firebase como último recurso
+    // PASO 4: Cargar documento de asistencia desde Firebase como ultimo recurso
     // Solo cargar de Firebase si no tenemos datos de props o store, o si forzamos recarga
     if (propsSize === 0 && storeSize === 0) {
       console.log('[AttendanceDebug] 🔄 CARGANDO DOCUMENTO DE ASISTENCIA DE FIRESTORE (onMounted)');
@@ -518,7 +553,7 @@ onMounted(async () => {
       console.log('[AttendanceDebug] Usando datos de Props o Store, no se carga de Firebase en onMounted a menos que se fuerce.');
     }
     
-    // PASO 5: ASEGURAR SINCRONIZACIÓN BIDIRECCIONAL
+    // PASO 5: ASEGURAR SINCRONIZACIoN BIDIRECCIONAL
     // Asegurarse de que el store tenga los mismos datos que el componente local
     // (Importante para continuidad entre vistas)
     if (Object.keys(localAttendanceRecords.value).length > 0 && 
@@ -527,7 +562,7 @@ onMounted(async () => {
       attendanceStore.attendanceRecords = { ...localAttendanceRecords.value };
     }
     
-    // PASO 6: Forzar actualización del renderizado utilizando nextTick
+    // PASO 6: Forzar actualizacion del renderizado utilizando nextTick
     await nextTick();
     console.log('[AttendanceDebug] Total de registros tras cargar (onMounted):', Object.keys(localAttendanceRecords.value).length);
     
@@ -543,13 +578,13 @@ onMounted(async () => {
         }
       }, 100);
     }
-    // resetAllStatuses(); // Comentado para prueba: Podría estar borrando los estados cargados
+    // resetAllStatuses(); // Comentado para prueba: Podria estar borrando los estados cargados
   } catch (error) {
-    console.error('[AttendanceDebug] Error en la inicialización del componente (onMounted):', error);
+    console.error('[AttendanceDebug] Error en la inicializacion del componente (onMounted):', error);
     errorMessage.value = 'Error al inicializar el componente de asistencia';
   } finally {
     isLoading.value = false;
-    console.log('[AttendanceDebug] ✅ Finalizada carga crítica de datos (onMounted)');
+    console.log('[AttendanceDebug] ✅ Finalizada carga critica de datos (onMounted)');
   }
 });
 
@@ -557,7 +592,7 @@ onMounted(async () => {
 const isWatcherProcessing = ref(false);
 const lastProcessedValues = ref({ date: '', classId: '' });
 
-// Función para normalizar fechas si están en formato YYYYMMDD
+// Funcion para normalizar fechas si estan en formato YYYYMMDD
 const normalizeDate = (dateStr: string) => {
   if (typeof dateStr === 'string' && dateStr.length === 8 && !dateStr.includes('-')) {
     return `${dateStr.substring(0,4)}-${dateStr.substring(4,6)}-${dateStr.substring(6,8)}`;
@@ -585,23 +620,23 @@ watch(
     if (finalDate === lastProcessedValues.value.date && 
         finalClassId === lastProcessedValues.value.classId) {
       if (debugEnabled) {
-        console.log('[AttendanceDebug] Watcher: Valores idénticos a los últimos procesados, omitiendo actualización.');
+        console.log('[AttendanceDebug] Watcher: Valores identicos a los ultimos procesados, omitiendo actualizacion.');
       }
       return; // Omitir si no hay cambio real
     }
     
-    // Prevenir múltiples ejecuciones simultáneas
+    // Prevenir multiples ejecuciones simultaneas
     if (isWatcherProcessing.value) {
       if (debugEnabled) {
-        console.log('[AttendanceDebug] Watcher: Ya hay una actualización en proceso, omitiendo llamada paralela.');
+        console.log('[AttendanceDebug] Watcher: Ya hay una actualizacion en proceso, omitiendo llamada paralela.');
       }
       return;
     }
     
-    // Verificar que tengamos valores válidos
+    // Verificar que tengamos valores validos
     if (!finalDate || !finalClassId) {
       if (debugEnabled) {
-        console.log('[AttendanceDebug] Watcher: Fecha o ID de clase inválidos. Esperando parámetros válidos.');
+        console.log('[AttendanceDebug] Watcher: Fecha o ID de clase invalidos. Esperando parametros validos.');
       }
       return;
     }
@@ -617,26 +652,26 @@ watch(
       const classExists = await verifyClassExists(finalClassId as string);
       
       if (classExists) {
-        // Fecha válida y clase existente, procedemos a cargar datos
+        // Fecha valida y clase existente, procedemos a cargar datos
         const result = await fetchDataForComponent(finalDate as string, finalClassId as string);
         
         if (debugEnabled && result) {
           console.log(`[AttendanceDebug] Watcher: Datos cargados correctamente. Estudiantes: ${result.students?.length || 0}, Registros: ${Object.keys(result.attendanceRecords || {}).length}`);
         }
       } else {
-        console.error(`[AttendanceDebug] Watcher: No se encontró la clase con ID=${finalClassId}`);
-        errorMessage.value = `No se encontró la clase con ID=${finalClassId}`;
+        console.error(`[AttendanceDebug] Watcher: No se encontro la clase con ID=${finalClassId}`);
+        errorMessage.value = `No se encontro la clase con ID=${finalClassId}`;
         localStudents.value = [];
         localAttendanceRecords.value = {};
       }
     } catch (error) {
       console.error('[AttendanceDebug] Watcher: Error al verificar la clase:', error);
-      errorMessage.value = 'Error al verificar información de la clase';
+      errorMessage.value = 'Error al verificar informacion de la clase';
     } finally {
       isLoading.value = false;
       
-      // Permitir que el watcher procese nuevos cambios después de un pequeño delay
-      // Esto evita múltiples actualizaciones consecutivas
+      // Permitir que el watcher procese nuevos cambios despues de un pequeño delay
+      // Esto evita multiples actualizaciones consecutivas
       setTimeout(() => {
         isWatcherProcessing.value = false;
       }, 300); // Debounce de 300ms
@@ -658,15 +693,15 @@ watch(
     const oldPropsRecords = oldValues ? oldValues[0] : undefined;
     const oldStoreRecords = oldValues ? oldValues[1] : undefined;
 
-    console.log('[AttendanceDebug] 🔍 WATCH DETECTÓ CAMBIOS EN REGISTROS');
+    console.log('[AttendanceDebug] 🔍 WATCH DETECTo CAMBIOS EN REGISTROS');
     
     // No hacer nada si tenemos cambios locales pendientes para evitar sobreescribirlos
     if (pendingChangesCount.value > 0) {
-      console.log(`[AttendanceDebug] ⚠️ PROTECCIÓN DE CAMBIOS: Ignorando cambios externos porque hay ${pendingChangesCount.value} cambios pendientes`);
+      console.log(`[AttendanceDebug] ⚠️ PROTECCION DE CAMBIOS: Ignorando cambios externos porque hay ${pendingChangesCount.value} cambios pendientes`);
       return;
     }
     
-    // Función para verificar cambios reales comparando objetos
+    // Funcion para verificar cambios reales comparando objetos
     const hasRealChanges = (newObj: any, oldObj: any) => {
       // Si alguno es undefined o null, considerar cambio si son diferentes
       if (!newObj || !oldObj) return newObj !== oldObj;
@@ -676,7 +711,7 @@ watch(
       const oldKeys = Object.keys(oldObj || {});
       if (newKeys.length !== oldKeys.length) return true;
       
-      // Verificar si algún valor cambió
+      // Verificar si algun valor cambio
       return newKeys.some(key => newObj[key] !== oldObj?.[key]);
     };
     
@@ -689,9 +724,9 @@ watch(
     const hasPropsChanges = propsRecords && hasRealChanges(propsRecords, oldPropsRecords);
     
     if (hasPropsChanges && propsSize > 0) {
-      console.log(`[AttendanceDebug] 📥 ACTUALIZACIÓN DESDE PROPS: ${propsSize} registros`);
+      console.log(`[AttendanceDebug] 📥 ACTUALIZACIoN DESDE PROPS: ${propsSize} registros`);
       
-      // IMPORTANTE: Solo actualizar si props tiene más datos o si no tenemos datos locales
+      // IMPORTANTE: Solo actualizar si props tiene mas datos o si no tenemos datos locales
       if (propsSize > localSize || localSize === 0) {
         localAttendanceRecords.value = { ...propsRecords };
         
@@ -701,7 +736,7 @@ watch(
           console.log('[AttendanceDebug] ↗️ Sincronizando store desde props');
         }
         
-        // Forzar actualización
+        // Forzar actualizacion
         setTimeout(() => {
           localAttendanceRecords.value = { ...localAttendanceRecords.value };
         }, 0);
@@ -713,15 +748,15 @@ watch(
     const hasStoreChanges = storeRecords && hasRealChanges(storeRecords, oldStoreRecords);
     
     if (hasStoreChanges && storeSize > 0) {
-      console.log(`[AttendanceDebug] 🗄️ ACTUALIZACIÓN DESDE STORE: ${storeSize} registros`);
+      console.log(`[AttendanceDebug] 🗄️ ACTUALIZACIoN DESDE STORE: ${storeSize} registros`);
       
-      // IMPORTANTE: Solo actualizar si store tiene más datos o no tenemos datos locales
+      // IMPORTANTE: Solo actualizar si store tiene mas datos o no tenemos datos locales
       if (storeSize > localSize || localSize === 0) {
         localAttendanceRecords.value = { ...storeRecords };
-        // Forzar actualización reactiva si es necesario, aunque la asignación a ref debería ser suficiente
+        // Forzar actualizacion reactiva si es necesario, aunque la asignacion a ref deberia ser suficiente
         // setTimeout(() => { localAttendanceRecords.value = { ...localAttendanceRecords.value }; }, 0);
       } else if (localSize > storeSize) {
-        // Opcional: si local tiene más datos, podría ser una desincronización
+        // Opcional: si local tiene mas datos, podria ser una desincronizacion
         // console.warn('[AttendanceDebug] Conflicto potencial: Store tiene menos datos que local. Se mantienen datos locales.');
       }
     }
@@ -729,7 +764,7 @@ watch(
   { immediate: true, deep: true }
 );
 
-// Función para refrescar datos de asistencia desde Firebase
+// Funcion para refrescar datos de asistencia desde Firebase
 const refreshAttendanceData = async () => {
   try {
     displayToast('Actualizando datos de asistencia...', 'info');
@@ -762,11 +797,11 @@ const refreshAttendanceData = async () => {
 watch(
   () => props.students,
   (newStudents) => {
-    console.log('[AttendanceDebug] Watch detectó cambio en props.students:', 
+    console.log('[AttendanceDebug] Watch detecto cambio en props.students:', 
       newStudents ? `Estudiantes: ${newStudents.length}` : 'No hay estudiantes');
     
     if (newStudents) {
-      // Siempre actualizar estudiantes locales cuando cambian props, incluso si está cargando
+      // Siempre actualizar estudiantes locales cuando cambian props, incluso si esta cargando
       localStudents.value = [...newStudents];
       
       // Si hay registros de asistencia cargados, verificar que todos los estudiantes tengan un estado
@@ -781,7 +816,7 @@ watch(
         if (studentsWithoutStatus.length > 0) {
           console.log(`[AttendanceDebug] ${studentsWithoutStatus.length} estudiantes sin estado de asistencia`);
           
-          // Forzar actualización de la UI después de un retraso mínimo
+          // Forzar actualizacion de la UI despues de un retraso minimo
           setTimeout(() => {
             console.log('[AttendanceDebug] Actualizando UI tras cambio en estudiantes');
             localAttendanceRecords.value = { ...localAttendanceRecords.value };
@@ -793,7 +828,7 @@ watch(
   { immediate: true, deep: true }
 );
 
-// Función para obtener el estado actual de un estudiante
+// Funcion para obtener el estado actual de un estudiante
 const getStudentStatus = (studentId: string): AttendanceStatus | undefined => {
   return localAttendanceRecords.value?.[studentId];
 };
@@ -804,7 +839,7 @@ const validateAttendanceStates = () => {
   const invalidStudents: string[] = [];
   const missingStatusStudents: string[] = [];
   
-  // Verificar que todos los estudiantes en la lista tengan un estado y que sea válido
+  // Verificar que todos los estudiantes en la lista tengan un estado y que sea valido
   localStudents.value.forEach(student => {
     const status = getStudentStatus(student.id);
     
@@ -813,18 +848,18 @@ const validateAttendanceStates = () => {
       missingStatusStudents.push(student.id);
       console.warn(`[AttendanceDebug] Estudiante ${student.id} sin estado definido`);
     } else if (!['Presente', 'Ausente', 'Tardanza', 'Justificado'].includes(status)) {
-      // Si tiene estado pero no es válido
+      // Si tiene estado pero no es valido
       valid = false;
       invalidStudents.push(student.id);
-      console.error(`[AttendanceDebug] Estado inválido para estudiante ${student.id}: ${status}`);
+      console.error(`[AttendanceDebug] Estado invalido para estudiante ${student.id}: ${status}`);
     }
     
-    // Si está justificado, verificar que tenga una justificación
+    // Si esta justificado, verificar que tenga una justificacion
     if (status === 'Justificado' && !pendingJustifications.value.has(student.id)) {
-      console.warn(`[AttendanceDebug] Estudiante ${student.id} marcado como justificado pero sin justificación`);
-      // Crear justificación vacía para evitar problemas
+      console.warn(`[AttendanceDebug] Estudiante ${student.id} marcado como justificado pero sin justificacion`);
+      // Crear justificacion vacia para evitar problemas
       pendingJustifications.value.set(student.id, {
-        reason: 'Justificación pendiente',
+        reason: 'Justificacion pendiente',
         timestamp: new Date(),
       });
     }
@@ -843,14 +878,14 @@ const validateAttendanceStates = () => {
   return { valid, invalidStudents, missingStatusStudents };
 };
 
-const handleUpdateStatus = (studentId: string, status: string) => {
+const handleUpdateStatus = async (studentId: string, status: string) => {
   if (studentId === 'all' && status === 'save') {
     // Validar estados antes de guardar
     const { valid, invalidStudents, missingStatusStudents } = validateAttendanceStates();
     
     if (!valid && invalidStudents.length > 0) {
-      console.error(`[AttendanceDebug] Se encontraron ${invalidStudents.length} estudiantes con estados inválidos`);
-      displayToast(`Error: Hay ${invalidStudents.length} estudiantes con estados inválidos`, 'error');
+      console.error(`[AttendanceDebug] Se encontraron ${invalidStudents.length} estudiantes con estados invalidos`);
+      displayToast(`Error: Hay ${invalidStudents.length} estudiantes con estados invalidos`, 'error');
       return;
     }
     
@@ -864,15 +899,11 @@ const handleUpdateStatus = (studentId: string, status: string) => {
     }
     
     // Guardar todos los cambios pendientes
-    const dateToSave = route.params.date as string || props.date || attendanceStore.selectedDate || '';
-    const classIdToSave = route.params.classId as string || route.params.id as string || props.initialClassId as string || '';
-    
-    console.log(`[AttendanceDebug] Guardando cambios para fecha=${dateToSave}, clase=${classIdToSave}`);
     console.log(`[AttendanceDebug] Total cambios pendientes: ${pendingChanges.value.size}`);
     
     // Asegurar que guardamos todos los cambios pendientes en Firestore
     displayToast('Guardando cambios en la base de datos...', 'info');
-    attendanceActions.saveAllPendingChanges();
+    await attendanceActions.saveAllPendingChanges();
     return;
   }
   
@@ -886,7 +917,7 @@ const handleUpdateStatus = (studentId: string, status: string) => {
     console.log(`Cambiando estudiante ${studentId} de Justificado a ${status}`);
   }
   
-  // Si el estudiante cambia a Justificado, manejar la justificación
+  // Si el estudiante cambia a Justificado, manejar la justificacion
   if (status === 'Justificado') {
     handleOpenJustification({
       id: studentId,
@@ -896,23 +927,23 @@ const handleUpdateStatus = (studentId: string, status: string) => {
   } 
   
   if (pendingChangesCount.value > 0) {
-    console.log(`[AttendanceList] Cambios pendientes: ${pendingChangesCount.value}. Esperando acción de guardar.`);
-    // Ya no guardamos automáticamente, esperamos a que se presione el botón de guardar
-    // Esto permite acumular múltiples cambios antes de enviar a Firestore
+    console.log(`[AttendanceList] Cambios pendientes: ${pendingChangesCount.value}. Esperando accion de guardar.`);
+    // Ya no guardamos automaticamente, esperamos a que se presione el boton de guardar
+    // Esto permite acumular multiples cambios antes de enviar a Firestore
   }
 };
 
-// Función para gestionar la apertura del modal de justificación
+// Funcion para gestionar la apertura del modal de justificacion
 const handleOpenJustification = async (student: any) => {
   try {
-    // abrir modal de justificación
-    console.log('[Justificación] Abriendo modal de justificación');
-    console.log('[Justificación] Iniciando proceso de justificación para estudiante:', student);
+    // abrir modal de justificacion
+    console.log('[Justificacion] Abriendo modal de justificacion');
+    console.log('[Justificacion] Iniciando proceso de justificacion para estudiante:', student);
         
-    // Verificar si tenemos toda la información necesaria
+    // Verificar si tenemos toda la informacion necesaria
     if (!student || !student.id) {
-      console.error('[Justificación] Error: Datos de estudiante inválidos', student);
-      displayToast('Error: Datos de estudiante inválidos', 'error');
+      console.error('[Justificacion] Error: Datos de estudiante invalidos', student);
+      displayToast('Error: Datos de estudiante invalidos', 'error');
       return;
     }
 
@@ -921,11 +952,11 @@ const handleOpenJustification = async (student: any) => {
     const classIdToUse = route.params.classId as string || route.params.id as string || props.initialClassId || attendanceStore.selectedClass;
 
     if (!dateToUse || !classIdToUse) {
-      console.error('[Justificación] Error: Fecha o clase no disponible', {
+      console.error('[Justificacion] Error: Fecha o clase no disponible', {
         date: dateToUse,
         classId: classIdToUse
       });
-      displayToast('Error: Información de fecha o clase no disponible', 'error');
+      displayToast('Error: Informacion de fecha o clase no disponible', 'error');
       return;
     }
 
@@ -936,7 +967,7 @@ const handleOpenJustification = async (student: any) => {
       apellido: student.apellido || ''
     };
 
-    console.log('[Justificación] Estado local actualizado:', selectedStudentForJustification.value);
+    console.log('[Justificacion] Estado local actualizado:', selectedStudentForJustification.value);
 
     // Marcar al estudiante como justificado en el mapa local
     justifiedStudentsMap.value[student.id] = true;
@@ -945,49 +976,49 @@ const handleOpenJustification = async (student: any) => {
     if (localAttendanceRecords.value) {
       const previousStatus = localAttendanceRecords.value[student.id];
       localAttendanceRecords.value[student.id] = 'Justificado';
-      console.log(`[Justificación] Estado de asistencia actualizado localmente de ${previousStatus} a Justificado`);
+      console.log(`[Justificacion] Estado de asistencia actualizado localmente de ${previousStatus} a Justificado`);
 
-      // Si el estudiante no tenía un estado previo o era diferente de 'Justificado',
+      // Si el estudiante no tenia un estado previo o era diferente de 'Justificado',
       // agregarlo a los cambios pendientes
       if (!previousStatus || previousStatus !== 'Justificado') {
         pendingChanges.value.add(student.id);
-        console.log('[Justificación] Cambio pendiente registrado');
+        console.log('[Justificacion] Cambio pendiente registrado');
         
-        // Crear una justificación pendiente si no existe
+        // Crear una justificacion pendiente si no existe
         if (!pendingJustifications.value.has(student.id)) {
           pendingJustifications.value.set(student.id, {
             reason: '',
             timestamp: new Date()
           });
-          console.log('[Justificación] Justificación pendiente creada automáticamente');
+          console.log('[Justificacion] Justificacion pendiente creada automaticamente');
         }
       }
     } else {
       // Si no hay registros locales, crear uno nuevo
       localAttendanceRecords.value = { [student.id]: 'Justificado' };
       pendingChanges.value.add(student.id);
-      console.log('[Justificación] Nuevo registro local creado');
+      console.log('[Justificacion] Nuevo registro local creado');
       
-      // Asegurar que exista una justificación pendiente
+      // Asegurar que exista una justificacion pendiente
       if (!pendingJustifications.value.has(student.id)) {
         pendingJustifications.value.set(student.id, {
           reason: '',
           timestamp: new Date()
         });
-        console.log('[Justificación] Justificación pendiente creada para nuevo registro');
+        console.log('[Justificacion] Justificacion pendiente creada para nuevo registro');
       }
     }
 
-    // Buscar si ya existe una justificación para este estudiante
+    // Buscar si ya existe una justificacion para este estudiante
     //  const existingJustification = attendanceStore.getJustification(student.id);
     const studentJustifications = attendanceStore.getJustificationsByStudent(student.id);
     const existingJustification = studentJustifications && studentJustifications.length > 0 ? studentJustifications[0] : null;
 
-    // Si ya existe una justificación, usarla como pendiente
+    // Si ya existe una justificacion, usarla como pendiente
     if (existingJustification) {
-      console.log(`[Justificación] Justificación existente encontrada para ${student.nombre}:`, existingJustification);
+      console.log(`[Justificacion] Justificacion existente encontrada para ${student.nombre}:`, existingJustification);
       
-      // Manejo correcto de los diferentes formatos de justificación
+      // Manejo correcto de los diferentes formatos de justificacion
       let justificationReason = '';
       let documentURL = '';
       
@@ -1004,16 +1035,20 @@ const handleOpenJustification = async (student: any) => {
         timestamp: new Date()
       });
       
-      console.log(`[Justificación] Justificación procesada: ${justificationReason}`);
+      console.log(`[Justificacion] Justificacion procesada: ${justificationReason}`);
     } else if (!pendingJustifications.value.has(student.id)) {
-      // Si no hay justificación existente ni pendiente, crear una nueva
+      // Si no hay justificacion existente ni pendiente, crear una nueva
       pendingJustifications.value.set(student.id, {
         reason: '',
         timestamp: new Date()
       });
-      console.log('[Justificación] Nueva justificación pendiente creada');
+      console.log('[Justificacion] Nueva justificacion pendiente creada');
     }
 
+    // Abrir el modal de justificación
+    console.log('[Modal] Abriendo modal de justificación');
+    justificationsModalOpen.value = true;
+    
     // Emitir el evento al componente padre
     console.log('[Modal] Emitiendo evento open-justification al componente padre');
     emit('open-justification', {
@@ -1023,59 +1058,84 @@ const handleOpenJustification = async (student: any) => {
     });
 
     // Notificar al usuario
-    displayToast(`Añadiendo justificación para ${student.nombre || 'Estudiante'}`, 'info');
+    displayToast(`Abriendo modal de justificación para ${student.nombre || 'Estudiante'}`, 'info');
 
   } catch (error) {
-    console.error('[Justificación] Error en el proceso de justificación:', error);
-    displayToast('Error al procesar la justificación', 'error');
+    console.error('[Justificacion] Error en el proceso de justificacion:', error);
+    displayToast('Error al procesar la justificacion', 'error');
   }
 };
 
-const handleSaveJustification = (data: { studentId: string, reason: string, documentURL?: string, file?: File }) => {
-  console.log('Guardando justificación:', data);
+const handleSaveJustification = async (data: { studentId: string, reason: string, file?: File }) => {
+  console.log('Guardando justificacion:', data);
   
   // Verificar que tenemos los datos necesarios
   if (!data.studentId || !data.reason) {
-    console.error('Datos incompletos para guardar justificación:', data);
-    displayToast('Error: Datos incompletos para la justificación', 'error');
+    console.error('Datos incompletos para guardar justificacion:', data);
+    displayToast('Error: Datos incompletos para la justificacion', 'error');
     return;
   }
 
-  // Crear el objeto de justificación sin incluir documentURL si es undefined
+  let documentURL: string | undefined = undefined;
+
+  // Si hay un archivo, subirlo primero
+  if (data.file) {
+    try {
+      // Aquí deberías implementar la lógica para subir el archivo a Firebase Storage
+      // Por ahora, simulamos la URL del documento
+      console.log('Subiendo archivo:', data.file.name);
+      displayToast('Subiendo archivo...', 'info');
+      
+      // Simular la subida (reemplazar con lógica real de Firebase Storage)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      documentURL = `https://firebasestorage.googleapis.com/uploads/${data.file.name}`;
+      
+      console.log('Archivo subido exitosamente:', documentURL);
+    } catch (error) {
+      console.error('Error al subir archivo:', error);
+      displayToast('Error al subir el archivo', 'error');
+      return;
+    }
+  }
+
+  // Crear el objeto de justificacion
   const justificationData: { reason: string; documentURL?: string; timestamp: Date } = {
     reason: data.reason,
     timestamp: new Date()
   };
 
   // Solo incluir documentURL si tiene un valor
-  if (data.documentURL) {
-    justificationData.documentURL = data.documentURL;
+  if (documentURL) {
+    justificationData.documentURL = documentURL;
   }
 
-  // Guardar la justificación en el mapa de justificaciones pendientes
+  // Guardar la justificacion en el mapa de justificaciones pendientes
   pendingJustifications.value.set(data.studentId, justificationData);
 
-  // Asegurarse de que el estudiante esté marcado como justificado
+  // Asegurarse de que el estudiante este marcado como justificado
   if (localAttendanceRecords.value) {
     localAttendanceRecords.value[data.studentId] = 'Justificado';
     pendingChanges.value.add(data.studentId);
   }
 
-  // Limpiar el estado de justificación actual
+  // Limpiar el estado de justificacion actual
   selectedStudentForJustification.value = null;
   currentJustificationReason.value = '';
+  
+  // Cerrar el modal de justificación
+  justificationsModalOpen.value = false;
 
-  console.log('Justificación guardada:', justificationData);
+  console.log('Justificacion guardada:', justificationData);
   
   // Actualizar la UI inmediatamente para mostrar el estado "Justificado"
   localAttendanceRecords.value = { ...localAttendanceRecords.value };
   
   // Notificar al usuario
-  displayToast('Justificación guardada correctamente', 'success');
+  displayToast('Justificacion guardada correctamente', 'success');
 };
 
 
-// Funciones para navegación
+// Funciones para navegacion
 const navigateToWorkspace = () => {
   console.log('Emitiendo navigate-to-class-selector desde AttendanceList');
   emit('navigate-to-class-selector');
@@ -1091,7 +1151,7 @@ const handleNavigateToClassSelector = () => {
   emit('navigate-to-class-selector');
 };
 
-// Función para exportar la asistencia a PDF
+// Funcion para exportar la asistencia a PDF
 const handleExportToPDF = async () => {
   try {
     isLoading.value = true; // Mostrar indicador de carga
@@ -1128,7 +1188,7 @@ const handleExportToPDF = async () => {
       console.warn('Error obteniendo nombre del maestro:', error);
     }
 
-    // Obtener información detallada de la clase
+    // Obtener informacion detallada de la clase
     const classInfo = classesStore.getClassById(currentClass);
     let classSchedule = 'Horario no especificado';
     let classDescription = '';
@@ -1143,10 +1203,10 @@ const handleExportToPDF = async () => {
       classDescription = classInfo.description;
     }
     
-    // Obtener observaciones de la clase específica
+    // Obtener observaciones de la clase especifica
     let classObservations = 'Sin observaciones adicionales registradas.';
     try {
-      // Intentar obtener observaciones específicas de la clase
+      // Intentar obtener observaciones especificas de la clase
       const observationsForClass = await attendanceStore.fetchObservationsForClass(currentClass);
       if (observationsForClass && observationsForClass.length > 0) {
         // Filtrar por fecha si es necesario, ya que fetchObservationsForClass devuelve todas las observaciones
@@ -1159,7 +1219,7 @@ const handleExportToPDF = async () => {
           classObservations = observationsForDate
             .map(obs => {
               // Verificar si obs.content es string u objeto
-              const content = typeof obs.content === 'string' ? obs.content : obs.content?.text || 'Observación sin contenido';
+              const content = typeof obs.content === 'string' ? obs.content : obs.content?.text || 'Observacion sin contenido';
               const author = obs.author || 'Maestro';
               return `${content} (${author})`;
             })
@@ -1167,7 +1227,7 @@ const handleExportToPDF = async () => {
         }
       }
     } catch (error) {
-      console.warn('Error obteniendo observaciones específicas:', error);
+      console.warn('Error obteniendo observaciones especificas:', error);
       // Fallback a observaciones generales
       const basicObservations = attendanceStore.getObservations;
       if (basicObservations && basicObservations.trim()) {
@@ -1175,18 +1235,18 @@ const handleExportToPDF = async () => {
       }
     }
     
-    // Crear observaciones detalladas que incluyan toda la información de contexto
+    // Crear observaciones detalladas que incluyan toda la informacion de contexto
     let detailedObservations = '';
     
-    // Información de la clase
-    detailedObservations += `INFORMACIÓN DE LA CLASE:\n`;
+    // Informacion de la clase
+    detailedObservations += `INFORMACIoN DE LA CLASE:\n`;
     detailedObservations += `Clase: ${currentClassName}\n`;
     detailedObservations += `Maestro: ${teacherName}\n`;
     detailedObservations += `Fecha: ${format(new Date(currentDate), "d 'de' MMMM yyyy", { locale: es })}\n`;
     detailedObservations += `Horario: ${classSchedule}\n`;
     
     if (classDescription) {
-      detailedObservations += `Descripción: ${classDescription}\n`;
+      detailedObservations += `Descripcion: ${classDescription}\n`;
     }
     
     detailedObservations += `\nOBSERVACIONES DEL MAESTRO:\n${classObservations}\n`;
@@ -1195,7 +1255,7 @@ const handleExportToPDF = async () => {
     const justifications = attendanceStore.getJustificationsByStudent || {};
     
     // Generar mensaje de estado para el usuario
-    displayToast('Generando PDF con información completa de la clase...', 'info');
+    displayToast('Generando PDF con informacion completa de la clase...', 'info');
 
     await generateAttendancePDF(
       students,
@@ -1207,11 +1267,11 @@ const handleExportToPDF = async () => {
       justifications
     );
 
-    displayToast('PDF generado exitosamente con toda la información de la clase', 'success');
+    displayToast('PDF generado exitosamente con toda la informacion de la clase', 'success');
     
   } catch (error) {
     console.error('Error al generar PDF:', error);
-    displayToast('Error al generar el PDF. Por favor, inténtelo de nuevo.', 'error');
+    displayToast('Error al generar el PDF. Por favor, intentelo de nuevo.', 'error');
   } finally {
     isLoading.value = false; // Ocultar indicador de carga
   }
@@ -1233,13 +1293,13 @@ const markAllAsLate = () => {
   attendanceActions.markAllAsLate();
 };
 
-// Función simplificada para resetear todos los estados
+// Funcion simplificada para resetear todos los estados
 const resetAllStatuses = async () => {
   if (props.isDisabled) return;
     await attendanceActions.resetAllStatuses();
 };
 
-// Función para abrir el modal de observaciones de asistencia
+// Funcion para abrir el modal de observaciones de asistencia
 const openAttendanceObservationModal = () => {
   attendanceObservationModalOpen.value = true;
 };
@@ -1255,7 +1315,7 @@ const sortedStudents = computed(() => {
 </script>
 
 <template>
-  <!-- Contenedor único para compatibilidad con Transition -->
+  <!-- Contenedor unico para compatibilidad con Transition -->
   <div class="attendance-list-container">
     <div class="attendance-list">
       <Toast 
@@ -1323,7 +1383,7 @@ const sortedStudents = computed(() => {
       </div>
     </div>
     
-    <!-- Modales fuera del contenido principal pero dentro del contenedor raíz -->
+    <!-- Modales fuera del contenido principal pero dentro del contenedor raiz -->
     <ClassObservationsModal 
       :is-visible="observationsModalOpen" 
       :class-id="currentSelectedClass"

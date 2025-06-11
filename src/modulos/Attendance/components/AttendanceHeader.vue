@@ -12,6 +12,9 @@ import {
 } from '@heroicons/vue/24/outline'
 import ClassObservationBadge from './ClassObservationBadge.vue'
 import { computed } from 'vue'
+import { useRBACStore } from '@/stores/rbacStore'
+
+const rbacStore = useRBACStore();
 
 const props = defineProps<{
   className?: string;
@@ -21,7 +24,6 @@ const props = defineProps<{
   shouldAnimateObservationsButton?: boolean;
   hasObservations?: boolean;
   observationButtonText?: string;
-
 }>()
 
 const emit = defineEmits<{
@@ -32,7 +34,18 @@ const emit = defineEmits<{
   (e: 'click'): void;
 }>()
 
+// RBAC computed properties
+const canEditAttendance = computed(() => {
+  return rbacStore.hasPermission('attendance_edit') || rbacStore.hasRole('Maestro');
+});
 
+const canExportAttendance = computed(() => {
+  return rbacStore.hasPermission('attendance_export') || rbacStore.hasRole('Maestro');
+});
+
+const canManageObservations = computed(() => {
+  return rbacStore.hasPermission('attendance_observe') || rbacStore.hasRole('Maestro');
+});
 
 // Computed property to determine button text based on whether observations exist
 const observationButtonText = computed(() => {
@@ -73,6 +86,7 @@ const observationTooltip = computed(() => {
       
       <!-- Save Button -->
       <button 
+        v-if="canEditAttendance"
         @click="emit('save')"
         :disabled="props.isDisabled || (props.pendingChangesCount || 0) === 0"
         :class="[
@@ -89,6 +103,7 @@ const observationTooltip = computed(() => {
       
       <!-- Export Button -->
       <button 
+        v-if="canExportAttendance"
         @click="emit('open-export')"
         class="px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-sm text-xs sm:text-sm flex items-center gap-1 flex-1 sm:flex-initial justify-center"
       >
@@ -99,6 +114,7 @@ const observationTooltip = computed(() => {
       
       <!-- Observations Button - Changes based on whether observations exist -->
       <button 
+        v-if="canManageObservations"
         @click="emit('open-observation')"
         :disabled="props.isDisabled"
         :title="observationTooltip"

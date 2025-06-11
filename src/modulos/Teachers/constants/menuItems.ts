@@ -10,7 +10,8 @@ import {
   AcademicCapIcon,
   BookOpenIcon,
   CalendarDaysIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  SparklesIcon
 } from '@heroicons/vue/24/outline'
 
 // Menú para maestros: rutas que comienzan con "/teacher" 
@@ -40,6 +41,12 @@ export const teacherMenuItems = [
     to: '/students', 
     ariaLabel: 'Gestionar alumnos'
   },
+  { 
+    name: 'Montaje', 
+    icon: SparklesIcon, 
+    to: '/montaje', 
+    ariaLabel: 'Gestión de montaje musical'
+  },
 ]
 
 // Menú para directores/administradores: rutas que coinciden con las definidas en el router
@@ -61,12 +68,17 @@ export const adminMenuItems = [
     icon: AcademicCapIcon, 
     to: '/teachers', 
     ariaLabel: 'Gestionar maestros'
-  },
-  { 
+  },  { 
     name: 'Instrumentos', 
     icon: MusicalNoteIcon, 
     to: '/instrumentos', 
     ariaLabel: 'Gestionar instrumentos' 
+  },
+  { 
+    name: 'Montaje', 
+    icon: SparklesIcon, 
+    to: '/montaje', 
+    ariaLabel: 'Gestión de montaje musical'
   },
   { 
     name: 'Analytics', 

@@ -183,6 +183,7 @@
     />
     <AttendanceObservation
       v-model="showObservationsModal"
+      :isVisible="showObservationsModal"
       :studentId="selectedStudentForObs?.id"
       :studentName="selectedStudentForObs ? `${selectedStudentForObs.nombre} ${selectedStudentForObs.apellido}` : ''"
       :classId="selectedClass"
@@ -602,9 +603,26 @@ function handleClassSelect(classId: string) {
   showClassesModal.value = false
   // Actualizar la clase seleccionada en el store para mantener coherencia
   attendanceStore.selectedClass = classId
-  // Navegar al formulario de asistencia con un formato de ruta adecuado
-  router.push(`/attendance/${selectedDate.value}/${classId}`)
-  console.log(`[AttendanceView] Navegando a la clase ${classId} en la fecha ${selectedDate.value}`)
+  
+  // Navegar a la ruta correcta según el rol del usuario
+  const userRole = authStore.user?.role?.toLowerCase() || ''
+  console.log(`[AttendanceView] handleClassSelect: Usuario completo:`, authStore.user)
+  console.log(`[AttendanceView] handleClassSelect: Rol del usuario: '${userRole}' (original: '${authStore.user?.role}')`)
+  let routePath = ''
+  
+  if (userRole === 'maestro' || userRole === 'teacher') {
+    // Formatear fecha para maestros (YYYYMMDD)
+    const dateFormatted = selectedDate.value.replace(/-/g, '')
+    routePath = `/teacher/attendance/${dateFormatted}/${classId}`
+    console.log(`[AttendanceView] handleClassSelect: Rol maestro detectado, navegando a: ${routePath}`)
+  } else {
+    // Para admin/director usar la ruta original
+    routePath = `/attendance/${selectedDate.value}/${classId}`
+    console.log(`[AttendanceView] handleClassSelect: Rol admin/director, navegando a: ${routePath}`)
+  }
+  
+  console.log(`[AttendanceView] Navegando a la clase ${classId} en la fecha ${selectedDate.value} con rol ${userRole} -> ${routePath}`)
+  router.push(routePath)
   loadAttendanceData(classId)
   updateView('attendance-form')
 }

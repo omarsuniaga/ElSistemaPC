@@ -22,7 +22,21 @@ const showNotification = (message: string, type = 'success') => {
   }, 7000)
 }
 
-const newStudent = ref({
+const newStudent = ref<{
+  id?: string;
+  nombre: string;
+  apellido: string;
+  instrumento: string;
+  edad: string;
+  tlf: string;
+  email: string;
+  direccion: string;
+  observaciones: string;
+  grupo: string[];
+  activo: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}>({
   nombre: '',
   apellido: '',
   instrumento: '',
@@ -31,7 +45,7 @@ const newStudent = ref({
   email: '',
   direccion: '',
   observaciones: '',
-  grupo: [], // Inicializamos la propiedad grupo como un array vacío
+  grupo: [], // Especificar el tipo
   activo: true,
   createdAt: new Date(),
   updatedAt: new Date()
@@ -81,40 +95,40 @@ const availableGrupo = computed(() => {
             if (cleanValue) {
               grupoSet.add(cleanValue);
             }
-          });
-        } 
+          });        }
         // Si grupo es un string pero parece ser un array serializado
-        else if (typeof student.grupo === 'string' && 
-                (student.grupo.startsWith('[') && student.grupo.endsWith(']'))) {
-          try {
-            const parsedGroup = JSON.parse(student.grupo);
-            if (Array.isArray(parsedGroup)) {
-              parsedGroup.forEach(group => {
-                const cleanValue = cleanGroupValue(group);
+        else if (typeof student.grupo === 'string') {
+          const grupoStr = student.grupo as string;
+          if (grupoStr.startsWith('[') && grupoStr.endsWith(']')) {
+            try {
+              const parsedGroup = JSON.parse(grupoStr);
+              if (Array.isArray(parsedGroup)) {
+                parsedGroup.forEach(group => {
+                  const cleanValue = cleanGroupValue(group);
+                  if (cleanValue) {
+                    grupoSet.add(cleanValue);
+                  }
+                });
+              } else {
+                // Si el parsing no resulta en un array, tratar como string
+                const cleanValue = cleanGroupValue(grupoStr);
                 if (cleanValue) {
                   grupoSet.add(cleanValue);
                 }
-              });
-            } else {
-              // Si el parsing no resulta en un array, tratar como string
-              const cleanValue = cleanGroupValue(student.grupo);
+              }
+            } catch (e) {
+              // Si hay error al parsear, tratar como string
+              const cleanValue = cleanGroupValue(grupoStr);
               if (cleanValue) {
                 grupoSet.add(cleanValue);
               }
             }
-          } catch (e) {
-            // Si hay error al parsear, tratar como string
-            const cleanValue = cleanGroupValue(student.grupo);
+          } else {
+            // Si grupo es un string simple, tratarlo como un solo valor
+            const cleanValue = cleanGroupValue(grupoStr);
             if (cleanValue) {
               grupoSet.add(cleanValue);
             }
-          }
-        }
-        // Si grupo es un string simple, tratarlo como un solo valor
-        else if (typeof student.grupo === 'string') {
-          const cleanValue = cleanGroupValue(student.grupo);
-          if (cleanValue) {
-            grupoSet.add(cleanValue);
           }
         }
       } catch (error) {
@@ -221,18 +235,25 @@ const clearForm = () => {
 
 const handleSubmit = async () => {
   try {
+    console.log('[NewStudentView] handleSubmit: Starting form submission');
+    console.log('[NewStudentView] handleSubmit: Form data:', JSON.stringify(newStudent.value, null, 2));
+    
     // Check if fields are correctly filled
     if (!newStudent.value.nombre || !newStudent.value.apellido) {
       error.value = 'Nombre y apellido son obligatorios'
       showNotification(error.value, 'error')
+      console.log('[NewStudentView] handleSubmit: Validation failed - missing name or surname');
       return
     }
     
     isLoading.value = true
     error.value = null
     
+    console.log('[NewStudentView] handleSubmit: Validation passed, proceeding...');
+    
   // Check if we're updating an existing student
     if (isEditingExistingStudent.value && matchedStudent.value) {
+      console.log('[NewStudentView] handleSubmit: Updating existing student');
       // Preserve the ID for updating
       newStudent.value.id = matchedStudent.value.id
       
@@ -248,6 +269,7 @@ const handleSubmit = async () => {
       clearForm()
       isEditingExistingStudent.value = false
       matchedStudent.value = null
+      console.log('[NewStudentView] handleSubmit: Student updated successfully');
       return
     }
       // Otherwise proceed with duplicate check as before
@@ -297,29 +319,39 @@ const handleSubmit = async () => {
                                  normalizedInstrumento === studentInstrumento;
       
       return nameMatches && edadMatches && instrumentoMatches;
-    });
-
-    if (existingStudent) {
+    });    if (existingStudent) {
       error.value = `Ya existe un alumno con el nombre ${existingStudent.nombre} ${existingStudent.apellido}`;
       showNotification(error.value, 'error');
       isLoading.value = false;
+      console.log('[NewStudentView] handleSubmit: Duplicate student found, aborting');
       return;
-    }    // If no duplicates found, proceed with adding student
+    }    
+    
+    console.log('[NewStudentView] handleSubmit: No duplicates found, proceeding with creation');
+    
+    // If no duplicates found, proceed with adding student
     // Ensure grupo is always stored as an array
     if (!Array.isArray(newStudent.value.grupo)) {
       newStudent.value.grupo = newStudent.value.grupo ? [newStudent.value.grupo] : [];
     }
     
+    console.log('[NewStudentView] handleSubmit: Final data before store call:', JSON.stringify(newStudent.value, null, 2));
+    
     await studentsStore.addStudent(newStudent.value);
+    
+    console.log('[NewStudentView] handleSubmit: Student added successfully to store');
+    
     showNotification(`Alumno ${newStudent.value.nombre} ${newStudent.value.apellido} guardado con éxito`);
     clearForm();
     isEditingExistingStudent.value = false
-    matchedStudent.value = null
-  } catch (err: any) {
+    matchedStudent.value = null  } catch (err: any) {
+    console.error('[NewStudentView] handleSubmit: Error occurred:', err);
+    console.error('[NewStudentView] handleSubmit: Error details:', err.message, err.code, err.stack);
     error.value = err.message || 'Error al crear el alumno'
     showNotification(error.value, 'error')
   } finally {
     isLoading.value = false
+    console.log('[NewStudentView] handleSubmit: Process completed, loading set to false');
   }
 }
 

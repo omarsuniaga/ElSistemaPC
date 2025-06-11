@@ -2,13 +2,14 @@
   <footer 
     v-if="shouldShowNavigation"
     class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700 z-40">
-    <div class="grid" :class="[navigationItems.length === 5 ? 'grid-cols-5' : 'grid-cols-4']">
-      <!-- Renderizamos dinámicamente los elementos de navegación según el rol -->      <router-link 
+    <div class="grid" :class="gridCols">
+      <!-- Renderizamos dinámicamente los elementos de navegación según el rol -->
+      <router-link 
         v-for="item in navigationItems" 
         :key="item.to" 
         :to="item.to" 
-        class="flex flex-col items-center justify-center text-xs space-y-1 py-3 touch-action-manipulation"
-        :class="[isRouteActive(item.to) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']"
+        class="flex flex-col items-center justify-center text-xs space-y-1 py-3 touch-action-manipulation transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+        :class="[isRouteActive(item.to) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20' : 'text-gray-600 dark:text-gray-400']"
         active-class="text-primary-600 dark:text-primary-400"
         :aria-label="item.ariaLabel"
         role="button"
@@ -17,9 +18,9 @@
         <component 
           :is="item.icon" 
           :class="[isRouteActive(item.to) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']" 
-          class="h-6 w-6" 
+          class="h-6 w-6 transition-colors duration-200" 
         />
-        <span>{{ item.name }}</span>
+        <span class="font-medium">{{ item.name }}</span>
       </router-link>
     </div>
   </footer>
@@ -30,6 +31,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { teacherMenuItems, adminMenuItems } from '../modulos/Teachers/constants/menuItems'
+import { superusuarioMenuItems } from '../modulos/Superusuario/constants/menuItems'
 import { HomeIcon, UserIcon } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
@@ -73,9 +75,8 @@ const isRouteActive = (path: string) => {
     // y que sea el menú más específico para esta ruta
     if (routeParts.length >= itemParts.length && 
         itemParts.every((part, index) => part === routeParts[index])) {
-      
-      // Verificar que no exista un ítem de menú más específico que coincida mejor
-      const menuItems = [...teacherMenuItems, ...adminMenuItems];
+        // Verificar que no exista un ítem de menú más específico que coincida mejor
+      const menuItems = [...teacherMenuItems, ...adminMenuItems, ...superusuarioMenuItems];
       const hasBetterMatch = menuItems.some(menuItem => {
         // Convertir la ruta del menú en componentes
         const menuItemParts = menuItem.to.split('/').filter(Boolean);
@@ -113,8 +114,20 @@ const isRouteActive = (path: string) => {
 
 // Items de navegación basados en el rol del usuario - usando las mismas constantes que Navigation.vue
 const navigationItems = computed(() => {
+  // Para Superusuario - mostrar los elementos más importantes del menú
+  if (authStore.isSuperusuario) {
+    // Seleccionar los 5 elementos más importantes para el footer
+    return [
+      superusuarioMenuItems[0], // Dashboard
+      superusuarioMenuItems[1], // Usuarios
+      superusuarioMenuItems[2], // Roles
+      superusuarioMenuItems[3], // Permisos
+      superusuarioMenuItems[4]  // Sistema
+    ];
+  }
+  
   // Para directores o administradores
-  if (authStore.isDirector || authStore.isAdmin) {
+  else if (authStore.isDirector || authStore.isAdmin) {
     // Mostrar hasta 5 elementos del menú de admin
     return adminMenuItems.slice(0, 5);
   }
@@ -127,10 +140,29 @@ const navigationItems = computed(() => {
   
   return [];
 })
+
+// Computed para determinar las columnas del grid dinámicamente
+const gridCols = computed(() => {
+  const itemCount = navigationItems.value.length;
+  switch (itemCount) {
+    case 3:
+      return 'grid-cols-3';
+    case 4:
+      return 'grid-cols-4';
+    case 5:
+      return 'grid-cols-5';
+    default:
+      return 'grid-cols-4';
+  }
+})
 </script>
 
 <style scoped>
-router-link-active {
-  @apply text-primary-600 dark:text-primary-400;
+.router-link-active {
+  color: rgb(147 51 234);
+}
+
+.dark .router-link-active {
+  color: rgb(196 181 253);
 }
 </style>

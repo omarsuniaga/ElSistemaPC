@@ -17,6 +17,21 @@ import { useAuthStore } from '../../../stores/auth'
 
 const COLLECTION_NAME = 'ALUMNOS'
 
+// Add database connection verification
+export const verifyDatabaseConnection = async (): Promise<boolean> => {
+  try {
+    console.log('[verifyDatabaseConnection] Testing Firestore connection...');
+    const testCollection = collection(db, COLLECTION_NAME);
+    const testQuery = query(testCollection, orderBy('apellido'));
+    await getDocs(testQuery);
+    console.log('[verifyDatabaseConnection] Firestore connection successful');
+    return true;
+  } catch (error) {
+    console.error('[verifyDatabaseConnection] Firestore connection failed:', error);
+    return false;
+  }
+};
+
 // Función auxiliar para mapear datos del estudiante
 const mapStudentData = (id: string, data: any): Student => {
   return {
@@ -132,7 +147,7 @@ export const getStudentsFirebase = async (): Promise<Student[]> => {
       const studentIds = new Set<string>()
       teacherClasses.forEach(clase => {
         if (clase.studentIds && Array.isArray(clase.studentIds)) {
-          clase.studentIds.forEach(id => studentIds.add(id))
+          clase.studentIds.forEach((id: string) => studentIds.add(id))
         }
       })
       
@@ -213,6 +228,15 @@ export const getStudentByIdFirebase = async (id: string): Promise<Student | null
 
 export const createStudentFirebase = async (student: Omit<Student, 'id'>): Promise<Student> => {
   try {
+    console.log('[createStudentFirebase] Starting student creation process');
+    console.log('[createStudentFirebase] Input student data:', JSON.stringify(student, null, 2));
+    
+    // Verify database connection first
+    const isConnected = await verifyDatabaseConnection();
+    if (!isConnected) {
+      throw new Error('No se pudo conectar a la base de datos');
+    }
+    
     // Normalizar el objeto student para asegurarse de que grupo sea siempre un array
     const normalizedStudent = {
       ...student,
@@ -221,19 +245,35 @@ export const createStudentFirebase = async (student: Omit<Student, 'id'>): Promi
              (student.grupo ? [student.grupo] : [])
     };
     
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+    console.log('[createStudentFirebase] Normalized student data:', JSON.stringify(normalizedStudent, null, 2));
+    console.log('[createStudentFirebase] Collection name:', COLLECTION_NAME);
+    
+    const dataToSave = {
       ...normalizedStudent,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
-    })
+    };
+    
+    console.log('[createStudentFirebase] Data to save to Firestore:', JSON.stringify(dataToSave, null, 2));
+    
+    const docRef = await addDoc(collection(db, COLLECTION_NAME), dataToSave);
+    
+    console.log('[createStudentFirebase] Document successfully created with ID:', docRef.id);
 
-    return {
+    const createdStudent = {
       id: docRef.id,
-      ...normalizedStudent
-    }
-  } catch (error) {
-    console.error('❌ Error al crear estudiante:', error)
-    throw new Error('Error al crear el estudiante')
+      ...normalizedStudent,
+      createdAt: new Date(),  // Convert serverTimestamp to Date for local usage
+      updatedAt: new Date()
+    };
+    
+    console.log('[createStudentFirebase] Returning created student:', JSON.stringify(createdStudent, null, 2));
+    
+    return createdStudent;
+  } catch (error: any) {
+    console.error('❌ [createStudentFirebase] Error al crear estudiante:', error);
+    console.error('❌ [createStudentFirebase] Error details:', error?.message, error?.code, error?.stack);
+    throw new Error('Error al crear el estudiante: ' + (error?.message || 'Error desconocido'))
   }
 }
 

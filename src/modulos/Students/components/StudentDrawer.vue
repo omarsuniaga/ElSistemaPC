@@ -17,6 +17,7 @@ import {
   Legend
 } from 'chart.js'
 import FileUpload from '../../../components/FileUpload.vue'
+import StudentAvatar from './StudentAvatar.vue'
 
 // Registrar los componentes de Chart.js que necesitamos
 ChartJS.register(
@@ -479,30 +480,12 @@ function handleUploadError(message: string) {
 
         <div v-else-if="student" class="space-y-6">
           <!-- Student Profile -->
-          <div class="flex items-center space-x-4">
-            <div class="relative">              <img
-                :src="isValidImageUrl(student.avatar) ? student.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.nombre}`"
-                :alt="`${student.nombre} ${student.apellido}`"
-                class="w-16 h-16 rounded-full object-cover border border-gray-300 dark:border-gray-600"
-                @error="handleImageError"
+          <div class="flex items-center space-x-4">            <div class="relative">
+              <StudentAvatar
+                :first-name="student.nombre || ''"
+                :last-name="student.apellido || ''"
+                size="lg"
               />
-              <!-- FileUpload para foto de perfil -->
-              <FileUpload
-                v-if="student.id"
-                accept="image/*"
-                :maxSize="3"
-                :path="`students/${student.id}/profile`"
-                label="Subir foto"
-                @success="handleProfilePhotoUpload"
-                @error="handleUploadError"
-                class="absolute -bottom-2 -right-2 w-8 h-8 z-10"
-              >
-                <button class="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center shadow hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 20h14M12 4v16m8-8H4" />
-                  </svg>
-                </button>
-              </FileUpload>
             </div>
             <div>
               <h3 class="text-xl font-bold">{{ student.nombre }} {{ student.apellido }}</h3>

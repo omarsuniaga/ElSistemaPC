@@ -1,4 +1,4 @@
-import { ref, computed, inject, provide, onMounted, watch } from 'vue';
+import { ref, computed, inject, provide, onMounted, watch, type Ref } from 'vue';
 import { getThemePreference, saveThemePreference } from '../modulos/Users/service/userPreferences';
 import { useAuthStore } from '../stores/auth';
 

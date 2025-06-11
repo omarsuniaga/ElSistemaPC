@@ -12,53 +12,24 @@ import {
   addDoc,
   orderBy,
   Timestamp,
-  deleteDoc,
-  DocumentData,
-  CollectionReference
+  deleteDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../firebase';
 import type { 
   AttendanceDocument, 
   JustificationData, 
-  AttendanceRecord, 
-  ClassObservation 
+  AttendanceRecord,
+  ClassObservationData
 } from '../types/attendance';
-import { auth } from '../../../firebase'; // Asegúrate de importar auth desde tu configuración de Firebase
+import { auth } from '../../../firebase';
 import { fetchAttendanceByDateFirebase as fetchByDate } from './attendance/fetchByDate';
-import { applyTeacherFilter, hasAccessToDocument, generateCacheKey } from '../../../utils/roleBasedAccess';
-import { useAuthStore } from '../../../stores/auth';
-import { getAllAttendanceDocumentsFirebase } from '../services/firebase'; // Importando la función necesaria
-
-// Configuración de caché
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutos en milisegundos
+import { getAllAttendanceDocumentsFirebase } from '../services/firebase';
 
 // Constants
 export const ATTENDANCE_COLLECTION = 'ASISTENCIAS';
 const OBSERVATIONS_COLLECTION = 'OBSERVACIONES';
 const CLASSES_COLLECTION = 'CLASES';
-const INDIVIDUAL_RECORDS_COLLECTION = 'REGISTROS_ASISTENCIA_INDIVIDUAL'; // Nueva colección para registros individuales
-
-/**
- * Función para obtener las clases de un maestro directamente sin importación dinámica
- * para evitar referencias circulares con classes.ts
- */
-const getTeacherClassesLocal = async (teacherId: string): Promise<any[]> => {
-  try {
-    const classesCollection = collection(db, CLASSES_COLLECTION);
-    const teacherQuery = query(classesCollection, where('teacherId', '==', teacherId));
-    const querySnapshot = await getDocs(teacherQuery);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      studentIds: doc.data().studentIds || []
-    }));
-  } catch (error) {
-    console.error('Error obteniendo clases del maestro:', error);
-    return [];
-  }
-};
 
 /**
  * Genera un ID de documento consistente para documentos de asistencia
@@ -148,7 +119,8 @@ export const addJustificationToAttendanceFirebase = async (
           ausentes: [],
           tarde: [],
           justificacion: [],
-          observations: ''
+          observación: '',
+          observations: []
         };
       }
       
@@ -194,7 +166,8 @@ export const addJustificationToAttendanceFirebase = async (
           ausentes: [justification.id], // Justificado va en ausentes
           tarde: [],
           justificacion: [justification],
-          observations: ''
+          observación: '',
+          observations: []
         }
       };
       
@@ -236,6 +209,7 @@ export const updateObservationsFirebase = async (
           ausentes: [],
           tarde: [],
           justificacion: [],
+          observación: '',
           observations
         };
       } else {
@@ -288,7 +262,7 @@ export const getAttendancesFirebase = async (): Promise<AttendanceRecord[]> => {
  * @param doc Documento de asistencia
  * @returns Array de registros de asistencia
  */
-const convertDocumentToRecords = (doc: any): AttendanceRecord[] => {
+const convertDocumentToRecords = (doc: AttendanceDocument): AttendanceRecord[] => {
   const records: AttendanceRecord[] = [];
   
   // Si no hay datos, retornar array vacío
@@ -365,12 +339,9 @@ export const getAttendanceByDateAndClassFirebase = async (
       document.data.justificacion.forEach((justification) => {
         if (justification && justification.id) {
           justifiedStudentIds.add(justification.id);
-          console.log(`[Procesando] Estudiante ${justification.id} tiene justificación: ${justification.reason}`);
         }
       });
     }
-    
-    console.log(`[Asistencia] Encontrados ${justifiedStudentIds.size} estudiantes con justificación`);
     
     // Procesar todos los registros con la función convertDocumentToRecords
     const records = convertDocumentToRecords(document);
@@ -379,7 +350,6 @@ export const getAttendanceByDateAndClassFirebase = async (
     return records.map(record => {
       // Si el estudiante tiene justificación y está ausente, cambiarlo a Justificado
       if (record.status === 'Ausente' && justifiedStudentIds.has(record.studentId)) {
-        console.log(`[Asistencia] Corrigiendo estado de ${record.studentId} de Ausente a Justificado`);
         return {
           ...record,
           status: 'Justificado'
@@ -399,7 +369,7 @@ export const getAttendanceByDateAndClassFirebase = async (
 export const updateAttendanceFirebase = async (attendanceData: AttendanceRecord): Promise<string> => {
   try {
     // Obtener o crear el documento
-    const docId = getAttendanceDocId(attendanceData.date, attendanceData.classId);
+    const docId = getAttendanceDocId(attendanceData.fecha, attendanceData.classId);
     const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
     let document: AttendanceDocument;
     
@@ -486,7 +456,7 @@ export const updateAttendanceFirebase = async (attendanceData: AttendanceRecord)
           id: attendanceData.studentId,
           studentId: attendanceData.studentId,
           classId: attendanceData.classId,
-          fecha: attendanceData.date, 
+          fecha: attendanceData.fecha, 
           reason: justificationReason,
           documentUrl: documentUrl,
           approvalStatus: 'pending',
@@ -509,9 +479,9 @@ export const updateAttendanceFirebase = async (attendanceData: AttendanceRecord)
           id: attendanceData.studentId,
           studentId: attendanceData.studentId,
           classId: attendanceData.classId,
-          fecha: attendanceData.date, 
-          reason: typeof justificationData === 'string' ? justificationData : (justificationData.reason || ''),
-          documentUrl: (typeof justificationData !== 'string' ? justificationData.documentUrl : null) || null,
+          fecha: attendanceData.fecha, 
+          reason: typeof justificationData === 'string' ? justificationData : (justificationData?.reason || ''),
+          documentUrl: (typeof justificationData !== 'string' ? justificationData?.documentUrl : null) || null,
           approvalStatus: 'pending',
           createdAt: new Date(),
           timeLimit: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
@@ -613,8 +583,10 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
               id: doc.id + '_' + studentId,
               studentId,
               classId,
-              date: date,
-              status: 'Presente'
+              fecha: date,
+              status: 'Presente',
+              createdAt: new Date(),
+              updatedAt: new Date()
             });
           });
         }
@@ -626,8 +598,10 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
               id: doc.id + '_' + studentId,
               studentId,
               classId,
-              date: date,
-              status: 'Ausente'
+              fecha: date,
+              status: 'Ausente',
+              createdAt: new Date(),
+              updatedAt: new Date()
             });
           });
         }
@@ -636,16 +610,18 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
         if (attendanceData.tarde && Array.isArray(attendanceData.tarde)) {
           attendanceData.tarde.forEach((studentId: string) => {
             const justification = attendanceData.justificacion?.find(
-              (j: any) => j.id === studentId
+              (j: JustificationData) => j.id === studentId
             );
             
             records.push({
               id: doc.id + '_' + studentId,
               studentId,
               classId,
-              date: date,
+              fecha: date,
               status: justification ? 'Justificado' : 'Tardanza',
-              justification: justification ? justification.reason : undefined
+              justification: justification ? justification.reason : undefined,
+              createdAt: new Date(),
+              updatedAt: new Date()
             });
           });
         }
@@ -655,9 +631,11 @@ export const fetchAttendanceByDateRangeFirebase = async (startDate: string, endD
           id: doc.id,
           studentId: data.studentId,
           classId: data.classId,
-          date: data.date,
+          fecha: data.date,
           status: data.status,
-          justification: data.justification
+          justification: data.justification,
+          createdAt: new Date(),
+          updatedAt: new Date()
         });
       }
     });
@@ -740,9 +718,6 @@ export async function addObservationToHistoryFirebase(
   studentId?: string
 ): Promise<void> {
   try {
-    console.log(`[addObservationToHistoryFirebase] Adding ${studentId ? 'student-specific' : 'class-level'} observation`);
-    console.log(`[addObservationToHistoryFirebase] Class: ${classId}, Date: ${date}, StudentId: ${studentId || 'N/A'}`);
-    
     // Create query conditions based on whether this is a class or student observation
     const queryConditions = [
       where('classId', '==', classId),
@@ -822,7 +797,7 @@ export async function updateObservationInHistoryFirebase(
 export async function getObservationsHistoryFirebase(
   classId?: string, 
   specificDate?: string
-): Promise<any[]> {
+): Promise<ObservationRecord[]> {
   try {
     let queryRef;
     
@@ -1078,3 +1053,87 @@ export async function getStudentAttendanceByDate(studentId: string, date: string
     throw error; // Re-throw the error to be handled by the caller
   }
 };
+
+/**
+ * Verifica permisos de maestro antes de registrar asistencia
+ * Integración con el sistema de colaboración de maestros
+ */
+async function validateTeacherPermissions(classId: string, teacherId: string, action: 'attendance' | 'observation' | 'history'): Promise<boolean> {
+  try {
+    // Importar dinámicamente para evitar dependencias circulares
+    const { canTeacherRecordAttendance, canTeacherAddObservations, canTeacherViewAttendanceHistory } = await import('../../Classes/service/classes');
+    
+    switch (action) {
+      case 'attendance':
+        return await canTeacherRecordAttendance(classId, teacherId);
+      case 'observation':
+        return await canTeacherAddObservations(classId, teacherId);
+      case 'history':
+        return await canTeacherViewAttendanceHistory(classId, teacherId);
+      default:
+        return false;
+    }
+  } catch (error) {
+    console.error('Error validating teacher permissions:', error);
+    return false;
+  }
+}
+
+/**
+ * Versión mejorada de addAttendanceRecord que verifica permisos de maestro
+ */
+export async function addAttendanceRecordWithPermissions(
+  record: Omit<AttendanceRecord, 'id'>, 
+  teacherId: string
+): Promise<AttendanceRecord> {
+  try {
+    // Verificar permisos del maestro para esta clase
+    const hasPermission = await validateTeacherPermissions(record.classId, teacherId, 'attendance');
+    
+    if (!hasPermission) {
+      throw new Error('No tienes permisos para registrar asistencia en esta clase');
+    }
+    
+    // Agregar información del maestro que registra la asistencia
+    const recordWithTeacher = {
+      ...record,
+      updatedBy: teacherId,
+      updatedAt: new Date()
+    };
+    
+    // Usar la función original con los datos enriquecidos
+    return await addAttendanceRecord(recordWithTeacher);
+  } catch (error) {
+    console.error('Error adding attendance record with permissions:', error);
+    throw error;
+  }
+}
+
+/**
+ * Versión mejorada de updateAttendanceRecord que verifica permisos de maestro
+ */
+export async function updateAttendanceRecordWithPermissions(
+  id: string, 
+  updates: any, 
+  teacherId: string, 
+  classId: string
+): Promise<void> {
+  try {
+    // Verificar permisos del maestro para esta clase
+    const hasPermission = await validateTeacherPermissions(classId, teacherId, 'attendance');
+    
+    if (!hasPermission) {
+      throw new Error('No tienes permisos para actualizar asistencia en esta clase');
+    }
+    
+    // Agregar información del maestro que actualiza la asistencia
+    const updatesWithTeacher = {
+      ...updates,
+      updatedBy: teacherId,
+      updatedAt: new Date()
+    };
+    
+    // Usar la función original con los datos enriquecidos
+    await updateAttendanceRecord(id, updatesWithTeacher);
+  } catch (error) {
+    console.error('Error updating a

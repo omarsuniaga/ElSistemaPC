@@ -7,6 +7,17 @@ import {
   // updateAttendanceWithJustificationFirebase removed as it was unused
 } from '../../service/attendance';
 
+// ========== NUEVO SISTEMA DE PERMISOS ==========
+import { usePermissions } from '../../../Auth/composables/usePermissions';
+import { ResourceType, PermissionAction } from '../../../Auth/types/permissions';
+
+// Enhanced record actions that support teacher collaboration
+import {
+  addAttendanceRecordWithPermissions,
+  updateAttendanceRecordWithPermissions,
+  canAddObservationWithPermissions
+} from '../../service/attendanceCollaboration';
+
 // Define a type for the store's `this` context for recordActions
 interface RecordActionsThisContext {
   isLoading: boolean;
@@ -20,6 +31,11 @@ interface RecordActionsThisContext {
   // Internal helpers if they are part of the `this` context when actions are invoked
   _updateAttendanceDocumentsArray: (document: AttendanceDocument) => void;
   _cleanJustifications: (document: {id: string}) => void; // Simplified based on usage
+}
+
+// Extended interface to include teacher collaboration context
+interface EnhancedRecordActionsThisContext extends RecordActionsThisContext {
+  currentTeacherId?: string;
 }
 
 export const recordActions = {
@@ -152,4 +168,132 @@ export const recordActions = {
       this.isLoading = false;
     }
   },
+};
+
+export const enhancedRecordActions = {
+  ...recordActions,
+
+  /**
+   * Versión mejorada de addRecord que verifica permisos de maestro
+   */
+  async addRecordWithPermissions(
+    this: EnhancedRecordActionsThisContext, 
+    recordData: Omit<MainAttendanceRecord, 'id'>,
+    teacherId?: string
+  ): Promise<MainAttendanceRecord | null> {
+    this.isLoading = true;
+    this.error = null;
+    
+    try {
+      // Usar el teacherId proporcionado o el del contexto actual
+      const currentTeacherId = teacherId || this.currentTeacherId;
+      
+      if (!currentTeacherId) {
+        throw new Error('No se puede identificar el maestro actual');
+      }
+      
+      // Validar el estado de asistencia
+      const validStatus = ['Presente', 'Ausente', 'Tardanza', 'Justificado'].includes(recordData.status) 
+                          ? recordData.status 
+                          : 'Ausente';
+
+      const recordWithValidStatus = { 
+        ...recordData, 
+        status: validStatus as MainAttendanceRecord['status'] 
+      };
+
+      // Usar el servicio con verificación de permisos
+      const newRecord = await addAttendanceRecordWithPermissions(recordWithValidStatus, currentTeacherId);
+      
+      if (newRecord) {
+        // Actualizar el store con el nuevo registro
+        if (!this.records) {
+          this.records = [];
+        }
+        this.records.push(newRecord);
+        
+        // Refrescar documentos de asistencia si es necesario
+        if (typeof this.fetchAttendanceDocuments === 'function') {
+          await this.fetchAttendanceDocuments();
+        }
+      }
+      
+      return newRecord;
+    } catch (err: any) {
+      this.error = `Error al agregar registro: ${err.message || String(err)}`;
+      console.error('Error en addRecordWithPermissions:', err);
+      return null;
+    } finally {
+      this.isLoading = false;
+    }
+  },
+
+  /**
+   * Versión mejorada de updateRecord que verifica permisos de maestro
+   */
+  async updateRecordWithPermissions(
+    this: EnhancedRecordActionsThisContext,
+    recordId: string,
+    updates: Partial<MainAttendanceRecord>,
+    classId: string,
+    teacherId?: string
+  ): Promise<boolean> {
+    this.isLoading = true;
+    this.error = null;
+    
+    try {
+      // Usar el teacherId proporcionado o el del contexto actual
+      const currentTeacherId = teacherId || this.currentTeacherId;
+      
+      if (!currentTeacherId) {
+        throw new Error('No se puede identificar el maestro actual');
+      }
+      
+      // Usar el servicio con verificación de permisos
+      await updateAttendanceRecordWithPermissions(recordId, updates, currentTeacherId, classId);
+      
+      // Actualizar el record en el store local
+      if (this.records) {
+        const index = this.records.findIndex(r => r.id === recordId);
+        if (index !== -1) {
+          this.records[index] = { ...this.records[index], ...updates };
+        }
+      }
+      
+      // Refrescar documentos de asistencia si es necesario
+      if (typeof this.fetchAttendanceDocuments === 'function') {
+        await this.fetchAttendanceDocuments();
+      }
+      
+      return true;
+    } catch (err: any) {
+      this.error = `Error al actualizar registro: ${err.message || String(err)}`;
+      console.error('Error en updateRecordWithPermissions:', err);
+      return false;
+    } finally {
+      this.isLoading = false;
+    }
+  },
+
+  /**
+   * Verifica si el maestro actual puede agregar observaciones
+   */
+  async canAddObservation(
+    this: EnhancedRecordActionsThisContext,
+    classId: string,
+    teacherId?: string
+  ): Promise<boolean> {
+    try {
+      const currentTeacherId = teacherId || this.currentTeacherId;
+      
+      if (!currentTeacherId) {
+        return false;
+      }
+      
+      return await canAddObservationWithPermissions(classId, currentTeacherId);
+    } catch (err) {
+      console.error('Error checking observation permissions:', err);
+      return false;
+    }
+  }
 };

@@ -131,8 +131,8 @@ import { es } from 'date-fns/locale';
 import { useAttendanceStore } from '../store/attendance';
 import type { ClassObservation } from '../types/attendance';
 import * as _ from 'lodash';
-import { useAuthStore } from '../../../stores/auth'; // Added to fetch teacherId
-import { useTeachersStore } from '../../Teachers/store/teachers'; // Import teachers store
+import { useAuthStore } from '../../../stores/auth';
+import { useTeachersStore } from '../../Teachers/store/teachers';
 
 interface Timestamp {
   seconds: number;
@@ -147,8 +147,8 @@ const props = defineProps<{
 const emit = defineEmits(['request-edit']);
 
 const attendanceStore = useAttendanceStore();
-const authStore = useAuthStore(); // Instantiate auth store
-const teachersStore = useTeachersStore(); // Instantiate teachers store
+const authStore = useAuthStore();
+const teachersStore = useTeachersStore();
 
 // Function to get teacher name from teacher ID
 const getTeacherName = (teacherId: string): string => {
@@ -320,7 +320,12 @@ const processTextForDisplay = (text: string): { __html: string } => {
 };
 
 const getObservationDisplayText = (observation: ClassObservation): string => {
-  // Nuevo formato con content.text
+  // Prioridad: usar el campo text directamente
+  if (observation.text && typeof observation.text === 'string') {
+    return observation.text;
+  }
+  
+  // Fallback: usar content.text
   if (observation.content && observation.content.text) {
     return observation.content.text;
   }
@@ -329,9 +334,7 @@ const getObservationDisplayText = (observation: ClassObservation): string => {
   if ((observation as any).formattedText && typeof (observation as any).formattedText === 'string') {
     return (observation as any).formattedText;
   }
-  if (typeof (observation as any).text === 'string') {
-    return (observation as any).text;
-  }
+  
   if (typeof (observation as any).text === 'object' && (observation as any).text !== null) {
     const textObj = (observation as any).text as any;
     if (textObj.formattedText && typeof textObj.formattedText === 'string') {
@@ -343,7 +346,7 @@ const getObservationDisplayText = (observation: ClassObservation): string => {
   }
   
   console.log('[ObservationsHistory] No se pudo extraer texto de la observación:', observation);
-  return '';
+  return 'Sin contenido de texto';
 };
 
 const openImageViewer = (imageSrc: string) => {
@@ -362,6 +365,102 @@ const editObservation = (observation: ClassObservation) => {
   console.log("[ObservationsHistory] Requesting edit for:", JSON.parse(JSON.stringify(observation)));
   emit('request-edit', JSON.parse(JSON.stringify(observation)));
 };
+
+// Function to delete an observation
+const deleteObservation = async (observation: ClassObservation) => {
+  if (!observation.id) {
+    console.error('No observation ID provided for deletion');
+    return;
+  }
+  
+  const confirmDelete = confirm('¿Está seguro de que desea eliminar esta observación? Esta acción no se puede deshacer.');
+  if (!confirmDelete) return;
+  
+  try {
+    loading.value = true;
+    // Call store method to delete observation
+    await attendanceStore.deleteObservation(observation.id);
+    
+    // Remove from local array
+    localObservations.value = localObservations.value.filter(obs => obs.id !== observation.id);
+    
+    console.log('Observation deleted successfully');
+  } catch (error) {
+    console.error('Error deleting observation:', error);
+    alert('Error al eliminar la observación: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Function to download observations as PDF
+const downloadObservationsPDF = async () => {
+  try {
+    loading.value = true;
+    
+    // Dynamic import of jsPDF and autoTable
+    const { jsPDF } = await import('jspdf');
+    await import('jspdf-autotable');
+    
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(16);
+    doc.text('Historial de Observaciones', 14, 20);
+    
+    // Add subtitle with class and date info
+    doc.setFontSize(12);
+    let subtitle = `Clase: ${props.classId}`;
+    if (props.date) {
+      subtitle += ` | Fecha: ${formatDate(props.date)}`;
+    }
+    doc.text(subtitle, 14, 30);
+    
+    // Prepare data for table
+    const tableData = sortedObservations.value.map(obs => [
+      formatDateTime(obs.createdAt),
+      getTeacherName(obs.authorId || obs.author || ''),
+      getObservationDisplayText(obs).substring(0, 200) + (getObservationDisplayText(obs).length > 200 ? '...' : ''),
+      obs.type || 'General',
+      obs.priority || 'Media'
+    ]);
+    
+    // Create table
+    (doc as any).autoTable({
+      head: [['Fecha', 'Autor', 'Observación', 'Tipo', 'Prioridad']],
+      body: tableData,
+      startY: 40,
+      styles: {
+        fontSize: 9,
+        cellPadding: 3
+      },
+      columnStyles: {
+        0: { cellWidth: 30 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 80 },
+        3: { cellWidth: 25 },
+        4: { cellWidth: 25 }
+      }
+    });
+    
+    // Save the PDF
+    const fileName = `observaciones_${props.classId}_${props.date || 'todas'}_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(fileName);
+    
+    console.log('PDF downloaded successfully');
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    alert('Error al generar el PDF: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Expose functions for parent component
+defineExpose({
+  fetchObservations,
+  downloadObservationsPDF
+});
 
 watch(() => [props.classId, props.date, authStore.user?.uid], fetchObservations, { immediate: true, deep: true });
 

@@ -4,6 +4,31 @@ import type { WorkspaceElement } from '../../Workspace/types/workspace'
 
 
 /**
+ * Roles de maestros en una clase
+ */
+export enum TeacherRole {
+  LEAD = 'lead',        // Maestro Encargado (principal)
+  ASSISTANT = 'assistant' // Maestro Asistente
+}
+
+/**
+ * Información de un maestro asignado a una clase
+ */
+export interface ClassTeacher {
+  teacherId: string;
+  role: TeacherRole;
+  assignedAt: Date;
+  assignedBy: string; // ID del usuario que asignó al maestro
+  permissions: {
+    canTakeAttendance: boolean;
+    canAddObservations: boolean;
+    canViewAttendanceHistory: boolean;
+    canEditClass: boolean;        // Solo para LEAD
+    canManageTeachers: boolean;   // Solo para LEAD
+  };
+}
+
+/**
  * Tipo principal que usaremos en el store.
  * Representa la información normalizada de una clase.
  */
@@ -13,7 +38,8 @@ export interface ClassData {
   description?: string;
   level?: string;
   instrument?: string;
-  teacherId?: string;
+  teacherId?: string; // Mantener por compatibilidad (será el lead teacher)
+  teachers?: ClassTeacher[]; // Nueva estructura de maestros
   studentIds?: string[];
   // El horario se representa siempre como un objeto con un arreglo de sesiones.
   schedule?: {
@@ -108,6 +134,49 @@ export interface ClassAttendance {
   attendance: AttendanceRecord[];
   createdAt: string;
   updatedAt?: string;
+}
+
+/**
+ * Representación extendida de una clase para maestros asistentes
+ * Incluye información sobre su rol y permisos específicos
+ */
+export interface TeacherClassView extends ClassData {
+  myRole?: TeacherRole;
+  myPermissions?: ClassTeacher['permissions'];
+  leadTeacher?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  assistantTeachers?: {
+    id: string;
+    name: string;
+    email: string;
+    assignedAt: Date;
+  }[];
+}
+
+/**
+ * Datos para invitar un maestro asistente a una clase
+ */
+export interface InviteAssistantData {
+  classId: string;
+  teacherId: string;
+  permissions: {
+    canTakeAttendance: boolean;
+    canAddObservations: boolean;
+    canViewAttendanceHistory: boolean;
+  };
+  invitedBy: string;
+}
+
+/**
+ * Respuesta a una invitación de maestro asistente
+ */
+export interface AssistantInvitationResponse {
+  invitationId: string;
+  accepted: boolean;
+  respondedAt: Date;
 }
 
 /* Tipos para operaciones CRUD */

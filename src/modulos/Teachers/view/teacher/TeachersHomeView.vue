@@ -42,6 +42,7 @@ const selectedClassId = ref('');
 const showForm = ref(false);
 const showStudentManager = ref(false);
 const isEditing = ref(false);
+const classesViewMode = ref('card'); // 'card' | 'list' - Control the view mode for TeacherClassesCard
 
 // Mantener el ID del maestro actual
 const currentTeacherId = ref('');
@@ -298,33 +299,18 @@ const handleDeleteClass = async (classId) => {
       } else if (typeof classesStore.deleteClass === 'function') {
         // Alternative if a deleteClass method exists
         await classesStore.deleteClass(classId);
-      } else if (typeof classesStore.updateClass === 'function') {
-        // Fallback: Update with a status property that might exist in your data model
-        // For example, many schemas use 'status' or 'isDeleted' instead of 'active'
-        await classesStore.updateClass({
-          id: classId,
-          status: 'inactive' // Using a more common property name
-        });
-      } else {
-        // Fallback if no delete method exists
-        console.error('No method available to delete or update classes');
-        throw new Error('No method available to delete or update classes');
       }
       
       toast({
-        title: "Clase Eliminada",
-        description: "La clase ha sido eliminada exitosamente."
+        title: 'Clase eliminada',
+        description: 'La clase ha sido eliminada exitosamente'
       });
-      
-      if (selectedClassId.value === classId) {
-        selectedClassId.value = '';
-      }
     } catch (error) {
       console.error('Error al eliminar la clase:', error);
       toast({
-        title: "Error",
-        description: "No se pudo eliminar la clase. Intente nuevamente.",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Hubo un problema al eliminar la clase',
+        variant: 'destructive'
       });
     }
   }
@@ -333,6 +319,23 @@ const handleDeleteClass = async (classId) => {
 const handleManageStudents = (classId) => {
   selectedClassId.value = classId;
   showStudentManager.value = true;
+};
+
+// Nuevos manejadores para tomar asistencia y ver historial
+const handleTakeAttendance = (classId) => {
+  // Navegar a la página de tomar asistencia para la clase específica
+  router.push({ 
+    name: 'TeacherAttendanceClass', 
+    params: { id: classId } 
+  });
+};
+
+const handleViewHistory = (classId) => {
+  // Navegar a la página de historial de observaciones para la clase específica
+  router.push({ 
+    name: 'ClassObservations', 
+    params: { id: classId } 
+  });
 };
 
 const handleSaveClass = async (classData) => {
@@ -781,33 +784,68 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
         <!-- <StudentAnalytics />  -->
         <TopAbsenteesByRange :limit="10" class="mt-8" />
       </div>
-      
-      <!-- Vista de listado de clases -->
+        <!-- Vista de listado de clases -->
       <div v-if="activeTab === 'classes'" class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 md:p-4">
         <h2 class="text-base md:text-lg font-semibold mb-3 md:mb-4 flex justify-between items-center">
           <span>Mis Clases</span>
-          <button 
-            @click="handleAddClass"
-            class="flex items-center gap-1 text-xs md:text-sm bg-blue-600 text-white px-2 md:px-3 py-1 rounded-md hover:bg-blue-700 transition-colors"
-          >
-            <PlusIcon class="w-3 h-3 md:w-4 md:h-4" />
-            Nueva Clase
-          </button>
+          <div class="flex items-center gap-2">
+            <!-- Toggle para cambiar entre vista de tarjeta y lista -->
+            <div class="flex bg-gray-100 dark:bg-gray-700 rounded-md p-0.5">
+              <button 
+                @click="classesViewMode = 'card'" 
+                :class="[
+                  'px-2 py-1 text-xs rounded-md transition-colors',
+                  classesViewMode === 'card' 
+                    ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm' 
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                ]"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              </button>
+              <button 
+                @click="classesViewMode = 'list'" 
+                :class="[
+                  'px-2 py-1 text-xs rounded-md transition-colors',
+                  classesViewMode === 'list' 
+                    ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm' 
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                ]"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
+            
+            <button
+              @click="handleAddClass"
+              class="flex items-center gap-1 text-xs md:text-sm bg-blue-600 text-white px-2 md:px-3 py-1 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              <PlusIcon class="w-3 h-3 md:w-4 md:h-4" />
+              Nueva Clase
+            </button>
+          </div>
         </h2>
         
-        <!-- Grid de Card de clases -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+        <!-- Grid/List de clases (responsivo según el modo de vista) -->
+        <div :class="[
+          classesViewMode === 'card' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4' : 'space-y-2'
+        ]">
           <template v-if="sortedTeacherClasses.length">
             <TeacherClassesCard
               v-for="classItem in sortedTeacherClasses"
               :key="classItem.id"
               :classData="classItem"
+              :viewMode="classesViewMode"
               @view="handleViewClass"
               @edit="handleEditClass"
               @delete="handleDeleteClass"
               @manage-students="handleManageStudents"
-            />
-          </template>
+              @take-attendance="handleTakeAttendance"
+              @view-history="handleViewHistory"
+            />          </template>
           <div v-else class="col-span-full text-center text-gray-500 dark:text-gray-400 py-8">
             No tienes clases asignadas todavía.
           </div>

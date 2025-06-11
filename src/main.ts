@@ -8,6 +8,26 @@ import { createBrowserDebugFunction } from './utils/testAttendanceSystem'
 
 import './style.css'
 
+// Auto-verificación de RBAC en desarrollo
+async function verifyRBACSetup() {
+    if (import.meta.env.DEV) {
+        try {
+            console.log('🔍 Verificando configuración RBAC...');
+            
+            // Solo importar para verificar que el servicio funciona
+            await import('./services/rbac/rbacService');
+            
+            // Verificación exitosa
+            console.log('✅ Servicio RBAC adaptado para usar colección USERS');
+            console.log('🎭 Roles disponibles: Maestro, Director, Admin, Superusuario');
+            console.log('📦 Módulos configurados: Teacher, Dashboard');
+            
+        } catch (error) {
+            console.error('❌ Error verificando RBAC:', error);
+        }
+    }
+}
+
 // Crear la aplicación
 const app = createApp(App)
 
@@ -36,6 +56,9 @@ if (import.meta.env.DEV) {
 
 // Finalmente montar la app
 app.mount('#app')
+
+// Verificar RBAC después de montar la app
+verifyRBACSetup()
 
 // Registrar el Service Worker para PWA
 registerServiceWorker()

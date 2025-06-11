@@ -1,0 +1,958 @@
+// src/router/index.ts
+import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+import { rbacGuard } from './guards/rbacGuard'
+import { instrumentsRoutes } from '../modulos/Instruments/router';
+import studentRoutes from '../modulos/Students/router';
+import montajeRoutes from '../modulos/Montaje/router';
+import { superusuarioRoutes } from '../modulos/Superusuario/router';
+
+const routes: Array<RouteRecordRaw> = [
+  // Rutas públicas (sin requerir autenticación)
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('../views/auth/LoginView.vue'),
+    meta: { public: true }
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('../views/auth/RegisterView.vue'),
+    meta: { public: true }
+  },
+  
+  // Rutas para edición de maestros
+  {
+    path: '/teachers/:id/edit-enrollment',
+    name: 'TeacherEditEnrollment',
+    component: () => import('../modulos/Teachers/view/TeacherEditEnrollmentView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'teachers',
+      permission: 'edit_enrollment'
+    }
+  },
+  {
+    path: '/teachers/:id/edit',
+    name: 'TeacherEdit',
+    component: () => import('../modulos/Teachers/view/TeacherEditView.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'teachers',
+      permission: 'edit'
+    }
+  },
+  
+  // Rutas principales para maestros
+  {
+    path: '/teachers',
+    name: 'Teachers',
+    component: () => import('../modulos/Teachers/view/admin/TeacherAdminView.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'teachers',
+      permission: 'view_all'
+    }
+  },
+  {
+    path: '/teachers/:id',
+    name: 'TeacherDetail',
+    component: () => import('../modulos/Teachers/view/teacher/TeacherProfileView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'teachers',
+      permission: 'view_detail'
+    }
+  },
+  
+  // Rutas específicas para maestros
+  {
+    path: '/teacher',
+    name: 'TeacherHome',
+    component: () => import('../modulos/Teachers/view/TeacherDashboardPage.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'teacher_dashboard',
+      permission: 'view'
+    }
+  },
+  {
+    path: '/teacher/attendance',
+    redirect: '/teacher/attendance/calendar',
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'attendance',
+      permission: 'teacher_view'
+    }
+  },
+  {
+    path: '/teacher/attendance/calendar',
+    name: 'TeacherAttendanceCalendar',
+    component: () => import('../views/AttendanceView.vue'),
+    props: { mode: 'calendar' },
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'attendance',
+      permission: 'teacher_calendar'
+    }
+  },
+  {
+    path: '/teacher/attendance/:date?/:classId?',
+    name: 'TeacherAttendanceDetail',
+    component: () => import('../views/AttendanceView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'attendance',
+      permission: 'teacher_detail'
+    }
+  },
+  {
+    path: '/teacher/schedule',
+    name: 'TeacherSchedule',
+    component: () => import('../modulos/Schedules/view/TeacherScheduleView.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'schedule',
+      permission: 'teacher_view'
+    }
+  },
+  {
+    path: '/teacher/profile',
+    name: 'TeacherProfile',
+    component: () => import('../modulos/Teachers/view/teacher/TeacherProfileView.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'teacher_profile',
+      permission: 'view'
+    }
+  },
+  {
+    path: '/teacher/class/:id',
+    name: 'TeacherClassDetail',
+    component: () => import('../modulos/Teachers/view/teacher/ClassDetailView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'classes',
+      permission: 'teacher_view_detail'
+    }
+  },
+  {
+    path: '/teacher/classes',
+    name: 'TeacherClasses',
+    component: () => import('../modulos/Classes/components/TeacherClassesDashboard.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'classes',
+      permission: 'teacher_view'
+    }
+  },
+  
+  // Rutas de asistencia
+  {
+    path: '/attendance/:date/:classId',
+    name: 'attendance',
+    component: () => import('../modulos/Attendance/components/AttendanceList.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'attendance',
+      permission: 'view_detail'
+    }
+  },
+  {
+    path: '/attendance/:date(\\d{8})',
+    name: 'AttendanceActivities',
+    component: () => import('../views/AttendanceActivitiesView.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'attendance',
+      permission: 'view_activities'
+    }
+  },
+  {
+    path: '/attendance/:date(\\d{8})/:classId',
+    name: 'AttendanceDetail',
+    component: () => import('../views/AttendanceView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'attendance',
+      permission: 'view_detail'
+    }
+  },
+  {
+    path: '/attendance/calendar',
+    name: 'AttendanceCalendar',
+    component: () => import('../views/ClassSelectionView.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'attendance',
+      permission: 'calendar'
+    }
+  },
+  {
+    path: '/attendance/informe',
+    name: 'AttendanceReport',
+    component: () => import('../components/TeacherInformeAttendance.vue'),
+    props: route => ({ teacherId: route.query.teacherId }),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'attendance',
+      permission: 'report'
+    }
+  },
+  {
+    path: '/teacher/attendance/informe',
+    name: 'TeacherInformeAttendance',
+    component: () => import('../components/TeacherInformeAttendance.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'attendance',
+      permission: 'teacher_report'
+    }
+  },
+
+  // Rutas administrativas
+  {
+    path: '/dashboard',
+    name: 'AdminHomeView',
+    component: () => import('../modulos/Teachers/view/admin/AdminHomeView.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'dashboard',
+      permission: 'view'
+    }
+  },
+  {
+    path: '/admin/reporteSemanal',
+    name: 'AdminReporteSemanal',
+    component: () => import('../modulos/Teachers/view/admin/AdminReporteSemanal.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'reports',
+      permission: 'admin_view'
+    }
+  },
+  {
+    path: '/monitoring',
+    name: 'DailyMonitoring',
+    component: () => import('../views/DailyMonitoringView.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'monitoring',
+      permission: 'view'
+    }
+  },
+  {
+    path: '/analytics',
+    name: 'Analytics',
+    component: () => import('../modulos/Analytics/view/AnalyticsDashboard.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'analytics',
+      permission: 'view'
+    }
+  },
+  
+  // Rutas de estudiantes
+  {
+    path: '/students',
+    name: 'Students',
+    component: () => import('../views/StudentsView.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'students',
+      permission: 'view_all'
+    }
+  },
+  {
+    path: '/students/new',
+    name: 'NewStudent',
+    component: () => import('../modulos/Students/view/NewStudentView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'students',
+      permission: 'create'
+    }
+  },
+  {
+    path: '/students/:studentId',
+    name: 'StudentProfile',
+    component: () => import('../modulos/Students/view/StudentProfileView.vue'),
+    props: true,
+    meta: {
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'students',
+      permission: 'view_detail'
+    }
+  },
+  {
+    path: '/students/:studentId/instrumento/:instrumentId',
+    name: 'StudentInstrumentProfile',
+    component: () => import('../modulos/Students/view/StudentInstrumentProfile.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'students',
+      permission: 'view_instrument'
+    }
+  },
+  
+  // Rutas de clases
+  {
+    path: '/classes',
+    name: 'Classes',
+    component: () => import('../views/ClassesView.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'classes',
+      permission: 'view_all'
+    }
+  },
+  {
+    path: '/classes/:id',
+    name: 'ClassDetail',
+    component: () => import('../modulos/Classes/view/ClassDetailView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'classes',
+      permission: 'view_detail'
+    }
+  },
+  {
+    path: '/classes/:id/edit',
+    name: 'EditClass',
+    component: () => import('../modulos/Classes/view/ClassDetailView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'classes',
+      permission: 'edit'
+    }
+  },
+  {
+    path: '/student-schedule-demo',
+    name: 'StudentScheduleDemo',
+    component: () => import('../modulos/Classes/components/StudentScheduleDemo.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'classes',
+      permission: 'view_schedule'
+    }
+  },
+  
+  // Rutas de contenidos y configuración
+  {
+    path: '/contents',
+    name: 'Contents',
+    component: () => import('../views/ContentsView.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'contents',
+      permission: 'view'
+    }
+  },
+  {
+    path: '/schedule',
+    name: 'Schedule',
+    component: () => import('../modulos/Schedules/view/ScheduleView.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'schedule',
+      permission: 'admin_view'
+    }
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../views/ProfileView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'profile',
+      permission: 'view'
+    }
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('../views/SettingsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'settings',
+      permission: 'view'
+    }
+  },
+
+  // Incluir rutas de módulos
+  ...instrumentsRoutes,
+  ...studentRoutes,
+  ...montajeRoutes,
+  ...superusuarioRoutes,
+
+  // Ruta inicial: redirige según el rol
+  {
+    path: '/',
+    name: 'home',
+    redirect: (to) => {
+      const authStore = useAuthStore()
+      if (!authStore.isAuthenticated) {
+        return '/login'
+      }
+      
+      // Redirección basada en rol (simplificado)
+      const userRole = authStore.currentUser?.role
+      switch (userRole) {
+        case 'Maestro':
+          return '/teacher'
+        case 'Director':
+        case 'Admin':
+          return '/dashboard'
+        case 'Superusuario':
+          return '/superusuario'
+        default:
+          return '/dashboard'
+      }
+    },
+    meta: { requiresAuth: true }
+  },
+
+  // Ruta de fallback
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('../views/NotFoundView.vue')
+  }
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes
+})
+
+// Guard de autenticación y RBAC
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+  
+  // Permitir rutas públicas
+  if (to.meta.public) {
+    return next()
+  }
+  
+  // Verificar autenticación
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return next('/login')
+  }
+  
+  // Evitar redirección infinita
+  if (to.path === '/login' && authStore.isAuthenticated) {
+    return next('/')
+  }
+  
+  // Verificación RBAC para rutas que lo requieran
+  if (to.meta.requiresRBAC && to.meta.moduleKey && to.meta.permission) {
+    try {
+      const hasAccess = await rbacGuard(to, from)
+      if (hasAccess === true) {
+        return next()
+      } else if (typeof hasAccess === 'object') {
+        return next(hasAccess) // Redirección
+      } else {
+        // Sin acceso, redirigir al dashboard
+        return next('/dashboard')
+      }
+    } catch (error) {
+      console.error('Error en RBAC guard:', error)
+      return next('/dashboard')
+    }
+  }
+  
+  // Verificación legacy de allowedRoles (para rutas que aún no se han migrado)
+  if (to.meta.allowedRoles && Array.isArray(to.meta.allowedRoles)) {
+    const userRole = authStore.currentUser?.role
+    if (!userRole || !to.meta.allowedRoles.includes(userRole)) {
+      return next('/dashboard')
+    }
+  }
+  
+  next()
+})
+
+export default router
+    }
+  },  {
+    path: '/teachers/:id',
+    name: 'TeacherDetail',
+    component: () => import('../modulos/Teachers/view/teacher/TeacherProfileView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'teachers',
+      permission: 'view_detail'
+    }
+  },  // Rutas específicas para maestros
+  {
+    path: '/teacher',
+    name: 'TeacherHome',
+    component: () => import('../modulos/Teachers/view/TeacherDashboardPage.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'teacher_dashboard',
+      permission: 'view'
+    }
+  },  {
+    path: '/teacher/attendance',
+    redirect: '/teacher/attendance/calendar',
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'attendance',
+      permission: 'teacher_view'
+    }
+  },  {
+    path: '/teacher/attendance/calendar',
+    name: 'TeacherAttendanceCalendar',
+    component: () => import('../views/AttendanceView.vue'),
+    props: { mode: 'calendar' },
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'attendance',
+      permission: 'teacher_calendar'
+    }
+  },  {
+    path: '/teacher/attendance/:date?/:classId?',
+    name: 'TeacherAttendanceDetail',
+    component: () => import('../views/AttendanceView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'attendance',
+      permission: 'teacher_detail'
+    }
+  },  {
+    path: '/teacher/schedule',
+    name: 'TeacherSchedule',
+    component: () => import('../modulos/Schedules/view/TeacherScheduleView.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'schedule',
+      permission: 'teacher_view'
+    }
+  },  {
+    path: '/teacher/profile',
+    name: 'TeacherProfile',
+    component: () => import('../modulos/Teachers/view/teacher/TeacherProfileView.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'teacher_profile',
+      permission: 'view'
+    }
+  },
+  // {
+  //   path: '/teacher-attendance',
+  //   name: 'teacher-attendance',
+  //   component: () => import('../views/TeacherAttendanceView.vue'),
+  //   meta: {
+  //     requiresAuth: true,
+  //     requiresTeacher: true
+  //   }
+  // },  {
+    path: '/attendance/:date/:classId',
+    name: 'attendance',
+      component: () => import('../modulos/Attendance/components/AttendanceList.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,      moduleKey: 'attendance',
+      permission: 'view_detail'
+    }
+  },
+  {
+    path: '/teacher/class/:id',
+    name: 'TeacherClassDetail',
+    component: () => import('../modulos/Teachers/view/teacher/ClassDetailView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'classes',
+      permission: 'teacher_view_detail'
+    }
+  },  {
+    path: '/admin/reporteSemanal',
+    name: 'AdminReporteSemanal',
+    component: () => import('../modulos/Teachers/view/admin/AdminReporteSemanal.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'reports',
+      permission: 'admin_view'
+    }
+  },
+  // Ruta para la lista dinámica de actividades según la fecha (ej: /attendance/20250318)
+  {
+    path: '/attendance/:date(\\d{8})',
+    name: 'AttendanceActivities',
+    component: () => import('../views/AttendanceActivitiesView.vue'),
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Maestro', 'Director', 'Admin']
+    }
+  },
+  // Ruta para el detalle de una actividad (ej: /attendance/20250318/123)
+  {
+    path: '/attendance/:date(\\d{8})/:classId',
+    name: 'AttendanceDetail',
+    component: () => import('../views/AttendanceView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Maestro', 'Director', 'Admin']
+    }  },
+
+  // Rutas para directores y administradores
+  {
+    path: '/dashboard',
+    name: 'AdminHomeView',
+    component: () => import('../modulos/Teachers/view/admin/AdminHomeView.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'dashboard',
+      permission: 'view'
+    }
+  },
+  {
+    path: '/monitoring',
+    name: 'DailyMonitoring',
+    component: () => import('../views/DailyMonitoringView.vue'),
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin']
+    }
+  },
+  {
+    path: '/students',
+    name: 'Students',
+    component: () => import('../views/StudentsView.vue'),
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin', 'Maestro']
+    }
+  },
+  {
+    path: '/analytics',
+    name: 'Analytics',
+    component: () => import('../modulos/Analytics/view/AnalyticsDashboard.vue'),
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin']
+    }
+  },  {    path: '/classes',
+    name: 'Classes',
+    component: () => import('../views/ClassesView.vue'),
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin']
+    }
+  },
+  // Dashboard específico para maestros
+  {
+    path: '/teacher/classes',
+    name: 'TeacherClasses',
+    component: () => import('../modulos/Classes/components/TeacherClassesDashboard.vue'),
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Maestro']
+    }
+  },{
+    path: '/classes/:id',
+    name: 'ClassDetail',
+    component: () => import('../modulos/Classes/view/ClassDetailView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin', 'Maestro']
+    }
+  },  {
+    path: '/classes/:id/edit',
+    name: 'EditClass',
+    component: () => import('../modulos/Classes/view/ClassDetailView.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin']
+    }
+  },
+  {
+    path: '/student-schedule-demo',
+    name: 'StudentScheduleDemo',
+    component: () => import('../modulos/Classes/components/StudentScheduleDemo.vue'),
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin', 'Maestro']
+    }
+  },
+  {
+    path: '/contents',
+    name: 'Contents',
+    component: () => import('../views/ContentsView.vue'),
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin']
+    }
+  },
+  {
+    path: '/schedule',
+    name: 'Schedule',
+    component: () => import('../modulos/Schedules/view/ScheduleView.vue'),
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin']
+    }
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../views/ProfileView.vue'),
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin']
+    }
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('../views/SettingsView.vue'),
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/students/new',
+    name: 'NewStudent',
+    component: () => import('../modulos/Students/view/NewStudentView.vue'),
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin', 'Maestro']
+    }
+  },
+  // ruta para /students/:studentId/
+  {
+    path: '/students/:studentId',
+    name: 'StudentProfile',
+    component: () => import('../modulos/Students/view/StudentProfileView.vue'),
+    props: true,
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['Director', 'Admin', 'Maestro']
+    }
+  },
+
+  {
+    path: '/students/:studentId/instrumento/:instrumentId',
+    name: 'StudentInstrumentProfile',
+    component: () => import('../modulos/Students/view/StudentInstrumentProfile.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['Director', 'Admin', 'Maestro'] }
+  },
+  {
+    path: '/attendance/calendar',
+    name: 'AttendanceCalendar',
+    component: () => import('../views/ClassSelectionView.vue')
+  },
+  {
+    path: '/attendance/informe',
+    name: 'AttendanceReport',
+    component: () => import('../components/TeacherInformeAttendance.vue'),
+    props: route => ({ teacherId: route.query.teacherId }),
+    meta: { 
+      requiresAuth: true, 
+      allowedRoles: ['Director', 'Admin', 'Maestro'] 
+    }
+  },
+  {
+    path: '/teacher/attendance/informe',
+    name: 'TeacherInformeAttendance',
+    component: () => import('../components/TeacherInformeAttendance.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['Maestro'] }
+  },  ...instrumentsRoutes,
+  ...studentRoutes,
+  ...montajeRoutes,
+  ...superusuarioRoutes,
+  // ...attendanceRoutes,  // Ruta inicial: redirige según el rol
+  {
+    path: '/',
+    name: 'home',
+    redirect: (to) => {
+      const authStore = useAuthStore()
+      // Evitar bucles de redirección
+      if (to.redirectedFrom?.path === '/') {
+        return '/dashboard' // Fallback en lugar de false
+      }
+      
+      if (authStore.isSuperusuario) {
+        return '/superusuario/dashboard'
+      } else if (authStore.isTeacher) {
+        return '/teacher'
+      } else {
+        return '/dashboard'
+      }
+    },
+    meta: { requiresAuth: true }
+  },
+
+  // Ruta 404: redirige a home
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/'
+  }
+]
+
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes
+})
+
+// Guardia de rutas
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+  const isPublicRoute = to.meta.public
+
+  try {
+    // Si el usuario aún no está autenticado, se verifica su estado
+    if (!authStore.isLoggedIn) {
+      await authStore.checkAuth()
+    }
+    
+    const user = authStore.user
+    const userRole = user?.role
+    const userStatus = user?.status
+    const allowedRoles = to.meta.allowedRoles as string[] | undefined
+    const requiresRBAC = to.meta.requiresRBAC as boolean
+
+    // Si la ruta requiere autenticación y el usuario no está logueado, redirige a Login
+    if (!isPublicRoute && !authStore.isLoggedIn) {
+      return next({ 
+        name: 'Login',
+        query: { redirect: to.fullPath }
+      })
+    }
+
+    // Si la ruta es pública pero el usuario ya está autenticado y aprobado, redirige a su área
+    if (isPublicRoute && authStore.isLoggedIn && userStatus === 'aprobado') {
+      // Evitar bucles de redirección al área principal del usuario
+      const comingFromSameArea = (
+        (authStore.isSuperusuario && from.path?.startsWith('/superusuario')) ||
+        (authStore.isTeacher && from.path?.startsWith('/teacher')) ||
+        (!authStore.isSuperusuario && !authStore.isTeacher && from.path?.startsWith('/dashboard'))
+      )
+      
+      if (!comingFromSameArea) {
+        if (authStore.isSuperusuario) {
+          return next('/superusuario/dashboard')
+        } else if (authStore.isTeacher) {
+          return next('/teacher')
+        } else {
+          return next('/dashboard')
+        }
+      }
+    }
+
+    // Si la ruta requiere verificación RBAC, usar el nuevo sistema
+    if (requiresRBAC) {
+      return await rbacGuard(to, from, next)
+    }
+
+    // Si la ruta tiene restricciones de rol tradicionales y el usuario no cumple, redirige según su rol
+    if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
+      console.warn(`⚠️ Acceso denegado: rol ${userRole} no tiene permiso para acceder a ${to.path}`)
+      
+      // Evitar bucles de redirección al denegar acceso
+      const comingFromSameArea = (
+        (authStore.isSuperusuario && from.path?.startsWith('/superusuario')) ||
+        (authStore.isTeacher && from.path?.startsWith('/teacher')) ||
+        (!authStore.isSuperusuario && !authStore.isTeacher && from.path?.startsWith('/dashboard'))
+      )
+      
+      if (!comingFromSameArea) {
+        if (authStore.isSuperusuario) {
+          return next('/superusuario/dashboard')
+        } else if (authStore.isTeacher) {
+          return next('/teacher')
+        } else {
+          return next('/dashboard')
+        }
+      } else {
+        // Si ya está en su área, permitir acceso a rutas básicas
+        return next('/') 
+      }
+    }
+
+    next()
+  } catch (error) {
+    console.error('❌ Error en la navegación:', error)
+    next({ name: 'Login' })
+  }
+})
+
+// Manejador de errores en el enrutamiento (para módulos dinámicos)
+router.onError((error) => {
+  console.error('❌ Error de enrutamiento:', error)
+  if (error.message.includes('Failed to fetch dynamically imported module')) {
+    console.warn('⚠️ Error al cargar módulo dinámico. Probando una única recarga...')
+    const reloadCount = parseInt(localStorage.getItem('route_reload_count') || '0')
+    if (reloadCount < 1) {
+      localStorage.setItem('route_reload_count', (reloadCount + 1).toString())
+      window.location.reload()
+    } else {
+      console.error('❌ Múltiples errores al cargar módulos. Deteniendo ciclo de recargas.')
+      localStorage.removeItem('route_reload_count')
+    }
+  }
+})
+
+export default router

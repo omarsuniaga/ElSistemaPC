@@ -622,46 +622,27 @@ const saveObservation = async () => {
     // Use prepareObservationForSave from useRichEditor
     const observationPayload = prepareObservationForSave(); 
     
-    const finalObservationData = {
-      ...observationPayload, // This includes text, formattedText, and imageUrls
+    // Preparar datos base de la observación compatible con la estructura de Firestore
+    const baseObservationData = {
       classId: props.classId,
-      date: props.attendanceDate, // This is the date of the attendance/class
-      author: teacherName, // Now using teacher name instead of email
-      studentId: props.classObservationMode ? null : props.studentId, // Null if class observation
-      // createdAt will be set by Firestore server timestamp or service
-      // taggedStudents are already part of observationPayload if handled by useRichEditor's prepareObservationForSave
+      date: props.attendanceDate, // Required field YYYY-MM-DD
+      fecha: props.attendanceDate, // For compatibility
+      authorId: currentUserId || '', // Required field
+      author: currentUserId || '', // Using authorId as author (as per Firestore structure)
+      text: observationPayload.text || newObservation.value.trim(), // Required field
+      content: {
+        text: observationPayload.text || newObservation.value.trim(),
+        taggedStudents: observationPayload.taggedStudents || taggedStudents.value || []
+      },
+      taggedStudents: observationPayload.taggedStudents || taggedStudents.value || [],
+      type: 'general' as const, // Type must be one of the specific values
+      priority: 'media' as const, // Priority must be one of the specific values
+      requiresFollowUp: false // Default, adjust as needed
     };
 
-    console.log("Attempting to save observation:", finalObservationData);
+    console.log("Attempting to save observation:", baseObservationData);
 
     try {
-      // Determinar el tipo de observación basado en si tenemos studentId
-      const isStudentSpecific = props.studentId && !props.classObservationMode;
-      
-      console.log(`Saving ${isStudentSpecific ? 'student-specific' : 'class'} observation using addObservationToHistoryFirebase`);
-      
-      // Preparar datos base de la observación
-      const baseObservationData = {
-        classId: props.classId,
-        date: props.attendanceDate, // Required field
-        fecha: props.attendanceDate, // For compatibility
-        authorId: currentUserId || '', // Required field
-        author: teacherName, // Using teacher name
-        text: finalObservationData.text || '', // Required field
-        content: {
-          text: finalObservationData.text || '', // Ensure text is at least an empty string
-          // Si tenemos studentId específico, agregarlo a taggedStudents
-          taggedStudents: isStudentSpecific ? [props.studentId!] : [],
-          // Agregar otros campos del rich editor si están disponibles
-          // bulletPoints: finalObservationData.bulletPoints,
-          // works: finalObservationData.works,
-          // classDynamics: finalObservationData.classDynamics
-        },
-        type: 'general' as const, // Type must be one of the specific values
-        priority: 'media' as const, // Priority must be one of the specific values
-        requiresFollowUp: false // Default, adjust as needed
-      };
-
       // Guardar la observación usando el store
       await attendanceStore.addObservationToHistory(baseObservationData);
       console.log("Observation saved successfully");
@@ -669,31 +650,35 @@ const saveObservation = async () => {
       // Show success message to the user
       showToast('Observación guardada correctamente', 'success');
       
+      // Reset form after successful save
+      resetForm();
+      
       // After successful save, let's reload observations history if we're in history tab
       if (activeTab.value === 'history') {
         // Add a small delay before refreshing to allow the database to update
         setTimeout(() => {
-          if (historyComponent.value) {
+          if (historyComponent.value && historyComponent.value.fetchObservations) {
             historyComponent.value.fetchObservations();
           }
         }, 500);
       }
     } catch (error) {
       console.error("Error saving observation:", error);
-      showToast('Error al guardar la observación', 'error');
+      showToast('Error al guardar la observación: ' + (error instanceof Error ? error.message : 'Error desconocido'), 'error');
       throw error;
     }
 
-    emit('observation-saved', finalObservationData);
-    // Also emit the 'observation' event that AttendanceView.vue is listening for
-    emit('observation', finalObservationData.text);
-    // showToast('Observación guardada'); // Implement or import a toast notification system
-    console.log('Observation save initiated (actual call pending). Events emitted: observation-saved, observation');
-    close();
+    // Emit events for parent components
+    emit('observation-saved', baseObservationData);
+    emit('observation', baseObservationData.text);
+    console.log('Observation saved successfully. Events emitted: observation-saved, observation');
+    
+    // Close modal after successful save
+    handleClose();
 
   } catch (err) {
     console.error('Error in saveObservation:', err);
-    // showToast('Error al guardar: ' + (err as Error).message, { type: 'error' });
+    showToast('Error al guardar: ' + (err instanceof Error ? err.message : 'Error desconocido'), 'error');
   } finally {
     isLoading.value = false;
   }

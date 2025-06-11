@@ -48,23 +48,23 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     // Retorna true si hay un usuario autenticado
-    isLoggedIn: (state) => !!state.user,
-    // Computed properties para roles
+    isLoggedIn: (state) => !!state.user,    // Computed properties para roles
     isDirector: (state) => state.user?.role === 'Director',
     isTeacher: (state) => state.user?.role === 'Maestro',
     isAdmin: (state) => state.user?.role === 'Admin',
+    isSuperusuario: (state) => state.user?.role === 'Superusuario',
     // Retorna true si el usuario está aprobado
     isApproved: (state) => state.user?.status === 'aprobado',
     // Permisos para gestionar módulos
     canManageStudents: (state) => ['Director', 'Maestro'].includes(state.user?.role || ''),
     canManageAttendance: (state) => ['Director', 'Maestro'].includes(state.user?.role || ''),
-    canManageSchedule: (state) => ['Director', 'Maestro'].includes(state.user?.role || ''),
-    // Función para validar acceso a módulos específicos
+    canManageSchedule: (state) => ['Director', 'Maestro'].includes(state.user?.role || ''),    // Función para validar acceso a módulos específicos
     canAccessModule: (state) => (moduleName: string) => {
       const roleModules = {
         'Maestro': ['home', 'attendance', 'schedule', 'students'],
         'Director': ['home', 'attendance', 'schedule', 'students', 'classes', 'reports', 'teachers', 'profile'],
-        'Admin': ['home', 'attendance', 'students', 'profile']
+        'Admin': ['home', 'attendance', 'students', 'profile'],
+        'Superusuario': ['home', 'superusuario', 'system', 'audit', 'backup', 'permissions', 'users', 'roles']
       }
       return state.user?.role && roleModules[state.user.role as keyof typeof roleModules]?.includes(moduleName)
     }
@@ -112,14 +112,23 @@ export const useAuthStore = defineStore('auth', {
               type: 'success'
             })
           }
-          
-          // Actualizar el último login en Firestore
+            // Actualizar el último login en Firestore
           await setDoc(userDocRef, { lastLogin: new Date().toISOString() }, { merge: true })
           // Inicializar datos de otros módulos
           await this.initializeData()
           
-          const isAdmin = ['Director', 'Admin'].includes(userData.role)
-          return { user: this.user, redirectTo: '/', showNotification: isAdmin }
+          // Determinar redirección según el rol
+          let redirectTo = '/'
+          if (userData.role === 'Superusuario') {
+            redirectTo = '/superusuario/dashboard'
+          } else if (userData.role === 'Maestro') {
+            redirectTo = '/teacher'
+          } else if (['Director', 'Admin'].includes(userData.role)) {
+            redirectTo = '/dashboard'
+          }
+          
+          const isAdmin = ['Director', 'Admin', 'Superusuario'].includes(userData.role)
+          return { user: this.user, redirectTo, showNotification: isAdmin }
         }
       } catch (error: any) {
         this.error = this.parseAuthError(error)
@@ -127,9 +136,7 @@ export const useAuthStore = defineStore('auth', {
       } finally {
         this.isLoading = false
       }
-    },
-
-    /**
+    },    /**
      * Cierra la sesión del usuario.
      * Limpia el estado del usuario y reinicia los stores de otros módulos.
      */
@@ -138,15 +145,35 @@ export const useAuthStore = defineStore('auth', {
         await firebaseSignOut(auth)
         this.user = null
         this.dataInitialized = false
-        // Reinicia otros stores; para stores sin $reset, se puede implementar un método reset personalizado
-        const studentsStore = useStudentsStore()
-        const classesStore = useClassesStore()
-        const attendanceStore = useAttendanceStore()
-        await Promise.all([
-          studentsStore.$reset(),
-          classesStore.$reset(),
-          attendanceStore.$reset()
-        ])
+        
+        // Reinicia otros stores con manejo de errores individual
+        try {
+          const studentsStore = useStudentsStore()
+          if (studentsStore.$reset) {
+            studentsStore.$reset()
+          }
+        } catch (error) {
+          console.warn('No se pudo resetear el store de students:', error)
+        }
+
+        try {
+          const classesStore = useClassesStore()
+          if (classesStore.$reset) {
+            classesStore.$reset()
+          }
+        } catch (error) {
+          console.warn('No se pudo resetear el store de classes:', error)
+        }
+
+        try {
+          const attendanceStore = useAttendanceStore()
+          if (attendanceStore.$reset) {
+            attendanceStore.$reset()
+          }
+        } catch (error) {
+          console.warn('No se pudo resetear el store de attendance:', error)
+        }
+
       } catch (error: any) {
         console.error('Error al cerrar sesión:', error)
         throw error

@@ -4,12 +4,14 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { HomeIcon } from '@heroicons/vue/24/outline' // Import HomeIcon
 import { teacherMenuItems, adminMenuItems } from '../modulos/Teachers/constants/menuItems'
+import { superusuarioMenuItems } from '../modulos/Superusuario/constants/menuItems'
 
 // Use refs to store data that will be populated after component is mounted
 const route = useRoute()
 const router = useRouter()
 const isTeacher = ref(false)
 const isAdminOrDirector = ref(false)
+const isSuperusuario = ref(false)
 import { FunctionalComponent, HTMLAttributes, VNodeProps } from 'vue';
 
 interface MenuItem {
@@ -45,13 +47,15 @@ onMounted(async () => {
   // Dynamic import of the auth store to ensure Pinia is initialized first
   const { useAuthStore } = await import('../stores/auth')
   const authStore = useAuthStore()
-  
-  // Set the data after auth store is available
+    // Set the data after auth store is available
   isTeacher.value = authStore.isTeacher
   isAdminOrDirector.value = authStore.isDirector || authStore.isAdmin
+  isSuperusuario.value = authStore.isSuperusuario
   
   // Asignar los items del menú según el rol
-  if (isTeacher.value) {
+  if (isSuperusuario.value) {
+    menuItems.value = superusuarioMenuItems
+  } else if (isTeacher.value) {
     menuItems.value = teacherMenuItems
   } else if (isAdminOrDirector.value) {
     menuItems.value = adminMenuItems

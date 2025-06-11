@@ -16,6 +16,7 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/vue/24/outline';
 import Modal from '../../../shared/Modal.vue';
+import StudentAvatar from '../../Students/components/StudentAvatar.vue';
 
 const props = defineProps({
   show: Boolean,
@@ -315,12 +316,11 @@ const getStudents = computed(() => {
                       @click="goToStudentProfile(student.id)"
                     >
                       <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <div class="flex items-center gap-4">
-                          <div class="relative">
-                            <img
-                              :src="student.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.nombre}`"
-                              :alt="`${student.nombre} ${student.apellido}`"
-                              class="h-10 w-10 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 group-hover:border-primary-300 dark:group-hover:border-primary-700 transition-colors"
+                        <div class="flex items-center gap-4">                          <div class="relative">
+                            <StudentAvatar
+                              :first-name="student.nombre || ''"
+                              :last-name="student.apellido || ''"
+                              size="md"
                             />
                             <div class="absolute -bottom-1 -right-1 h-4 w-4 bg-green-400 rounded-full border-2 border-white dark:border-gray-800"
                                  v-if="isStudentActive(student)"></div>

@@ -7,6 +7,7 @@ import { useAnalyticsStore } from '../../Analytics/store/analytics'
 import { PlusCircleIcon, MagnifyingGlassIcon, EllipsisVerticalIcon } from '@heroicons/vue/24/outline'
 import ConfirmModal from '../../../components/ConfirmModal.vue'
 import StudentDrawer from '../components/StudentDrawer.vue'
+import StudentAvatar from '../components/StudentAvatar.vue'
 // import BaseCard from '../../../components/BaseCard.vue'
 
 // Student interface definition
@@ -310,12 +311,11 @@ watch(sortOrder, (newValue) => {
           class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
         >
           <div class="px-2 py-1 flex items-start space-x-1">
-            <!-- Avatar -->
-            <div class="flex-shrink-0">
-              <img
-                :src="student.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.nombre}`"
-                :alt="`${student.nombre} ${student.apellido}`"
-                class="h-12 w-12 rounded-full"
+            <!-- Avatar -->            <div class="flex-shrink-0">
+              <StudentAvatar
+                :first-name="student.nombre || ''"
+                :last-name="student.apellido || ''"
+                size="lg"
               />
             </div>
             

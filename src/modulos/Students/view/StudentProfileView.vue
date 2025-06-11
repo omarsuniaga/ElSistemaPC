@@ -37,6 +37,7 @@ import { useClassesStore } from '../../Classes/store/classes'
 import { useAttendanceStore } from '../../Attendance/store/attendance'
 import { useOptimizedAttendance } from '../../Attendance/composables/useOptimizedAttendance'
 import { useTeachersStore } from '../../Teachers/store/teachers'
+import PerformanceWidget from '../../Performance/components/PerformanceWidget.vue'
 import { Line } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -50,6 +51,7 @@ import {
 } from 'chart.js'
 import { uploadFile } from "../../../service/storage"
 import FileUpload from "../../../components/FileUpload.vue"
+import StudentAvatar from "../components/StudentAvatar.vue"
 
 ChartJS.register(
   CategoryScale,
@@ -1086,8 +1088,7 @@ const filteredAttendanceRecords = computed(() => {
     } catch (error) {
       console.error('Error filtering date:', error);
       return false;
-    }
-  });
+    }  });
   
   // Sort by date (most recent first)
   return [...filtered].sort((a, b) => {
@@ -1095,6 +1096,23 @@ const filteredAttendanceRecords = computed(() => {
     return new Date(b.Fecha).getTime() - new Date(a.Fecha).getTime();
   });
 });
+
+// Métodos para el widget de rendimiento
+const handleViewPerformanceDetails = () => {
+  // Navegar a una vista detallada de rendimiento
+  router.push(`/students/${studentId}/performance`);
+};
+
+const handleViewRecommendations = () => {
+  // Navegar a las recomendaciones específicas del estudiante
+  router.push(`/students/${studentId}/recommendations`);
+};
+
+const handleExpandPerformance = () => {
+  // Expandir el widget de rendimiento en una vista modal o pantalla completa
+  // Por ahora simplemente navegamos a los detalles
+  handleViewPerformanceDetails();
+};
 </script>
 
 <style scoped>
@@ -1373,33 +1391,12 @@ const filteredAttendanceRecords = computed(() => {
   <div v-if="student" class="py-6 animate-fade-in">
     <!-- Header with Profile Photo -->
     <div class="flex justify-between items-start mb-6">
-      <div class="flex items-center gap-4">
-        <div class="relative">
-          <img
-            :src="student.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student?.nombre || 'default'}`"
-            @error="handleImageError"
-            :alt="`${student.nombre} ${student.apellido}`"
-            class="w-24 h-24 rounded-full object-cover"
+      <div class="flex items-center gap-4">        <div class="relative">
+          <StudentAvatar
+            :first-name="student.nombre || ''"
+            :last-name="student.apellido || ''"
+            size="xl"
           />
-          <div class="absolute -bottom-2 -right-2">
-          <FileUpload
-            accept="image/*"
-            label=""
-            @success="handleProfilePhotoUpload" 
-            :path="`students/${student.id}/profile`"
-            :maxSize="3"  
-          >
-              <template #default>
-                <button
-                  type="button"
-                  class="p-2 rounded-full bg-white dark:bg-gray-800 shadow-md hover:bg-gray-50 dark:hover:bg-gray-700"
-                  :disabled="isUploading"
-                >
-                  <CameraIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                </button>
-              </template>
-            </FileUpload>
-          </div>
         </div>
         <div>
           <h1 class="text-2xl font-bold">
@@ -1561,9 +1558,21 @@ const filteredAttendanceRecords = computed(() => {
             class="input w-full"
             type="email"
           />
-        </div>
-      </div>
+        </div>      </div>
+    </div>    <!-- Widget de Rendimiento Académico -->
+    <div class="card lg:col-span-3">
+      <PerformanceWidget
+        :student-id="student.id"
+        :show-trend="true"
+        :show-recent-comments="true"
+        :show-actions="true"
+        :allow-expand="true"
+        @view-details="handleViewPerformanceDetails"
+        @view-recommendations="handleViewRecommendations"
+        @expand="handleExpandPerformance"
+      />
     </div>
+
     <!-- Información Académica -->
     <div class="card lg:col-span-2">
       <h2 class="profile-section-title">

@@ -619,9 +619,9 @@ const setActiveTab = (tab: string) => {
       <!-- Ausentes Tab (NEW Section Component) -->
       <AusentesSection
         v-if="activeTab === 'schedule'"
-      />
-
-      <!-- Mis Clases Tab (UPDATED Section Component) -->
+      />      <!-- Mis Clases Tab (UPDATED Section Component) -->
+      <!-- Este componente utiliza el nuevo TeacherClassesCard con soporte para viewMode (tarjeta/lista) -->
+      <!-- Esta vista reemplaza la página separada de "Clases" que se ha eliminado del menú principal -->
       <TeacherClassesSection
         v-if="activeTab === 'classes'"
         :classes="sortedTeacherClasses"

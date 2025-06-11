@@ -20,17 +20,24 @@ export interface Student {
     padre?: string;
     tlf_madre?: string;
     tlf_padre?: string;
+    tutor?: string;
+    tlf_tutor?: string;
     colegio_trabajo?: string;
     horario_colegio_trabajo?: string;
-    fecInscripcion?: Date;
+    fecInscripcion?: string;  // Changed from Date to string for consistency
     tlf?: string;
     edad?: string;
     nac?: string;
     sexo?: string;
+    observaciones?: string;  // Added missing field
+    avatar?: string;         // Added missing field
+    horario?: string;        // Added missing field  
+    duracion?: string;       // Added missing field
+    // Documents storage
+    documentos?: Record<string, { url: string; fecha: string }>;
     propiedadExtra1?: string;
     propiedadExtra2?: string;
     propiedadExtra3?: string;
-
 }
 
 export interface SelectedStudent {

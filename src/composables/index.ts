@@ -20,5 +20,9 @@ export { debug, debugManager, debugInfo } from '../utils/debug'
 // Exportaciones de utilidades generales de error handling
 export { handleModuleLoadingError, logError } from '../utils/errorHandling'
 
+// Exportaciones de composables de Firestore
+export { useFirestore } from './useFirestore'
+export type { FirestoreComposable } from './useFirestore'
+
 // Alias para compatibilidad hacia atrás
 export { useErrorHandling as useErrorHandlingComposable } from './useErrorHandling'

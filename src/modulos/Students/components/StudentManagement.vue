@@ -3,6 +3,9 @@ import { ref } from 'vue'
 import { XMarkIcon } from '@heroicons/vue/24/outline'
 import { UserGroupIcon } from '@heroicons/vue/24/outline'
 import type { Student } from '../types'
+import { usePermissions } from '@/modulos/Auth/composables/usePermissions'
+import { PermissionAction, ResourceType } from '@/modulos/Auth/types/permissions'
+import PermissionGuard from '@/modulos/Auth/components/PermissionGuard.vue'
 
 const props = defineProps<{
   groupName: string;
@@ -14,6 +17,9 @@ const emit = defineEmits<{
   (e: 'remove-student', studentId: string): void;
   (e: 'add-student'): void;
 }>()
+
+// Usar el composable de permisos
+const { hasPermission, canUpdate, canCreate } = usePermissions()
 </script>
 
 <template>
@@ -48,29 +54,31 @@ const emit = defineEmits<{
               {{ student.instrumento }}
             </p>
           </div>
-        </div>
+        </div>        <PermissionGuard :required-resource="ResourceType.ALL_STUDENTS" required-action="delete">
+          <button
+            @click="emit('remove-student', student.id)"
+            class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            title="Eliminar del grupo"
+            :disabled="isLoading"
+          >
+            <XMarkIcon class="w-5 h-5" />
+          </button>
+        </PermissionGuard>
+      </div>
+    </div>    <!-- Botón para agregar estudiantes -->
+    <PermissionGuard :required-resource="ResourceType.ALL_STUDENTS" required-action="create">
+      <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <button
-          @click="emit('remove-student', student.id)"
-          class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-          title="Eliminar del grupo"
+          @click="emit('add-student')"
+          class="w-full px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors flex items-center justify-center gap-2"
           :disabled="isLoading"
         >
-          <XMarkIcon class="w-5 h-5" />
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+          </svg>
+          Agregar Estudiante
         </button>
       </div>
-    </div>
-    <!-- Botón para agregar estudiantes -->
-    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-      <button
-        @click="emit('add-student')"
-        class="w-full px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors flex items-center justify-center gap-2"
-        :disabled="isLoading"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-        </svg>
-        Agregar Estudiante
-      </button>
-    </div>
+    </PermissionGuard>
   </div>
 </template>

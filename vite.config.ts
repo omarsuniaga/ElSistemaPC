@@ -176,7 +176,7 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: true, // Needed for proper network access
-      strictPort: true, // Forzar el uso del puerto 3000
+      strictPort: false, // Permitir usar otros puertos si 3000 está ocupado
       // Enhanced CORS configuration
       cors: true, // Enable CORS for all requests
       headers: {
@@ -186,13 +186,13 @@ export default defineConfig(({ mode }) => {
       },
       watch: {
         // Configuración de watch para mejor rendimiento
-        usePolling: true,
+        usePolling: false, // Deshabilitar polling para mejor rendimiento
         interval: 1000,
       },
       hmr: {
         // Configuración de Hot Module Replacement
         overlay: true,
-        port: 3000,
+        clientPort: undefined, // Usar el mismo puerto que el servidor
         timeout: 30000
       },
       proxy: {
