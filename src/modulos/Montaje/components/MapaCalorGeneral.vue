@@ -92,18 +92,15 @@ const ultimosSieteDias = computed(() => {
     const fecha = new Date(hoy)
     fecha.setDate(fecha.getDate() - i)
     
-    const intensidades = [0, 1, 2, 3, 4] // Simulado
-    const actividades = [0, 2, 5, 8, 12] // Simulado
-    const horas = [0, 1, 2, 3, 4] // Simulado
-    
-    const randomIndex = Math.floor(Math.random() * intensidades.length)
+    // Simular actividad
+    const actividad = Math.floor(Math.random() * 10)
     
     dias.push({
       fecha: fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }),
       label: fecha.toLocaleDateString('es-ES', { weekday: 'short' }),
-      intensidad: intensidades[randomIndex],
-      actividad: actividades[randomIndex],
-      horasTrabajas: horas[randomIndex]
+      actividad,
+      intensidad: getIntensidad(actividad),
+      horasTrabajas: Math.floor(Math.random() * 8)
     })
   }
   
@@ -118,9 +115,7 @@ const obrasProgreso = computed(() => [
 
 const estadisticas = computed(() => ({
   obrasActivas: 3,
-  progresoSemana: 72,
-  horasTotal: 18,
-  compassesTrabajados: 156
+  progresoSemana: 78
 }))
 
 const alertas = computed(() => [
@@ -137,13 +132,17 @@ const alertas = computed(() => [
 ])
 
 // Métodos
-function getIntensidadClass(intensidad: number): string {
+function getIntensidad(actividad: number): string {
+  if (actividad === 0) return 'baja'
+  if (actividad <= 3) return 'media'
+  return 'alta'
+}
+
+function getIntensidadClass(intensidad: string): string {
   switch (intensidad) {
-    case 0: return 'bg-gray-200'
-    case 1: return 'bg-green-200'
-    case 2: return 'bg-green-300'
-    case 3: return 'bg-green-400'
-    case 4: return 'bg-green-500'
+    case 'baja': return 'bg-gray-200'
+    case 'media': return 'bg-blue-300'
+    case 'alta': return 'bg-blue-500'
     default: return 'bg-gray-200'
   }
 }
@@ -168,42 +167,5 @@ function seleccionarDia(dia: any) {
   diaSeleccionado.value = dia
   console.log('Día seleccionado:', dia)
   // Emitir evento o mostrar detalles del día
-}
-</script>
-    const fecha = new Date(hoy)
-    fecha.setDate(fecha.getDate() - i)
-    
-    // Simular actividad
-    const actividad = Math.floor(Math.random() * 10)
-    
-    dias.push({
-      fecha: fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }),
-      label: fecha.toLocaleDateString('es-ES', { weekday: 'short' }),
-      actividad,
-      intensidad: getIntensidad(actividad)
-    })
-  }
-  
-  return dias
-})
-
-const estadisticas = computed(() => ({
-  obrasActivas: 3,
-  progresoSemana: 78
-}))
-
-function getIntensidad(actividad: number): 'baja' | 'media' | 'alta' {
-  if (actividad === 0) return 'baja'
-  if (actividad <= 3) return 'media'
-  return 'alta'
-}
-
-function getIntensidadClass(intensidad: string): string {
-  switch (intensidad) {
-    case 'baja': return 'bg-gray-200'
-    case 'media': return 'bg-blue-300'
-    case 'alta': return 'bg-blue-500'
-    default: return 'bg-gray-200'
-  }
 }
 </script>

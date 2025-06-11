@@ -53,7 +53,7 @@
     <div class="metrics-section space-y-2">
       <div class="metrics-row grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div class="metric-compact flex items-center space-x-2 min-w-0">
-          <Icon icon="heroicons:calendar-days" class="metric-icon text-lg flex-shrink-0 text-blue-500" />
+          <span>??</span>
           <div class="metric-content flex flex-col min-w-0">
             <span class="metric-value font-semibold text-gray-900 text-sm">{{ performance.attendance.attendanceRate }}%</span>
             <span class="metric-label text-xs text-gray-500 truncate">Asistencia</span>
@@ -61,7 +61,7 @@
         </div>
         
         <div class="metric-compact flex items-center space-x-2 min-w-0">
-          <Icon icon="heroicons:musical-note" class="metric-icon text-lg flex-shrink-0 text-purple-500" />
+          <span>??</span>
           <div class="metric-content flex flex-col min-w-0">
             <span class="metric-value font-semibold text-gray-900 text-sm">{{ Math.round(performance.repertoire.averageScore) }}</span>
             <span class="metric-label text-xs text-gray-500 truncate">Repertorio</span>
@@ -69,7 +69,7 @@
         </div>
         
         <div class="metric-compact flex items-center space-x-2 min-w-0">
-          <Icon icon="heroicons:users" class="metric-icon text-lg flex-shrink-0 text-green-500" />
+          <span>??</span>
           <div class="metric-content flex flex-col min-w-0">
             <span class="metric-value font-semibold text-gray-900 text-sm">{{ Math.round(performance.work.collectiveWork.teamworkScore) }}</span>
             <span class="metric-label text-xs text-gray-500 truncate">Trabajo Grupal</span>
@@ -77,7 +77,7 @@
         </div>
         
         <div class="metric-compact flex items-center space-x-2 min-w-0">
-          <Icon icon="heroicons:chat-bubble-left-ellipsis" class="metric-icon text-lg flex-shrink-0 text-orange-500" />
+          <span>??</span>
           <div class="metric-content flex flex-col min-w-0">
             <span class="metric-value font-semibold text-gray-900 text-sm">{{ performance.observations.positiveComments.length }}</span>
             <span class="metric-label text-xs text-gray-500 truncate">Comentarios +</span>
@@ -89,7 +89,7 @@
     <!-- Indicador de tendencia -->
     <div v-if="showTrend && performance.trends" class="trend-section border-t border-gray-100 pt-3">
       <div class="trend-indicator flex items-center space-x-2" :class="trendClass">
-        <Icon :icon="trendIcon" class="trend-icon-display text-sm" />
+        <span>??</span>
         <span class="trend-text text-xs font-medium">{{ trendText }}</span>
         <div class="trend-bar flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
           <div 
@@ -106,15 +106,15 @@
       <!-- Alertas -->
       <div v-if="hasAlerts" class="alerts space-y-1">
         <div v-if="performance.attendance.attendanceRate < 75" class="alert flex items-center space-x-2 text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">
-          <Icon icon="heroicons:exclamation-triangle" />
+          <span>??</span>
           <span>Asistencia baja ({{ performance.attendance.attendanceRate }}%)</span>
         </div>
         <div v-if="performance.scores.overallScore < 60" class="alert flex items-center space-x-2 text-xs px-2 py-1 rounded bg-red-100 text-red-800">
-          <Icon icon="heroicons:exclamation-circle" />
+          <span>??</span>
           <span>Rendimiento preocupante</span>
         </div>
         <div v-if="performance.trends && performance.trends.overall.changeRate < -10" class="alert flex items-center space-x-2 text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-          <Icon icon="heroicons:arrow-trending-down" />
+          <span>??</span>
           <span>Tendencia descendente</span>
         </div>
       </div>
@@ -122,7 +122,7 @@
       <!-- Recomendaciones -->
       <div v-if="showRecommendations && performance.recommendations && performance.recommendations.length > 0" class="recommendations space-y-1">
         <div class="recommendations-header flex items-center space-x-1 text-xs font-medium text-gray-700">
-          <Icon icon="heroicons:light-bulb" class="text-yellow-500" />
+          <span>??</span>
           <span>Recomendaciones</span>
         </div>
         <div class="recommendations-list space-y-1">
@@ -143,14 +143,14 @@
         class="action-button inline-flex items-center space-x-1 px-3 py-1 rounded text-xs font-medium transition-colors bg-blue-100 text-blue-800 hover:bg-blue-200" 
         @click="$emit('view-details', performance.studentId)"
       >
-        <Icon icon="heroicons:eye" />
+        <span>??</span>
         Ver Detalles
       </button>
       <button 
         class="action-button inline-flex items-center space-x-1 px-3 py-1 rounded text-xs font-medium transition-colors bg-gray-100 text-gray-800 hover:bg-gray-200" 
         @click="$emit('view-profile', performance.studentId)"
       >
-        <Icon icon="heroicons:user" />
+        <span>??</span>
         Perfil
       </button>
       <button 
@@ -158,7 +158,7 @@
         class="action-button inline-flex items-center space-x-1 px-3 py-1 rounded text-xs font-medium transition-colors bg-orange-100 text-orange-800 hover:bg-orange-200" 
         @click="$emit('needs-attention', performance.studentId)"
       >
-        <Icon icon="heroicons:bell-alert" />
+        <span>??</span>
         Atención
       </button>
     </div>
@@ -167,7 +167,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Icon } from '@iconify/vue';
+// import { Icon } from '@iconify/vue'; // Commented temporarily for build
 import StudentAvatar from '../../Students/components/StudentAvatar.vue';
 import type { StudentPerformance, PerformanceRecommendation } from '../types/performance';
 
@@ -289,3 +289,4 @@ const formatDate = (dateString: string | undefined) => {
 /* All @apply rules have been moved to inline classes in the template. */
 /* Styles for dynamic classes computed in <script setup> are still applied via :class bindings. */
 </style>
+

@@ -19,7 +19,7 @@
         </div>
         
         <div class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg stat-card">
-          <TrendingUpIcon class="w-8 h-8 text-green-500" />
+          <ArrowTrendingUpIcon class="w-8 h-8 text-green-500" />
           <div>
             <p class="text-2xl font-bold text-gray-900 dark:text-white stat-value">{{ data?.progressRate || 78 }}%</p>
             <p class="text-sm text-gray-600 dark:text-gray-400 stat-label">Progreso General</p>
@@ -125,9 +125,9 @@ import {
   MusicalNoteIcon,
   StarIcon,
   CalendarIcon,
-  ClockIcon
+  ClockIcon,
+  ArrowTrendingUpIcon
 } from '@heroicons/vue/24/outline'
-import { TrendingUpIcon } from '@heroicons/vue/24/solid' // Corrected import
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 

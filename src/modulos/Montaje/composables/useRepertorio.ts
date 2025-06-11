@@ -159,13 +159,6 @@ export function useRepertorio() {
     }
   }
 
-      return await createRepertoireItem(duplicateData)
-    } catch (error) {
-      console.error('Error duplicating repertoire item:', error)
-      throw error
-    }
-  }
-
   // Participant management
   const addParticipant = async (participantData: Omit<Participant, 'id' | 'joinedAt'>) => {
     try {
@@ -328,7 +321,6 @@ export function useRepertorio() {
     clearFilters: repertorioStore.limpiarFiltros,
     searchRepertoires: repertorioStore.buscarRepertorios,
     clearState: repertorioStore.limpiarEstado,
-    clearFilters,
     setSearchQuery,
     setInstrumentFilter,
     setDifficultyFilter,

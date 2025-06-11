@@ -12,7 +12,8 @@ import {
   addDoc,
   orderBy,
   Timestamp,
-  deleteDoc
+  deleteDoc,
+  getFirestore
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../firebase';
@@ -20,7 +21,8 @@ import type {
   AttendanceDocument, 
   JustificationData, 
   AttendanceRecord,
-  ClassObservationData
+  ClassObservationData,
+  ObservationRecord
 } from '../types/attendance';
 import { auth } from '../../../firebase';
 import { fetchAttendanceByDateFirebase as fetchByDate } from './attendance/fetchByDate';
@@ -29,7 +31,7 @@ import { getAllAttendanceDocumentsFirebase } from '../services/firebase';
 // Constants
 export const ATTENDANCE_COLLECTION = 'ASISTENCIAS';
 const OBSERVATIONS_COLLECTION = 'OBSERVACIONES';
-const CLASSES_COLLECTION = 'CLASES';
+// const CLASSES_COLLECTION = 'CLASES'; // Unused, commented out
 
 /**
  * Genera un ID de documento consistente para documentos de asistencia
@@ -158,9 +160,13 @@ export const addJustificationToAttendanceFirebase = async (
     } else {
       // Crear nuevo documento
       const newDoc: AttendanceDocument = {
+        id: docId,
         fecha,
         classId,
         teacherId: auth.currentUser?.uid || '',
+        uid: auth.currentUser?.uid || '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
         data: {
           presentes: [],
           ausentes: [justification.id], // Justificado va en ausentes
@@ -191,7 +197,7 @@ export const addJustificationToAttendanceFirebase = async (
 export const updateObservationsFirebase = async (
   fecha: string,
   classId: string,
-  observations: string
+  observations: string | ClassObservationData[]
 ): Promise<string> => {
   try {
     const docId = getAttendanceDocId(fecha, classId);
@@ -209,11 +215,15 @@ export const updateObservationsFirebase = async (
           ausentes: [],
           tarde: [],
           justificacion: [],
-          observación: '',
-          observations
+          observación: typeof observations === 'string' ? observations : '',
+          observations: Array.isArray(observations) ? observations : []
         };
       } else {
-        data.data.observations = observations;
+        if (typeof observations === 'string') {
+          data.data.observación = observations;
+        } else {
+          data.data.observations = observations;
+        }
       }
       
       await updateDoc(docRef, {
@@ -860,7 +870,7 @@ const formatDate = (timestamp: any) => {
 // Fetch all attendance records
 export async function fetchAttendanceRecords(startDate?: string, endDate?: string) {
   try {
-    let q = attendanceCollection;
+    let q;
     
     // If date range is provided, add query filters
     if (startDate && endDate) {
@@ -869,6 +879,8 @@ export async function fetchAttendanceRecords(startDate?: string, endDate?: strin
         where('date', '>=', startDate),
         where('date', '<=', endDate)
       );
+    } else {
+      q = attendanceCollection;
     }
     
     const snapshot = await getDocs(q);
@@ -1005,15 +1017,19 @@ export async function getTeacherAttendanceDocsFirebase(teacherId: string, fromDa
       const data = doc.data();
       documents.push({
         id: doc.id,
-        date: data.date,
+        fecha: data.date,
         classId: data.classId,
         teacherId: data.teacherId,
+        uid: data.uid || '',
+        createdAt: data.createdAt || new Date(),
+        updatedAt: data.updatedAt || new Date(),
         data: {
           presentes: data.data?.presentes || [],
           ausentes: data.data?.ausentes || [],
           tarde: data.data?.tarde || [],
           justificacion: data.data?.justificacion || [],
-          observations: data.data?.observations || ''
+          observación: data.data?.observación || '',
+          observations: data.data?.observations || []
         }
       });
     });
@@ -1036,7 +1052,7 @@ export const fetchAttendanceByDateFirebase = fetchByDate;
  * @param date La date en formato YYYY-MM-DD
  * @returns El estado de asistencia del estudiante
  */
-export async function getStudentAttendanceByDate(studentId: string, date: string): Promise<string | null> {
+export async function getStudentAttendanceByDate(studentId: string, date: string): Promise<AttendanceRecord | null> {
   try {
     const snapshot = await getDocs(query(attendanceCollection, where('studentId', '==', studentId), where('date', '==', date)));
     if (!snapshot.empty && snapshot.docs.length > 0) {
@@ -1136,4 +1152,7 @@ export async function updateAttendanceRecordWithPermissions(
     // Usar la función original con los datos enriquecidos
     await updateAttendanceRecord(id, updatesWithTeacher);
   } catch (error) {
-    console.error('Error updating a
+    console.error('Error updating attendance record with permissions:', error);
+    throw error;
+  }
+}

@@ -2,29 +2,26 @@
   <div class="director-dashboard">
     <!-- Header del Dashboard -->
     <div class="dashboard-header">
-      <div class="header-content">
-        <h1 class="dashboard-title">
-          <Icon name="heroicons:chart-bar-square" class="title-icon" />
+      <div class="header-content">        <h1 class="dashboard-title">
+          <span class="icon">📊</span>
           Dashboard Directorial de Rendimiento
         </h1>
         <p class="dashboard-subtitle">
           Vista ejecutiva del rendimiento estudiantil basada en métricas integrales
         </p>
       </div>
-      <div class="header-actions">
-        <button 
+      <div class="header-actions">        <button 
           class="action-btn action-primary"
           @click="refreshData"
           :disabled="loading"
         >
-          <Icon name="heroicons:arrow-path" :class="{ 'animate-spin': loading }" />
+          <span class="icon">🔄</span>
           {{ loading ? 'Actualizando...' : 'Actualizar' }}
-        </button>
-        <button 
+        </button>        <button 
           class="action-btn action-secondary"
           @click="exportReport"
         >
-          <Icon name="heroicons:document-arrow-down" />
+          <span class="icon">📄</span>
           Exportar Informe
         </button>
       </div>
@@ -36,43 +33,43 @@
       <div class="kpis-grid">
         <div class="kpi-card kpi-primary">
           <div class="kpi-header">
-            <Icon name="heroicons:users" class="kpi-icon" />
+            <span class="icon">??</span>
             <span class="kpi-label">Total Estudiantes</span>
           </div>
           <div class="kpi-value">{{ summary.totalStudents }}</div>
           <div class="kpi-trend trend-positive">
-            <Icon name="heroicons:arrow-trending-up" />
+            <span class="icon">??</span>
             <span>+5% vs mes anterior</span>
           </div>
         </div>
 
         <div class="kpi-card kpi-success">
           <div class="kpi-header">
-            <Icon name="heroicons:trophy" class="kpi-icon" />
+            <span class="icon">??</span>
             <span class="kpi-label">Rendimiento Promedio</span>
           </div>
           <div class="kpi-value">{{ summary.averageScore }}<span class="kpi-unit">/100</span></div>
           <div class="kpi-trend trend-positive">
-            <Icon name="heroicons:arrow-trending-up" />
+            <span class="icon">??</span>
             <span>+3% vs mes anterior</span>
           </div>
         </div>
 
         <div class="kpi-card kpi-info">
           <div class="kpi-header">
-            <Icon name="heroicons:calendar-days" class="kpi-icon" />
+            <span class="icon">??</span>
             <span class="kpi-label">Asistencia Promedio</span>
           </div>
           <div class="kpi-value">{{ summary.averageAttendance }}<span class="kpi-unit">%</span></div>
           <div class="kpi-trend trend-positive">
-            <Icon name="heroicons:arrow-trending-up" />
+            <span class="icon">??</span>
             <span>+2% vs mes anterior</span>
           </div>
         </div>
 
         <div class="kpi-card kpi-warning">
           <div class="kpi-header">
-            <Icon name="heroicons:exclamation-triangle" class="kpi-icon" />
+            <span class="icon">??</span>
             <span class="kpi-label">Necesitan Atención</span>
           </div>
           <div class="kpi-value">{{ studentsNeedingAttention.length }}</div>
@@ -92,7 +89,7 @@
           @click="$emit('view-all-top-performers')"
         >
           Ver todos
-          <Icon name="heroicons:arrow-right" />
+          <span class="icon">??</span>
         </button>
       </div>
       <div class="performers-grid">
@@ -114,11 +111,11 @@
           </div>
           <div class="performer-metrics">
             <div class="metric-mini">
-              <Icon name="heroicons:calendar-days" class="text-blue-500" />
+              <span class="icon">??</span>
               <span>{{ student.attendanceMetrics.attendanceRate }}%</span>
             </div>
             <div class="metric-mini">
-              <Icon name="heroicons:musical-note" class="text-purple-500" />
+              <span class="icon">??</span>
               <span>{{ Math.round(student.repertoireMetrics.averageScore) }}</span>
             </div>
           </div>
@@ -126,7 +123,7 @@
             class="performer-action"
             @click="$emit('view-student-details', student.studentId)"
           >
-            <Icon name="heroicons:eye" />
+            <span class="icon">??</span>
             Ver detalles
           </button>
         </div>
@@ -137,7 +134,7 @@
     <div v-if="studentsNeedingAttention.length > 0" class="alerts-section">
       <div class="section-header">
         <h2 class="section-title">
-          <Icon name="heroicons:exclamation-triangle" class="text-orange-500" />
+          <span class="icon">??</span>
           Estudiantes que Requieren Atención
         </h2>
         <button 
@@ -145,7 +142,7 @@
           @click="$emit('view-all-attention-needed')"
         >
           Ver todos ({{ studentsNeedingAttention.length }})
-          <Icon name="heroicons:arrow-right" />
+          <span class="icon">??</span>
         </button>
       </div>
       <div class="alerts-grid">
@@ -161,16 +158,16 @@
             </div>
           </div>
           <div class="alert-reasons">
-            <div v-if="student.attendanceMetrics.attendanceRate < 75" class="alert-reason">
-              <Icon name="heroicons:calendar-x-mark" class="text-red-500" />
-              <span>Asistencia baja ({{ student.attendanceMetrics.attendanceRate }}%)</span>
+            <div v-if="student.attendance.attendanceRate < 75" class="alert-reason">
+              <span class="icon">??</span>
+              <span>Asistencia baja ({{ student.attendance.attendanceRate }}%)</span>
             </div>
             <div v-if="student.overallScore < 60" class="alert-reason">
-              <Icon name="heroicons:chart-bar" class="text-orange-500" />
+              <span class="icon">??</span>
               <span>Rendimiento bajo ({{ Math.round(student.overallScore) }} pts)</span>
             </div>
             <div v-if="student.trends.overall < -10" class="alert-reason">
-              <Icon name="heroicons:arrow-trending-down" class="text-red-500" />
+              <span class="icon">??</span>
               <span>Tendencia descendente</span>
             </div>
           </div>
@@ -179,14 +176,14 @@
               class="alert-action-btn"
               @click="$emit('contact-student', student.studentId)"
             >
-              <Icon name="heroicons:phone" />
+              <span class="icon">??</span>
               Contactar
             </button>
             <button 
               class="alert-action-btn"
               @click="$emit('view-student-details', student.studentId)"
             >
-              <Icon name="heroicons:user" />
+              <span class="icon">??</span>
               Ver perfil
             </button>
           </div>
@@ -225,21 +222,21 @@
           <h3 class="summary-title">Tendencias Generales</h3>
           <div class="trends-list">
             <div class="trend-item trend-positive">
-              <Icon name="heroicons:arrow-trending-up" />
+              <span class="icon">??</span>
               <div class="trend-content">
                 <span class="trend-number">{{ summary.trends.improving }}</span>
                 <span class="trend-label">Estudiantes mejorando</span>
               </div>
             </div>
             <div class="trend-item trend-stable">
-              <Icon name="heroicons:minus" />
+              <span class="icon">??</span>
               <div class="trend-content">
                 <span class="trend-number">{{ summary.trends.stable }}</span>
                 <span class="trend-label">Estudiantes estables</span>
               </div>
             </div>
             <div class="trend-item trend-negative">
-              <Icon name="heroicons:arrow-trending-down" />
+              <span class="icon">??</span>
               <div class="trend-content">
                 <span class="trend-number">{{ summary.trends.declining }}</span>
                 <span class="trend-label">Estudiantes declinando</span>
@@ -253,7 +250,7 @@
     <!-- Loading Overlay -->
     <div v-if="loading" class="loading-overlay">
       <div class="loading-content">
-        <Icon name="heroicons:arrow-path" class="animate-spin text-4xl text-blue-500" />
+        <span class="icon">??</span>
         <p class="loading-text">Generando reporte directorial...</p>
       </div>
     </div>
@@ -262,7 +259,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { Icon } from '@iconify/vue';
+// import { Icon } from '@iconify/vue'; // Commented temporarily for build
 import { usePerformanceDashboard } from '../composables/usePerformanceDashboard';
 
 // Emit events
@@ -314,10 +311,10 @@ const getRankClass = (index: number) => {
 };
 
 const getAlertLevel = (student: any) => {
-  if (student.overallScore < 50 || student.attendanceMetrics.attendanceRate < 60) {
+  if (student.overallScore < 50 || student.attendance.attendanceRate < 60) {
     return 'alert-critical';
   }
-  if (student.overallScore < 60 || student.attendanceMetrics.attendanceRate < 75) {
+  if (student.overallScore < 60 || student.attendance.attendanceRate < 75) {
     return 'alert-high';
   }
   return 'alert-medium';
@@ -941,3 +938,4 @@ onMounted(() => {
   }
 }
 </style>
+

@@ -42,7 +42,7 @@
         
         <div class="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
           <div class="flex-shrink-0">
-            <TrendingUpIcon class="w-6 h-6 text-purple-500" />
+            <ArrowTrendingUpIcon class="w-6 h-6 text-purple-500" />
           </div>
           <div class="space-y-1">
             <p class="text-xl font-bold text-gray-900 dark:text-white">{{ data?.trend || 'Estable' }}</p>
@@ -130,9 +130,9 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   InformationCircleIcon,
-  LightBulbIcon
+  LightBulbIcon,
+  ArrowTrendingUpIcon
 } from '@heroicons/vue/24/outline'
-import { TrendingUpIcon } from '@heroicons/vue/24/solid' // Changed to solid
 
 interface AttendanceAnalysisData {
   attendanceRate: number

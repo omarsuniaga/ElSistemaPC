@@ -54,7 +54,7 @@
         <!-- Quick Actions -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <h3 class="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-6">
-            <LightningBoltIcon class="w-5 h-5" />
+            <BoltIcon class="w-5 h-5" />
             Acciones Rápidas
           </h3>
           
@@ -273,7 +273,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   ArrowLeftIcon,
-  LightningBoltIcon,
+  BoltIcon,
   CalendarIcon,
   EnvelopeIcon,
   DocumentTextIcon,

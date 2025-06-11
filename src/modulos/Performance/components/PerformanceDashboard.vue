@@ -14,21 +14,21 @@
           @click="refreshData"
           :disabled="loading"
         >
-          <Icon name="heroicons:arrow-path" :class="{ 'animate-spin': loading }" />
+          <span>??</span>
           Actualizar
         </button>
         <button 
           class="btn btn-secondary"
           @click="showFilters = !showFilters"
         >
-          <Icon name="heroicons:funnel" />
+          <span>??</span>
           Filtros
         </button>
         <button 
           class="btn btn-secondary"
           @click="exportData"
         >
-          <Icon name="heroicons:arrow-down-tray" />
+          <span>??</span>
           Exportar
         </button>
       </div>
@@ -106,7 +106,7 @@
       <div class="summary-cards">
         <div class="summary-card">
           <div class="summary-icon bg-blue-100 text-blue-600">
-            <Icon name="heroicons:users" />
+            <span>??</span>
           </div>
           <div class="summary-content">
             <div class="summary-number">{{ summary.totalStudents }}</div>
@@ -116,7 +116,7 @@
         
         <div class="summary-card">
           <div class="summary-icon bg-green-100 text-green-600">
-            <Icon name="heroicons:chart-bar" />
+            <span>??</span>
           </div>
           <div class="summary-content">
             <div class="summary-number">{{ summary.averageScore }}</div>
@@ -126,7 +126,7 @@
         
         <div class="summary-card">
           <div class="summary-icon bg-purple-100 text-purple-600">
-            <Icon name="heroicons:calendar-days" />
+            <span>??</span>
           </div>
           <div class="summary-content">
             <div class="summary-number">{{ summary.averageAttendance }}%</div>
@@ -136,7 +136,7 @@
         
         <div class="summary-card">
           <div class="summary-icon bg-orange-100 text-orange-600">
-            <Icon name="heroicons:arrow-trending-up" />
+            <span>??</span>
           </div>
           <div class="summary-content">
             <div class="summary-number">{{ summary.trends.improving }}</div>
@@ -180,7 +180,7 @@
           :class="{ 'tab-active': activeTab === tab.id }"
           @click="activeTab = tab.id"
         >
-          <Icon :name="tab.icon" />
+          <span>??</span>
           {{ tab.label }}
           <span v-if="tab.count !== undefined" class="tab-count">{{ tab.count }}</span>
         </button>
@@ -210,7 +210,7 @@
               :disabled="currentPage === 1"
               @click="currentPage--"
             >
-              <Icon name="heroicons:chevron-left" />
+              <span>??</span>
               Anterior
             </button>
             
@@ -224,7 +224,7 @@
               @click="currentPage++"
             >
               Siguiente
-              <Icon name="heroicons:chevron-right" />
+              <span>??</span>
             </button>
           </div>
         </div>
@@ -291,15 +291,15 @@
                 <h4>Tendencias Generales</h4>
                 <div class="trends-summary">
                   <div class="trend-item">
-                    <Icon name="heroicons:arrow-trending-up" class="text-green-500" />
+                    <span>??</span>
                     <span>{{ summary.trends.improving }} estudiantes mejorando</span>
                   </div>
                   <div class="trend-item">
-                    <Icon name="heroicons:minus" class="text-gray-500" />
+                    <span>??</span>
                     <span>{{ summary.trends.stable }} estudiantes estables</span>
                   </div>
                   <div class="trend-item">
-                    <Icon name="heroicons:arrow-trending-down" class="text-red-500" />
+                    <span>??</span>
                     <span>{{ summary.trends.declining }} estudiantes declinando</span>
                   </div>
                 </div>
@@ -309,15 +309,15 @@
                 <h4>Alertas Activas</h4>
                 <div class="alerts-summary">
                   <div class="alert-item">
-                    <Icon name="heroicons:exclamation-triangle" class="text-yellow-500" />
+                    <span>??</span>
                     <span>{{ getAlertsCount('attendance') }} con asistencia baja</span>
                   </div>
                   <div class="alert-item">
-                    <Icon name="heroicons:exclamation-circle" class="text-red-500" />
+                    <span>??</span>
                     <span>{{ getAlertsCount('performance') }} con rendimiento preocupante</span>
                   </div>
                   <div class="alert-item">
-                    <Icon name="heroicons:arrow-trending-down" class="text-orange-500" />
+                    <span>??</span>
                     <span>{{ getAlertsCount('trend') }} con tendencia descendente</span>
                   </div>
                 </div>
@@ -331,7 +331,7 @@
     <!-- Loading overlay -->
     <div v-if="loading" class="loading-overlay">
       <div class="loading-spinner">
-        <Icon name="heroicons:arrow-path" class="animate-spin text-4xl text-blue-500" />
+        <span>??</span>
         <p class="loading-text">Cargando datos de rendimiento...</p>
       </div>
     </div>
@@ -340,7 +340,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { Icon } from '@iconify/vue';
+// import { Icon } from '@iconify/vue'; // Commented temporarily for build
 import { usePerformanceDashboard } from '../composables/usePerformanceDashboard';
 import StudentPerformanceCard from './StudentPerformanceCard.vue';
 import type { PerformanceFilters } from '../types/performance';
@@ -1052,3 +1052,4 @@ onMounted(() => {
   }
 }
 </style>
+

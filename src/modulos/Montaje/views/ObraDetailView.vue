@@ -441,13 +441,19 @@ const loadData = async () => {
       }
       
       // Cargar evaluaciones
-      if (typeof montajeStore.obtenerEvaluacionesPorObra === 'function') {
-        evaluaciones.value = await montajeStore.obtenerEvaluacionesPorObra(obraId)
+      // The property 'obtenerEvaluacionesPorObra' does not exist on 'montajeStore' type.
+      // Using fallback logic: load all evaluations via a store action (assumed to be 'cargarEvaluaciones')
+      // and then filter them.
+      if (montajeStore.cargarEvaluaciones && typeof montajeStore.cargarEvaluaciones === 'function') {
+        await montajeStore.cargarEvaluaciones();
       } else {
-        // Fallback: intentar usar cargarEvaluaciones y filtrar después
-        await cargarEvaluaciones()
-        evaluaciones.value = montajeStore.evaluacionesContinuas?.filter(evaluacion => evaluacion.obraId === obraId) || []
+        // If the action 'cargarEvaluaciones' does not exist on the store,
+        // log a warning as evaluations might not be loaded or might be stale.
+        console.warn('Store action "cargarEvaluaciones" not found. Evaluations may not be up-to-date.');
       }
+      evaluaciones.value = montajeStore.evaluacionesContinuas?.filter(
+        evaluacion => evaluacion.obraId === obraId
+      ) || [];
       
       // Cargar frases (sólo si no están cargadas todavía)
       if (typeof montajeStore.obtenerFrasesPorObra === 'function') {
@@ -592,6 +598,16 @@ const updateProgress = (newProgress: number) => {
       }
     }
   }
+}
+
+const getDifficultyClass = (dificultad: string) => {
+  const classes = {
+    'FACIL': 'bg-green-100 text-green-800',
+    'INTERMEDIO': 'bg-yellow-100 text-yellow-800',
+    'DIFICIL': 'bg-red-100 text-red-800',
+    // Add more difficulty levels and their corresponding classes as needed
+  }
+  return classes[dificultad.toUpperCase()] || 'bg-gray-100 text-gray-800'
 }
 
 const getEstadoBadgeClass = (estado: string) => {
