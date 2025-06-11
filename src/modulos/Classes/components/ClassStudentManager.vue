@@ -234,6 +234,9 @@ onMounted(async () => {
   if (studentsStore.students.length === 0) {
     isLoading.value = true;
     try {
+      // Usar fetchStudents() que ahora usa RBAC para determinar
+      // si el usuario puede ver todos los estudiantes o solo los de sus clases
+      // El permiso se controla desde el panel de superusuario
       await studentsStore.fetchStudents();
     } catch (error) {
       console.error('Error al cargar estudiantes:', error);
@@ -294,7 +297,7 @@ onMounted(async () => {
                 <div>
                   <span class="font-medium">{{ student.nombre }} {{ student.apellido }}</span>
                   <p class="text-sm text-gray-600 dark:text-gray-400">
-                    {{ student.email || 'Sin correo' }}
+                    {{ student.grupo || 'Sin correo' }}
                   </p>
                 </div>
               </div>

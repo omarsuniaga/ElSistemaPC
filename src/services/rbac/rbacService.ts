@@ -80,8 +80,7 @@ class RBACService {
   private rolesCache: Map<string, Role> = new Map();
   private permissionsCache: Map<string, Permission> = new Map();
   private moduleAccessCache: Map<string, ModuleAccess> = new Map();
-  private userRolesCache: Map<string, string[]> = new Map();
-  // Roles base definidos en código (basados en la estructura existente USERS.role)
+  private userRolesCache: Map<string, string[]> = new Map();  // Roles base definidos en código (basados en la estructura existente USERS.role)
   private baseRoles = {
     'Maestro': {
       name: 'Maestro',
@@ -91,7 +90,7 @@ class RBACService {
         'attendance_teacher_view',
         'attendance_calendar',
         'schedule_teacher_view',
-        'students_view_all',
+        'students_view_own_classes', // Permiso por defecto: solo estudiantes de sus clases
         'students_view_detail',
         'profile_view',
         'profile_edit',

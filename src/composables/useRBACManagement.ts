@@ -1,18 +1,8 @@
 // src/composables/useRBACManagement.ts
 
 import { ref, computed, onMounted } from 'vue'
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc,
-  addDoc,
-  serverTimestamp 
-} from 'firebase/firestore'
-import { db } from '@/firebase'
+import { useAuthStore } from '@/stores/auth'
+import { RBACPersistenceService, type NavigationItem } from '@/services/rbac/rbacPersistenceService'
 
 export interface Role {
   id: string
@@ -36,96 +26,18 @@ export interface Permission {
 export function useRBACManagement() {
   const roles = ref<Role[]>([])
   const permissions = ref<Permission[]>([])
+  const navigationConfig = ref<NavigationItem[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  // Permisos predefinidos para el sistema
-  const defaultPermissions: Omit<Permission, 'id'>[] = [
-    // Permisos de Asistencia
-    { name: 'Ver Asistencia', description: 'Puede ver registros de asistencia', module: 'attendance', action: 'read', resource: 'attendance_records' },
-    { name: 'Crear Asistencia', description: 'Puede crear nuevos registros de asistencia', module: 'attendance', action: 'create', resource: 'attendance_records' },
-    { name: 'Editar Asistencia', description: 'Puede modificar registros de asistencia', module: 'attendance', action: 'update', resource: 'attendance_records' },
-    { name: 'Eliminar Asistencia', description: 'Puede eliminar registros de asistencia', module: 'attendance', action: 'delete', resource: 'attendance_records' },
-    { name: 'Calendario Asistencia', description: 'Puede acceder al calendario de asistencia', module: 'attendance', action: 'read', resource: 'attendance_calendar' },
-    
-    // Permisos de Clases
-    { name: 'Ver Clases', description: 'Puede ver información de clases', module: 'classes', action: 'read', resource: 'classes' },
-    { name: 'Gestionar Clases', description: 'Puede crear y modificar clases', module: 'classes', action: 'write', resource: 'classes' },
-    
-    // Permisos de Estudiantes
-    { name: 'Ver Estudiantes', description: 'Puede ver información de estudiantes', module: 'students', action: 'read', resource: 'students' },
-    { name: 'Gestionar Estudiantes', description: 'Puede crear y modificar estudiantes', module: 'students', action: 'write', resource: 'students' },
-    
-    // Permisos de Maestros
-    { name: 'Ver Maestros', description: 'Puede ver información de maestros', module: 'teachers', action: 'read', resource: 'teachers' },
-    { name: 'Gestionar Maestros', description: 'Puede crear y modificar maestros', module: 'teachers', action: 'write', resource: 'teachers' },
-    
-    // Permisos de Dashboard
-    { name: 'Dashboard Maestro', description: 'Acceso al dashboard de maestro', module: 'dashboard', action: 'read', resource: 'teacher_dashboard' },
-    { name: 'Dashboard Admin', description: 'Acceso al dashboard administrativo', module: 'dashboard', action: 'read', resource: 'admin_dashboard' },
-    
-    // Permisos de Sistema
-    { name: 'Gestión RBAC', description: 'Puede gestionar roles y permisos', module: 'system', action: 'admin', resource: 'rbac' },
-    { name: 'Configuración Sistema', description: 'Puede configurar el sistema', module: 'system', action: 'admin', resource: 'configuration' }
-  ]
-
-  // Roles predefinidos
-  const defaultRoles: Omit<Role, 'id'>[] = [
-    {
-      name: 'Maestro',
-      description: 'Profesor con acceso a módulos de enseñanza',
-      permissions: [
-        'Ver Asistencia', 'Crear Asistencia', 'Editar Asistencia', 'Calendario Asistencia',
-        'Ver Clases', 'Ver Estudiantes', 'Dashboard Maestro'
-      ],
-      isActive: true
-    },
-    {
-      name: 'Director',
-      description: 'Administrador general con acceso académico',
-      permissions: [
-        'Ver Asistencia', 'Crear Asistencia', 'Editar Asistencia', 'Eliminar Asistencia', 'Calendario Asistencia',
-        'Ver Clases', 'Gestionar Clases',
-        'Ver Estudiantes', 'Gestionar Estudiantes',
-        'Ver Maestros', 'Gestionar Maestros',
-        'Dashboard Admin'
-      ],
-      isActive: true
-    },
-    {
-      name: 'Admin',
-      description: 'Administrador con permisos limitados',
-      permissions: [
-        'Ver Asistencia', 'Crear Asistencia', 'Editar Asistencia', 'Calendario Asistencia',
-        'Ver Clases', 'Gestionar Clases',
-        'Ver Estudiantes', 'Gestionar Estudiantes',
-        'Dashboard Admin'
-      ],
-      isActive: true
-    },
-    {
-      name: 'Superusuario',
-      description: 'Super administrador con acceso completo',
-      permissions: [
-        'Ver Asistencia', 'Crear Asistencia', 'Editar Asistencia', 'Eliminar Asistencia', 'Calendario Asistencia',
-        'Ver Clases', 'Gestionar Clases',
-        'Ver Estudiantes', 'Gestionar Estudiantes',
-        'Ver Maestros', 'Gestionar Maestros',
-        'Dashboard Admin', 'Gestión RBAC', 'Configuración Sistema'
-      ],
-      isActive: true
-    }
-  ]
-
-  // Cargar roles desde Firestore
+  // Cargar roles desde Firestore usando persistencia
   const loadRoles = async () => {
     try {
       loading.value = true
-      const rolesSnapshot = await getDocs(collection(db, 'rbac_roles'))
-      roles.value = rolesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Role))
+      console.log('🔄 Cargando roles desde Firestore...')
+      const savedRoles = await RBACPersistenceService.getRoles()
+      roles.value = savedRoles
+      console.log(`✅ ${savedRoles.length} roles cargados`)
     } catch (err) {
       error.value = 'Error al cargar roles'
       console.error('Error loading roles:', err)
@@ -134,15 +46,14 @@ export function useRBACManagement() {
     }
   }
 
-  // Cargar permisos desde Firestore
+  // Cargar permisos desde Firestore usando persistencia
   const loadPermissions = async () => {
     try {
       loading.value = true
-      const permissionsSnapshot = await getDocs(collection(db, 'rbac_permissions'))
-      permissions.value = permissionsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Permission))
+      console.log('🔄 Cargando permisos desde Firestore...')
+      const savedPermissions = await RBACPersistenceService.getPermissions()
+      permissions.value = savedPermissions
+      console.log(`✅ ${savedPermissions.length} permisos cargados`)
     } catch (err) {
       error.value = 'Error al cargar permisos'
       console.error('Error loading permissions:', err)
@@ -150,143 +61,163 @@ export function useRBACManagement() {
       loading.value = false
     }
   }
-  // Función para forzar la inicialización de datos RBAC
+
+  // Cargar configuración de navegación
+  const loadNavigationConfig = async () => {
+    try {
+      loading.value = true
+      console.log('🔄 Cargando configuración de navegación desde Firestore...')
+      const savedNavigation = await RBACPersistenceService.getNavigationConfig()
+      navigationConfig.value = savedNavigation
+      console.log(`✅ ${savedNavigation.length} elementos de navegación cargados`)
+    } catch (err) {
+      error.value = 'Error al cargar configuración de navegación'
+      console.error('Error loading navigation config:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Función para forzar la inicialización de datos RBAC usando persistencia
   const forceInitializeRBAC = async () => {
     try {
       loading.value = true
-      console.log('Inicializando datos RBAC por defecto...')
+      console.log('🔄 Inicializando datos RBAC por defecto...')
       
-      // Forzar creación de permisos
-      console.log('Creando permisos por defecto...')
-      for (const permission of defaultPermissions) {
-        await addDoc(collection(db, 'rbac_permissions'), {
-          ...permission,
-          createdAt: serverTimestamp()
-        })
-        console.log(`✓ Permiso creado: ${permission.name}`)
-      }
+      // Usar el servicio de persistencia para inicializar
+      await RBACPersistenceService.initializeDefaultConfig('system-init')
       
-      // Forzar creación de roles
-      console.log('Creando roles por defecto...')
-      for (const role of defaultRoles) {
-        await addDoc(collection(db, 'rbac_roles'), {
-          ...role,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        })
-        console.log(`✓ Rol creado: ${role.name}`)
-      }
-      
-      // Recargar datos
+      // Recargar todos los datos
       await loadPermissions()
       await loadRoles()
+      await loadNavigationConfig()
       
       console.log('✅ Inicialización RBAC completada!')
     } catch (err) {
       error.value = 'Error al forzar inicialización RBAC'
       console.error('Error forcing RBAC initialization:', err)
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Crear nuevo rol
-  const createRole = async (roleData: Omit<Role, 'id'>) => {
-    try {
-      loading.value = true
-      await addDoc(collection(db, 'rbac_roles'), {
-        ...roleData,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      })
-      await loadRoles()
-    } catch (err) {
-      error.value = 'Error al crear rol'
-      console.error('Error creating role:', err)
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  // Actualizar rol
-  const updateRole = async (roleId: string, roleData: Partial<Role>) => {
+  // Función para guardar cambios en roles
+  const saveRoles = async (updatedBy: string = 'system') => {
     try {
       loading.value = true
-      await updateDoc(doc(db, 'rbac_roles', roleId), {
-        ...roleData,
-        updatedAt: serverTimestamp()
-      })
-      await loadRoles()
+      console.log('💾 Guardando roles en Firestore...')
+      await RBACPersistenceService.saveRoles(roles.value, updatedBy)
+      console.log('✅ Roles guardados correctamente')
     } catch (err) {
-      error.value = 'Error al actualizar rol'
-      console.error('Error updating role:', err)
+      error.value = 'Error al guardar roles'
+      console.error('Error saving roles:', err)
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  // Eliminar rol
-  const deleteRole = async (roleId: string) => {
+  // Función para guardar cambios en permisos
+  const savePermissions = async (updatedBy: string = 'system') => {
     try {
       loading.value = true
-      await deleteDoc(doc(db, 'rbac_roles', roleId))
-      await loadRoles()
+      console.log('💾 Guardando permisos en Firestore...')
+      await RBACPersistenceService.savePermissions(permissions.value, updatedBy)
+      console.log('✅ Permisos guardados correctamente')
     } catch (err) {
-      error.value = 'Error al eliminar rol'
-      console.error('Error deleting role:', err)
+      error.value = 'Error al guardar permisos'
+      console.error('Error saving permissions:', err)
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  // Crear nuevo permiso
-  const createPermission = async (permissionData: Omit<Permission, 'id'>) => {
+  // Función para guardar configuración de navegación
+  const saveNavigationConfig = async (updatedBy: string = 'system') => {
     try {
       loading.value = true
-      await addDoc(collection(db, 'rbac_permissions'), {
-        ...permissionData,
-        createdAt: serverTimestamp()
-      })
-      await loadPermissions()
+      console.log('💾 Guardando configuración de navegación en Firestore...')
+      await RBACPersistenceService.saveNavigationConfig(navigationConfig.value, updatedBy)
+      console.log('✅ Configuración de navegación guardada correctamente')
     } catch (err) {
-      error.value = 'Error al crear permiso'
-      console.error('Error creating permission:', err)
+      error.value = 'Error al guardar configuración de navegación'
+      console.error('Error saving navigation config:', err)
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  // Actualizar permiso
-  const updatePermission = async (permissionId: string, permissionData: Partial<Permission>) => {
+  // Actualizar permiso específico de un maestro para ver estudiantes
+  const updateTeacherStudentViewPermission = async (teacherId: string, canViewAll: boolean) => {
     try {
       loading.value = true
-      await updateDoc(doc(db, 'rbac_permissions', permissionId), permissionData)
-      await loadPermissions()
+      console.log(`🔄 Actualizando permiso de estudiantes para maestro ${teacherId}...`)
+      
+      const authStore = useAuthStore()
+      const currentUser = authStore.user
+      
+      if (!currentUser) {
+        throw new Error('No hay usuario autenticado')
+      }
+
+      // Encontrar el rol del maestro y actualizarlo
+      const teacherRole = roles.value.find(role => role.name === 'Maestro' || role.name === 'Maestro Avanzado')
+      
+      if (teacherRole) {
+        const updatedPermissions = [...teacherRole.permissions]
+        
+        if (canViewAll) {
+          // Agregar permiso para ver todos los estudiantes
+          if (!updatedPermissions.includes('Ver Todos los Estudiantes')) {
+            updatedPermissions.push('Ver Todos los Estudiantes')
+          }
+          // Remover permiso limitado si existe
+          const limitedIndex = updatedPermissions.indexOf('Ver Estudiantes de Clases Propias')
+          if (limitedIndex > -1) {
+            updatedPermissions.splice(limitedIndex, 1)
+          }
+        } else {
+          // Remover permiso de ver todos los estudiantes
+          const allStudentsIndex = updatedPermissions.indexOf('Ver Todos los Estudiantes')
+          if (allStudentsIndex > -1) {
+            updatedPermissions.splice(allStudentsIndex, 1)
+          }
+          // Agregar permiso limitado si no existe
+          if (!updatedPermissions.includes('Ver Estudiantes de Clases Propias')) {
+            updatedPermissions.push('Ver Estudiantes de Clases Propias')
+          }
+        }
+
+        // Actualizar el rol
+        teacherRole.permissions = updatedPermissions
+        await saveRoles(currentUser.uid)
+      }
+      
+      console.log('✅ Permiso de estudiantes actualizado correctamente')
     } catch (err) {
-      error.value = 'Error al actualizar permiso'
-      console.error('Error updating permission:', err)
+      error.value = 'Error al actualizar permiso de estudiantes'
+      console.error('Error updating teacher student view permission:', err)
       throw err
     } finally {
       loading.value = false
-    }
+    }  
   }
 
-  // Eliminar permiso
-  const deletePermission = async (permissionId: string) => {
+  // Verificar si un maestro puede ver todos los estudiantes
+  const getTeacherStudentViewPermission = async (teacherId: string): Promise<boolean> => {
     try {
-      loading.value = true
-      await deleteDoc(doc(db, 'rbac_permissions', permissionId))
-      await loadPermissions()
+      // Buscar en los roles si el maestro tiene el permiso
+      const teacherRole = roles.value.find(role => role.name === 'Maestro' || role.name === 'Maestro Avanzado')
+      const permissions = teacherRole?.permissions || []
+      
+      // Si tiene el permiso de ver todos los estudiantes, retornar true
+      return permissions.includes('Ver Todos los Estudiantes')
     } catch (err) {
-      error.value = 'Error al eliminar permiso'
-      console.error('Error deleting permission:', err)
-      throw err
-    } finally {
-      loading.value = false
+      console.error('Error getting teacher permissions:', err)
+      return false
     }
   }
 
@@ -294,6 +225,46 @@ export function useRBACManagement() {
   const hasPermission = (userRole: string, permissionName: string): boolean => {
     const role = roles.value.find(r => r.name.toLowerCase() === userRole.toLowerCase())
     return role ? role.permissions.includes(permissionName) : false
+  }
+
+  // Obtener configuración de navegación para un rol específico
+  const getNavigationForRole = (userRole: string): NavigationItem[] => {
+    return navigationConfig.value.filter(item => 
+      item.isActive && item.roles.includes(userRole)
+    ).sort((a, b) => a.order - b.order)
+  }
+
+  // Verificar si un usuario puede acceder a una ruta específica
+  const canAccessRoute = (userRole: string, routePath: string): boolean => {
+    const allowedNavigation = getNavigationForRole(userRole)
+    return allowedNavigation.some(item => item.path === routePath)
+  }
+
+  // Actualizar configuración de navegación para un rol
+  const updateNavigationForRole = async (roleName: string, updates: Partial<NavigationItem>[], updatedBy: string) => {
+    try {
+      loading.value = true
+      console.log(`🔄 Actualizando navegación para rol ${roleName}...`)
+      
+      // Actualizar elementos de navegación
+      updates.forEach(update => {
+        const existingItem = navigationConfig.value.find(item => item.id === update.id)
+        if (existingItem) {
+          Object.assign(existingItem, update)
+        }
+      })
+      
+      // Guardar cambios
+      await saveNavigationConfig(updatedBy)
+      
+      console.log('✅ Navegación actualizada correctamente')
+    } catch (err) {
+      error.value = 'Error al actualizar navegación'
+      console.error('Error updating navigation:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
   }
 
   // Obtener permisos por módulo
@@ -307,9 +278,16 @@ export function useRBACManagement() {
     })
     return grouped
   })
+
+  // Función para inicializar datos por defecto si no existen
+  const initializeDefaultData = async () => {
+    await forceInitializeRBAC()
+  }
+
   onMounted(async () => {
     await loadRoles()
     await loadPermissions()
+    await loadNavigationConfig()
     
     // Si no hay datos, inicializar automáticamente
     if (roles.value.length === 0 || permissions.value.length === 0) {
@@ -320,18 +298,23 @@ export function useRBACManagement() {
   return {
     roles,
     permissions,
+    navigationConfig,
     loading,
     error,
     loadRoles,
     loadPermissions,
+    loadNavigationConfig,
     forceInitializeRBAC,
-    createRole,
-    updateRole,
-    deleteRole,
-    createPermission,
-    updatePermission,
-    deletePermission,
+    saveRoles,
+    savePermissions,
+    saveNavigationConfig,
+    updateTeacherStudentViewPermission,
+    getTeacherStudentViewPermission,
     hasPermission,
-    getPermissionsByModule
+    getNavigationForRole,
+    canAccessRoute,
+    updateNavigationForRole,
+    getPermissionsByModule,
+    initializeDefaultData
   }
 }

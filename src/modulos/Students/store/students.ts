@@ -132,9 +132,37 @@ export const useStudentsStore = defineStore('students', {
         return []
       } finally {
         this.loading = false
-        console.log('[studentsStore] fetchStudents: End. Loading state:', this.loading);
+        console.log('[studentsStore] fetchStudents: End. Loading state:', this.loading);      }
+    },    /**
+     * Método para obtener TODOS los estudiantes sin restricciones RBAC
+     * Solo debe usarse en casos específicos donde se requiera acceso completo
+     * (por ejemplo, para superusuario o configuraciones de sistema)
+     */
+    async fetchAllStudentsForced() {
+      console.log('[studentsStore] fetchAllStudentsForced: Start (bypassing RBAC)');
+      this.loading = true
+      this.error = null
+      
+      try {
+        // Usar la función getAllStudentsFirebase() directamente
+        const { getAllStudentsFirebase } = await import('../service/students')
+        const fetchedStudentsData = await getAllStudentsFirebase()
+        console.log('[studentsStore] fetchAllStudentsForced: Raw data from Firebase:', JSON.parse(JSON.stringify(fetchedStudentsData)));
+        
+        this.students = fetchedStudentsData
+        this.lastSync = new Date()
+        console.log('[studentsStore] fetchAllStudentsForced: Complete. Total students:', this.students.length);
+        return this.students
+      } catch (error: any) {
+        console.error('[studentsStore] fetchAllStudentsForced: Error:', error);
+        this.error = error.message
+        return []
+      } finally {
+        this.loading = false
       }
-    },    async fetchStudentById(id: string) {
+    },
+    
+    async fetchStudentById(id: string) {
       this.loading = true
       this.error = null
       

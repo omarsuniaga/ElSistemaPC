@@ -1,8 +1,7 @@
 // src/stores/rbacStore.ts
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { useAuthStore } from '../modulos/Auth/store/auth';
-import { rbacService } from '@/services/rbac/rbacService';
+import { useAuthStore } from './auth';
 
 export const useRBACStore = defineStore('rbac', () => {
   const authStore = useAuthStore();
@@ -30,7 +29,6 @@ export const useRBACStore = defineStore('rbac', () => {
     }
     return userPermissions.value.includes(permissionName);
   });
-
   const canAccess = computed(() => (resource: string, action: string) => {
     // Dar acceso total a maestros para recursos de asistencia
     if ((authStore.user?.role === 'Maestro' || authStore.user?.role === 'maestro') && 
@@ -41,7 +39,25 @@ export const useRBACStore = defineStore('rbac', () => {
     const permission = `${resource}_${action}`;
     return hasPermission.value(permission);
   });
+  // Método específico para verificar permisos de estudiantes
+  const canViewAllStudents = computed(() => () => {
+    // Superusuario, Admin y Director siempre pueden ver todos los estudiantes
+    if (['Superusuario', 'Admin', 'Director'].includes(authStore.user?.role || '')) {
+      return true;
+    }
+    
+    // Para maestros, verificar si tienen el permiso específico
+    return hasPermission.value('Ver Todos los Estudiantes');
+  });
 
+  const canViewOwnClassStudents = computed(() => () => {
+    // Todos los maestros pueden ver estudiantes de sus propias clases
+    if (authStore.user?.role === 'Maestro' || authStore.user?.role === 'maestro') {
+      return true;
+    }
+    
+    return hasPermission.value('Ver Estudiantes de Clases Propias');
+  });
   // Acciones
   const initializeUserRBAC = async () => {
     if (!authStore.user?.uid || initialized.value) {
@@ -50,30 +66,33 @@ export const useRBACStore = defineStore('rbac', () => {
 
     loading.value = true;
     try {
-      // Para maestros, asignar permisos completos automáticamente
-      if (authStore.user.role === 'Maestro' || authStore.user.role === 'maestro') {
-        userRoles.value = ['Maestro'];
-        userPermissions.value = [
-          'attendance_view',
-          'attendance_edit', 
-          'attendance_justify',
-          'attendance_export',
-          'attendance_calendar',
-          'students_view',
-          'classes_view',
-          'profile_view',
-          'profile_edit'
-        ];
-        initialized.value = true;
-        return;
-      }
-
-      // Para otros roles, obtener desde el servicio RBAC
-      const roles = await rbacService.getUserRoles(authStore.user.uid);
-      const permissions = await rbacService.getUserPermissions(authStore.user.uid);
+      const userRole = authStore.user.role || '';
       
-      userRoles.value = roles;
-      userPermissions.value = permissions;
+      // Para maestros, asignar permisos basados en RBAC
+      if (userRole === 'Maestro' || userRole === 'maestro') {
+        userRoles.value = ['Maestro'];
+        // Permisos por defecto para maestros (solo estudiantes de sus clases)
+        userPermissions.value = [
+          'Ver Asistencia',
+          'Crear Asistencia', 
+          'Editar Asistencia',
+          'Calendario Asistencia',
+          'Ver Clases',
+          'Ver Estudiantes de Clases Propias', // Por defecto solo sus estudiantes
+          'Dashboard Maestro'
+        ];
+      } else if (['Director', 'Admin', 'Superusuario'].includes(userRole)) {
+        userRoles.value = [userRole];
+        // Estos roles siempre pueden ver todos los estudiantes
+        userPermissions.value = [
+          'Ver Asistencia',
+          'Crear Asistencia',
+          'Editar Asistencia',
+          'Ver Todos los Estudiantes',
+          'Gestionar Estudiantes'
+        ];
+      }
+      
       initialized.value = true;
     } catch (error) {
       console.error('Error al inicializar RBAC:', error);
@@ -82,10 +101,10 @@ export const useRBACStore = defineStore('rbac', () => {
         userRoles.value = [authStore.user.role];
         if (authStore.user.role === 'Maestro' || authStore.user.role === 'maestro') {
           userPermissions.value = [
-            'attendance_view',
-            'attendance_edit',
-            'attendance_justify',
-            'attendance_export'
+            'Ver Asistencia',
+            'Crear Asistencia',
+            'Editar Asistencia',
+            'Ver Estudiantes de Clases Propias'
           ];
         }
       }
@@ -125,7 +144,6 @@ export const useRBACStore = defineStore('rbac', () => {
       userPermissions.value.splice(index, 1);
     }
   };
-
   return {
     // Estado
     userRoles,
@@ -137,6 +155,8 @@ export const useRBACStore = defineStore('rbac', () => {
     hasRole,
     hasPermission,
     canAccess,
+    canViewAllStudents,
+    canViewOwnClassStudents,
     
     // Acciones
     initializeUserRBAC,

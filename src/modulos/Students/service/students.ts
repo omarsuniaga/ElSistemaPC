@@ -102,15 +102,61 @@ const getTeacherClasses = async (teacherId: string): Promise<any[]> => {
   }
 }
 
+/**
+ * Obtiene TODOS los estudiantes de la colección ALUMNOS sin filtros por rol
+ * Útil para cuando los maestros necesitan ver todos los estudiantes disponibles 
+ * para agregarlos a sus clases
+ */
+export const getAllStudentsFirebase = async (): Promise<Student[]> => {
+  try {
+    console.log('[getAllStudentsFirebase] Obteniendo todos los estudiantes de la base de datos')
+    
+    // Consulta simple para obtener todos los estudiantes ordenados por apellido
+    const baseQuery = query(collection(db, COLLECTION_NAME), orderBy('apellido'))
+    const querySnapshot = await getDocs(baseQuery)
+    
+    const students = querySnapshot.docs.map(doc => {
+      const data = doc.data()
+      return mapStudentData(doc.id, data)
+    })
+    
+    console.log(`[getAllStudentsFirebase] Obtenidos ${students.length} estudiantes en total`)
+    return students
+  } catch (error) {
+    console.error('❌ Error al obtener todos los estudiantes:', error)
+    throw new Error('Error al obtener la lista completa de estudiantes')
+  }
+}
+
 export const getStudentsFirebase = async (): Promise<Student[]> => {
   try {
     const authStore = useAuthStore()
     const currentUser = authStore.user
-    const role = currentUser?.role || ''
     const uid = currentUser?.uid || ''
     
-    // Generar clave para caché específica por usuario/rol
-    const cacheKey = `students_${role}_${uid}`
+    // Obtener permisos del usuario desde su documento
+    let canViewAll = false
+    try {
+      const userDoc = await getDoc(doc(db, 'USERS', uid))
+      if (userDoc.exists()) {
+        const userData = userDoc.data()
+        const userPermissions = userData.userPermissions || []
+        canViewAll = userPermissions.includes('Ver Todos los Estudiantes')
+      }
+    } catch (permissionError) {
+      console.warn('Error verificando permisos, usando permisos por defecto:', permissionError)
+    }
+    
+    // Roles que siempre pueden ver todos los estudiantes
+    const adminRoles = ['Superusuario', 'Admin', 'Director']
+    if (adminRoles.includes(currentUser?.role || '')) {
+      canViewAll = true
+    }
+    
+    console.log(`[RBAC] Usuario ${uid} puede ver todos los estudiantes:`, canViewAll)
+    
+    // Generar clave para caché específica por usuario/permisos
+    const cacheKey = `students_${uid}_${canViewAll ? 'all' : 'own'}`
     
     // Intentar obtener del caché primero
     const cachedData = localStorage.getItem(cacheKey)
@@ -130,10 +176,30 @@ export const getStudentsFirebase = async (): Promise<Student[]> => {
     // Consulta base con ordenamiento
     const baseQuery = query(collection(db, COLLECTION_NAME), orderBy('apellido'))
     
-    // Aplicar filtrado según el rol
-    if (['Maestro', 'Teacher', 'teacher'].includes(role) && uid) {
-      // Para maestros, filtrar estudiantes por sus clases
-      console.log(`[Filtro] Obteniendo estudiantes para maestro: ${uid}`)
+    if (canViewAll) {
+      // Usuario con permiso para ver todos los estudiantes
+      console.log('[RBAC] Obteniendo todos los estudiantes')
+      const querySnapshot = await getDocs(baseQuery)
+      const students = querySnapshot.docs.map(doc => {
+        const data = doc.data()
+        return mapStudentData(doc.id, data)
+      })
+      
+      // Guardar en caché
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          timestamp: Date.now(),
+          data: students
+        }))
+      } catch (e) {
+        console.warn('Error al guardar caché de estudiantes:', e)
+      }
+      
+      console.log(`[Firebase] Obtenidos ${students.length} estudiantes en total`)
+      return students
+    } else {
+      // Usuario con permiso solo para ver estudiantes de sus clases
+      console.log(`[RBAC] Usuario con permisos limitados: solo estudiantes de sus clases`)
       
       // 1. Obtener clases del maestro (ya filtradas por teacherId)
       const teacherClasses = await getTeacherClasses(uid)
@@ -178,27 +244,6 @@ export const getStudentsFirebase = async (): Promise<Student[]> => {
       }
       
       console.log(`[Firebase] Obtenidos ${students.length} estudiantes para el maestro`)
-      return students
-    } else {
-      // Para directores, admin u otros roles: obtener todos los estudiantes
-      console.log('[Filtro] Obteniendo todos los estudiantes (rol admin/director)')
-      const querySnapshot = await getDocs(baseQuery)
-      const students = querySnapshot.docs.map(doc => {
-        const data = doc.data()
-        return mapStudentData(doc.id, data)
-      })
-      
-      // Guardar en caché
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify({
-          timestamp: Date.now(),
-          data: students
-        }))
-      } catch (e) {
-        console.warn('Error al guardar caché de estudiantes:', e)
-      }
-      
-      console.log(`[Firebase] Obtenidos ${students.length} estudiantes en total`)
       return students
     }
   } catch (error) {

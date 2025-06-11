@@ -2,6 +2,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { rbacGuard } from './guards/rbacGuard'
+import { navigationGuard, superuserGuard } from '../guards/navigationGuard'
 import { instrumentsRoutes } from '../modulos/Instruments/router'
 import studentRoutes from '../modulos/Students/router'
 import montajeRoutes from '../modulos/Montaje/router'
@@ -524,6 +525,17 @@ router.beforeEach(async (to, from, next) => {
     const userRole = authStore.user?.role
     if (!userRole || !to.meta.allowedRoles.includes(userRole)) {
       return next('/dashboard')
+    }
+  }
+  // Guard de navegación RBAC configurable (nuevo sistema)
+  // Solo aplicar si la ruta no tiene configuración legacy específica
+  if (!to.meta.requiresRBAC && !to.meta.allowedRoles) {
+    try {
+      await navigationGuard(to, from, next)
+      return // navigationGuard ya maneja el next()
+    } catch (error) {
+      console.error('Error en navigation guard:', error)
+      // En caso de error, permitir continuar con verificación básica
     }
   }
   

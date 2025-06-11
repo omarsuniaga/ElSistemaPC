@@ -49,7 +49,7 @@ const handleUpdate = (studentIds: string[]) => {
           leave-to="opacity-0 scale-95"
         >
           <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
-            <h2 class="text-xl font-semibold mb-4">Gestionar Estudiantes - {{ selectedClass?.name }}</h2>
+            <h2 class="text-xl font-semibold mb-4">Gestionar  - {{ selectedClass?.name }}</h2>
             <ClassStudentManager 
               v-if="selectedClass"
               :class-id="selectedClass.id"

@@ -51,6 +51,16 @@ export const superusuarioRoutes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/superusuario/navigation',
+    name: 'SuperusuarioNavigation',
+    component: () => import('../views/NavigationManagement.vue'),
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['Superusuario'],
+      title: 'Gestión de Navegación'
+    }
+  },
+  {
     path: '/superusuario/users',
     name: 'SuperusuarioUsers',
     component: () => import('../views/SuperusuarioDashboard.vue'), // Reusar dashboard por ahora
