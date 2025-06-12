@@ -26,9 +26,11 @@ import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot, Menu
 import { useStudentsStore } from '../../../modulos/Students/store/students';
 import { useTeachersStore } from '../store/teachers';
 import { useTeacherCollaboration } from '../../../modulos/Classes/composables/useTeacherCollaboration';
+import { useAuthStore } from '../../../stores/auth';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import ShareClassModal from './ShareClassModal.vue';
 
 const props = defineProps({
   classData: {
@@ -42,11 +44,12 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['view', 'edit', 'delete', 'manage-students', 'take-attendance', 'view-history']);
+const emit = defineEmits(['view', 'edit', 'delete', 'manage-students', 'take-attendance', 'view-history', 'collaboration-updated']);
 
 // Stores
 const studentsStore = useStudentsStore();
 const teachersStore = useTeachersStore();
+const authStore = useAuthStore();
 const { inviteAssistant } = useTeacherCollaboration();
 
 // Router para la navegación
@@ -56,6 +59,7 @@ const router = useRouter();
 const showStudentsModal = ref(false);
 const showShareModal = ref(false);
 const showPermissionsModal = ref(false);
+const showManageCollaboratorsModal = ref(false);
 const selectedTeacherId = ref('');
 const isExpanded = ref(false);
 
@@ -72,6 +76,38 @@ const isLoading = ref(false);
 // Verificación segura para validar studentIds
 const hasStudentIds = computed(() => {
   return Array.isArray(props.classData.studentIds) && props.classData.studentIds.length > 0;
+});
+
+// Determinar si es clase compartida (el usuario actual es asistente)
+const isSharedClass = computed(() => {
+  return props.classData.myRole === 'assistant';
+});
+
+// Obtener el nombre del maestro principal para clases compartidas
+const leadTeacherName = computed(() => {
+  if (isSharedClass.value && props.classData.leadTeacher) {
+    return props.classData.leadTeacher.name || 'Maestro Principal';
+  }
+  return '';
+});
+
+// Verificar si el usuario actual puede compartir la clase (solo maestros principales)
+const canShareClass = computed(() => {
+  return props.classData.myRole === 'lead' || 
+         (!props.classData.myRole && props.classData.teacherId === authStore.user?.uid);
+});
+
+// Verificar si la clase tiene colaboradores (maestros asistentes)
+const hasCollaborators = computed(() => {
+  return canShareClass.value && 
+         props.classData.assistantTeachers && 
+         props.classData.assistantTeachers.length > 0;
+});
+
+// Obtener lista de colaboradores para mostrar
+const collaboratorsList = computed(() => {
+  if (!hasCollaborators.value) return [];
+  return props.classData.assistantTeachers?.map(teacher => teacher.name || 'Maestro') || [];
 });
 
 // Función para obtener el color del día
@@ -202,8 +238,7 @@ const allStudents = computed(() => {
       name: student ? `${student.nombre || ''} ${student.apellido || ''}`.trim() : `Estudiante ${id}`,
       instrument: student?.instrumento || 'No especificado',
       age: student?.edad || 'N/A'
-    };
-  });
+    };  });
 });
 
 // Manejadores de eventos
@@ -384,6 +419,59 @@ const cancelShare = () => {
   selectedTeacherId.value = '';
 };
 
+// Manejar invitación enviada
+const handleInvitationSent = () => {
+  // Opcional: Actualizar el estado local o mostrar confirmación
+  console.log('Invitación enviada correctamente');
+};
+
+// Manejar abandono de colaboración (maestro asistente)
+const handleLeaveCollaboration = async () => {
+  if (!confirm('¿Estás seguro de que quieres abandonar esta colaboración?')) {
+    return;
+  }
+
+  isLoading.value = true;
+  try {
+    const { removeAssistant } = useTeacherCollaboration();
+    await removeAssistant(props.classData.id, authStore.user?.uid || '');
+    
+    alert('Has abandonado la colaboración exitosamente');
+    
+    // Emitir evento para que el padre actualice la lista
+    emit('collaboration-updated');
+  } catch (error) {
+    console.error('Error abandonando colaboración:', error);
+    alert('Error al abandonar la colaboración');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Remover colaborador (maestro principal)
+const removeCollaborator = async (teacherId: string) => {
+  if (!confirm('¿Estás seguro de que quieres remover este colaborador?')) {
+    return;
+  }
+
+  isLoading.value = true;
+  try {
+    const { removeAssistant } = useTeacherCollaboration();
+    await removeAssistant(props.classData.id, teacherId);
+    
+    alert('Colaborador removido exitosamente');
+    showManageCollaboratorsModal.value = false;
+    
+    // Emitir evento para que el padre actualice la lista
+    emit('collaboration-updated');
+  } catch (error) {
+    console.error('Error removiendo colaborador:', error);
+    alert('Error al remover colaborador');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
 // Cargar datos al montar
 onMounted(async () => {
   if (!studentsStore.students.length) {
@@ -397,25 +485,24 @@ onMounted(async () => {
 
 <template>  <div 
     :class="[
-      'relative bg-white dark:bg-gray-800 rounded-xl shadow-md transition-all duration-500 overflow-hidden border-t-4',
+      'relative bg-white dark:bg-gray-800 rounded-xl shadow-md transition-all duration-500 overflow-visible border-t-4 teacher-class-card',
       getDayColor.border,
       getDayColor.shadow,
-      viewMode === 'list' ? 'flex items-center p-4 space-x-4' : ''
+      viewMode === 'list' ? 'flex items-center p-4 space-x-4 mb-2 list-view-card' : ''
     ]"
   >
     <!-- Vista de Lista -->
     <template v-if="viewMode === 'list'">
       <!-- Indicador de día (banda lateral izquierda) -->
       <div :class="['w-1 h-full rounded-full', getDayColor.bg]"></div>
-      
-      <div class="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+        <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-center min-w-0">
         <!-- Información básica -->
-        <div class="md:col-span-2">
+        <div class="sm:col-span-1 lg:col-span-2 min-w-0">
           <div class="flex items-center gap-2 mb-1">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
               {{ classData.name }}
             </h3>
-            <span :class="['px-2 py-0.5 text-xs font-medium rounded-full', getDayColor.bg, getDayColor.text]">
+            <span :class="['px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0', getDayColor.bg, getDayColor.text]">
               {{ formatDayName(props.classData.schedule?.slots?.[0]?.day || '') }}
             </span>
           </div>
@@ -425,26 +512,53 @@ onMounted(async () => {
         </div>
         
         <!-- Horario -->
-        <div class="flex items-center text-gray-600 dark:text-gray-400">
-          <ClockIcon class="h-4 w-4 mr-2 flex-shrink-0" />
-          <span class="text-sm font-medium">{{ formattedSchedule }}</span>
+        <div class="sm:col-span-1 lg:col-span-1">
+          <div class="flex items-center text-gray-600 dark:text-gray-400">
+            <ClockIcon class="h-4 w-4 mr-2 flex-shrink-0" />
+            <span class="text-sm font-medium truncate">{{ formattedSchedule }}</span>
+          </div>
         </div>
         
         <!-- Salón -->
-        <div class="flex items-center text-gray-600 dark:text-gray-400">
-          <BuildingOfficeIcon class="h-4 w-4 mr-2 flex-shrink-0" />
-          <span class="text-sm">{{ classData.classroom || 'Sin salón' }}</span>
+        <div class="sm:col-span-1 lg:col-span-1">
+          <div class="flex items-center text-gray-600 dark:text-gray-400">
+            <BuildingOfficeIcon class="h-4 w-4 mr-2 flex-shrink-0" />
+            <span class="text-sm truncate">{{ classData.classroom || 'Sin salón' }}</span>
+          </div>
         </div>
         
         <!-- Estudiantes -->
-        <div class="flex items-center text-gray-600 dark:text-gray-400">
-          <UserGroupIcon class="h-4 w-4 mr-2 flex-shrink-0" />
-          <span class="text-sm font-medium">{{ hasStudentIds ? classData.studentIds.length : 0 }} estudiantes</span>
+        <div class="sm:col-span-1 lg:col-span-1">
+          <div class="flex items-center text-gray-600 dark:text-gray-400">
+            <UserGroupIcon class="h-4 w-4 mr-2 flex-shrink-0" />
+            <span class="text-sm font-medium whitespace-nowrap">{{ hasStudentIds ? classData.studentIds.length : 0 }} estudiantes</span>
+          </div>
+        </div>
+        
+        <!-- Badges adicionales para clases compartidas -->
+        <div class="sm:col-span-2 lg:col-span-1 flex gap-1">
+          <!-- Badge para clase compartida (maestro asistente) -->
+          <span 
+            v-if="isSharedClass" 
+            class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
+            title="Eres maestro asistente en esta clase"
+          >
+            Asistente
+          </span>
+          
+          <!-- Badge para clase con colaboradores (maestro principal) -->
+          <span 
+            v-else-if="hasCollaborators" 
+            class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+            title="Esta clase tiene maestros colaboradores"
+          >
+            Colaborativa
+          </span>
         </div>
       </div>
         <!-- Acciones (vista lista) -->
       <div class="flex items-center space-x-2">        <!-- Menú hamburguesa -->
-        <Menu as="div" class="relative" style="z-index: 100;">
+        <Menu as="div" class="relative menu-container">
           <MenuButton class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <EllipsisVerticalIcon class="h-5 w-5 text-gray-500 dark:text-gray-400" />
           </MenuButton>
@@ -457,7 +571,7 @@ onMounted(async () => {
             leave-from-class="transform scale-100 opacity-100"
             leave-to-class="transform scale-95 opacity-0"
           >
-            <MenuItems class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" style="z-index: 100;">
+            <MenuItems class="menu-dropdown absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none border border-gray-200 dark:border-gray-600">
               <div class="py-1">
                 <MenuItem v-slot="{ active }">
                   <button
@@ -508,8 +622,7 @@ onMounted(async () => {
                   >
                     <TrashIcon class="mr-3 h-4 w-4" />
                     Eliminar clase
-                  </button>
-                </MenuItem>
+                  </button>                </MenuItem>
               </div>
             </MenuItems>
           </transition>
@@ -537,7 +650,8 @@ onMounted(async () => {
           class="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
           title="Historial"
         >
-          <DocumentTextIcon class="h-4 w-4" />        </button>
+          <DocumentTextIcon class="h-4 w-4" />
+        </button>
       </div>
     </template>
 
@@ -546,9 +660,8 @@ onMounted(async () => {
       <!-- Capa decorativa con gradiente sutil -->
       <div class="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/[0.02] dark:to-white/[0.02] pointer-events-none"></div>
         <!-- Header con menú hamburguesa -->
-      <div class="relative flex justify-between items-start p-6 pb-3">
-        <div class="flex-1 pr-4">
-          <!-- Badge del día con animación -->
+      <div class="relative flex justify-between items-start p-6 pb-3">        <div class="flex-1 pr-4">
+          <!-- Badge del día con animación y badge de clase compartida -->
           <div class="flex items-center gap-3 mb-3">
             <span :class="[
               'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-all duration-300',
@@ -560,14 +673,56 @@ onMounted(async () => {
               <MusicalNoteIcon class="w-3 h-3 mr-1.5 animate-pulse" />
               {{ formatDayName(props.classData.schedule?.slots?.[0]?.day || '') }}
             </span>
+              <!-- Badge para clase compartida (maestro asistente) -->
+            <span 
+              v-if="isSharedClass"
+              class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200 ring-1 ring-orange-500/20"
+              title="Eres maestro asistente en esta clase"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              Asistente
+            </span>
+
+            <!-- Badge para clase con colaboradores (maestro principal) -->
+            <span 
+              v-if="hasCollaborators"
+              class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 ring-1 ring-blue-500/20"
+              title="Esta clase tiene maestros colaboradores"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m3 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+              Colaborativa
+            </span>
           </div>
           
           <!-- Título mejorado -->
           <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
             {{ classData.name }}
           </h3>
+            <!-- Información del maestro principal para clases compartidas -->
+          <div v-if="isSharedClass" class="mb-2">
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              <span class="font-medium">Maestro Principal:</span> {{ leadTeacherName }}
+            </p>
+          </div>
+
+          <!-- Información de colaboradores para clases principales -->
+          <div v-if="hasCollaborators" class="mb-2">
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              <span class="font-medium">Colaboradores:</span> 
+              <span class="text-blue-600 dark:text-blue-400">
+                {{ collaboratorsList.slice(0, 2).join(', ') }}
+                <span v-if="collaboratorsList.length > 2">
+                  y {{ collaboratorsList.length - 2 }} más
+                </span>
+              </span>
+            </p>
+          </div>
           
-          <!-- Subtítulo/Descripción mejorado -->          <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2">
+          <!-- Subtítulo/Descripción mejorado --><p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2">
             {{ classData.description || 'Sin descripción disponible' }}
           </p>
         </div>
@@ -586,8 +741,9 @@ onMounted(async () => {
             leave-from-class="transform scale-100 opacity-100"
             leave-to-class="transform scale-95 opacity-0"
           >
-            <MenuItems class="absolute right-0 z-30 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 focus:outline-none backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
-              <div class="p-1">                <MenuItem v-slot="{ active }">
+            <MenuItems class="absolute right-0 z-30 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 focus:outline-none backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">              <div class="p-1">                
+                <!-- Compartir clase - solo para maestros principales -->
+                <MenuItem v-if="canShareClass" v-slot="{ active }">
                   <button
                     @click="handleShare"
                     :class="[
@@ -599,6 +755,36 @@ onMounted(async () => {
                     Compartir clase
                   </button>
                 </MenuItem>
+
+                <!-- Gestionar colaboradores - solo para maestros principales con colaboradores -->
+                <MenuItem v-if="hasCollaborators" v-slot="{ active }">
+                  <button
+                    @click="showManageCollaboratorsModal = true"
+                    :class="[
+                      active ? 'bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 text-purple-700 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300',
+                      'group flex items-center px-4 py-3 text-sm font-medium w-full text-left rounded-lg transition-all duration-200 hover:scale-[1.02]'
+                    ]"
+                  >
+                    <UserGroupIcon class="mr-3 h-4 w-4 transition-transform group-hover:rotate-12" />
+                    Gestionar colaboradores
+                  </button>
+                </MenuItem>
+
+                <!-- Abandonar colaboración - solo para maestros asistentes -->
+                <MenuItem v-if="isSharedClass" v-slot="{ active }">
+                  <button
+                    @click="handleLeaveCollaboration"
+                    :class="[
+                      active ? 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 text-red-700 dark:text-red-300' : 'text-gray-700 dark:text-gray-300',
+                      'group flex items-center px-4 py-3 text-sm font-medium w-full text-left rounded-lg transition-all duration-200 hover:scale-[1.02]'
+                    ]"
+                  >
+                    <XMarkIcon class="mr-3 h-4 w-4 transition-transform group-hover:rotate-12" />
+                    Abandonar colaboración
+                  </button>
+                </MenuItem>
+
+                <div v-if="canShareClass || isSharedClass" class="my-1 h-px bg-gray-200 dark:bg-gray-700"></div>
                 
                 <MenuItem v-slot="{ active }">
                   <button
@@ -726,6 +912,17 @@ onMounted(async () => {
             style="pointer-events: auto; position: relative; z-index: 10;"
           >
             <DocumentTextIcon class="h-5 w-5 group-hover:rotate-12 transition-transform" />
+          </button>
+
+          <!-- Botón de compartir clase (solo para maestros principales) -->
+          <button
+            v-if="canShareClass"
+            @click="showShareModal = true"
+            class="action-button group flex items-center justify-center w-12 h-12 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
+            title="Compartir Clase"
+            style="pointer-events: auto; position: relative; z-index: 10;"
+          >
+            <ShareIcon class="h-5 w-5 group-hover:rotate-12 transition-transform" />
           </button>
           
           <button
@@ -941,6 +1138,92 @@ onMounted(async () => {
                 </div>
               </DialogPanel>
             </TransitionChild>
+          </div>        </div>
+      </Dialog>
+    </TransitionRoot>    <!-- Modal de compartir clase -->
+    <ShareClassModal
+      :show="showShareModal"
+      :class-data="{
+        id: classData.id,
+        name: classData.name,
+        teacherId: classData.teacherId
+      }"
+      @close="showShareModal = false"
+      @invitation-sent="handleInvitationSent"
+    />
+
+    <!-- Modal de gestionar colaboradores -->
+    <TransitionRoot appear :show="showManageCollaboratorsModal" as="template">
+      <Dialog as="div" @close="showManageCollaboratorsModal = false" class="relative z-50">
+        <TransitionChild
+          as="template"
+          enter="duration-300 ease-out"
+          enter-from="opacity-0"
+          enter-to="opacity-100"
+          leave="duration-200 ease-in"
+          leave-from="opacity-100"
+          leave-to="opacity-0"
+        >
+          <div class="fixed inset-0 bg-black/25" />
+        </TransitionChild>
+
+        <div class="fixed inset-0 overflow-y-auto">
+          <div class="flex min-h-full items-center justify-center p-4 text-center">
+            <TransitionChild
+              as="template"
+              enter="duration-300 ease-out"
+              enter-from="opacity-0 scale-95"
+              enter-to="opacity-100 scale-100"
+              leave="duration-200 ease-in"
+              leave-from="opacity-100 scale-100"
+              leave-to="opacity-0 scale-95"
+            >
+              <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
+                <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">
+                  Gestionar Colaboradores: {{ classData.name }}
+                </DialogTitle>
+
+                <div v-if="hasCollaborators" class="space-y-3">
+                  <div
+                    v-for="teacher in classData.assistantTeachers"
+                    :key="teacher.teacherId"
+                    class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                  >
+                    <div>
+                      <p class="font-medium text-gray-900 dark:text-white">
+                        {{ teacher.name || 'Maestro' }}
+                      </p>
+                      <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Permisos: 
+                        {{ teacher.permissions?.canTakeAttendance ? 'Asistencia' : '' }}
+                        {{ teacher.permissions?.canAddObservations ? ', Observaciones' : '' }}
+                      </p>
+                    </div>
+                    <button
+                      @click="removeCollaborator(teacher.teacherId)"
+                      class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                      title="Remover colaborador"
+                    >
+                      <XMarkIcon class="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div v-else class="text-center py-4">
+                  <p class="text-gray-500 dark:text-gray-400">No hay colaboradores en esta clase.</p>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                  <button
+                    type="button"
+                    class="inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    @click="showManageCollaboratorsModal = false"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </DialogPanel>
+            </TransitionChild>
           </div>
         </div>
       </Dialog>
@@ -1118,5 +1401,59 @@ onMounted(async () => {
 
 .dark .group\/expand:hover .group-hover\/expand\:text-gray-300 {
   color: rgb(209 213 219);
+}
+
+/* Contenedor del menú con aislamiento */
+.menu-container {
+  isolation: isolate;
+  z-index: 200;
+}
+
+/* Dropdown del menú con z-index máximo */
+.menu-dropdown {
+  z-index: 99999 !important;
+  position: absolute !important;
+  isolation: isolate;
+}
+
+/* Estilos específicos para vista de lista y menús */
+.list-view-card {
+  position: relative;
+  z-index: 1;
+}
+
+.list-view-card:hover {
+  z-index: 100;
+}
+
+.list-view-card .menu-container {
+  z-index: 300;
+}
+
+.list-view-card .menu-dropdown {
+  z-index: 99999 !important;
+}
+
+/* Asegurar que los menús siempre estén en la parte superior */
+.teacher-class-card [role="menu"] {
+  position: absolute !important;
+  z-index: 99999 !important;
+  isolation: isolate;
+  transform: translateZ(0); /* Forzar aceleración de hardware */
+}
+
+/* Prevenir que otros elementos interfieran con los menús */
+.teacher-class-card .relative {
+  isolation: isolate;
+}
+
+/* Mejorar la visibilidad de los menús en vista lista */
+.list-view-card [role="menu"] {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  backdrop-filter: blur(10px);
+}
+
+.dark .list-view-card [role="menu"] {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
 }
 </style>

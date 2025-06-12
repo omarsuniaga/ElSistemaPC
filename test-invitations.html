@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba Sistema Invitaciones</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            border: 1px solid #ddd;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Prueba del Sistema de Invitaciones de Clases</h1>
+    
+    <div class="section">
+        <h2>1. Crear Invitación de Prueba</h2>
+        <div>
+            <label>ID del Maestro Destinatario:</label>
+            <input type="text" id="teacherId" placeholder="ID del maestro que recibirá la invitación">
+        </div>
+        <div>
+            <label>Nombre del Maestro:</label>
+            <input type="text" id="teacherName" placeholder="Nombre del maestro">
+        </div>
+        <div>
+            <label>ID de la Clase:</label>
+            <input type="text" id="classId" placeholder="ID de la clase" value="test-class-123">
+        </div>
+        <div>
+            <label>Nombre de la Clase:</label>
+            <input type="text" id="className" placeholder="Nombre de la clase" value="Clase de Piano Avanzado">
+        </div>
+        <div>
+            <label>ID del Usuario que Invita:</label>
+            <input type="text" id="fromUserId" placeholder="ID del usuario que invita" value="inviter-123">
+        </div>
+        <div>
+            <label>Nombre del Usuario que Invita:</label>
+            <input type="text" id="fromUserName" placeholder="Nombre del usuario que invita" value="Maestro Principal">
+        </div>
+        <button onclick="createTestInvitation()">Crear Invitación de Prueba</button>
+    </div>
+
+    <div class="section">
+        <h2>2. Escuchar Notificaciones</h2>
+        <div>
+            <label>ID del Maestro para Escuchar:</label>
+            <input type="text" id="listenTeacherId" placeholder="ID del maestro">
+            <button onclick="startListening()">Iniciar Escucha</button>
+            <button onclick="stopListening()">Detener Escucha</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>3. Consultar Notificaciones</h2>
+        <div>
+            <label>ID del Maestro:</label>
+            <input type="text" id="queryTeacherId" placeholder="ID del maestro">
+            <button onclick="queryNotifications()">Consultar Todas</button>
+            <button onclick="queryPendingInvitations()">Solo Pendientes</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>4. Log de Eventos</h2>
+        <button onclick="clearLog()">Limpiar Log</button>
+        <div id="log" class="log"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js';
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            query, 
+            where, 
+            getDocs, 
+            onSnapshot, 
+            orderBy,
+            Timestamp 
+        } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
+
+        // Configuración de Firebase - usar la misma del proyecto
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjCtyVRNuVSPTohz3kFcdRzl8_NXJy5h0",
+            authDomain: "music-academy-app-act.firebaseapp.com",
+            projectId: "music-academy-app-act",
+            storageBucket: "music-academy-app-act.firebasestorage.app",
+            messagingSenderId: "527507176767",
+            appId: "1:527507176767:web:7736ec3b3ad8b50a9a8c18"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let unsubscribe = null;
+
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        window.clearLog = function() {
+            document.getElementById('log').textContent = '';
+        }
+
+        window.createTestInvitation = async function() {
+            const teacherId = document.getElementById('teacherId').value;
+            const teacherName = document.getElementById('teacherName').value;
+            const classId = document.getElementById('classId').value;
+            const className = document.getElementById('className').value;
+            const fromUserId = document.getElementById('fromUserId').value;
+            const fromUserName = document.getElementById('fromUserName').value;
+
+            if (!teacherId || !teacherName) {
+                alert('Por favor, completa al menos el ID y nombre del maestro');
+                return;
+            }
+
+            try {
+                log('Creando invitación de prueba...');
+                
+                const notification = {
+                    type: 'class-invitation',
+                    title: 'Invitación a Clase Compartida',
+                    message: `${fromUserName} te ha invitado a colaborar en la clase "${className}"`,
+                    teacherId: teacherId,
+                    fromUserId: fromUserId,
+                    fromUserName: fromUserName,
+                    classId: classId,
+                    className: className,
+                    permissions: {
+                        canTakeAttendance: true,
+                        canAddObservations: true,
+                        canViewAttendanceHistory: true
+                    },
+                    status: 'pending',
+                    createdAt: Timestamp.now(),
+                    expiresAt: Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
+                    data: {
+                        originalInviteData: {
+                            teacherId,
+                            teacherName,
+                            classId,
+                            className,
+                            fromUserId,
+                            fromUserName,
+                            permissions: {
+                                canTakeAttendance: true,
+                                canAddObservations: true,
+                                canViewAttendanceHistory: true
+                            }
+                        }
+                    }
+                };
+
+                const docRef = await addDoc(collection(db, 'TEACHER_NOTIFICATIONS'), notification);
+                log(`✅ Invitación creada exitosamente: ${docRef.id}`);
+                log(`   - Para maestro: ${teacherId} (${teacherName})`);
+                log(`   - Clase: ${className} (${classId})`);
+                log(`   - De: ${fromUserName} (${fromUserId})`);
+                
+            } catch (error) {
+                log(`❌ Error creando invitación: ${error.message}`);
+                console.error('Error:', error);
+            }
+        }
+
+        window.startListening = function() {
+            const teacherId = document.getElementById('listenTeacherId').value;
+            
+            if (!teacherId) {
+                alert('Por favor, ingresa el ID del maestro');
+                return;
+            }
+
+            if (unsubscribe) {
+                unsubscribe();
+            }
+
+            log(`🔄 Iniciando escucha para maestro: ${teacherId}`);
+
+            const q = query(
+                collection(db, 'TEACHER_NOTIFICATIONS'),
+                where('teacherId', '==', teacherId),
+                orderBy('createdAt', 'desc')
+            );
+
+            unsubscribe = onSnapshot(q, (querySnapshot) => {
+                log(`📨 Notificaciones recibidas: ${querySnapshot.size}`);
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    log(`   📬 ${doc.id}: ${data.type} - ${data.status}`);
+                    log(`      Título: ${data.title}`);
+                    log(`      Fecha: ${data.createdAt?.toDate?.()?.toLocaleString() || 'Sin fecha'}`);
+                });
+
+                const pendingInvitations = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.type === 'class-invitation' && data.status === 'pending') {
+                        pendingInvitations.push({ id: doc.id, ...data });
+                    }
+                });
+
+                log(`🔔 Invitaciones pendientes: ${pendingInvitations.length}`);
+                
+            }, (error) => {
+                log(`❌ Error en listener: ${error.message}`);
+            });
+        }
+
+        window.stopListening = function() {
+            if (unsubscribe) {
+                unsubscribe();
+                unsubscribe = null;
+                log('⏹️ Escucha detenida');
+            }
+        }
+
+        window.queryNotifications = async function() {
+            const teacherId = document.getElementById('queryTeacherId').value;
+            
+            if (!teacherId) {
+                alert('Por favor, ingresa el ID del maestro');
+                return;
+            }
+
+            try {
+                log(`🔍 Consultando todas las notificaciones para: ${teacherId}`);
+                
+                const q = query(
+                    collection(db, 'TEACHER_NOTIFICATIONS'),
+                    where('teacherId', '==', teacherId),
+                    orderBy('createdAt', 'desc')
+                );
+
+                const querySnapshot = await getDocs(q);
+                log(`📋 Total encontradas: ${querySnapshot.size}`);
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    log(`   ${doc.id}: ${data.type} - ${data.status}`);
+                    log(`      ${data.title}`);
+                    log(`      ${data.createdAt?.toDate?.()?.toLocaleString()}`);
+                });
+
+            } catch (error) {
+                log(`❌ Error consultando: ${error.message}`);
+            }
+        }
+
+        window.queryPendingInvitations = async function() {
+            const teacherId = document.getElementById('queryTeacherId').value;
+            
+            if (!teacherId) {
+                alert('Por favor, ingresa el ID del maestro');
+                return;
+            }
+
+            try {
+                log(`🔍 Consultando invitaciones pendientes para: ${teacherId}`);
+                
+                const q = query(
+                    collection(db, 'TEACHER_NOTIFICATIONS'),
+                    where('teacherId', '==', teacherId),
+                    where('type', '==', 'class-invitation'),
+                    where('status', '==', 'pending'),
+                    orderBy('createdAt', 'desc')
+                );
+
+                const querySnapshot = await getDocs(q);
+                log(`🔔 Invitaciones pendientes: ${querySnapshot.size}`);
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    log(`   ${doc.id}: ${data.className || 'Sin nombre'}`);
+                    log(`      De: ${data.fromUserName || 'Desconocido'}`);
+                    log(`      Fecha: ${data.createdAt?.toDate?.()?.toLocaleString()}`);
+                });
+
+            } catch (error) {
+                log(`❌ Error consultando pendientes: ${error.message}`);
+            }
+        }
+
+        // Log inicial
+        log('Sistema de prueba de invitaciones cargado');
+        log('Configura los datos y prueba las diferentes funciones');
+    </script>
+</body>
+</html>

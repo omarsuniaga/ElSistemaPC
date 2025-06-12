@@ -6,37 +6,178 @@ import {
   updateDoc, 
   setDoc,
   getDoc,
+  addDoc,
   query, 
   where,  
-  serverTimestamp,
+  serverTimestamp
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../firebase';
 import type { AttendanceDocument, JustificationData, AttendanceRecord } from '../../modulos/Attendance/types/attendance';
 
+const ATTENDANCE_COLLECTION = 'ASISTENCIAS';
+
+// Utilidad para normalizar documentos de asistencia existentes
+const normalizeAttendanceDocument = (document: any): AttendanceDocument => {
+  // Asegurar que existe la estructura de datos básica
+  if (!document.data) {
+    document.data = createDefaultAttendanceData();
+  }
+
+  // Normalizar arrays si están undefined
+  if (!Array.isArray(document.data.presentes)) {
+    document.data.presentes = [];
+  }
+  if (!Array.isArray(document.data.ausentes)) {
+    document.data.ausentes = [];
+  }
+  if (!Array.isArray(document.data.tarde)) {
+    document.data.tarde = [];
+  }
+  if (!Array.isArray(document.data.justificacion)) {
+    document.data.justificacion = [];
+  }
+
+  // Normalizar el campo observación
+  if (Array.isArray(document.data.observación)) {
+    document.data.observación = document.data.observación.join(' ');
+  } else if (!document.data.observación) {
+    document.data.observación = '';
+  }
+
+  // Asegurar que observations existe como array
+  if (!Array.isArray(document.data.observations)) {
+    document.data.observations = [];
+  }
+
+  return document as AttendanceDocument;
+};
+
+// Utilidades de validación
+const validateDate = (date: string): boolean => {
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  return dateRegex.test(date) && !isNaN(Date.parse(date));
+};
+
+const validateClassId = (classId: string): boolean => {
+  return typeof classId === 'string' && classId.trim().length > 0;
+};
+
+const validateStudentId = (studentId: string): boolean => {
+  return typeof studentId === 'string' && studentId.trim().length > 0;
+};
+
+// Utilidad para crear estructura de datos por defecto
+const createDefaultAttendanceData = () => ({
+  presentes: [],
+  ausentes: [],
+  tarde: [],
+  justificacion: [],
+  observación: '', // Compatibilidad con versión anterior
+  observations: [] // Nuevo formato estructurado
+});
+
+// Utilidad para validar y limpiar datos de justificación
+const validateJustificationData = (justification: Partial<JustificationData>): JustificationData => {
+  if (!justification.studentId || !validateStudentId(justification.studentId)) {
+    throw new Error('ID de estudiante inválido en justificación');
+  }
+  
+  if (!justification.classId || !validateClassId(justification.classId)) {
+    throw new Error('ID de clase inválido en justificación');
+  }
+  
+  if (!justification.fecha || !validateDate(justification.fecha)) {
+    throw new Error('Fecha inválida en justificación');
+  }
+  
+  if (!justification.reason || justification.reason.trim().length === 0) {
+    throw new Error('Razón de justificación requerida');
+  }
+
+  return {
+    id: justification.id || `${justification.studentId}_${justification.fecha}_${Date.now()}`,
+    studentId: justification.studentId,
+    classId: justification.classId,
+    fecha: justification.fecha,
+    reason: justification.reason.trim(),
+    documentUrl: justification.documentUrl,
+    approvalStatus: justification.approvalStatus || 'pending',
+    approvedBy: justification.approvedBy,
+    approvedAt: justification.approvedAt,
+    createdAt: justification.createdAt || new Date(),
+    updatedAt: justification.updatedAt,
+    timeLimit: justification.timeLimit || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  };
+};
+
+// Utilidad para generar ID de documento
+const generateDocumentId = (fecha: string, classId: string): string => {
+  return `${fecha}_${classId}`;
+};
+
+// Utilidad para crear justificación por defecto
+const createJustificationData = (
+  studentId: string,
+  classId: string,
+  fecha: string,
+  reason: string,
+  documentUrl?: string
+): JustificationData => {
+  return validateJustificationData({
+    studentId,
+    classId,
+    fecha,
+    reason,
+    documentUrl,
+    approvalStatus: 'pending',
+    createdAt: new Date(),
+    timeLimit: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 días para aprobar
+  });
+};
 /**
  * Obtiene un documento de asistencia por fecha y clase
+ * 
+ * Esta función busca un documento de asistencia específico en Firestore
+ * basado en la fecha y el ID de la clase. Normaliza automáticamente
+ * los datos para asegurar compatibilidad con versiones anteriores.
+ * 
  * @param fecha - La fecha de asistencia en formato YYYY-MM-DD
- * @param classId - El ID de la clase
- * @returns El documento de asistencia o null si no existe
+ * @param classId - El ID único de la clase
+ * @returns El documento de asistencia normalizado o null si no existe
+ * @throws Error si los parámetros de entrada son inválidos
+ * 
+ * @example
+ * ```typescript
+ * const doc = await getAttendanceDocumentFirebase('2023-12-01', 'class123');
+ * if (doc) {
+ *   console.log('Estudiantes presentes:', doc.data.presentes.length);
+ * }
+ * ```
  */
 export const getAttendanceDocumentFirebase = async (
   fecha: string,
   classId: string
 ): Promise<AttendanceDocument | null> => {
   try {
+    // Validar parámetros de entrada
+    if (!validateDate(fecha)) {
+      throw new Error(`Fecha inválida: ${fecha}. Debe tener formato YYYY-MM-DD`);
+    }
+    
+    if (!validateClassId(classId)) {
+      throw new Error(`ID de clase inválido: ${classId}`);
+    }
+
     console.log(`🔍 Buscando documento de asistencia para fecha ${fecha} y clase ${classId}`);
     
-    // Crear un ID de documento combinando fecha y classId
-    const docId = `${fecha}_${classId}`;
-    
-    // Obtener el documento
-    const docRef = doc(db, 'ASISTENCIAS', docId);
+    const docId = generateDocumentId(fecha, classId);
+    const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
     const docSnap = await getDoc(docRef);
-    
-    if (docSnap.exists()) {
+      if (docSnap.exists()) {
       console.log('📄 Documento encontrado');
-      const data = docSnap.data() as AttendanceDocument;
+      const rawData = docSnap.data();
+      const data = normalizeAttendanceDocument(rawData);
       return data;
     } else {
       console.log('❓ No se encontró documento de asistencia');
@@ -54,30 +195,38 @@ export const getAttendanceDocumentFirebase = async (
  * @returns El ID del documento
  */
 export const saveAttendanceDocumentFirebase = async (
-  attendanceDoc: AttendanceDocument
+  attendanceDoc: Omit<AttendanceDocument, 'id' | 'teacherId' | 'uid' | 'createdAt' | 'updatedAt'>
 ): Promise<string> => {
   try {
     console.log('💾 Guardando documento de asistencia:', attendanceDoc);
     
-    // Crear un ID de documento combinando fecha y classId
-    const docId = `${attendanceDoc.fecha}_${attendanceDoc.classId}`;
+    // Validar datos de entrada
+    if (!validateDate(attendanceDoc.fecha)) {
+      throw new Error(`Fecha inválida: ${attendanceDoc.fecha}`);
+    }
     
-    // Referencia al documento
-    const docRef = doc(db, 'ASISTENCIAS', docId);
+    if (!validateClassId(attendanceDoc.classId)) {
+      throw new Error(`ID de clase inválido: ${attendanceDoc.classId}`);
+    }
+
+    // Normalizar el documento antes de guardarlo
+    const normalizedDoc = normalizeAttendanceDocument(attendanceDoc);
     
-    // Verificar si el documento ya existe
+    const docId = generateDocumentId(attendanceDoc.fecha, attendanceDoc.classId);
+    const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
+      // Verificar si el documento ya existe
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
       console.log('🔄 Actualizando documento existente');
       await updateDoc(docRef, {
-        ...attendanceDoc,
+        ...normalizedDoc,
         updatedAt: serverTimestamp()
       });
     } else {
       console.log('➕ Creando nuevo documento');
       await setDoc(docRef, {
-        ...attendanceDoc,
+        ...normalizedDoc,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
@@ -106,65 +255,77 @@ export const addJustificationToAttendanceFirebase = async (
   file: File | null
 ): Promise<string> => {
   try {
-    console.log('📝 Añadiendo justificación para estudiante:', justification.id);
+    // Validar parámetros
+    if (!validateDate(fecha)) {
+      throw new Error(`Fecha inválida: ${fecha}`);
+    }
     
-    // Si hay un archivo, subirlo primero
+    if (!validateClassId(classId)) {
+      throw new Error(`ID de clase inválido: ${classId}`);
+    }
+
+    // Validar y normalizar datos de justificación
+    const validatedJustification = validateJustificationData(justification);
+
+    console.log('📝 Añadiendo justificación para estudiante:', validatedJustification.studentId);
+      // Si hay un archivo, subirlo primero
     if (file) {
-      const storageRef = ref(storage, `justifications/${fecha}_${justification.id}_${classId}_${file.name}`);
+      const storageRef = ref(storage, `justifications/${fecha}_${validatedJustification.studentId}_${classId}_${file.name}`);
       await uploadBytes(storageRef, file);
-      justification.documentURL = await getDownloadURL(storageRef);
+      validatedJustification.documentUrl = await getDownloadURL(storageRef);
     }
     
     // Obtener el documento existente
-    const docId = `${fecha}_${classId}`;
-    const docRef = doc(db, 'ASISTENCIAS', docId);
+    const docId = generateDocumentId(fecha, classId);
+    const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
     const docSnap = await getDoc(docRef);
-    
-    if (docSnap.exists()) {
+      if (docSnap.exists()) {
       // Documento existe, actualizar el array de justificaciones
-      const data = docSnap.data() as AttendanceDocument;
-      
-      // Asegurar que existe la estructura de datos
+      const rawData = docSnap.data();
+      const data = normalizeAttendanceDocument(rawData);
+        // Asegurar que existe la estructura de datos
       if (!data.data) {
-        data.data = {
-          presentes: [],
-          ausentes: [],
-          tarde: [],
-          justificacion: [],
-          observations: ''
-        };
+        data.data = createDefaultAttendanceData();
+      }
+      
+      // Normalizar el campo observación para compatibilidad
+      if (Array.isArray(data.data.observación)) {
+        data.data.observación = data.data.observación.join(' ');
+      } else if (!data.data.observación) {
+        data.data.observación = '';
+      }
+      
+      // Asegurar que observations existe
+      if (!data.data.observations) {
+        data.data.observations = [];
       }
       
       if (!data.data.justificacion) {
         data.data.justificacion = [];
       }
-      
-      // Buscar si ya existe una justificación para este estudiante
-      const justIndex = data.data.justificacion.findIndex(j => j.id === justification.id);
+        // Buscar si ya existe una justificación para este estudiante
+      const justIndex = data.data.justificacion.findIndex(j => j.studentId === validatedJustification.studentId);
       
       if (justIndex !== -1) {
         // Actualizar la justificación existente
-        data.data.justificacion[justIndex] = justification;
+        data.data.justificacion[justIndex] = { ...data.data.justificacion[justIndex], ...validatedJustification };
       } else {
         // Añadir nueva justificación
-        data.data.justificacion.push(justification);
+        data.data.justificacion.push(validatedJustification);
       }
       
-      // Asegurarse de que el estudiante está en el array de ausentes justificados
-      // Y quitarlo de ausentes si está ahí
-      if (!data.data.presentes.includes(justification.id) && 
-          !data.data.tarde.includes(justification.id)) {
-        
-        // Quitar de ausentes si está ahí
-        const ausenteIndex = data.data.ausentes.indexOf(justification.id);
-        if (ausenteIndex !== -1) {
-          data.data.ausentes.splice(ausenteIndex, 1);
-        }
-        
-        // Asegurarse de que está en el array de tardanza (asumiendo que es la categoría para justificados)
-        if (!data.data.tarde.includes(justification.id)) {
-          data.data.tarde.push(justification.id);
-        }
+      // Gestionar el estado del estudiante en los arrays
+      const studentId = validatedJustification.studentId;
+      
+      // Quitar de ausentes si está ahí
+      const ausenteIndex = data.data.ausentes.indexOf(studentId);
+      if (ausenteIndex !== -1) {
+        data.data.ausentes.splice(ausenteIndex, 1);
+      }
+      
+      // Asegurarse de que está en el array de tardanza/justificados
+      if (!data.data.tarde.includes(studentId)) {
+        data.data.tarde.push(studentId);
       }
       
       // Actualizar el documento
@@ -176,15 +337,15 @@ export const addJustificationToAttendanceFirebase = async (
       console.log('✅ Justificación añadida con éxito');
     } else {
       // No existe el documento, crearlo primero
-      const newDoc: AttendanceDocument = {
+      const newDoc: Omit<AttendanceDocument, 'id' | 'teacherId' | 'uid' | 'createdAt' | 'updatedAt'> = {
         fecha,
-        classId,
-        data: {
+        classId,        data: {
           presentes: [],
           ausentes: [],
-          tarde: [justification.id], // Poner al estudiante como tarde (justificado)
-          justificacion: [justification],
-          observations: ''
+          tarde: [validatedJustification.studentId], // Poner al estudiante como tarde (justificado)
+          justificacion: [validatedJustification],
+          observación: '',
+          observations: []
         }
       };
       
@@ -208,7 +369,7 @@ export const addJustificationToAttendanceFirebase = async (
  * Actualiza las observaciones de un documento de asistencia
  * @param fecha - La fecha del documento
  * @param classId - El ID de la clase
- * @param observations - Las observaciones a guardar
+ * @param observations - Las observaciones a guardar (string para compatibilidad)
  * @returns El ID del documento actualizado
  */
 export const updateObservationsFirebase = async (
@@ -217,28 +378,41 @@ export const updateObservationsFirebase = async (
   observations: string
 ): Promise<string> => {
   try {
+    // Validar parámetros
+    if (!validateDate(fecha)) {
+      throw new Error(`Fecha inválida: ${fecha}`);
+    }
+    
+    if (!validateClassId(classId)) {
+      throw new Error(`ID de clase inválido: ${classId}`);
+    }
+
     console.log('📝 Actualizando observaciones de clase');
     
-    const docId = `${fecha}_${classId}`;
-    const docRef = doc(db, 'ASISTENCIAS', docId);
+    const docId = generateDocumentId(fecha, classId);
+    const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
     const docSnap = await getDoc(docRef);
-    
-    if (docSnap.exists()) {
+      if (docSnap.exists()) {
       // Documento existe, actualizar observaciones
-      const data = docSnap.data() as AttendanceDocument;
-      
-      // Asegurar que existe la estructura de datos
+      const rawData = docSnap.data();
+      const data = normalizeAttendanceDocument(rawData);
+        // Asegurar que existe la estructura de datos
       if (!data.data) {
-        data.data = {
-          presentes: [],
-          ausentes: [],
-          tarde: [],
-          justificacion: [],
-          observations: observations
-        };
-      } else {
-        data.data.observations = observations;
+        data.data = createDefaultAttendanceData();
       }
+      
+      // Normalizar el campo observación para compatibilidad
+      if (Array.isArray(data.data.observación)) {
+        data.data.observación = data.data.observación.join(' ');
+      }
+      
+      // Asegurar que observations existe
+      if (!data.data.observations) {
+        data.data.observations = [];
+      }
+      
+      // Actualizar observación en formato string (compatibilidad)
+      data.data.observación = observations;
       
       // Actualizar el documento
       await updateDoc(docRef, {
@@ -249,7 +423,7 @@ export const updateObservationsFirebase = async (
       console.log('✅ Observaciones actualizadas con éxito');
     } else {
       // No existe el documento, crearlo primero
-      const newDoc: AttendanceDocument = {
+      const newDoc: Omit<AttendanceDocument, 'id' | 'teacherId' | 'uid' | 'createdAt' | 'updatedAt'> = {
         fecha,
         classId,
         data: {
@@ -257,7 +431,8 @@ export const updateObservationsFirebase = async (
           ausentes: [],
           tarde: [],
           justificacion: [],
-          observations: observations
+          observación: observations,
+          observations: []
         }
       };
       
@@ -285,14 +460,14 @@ export const getAllAttendanceDocumentsFirebase = async (): Promise<AttendanceDoc
   try {
     console.log('🔍 Obteniendo todos los documentos de asistencia');
     
-    const attendanceCollection = collection(db, 'ASISTENCIAS');
+    const attendanceCollection = collection(db, ATTENDANCE_COLLECTION);
     const querySnapshot = await getDocs(attendanceCollection);
     
     const documents: AttendanceDocument[] = [];
-    
-    querySnapshot.forEach((doc) => {
-      const data = doc.data() as AttendanceDocument;
-      documents.push(data);
+      querySnapshot.forEach((doc) => {
+      const rawData = doc.data();
+      const normalizedData = normalizeAttendanceDocument(rawData);
+      documents.push(normalizedData);
     });
     
     console.log(`✅ Se encontraron ${documents.length} documentos de asistencia`);
@@ -316,35 +491,41 @@ export const convertDocumentToRecords = (document: AttendanceDocument): Attendan
   // Convertir presentes
   document.data.presentes.forEach(studentId => {
     records.push({
+      id: `${studentId}_${document.fecha}_${document.classId}`,
       studentId,
       classId: document.classId,
-      Fecha: document.fecha,
-      status: 'Presente'
+      fecha: document.fecha,
+      status: 'Presente',
+      createdAt: new Date()
     });
   });
   
   // Convertir ausentes
   document.data.ausentes.forEach(studentId => {
     records.push({
+      id: `${studentId}_${document.fecha}_${document.classId}`,
       studentId,
       classId: document.classId,
-      Fecha: document.fecha,
-      status: 'Ausente'
+      fecha: document.fecha,
+      status: 'Ausente',
+      createdAt: new Date()
     });
   });
   
-  // Convertir tarde
+  // Convertir tarde/justificados
   document.data.tarde.forEach(studentId => {
-    const isJustified = document.data.justificacion?.some(j => j.id === studentId);
+    const justificationData = document.data.justificacion?.find(j => j.studentId === studentId);
+    const isJustified = !!justificationData;
+    
     records.push({
+      id: `${studentId}_${document.fecha}_${document.classId}`,
       studentId,
       classId: document.classId,
-      Fecha: document.fecha,
+      fecha: document.fecha,
       status: isJustified ? 'Justificado' : 'Tardanza',
-      justification: isJustified ? 
-        document.data.justificacion.find(j => j.id === studentId)?.reason : undefined,
-      documentUrl: isJustified ?
-        document.data.justificacion.find(j => j.id === studentId)?.documentURL : undefined
+      justification: isJustified ? justificationData.reason : undefined,
+      documentUrl: isJustified ? justificationData.documentUrl : undefined,
+      createdAt: new Date()
     });
   });
   
@@ -394,26 +575,32 @@ export const getAttendanceByDateAndClassFirebase = async (
 
 export const updateAttendanceFirebase = async (attendanceData: AttendanceRecord): Promise<string> => {
   try {
+    // Validar datos de entrada
+    if (!validateDate(attendanceData.fecha)) {
+      throw new Error(`Fecha inválida: ${attendanceData.fecha}`);
+    }
+    
+    if (!validateClassId(attendanceData.classId)) {
+      throw new Error(`ID de clase inválido: ${attendanceData.classId}`);
+    }
+    
+    if (!validateStudentId(attendanceData.studentId)) {
+      throw new Error(`ID de estudiante inválido: ${attendanceData.studentId}`);
+    }
+
     // Obtener el documento existente o crear uno nuevo
-    const docId = `${attendanceData.Fecha}_${attendanceData.classId}`;
-    const docRef = doc(db, 'ASISTENCIAS', docId);
+    const docId = generateDocumentId(attendanceData.fecha, attendanceData.classId);
+    const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
     const docSnap = await getDoc(docRef);
     
-    let document: AttendanceDocument;
-    
-    if (docSnap.exists()) {
-      document = docSnap.data() as AttendanceDocument;
+    let document: Omit<AttendanceDocument, 'id' | 'teacherId' | 'uid' | 'createdAt' | 'updatedAt'>;
+      if (docSnap.exists()) {
+      document = normalizeAttendanceDocument(docSnap.data());
     } else {
       document = {
-        fecha: attendanceData.Fecha,
+        fecha: attendanceData.fecha,
         classId: attendanceData.classId,
-        data: {
-          presentes: [],
-          ausentes: [],
-          tarde: [],
-          justificacion: [],
-          observations: ''
-        }
+        data: createDefaultAttendanceData()
       };
     }
     
@@ -438,19 +625,28 @@ export const updateAttendanceFirebase = async (attendanceData: AttendanceRecord)
     
     // Si el estado es justificado, actualizar o añadir justificación
     if (attendanceData.status === 'Justificado' && attendanceData.justification) {
-      const justIndex = document.data.justificacion.findIndex(j => j.id === attendanceData.studentId);
+      const justIndex = document.data.justificacion.findIndex(j => j.studentId === attendanceData.studentId);
+      
+      const justificationReason = typeof attendanceData.justification === 'string' 
+        ? attendanceData.justification 
+        : attendanceData.justification.reason;
       
       if (justIndex !== -1) {
-        document.data.justificacion[justIndex].reason = typeof attendanceData.justification === 'string' ? attendanceData.justification : (attendanceData.justification as string);
+        // Actualizar justificación existente
+        document.data.justificacion[justIndex].reason = justificationReason;
         if (attendanceData.documentUrl) {
-          document.data.justificacion[justIndex].documentURL = attendanceData.documentUrl;
+          document.data.justificacion[justIndex].documentUrl = attendanceData.documentUrl;
         }
       } else {
-        document.data.justificacion.push({
-          id: attendanceData.studentId,
-          reason: typeof attendanceData.justification === 'string' ? attendanceData.justification : (attendanceData.justification.reason || ''),
-          documentURL: attendanceData.documentUrl
-        });
+        // Crear nueva justificación
+        const newJustification = createJustificationData(
+          attendanceData.studentId,
+          attendanceData.classId,
+          attendanceData.fecha,
+          justificationReason,
+          attendanceData.documentUrl
+        );
+        document.data.justificacion.push(newJustification);
       }
     }
     
@@ -482,10 +678,24 @@ export const updateAttendanceWithJustificationFirebase = async (
   reason: string,
   file: File | null
 ): Promise<string> => {
-  const justification: JustificationData = {
-    id: studentId,
-    reason
-  };
+  // Validar parámetros
+  if (!validateStudentId(studentId)) {
+    throw new Error(`ID de estudiante inválido: ${studentId}`);
+  }
+  
+  if (!validateDate(date)) {
+    throw new Error(`Fecha inválida: ${date}`);
+  }
+  
+  if (!validateClassId(classId)) {
+    throw new Error(`ID de clase inválido: ${classId}`);
+  }
+  
+  if (!reason || reason.trim().length === 0) {
+    throw new Error('La razón de justificación es requerida');
+  }
+
+  const justification = createJustificationData(studentId, classId, date, reason.trim());
   
   return addJustificationToAttendanceFirebase(date, classId, justification, file);
 };

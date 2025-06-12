@@ -2,15 +2,13 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { rbacGuard } from './guards/rbacGuard'
-import { navigationGuard, superuserGuard } from '../guards/navigationGuard'
+import { navigationGuard } from '../guards/navigationGuard'
 import { instrumentsRoutes } from '../modulos/Instruments/router'
 import studentRoutes from '../modulos/Students/router'
 import montajeRoutes from '../modulos/Montaje/router'
 import { superusuarioRoutes } from '../modulos/Superusuario/router'
 import { performanceRoutes } from '../modulos/Performance/router'
-
-
-
+import adminRoutes from '../modulos/Admin/router'
 
 const routes: Array<RouteRecordRaw> = [
   // Rutas públicas (sin requerir autenticación)
@@ -171,6 +169,18 @@ const routes: Array<RouteRecordRaw> = [
       requiresRBAC: true,
       moduleKey: 'classes',
       permission: 'teacher_view'
+    }
+  },
+  {
+    path: '/teacher/notifications',
+    name: 'TeacherNotifications',
+    component: () => import('../modulos/Teachers/views/TeacherNotifications.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'teacher_notifications',
+      permission: 'view',
+      allowedRoles: ['Maestro', 'maestro', 'teacher', 'Teacher']
     }
   },
   
@@ -438,43 +448,33 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../components/FooterNavigationTest.vue'),
     meta: {
       requiresAuth: true,
-      allowedRoles: ['Superusuario'],
-      title: 'Test Footer Navigation'
+      allowedRoles: ['Superusuario'],      title: 'Test Footer Navigation'
     }
   },
+  
+  // Ruta temporal para test de RBAC/Firestore (solo para desarrollo)
+  {
+    path: '/rbac-test',
+    name: 'RBACTest',
+    component: () => import('../pages/RBACTest.vue'),
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['Superusuario', 'Admin'],
+      title: 'Test RBAC Firestore'
+    }
+  },
+  
   // Incluir rutas de módulos
   ...instrumentsRoutes,
   ...studentRoutes,
   ...montajeRoutes,
   ...superusuarioRoutes,
   ...performanceRoutes,
-  // Ruta inicial: redirige según el rol
+  ...adminRoutes,  // Ruta inicial: redirige según el rol
   {
     path: '/',
     name: 'home',
-    redirect: () => {
-      const authStore = useAuthStore()
-      if (!authStore.isLoggedIn) {
-        return '/login'
-      }
-      
-      // Redirección basada en rol
-      const userRole = authStore.user?.role
-      const normalizedRole = userRole?.toLowerCase() || ''
-      
-      // Usar includes para hacer comparaciones más flexibles
-      if (normalizedRole.includes('maestro') || normalizedRole.includes('teacher')) {
-        return '/teacher'
-      } else if (normalizedRole.includes('director') || normalizedRole.includes('admin')) {
-        return '/dashboard'
-      } else if (normalizedRole.includes('superusuario')) {
-        return '/superusuario'
-      } else {
-        // Si no coincide con ningún rol conocido
-        console.log(`Rol no reconocido: ${userRole}, redirigiendo a dashboard`)
-        return '/dashboard'
-      }
-    },
+    component: () => import('../views/HomeRedirect.vue'),
     meta: { requiresAuth: true }
   },
   // Ruta de fallback
@@ -497,6 +497,15 @@ router.beforeEach(async (to, from, next) => {
   // Permitir rutas públicas
   if (to.meta.public) {
     return next()
+  }
+  
+  // Esperar a que la autenticación esté inicializada antes de tomar decisiones
+  if (!authStore.isInitialized) {
+    try {
+      await authStore.checkAuth()
+    } catch (error) {
+      console.error('Error al verificar autenticación:', error)
+    }
   }
   
   // Verificar autenticación

@@ -680,23 +680,32 @@ export const getTeacherClasses = async (teacherId: string): Promise<TeacherClass
 };
 
 /**
- * Invita un maestro como asistente a una clase
+ * Añade un maestro como asistente a una clase (usado internamente cuando se acepta invitación)
  */
-export const inviteAssistantTeacher = async (inviteData: InviteAssistantData): Promise<void> => {
+export const addAssistantTeacherToClass = async (inviteData: InviteAssistantData): Promise<void> => {
   try {
+    console.log('🔍 [addAssistantTeacherToClass] inviteData:', inviteData);
+    
     const classRef = doc(db, CLASSES_COLLECTION, inviteData.classId);
+    console.log('🔍 [addAssistantTeacherToClass] Buscando clase con ID:', inviteData.classId);
+    
     const classDoc = await getDoc(classRef);
     
     if (!classDoc.exists()) {
+      console.error('❌ [addAssistantTeacherToClass] Clase no encontrada:', inviteData.classId);
+      // Listar todas las clases disponibles para debug
+      const { getDocs, collection } = await import('firebase/firestore');
+      const classesSnapshot = await getDocs(collection(db, CLASSES_COLLECTION));
+      console.log('📋 [addAssistantTeacherToClass] Clases disponibles:');
+      classesSnapshot.docs.forEach(doc => {
+        console.log(`  - ID: ${doc.id}, Name: ${doc.data().name}`);
+      });
       throw new Error('Clase no encontrada');
     }
     
-    const classData = classDoc.data() as ClassData;
+    console.log('✅ [addAssistantTeacherToClass] Clase encontrada:', classDoc.data().name);
     
-    // Verificar que el usuario que invita es el maestro encargado
-    if (classData.teacherId !== inviteData.invitedBy) {
-      throw new Error('Solo el maestro encargado puede invitar asistentes');
-    }
+    const classData = classDoc.data() as ClassData;
     
     // Verificar que el maestro no esté ya asignado
     const existingTeacher = classData.teachers?.find(t => t.teacherId === inviteData.teacherId);
@@ -724,9 +733,65 @@ export const inviteAssistantTeacher = async (inviteData: InviteAssistantData): P
       updatedAt: new Date()
     });
     
-    console.log(`Maestro asistente ${inviteData.teacherId} invitado a clase ${inviteData.classId}`);
+    console.log(`Maestro asistente ${inviteData.teacherId} añadido a clase ${inviteData.classId}`);
   } catch (error) {
-    console.error('Error inviting assistant teacher:', error);
+    console.error('Error adding assistant teacher to class:', error);
+    throw error;
+  }
+};
+
+/**
+ * Invita un maestro como asistente a una clase (crea una notificación de invitación)
+ */
+export const inviteAssistantTeacher = async (inviteData: InviteAssistantData): Promise<void> => {
+  try {
+    const classRef = doc(db, CLASSES_COLLECTION, inviteData.classId);
+    const classDoc = await getDoc(classRef);
+    
+    if (!classDoc.exists()) {
+      throw new Error('Clase no encontrada');
+    }
+    
+    const classData = classDoc.data() as ClassData;
+      // Verificar que el usuario que invita es el maestro encargado
+    if (classData.teacherId !== inviteData.invitedBy) {
+      throw new Error('Solo el maestro encargado puede invitar asistentes');
+    }
+    
+    // Verificar que el maestro no esté ya asignado
+    // Verificar en el teacherId principal (maestro encargado)
+    if (classData.teacherId === inviteData.teacherId) {
+      throw new Error('El maestro ya está asignado como maestro encargado de esta clase');
+    }
+    
+    // Verificar en la lista de maestros asistentes
+    const existingTeacher = classData.teachers?.find(t => t.teacherId === inviteData.teacherId);
+    if (existingTeacher) {
+      throw new Error('El maestro ya está asignado como asistente en esta clase');
+    }
+
+    // Obtener información del maestro que invita y del maestro invitado
+    const [inviterInfo, invitedInfo] = await Promise.all([
+      getTeacherInfo(inviteData.invitedBy),
+      getTeacherInfo(inviteData.teacherId)
+    ]);
+
+    // Crear notificación de invitación usando el servicio de notificaciones
+    const { createClassInvitationNotification } = await import('../../Teachers/services/teacherNotifications');
+    
+    await createClassInvitationNotification({
+      teacherId: inviteData.teacherId,
+      teacherName: invitedInfo.name,
+      classId: inviteData.classId,
+      className: classData.name,
+      fromUserId: inviteData.invitedBy,
+      fromUserName: inviterInfo.name,
+      permissions: inviteData.permissions
+    });
+    
+    console.log(`Invitación enviada a maestro ${inviteData.teacherId} para clase ${inviteData.classId}`);
+  } catch (error) {
+    console.error('Error sending invitation to assistant teacher:', error);
     throw error;
   }
 };
@@ -896,7 +961,87 @@ export const canTeacherViewAttendanceHistory = async (
   }
 };
 
-// Funciones auxiliares
+/**
+ * Añade un estudiante a una clase
+ */
+export const addStudentToClass = async (classId: string, studentId: string): Promise<void> => {
+  try {
+    console.log('[addStudentToClass] Adding student', studentId, 'to class', classId);
+    
+    // Obtener la clase actual
+    const classRef = doc(db, CLASSES_COLLECTION, classId);
+    const classDoc = await getDoc(classRef);
+    
+    if (!classDoc.exists()) {
+      throw new Error('La clase no existe');
+    }
+    
+    const classData = classDoc.data() as ClassData;
+    const currentStudents = classData.studentIds || [];
+    
+    // Verificar si el estudiante ya está en la clase
+    if (currentStudents.includes(studentId)) {
+      throw new Error('El estudiante ya está inscrito en esta clase');
+    }
+    
+    // Añadir el estudiante a la lista
+    const updatedStudents = [...currentStudents, studentId];
+    
+    // Actualizar la clase en Firestore
+    await updateDoc(classRef, {
+      studentIds: updatedStudents,
+      updatedAt: new Date()
+    });
+    
+    console.log('[addStudentToClass] Student successfully added to class');
+  } catch (error) {
+    console.error('[addStudentToClass] Error adding student to class:', error);
+    throw error;
+  }
+};
+
+/**
+ * Remueve un estudiante de una clase
+ */
+export const removeStudentFromClass = async (classId: string, studentId: string): Promise<void> => {
+  try {
+    console.log('[removeStudentFromClass] Removing student', studentId, 'from class', classId);
+    
+    // Obtener la clase actual
+    const classRef = doc(db, CLASSES_COLLECTION, classId);
+    const classDoc = await getDoc(classRef);
+    
+    if (!classDoc.exists()) {
+      throw new Error('La clase no existe');
+    }
+    
+    const classData = classDoc.data() as ClassData;
+    const currentStudents = classData.studentIds || [];
+    
+    // Verificar si el estudiante está en la clase
+    if (!currentStudents.includes(studentId)) {
+      throw new Error('El estudiante no está inscrito en esta clase');
+    }
+    
+    // Remover el estudiante de la lista
+    const updatedStudents = currentStudents.filter(id => id !== studentId);
+    
+    // Actualizar la clase en Firestore
+    await updateDoc(classRef, {
+      studentIds: updatedStudents,
+      updatedAt: new Date()
+    });
+    
+    console.log('[removeStudentFromClass] Student successfully removed from class');
+  } catch (error) {
+    console.error('[removeStudentFromClass] Error removing student from class:', error);
+    throw error;
+  }
+};
+
+/**
+ * Funciones auxiliares
+ */
 
 /**
  * Obtiene información básica de un maestro

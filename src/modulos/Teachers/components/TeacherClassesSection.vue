@@ -1,21 +1,30 @@
 <script setup lang="ts">
 import { defineProps, defineEmits, ref, computed } from 'vue';
-import { useRouter } from 'vue-router'; // <-- Importamos useRouter
+import { useRouter } from 'vue-router';
 import { PlusIcon } from '@heroicons/vue/24/outline';
-import TeacherClassesCard from './TeacherClassesCard.vue'; // Ajusta la ruta si es necesario
-
+import TeacherClassesCard from './TeacherClassesCard.vue';
 // Define types for class data
 interface ClassData {
   id: string;
   name: string;
-  // Incluye aquí las otras propiedades que TeacherClassesCard necesita
-  level: string;
+  level?: string; // Hacer opcional
   instrument?: string;
   schedule?: {
       slots: { day: string | number; startTime: string; endTime: string; }[];
   };
   classroom?: string;
   studentIds?: string[];
+  teacherId?: string;
+  description?: string;
+  status?: string;
+  // Propiedades adicionales para clases compartidas
+  myRole?: 'lead' | 'assistant';
+  myPermissions?: any;
+  leadTeacher?: {
+    id: string;
+    name: string;
+  };
+  assistantTeachers?: any[];
 }
 
 const props = defineProps<{
@@ -84,10 +93,10 @@ const sortedClasses = computed(() => {
 // Emits for actions from this component
 const emit = defineEmits([
   'add-class',         // Emitido al hacer clic en "Nueva Clase"
-  // 'view-class',     // Ya no necesitamos re-emitir 'view', navegamos directamente
   'edit-class',        // Re-emitido desde TeacherClassesCard
   'delete-class',      // Re-emitido desde TeacherClassesCard
-  'manage-students'  // Re-emitido desde TeacherClassesCard
+  'manage-students',   // Re-emitido desde TeacherClassesCard
+  'collaboration-updated'  // Re-emitido desde TeacherClassesCard
 ]);
 
 const router = useRouter(); // <-- Inicializamos router
@@ -165,8 +174,7 @@ const handleCardAction = (action: 'edit-class' | 'delete-class' | 'manage-studen
         <div>
           <h2 class="text-2xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
             Mis Clases
-          </h2>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          </h2>          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
             Gestiona y visualiza todas tus clases de música
           </p>
         </div>
@@ -236,15 +244,13 @@ const handleCardAction = (action: 'edit-class' | 'delete-class' | 'manage-studen
     </div>
 
     <!-- Contenido principal -->
-    <div class="p-6">
-      <!-- Grid/List de Tarjetas de Clase (adaptable según el modo) -->
+    <div class="p-6">      <!-- Grid/List de Tarjetas de Clase (adaptable según el modo) -->
       <div :class="[
         viewMode === 'card' 
           ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' 
-          : 'space-y-3'
-      ]">
-        <template v-if="classes.length > 0">
-          <TeacherClassesCard
+          : 'space-y-0'
+      ]" :style="viewMode === 'list' ? 'isolation: auto;' : ''">
+        <template v-if="classes.length > 0">          <TeacherClassesCard
             v-for="classItem in classes"
             :key="classItem.id"
             :class-data="classItem"
@@ -255,7 +261,11 @@ const handleCardAction = (action: 'edit-class' | 'delete-class' | 'manage-studen
             @manage-students="(classId) => handleCardAction('manage-students', classId)"
             @take-attendance="handleCardView"
             @view-history="handleCardView"
-            class="transition-all duration-300"
+            @collaboration-updated="() => emit('collaboration-updated')"
+            :class="[
+              'transition-all duration-300',
+              viewMode === 'list' ? 'hover:z-50 relative' : ''
+            ]"
           />
         </template>
 

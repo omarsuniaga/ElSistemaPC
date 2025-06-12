@@ -14,6 +14,8 @@ import {
 } from 'firebase/firestore'
 import type { Student } from '../../../types'
 import { useAuthStore } from '../../../stores/auth'
+import { createStudentRegistrationNotification } from '../../Teachers/services/generalNotifications'
+import { fetchTeachersFromFirebase } from '../../Teachers/services/teachers'
 
 const COLLECTION_NAME = 'ALUMNOS'
 
@@ -101,6 +103,50 @@ const getTeacherClasses = async (teacherId: string): Promise<any[]> => {
     return [];
   }
 }
+
+// Función para notificar a los maestros sobre un nuevo estudiante registrado
+const notifyTeachersAboutNewStudent = async (student: Student): Promise<void> => {
+  try {
+    console.log('[notifyTeachersAboutNewStudent] Sending notifications for student:', student.nombre, student.apellido);
+    
+    // Obtener todos los maestros
+    const teachers = await fetchTeachersFromFirebase();
+    console.log('[notifyTeachersAboutNewStudent] Found teachers:', teachers.length);
+    
+    // Obtener información del usuario actual que registró el estudiante
+    const authStore = useAuthStore();
+    const currentUser = authStore.user;
+    
+    // Enviar notificación a cada maestro
+    const notificationPromises = teachers.map(teacher => {
+      if (teacher.id) {
+        console.log('[notifyTeachersAboutNewStudent] Sending notification to teacher:', teacher.name);
+        return createStudentRegistrationNotification({
+          teacherId: teacher.id,
+          studentId: student.id,
+          studentName: `${student.nombre} ${student.apellido}`,
+          studentData: {
+            firstName: student.nombre,
+            lastName: student.apellido,
+            email: student.email,
+            phone: student.tlf,
+            instrument: student.instrumento,
+            id: student.id
+          },
+          fromUserId: currentUser?.uid || 'system',
+          fromUserName: currentUser?.email || 'Sistema'
+        });
+      }
+      return Promise.resolve('');
+    });
+    
+    await Promise.all(notificationPromises);
+    console.log('[notifyTeachersAboutNewStudent] All notifications sent successfully');
+  } catch (error) {
+    console.error('[notifyTeachersAboutNewStudent] Error sending notifications:', error);
+    throw error;
+  }
+};
 
 /**
  * Obtiene TODOS los estudiantes de la colección ALUMNOS sin filtros por rol
@@ -313,6 +359,14 @@ export const createStudentFirebase = async (student: Omit<Student, 'id'>): Promi
     };
     
     console.log('[createStudentFirebase] Returning created student:', JSON.stringify(createdStudent, null, 2));
+    
+    // Enviar notificaciones a los maestros sobre el nuevo estudiante registrado
+    try {
+      await notifyTeachersAboutNewStudent(createdStudent);
+    } catch (notificationError) {
+      console.warn('No se pudieron enviar las notificaciones a los maestros:', notificationError);
+      // No lanzar error aquí para no fallar la creación del estudiante
+    }
     
     return createdStudent;
   } catch (error: any) {

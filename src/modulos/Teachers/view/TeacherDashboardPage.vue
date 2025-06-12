@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, type FunctionalComponent } from 'vue';
 import { useRouter } from 'vue-router';
-import { useClassesStore } from '@/modulos/Classes/store/classes'; // Use alias
-import { useTeachersStore } from '@/modulos/Teachers/store/teachers'; // Use alias
-import { useStudentsStore } from '@/modulos/Students/store/students'; // Use alias
-import { useAuthStore } from '@/stores/auth'; // Assuming this path is correct
+import { useClassesStore } from '../../Classes/store/classes';
+import { useTeachersStore } from '../store/teachers';
+import { useStudentsStore } from '../../Students/store/students';
+import { useAuthStore } from '../../../stores/auth';
+import { useToast } from '../../../components/ui/toast/use-toast';
 import {
   CalendarIcon,
   BookOpenIcon,
@@ -17,22 +18,23 @@ import {
   AcademicCapIcon,
   ClipboardDocumentCheckIcon,
 } from '@heroicons/vue/24/outline';
-import { useToast } from '@/components/ui/toast/use-toast'; // Assuming this path is correct
 import { Dialog, DialogPanel, DialogOverlay, TransitionRoot, TransitionChild } from '@headlessui/vue';
 
 // Import components used in the template
 import TeacherDashboardHeader from '../components/TeacherDashboardHeader.vue';
 import DashboardMetricsSection from '../components/DashboardMetricsSection.vue';
-import NotificationListSection from '../components/NotificationListSection.vue';
-import TodaysClassesSection from '../components/TodaysClassesSection.vue'; // NEW component for "Clases Hoy"
-import AusentesSection from '../components/AusentesSection.vue'; // NEW component for "Ausentes" tab
-import ObservacionesSection from '../components/ObservacionesSection.vue'; // NEW component for "Observaciones" tab
-import TeacherClassesSection from '../components/TeacherClassesSection.vue'; // UPDATED component for "Mis Clases"
+import TodaysClassesSection from '../components/TodaysClassesSection.vue'; // Self-contained component for "Clases Hoy"
+import AusentesSection from '../components/AusentesSection.vue'; // Component for "Ausentes" tab
+import ObservacionesSection from '../components/ObservacionesSection.vue'; // Component for "Observaciones" tab
+import TeacherClassesSection from '../components/TeacherClassesSection.vue'; // Component for "Mis Clases"
+import NotificationsSection from '../components/NotificationsSection.vue'; // Self-contained component for "Notificaciones" tab
 
 // Import existing components used in modals
-import ClassForm from '@/modulos/Classes/components/ClassForm.vue';
-import ClassStudentManager from '@/modulos/Classes/components/ClassStudentManager.vue';
+import ClassForm from '../../Classes/components/ClassForm.vue';
+import ClassStudentManager from '../../Classes/components/ClassStudentManager.vue';
 
+// Import collaboration composable
+import { useTeacherCollaboration } from '../../Classes/composables/useTeacherCollaboration';
 
 // Stores and Router
 const router = useRouter();
@@ -41,6 +43,15 @@ const teachersStore = useTeachersStore();
 const studentsStore = useStudentsStore();
 const authStore = useAuthStore();
 const { toast } = useToast();
+
+// Teacher collaboration composable for handling shared classes
+const { 
+  myClasses: allTeacherClasses, 
+  fetchMyClasses, 
+  leadClasses, 
+  assistantClasses,
+  isLoading: collaborationLoading 
+} = useTeacherCollaboration();
 
 // State
 const loading = ref(true);
@@ -56,53 +67,23 @@ const currentTeacher = ref<any>(null); // Will hold the teacher object from the 
 
 // Computed properties
 const teacherClasses = computed(() => {
-  if (!Array.isArray(classesStore.classes)) {
-    console.warn("classesStore.classes is not an array", classesStore.classes);
+  // Use collaboration composable data which includes both lead and assistant classes
+  if (!Array.isArray(allTeacherClasses.value)) {
+    console.warn("allTeacherClasses is not an array", allTeacherClasses.value);
     return [];
   }
-  // Filter by currentTeacherId derived from store/auth
-  return classesStore.classes.filter(classItem => classItem.teacherId === currentTeacherId.value);
+  return allTeacherClasses.value;
 });
 
 const selectedClass = computed(() => {
   if (!selectedClassId.value) return null;
-   if (!Array.isArray(classesStore.classes)) {
+  if (!Array.isArray(allTeacherClasses.value)) {
     return null;
   }
-  return classesStore.classes.find(c => c.id === selectedClassId.value) || null;
+  return allTeacherClasses.value.find(c => c.id === selectedClassId.value) || null;
 });
 
-// Clases programadas para hoy (por día de la semana) - Used in Overview metrics and section
-const todaysClasses = computed(() => {
-  const today = new Date();
-  const todayDayOfWeek = today.getDay(); // 0 = domingo, 6 = sábado
-
-  const dayMapping: { [key: string | number]: number } = {
-    'domingo': 0, 'dom': 0, 'sunday': 0, 'sun': 0, '0': 0, 0: 0,
-    'lunes': 1, 'lun': 1, 'monday': 1, 'mon': 1, '1': 1, 1: 1,
-    'martes': 2, 'mar': 2, 'tuesday': 2, 'tue': 2, '2': 2, 2: 2,
-    'miércoles': 3, 'miercoles': 3, 'mié': 3, 'mie': 3, 'wednesday': 3, 'wed': 3, '3': 3, 3: 3,
-    'jueves': 4, 'jue': 4, 'thursday': 4, 'thu': 4, '4': 4, 4: 4,
-    'viernes': 5, 'vie': 5, 'friday': 5, 'fri': 5, '5': 5, 5: 5,
-    'sábado': 6, 'sabado': 6, 'sáb': 6, 'sab': 6, 'saturday': 6, 'sat': 6, '6': 6, 6: 6
-  };
-
-  // Filter classes that have at least one slot scheduled for today
-  return teacherClasses.value.filter(classItem => {
-    if (!classItem.schedule?.slots || !Array.isArray(classItem.schedule.slots)) return false;
-
-    return classItem.schedule.slots.some(slot => {
-      // Ensure slot.day is treated as a number (0-6)
-      const slotDayNum = typeof slot.day === 'string'
-                         ? dayMapping[slot.day.toLowerCase().trim()]
-                         : (typeof slot.day === 'number' ? slot.day : undefined);
-
-      return slotDayNum !== undefined && slotDayNum >= 0 && slotDayNum <= 6 && slotDayNum === todayDayOfWeek;
-    });
-  });
-});
-
-// Métricas para el dashboard (Uses todaysClasses)
+// Métricas para el dashboard (simplificadas)
 const dashboardMetrics = computed(() => {
   const classes = teacherClasses.value;
   const totalStudents = classes.reduce((acc, curr) => {
@@ -123,12 +104,22 @@ const dashboardMetrics = computed(() => {
     }, 0);
   }, 0);
 
+  // Separar clases principales de compartidas para métricas
+  const leadClassesCount = leadClasses.value.length;
+  const assistantClassesCount = assistantClasses.value.length;
+
   return [
     {
-      title: 'Clases Asignadas',
-      value: classes.length,
+      title: 'Clases Principales',
+      value: leadClassesCount,
       icon: BookOpenIcon as FunctionalComponent,
       color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
+    },
+    {
+      title: 'Clases Compartidas',
+      value: assistantClassesCount,
+      icon: BookOpenIcon as FunctionalComponent,
+      color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400'
     },
     {
       title: 'Total Estudiantes',
@@ -141,67 +132,30 @@ const dashboardMetrics = computed(() => {
       value: Math.round(totalHours * 10) / 10,
       icon: ClockIcon as FunctionalComponent,
       color: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-    },
-    {
-      title: 'Clases Hoy',
-      value: todaysClasses.value.length, // Using todaysClasses
-      icon: CalendarIcon as FunctionalComponent,
-      color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400'
-    },
+    }
   ];
 });
-
-// Notificaciones de prueba (Kept here as sample data)
-const notifications = ref([
-  {
-    id: 1,
-    title: 'Nueva clase asignada',
-    message: 'Se te ha asignado la clase de Piano Intermedio',
-    date: new Date(),
-    read: false,
-    type: 'info'
-  },
-  {
-    id: 2,
-    title: 'Recordatorio',
-    message: 'Recuerda actualizar la lista de asistencia',
-    date: new Date(Date.now() - 86400000),
-    read: true,
-    type: 'reminder'
-  }
-]);
-
 
 // --- Helper functions for sorting classes by day ---
 // Mapping from day name/number to numeric day index (0-6 for getDay)
 const getDayIndex = (dayValue: any): number => {
     const dayMapping: { [key: string | number]: number } = {
-        'domingo': 0, 'dom': 0, 'sunday': 0, 'sun': 0, 0: 0,
-        'lunes': 1, 'lun': 1, 'monday': 1, 'mon': 1, 1: 1,
-        'martes': 2, 'mar': 2, 'tuesday': 2, 'tue': 2, 2: 2,
-        'miércoles': 3, 'miercoles': 3, 'mié': 3, 'mie': 3, 'wednesday': 3, 'wed': 3, 3: 3,
-        'jueves': 4, 'jue': 4, 'thursday': 4, 'thu': 4, 4: 4,
-        'viernes': 5, 'vie': 5, 'friday': 5, 'fri': 5, 5: 5,
-        'sábado': 6, 'sabado': 6, 'sáb': 6, 'sab': 6, 'saturday': 6, 'sat': 6, 6: 6,
+        'domingo': 0, 'dom': 0, 'sunday': 0, 'sun': 0, '0': 0,
+        'lunes': 1, 'lun': 1, 'monday': 1, 'mon': 1, '1': 1,
+        'martes': 2, 'mar': 2, 'tuesday': 2, 'tue': 2, '2': 2,
+        'miércoles': 3, 'miercoles': 3, 'mié': 3, 'mie': 3, 'wednesday': 3, 'wed': 3, '3': 3,
+        'jueves': 4, 'jue': 4, 'thursday': 4, 'thu': 4, '4': 4,
+        'viernes': 5, 'vie': 5, 'friday': 5, 'fri': 5, '5': 5,
+        'sábado': 6, 'sabado': 6, 'sáb': 6, 'sab': 6, 'saturday': 6, 'sat': 6, '6': 6,
     };
-    // Handle both string and number types, return -1 for unknown
     return dayMapping[typeof dayValue === 'string' ? dayValue.toLowerCase().trim() : dayValue] ?? -1;
 };
 
-// Function to get the numeric day of the week (0-6, where 0 is Sunday)
-const getCurrentDayIndex = () => {
-  return new Date().getDay();
-};
-
-// Get the current day index
+const getCurrentDayIndex = () => new Date().getDay();
 const currentDayIndex = ref(getCurrentDayIndex());
 
-// Calculate the distance from today to a specific day index (0-6)
-// This ensures sorting starts from today and wraps around the week
 const getDistanceFromTodayIndex = (dayIndex: number): number => {
   const today = currentDayIndex.value;
-  // Calculate distance considering wrap-around
-  // (targetDay - today + 7) % 7
   return (dayIndex - today + 7) % 7;
 };
 
@@ -210,27 +164,23 @@ const sortedTeacherClasses = computed(() => {
   if (!teacherClasses.value.length) return [];
 
   return [...teacherClasses.value].sort((a, b) => {
-    // Find the first valid schedule slot day for sorting
     const aFirstSlotDay = a.schedule?.slots?.[0]?.day;
     const bFirstSlotDay = b.schedule?.slots?.[0]?.day;
 
     const dayIndexA = aFirstSlotDay !== undefined ? getDayIndex(aFirstSlotDay) : -1;
     const dayIndexB = bFirstSlotDay !== undefined ? getDayIndex(bFirstSlotDay) : -1;
 
-    // Handle cases where schedule/slot/day might be missing or invalid
-    if (dayIndexA === -1 && dayIndexB === -1) return 0; // Both invalid, keep original order
-    if (dayIndexA === -1) return 1; // A invalid, push A to end
-    if (dayIndexB === -1) return -1; // B invalid, push B to end
+    if (dayIndexA === -1 && dayIndexB === -1) return 0;
+    if (dayIndexA === -1) return 1;
+    if (dayIndexB === -1) return -1;
 
-    // Calculate distance from today
     const distanceA = getDistanceFromTodayIndex(dayIndexA);
     const distanceB = getDistanceFromTodayIndex(dayIndexB);
 
     if (distanceA !== distanceB) {
-      return distanceA - distanceB; // Sort by proximity to current day
+      return distanceA - distanceB;
     }
 
-    // If same distance (same day), sort by start time of the first slot
     const startTimeA = a.schedule?.slots?.[0]?.startTime || '00:00';
     const startTimeB = b.schedule?.slots?.[0]?.startTime || '00:00';
     return startTimeA.localeCompare(startTimeB);
@@ -329,6 +279,12 @@ function cleanData(obj: any): any {
 
 
 // --- Handlers (Methods triggered by events from children or directly) ---
+const handleCollaborationUpdated = async () => {
+  // Recargar las clases cuando se actualiza una colaboración
+  await fetchMyClasses();
+  console.log('Colaboración actualizada, clases recargadas');
+};
+
 const handleAddClass = () => {
   isEditing.value = false;
   selectedClassId.value = '';
@@ -501,17 +457,15 @@ onMounted(async () => {
       } else {
         console.warn('⚠️ No authenticated user found.');
         // Optionally set a default or handle unauthenticated state
-      }
-    } else {
+      }    } else {
       console.warn('⚠️ teachersStore or its fetch method not available.');
       // If teacher store is crucial, you might want to stop here or show an error
     }
 
-    // 2. Fetch classes and students (can run in parallel after teacher ID is potentially set)
-    if (classesStore && (typeof classesStore.forceSync === 'function' || typeof classesStore.fetchClasses === 'function')) {
-       promises.push(classesStore.forceSync ? classesStore.forceSync() : classesStore.fetchClasses());
-    } else { console.warn('⚠️ classesStore or its fetch method not available.'); }
+    // 2. Fetch teacher's classes using collaboration composable (includes shared classes)
+    await fetchMyClasses();
 
+    // 3. Fetch students (can run in parallel)
     if (studentsStore && typeof studentsStore.fetchStudents === 'function') {
       promises.push(studentsStore.fetchStudents());
     } else { console.warn('⚠️ studentsStore or its fetchStudents method not available.'); }
@@ -519,6 +473,8 @@ onMounted(async () => {
     await Promise.all(promises.filter(p => p !== undefined)); // Filter out any undefined promises
 
     console.log(`✅ Datos cargados. Clases del profesor (${currentTeacherId.value}): ${teacherClasses.value.length}`);
+    console.log(`📋 Clases donde es encargado: ${leadClasses.value.length}`);
+    console.log(`🤝 Clases compartidas (asistente): ${assistantClasses.value.length}`);
 
   } catch (error) {
     console.error('❌ Error cargando datos:', error);
@@ -589,36 +545,14 @@ const setActiveTab = (tab: string) => {
         <!-- Metrics Component -->
         <DashboardMetricsSection
           :metrics="dashboardMetrics"
-        />
-
-        <!-- Todays Classes Component (NEW) -->
-        <TodaysClassesSection
-            :classes="todaysClasses"
-            @take-attendance="handleTakeAttendance"
-            @view-class="handleViewClass"
-        />
-
-         <!-- Quick Actions (Moved from previous spot, seems relevant for overview) -->
-        <div class="flex flex-wrap gap-2 md:gap-3">
-          <button
-            @click="handleAddClass"
-            class="flex items-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-blue-600 text-white text-sm md:text-base rounded-md hover:bg-blue-700 transition-colors dark:bg-blue-700 dark:hover:bg-blue-600"
-          >
-            <PlusIcon class="w-4 h-4 md:w-5 md:h-5" />
-            <span>Agregar Clase</span>
-          </button>
-           <!-- Add other quick actions here if needed -->
-        </div>
-
-        <!-- Notifications Component -->
-        <NotificationListSection
-          :notifications="notifications"
-        />
-      </div>
-
-      <!-- Ausentes Tab (NEW Section Component) -->
+        />        <!-- Todays Classes Component (Self-contained) -->
+        <!-- <TodaysClassesSection /> -->
+      </div>      <!-- Ausentes Tab (NEW Section Component) -->
       <AusentesSection
         v-if="activeTab === 'schedule'"
+      />      <!-- Notificaciones Tab (Self-contained Component) -->
+      <NotificationsSection
+        v-if="activeTab === 'notifications'"
       />      <!-- Mis Clases Tab (UPDATED Section Component) -->
       <!-- Este componente utiliza el nuevo TeacherClassesCard con soporte para viewMode (tarjeta/lista) -->
       <!-- Esta vista reemplaza la página separada de "Clases" que se ha eliminado del menú principal -->
@@ -630,11 +564,19 @@ const setActiveTab = (tab: string) => {
         @edit-class="handleEditClass"
         @delete-class="handleDeleteClass"
         @manage-students="handleManageStudents"
+        @collaboration-updated="handleCollaborationUpdated"
       />
-
       <!-- Observaciones Tab (NEW Section Component) -->
        <ObservacionesSection
          v-if="activeTab === 'upcoming'"
+          :classes="teacherClasses"
+          @view-class="handleViewClass"
+          @edit-class="handleEditClass"
+          @delete-class="handleDeleteClass"
+          @manage-students="handleManageStudents"
+          @take-attendance="handleTakeAttendance"
+          @add-class="handleAddClass"
+
        />
 
     </section>

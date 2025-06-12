@@ -186,6 +186,7 @@ export interface JustificationData {
   createdAt: Date;
   updatedAt?: Date;
   timeLimit: Date;
+  
 }
 
 export interface StatusChange {

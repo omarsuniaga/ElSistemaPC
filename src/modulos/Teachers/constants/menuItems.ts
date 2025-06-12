@@ -11,7 +11,8 @@ import {
   BookOpenIcon,
   CalendarDaysIcon,
   ChatBubbleLeftRightIcon,
-  SparklesIcon
+  SparklesIcon,
+  BellIcon
 } from '@heroicons/vue/24/outline'
 
 // Menú para maestros: rutas que comienzan con "/teacher" 
@@ -23,11 +24,23 @@ export const teacherMenuItems = [
     to: '/teacher', 
     ariaLabel: 'Panel de control del maestro'
   },
+  // { 
+  //   name: 'Notificaciones', 
+  //   icon: BellIcon, 
+  //   to: '/teacher/notifications', 
+  //   ariaLabel: 'Ver notificaciones'
+  // },
   { 
     name: 'Attendance', 
     icon: ClipboardDocumentCheckIcon, 
     to: '/teacher/attendance', 
     ariaLabel: 'Gestionar asistencias'
+  },
+   { 
+    name: 'Montaje', 
+    icon: SparklesIcon, 
+    to: '/montaje', 
+    ariaLabel: 'Gestión de montaje musical'
   },
   { 
     name: 'Horarios', 
@@ -40,12 +53,6 @@ export const teacherMenuItems = [
     icon: UserGroupIcon, 
     to: '/students', 
     ariaLabel: 'Gestionar alumnos'
-  },
-  { 
-    name: 'Montaje', 
-    icon: SparklesIcon, 
-    to: '/montaje', 
-    ariaLabel: 'Gestión de montaje musical'
   },
 ]
 

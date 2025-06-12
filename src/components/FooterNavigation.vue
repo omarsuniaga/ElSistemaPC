@@ -15,11 +15,20 @@
         role="button"
         :aria-current="isRouteActive(item.to) ? 'page' : undefined"
       >
-        <component 
-          :is="item.icon" 
-          :class="[isRouteActive(item.to) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']" 
-          class="h-6 w-6 transition-colors duration-200" 
-        />
+        <div class="relative">
+          <component 
+            :is="item.icon" 
+            :class="[isRouteActive(item.to) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400']" 
+            class="h-6 w-6 transition-colors duration-200" 
+          />
+          <!-- Notification badge for notifications menu item -->
+          <div 
+            v-if="item.to === '/teacher/notifications' && authStore.isTeacher && unreadNotificationsCount > 0"
+            class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+          >
+            {{ unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount }}
+          </div>
+        </div>
         <span class="font-medium">{{ item.name }}</span>
       </router-link>
     </div>
@@ -27,15 +36,41 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { teacherMenuItems, adminMenuItems } from '../modulos/Teachers/constants/menuItems'
 import { superusuarioMenuItems } from '../modulos/Superusuario/constants/menuItems'
 import { HomeIcon, UserIcon } from '@heroicons/vue/24/outline'
+import { useGeneralNotifications } from '../modulos/Teachers/composables/useGeneralNotifications'
 
 const route = useRoute()
 const authStore = useAuthStore()
+
+// Notification system for teachers
+const { 
+  unreadCount, 
+  loadNotifications, 
+  setupRealtimeListener 
+} = useGeneralNotifications()
+
+const unreadNotificationsCount = computed(() => unreadCount.value)
+
+let unsubscribe: (() => void) | null = null
+
+// Initialize notifications for teachers
+onMounted(() => {
+  if (authStore.isTeacher) {
+    loadNotifications()
+    setupRealtimeListener()
+  }
+})
+
+onUnmounted(() => {
+  if (unsubscribe) {
+    unsubscribe()
+  }
+})
 // Remove unused computed property since route.path is used directly
 
 // Determinar si la navegación debe mostrarse (ocultar en rutas públicas)

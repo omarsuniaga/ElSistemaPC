@@ -72,25 +72,40 @@
               class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
             >
               <div class="flex justify-between items-start">
-                <div class="flex-1">
-                  <div class="flex items-center space-x-3">
-                    <h3 class="font-medium text-gray-900">{{ role.name }}</h3>
-                    <span
-                      :class="[
-                        'px-2 py-1 text-xs rounded-full',
-                        role.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      ]"
-                    >
-                      {{ role.isActive ? 'Activo' : 'Inactivo' }}
-                    </span>
+                  <div class="flex-1">
+                    <div class="flex items-center space-x-3">
+                      <h3 class="font-medium text-gray-900">{{ role.name }}</h3>
+                      <span
+                        :class="[
+                          'px-2 py-1 text-xs rounded-full',
+                          role.isActive
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        ]"
+                      >
+                        {{ role.isActive ? 'Activo' : 'Inactivo' }}
+                      </span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">{{ role.description }}</p>
+                    <div class="mt-2">
+                      <span class="text-xs text-gray-500">{{ role.permissions.length }} permisos asignados</span>
+                      <div class="mt-1 flex flex-wrap gap-1">
+                        <span 
+                          v-for="permission in role.permissions.slice(0, 3)" 
+                          :key="permission"
+                          class="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
+                        >
+                          {{ permission }}
+                        </span>
+                        <span 
+                          v-if="role.permissions.length > 3"
+                          class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full"
+                        >
+                          +{{ role.permissions.length - 3 }} más
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <p class="text-sm text-gray-600 mt-1">{{ role.description }}</p>
-                  <div class="mt-2">
-                    <span class="text-xs text-gray-500">{{ role.permissions.length }} permisos asignados</span>
-                  </div>
-                </div>
                 <div class="flex space-x-2">
                   <button @click="openRoleModal(role)" class="btn-secondary-sm">
                     ✏️
@@ -195,7 +210,8 @@ const {
   updateRole,
   deletePermission,
   getPermissionsByModule,
-  forceInitializeRBAC
+  forceInitializeRBAC,
+  initialize
 } = useRBACManagement()
 
 const activeTab = ref('roles')
@@ -290,8 +306,8 @@ const confirmDeletePermission = async (permission: Permission) => {
 }
 
 // Inicialización
-onMounted(() => {
-  // Los datos se cargan automáticamente a través del composable
+onMounted(async () => {
+  await initialize()
 })
 </script>
 

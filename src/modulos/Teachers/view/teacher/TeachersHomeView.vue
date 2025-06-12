@@ -666,7 +666,9 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
 <template>
   <div class="teacher-dashboard">
     <header class="dashboard-header bg-white dark:bg-gray-800 p-3 md:p-4 rounded-lg shadow mb-4 md:mb-6">
-      <h1 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Panel de Control de Maestros</h1>
+      <h1 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
+        {{ currentTeacher.name }}
+      </h1>
       <p class="text-sm md:text-base text-gray-600 dark:text-gray-400">Aquí puedes gestionar y visualizar información relevante sobre tus clases y estudiantes.</p>
       
       <!-- Tabs de navegación -->

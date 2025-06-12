@@ -59,11 +59,10 @@ export const superusuarioRoutes: RouteRecordRaw[] = [
       allowedRoles: ['Superusuario'],
       title: 'Gestión de Navegación'
     }
-  },
-  {
+  },  {
     path: '/superusuario/users',
     name: 'SuperusuarioUsers',
-    component: () => import('../views/SuperusuarioDashboard.vue'), // Reusar dashboard por ahora
+    component: () => import('../views/GestionUsuarios.vue'),
     meta: {
       requiresAuth: true,
       allowedRoles: ['Superusuario'],
@@ -73,7 +72,7 @@ export const superusuarioRoutes: RouteRecordRaw[] = [
   {
     path: '/superusuario/system',
     name: 'SuperusuarioSystem',
-    component: () => import('../views/SuperusuarioDashboard.vue'), // Reusar dashboard por ahora
+    component: () => import('../views/GestionModulos.vue'),
     meta: {
       requiresAuth: true,
       allowedRoles: ['Superusuario'],
@@ -83,7 +82,7 @@ export const superusuarioRoutes: RouteRecordRaw[] = [
   {
     path: '/superusuario/audit',
     name: 'SuperusuarioAudit',
-    component: () => import('../views/SuperusuarioDashboard.vue'), // Reusar dashboard por ahora
+    component: () => import('../views/AuditoriaView.vue'),
     meta: {
       requiresAuth: true,
       allowedRoles: ['Superusuario'],

@@ -49,15 +49,18 @@
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             placeholder="Descripción del rol y sus responsabilidades"
           ></textarea>
-        </div>
-
-        <!-- Selección de permisos -->
+        </div>        <!-- Selección de permisos -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-4">
             Permisos Asignados
           </label>
           
-          <div class="space-y-4">
+          <div v-if="permissions.length === 0" class="text-center py-4">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
+            <p class="text-sm text-gray-500 mt-2">Cargando permisos...</p>
+          </div>
+          
+          <div v-else class="space-y-4">
             <div v-for="(modulePermissions, moduleName) in groupedPermissions" :key="moduleName">
               <div class="bg-gray-50 px-4 py-2 rounded-md">
                 <h4 class="font-medium text-gray-800 capitalize">{{ moduleName }}</h4>
@@ -107,7 +110,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRBACManagement, type Role } from '@/composables/useRBACManagement'
+import { useRBACManagement, type Role } from '../../../composables/useRBACManagement'
 
 interface Props {
   isOpen: boolean
@@ -122,7 +125,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const { permissions, createRole, updateRole, loading, getPermissionsByModule } = useRBACManagement()
+const { permissions, createRole, updateRole, loading, getPermissionsByModule, initialize } = useRBACManagement()
 
 const formData = ref({
   name: '',
@@ -136,8 +139,13 @@ const isEdit = computed(() => !!props.role)
 const groupedPermissions = computed(() => getPermissionsByModule.value)
 
 // Resetear formulario cuando se abre/cierra el modal
-watch(() => props.isOpen, (newVal) => {
+watch(() => props.isOpen, async (newVal) => {
   if (newVal) {
+    // Asegurar que los permisos estén cargados
+    if (permissions.value.length === 0) {
+      await initialize()
+    }
+    
     if (props.role) {
       // Modo edición
       formData.value = {

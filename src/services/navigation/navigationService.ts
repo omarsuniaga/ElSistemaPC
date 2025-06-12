@@ -2,7 +2,7 @@
 
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useRBACManagement } from '@/composables/useRBACManagement'
+import { RBACPersistenceService } from '@/services/rbac/rbacPersistenceService'
 import type { NavigationItem } from '@/services/rbac/rbacPersistenceService'
 
 export interface NavigationMenuItem {
@@ -17,7 +17,7 @@ export interface NavigationMenuItem {
 
 export class NavigationService {
   private static instance: NavigationService
-  private rbacManagement = useRBACManagement()
+  private navigationConfig = ref<NavigationItem[]>([])
   
   static getInstance(): NavigationService {
     if (!NavigationService.instance) {
@@ -26,6 +26,26 @@ export class NavigationService {
     return NavigationService.instance
   }
 
+  /**
+   * Cargar configuración de navegación
+   */
+  async loadNavigationConfig(): Promise<void> {
+    try {
+      const config = await RBACPersistenceService.getNavigationConfig()
+      this.navigationConfig.value = config
+    } catch (error) {
+      console.error('Error cargando configuración de navegación:', error)
+    }
+  }
+
+  /**
+   * Obtener navegación para un rol específico
+   */
+  getNavigationForRole(userRole: string): NavigationItem[] {
+    return this.navigationConfig.value.filter(item => 
+      item.isActive && item.roles.includes(userRole)
+    ).sort((a, b) => a.order - b.order)
+  }
   /**
    * Obtener menú de navegación para el usuario actual
    */
@@ -40,12 +60,12 @@ export class NavigationService {
 
     try {
       // Cargar configuración de navegación si no está cargada
-      if (this.rbacManagement.navigationConfig.value.length === 0) {
-        await this.rbacManagement.loadNavigationConfig()
+      if (this.navigationConfig.value.length === 0) {
+        await this.loadNavigationConfig()
       }
 
       // Obtener navegación permitida para el rol del usuario
-      const allowedNavigation = this.rbacManagement.getNavigationForRole(currentUser.role)
+      const allowedNavigation = this.getNavigationForRole(currentUser.role)
       
       // Convertir a formato de menú
       const menuItems: NavigationMenuItem[] = allowedNavigation.map(item => ({
@@ -75,20 +95,20 @@ export class NavigationService {
     
     if (!currentUser?.role) {
       return false
-    }
-
-    // Roles administrativos siempre tienen acceso completo
+    }    // Roles administrativos siempre tienen acceso completo
     if (['Superusuario', 'Admin'].includes(currentUser.role)) {
       return true
     }
 
     try {
       // Cargar configuración si no está disponible
-      if (this.rbacManagement.navigationConfig.value.length === 0) {
-        await this.rbacManagement.loadNavigationConfig()
+      if (this.navigationConfig.value.length === 0) {
+        await this.loadNavigationConfig()
       }
 
-      return this.rbacManagement.canAccessRoute(currentUser.role, routePath)
+      // Verificar si la ruta está permitida para el rol
+      const allowedNavigation = this.getNavigationForRole(currentUser.role)
+      return allowedNavigation.some(item => item.path === routePath)
       
     } catch (error) {
       console.error('Error verificando acceso a ruta:', error)
@@ -134,7 +154,6 @@ export class NavigationService {
 
     return fallbackMenus[userRole] || []
   }
-
   /**
    * Actualizar configuración de navegación (solo para superusuarios)
    */
@@ -149,14 +168,14 @@ export class NavigationService {
     try {
       // Actualizar elementos de navegación
       updates.forEach(update => {
-        const existingItem = this.rbacManagement.navigationConfig.value.find(item => item.id === update.id)
+        const existingItem = this.navigationConfig.value.find((item: NavigationItem) => item.id === update.id)
         if (existingItem && update.id) {
           Object.assign(existingItem, update)
         }
       })
       
-      // Guardar cambios
-      await this.rbacManagement.saveNavigationConfig(updatedBy)
+      // Guardar cambios usando el servicio de persistencia
+      await RBACPersistenceService.saveNavigationConfig(this.navigationConfig.value, updatedBy)
       
       console.log('✅ Configuración de navegación actualizada')
     } catch (error) {

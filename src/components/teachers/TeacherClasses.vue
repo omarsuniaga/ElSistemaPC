@@ -36,6 +36,36 @@
       </div>
     </div>
     
+    <!-- Pestañas para separar tipos de clases -->
+    <div class="mb-6">
+      <div class="border-b border-gray-200 dark:border-gray-700">
+        <nav class="-mb-px flex space-x-8">
+          <button
+            @click="activeTab = 'my-classes'"
+            :class="[
+              'py-2 px-1 border-b-2 font-medium text-sm',
+              activeTab === 'my-classes'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200'
+            ]"
+          >
+            Mis Clases ({{ myClasses.length }})
+          </button>
+          <button
+            @click="activeTab = 'shared-classes'"
+            :class="[
+              'py-2 px-1 border-b-2 font-medium text-sm',
+              activeTab === 'shared-classes'
+                ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200'
+            ]"
+          >
+            Clases Compartidas ({{ sharedClasses.length }})
+          </button>
+        </nav>
+      </div>
+    </div>
+    
     <!-- Estadísticas de clases -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       <div class="stat-card bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
@@ -70,22 +100,39 @@
         </div>
       </div>
     </div>
-    
-    <!-- Lista de clases -->
+      <!-- Lista de clases -->
     <div class="space-y-6 mb-6">
       <div v-if="filteredClasses.length === 0" class="text-center py-12">
         <DocumentTextIcon class="h-12 w-12 mx-auto text-gray-400" />
-        <h3 class="mt-2 text-lg font-medium text-gray-500">No se encontraron clases</h3>
+        <h3 class="mt-2 text-lg font-medium text-gray-500">
+          {{ activeTab === 'shared-classes' ? 'No tienes clases compartidas' : 'No se encontraron clases' }}
+        </h3>
         <p class="mt-1 text-gray-500">
-          {{ hasFilters ? 'Intenta cambiar tus filtros de búsqueda.' : 'No tienes clases asignadas actualmente.' }}
+          {{ hasFilters ? 'Intenta cambiar tus filtros de búsqueda.' : 
+             activeTab === 'shared-classes' ? 'No tienes clases compartidas actualmente.' : 'No tienes clases asignadas actualmente.' }}
         </p>
       </div>
       
-      <div 
-        v-for="class_ in filteredClasses" 
-        :key="class_.id" 
-        class="class-card bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden transition-all hover:shadow-lg"
-      >
+      <!-- Mostrar clases compartidas con componente especializado -->
+      <template v-if="activeTab === 'shared-classes'">
+        <SharedClassCard
+          v-for="class_ in filteredClasses"
+          :key="class_.id"
+          :class-data="class_"
+          @view="showClassDetails"
+          @take-attendance="takeAttendance"
+          @view-history="viewHistory"
+        />
+      </template>
+      
+      <!-- Mostrar clases propias con diseño regular -->
+      <template v-else>
+        <div 
+          v-for="class_ in filteredClasses" 
+          :key="class_.id" 
+          class="class-card bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden transition-all hover:shadow-lg"
+        >
+          <!-- Contenido de clase propia existente -->
         <div class="p-6">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -265,7 +312,8 @@ import { format, addMinutes, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useRouter } from 'vue-router';
 import { useClassesStore } from '../../stores/classes';
-import { useStudentsStore } from '../../stores/students';
+import { useStudentsStore } from '../../modulos/Students/store/students';
+import { useTeachersStore } from '../../modulos/Teachers/store/teachers';
 import {
   MagnifyingGlassIcon,
   AcademicCapIcon,
@@ -278,6 +326,7 @@ import {
   XMarkIcon
 } from '@heroicons/vue/24/outline';
 import StudentAvatar from '../../modulos/Students/components/StudentAvatar.vue';
+import SharedClassCard from '../../modulos/Teachers/components/SharedClassCard.vue';
 
 // Router
 const router = useRouter();
@@ -285,6 +334,7 @@ const router = useRouter();
 // Stores
 const classesStore = useClassesStore();
 const studentsStore = useStudentsStore();
+const teachersStore = useTeachersStore();
 
 // Estado
 const searchQuery = ref('');
@@ -294,6 +344,7 @@ const currentPage = ref(1);
 const pageSize = 5;
 const selectedClassStudents = ref(null);
 const classStudents = ref([]);
+const activeTab = ref('my-classes');
 
 // ID del profesor (simulado)
 const teacherId = '1'; // En un caso real, se obtendría del usuario autenticado
@@ -333,10 +384,17 @@ const classesStats = computed(() => {
 
 // Clases del profesor
 const teacherClasses = ref([]);
+const sharedClasses = ref([]);
 
-// Clases filtradas
+// Clases mostradas según la pestaña activa
+const myClasses = computed(() => teacherClasses.value);
+const currentClasses = computed(() => {
+  return activeTab.value === 'my-classes' ? myClasses.value : sharedClasses.value;
+});
+
+// Clases filtradas (usa currentClasses en lugar de teacherClasses)
 const filteredClasses = computed(() => {
-  let result = [...teacherClasses.value];
+  let result = [...currentClasses.value];
   
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
@@ -456,6 +514,15 @@ const showStudentDetails = (studentId) => {
   router.push(`/students/${studentId}`);
 };
 
+// Funciones para clases compartidas
+const takeAttendance = (class_) => {
+  router.push(`/teacher/classes/${class_.id}/attendance`);
+};
+
+const viewHistory = (class_) => {
+  router.push(`/teacher/classes/${class_.id}/history`);
+};
+
 // Resetear la página actual cuando cambian los filtros
 watch([searchQuery, filterInstrument, filterLevel], () => {
   currentPage.value = 1;
@@ -469,8 +536,11 @@ onMounted(async () => {
       await classesStore.fetchClasses();
     }
     
-    // Filtrar clases para este profesor
+    // Filtrar clases para este profesor (como maestro principal)
     teacherClasses.value = classesStore.classes.filter(c => c.teacherId === teacherId);
+    
+    // Cargar clases compartidas (donde es asistente)
+    sharedClasses.value = await teachersStore.getSharedClasses(teacherId);
     
   } catch (error) {
     console.error('Error al cargar clases del profesor:', error);

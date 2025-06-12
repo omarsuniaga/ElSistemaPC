@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Invitaciones - Sistema de Notificaciones</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .notification-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 8px 0;
+        }
+        .notification-item.pending {
+            border-left: 4px solid #ffc107;
+        }
+        .notification-item.accepted {
+            border-left: 4px solid #28a745;
+        }
+        .notification-item.rejected {
+            border-left: 4px solid #dc3545;
+        }
+        #log {
+            background: #000;
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 4px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Prueba de Sistema de Invitaciones (ACTUALIZADO)</h1>
+    
+    <div class="container">
+        <h2>1. Crear Invitación de Prueba</h2>
+        <form id="invitationForm">
+            <div class="form-group">
+                <label for="teacherId">ID del Maestro Destinatario (UID de Firebase):</label>
+                <input type="text" id="teacherId" required placeholder="ej: abc123def456...">
+            </div>
+            <div class="form-group">
+                <label for="teacherName">Nombre del Maestro:</label>
+                <input type="text" id="teacherName" required placeholder="ej: Juan Pérez">
+            </div>
+            <div class="form-group">
+                <label for="className">Nombre de la Clase:</label>
+                <input type="text" id="className" required placeholder="ej: Piano Intermedio">
+            </div>
+            <div class="form-group">
+                <label for="fromUserName">Nombre del Usuario que Invita:</label>
+                <input type="text" id="fromUserName" required placeholder="ej: María García">
+            </div>
+            <button type="submit">Crear Invitación</button>
+        </form>
+        <div id="createResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>2. Consultar Invitaciones Existentes</h2>
+        <div class="form-group">
+            <label for="queryTeacherId">ID del Maestro a Consultar:</label>
+            <input type="text" id="queryTeacherId" placeholder="ej: abc123def456...">
+        </div>
+        <button onclick="queryNotifications()">Consultar Notificaciones</button>
+        <button onclick="queryPendingInvitations()">Solo Pendientes</button>
+        <div id="queryResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>3. Escuchar en Tiempo Real</h2>
+        <div class="form-group">
+            <label for="listenTeacherId">ID del Maestro para Escuchar:</label>
+            <input type="text" id="listenTeacherId" placeholder="ej: abc123def456...">
+        </div>
+        <button onclick="startListening()">Iniciar Escucha</button>
+        <button onclick="stopListening()">Detener Escucha</button>
+        <div id="listenResult"></div>
+        <div id="realtimeNotifications"></div>
+    </div>
+
+    <div class="container">
+        <h2>4. Log de Actividad</h2>
+        <button onclick="clearLog()">Limpiar Log</button>
+        <div id="log"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            query, 
+            where, 
+            getDocs, 
+            onSnapshot,
+            Timestamp,
+            limit
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Configuración de Firebase - ACTUALIZAR CON TU CONFIGURACIÓN
+        const firebaseConfig = {
+            apiKey: "AIzaSyBLDDPmBzYjNOxVIhJsE9Y7C5VwE7oW7kI",
+            authDomain: "orquestapuntacana.firebaseapp.com",
+            projectId: "orquestapuntacana",
+            storageBucket: "orquestapuntacana.appspot.com",
+            messagingSenderId: "929870976297",
+            appId: "1:929870976297:web:32e7b5b0a5d6a4d0f41a3c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        let unsubscribeListener = null;
+
+        // Función para log
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        // Limpiar log
+        window.clearLog = function() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // Crear invitación
+        document.getElementById('invitationForm').onsubmit = async function(e) {
+            e.preventDefault();
+            
+            const teacherId = document.getElementById('teacherId').value;
+            const teacherName = document.getElementById('teacherName').value;
+            const className = document.getElementById('className').value;
+            const fromUserName = document.getElementById('fromUserName').value;
+            
+            try {
+                log('Creando invitación...');
+                
+                const notification = {
+                    type: 'class-invitation',
+                    title: 'Invitación a Clase Compartida',
+                    message: `${fromUserName} te ha invitado a colaborar en la clase "${className}"`,
+                    teacherId: teacherId,
+                    fromUserId: 'test-user-' + Date.now(),
+                    fromUserName: fromUserName,
+                    classId: 'test-class-' + Date.now(),
+                    className: className,
+                    permissions: {
+                        canTakeAttendance: true,
+                        canAddObservations: true,
+                        canViewAttendanceHistory: true
+                    },
+                    status: 'pending',
+                    createdAt: Timestamp.now(),
+                    expiresAt: Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
+                };
+
+                const docRef = await addDoc(collection(db, 'TEACHER_NOTIFICATIONS'), notification);
+                
+                document.getElementById('createResult').innerHTML = 
+                    `<div class="success">✅ Invitación creada exitosamente con ID: ${docRef.id}</div>`;
+                
+                log(`Invitación creada: ${docRef.id}`);
+                
+            } catch (error) {
+                document.getElementById('createResult').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+                log(`Error creando invitación: ${error.message}`);
+            }
+        };
+
+        // Consultar notificaciones - SIN orderBy para evitar índices
+        window.queryNotifications = async function() {
+            const teacherId = document.getElementById('queryTeacherId').value;
+            if (!teacherId) {
+                alert('Por favor ingresa un ID de maestro');
+                return;
+            }
+
+            try {
+                log(`Consultando notificaciones para: ${teacherId}`);
+                
+                const q = query(
+                    collection(db, 'TEACHER_NOTIFICATIONS'),
+                    where('teacherId', '==', teacherId),
+                    limit(20)
+                );
+
+                const querySnapshot = await getDocs(q);
+                let html = '<h3>Notificaciones encontradas:</h3>';
+                
+                if (querySnapshot.empty) {
+                    html += '<p>No se encontraron notificaciones</p>';
+                } else {
+                    // Convertir a array y ordenar manualmente
+                    const notifications = [];
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        notifications.push({ id: doc.id, ...data });
+                    });
+
+                    // Ordenar por fecha manualmente
+                    notifications.sort((a, b) => {
+                        const getTime = (date) => {
+                            if (date?.toDate) return date.toDate().getTime();
+                            if (date instanceof Date) return date.getTime();
+                            if (date?.seconds) return date.seconds * 1000;
+                            return 0;
+                        };
+                        return getTime(b.createdAt) - getTime(a.createdAt);
+                    });
+
+                    notifications.forEach((notification) => {
+                        const createdAt = notification.createdAt?.toDate?.() || new Date(notification.createdAt);
+                        html += `
+                            <div class="notification-item ${notification.status}">
+                                <strong>${notification.title}</strong> - <span style="color: #666;">${notification.status}</span><br>
+                                <small>${notification.message}</small><br>
+                                <small>Creado: ${createdAt.toLocaleString()}</small><br>
+                                <small>ID: ${notification.id}</small>
+                            </div>
+                        `;
+                    });
+                }
+                
+                document.getElementById('queryResult').innerHTML = html;
+                log(`Encontradas ${querySnapshot.size} notificaciones`);
+                
+            } catch (error) {
+                document.getElementById('queryResult').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+                log(`Error consultando notificaciones: ${error.message}`);
+            }
+        };
+
+        // Consultar solo invitaciones pendientes - SIN orderBy
+        window.queryPendingInvitations = async function() {
+            const teacherId = document.getElementById('queryTeacherId').value;
+            if (!teacherId) {
+                alert('Por favor ingresa un ID de maestro');
+                return;
+            }
+
+            try {
+                log(`Consultando invitaciones pendientes para: ${teacherId}`);
+                
+                const q = query(
+                    collection(db, 'TEACHER_NOTIFICATIONS'),
+                    where('teacherId', '==', teacherId),
+                    where('type', '==', 'class-invitation'),
+                    where('status', '==', 'pending')
+                );
+
+                const querySnapshot = await getDocs(q);
+                let html = '<h3>Invitaciones pendientes:</h3>';
+                
+                if (querySnapshot.empty) {
+                    html += '<p>No hay invitaciones pendientes</p>';
+                } else {
+                    const invitations = [];
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        invitations.push({ id: doc.id, ...data });
+                    });
+
+                    // Ordenar manualmente
+                    invitations.sort((a, b) => {
+                        const getTime = (date) => {
+                            if (date?.toDate) return date.toDate().getTime();
+                            if (date instanceof Date) return date.getTime();
+                            if (date?.seconds) return date.seconds * 1000;
+                            return 0;
+                        };
+                        return getTime(b.createdAt) - getTime(a.createdAt);
+                    });
+
+                    invitations.forEach((invitation) => {
+                        const createdAt = invitation.createdAt?.toDate?.() || new Date(invitation.createdAt);
+                        html += `
+                            <div class="notification-item pending">
+                                <strong>${invitation.className}</strong><br>
+                                <small>De: ${invitation.fromUserName}</small><br>
+                                <small>Creado: ${createdAt.toLocaleString()}</small><br>
+                                <small>ID: ${invitation.id}</small>
+                            </div>
+                        `;
+                    });
+                }
+                
+                document.getElementById('queryResult').innerHTML = html;
+                log(`Encontradas ${querySnapshot.size} invitaciones pendientes`);
+                
+            } catch (error) {
+                document.getElementById('queryResult').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+                log(`Error consultando invitaciones pendientes: ${error.message}`);
+            }
+        };
+
+        // Iniciar escucha en tiempo real - SIN orderBy
+        window.startListening = function() {
+            const teacherId = document.getElementById('listenTeacherId').value;
+            if (!teacherId) {
+                alert('Por favor ingresa un ID de maestro');
+                return;
+            }
+
+            // Detener listener anterior si existe
+            if (unsubscribeListener) {
+                unsubscribeListener();
+            }
+
+            try {
+                log(`Iniciando escucha en tiempo real para: ${teacherId}`);
+                
+                const q = query(
+                    collection(db, 'TEACHER_NOTIFICATIONS'),
+                    where('teacherId', '==', teacherId),
+                    limit(10)
+                );
+
+                unsubscribeListener = onSnapshot(q, (querySnapshot) => {
+                    log(`📡 Actualización en tiempo real: ${querySnapshot.size} documentos`);
+                    
+                    let html = '<h4>📡 Notificaciones en Tiempo Real:</h4>';
+                    
+                    if (querySnapshot.empty) {
+                        html += '<p>No hay notificaciones</p>';
+                    } else {
+                        const notifications = [];
+                        querySnapshot.forEach((doc) => {
+                            const data = doc.data();
+                            notifications.push({ id: doc.id, ...data });
+                        });
+
+                        // Ordenar por fecha manualmente
+                        notifications.sort((a, b) => {
+                            const getTime = (date) => {
+                                if (date?.toDate) return date.toDate().getTime();
+                                if (date instanceof Date) return date.getTime();
+                                if (date?.seconds) return date.seconds * 1000;
+                                return 0;
+                            };
+                            return getTime(b.createdAt) - getTime(a.createdAt);
+                        });
+
+                        notifications.forEach((notification) => {
+                            const createdAt = notification.createdAt?.toDate?.() || new Date(notification.createdAt);
+                            html += `
+                                <div class="notification-item ${notification.status}">
+                                    <strong>${notification.title}</strong> - <span style="color: #666;">${notification.status}</span><br>
+                                    <small>${notification.message}</small><br>
+                                    <small>Creado: ${createdAt.toLocaleString()}</small><br>
+                                    <small>ID: ${notification.id}</small>
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    document.getElementById('realtimeNotifications').innerHTML = html;
+                    
+                }, (error) => {
+                    log(`❌ Error en listener: ${error.message}`);
+                    document.getElementById('listenResult').innerHTML = 
+                        `<div class="error">❌ Error en listener: ${error.message}</div>`;
+                });
+
+                document.getElementById('listenResult').innerHTML = 
+                    '<div class="success">✅ Escucha iniciada correctamente</div>';
+                    
+            } catch (error) {
+                document.getElementById('listenResult').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+                log(`Error iniciando listener: ${error.message}`);
+            }
+        };
+
+        // Detener escucha
+        window.stopListening = function() {
+            if (unsubscribeListener) {
+                unsubscribeListener();
+                unsubscribeListener = null;
+                document.getElementById('listenResult').innerHTML = 
+                    '<div class="success">✅ Escucha detenida</div>';
+                document.getElementById('realtimeNotifications').innerHTML = '';
+                log('🛑 Listener detenido');
+            }
+        };
+
+        // Log inicial
+        log('✅ Sistema de pruebas cargado correctamente (SIN ÍNDICES)');
+        log('📊 Configuración Firebase: ' + firebaseConfig.projectId);
+        log('⚠️  Las consultas funcionan sin orderBy para evitar índices compuestos');
+        
+    </script>
+</body>
+</html>

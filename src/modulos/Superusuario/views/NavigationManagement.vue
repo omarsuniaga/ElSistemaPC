@@ -237,6 +237,7 @@ const loadData = async () => {
   try {
     loading.value = true
     error.value = null
+    await rbacManagement.initialize()
     await rbacManagement.loadNavigationConfig()
   } catch (err) {
     error.value = 'Error cargando configuración de navegación'

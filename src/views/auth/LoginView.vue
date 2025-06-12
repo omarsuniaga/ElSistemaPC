@@ -26,8 +26,12 @@ onMounted(async () => {
     successMessage.value = 'Registro exitoso. Por favor inicia sesión para continuar.'
   }
 
-  // Verificar si ya está autenticado
-  const user = await authStore.checkAuth()
+  // Verificar si ya está autenticado (solo si no se ha inicializado aún)
+  let user = authStore.user;
+  
+  if (!authStore.isInitialized) {
+    user = await authStore.checkAuth()
+  }
   
   if (user) {
     // Verificar el estado del usuario

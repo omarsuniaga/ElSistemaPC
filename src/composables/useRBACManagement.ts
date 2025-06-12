@@ -1,6 +1,6 @@
 // src/composables/useRBACManagement.ts
 
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { RBACPersistenceService, type NavigationItem } from '@/services/rbac/rbacPersistenceService'
 
@@ -205,9 +205,8 @@ export function useRBACManagement() {
       loading.value = false
     }  
   }
-
   // Verificar si un maestro puede ver todos los estudiantes
-  const getTeacherStudentViewPermission = async (teacherId: string): Promise<boolean> => {
+  const getTeacherStudentViewPermission = async (_teacherId: string): Promise<boolean> => {
     try {
       // Buscar en los roles si el maestro tiene el permiso
       const teacherRole = roles.value.find(role => role.name === 'Maestro' || role.name === 'Maestro Avanzado')
@@ -278,13 +277,13 @@ export function useRBACManagement() {
     })
     return grouped
   })
-
   // Función para inicializar datos por defecto si no existen
   const initializeDefaultData = async () => {
     await forceInitializeRBAC()
   }
 
-  onMounted(async () => {
+  // Función para inicializar el composable manualmente
+  const initialize = async () => {
     await loadRoles()
     await loadPermissions()
     await loadNavigationConfig()
@@ -293,7 +292,164 @@ export function useRBACManagement() {
     if (roles.value.length === 0 || permissions.value.length === 0) {
       await forceInitializeRBAC()
     }
-  })
+  }
+
+  // Crear un nuevo rol
+  const createRole = async (roleData: Omit<Role, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      loading.value = true
+      const newRole: Role = {
+        id: `role-${Date.now()}`,
+        ...roleData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+      
+      roles.value.push(newRole)
+      await saveRoles('system')
+      
+      console.log('✅ Rol creado exitosamente')
+    } catch (err) {
+      error.value = 'Error al crear rol'
+      console.error('Error creating role:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Actualizar un rol existente
+  const updateRole = async (roleId: string, updates: Partial<Role>) => {
+    try {
+      loading.value = true
+      const roleIndex = roles.value.findIndex(r => r.id === roleId)
+      
+      if (roleIndex === -1) {
+        throw new Error('Rol no encontrado')
+      }
+      
+      roles.value[roleIndex] = {
+        ...roles.value[roleIndex],
+        ...updates,
+        updatedAt: new Date()
+      }
+      
+      await saveRoles('system')
+      console.log('✅ Rol actualizado exitosamente')
+    } catch (err) {
+      error.value = 'Error al actualizar rol'
+      console.error('Error updating role:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Eliminar un rol
+  const deleteRole = async (roleId: string) => {
+    try {
+      loading.value = true
+      const roleIndex = roles.value.findIndex(r => r.id === roleId)
+      
+      if (roleIndex === -1) {
+        throw new Error('Rol no encontrado')
+      }
+      
+      roles.value.splice(roleIndex, 1)
+      await saveRoles('system')
+      
+      console.log('✅ Rol eliminado exitosamente')  
+    } catch (err) {
+      error.value = 'Error al eliminar rol'
+      console.error('Error deleting role:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Crear un nuevo permiso
+  const createPermission = async (permissionData: Omit<Permission, 'id'>) => {
+    try {
+      loading.value = true
+      const newPermission: Permission = {
+        id: `permission-${Date.now()}`,
+        ...permissionData
+      }
+      
+      permissions.value.push(newPermission)
+      await savePermissions('system')
+      
+      console.log('✅ Permiso creado exitosamente')
+    } catch (err) {
+      error.value = 'Error al crear permiso'
+      console.error('Error creating permission:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Actualizar un permiso existente
+  const updatePermission = async (permissionId: string, updates: Partial<Permission>) => {
+    try {
+      loading.value = true
+      const permissionIndex = permissions.value.findIndex(p => p.id === permissionId)
+      
+      if (permissionIndex === -1) {
+        throw new Error('Permiso no encontrado')
+      }
+      
+      permissions.value[permissionIndex] = {
+        ...permissions.value[permissionIndex],
+        ...updates
+      }
+      
+      await savePermissions('system')
+      console.log('✅ Permiso actualizado exitosamente')
+    } catch (err) {
+      error.value = 'Error al actualizar permiso'
+      console.error('Error updating permission:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Eliminar un permiso
+  const deletePermission = async (permissionId: string) => {
+    try {
+      loading.value = true
+      const permissionIndex = permissions.value.findIndex(p => p.id === permissionId)
+      
+      if (permissionIndex === -1) {
+        throw new Error('Permiso no encontrado')
+      }
+      
+      // Remover el permiso de todos los roles que lo tengan
+      roles.value.forEach(role => {
+        const permissionName = permissions.value[permissionIndex].name
+        const index = role.permissions.indexOf(permissionName)
+        if (index > -1) {
+          role.permissions.splice(index, 1)
+        }
+      })
+      
+      permissions.value.splice(permissionIndex, 1)
+      
+      // Guardar tanto roles como permisos
+      await savePermissions('system')
+      await saveRoles('system')
+      
+      console.log('✅ Permiso eliminado exitosamente')
+    } catch (err) {
+      error.value = 'Error al eliminar permiso'
+      console.error('Error deleting permission:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
 
   return {
     roles,
@@ -315,6 +471,13 @@ export function useRBACManagement() {
     canAccessRoute,
     updateNavigationForRole,
     getPermissionsByModule,
-    initializeDefaultData
+    initializeDefaultData,
+    initialize,
+    createRole,
+    updateRole,
+    deleteRole,
+    createPermission,
+    updatePermission,
+    deletePermission
   }
 }

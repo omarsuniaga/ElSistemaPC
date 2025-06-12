@@ -366,5 +366,50 @@ export const useTeachersStore = defineStore('teacher', {
         return null
       }
     },
+
+    /**
+     * Obtiene las clases donde el maestro es asistente (clases compartidas)
+     */
+    async getSharedClasses(teacherId: string) {
+      try {
+        const db = getFirestore()
+        const classesCollection = collection(db, 'CLASES')
+        
+        // Buscar clases donde el maestro aparece en el array de teachers como asistente
+        const q = query(classesCollection, where("teachers", "array-contains-any", [
+          { teacherId: teacherId }
+        ]))
+        
+        const querySnapshot = await getDocs(q)
+        const sharedClasses = []
+        
+        for (const doc of querySnapshot.docs) {
+          const classData = { id: doc.id, ...doc.data() }
+          
+          // Verificar que el maestro esté en la lista de asistentes
+          const isAssistant = classData.teachers?.some((teacher: any) => 
+            teacher.teacherId === teacherId && teacher.role === 'assistant'
+          )
+          
+          if (isAssistant) {
+            // Obtener información del maestro principal
+            const mainTeacher = await this.fetchTeacherById(classData.teacherId)
+            
+            sharedClasses.push({
+              ...classData,
+              isShared: true,
+              mainTeacherName: mainTeacher?.name || 'Maestro Principal',
+              teacherRole: 'assistant',
+              sharedWith: classData.teacherId
+            })
+          }
+        }
+        
+        return sharedClasses
+      } catch (error) {
+        console.error('Error al obtener clases compartidas:', error)
+        return []
+      }
+    },
   }
 })

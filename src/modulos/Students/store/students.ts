@@ -112,28 +112,21 @@ export const useStudentsStore = defineStore('students', {
   
   actions: {
     async fetchStudents() {
-      console.log('[studentsStore] fetchStudents: Start');
       this.loading = true
       this.error = null
-      
       try {
-        const fetchedStudentsData = await getStudentsFirebase()
-        console.log('[studentsStore] fetchStudents: Raw data from Firebase:', JSON.parse(JSON.stringify(fetchedStudentsData)));
-        
-        this.students = fetchedStudentsData
-        console.log('[studentsStore] fetchStudents: Updated this.students state (count:', this.students.length, '):', JSON.parse(JSON.stringify(this.students)));
-        
+        const fetchedStudentsData = await getStudentsFirebase()        
+        this.students = fetchedStudentsData        
         this.lastSync = new Date()
-        console.log('[studentsStore] fetchStudents: Sync complete. Last sync:', this.lastSync);
         return this.students
       } catch (error: any) {
-        console.error('[studentsStore] fetchStudents: Error fetching students:', error);
         this.error = error.message
         return []
       } finally {
         this.loading = false
-        console.log('[studentsStore] fetchStudents: End. Loading state:', this.loading);      }
-    },    /**
+      }
+    },
+    /**
      * Método para obtener TODOS los estudiantes sin restricciones RBAC
      * Solo debe usarse en casos específicos donde se requiera acceso completo
      * (por ejemplo, para superusuario o configuraciones de sistema)

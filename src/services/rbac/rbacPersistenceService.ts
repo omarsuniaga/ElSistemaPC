@@ -1,16 +1,10 @@
 // src/services/rbac/rbacPersistenceService.ts
 
 import { 
-  collection, 
   doc, 
-  getDocs, 
   getDoc, 
   setDoc, 
-  updateDoc, 
-  deleteDoc,
-  serverTimestamp,
-  query,
-  where
+  serverTimestamp
 } from 'firebase/firestore'
 import { db } from '@/firebase'
 import type { Role, Permission } from '@/composables/useRBACManagement'
@@ -373,7 +367,6 @@ export class RBACPersistenceService {
       return null
     }
   }
-
   /**
    * Inicializar configuración por defecto en Firestore
    */
@@ -381,21 +374,119 @@ export class RBACPersistenceService {
     try {
       console.log('🔄 Inicializando configuración RBAC por defecto...')
       
-      // Importar configuración por defecto desde useRBACManagement
-      const { useRBACManagement } = await import('@/composables/useRBACManagement')
-      const rbacManagement = useRBACManagement()
+      // Inicializar roles por defecto directamente
+      const defaultRoles = this.getDefaultRoles()
+      await this.saveRoles(defaultRoles, updatedBy)
       
-      // Inicializar datos por defecto
-      await rbacManagement.initializeDefaultData()
+      // Inicializar permisos por defecto directamente
+      const defaultPermissions = this.getDefaultPermissions()
+      await this.savePermissions(defaultPermissions, updatedBy)
       
-      // Guardar navegación por defecto
+      // Inicializar navegación por defecto
       const defaultNavigation = this.getDefaultNavigationConfig()
       await this.saveNavigationConfig(defaultNavigation, updatedBy)
       
-      console.log('✅ Configuración RBAC inicializada correctamente')
-    } catch (error) {
+      console.log('✅ Configuración RBAC inicializada correctamente')    } catch (error) {
       console.error('❌ Error inicializando configuración RBAC:', error)
       throw new Error('Error al inicializar configuración RBAC')
     }
+  }
+
+  /**
+   * Obtener roles por defecto del sistema
+   */
+  private static getDefaultRoles(): Role[] {
+    return [
+      {
+        id: 'maestro',
+        name: 'Maestro',
+        description: 'Profesor con acceso a módulos de enseñanza',
+        permissions: [
+          'Ver Asistencia', 'Crear Asistencia', 'Editar Asistencia', 'Calendario Asistencia',
+          'Ver Clases', 'Ver Estudiantes', 'Dashboard Maestro'
+        ],
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'director',
+        name: 'Director',
+        description: 'Administrador general con acceso académico',
+        permissions: [
+          'Ver Asistencia', 'Crear Asistencia', 'Editar Asistencia', 'Eliminar Asistencia', 'Calendario Asistencia',
+          'Ver Clases', 'Gestionar Clases',
+          'Ver Estudiantes', 'Gestionar Estudiantes',
+          'Ver Maestros', 'Gestionar Maestros',
+          'Dashboard Admin'
+        ],
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'admin',
+        name: 'Admin',
+        description: 'Administrador con permisos limitados',
+        permissions: [
+          'Ver Asistencia', 'Crear Asistencia', 'Editar Asistencia', 'Calendario Asistencia',
+          'Ver Clases', 'Gestionar Clases',
+          'Ver Estudiantes', 'Gestionar Estudiantes',
+          'Dashboard Admin'
+        ],
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'superusuario',
+        name: 'Superusuario',
+        description: 'Super administrador con acceso completo',
+        permissions: [
+          'Ver Asistencia', 'Crear Asistencia', 'Editar Asistencia', 'Eliminar Asistencia', 'Calendario Asistencia',
+          'Ver Clases', 'Gestionar Clases',
+          'Ver Estudiantes', 'Gestionar Estudiantes',
+          'Ver Maestros', 'Gestionar Maestros',
+          'Dashboard Admin', 'Gestión RBAC', 'Configuración Sistema'
+        ],
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ]
+  }
+
+  /**
+   * Obtener permisos por defecto del sistema
+   */
+  private static getDefaultPermissions(): Permission[] {
+    return [
+      // Permisos de Asistencia
+      { id: 'ver-asistencia', name: 'Ver Asistencia', description: 'Puede ver registros de asistencia', module: 'attendance', action: 'read', resource: 'attendance_records' },
+      { id: 'crear-asistencia', name: 'Crear Asistencia', description: 'Puede crear nuevos registros de asistencia', module: 'attendance', action: 'create', resource: 'attendance_records' },
+      { id: 'editar-asistencia', name: 'Editar Asistencia', description: 'Puede modificar registros de asistencia', module: 'attendance', action: 'update', resource: 'attendance_records' },
+      { id: 'eliminar-asistencia', name: 'Eliminar Asistencia', description: 'Puede eliminar registros de asistencia', module: 'attendance', action: 'delete', resource: 'attendance_records' },
+      { id: 'calendario-asistencia', name: 'Calendario Asistencia', description: 'Puede acceder al calendario de asistencia', module: 'attendance', action: 'read', resource: 'attendance_calendar' },
+      
+      // Permisos de Clases
+      { id: 'ver-clases', name: 'Ver Clases', description: 'Puede ver información de clases', module: 'classes', action: 'read', resource: 'classes' },
+      { id: 'gestionar-clases', name: 'Gestionar Clases', description: 'Puede crear y modificar clases', module: 'classes', action: 'write', resource: 'classes' },
+      
+      // Permisos de Estudiantes
+      { id: 'ver-estudiantes', name: 'Ver Estudiantes', description: 'Puede ver información de estudiantes', module: 'students', action: 'read', resource: 'students' },
+      { id: 'gestionar-estudiantes', name: 'Gestionar Estudiantes', description: 'Puede crear y modificar estudiantes', module: 'students', action: 'write', resource: 'students' },
+      
+      // Permisos de Maestros
+      { id: 'ver-maestros', name: 'Ver Maestros', description: 'Puede ver información de maestros', module: 'teachers', action: 'read', resource: 'teachers' },
+      { id: 'gestionar-maestros', name: 'Gestionar Maestros', description: 'Puede crear y modificar maestros', module: 'teachers', action: 'write', resource: 'teachers' },
+      
+      // Permisos de Dashboard
+      { id: 'dashboard-maestro', name: 'Dashboard Maestro', description: 'Acceso al dashboard de maestro', module: 'dashboard', action: 'read', resource: 'teacher_dashboard' },
+      { id: 'dashboard-admin', name: 'Dashboard Admin', description: 'Acceso al dashboard administrativo', module: 'dashboard', action: 'read', resource: 'admin_dashboard' },
+      
+      // Permisos de Sistema
+      { id: 'gestion-rbac', name: 'Gestión RBAC', description: 'Puede gestionar roles y permisos', module: 'system', action: 'admin', resource: 'rbac' },
+      { id: 'configuracion-sistema', name: 'Configuración Sistema', description: 'Puede configurar el sistema', module: 'system', action: 'admin', resource: 'configuration' }
+    ]
   }
 }

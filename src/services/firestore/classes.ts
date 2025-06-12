@@ -16,16 +16,17 @@ export interface ClassData {
   classroom?: string;
   createdAt?: Date;
   updatedAt?: Date;
-  
+  [key: string]: any; // Permite propiedades adicionales
 }
+// src/services/firestore/classes.ts
 
 // Get Firebase auth instance
 const auth = getAuth();
-
+const CLASSES_COLLECTION = 'CLASES';
 const classesService = {
   async getClasses(): Promise<ClassData[]> {
     try {
-      const querySnapshot = await getDocs(collection(db, 'CLASES'));
+      const querySnapshot = await getDocs(collection(db, CLASSES_COLLECTION));
       return querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -44,7 +45,7 @@ const classesService = {
         throw new Error('No hay usuario autenticado');
       }
 
-      const querySnapshot = await getDocs(collection(db, 'CLASES'));
+      const querySnapshot = await getDocs(collection(db, CLASSES_COLLECTION));
       return querySnapshot.docs
         .map(doc => ({
           id: doc.id,
@@ -71,10 +72,11 @@ const classesService = {
         updatedAt: new Date()
       };
 
-      const docRef = await addDoc(collection(db, 'CLASES'), finalClassData);
+      const docRef = await addDoc(collection(db, CLASSES_COLLECTION), finalClassData);
 
       return {
         id: docRef.id,
+        name: finalClassData.name, // Ensure 'name' is explicitly part of the returned object's type
         ...finalClassData
       };
     } catch (error) {
@@ -85,7 +87,7 @@ const classesService = {
 
   async updateClass(updatedClass: Partial<ClassData> & { id: string }): Promise<boolean> {
     try {
-      const docRef = doc(db, 'CLASES', updatedClass.id);
+      const docRef = doc(db, CLASSES_COLLECTION, updatedClass.id);
       const docSnap = await getDoc(docRef);
 
       const updateData = {
@@ -111,7 +113,7 @@ const classesService = {
 
   async deleteClass(classId: string): Promise<void> {
     try {
-      await deleteDoc(doc(db, 'CLASES', classId));
+      await deleteDoc(doc(db, CLASSES_COLLECTION, classId));
     } catch (error) {
       console.error('Error al eliminar clase:', error);
       throw error;
@@ -120,7 +122,7 @@ const classesService = {
 
   async getClassById(classId: string): Promise<ClassData | null> {
     try {
-      const docRef = doc(db, 'CLASES', classId);
+      const docRef = doc(db, CLASSES_COLLECTION, classId);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {

@@ -8,7 +8,7 @@
 
     
     <!-- Campo para ingresar el correo del destinatario -->
-    <div class="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+    <!-- <div class="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
       <h3 class="font-semibold text-sm sm:text-base mb-2">Enviar reporte por correo electrónico</h3>
       <div class="flex flex-col sm:flex-row gap-3 items-center">
         <div class="w-full sm:w-2/3">
@@ -26,7 +26,26 @@
           <span>Enviar Reporte</span>
         </button>
       </div>
+    </div> -->
+
+    <!-- vamos a colocar una breve descripcion de lo que debe hacer el usuario -->
+    <div class="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+      <h3 class="font-semibold text-sm sm:text-base mb-2">Gestión de Asistencia</h3>
+      <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+        Aquí puedes gestionar la asistencia de tus clases, ver estadísticas y generar reportes. 
+        Selecciona una fecha en el calendario para comenzar.
+      </p>
+      <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
+        Las fechas con un Punto Azul indican que hay clases registradas.
+      </p>
+      <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
+        Aquellas que no tengan puntos, significa que no hay clases registradas para esa fecha.
+      </p>
+      <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
+        Presiona una fecha y luego escoge la clase que vas a registrar asistencia.
+      </p>
     </div>
+
 
     <!-- Loading State -->
     <div v-if="isLoading" class="flex flex-col justify-center items-center py-6 sm:py-10 bg-white dark:bg-gray-800 rounded-lg shadow-md">

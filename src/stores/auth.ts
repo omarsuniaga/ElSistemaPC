@@ -24,6 +24,7 @@ interface User {
   updatedAt?: string
   userRoles?: string[];
   isDark?: boolean;
+  profileCompleted?: boolean;
   // Agrega otros campos si es necesario
 }
 

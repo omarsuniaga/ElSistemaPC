@@ -48,18 +48,10 @@ const isDevelopment = computed(() => import.meta.env?.DEV || false);
 // Function to check if attendance exists for a class on a specific date (async version)
 const hasAttendanceRecord = async (classId: string, date: string): Promise<boolean> => {
   try {
-    console.log('[ClassesModal] ===== CHECKING ATTENDANCE RECORD =====');
-    console.log('[ClassesModal] Input:', { classId, date });
-    console.log('[ClassesModal] Available attendance documents:');
+    // console.log('[ClassesModal] ===== CHECKING ATTENDANCE RECORD =====');
+    // console.log('[ClassesModal] Input:', { classId, date });
+    // console.log('[ClassesModal] Available attendance documents:');
     
-    attendanceStore.attendanceDocuments.forEach((doc, index) => {
-      console.log(`[ClassesModal] Doc ${index}:`, {
-        id: doc.id,
-        classId: doc.classId,
-        fecha: doc.fecha,
-        matches: (doc.classId === classId && doc.fecha === date)
-      });
-    });
     
     // First check the attendance store cache
     const record = attendanceStore.attendanceDocuments.find(
@@ -67,17 +59,17 @@ const hasAttendanceRecord = async (classId: string, date: string): Promise<boole
     );
     
     if (record) {
-      console.log('[ClassesModal] ✅ Found record in store cache:', record.id);
+      // console.log('[ClassesModal] ✅ Found record in store cache:', record.id);
       return true;
     }
-    
-    console.log('[ClassesModal] ❌ No record found in store cache');
-    
+
+    // console.log('[ClassesModal] ❌ No record found in store cache');
+
     // If not in cache, use optimized query to check Firestore
-    console.log('[ClassesModal] Checking Firestore...');
+    // console.log('[ClassesModal] Checking Firestore...');
     const exists = await checkAttendanceExists(classId, date);
-    console.log('[ClassesModal] Firestore query result:', exists);
-    
+    // console.log('[ClassesModal] Firestore query result:', exists);
+
     return exists;
   } catch (error) {
     console.error('[ClassesModal] Error checking attendance record:', error);
@@ -88,19 +80,19 @@ const hasAttendanceRecord = async (classId: string, date: string): Promise<boole
 // Function to check attendance status for a specific class
 const checkAttendanceStatus = async (classId: string, date: string) => {
   const key = `${classId}|${date}`;
-  console.log('[ClassesModal] Starting attendance check for:', { classId, date, key });
+  // console.log('[ClassesModal] Starting attendance check for:', { classId, date, key });
   attendanceStatusLoading.value[key] = true;
   
   try {
     const hasRecord = await hasAttendanceRecord(classId, date);
-    console.log('[ClassesModal] Attendance check result:', { classId, date, hasRecord });
+    // console.log('[ClassesModal] Attendance check result:', { classId, date, hasRecord });
     attendanceStatus.value[key] = hasRecord;
   } catch (error) {
     console.error('[ClassesModal] Error checking attendance status:', error);
     attendanceStatus.value[key] = false;
   } finally {
     attendanceStatusLoading.value[key] = false;
-    console.log('[ClassesModal] Attendance status set:', { key, status: attendanceStatus.value[key] });
+    //   console.log('[ClassesModal] Attendance status set:', { key, status: attendanceStatus.value[key] });
   }
 };
 
