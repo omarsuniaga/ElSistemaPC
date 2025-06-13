@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, type FunctionalComponent } from 'vue';
+import { ref, computed, onMounted, watch, provide, type FunctionalComponent } from 'vue';
 import { useRouter } from 'vue-router';
 import { useClassesStore } from '../../Classes/store/classes';
 import { useTeachersStore } from '../store/teachers';
@@ -64,6 +64,9 @@ const isEditing = ref(false);
 // Teacher identification
 const currentTeacherId = ref(''); // Will hold the ID from the teachers store or auth UID
 const currentTeacher = ref<any>(null); // Will hold the teacher object from the teachers store
+
+// Provide currentTeacherId to child components
+provide('currentTeacherId', currentTeacherId);
 
 // Computed properties
 const teacherClasses = computed(() => {
@@ -565,18 +568,10 @@ const setActiveTab = (tab: string) => {
         @delete-class="handleDeleteClass"
         @manage-students="handleManageStudents"
         @collaboration-updated="handleCollaborationUpdated"
-      />
-      <!-- Observaciones Tab (NEW Section Component) -->
+      />      <!-- Observaciones Tab (NEW Section Component) -->
        <ObservacionesSection
          v-if="activeTab === 'upcoming'"
-          :classes="teacherClasses"
-          @view-class="handleViewClass"
-          @edit-class="handleEditClass"
-          @delete-class="handleDeleteClass"
-          @manage-students="handleManageStudents"
-          @take-attendance="handleTakeAttendance"
-          @add-class="handleAddClass"
-
+         :classes="teacherClasses"
        />
 
     </section>

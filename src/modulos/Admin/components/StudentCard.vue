@@ -348,6 +348,13 @@ const vClickOutside = {
   }
 }
 </script>
+<script>
+export default {
+  components: {
+    name: 'StudentCard',
+  }
+}
+</script>
 
 <style scoped>
 /* Card hover effects */

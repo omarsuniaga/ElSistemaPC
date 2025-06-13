@@ -2,9 +2,10 @@
   "name": "Academia de Música Manager",
   "short_name": "Acad Música",
   "description": "Sistema integral de gestión para academias de música: asistencia, estudiantes, clases y reportes.",
-  "start_url": "/",
+  "version": "1.1.0",
+  "start_url": "/?source=pwa",
   "scope": "/",
-  "id": "/",
+  "id": "music-academy-app-v1",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#ffffff",
@@ -14,6 +15,22 @@
   "lang": "es",
   "dir": "ltr",
   "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "edge_side_panel": {
+    "preferred_width": 480
+  },
+  "handle_links": "preferred",
+  "file_handlers": [
+    {
+      "action": "/import",
+      "accept": {
+        "text/csv": [".csv"]
+      },
+      "name": "Importar Datos CSV"
+    }
+  ],
   "icons": [
     {
       "src": "icons/icon-72x72.png",

@@ -457,7 +457,10 @@ import { db } from "../firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useAuthStore } from "../stores/auth";
 
-const props = defineProps<{ limit?: number }>();
+const props = defineProps<{ 
+  limit?: number;
+  teacherId?: string;
+}>();
 const authStore = useAuthStore();
 
 // Agregar las variables faltantes
@@ -569,12 +572,26 @@ async function calcularTopAbsentees() {
     isLoading.value = true;
     error.value = null;
     
-    const result = await attendanceStore.fetchTopAbsentStudentsByRange(
-      formattedStartDate.value,
-      formattedEndDate.value,
-      parseInt(props.limit || '10', 10),
-      selectedClass.value || undefined
-    );
+    let result;
+    
+    // Si hay teacherId, usar el método específico para maestros
+    if (props.teacherId) {
+      console.log(`[TopAbsenteesByRange] Fetching absent students for teacher: ${props.teacherId}`);
+      result = await attendanceStore.fetchTopAbsentStudentsByTeacher(
+        formattedStartDate.value,
+        formattedEndDate.value,
+        props.teacherId,
+        props.limit || 10
+      );
+    } else {
+      // Si no hay teacherId, usar el método general
+      result = await attendanceStore.fetchTopAbsentStudentsByRange(
+        formattedStartDate.value,
+        formattedEndDate.value,
+        props.limit || 10,
+        selectedClass.value || undefined
+      );
+    }
     
     // Procesamiento adicional si es necesario
     topAbsentees.value = result;

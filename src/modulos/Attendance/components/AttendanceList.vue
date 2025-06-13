@@ -34,6 +34,7 @@ import ClassObservationsModal from '../../../components/ClassObservationsModal.v
 import JustificationModal from '../../../components/JustificationModal.vue'
 import { DocumentArrowDownIcon, PlusIcon } from '@heroicons/vue/24/outline'
 import AttendanceObservation from "./AttendanceObservation.vue"
+import ClassObservationsManager from '../../../components/observations/ClassObservationsManager.vue'
 
 // Props y emits
 const props = defineProps<{
@@ -67,6 +68,10 @@ const authStore = useAuthStore();
 const teachersStore = useTeachersStore();
 const route = useRoute();
 
+// Import the observations store for the unified system
+import { useObservationsStore } from '../../../stores/observations';
+const observationsStore = useObservationsStore();
+
 // Estado local para datos y carga
 const localStudents = ref<Student[]>([]);
 const localAttendanceRecords = ref<Record<string, AttendanceStatus>>({});
@@ -81,6 +86,9 @@ const isProcessing = ref<boolean>(false);
 const tableData = ref<Student[]>([]);
 const observationsModalOpen = ref<boolean>(false); // Estado para controlar la visibilidad del modal de observaciones
 const currentJustificationReason = ref<string>('');
+
+// Estado para el nuevo modal de observaciones unificadas
+const showClassObservationsManager = ref<boolean>(false);
 
 // Almacen para estudiantes justificados - usamos esto para mantener el estado visual
 const justifiedStudentsMap = ref<Record<string, boolean>>({});
@@ -193,8 +201,19 @@ const hasPendingChanges = computed(() => attendanceActions.hasPendingChanges.val
 console.log(`[AttendanceDebug] Cambios pendientes: ${hasPendingChanges.value}`);
 // Computed properties para observaciones
 const hasObservations = computed(() => {
-  const observations = attendanceStore.getObservations;
-  return observations && typeof observations === 'string' && observations.trim().length > 0;
+  // Consultar el nuevo sistema unificado de observaciones
+  if (!currentSelectedClass.value || !currentSelectedDate.value) {
+    return false;
+  }
+  
+  // Filtrar observaciones por clase y fecha del store
+  const allObservations = observationsStore.filteredObservations;
+  const todayObservations = allObservations.filter(obs => 
+    obs.classId === currentSelectedClass.value && 
+    obs.date === currentSelectedDate.value
+  );
+  
+  return todayObservations.length > 0;
 });
 
 const shouldAnimateObservationsButton = computed(() => {
@@ -562,7 +581,20 @@ onMounted(async () => {
       attendanceStore.attendanceRecords = { ...localAttendanceRecords.value };
     }
     
-    // PASO 6: Forzar actualizacion del renderizado utilizando nextTick
+    // PASO 6: Cargar observaciones del sistema unificado
+    try {
+      console.log('[AttendanceDebug] 📝 Cargando observaciones de la clase y fecha actual');
+      await observationsStore.fetchObservations({ 
+        classId: classIdToUse,
+        date: dateToUse 
+      });
+      console.log('[AttendanceDebug] ✓ Observaciones cargadas correctamente');
+    } catch (error) {
+      console.warn('[AttendanceDebug] ⚠️ Error al cargar observaciones:', error.message);
+      // No bloquear la carga de asistencia por errores en observaciones
+    }
+    
+    // PASO 7: Forzar actualizacion del renderizado utilizando nextTick
     await nextTick();
     console.log('[AttendanceDebug] Total de registros tras cargar (onMounted):', Object.keys(localAttendanceRecords.value).length);
     
@@ -1304,6 +1336,11 @@ const openAttendanceObservationModal = () => {
   attendanceObservationModalOpen.value = true;
 };
 
+// Función para abrir el modal profesional de observaciones unificadas
+const openClassObservationsModal = () => {
+  showClassObservationsManager.value = true;
+};
+
 // Estudiantes ordenados por nombre
 const sortedStudents = computed(() => {
   return [...effectiveStudents.value].sort((a, b) => {
@@ -1335,16 +1372,18 @@ const sortedStudents = computed(() => {
       <div v-else>
         <!-- Header with action buttons -->
         <AttendanceHeader 
-          :class-name="props.selectedClassName" 
+          :class-name="props.selectedClassName || 'Clase'" 
           :pending-changes-count="attendanceActions.pendingChangesCount.value"
           :is-disabled="props.isDisabled"
           :observations="attendanceStore.getObservations"
           :should-animate-observations-button="shouldAnimateObservationsButton"
           :has-observations="hasObservations"
+          :class-id="currentSelectedClass"
+          :selected-date="currentSelectedDate"
           @navigate-to-workspace="navigateToWorkspace"
           @save="handleUpdateStatus('all', 'save')"
           @open-export="handleExportToPDF"
-          @open-observation="openAttendanceObservationModal"
+          @open-observation="openClassObservationsModal"
           @navigate-to-calendar="handleNavigateToCalendar"
           @navigate-to-class-selector="handleNavigateToClassSelector"
         />
@@ -1374,7 +1413,7 @@ const sortedStudents = computed(() => {
           @update-status="handleUpdateStatus"
           @open-justification="handleOpenJustification"
           @save-justification="handleSaveJustification"
-          @open-observations="openAttendanceObservationModal"
+          @open-observations="openClassObservationsModal"
           @mark-all-present="() => markAllAsPresent()"
           @mark-all-absent="() => markAllAsAbsent()"
           @mark-all-late="() => markAllAsLate()"
@@ -1391,6 +1430,18 @@ const sortedStudents = computed(() => {
       :title="'Observaciones para ' + (props.selectedClassName || 'la clase')"
       @close="observationsModalOpen = false"
     />
+
+    <!-- Modal profesional de observaciones unificadas -->
+    <!-- Temporalmente comentado para debugging -->
+    <!--
+    <ClassObservationsManager
+      :is-open="showClassObservationsManager"
+      :class-id="currentSelectedClass"
+      :class-name="props.selectedClassName || 'Clase sin nombre'"
+      :selected-date="currentSelectedDate"
+      @close="showClassObservationsManager = false"
+    />
+    -->
 
     <AttendanceObservation
       v-if="attendanceObservationModalOpen"

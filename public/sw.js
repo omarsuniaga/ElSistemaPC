@@ -1,11 +1,22 @@
 // Versiones de caché
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
+const BUILD_DATE = '2023-10-18';
 const CACHE_NAMES = {
   static: `static-cache-v${APP_VERSION}`,
   dynamic: `dynamic-cache-v${APP_VERSION}`,
   assets: `assets-cache-v${APP_VERSION}`,
   documents: `documents-cache-v${APP_VERSION}`,
   api: `api-cache-v${APP_VERSION}`
+};
+
+// Mensajes que el Service Worker puede enviar a los clientes
+const SW_MESSAGES = {
+  INSTALLED: 'sw-installed',
+  UPDATED: 'sw-updated',
+  OFFLINE_READY: 'sw-offline-ready',
+  ERROR: 'sw-error',
+  CACHE_UPDATED: 'sw-cache-updated',
+  SYNC_COMPLETED: 'sw-sync-completed'
 };
 
 // Recursos estáticos para precarga - solo rutas accesibles directamente en el navegador
@@ -109,8 +120,17 @@ const trimCache = async (cacheName, maxItems) => {
   }
 };
 
+// Utilidad para enviar mensajes a todos los clientes
+const sendMessageToClients = async (message) => {
+  const clients = await self.clients.matchAll({ type: 'window' });
+  clients.forEach(client => {
+    client.postMessage(message);
+  });
+};
+
 // Install service worker and cache assets
 self.addEventListener('install', event => {
+  console.log(`[ServiceWorker] Installing version ${APP_VERSION} (${BUILD_DATE})`);
   
   event.waitUntil(
     Promise.all([
@@ -119,7 +139,7 @@ self.addEventListener('install', event => {
       caches.open(CACHE_NAMES.assets),
       caches.open(CACHE_NAMES.documents),
       caches.open(CACHE_NAMES.api)
-    ]).then(([staticCache, dynamicCache, assetsCache, documentsCache, apiCache]) => {
+    ]).then(async ([staticCache, dynamicCache, assetsCache, documentsCache, apiCache]) => {
       console.log('[ServiceWorker] Cachés abiertos, procediendo a cachear recursos estáticos');
       
       // Manejar cada recurso individualmente para evitar fallos en toda la operación
@@ -130,13 +150,35 @@ self.addEventListener('install', event => {
         })
       );
       
-      return Promise.all([
-        Promise.all(cacheStaticAssets),
-        Promise.resolve(), // No cachear nada en dynamic cache
-        Promise.resolve(), // No cachear nada en assets cache
-        Promise.resolve(), // No cachear nada en documents cache
-        Promise.resolve()  // No cachear nada en API cache
-      ]);
+      try {
+        await Promise.all(cacheStaticAssets);
+        console.log('[ServiceWorker] Todos los recursos estáticos cacheados correctamente');
+        
+        // Notificar a los clientes que el SW está listo para uso offline
+        await sendMessageToClients({
+          type: SW_MESSAGES.INSTALLED,
+          payload: {
+            version: APP_VERSION,
+            buildDate: BUILD_DATE,
+            cacheReady: true
+          }
+        });
+        
+        return true;
+      } catch (err) {
+        console.error('[ServiceWorker] Error al cachear recursos estáticos:', err);
+        
+        // Notificar que hay un error pero seguimos funcionando
+        await sendMessageToClients({
+          type: SW_MESSAGES.ERROR,
+          payload: {
+            message: 'Error al cachear recursos estáticos',
+            error: err.message
+          }
+        });
+        
+        return false;
+      }
     }).catch(error => {
       console.error('[ServiceWorker] Error durante la instalación:', error);
     })
@@ -148,17 +190,124 @@ self.addEventListener('install', event => {
 
 // Activate service worker and clean old caches
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
+  console.log(`[ServiceWorker] Activating version ${APP_VERSION}`);
+  
+  event.waitUntil((async () => {
+    try {
+      // Limpiar caches obsoletas
+      const cacheNames = await caches.keys();
       const currentCacheNames = Object.values(CACHE_NAMES);
-      return Promise.all(
-        cacheNames
-          .filter(name => !currentCacheNames.includes(name))
-          .map(name => caches.delete(name))
-      );
-    })
-  );
+      const deletedCaches = [];
+      
+      const cleanupPromises = cacheNames
+        .filter(name => !currentCacheNames.includes(name))
+        .map(async (name) => {
+          await caches.delete(name);
+          deletedCaches.push(name);
+          return name;
+        });
+      
+      await Promise.all(cleanupPromises);
+      
+      if (deletedCaches.length > 0) {
+        console.log('[ServiceWorker] Caches obsoletas eliminadas:', deletedCaches);
+      }
+      
+      // Tomar el control inmediatamente sin requerir recarga
+      await self.clients.claim();
+      
+      // Enviar mensaje de actualización a todos los clientes
+      await sendMessageToClients({
+        type: SW_MESSAGES.UPDATED,
+        payload: {
+          version: APP_VERSION,
+          buildDate: BUILD_DATE,
+          oldCachesDeleted: deletedCaches,
+          message: `Service Worker v${APP_VERSION} activado y listo`
+        }
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('[ServiceWorker] Error durante la activación:', error);
+      return false;
+    }
+  })());
 });
+
+// Variable para simular modo offline (para testing)
+let simulateOfflineMode = false;
+
+// Mensajería entre SW y clientes
+self.addEventListener('message', event => {
+  const message = event.data;
+  
+  if (!message || !message.type) {
+    return;
+  }
+  
+  console.log('[ServiceWorker] Mensaje recibido:', message.type);
+  
+  switch (message.type) {
+    case 'SIMULATE_OFFLINE':
+      simulateOfflineMode = !!message.payload;
+      console.log(`[ServiceWorker] Modo offline simulado: ${simulateOfflineMode}`);
+      break;
+      
+    case 'GET_VERSION':
+      event.ports[0].postMessage({
+        version: APP_VERSION,
+        buildDate: BUILD_DATE
+      });
+      break;
+      
+    case 'GET_SYNC_QUEUE':
+      event.ports[0].postMessage({
+        type: 'SYNC_QUEUE_STATE',
+        payload: syncQueue
+      });
+      break;
+      
+    case 'CLEAR_SYNC_QUEUE':
+      syncQueue = [];
+      saveSyncQueue();
+      break;
+  }
+});
+
+// Función para determinar la estrategia de caché para una URL
+const getCacheStrategy = (url) => {
+  // Verificar endpoints de API especiales
+  const apiEndpoint = API_ENDPOINTS.find(endpoint => endpoint.url.test(url));
+  if (apiEndpoint) {
+    return {
+      cacheName: apiEndpoint.cache,
+      strategy: apiEndpoint.strategy
+    };
+  }
+  
+  // Para assets estáticos
+  if (url.match(/\.(css|js|woff2?|ttf|eot|png|jpe?g|gif|svg|ico|webp)$/i)) {
+    return {
+      cacheName: CACHE_NAMES.assets,
+      strategy: 'cache-first'
+    };
+  }
+  
+  // Para documentos HTML
+  if (url.match(/\/[^.]*$|\.html$/i)) {
+    return {
+      cacheName: CACHE_NAMES.documents,
+      strategy: 'network-first'
+    };
+  }
+  
+  // Default
+  return {
+    cacheName: CACHE_NAMES.dynamic,
+    strategy: 'stale-while-revalidate'
+  };
+};
 
 // Intercept fetch requests
 self.addEventListener('fetch', (event) => {
@@ -171,6 +320,36 @@ self.addEventListener('fetch', (event) => {
   if (event.request.url.startsWith('chrome-extension')) {
     return;
   }
+  
+  // Manejar el modo offline simulado
+  if (simulateOfflineMode) {
+    console.log('[ServiceWorker] Simulando offline para:', event.request.url);
+    if (event.request.headers.get('Accept').includes('text/html')) {
+      // Para navegación a páginas, mostrar página offline
+      event.respondWith(caches.match(OFFLINE_URL));
+      return;
+    } else {
+      // Para otros recursos, intentar desde caché o fallar
+      event.respondWith(
+        caches.match(event.request).then(cachedResponse => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          return new Response('', { 
+            status: 503, 
+            statusText: 'Offline Simulation'
+          });
+        })
+      );
+      return;
+    }
+  }
+
+  // URL de la solicitud
+  const requestURL = event.request.url;
+
+  // Determinar estrategia de caché
+  const { cacheName, strategy } = getCacheStrategy(requestURL);
 
   // Skip Firebase Authentication requests
   if (event.request.url.includes('identitytoolkit.googleapis.com')) {
@@ -183,20 +362,108 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
+  
+  // Navegación principal a HTML - estrategia especial para offline
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return caches.match(OFFLINE_URL);
+      })
+    );
+    return;
+  }
 
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        if (response) {
-          return response;
-        }
-
-        return fetch(event.request)
-          .then(response => {
-            // Don't cache if not a success response
-            if (!response || response.status !== 200) {
-              return response;
+  // Aplicar estrategia según el tipo de solicitud
+  switch (strategy) {
+    case 'network-first':
+      event.respondWith(
+        fetch(event.request)
+          .then(networkResponse => {
+            // Clonar la respuesta antes de usarla
+            const responseToCache = networkResponse.clone();
+            
+            if (cacheName && networkResponse.status === 200) {
+              caches.open(cacheName).then(cache => {
+                cache.put(event.request, responseToCache);
+              });
             }
+            
+            return networkResponse;
+          })
+          .catch(() => {
+            // Si la red falla, intentar desde caché
+            return caches.match(event.request).then(cachedResponse => {
+              return cachedResponse || caches.match(OFFLINE_URL);
+            });
+          })
+      );
+      break;
+      
+    case 'cache-first':
+      event.respondWith(
+        caches.match(event.request).then(cachedResponse => {
+          if (cachedResponse) {
+            // Devolver desde caché, pero actualizar en segundo plano
+            const fetchPromise = fetch(event.request)
+              .then(networkResponse => {
+                if (cacheName && networkResponse.status === 200) {
+                  caches.open(cacheName).then(cache => {
+                    cache.put(event.request, networkResponse.clone());
+                  });
+                }
+                return networkResponse;
+              })
+              .catch(() => cachedResponse);
+              
+            // No esperamos a que termine, actualización en segundo plano
+            event.waitUntil(fetchPromise);
+            
+            return cachedResponse;
+          }
+          
+          // Si no está en caché, ir a red
+          return fetch(event.request).then(response => {
+            // Caché solo las respuestas exitosas
+            if (cacheName && response.status === 200) {
+              const responseToCache = response.clone();
+              caches.open(cacheName).then(cache => {
+                cache.put(event.request, responseToCache);
+              });
+            }
+            return response;
+          });
+        })
+      );
+      break;
+      
+    case 'network-only':
+      event.respondWith(fetch(event.request));
+      break;
+      
+    case 'stale-while-revalidate':
+    default:
+      event.respondWith(
+        caches.match(event.request).then(cachedResponse => {
+          const fetchPromise = fetch(event.request)
+            .then(networkResponse => {
+              if (cacheName && networkResponse.status === 200) {
+                const responseToCache = networkResponse.clone();
+                caches.open(cacheName).then(cache => {
+                  cache.put(event.request, responseToCache);
+                  
+                  // Mantener el tamaño del caché bajo control
+                  if (CACHE_LIMITS[cacheName]) {
+                    trimCache(cacheName, CACHE_LIMITS[cacheName]);
+                  }
+                });
+              }
+              return networkResponse;
+            });
+            
+          return cachedResponse || fetchPromise;
+        })
+      );
+  }
 
             // Clone the response as it can only be consumed once
             const responseToCache = response.clone();

@@ -5,6 +5,10 @@ import router from './router'
 import App from './App.vue'
 import { registerServiceWorker } from './registerServiceWorker'
 import { createBrowserDebugFunction } from './utils/testAttendanceSystem'
+// Importar herramientas de debug PWA y testing
+import './utils/musicAcademyDebugTools'
+import './utils/testingUtils'
+import './utils/pwaTester'
 
 import './style.css'
 

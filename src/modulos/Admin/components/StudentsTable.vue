@@ -314,7 +314,7 @@ import {
   TrashIcon,
   UserGroupIcon
 } from '@heroicons/vue/24/outline'
-import type { Student } from '../store/adminStudents'
+import { Student } from '../store/adminStudents'
 
 // Props
 interface Props {
@@ -440,7 +440,13 @@ const handleToggleStatus = (student: Student) => {
   emit('toggle-status', student)
 }
 </script>
-
+<script>
+export default {
+  components: {
+    name: 'StudentsTable',
+  }
+}
+</script>
 <style scoped>
 /* Table row hover effects */
 tbody tr:hover {

@@ -112,7 +112,7 @@ const isIPad = ref(false)
 
 // Referencias del Service Worker
 let swRegistration: ServiceWorkerRegistration | null = null
-let updateCheckInterval: number | null = null
+let updateCheckInterval: ReturnType<typeof setInterval> | null = null
 
 // Computed properties
 const displayVersion = computed(() => {

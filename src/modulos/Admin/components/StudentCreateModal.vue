@@ -439,7 +439,13 @@ const handleCancel = () => {
   emit('close')
 }
 </script>
-
+<script>
+export default {
+  components: {
+    name: 'StudentCreateModal',
+  }
+}
+</script>
 <style scoped>
 /* Custom styles for form elements */
 input:focus,

@@ -12,7 +12,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import ClassObservationBadge from './ClassObservationBadge.vue'
 import { computed } from 'vue'
-import { useRBACStore } from '@/stores/rbacStore'
+import { useRBACStore } from '../../../stores/rbacStore'
 
 const rbacStore = useRBACStore();
 
@@ -24,6 +24,8 @@ const props = defineProps<{
   shouldAnimateObservationsButton?: boolean;
   hasObservations?: boolean;
   observationButtonText?: string;
+  classId?: string;      // Para el nuevo sistema
+  selectedDate?: string; // Para el nuevo sistema
 }>()
 
 const emit = defineEmits<{
@@ -55,8 +57,8 @@ const observationButtonText = computed(() => {
 // Computed property for the button tooltip
 const observationTooltip = computed(() => {
   return props.hasObservations 
-    ? 'Consultar observaciones existentes' 
-    : 'Agregar una nueva observación';
+    ? 'Consultar observaciones de esta clase' 
+    : 'Agregar nueva observación para esta clase';
 })
 </script>
 
@@ -137,7 +139,7 @@ const observationTooltip = computed(() => {
         
         <!-- Text changes based on whether observations exist -->
         <span class="hidden xs:inline">
-          {{ props.hasObservations ? 'Consultar ' : 'Agregar ' }}
+          {{ observationButtonText }}
         </span>
         <span class="xs:hidden">
           {{ props.hasObservations ? 'Ver' : 'Agregar' }}

@@ -1336,14 +1336,32 @@ export const useAttendanceStore = defineStore('attendance', () => {
     startDate: string,
     endDate: string,
     limit: number,
-    classId?: string
+    classId?: string,
+    teacherId?: string
   ): Promise<Array<{ studentId: string; studentName: string; absences: number; percentage: number; totalPossibleClasses: number }>> => {
     loading.value = true;
     error.value = null;
     try {
-      console.log(`[AttendanceStore] Fetching top absent students for range: ${startDate} - ${endDate}, class: ${classId || 'all'}, limit: ${limit}`);
+      console.log(`[AttendanceStore] Fetching top absent students for range: ${startDate} - ${endDate}, class: ${classId || 'all'}, teacher: ${teacherId || 'all'}, limit: ${limit}`);
       const normalizedStartDate = normalizeDate(startDate);
       const normalizedEndDate = normalizeDate(endDate);
+
+      // If teacherId is provided, we need to filter by classes of that teacher
+      let validClassIds: string[] = [];
+      
+      if (teacherId) {
+        // Get classes for the specific teacher
+        const classesStore = useClassesStore();
+        const teacherClasses = classesStore.getClassesByTeacher(teacherId);
+        validClassIds = teacherClasses.map(c => c.id);
+        
+        if (validClassIds.length === 0) {
+          console.log(`[AttendanceStore] No classes found for teacher ${teacherId}`);
+          return [];
+        }
+        
+        console.log(`[AttendanceStore] Found ${validClassIds.length} classes for teacher ${teacherId}`);
+      }
 
       let queryRef = query(
         collection(db, ATTENDANCE_COLLECTION),
@@ -1353,13 +1371,27 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
       if (classId) {
         queryRef = query(queryRef, where('classId', '==', classId));
+      } else if (teacherId && validClassIds.length > 0) {
+        // If we have valid class IDs for the teacher, filter by them
+        // Note: Firestore 'in' queries are limited to 10 items, so we might need to split large arrays
+        if (validClassIds.length <= 10) {
+          queryRef = query(queryRef, where('classId', 'in', validClassIds));
+        } else {
+          // For more than 10 classes, we'll need to make multiple queries and combine results
+          console.log(`[AttendanceStore] Teacher has ${validClassIds.length} classes, will use post-filtering`);
+        }
       }
 
       const querySnapshot = await getDocs(queryRef);
-      const attendanceDocs: AttendanceDocument[] = [];
+      let attendanceDocs: AttendanceDocument[] = [];
       querySnapshot.forEach((doc: DocumentData) => {
         attendanceDocs.push({ id: doc.id, ...doc.data() } as AttendanceDocument);
       });
+
+      // Apply post-filtering if teacherId is provided and we have more than 10 classes
+      if (teacherId && validClassIds.length > 10) {
+        attendanceDocs = attendanceDocs.filter(doc => validClassIds.includes(doc.classId));
+      }
 
       console.log(`[AttendanceStore] Found ${attendanceDocs.length} attendance documents for the range.`);
 
@@ -1425,6 +1457,24 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   };
 
+  // Método específico para obtener alumnos ausentes filtrados por maestro
+  const fetchTopAbsentStudentsByTeacher = async(
+    startDate: string,
+    endDate: string,
+    teacherId: string,
+    limit: number = 10
+  ): Promise<Array<{ studentId: string; studentName: string; absences: number; percentage: number; totalPossibleClasses: number }>> => {
+    console.log(`[AttendanceStore] Fetching top absent students for teacher ${teacherId} from ${startDate} to ${endDate}`);
+    
+    return await fetchTopAbsentStudentsByRange(
+      startDate,
+      endDate,
+      limit,
+      undefined, // classId
+      teacherId  // teacherId
+    );
+  };
+
   return {
     // Estado
     attendanceRecords,
@@ -1478,6 +1528,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     fetchTopAbsentStudentsByRange,
     getStudentAttendanceByDateRange,
     deleteObservation,
+    fetchTopAbsentStudentsByTeacher,
     
     // Método para resetear el store (requerido para el logout)
     $reset() {

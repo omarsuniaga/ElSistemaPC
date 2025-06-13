@@ -393,11 +393,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useRBACStore } from '@/stores/rbacStore'
-import { useAdminTeachersStore } from '../store/adminTeachers'
+import { useRBACStore } from '@/stores/RBAC'
+import { useAdminTeachersStore } from '@/modulos/Admin/store/adminTeachers'
 import { 
   HomeIcon, 
-  ChevronRightIcon, 
   PlusIcon,
   ArrowDownTrayIcon,
   MagnifyingGlassIcon,

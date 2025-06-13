@@ -318,11 +318,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useRBACStore } from '@/stores/rbacStore'
+import { useRBACStore } from '../../../stores/rbacStore'
 import { useAdminStudentsStore } from '../store/adminStudents'
 import { 
   HomeIcon, 
-  ChevronRightIcon, 
   PlusIcon, 
   MagnifyingGlassIcon,
   ArrowDownTrayIcon,
@@ -335,8 +334,8 @@ import {
 
 // Components
 import StudentCard from '../components/StudentCard.vue'
-import StudentsTable from '../components/StudentsTable.vue'
-import StudentCreateModal from '../components/StudentCreateModal.vue'
+import { StudentsTable } from '../components/StudentsTable.vue'
+import { StudentCreateModal } from '../components/StudentCreateModal.vue'
 import StudentEditModal from '../components/StudentEditModal.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
 

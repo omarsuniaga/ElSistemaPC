@@ -6,6 +6,7 @@
   <title>Sin conexión - Academia de Música</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1a202c">
+  <!-- Inlining critical CSS to avoid external requests -->
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -37,15 +38,21 @@
       margin-bottom: 1.5rem;
     }
     .icon {
-      font-size: 3rem;
+      width: 80px;
+      height: 80px;
       margin-bottom: 1rem;
-      color: #3182ce;
+    }
+    .icon svg {
+      width: 100%;
+      height: 100%;
+      fill: #3182ce;
     }
     .buttons {
       display: flex;
       justify-content: center;
       gap: 12px;
       margin-top: 24px;
+      flex-wrap: wrap;
     }
     button {
       background-color: #3182ce;
@@ -103,11 +110,57 @@
     .data-status .value-pending {
       color: #d69e2e;
     }
+    .data-status .value-unavailable {
+      color: #e53e3e;
+    }
+    .notification {
+      background-color: #fed7d7;
+      color: #c53030;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 16px;
+      font-size: 0.9rem;
+      animation: fadeIn 0.3s ease-out;
+    }
+    .notification.online {
+      background-color: #c6f6d5;
+      color: #2f855a;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      margin-left: 8px;
+      background-color: #bee3f8;
+      color: #2b6cb0;
+    }
+    .app-version {
+      font-size: 0.7rem;
+      color: #a0aec0;
+      margin-top: 24px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="icon">📶</div>
+    <div class="icon">
+      <!-- Inline SVG to avoid external request -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3182ce" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 1l22 22"></path>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+        <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+        <path d="M12 20h.01"></path>
+      </svg>
+    </div>
     <h1>Sin conexión a Internet</h1>
     <p>No pudimos conectarnos a Internet. No te preocupes, puedes seguir trabajando con los datos que ya fueron guardados.</p>
     
@@ -137,29 +190,211 @@
   </div>
   
   <script>
+    // Variables para el estado de la aplicación
+    let syncQueueCount = 0;
+    let appVersion = '1.1.0';
+    let lastConnectionCheck = Date.now();
+    let checkInterval;
+    
     // Verificar si hay conexión
     function checkConnection() {
+      lastConnectionCheck = Date.now();
       if (navigator.onLine) {
-        window.location.href = '/';
+        showNotification('Conectado! Redirigiendo...', true);
+        setTimeout(() => {
+          window.location.href = '/?from=offline';
+        }, 1500);
       } else {
-        alert('Aún sin conexión. Puedes seguir trabajando en modo offline.');
+        showNotification('Aún sin conexión. Puedes seguir trabajando en modo offline.');
+        checkOfflineDataStatus();
+      }
+    }
+    
+    // Mostrar una notificación temporal
+    function showNotification(message, isOnline = false) {
+      // Eliminar notificaciones previas
+      const oldNotifications = document.querySelectorAll('.notification');
+      oldNotifications.forEach(notification => notification.remove());
+      
+      // Crear nueva notificación
+      const notification = document.createElement('div');
+      notification.className = isOnline ? 'notification online' : 'notification';
+      notification.textContent = message;
+      document.querySelector('.container').insertBefore(
+        notification,
+        document.querySelector('.buttons')
+      );
+      
+      // Eliminar después de 3 segundos
+      if (!isOnline) {
+        setTimeout(() => {
+          notification.remove();
+        }, 3000);
       }
     }
     
     // Ir a la aplicación aunque esté offline
     function goToApp() {
-      window.location.href = '/';
+      window.location.href = '/?mode=offline';
     }
     
-    // Escuchar eventos de conexión
-    window.addEventListener('online', function() {
-      document.querySelector('.icon').textContent = '✅';
-      document.querySelector('h1').textContent = '¡Conexión recuperada!';
-      document.querySelector('p').textContent = 'La conexión a Internet ha sido restablecida. Serás redirigido automáticamente en unos segundos.';
+    // Verificar los datos disponibles offline
+    async function checkOfflineDataStatus() {
+      try {
+        // IDs de los elementos de estado
+        const dataElements = {
+          attendance: document.querySelector('.data-item:nth-child(1) .data-value'),
+          students: document.querySelector('.data-item:nth-child(2) .data-value'),
+          classes: document.querySelector('.data-item:nth-child(3) .data-value')
+        };
+        
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          const apiCache = cacheNames.find(name => name.includes('api-cache'));
+          
+          if (apiCache) {
+            const cache = await caches.open(apiCache);
+            const requests = await cache.keys();
+            const urls = requests.map(req => req.url);
+            
+            // Determinar disponibilidad de datos
+            const hasAttendanceData = urls.some(url => url.includes('/attendance') || url.includes('/api/attendance'));
+            const hasStudentsData = urls.some(url => url.includes('/students') || url.includes('/api/students'));
+            const hasClassesData = urls.some(url => url.includes('/classes') || url.includes('/api/classes'));
+            
+            // Actualizar UI
+            updateDataStatus(dataElements.attendance, hasAttendanceData);
+            updateDataStatus(dataElements.students, hasStudentsData);
+            updateDataStatus(dataElements.classes, hasClassesData);
+            
+            // Mostrar recuento de caches
+            syncQueueCount = countQueueItems(urls);
+            updateSyncInfo();
+          } else {
+            // No hay caché API
+            markAllAsUnavailable(dataElements);
+          }
+        } else {
+          // La API de Cache no está disponible
+          markAllAsUnavailable(dataElements);
+        }
+      } catch (error) {
+        console.error('Error checking offline data:', error);
+      }
+    }
+    
+    // Actualizar el estado de un elemento de datos
+    function updateDataStatus(element, isAvailable) {
+      if (isAvailable) {
+        element.textContent = 'Disponible';
+        element.className = 'data-value value-ok';
+      } else {
+        element.textContent = 'No disponible';
+        element.className = 'data-value value-unavailable';
+      }
+    }
+    
+    // Marcar todos los datos como no disponibles
+    function markAllAsUnavailable(elements) {
+      Object.values(elements).forEach(element => {
+        element.textContent = 'No disponible';
+        element.className = 'data-value value-unavailable';
+      });
       
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 2000);
+      // Actualizar mensaje de sincronización
+      document.querySelector('.sync-info').innerHTML = 
+        'No se encontraron datos almacenados en caché. Algunas funciones pueden no estar disponibles sin conexión.';
+    }
+    
+    // Contar elementos en cola de sincronización
+    function countQueueItems(urls) {
+      // Suponemos que las URLs que contienen "sync" o "queue" son parte de la cola
+      return urls.filter(url => url.includes('sync') || url.includes('queue')).length;
+    }
+    
+    // Actualizar información de sincronización
+    function updateSyncInfo() {
+      const syncInfo = document.querySelector('.sync-info');
+      
+      if (syncQueueCount > 0) {
+        syncInfo.innerHTML = `
+          Los cambios que realices mientras estás sin conexión se sincronizarán automáticamente cuando recuperes la conexión a Internet.
+          <span class="badge">${syncQueueCount} ${syncQueueCount === 1 ? 'elemento' : 'elementos'} pendientes de sincronización</span>
+        `;
+      } else {
+        syncInfo.textContent = 'Los cambios que realices mientras estás sin conexión se sincronizarán automáticamente cuando recuperes la conexión a Internet.';
+      }
+    }
+    
+    // Verificar AppVersion
+    function checkAppVersion() {
+      // Intentar obtener la versión del Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(registration => {
+          if (registration && registration.active) {
+            const swUrl = registration.active.scriptURL;
+            
+            // Intentar extraer la versión del nombre del archivo o buscar en el código
+            fetch(swUrl)
+              .then(response => response.text())
+              .then(text => {
+                const versionMatch = text.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+                if (versionMatch && versionMatch[1]) {
+                  appVersion = versionMatch[1];
+                  document.getElementById('app-version').textContent = `v${appVersion}`;
+                }
+              })
+              .catch(() => {
+                console.log('No se pudo obtener la versión del Service Worker');
+              });
+          }
+        });
+      }
+    }
+    
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', () => {
+      // Añadir elemento para versión
+      const versionElement = document.createElement('div');
+      versionElement.id = 'app-version';
+      versionElement.className = 'app-version';
+      versionElement.textContent = `v${appVersion}`;
+      document.querySelector('.container').appendChild(versionElement);
+      
+      // Verificar estado inicial
+      checkOfflineDataStatus();
+      checkAppVersion();
+      
+      // Escuchar eventos de conexión
+      window.addEventListener('online', function() {
+        // Cambiar la UI para mostrar que estamos online
+        document.querySelector('h1').textContent = '¡Conexión recuperada!';
+        document.querySelector('p').textContent = 'La conexión a Internet ha sido restablecida. Serás redirigido automáticamente en unos segundos.';
+        
+        // Reemplazar el icono SVG por un icono de éxito
+        document.querySelector('.icon').innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#38a169" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        `;
+        
+        showNotification('Conexión restaurada! Redirigiendo a la aplicación...', true);
+        
+        // Redirigir después de un breve retardo
+        setTimeout(() => {
+          window.location.href = '/?from=offline-reconnect';
+        }, 2000);
+      });
+      
+      // Programar verificaciones periódicas
+      checkInterval = setInterval(() => {
+        // Si han pasado más de 30 segundos desde la última verificación manual
+        if (Date.now() - lastConnectionCheck > 30000 && navigator.onLine) {
+          clearInterval(checkInterval);
+          checkConnection();
+        }
+      }, 10000);
     });
   </script>
 </body>
