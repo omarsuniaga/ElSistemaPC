@@ -136,14 +136,23 @@
               >
                 <div class="flex items-start justify-between">
                   <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-3">
-                      <span :class="getTypeClass(observation.type)" class="px-2 py-1 text-xs font-medium rounded-full">
+                    <div class="flex items-center gap-3 mb-3">                      <span :class="getTypeClass(observation.type)" class="px-2 py-1 text-xs font-medium rounded-full">
                         {{ getTypeLabel(observation.type) }}
                       </span>
                       <span :class="getPriorityClass(observation.priority)" class="px-2 py-1 text-xs font-medium rounded-full">
                         {{ getPriorityLabel(observation.priority) }}
                       </span>
+                      
+                      <!-- Horario de la clase con iconos -->
+                      <div class="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md">
+                        <ClockIcon class="w-4 h-4 text-blue-600" />
+                        <span class="text-xs font-medium text-blue-800">
+                          {{ getClassSchedule(observation.classId) }}
+                        </span>
+                      </div>
+                      
                       <span class="text-sm text-gray-500">
+                        <CalendarDaysIcon class="w-4 h-4 inline mr-1" />
                         {{ formatDateTime(observation.createdAt) }}
                       </span>
                       <span v-if="observation.requiresFollowUp" class="text-orange-500 text-sm">
@@ -282,8 +291,15 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
+import { 
+  ClockIcon, 
+  CalendarDaysIcon,
+  XMarkIcon,
+  PlusIcon 
+} from '@heroicons/vue/24/outline';
 import { useTeacherObservations } from '../../composables/useObservationManagement';
 import { useAuthStore } from '../../stores/auth';
+import { useClassesStore } from '../../modulos/Classes/store/classes';
 import SmartObservationForm from './SmartObservationForm.vue';
 import type { ObservationData } from '../../stores/observations';
 
@@ -305,6 +321,7 @@ const emit = defineEmits<{
 
 // Composables
 const authStore = useAuthStore();
+const classesStore = useClassesStore();
 const {
   loading,
   error,
@@ -539,6 +556,68 @@ const getTypeLabel = (type: string) => {
   return labels[type as keyof typeof labels] || type;
 };
 
+const getClassSchedule = (classId: string) => {
+  const classData = classesStore.getClassById(classId);
+  if (!classData) return 'Sin horario';
+  
+  // Formatear el horario si existe
+  if (classData.horarios && classData.horarios.length > 0) {
+    const horario = classData.horarios[0];
+    return `${horario.startTime} - ${horario.endTime}`;
+  }
+  
+  if (classData.startTime && classData.endTime) {
+    return `${classData.startTime} - ${classData.endTime}`;
+  }
+  
+  return 'Sin horario';
+};
+
+const handleSmartFormSave = async (observationData: any) => {
+  try {
+    saving.value = true;
+    
+    if (editingObservation.value) {
+      // Actualizar observación existente
+      await updateMyObservation(editingObservation.value.id, observationData);
+      emit('observation-updated');
+    } else {
+      // Crear nueva observación
+      await createMyObservation(observationData);
+      emit('observation-created');
+    }
+    
+    // Recargar observaciones y cerrar formulario
+    await loadObservations();
+    cancelFormEditing();
+    
+  } catch (error) {
+    console.error('Error al guardar observación inteligente:', error);
+  } finally {
+    saving.value = false;
+  }
+};
+
+const handleFormUpdate = (data: any) => {
+  // Manejar actualizaciones del formulario si es necesario
+  console.log('Formulario actualizado:', data);
+};
+
+const cancelFormEditing = () => {
+  showCreateForm.value = false;
+  editingObservation.value = null;
+  
+  // Resetear el formulario original si es necesario
+  observationForm.value = {
+    classId: props.classId,
+    date: props.selectedDate,
+    type: 'general',
+    priority: 'media',
+    text: '',
+    requiresFollowUp: false
+  };
+};
+
 const getPriorityClass = (priority: string) => {
   const classes = {
     baja: 'bg-green-100 text-green-800',
@@ -569,52 +648,6 @@ const previousPage = () => {
   if (currentPage.value > 1) {
     currentPage.value--;
   }
-};
-
-// Funciones para manejar el formulario inteligente
-const handleSmartFormSave = async (observationData: any) => {
-  try {
-    saving.value = true;
-    
-    if (editingObservation.value) {
-      // Actualizar observación existente
-      await updateMyObservation(editingObservation.value.id, observationData);
-      emit('observation-updated');
-    } else {
-      // Crear nueva observación
-      await createMyObservation(observationData);
-      emit('observation-created');
-    }
-    
-    // Recargar observaciones y cerrar formulario
-    await loadObservations();
-    cancelFormEditing();
-    
-  } catch (error) {
-    console.error('Error al guardar observación inteligente:', error);
-  } finally {
-    saving.value = false;
-  }
-};
-
-const handleFormUpdate = (formData: any) => {
-  // Manejar actualizaciones del formulario si es necesario
-  console.log('Formulario actualizado:', formData);
-};
-
-const cancelFormEditing = () => {
-  showCreateForm.value = false;
-  editingObservation.value = null;
-  
-  // Resetear el formulario original si es necesario
-  observationForm.value = {
-    classId: props.classId,
-    date: props.selectedDate,
-    type: 'general',
-    priority: 'media',
-    text: '',
-    requiresFollowUp: false
-  };
 };
 
 // Watchers

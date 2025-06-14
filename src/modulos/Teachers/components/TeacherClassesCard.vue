@@ -98,6 +98,63 @@ const canShareClass = computed(() => {
 });
 
 // Verificar si la clase tiene colaboradores (maestros asistentes)
+const hasAssistants = computed(() => {
+  return props.classData.assistantTeachers && props.classData.assistantTeachers.length > 0;
+});
+
+// Obtener los permisos específicos del usuario actual en la clase
+const myPermissions = computed(() => {
+  if (isSharedClass.value && props.classData.myPermissions) {
+    return props.classData.myPermissions;
+  }
+  // Si es maestro principal, tiene todos los permisos
+  if (canShareClass.value) {
+    return {
+      canTakeAttendance: true,
+      canAddObservations: true,
+      canViewAttendanceHistory: true,
+      canManageStudents: true,
+      canEditClass: true
+    };
+  }
+  return {};
+});
+
+// Obtener el indicador de rol
+const roleIndicator = computed(() => {
+  if (isSharedClass.value) {
+    return {
+      text: 'Asistente',
+      icon: '👥',
+      class: 'bg-blue-100 text-blue-800 border border-blue-200'
+    };
+  } else if (hasAssistants.value) {
+    return {
+      text: 'Principal',
+      icon: '👑',
+      class: 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+    };
+  } else {
+    return {
+      text: 'Titular',
+      icon: '🎓',
+      class: 'bg-green-100 text-green-800 border border-green-200'
+    };
+  }
+});
+
+// Formatear horarios para mostrar
+const formatSchedule = computed(() => {
+  if (props.classData.horarios && props.classData.horarios.length > 0) {
+    return props.classData.horarios.map(h => 
+      `${h.day}: ${h.startTime} - ${h.endTime}`
+    ).join(', ');
+  }
+  if (props.classData.startTime && props.classData.endTime) {
+    return `${props.classData.startTime} - ${props.classData.endTime}`;
+  }
+  return 'Sin horario definido';
+});
 const hasCollaborators = computed(() => {
   return canShareClass.value && 
          props.classData.assistantTeachers && 
@@ -289,6 +346,12 @@ const handleDelete = () => emit('delete', props.classData.id);
 const handleManageStudents = () => emit('manage-students', props.classData.id);
 
 const handleTakeAttendance = () => {
+  // Verificar permisos antes de proceder
+  if (isSharedClass.value && !myPermissions.value.canTakeAttendance) {
+    console.warn('No tienes permisos para tomar asistencia en esta clase');
+    return;
+  }
+  
   const today = new Date();
   const dateString = format(today, 'yyyyMMdd');
   
@@ -570,10 +633,9 @@ onMounted(async () => {
             leave-active-class="transition duration-75 ease-in"
             leave-from-class="transform scale-100 opacity-100"
             leave-to-class="transform scale-95 opacity-0"
-          >
-            <MenuItems class="menu-dropdown absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none border border-gray-200 dark:border-gray-600">
+          >            <MenuItems class="menu-dropdown absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none border border-gray-200 dark:border-gray-600">
               <div class="py-1">
-                <MenuItem v-slot="{ active }">
+                <MenuItem v-if="canShareClass" v-slot="{ active }">
                   <button
                     @click="handleShare"
                     :class="[
@@ -599,7 +661,7 @@ onMounted(async () => {
                   </button>
                 </MenuItem>
                 
-                <MenuItem v-slot="{ active }">
+                <MenuItem v-if="!isSharedClass || myPermissions.canEditClass" v-slot="{ active }">
                   <button
                     @click="handleEdit"
                     :class="[
@@ -612,7 +674,7 @@ onMounted(async () => {
                   </button>
                 </MenuItem>
                 
-                <MenuItem v-slot="{ active }">
+                <MenuItem v-if="canShareClass" v-slot="{ active }">
                   <button
                     @click="handleDelete"
                     :class="[
@@ -626,10 +688,9 @@ onMounted(async () => {
               </div>
             </MenuItems>
           </transition>
-        </Menu>
-
-        <!-- Botones de acción rápida -->
+        </Menu>        <!-- Botones de acción rápida -->
         <button
+          v-if="!isSharedClass || myPermissions.canManageStudents"
           @click="handleManageStudents"
           class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
           title="Gestionar Alumnos"
@@ -638,6 +699,7 @@ onMounted(async () => {
         </button>
         
         <button
+          v-if="!isSharedClass || myPermissions.canTakeAttendance"
           @click="handleTakeAttendance"
           class="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
           title="Tomar Asistencia"
@@ -646,6 +708,7 @@ onMounted(async () => {
         </button>
         
         <button
+          v-if="!isSharedClass || myPermissions.canViewAttendanceHistory"
           @click="handleViewHistory"
           class="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
           title="Historial"

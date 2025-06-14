@@ -108,7 +108,7 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   EyeIcon,
-  ArrowDownloadIcon
+  ArrowDownTrayIcon
 } from '@heroicons/vue/24/outline'
 
 interface QuickAction {
@@ -158,7 +158,7 @@ const iconComponents = {
   CubeIcon,
   ChartBarIcon,
   EyeIcon,
-  ArrowDownloadIcon
+  ArrowDownTrayIcon
 }
 
 // Computed properties

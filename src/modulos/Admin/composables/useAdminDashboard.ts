@@ -1,12 +1,13 @@
 import { ref, computed } from 'vue'
 import { useAdminStore } from '../store/admin'
 import { useRBACStore } from '@/stores/rbacStore'
-import { useNotifications } from '@/composables/useNotifications'
+import { useNotificationsStore } from '@/stores/notifications'
 
 export const useAdminDashboard = () => {
   const adminStore = useAdminStore()
   const rbacStore = useRBACStore()
-  const { showNotification } = useNotifications()
+  const notificationsStore = useNotificationsStore()
+  const { showNotification } = { showNotification: notificationsStore.addNotification }
 
   // State
   const isLoading = ref(false)

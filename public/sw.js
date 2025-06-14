@@ -464,38 +464,21 @@ self.addEventListener('fetch', (event) => {
         })
       );
   }
-
-            // Clone the response as it can only be consumed once
-            const responseToCache = response.clone();
-
-            // Determinar el caché apropiado según el tipo de solicitud
-            let cacheToUse = CACHE_NAMES.dynamic; // Por defecto usar caché dinámico
-            
-            // Comprobar si la solicitud coincide con algún endpoint de API
-            for (const endpoint of API_ENDPOINTS) {
-              if (endpoint.cache && endpoint.url.test(event.request.url)) {
-                cacheToUse = endpoint.cache;
-                break;
-              }
-            }
-            
-            caches.open(cacheToUse)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-                // Limitar el tamaño del caché si es necesario
-                if (CACHE_LIMITS[cacheToUse]) {
-                  trimCache(cacheToUse, CACHE_LIMITS[cacheToUse]);
-                }
-              });
-
-            return response;
-          })
-          .catch(() => {
-            return new Response('Network error occurred', {
-              status: 408,
-              headers: { 'Content-Type': 'text/plain' }
-            });
-          });
-      })
-  );
 });
+
+// Background sync para el guardado offline de asistencia
+self.addEventListener('sync', event => {
+  if (event.tag === 'attendance-sync') {
+    event.waitUntil(syncAttendance());
+  }
+});
+
+async function syncAttendance() {
+  try {
+    // Intentar sincronizar datos de asistencia pendientes
+    console.log('[SW] Sincronizando datos de asistencia...');
+    // Aquí iría la lógica de sincronización
+  } catch (error) {
+    console.error('[SW] Error en sincronización:', error);
+  }
+}

@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { useAdminStore } from '../store/admin'
 import { useRBACStore } from '@/stores/rbacStore'
-import { useNotifications } from '@/composables/useNotifications'
+import { useNotificationsStore } from '@/stores/notifications'
 
 // Tipos específicos para el monitoreo
 interface ClassMonitoringData {
@@ -48,7 +48,8 @@ interface DayMetrics {
 export const useClassMonitoring = () => {
   const adminStore = useAdminStore()
   const rbacStore = useRBACStore()
-  const { showNotification } = useNotifications()
+  const notificationsStore = useNotificationsStore()
+  const { showNotification } = { showNotification: notificationsStore.addNotification }
 
   // Estado reactivo
   const isLoading = ref(false)

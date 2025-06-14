@@ -128,7 +128,7 @@
                 class="px-2 py-1 rounded-full text-xs"
                 :title="`${student.attendedClasses} clases asistidas de ${student.totalClasses} totales`"
               >
-                {{ Math.round(student.attendanceRate) }}%
+                {{ isNaN(student.attendanceRate) ? '0' : Math.round(student.attendanceRate) }}%
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-center flex justify-center">
@@ -144,19 +144,34 @@
               <button
                 v-if="student.absences === 4"
                 class="bg-yellow-500 hover:bg-yellow-600 text-white p-1.5 rounded text-xs mr-1 flex items-center"
-                @click="handleAmmonition(student)"
+                @click="openWhatsAppModalForWarning(student)"
+                title="Enviar Amonestación por WhatsApp"
+              >
+                <ChatBubbleOvalLeftEllipsisIcon class="h-4 w-4" />
+              </button>
+              <button
+                v-if="student.absences === 4"
+                class="bg-orange-500 hover:bg-orange-600 text-white p-1.5 rounded text-xs mr-1 flex items-center"
+                @click="generateAmonestacionPDF(student)"
                 title="Generar PDF de Amonestación"
               >
-                <DocumentTextIcon class="h-4 w-4 mr-1" />
+                <DocumentTextIcon class="h-4 w-4" />
               </button>
               <button
                 v-if="student.absences === 5"
-                class="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded text-xs flex items-center"
-                @click="handleRetiro(student)"
+                class="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded text-xs mr-1 flex items-center"
+                @click="openWhatsAppModalForWarning(student)"
+                title="Enviar Retiro por WhatsApp"
+              >
+                <ChatBubbleOvalLeftEllipsisIcon class="h-4 w-4" />
+              </button>
+              <button
+                v-if="student.absences === 5"
+                class="bg-gray-700 hover:bg-gray-800 text-white p-1.5 rounded text-xs flex items-center"
+                @click="generateRetiroPDF(student)"
                 title="Generar PDF de Retiro"
               >
-                <DocumentIcon class="h-4 w-4 mr-1" />
-                <span>Retiro</span>
+                <DocumentIcon class="h-4 w-4" />
               </button>
             </td>
           </tr>
@@ -215,7 +230,7 @@
                 :class="getAttendanceRateClass(student.attendanceRate)"
                 class="px-2 py-1 rounded-full text-xs"
               >
-                {{ Math.round(student.attendanceRate) }}%
+                {{ isNaN(student.attendanceRate) ? '0' : Math.round(student.attendanceRate) }}%
               </span>
             </div>
             <div class="text-xs text-gray-500">
@@ -235,19 +250,35 @@
           </button>
           <button
             v-if="student.absences === 4"
-            class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded text-sm flex items-center"
-            @click="handleAmmonition(student)"
+            class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs flex items-center"
+            @click="openWhatsAppModalForWarning(student)"
           >
-            <DocumentTextIcon class="h-5 w-5 mr-1.5" />
-            Amonestación
+            <ChatBubbleOvalLeftEllipsisIcon class="h-4 w-4 mr-1" />
+            WhatsApp
+          </button>
+          <button
+            v-if="student.absences === 4"
+            class="bg-orange-500 hover:bg-orange-600 text-white px-2 py-1 rounded text-xs flex items-center"
+            @click="generateAmonestacionPDF(student)"
+          >
+            <DocumentTextIcon class="h-4 w-4 mr-1" />
+            PDF
           </button>
           <button
             v-if="student.absences === 5"
-            class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm flex items-center"
-            @click="handleRetiro(student)"
+            class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs flex items-center"
+            @click="openWhatsAppModalForWarning(student)"
           >
-            <DocumentIcon class="h-5 w-5 mr-1.5" />
-            Retiro
+            <ChatBubbleOvalLeftEllipsisIcon class="h-4 w-4 mr-1" />
+            WhatsApp
+          </button>
+          <button
+            v-if="student.absences === 5"
+            class="bg-gray-700 hover:bg-gray-800 text-white px-2 py-1 rounded text-xs flex items-center"
+            @click="generateRetiroPDF(student)"
+          >
+            <DocumentIcon class="h-4 w-4 mr-1" />
+            PDF
           </button>
         </div>
       </div>
@@ -433,6 +464,15 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL DE WHATSAPP CON PRESETS -->
+  <WhatsAppMessageModal
+    v-if="whatsAppMessageData"
+    :is-open="showWhatsAppModal"
+    :student-data="whatsAppMessageData"
+    @close="closeWhatsAppModal"
+    @message-sent="handleMessageSent"
+  />
 </template>
 
 <script setup lang="ts">
@@ -456,6 +496,8 @@ import { useClassesStore } from "../modulos/Classes/store/classes";
 import { db } from "../firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useAuthStore } from "../stores/auth";
+import WhatsAppMessageModal from "./WhatsAppMessageModal.vue";
+import type { MessageData } from "../composables/useWhatsAppPresets";
 
 const props = defineProps<{ 
   limit?: number;
@@ -525,9 +567,10 @@ const absenceSort = ref("absences");
 function studentName(studentId: string) {
   const student = studentsStore.getStudentById(studentId);
   if (student) {
-    return `${student.nombre || ""} ${student.apellido || ""}`.trim();
+    const fullName = `${student.nombre || ""} ${student.apellido || ""}`.trim();
+    return fullName || "Estudiante sin nombre";
   }
-  return studentId;
+  return "Estudiante no encontrado";
 }
 
 function getAttendanceRateClass(rate: number) {
@@ -566,7 +609,118 @@ const pdfAmonestacionFormateado = computed(() => {
 const pdfRetiroFormateado = computed(() => {
   return formatearTextoParaPDF(pdfRetiroData.value.mensaje);
 });
-// En TopAbsenteesByRange.vue, alrededor de la línea 555
+
+// Variables para PDFs
+const pdfAmonestacionData = ref({
+  fecha: '',
+  nombre: '',
+  motivo: '',
+  mensaje: ''
+});
+
+const pdfRetiroData = ref({
+  fecha: '',
+  nombre: '',
+  motivo: '',
+  mensaje: ''
+});
+
+// Función para generar PDF de amonestación
+const generateAmonestacionPDF = async (student: any) => {
+  const studentInfo = studentsStore.getStudentById(student.studentId);
+  if (!studentInfo) return;
+  
+  const studentName = `${studentInfo.nombre} ${studentInfo.apellido}`.trim();
+  const currentDate = new Date().toLocaleDateString('es-ES');
+  
+  pdfAmonestacionData.value = {
+    fecha: currentDate,
+    nombre: studentName,
+    motivo: `Ausencias excesivas (${student.absences} faltas)`,
+    mensaje: `Estimado/a representante,
+
+Por medio de la presente, le notificamos que el estudiante ${studentName} ha recibido una AMONESTACIÓN FORMAL por las siguientes razones:
+
+• Ausencias acumuladas: ${student.absences}
+• Fecha de evaluación: ${currentDate}
+• Clase: ${getClassName(student.classId || '')}
+
+Esta amonestación queda registrada en el expediente del estudiante. De continuar con esta conducta, se procederá con medidas disciplinarias más severas.
+
+Solicitamos su inmediata atención a este asunto y su colaboración para mejorar la asistencia del estudiante.
+
+Es importante mantener la asistencia regular para el progreso académico del estudiante.
+
+Esperamos su comprensión y colaboración.`
+  };
+
+  // Generar PDF
+  await nextTick();
+  const element = document.getElementById('pdf-amonestacion');
+  if (element) {
+    const opt = {
+      margin: 1,
+      filename: `amonestacion_${studentName.replace(/\s+/g, '_')}_${currentDate.replace(/\//g, '-')}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    
+    try {
+      await html2pdf().set(opt).from(element).save();
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    }
+  }
+};
+
+// Función para generar PDF de retiro
+const generateRetiroPDF = async (student: any) => {
+  const studentInfo = studentsStore.getStudentById(student.studentId);
+  if (!studentInfo) return;
+  
+  const studentName = `${studentInfo.nombre} ${studentInfo.apellido}`.trim();
+  const currentDate = new Date().toLocaleDateString('es-ES');
+  
+  pdfRetiroData.value = {
+    fecha: currentDate,
+    nombre: studentName,
+    motivo: `Ausencias excesivas que superan el límite permitido (${student.absences} faltas)`,
+    mensaje: `Estimado/a representante,
+
+Después de múltiples advertencias y amonestaciones, lamentamos informarle que el estudiante ${studentName} ha sido RETIRADO de la institución por las siguientes razones:
+
+• Ausencias acumuladas: ${student.absences}
+• Fecha efectiva de retiro: ${currentDate}
+• Clase: ${getClassName(student.classId || '')}
+
+Esta decisión se toma después de agotar todas las instancias de diálogo y compromiso establecidas en el reglamento interno de la institución.
+
+Los documentos del estudiante estarán disponibles para retiro en coordinación académica en un plazo de 15 días hábiles.
+
+Lamentamos no haber podido contar con la colaboración necesaria para mantener la asistencia regular del estudiante.`
+  };
+
+  // Generar PDF
+  await nextTick();
+  const element = document.getElementById('pdf-retiro');
+  if (element) {
+    const opt = {
+      margin: 1,
+      filename: `retiro_${studentName.replace(/\s+/g, '_')}_${currentDate.replace(/\//g, '-')}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    
+    try {
+      await html2pdf().set(opt).from(element).save();
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    }
+  }
+};
+
 async function calcularTopAbsentees() {
   try {
     isLoading.value = true;
@@ -593,8 +747,37 @@ async function calcularTopAbsentees() {
       );
     }
     
-    // Procesamiento adicional si es necesario
-    topAbsentees.value = result;
+    // Procesamiento adicional: filtrar estudiantes sin nombre válido y agregar datos necesarios
+    const processedResult = result
+      .map(student => {
+        // Agregar el nombre del estudiante
+        const studentInfo = studentsStore.getStudentById(student.studentId);
+        if (!studentInfo) {
+          return null; // Excluir estudiantes no encontrados
+        }
+        
+        const fullName = `${studentInfo.nombre || ""} ${studentInfo.apellido || ""}`.trim();
+        if (!fullName) {
+          return null; // Excluir estudiantes sin nombre
+        }
+        
+        // Calcular datos adicionales para el componente
+        const attendedClasses = Math.max(0, (student.totalPossibleClasses || 0) - student.absences);
+        const attendanceRate = student.totalPossibleClasses > 0 
+          ? ((attendedClasses / student.totalPossibleClasses) * 100)
+          : 0;
+        
+        return {
+          ...student,
+          studentName: fullName,
+          attendedClasses,
+          attendanceRate: isNaN(attendanceRate) ? 0 : attendanceRate,
+          totalClasses: student.totalPossibleClasses || 0
+        };
+      })
+      .filter(student => student !== null); // Remover estudiantes nulos
+      
+    topAbsentees.value = processedResult;
   } catch (err: any) {
     console.error('Error al obtener datos de asistencia:', err);
     error.value = `Error al obtener datos de asistencia: ${err.message || err}`;
@@ -729,280 +912,56 @@ const whatsappMessage = ref(
 );
 const selectedPhones = ref<string[]>([]);
 
-// Textos específicos para cada nivel de inasistencia
-const getWhatsappInasistenciasTexto = (studentName: string, instrument: string = "") => {
-  const instrumentText = instrument ? ` de ${instrument}` : '';
-  return `Estimado representante,
+// Variables para el modal de WhatsApp
+const showWhatsAppModal = ref(false);
+const selectedStudentForWhatsApp = ref<any>(null);
 
-Por medio de la presente comunicación se le notifica que el alumno ${studentName}, estudiante${instrumentText} de nuestra institución, ha acumulado 3 inasistencias.
-
-Las ausencias afectan significativamente el progreso individual y colectivo, ya que la práctica musical en conjunto requiere la participación regular de todos los integrantes para mantener el avance del grupo.
-
-Le solicitamos comunicarse a la brevedad con la Coordinación Académica para aclarar los motivos de estas ausencias y tomar las medidas necesarias para evitar que la situación progrese a una amonestación formal.
-
-Atentamente,
-Coordinación Académica`;
+// Función para abrir modal de WhatsApp para amonestación
+const openWhatsAppModalForWarning = (student: any) => {
+  selectedStudentForWhatsApp.value = student;
+  showWhatsAppModal.value = true;
 };
 
-const getAmonestacionTexto = (studentName: string, instrument: string = "", studentId: string = "") => {
-  const instrumentText = instrument ? ` de ${instrument}` : '';
-  return `Nos dirigimos a usted para notificar formalmente que el alumno ${studentName} (ID: ${studentId}), estudiante${instrumentText} de nuestra institución musical, ha acumulado un total de 4 inasistencias a la fecha.
-
-De acuerdo al reglamento de nuestra institución, este número de ausencias representa un impedimento significativo para el adecuado desarrollo musical del estudiante y afecta directamente al avance del grupo en las clases colectivas. La música como disciplina colectiva requiere de la participación constante y comprometida de todos sus integrantes.
-
-Las ausencias provocan:
-• Retraso en el aprendizaje individual del estudiante
-• Desbalance en los ensambles musicales
-• Dificultad para mantener el progreso y repertorio del conjunto
-• Necesidad de tiempo adicional para nivelación
-
-Esta amonestación formal constituye un aviso previo a la posible solicitud de retiro del programa si se acumula una ausencia adicional. Le solicitamos contactar urgentemente a la Coordinación Académica para discutir medidas correctivas y compromisos de asistencia futura.`;
+// Función para cerrar modal de WhatsApp
+const closeWhatsAppModal = () => {
+  showWhatsAppModal.value = false;
+  selectedStudentForWhatsApp.value = null;
 };
 
-const getRetiroTexto = (studentName: string, instrument: string = "", studentId: string = "") => {
-  const instrumentText = instrument ? ` de ${instrument}` : '';
-  return `Por medio de la presente, nos vemos en la obligación de notificar que el alumno ${studentName} (ID: ${studentId}), estudiante${instrumentText} de nuestra institución musical, ha acumulado un total de 5 inasistencias, superando el límite establecido en nuestro reglamento académico.
-
-En consecuencia, y velando por la calidad de la formación colectiva de todos nuestros estudiantes, procedemos a notificar:
-
-1. El retiro temporal del estudiante del programa actual
-2. La solicitud de devolución del instrumento asignado (si aplica)
-3. La suspensión de las clases hasta nueva evaluación
-
-En una institución dedicada a la formación musical, la práctica colectiva constituye un pilar fundamental de aprendizaje. Las inasistencias recurrentes generan un impacto negativo significativo en:
-• El progreso del conjunto musical
-• La cohesión del grupo
-• El avance en el repertorio programado
-• El desarrollo técnico secuencial requerido
-
-El estudiante podrá solicitar su reingreso para un próximo ciclo mediante una carta de compromiso formal, donde exprese su disponibilidad para cumplir con la asistencia requerida. Dicha solicitud será evaluada por el consejo académico.
-
-Agradecemos su comprensión y quedamos a su disposición para cualquier aclaratoria adicional.`;
+// Función para manejar cuando se envía un mensaje
+const handleMessageSent = (data: { preset: any; message: string }) => {
+  console.log('Mensaje enviado:', data);
+  // Aquí puedes agregar lógica adicional como logging o notificaciones
+  closeWhatsAppModal();
 };
 
-async function openWhatsappModal(student: any) {
-  whatsappStudent.value = student;
-  // Obtener teléfonos padre/madre si existen
-  const studentData = studentsStore.getStudentById(student.studentId);
-  selectedPhones.value = [];
-  if (studentData?.tlf_padre) selectedPhones.value.push(studentData.tlf_padre);
-  if (studentData?.tlf_madre) selectedPhones.value.push(studentData.tlf_madre);
+// Computed para los datos del estudiante seleccionado para WhatsApp
+const whatsAppMessageData = computed((): MessageData | null => {
+  if (!selectedStudentForWhatsApp.value) return null;
   
-  // Personalizar mensaje con datos del estudiante
-  const estudiante = studentName(student.studentId);
-  const instrumento = studentData?.instrumento || "";
-  whatsappMessage.value = getWhatsappInasistenciasTexto(estudiante, instrumento);
+  const student = studentsStore.getStudentById(selectedStudentForWhatsApp.value.studentId);
+  if (!student) return null;
   
-  showWhatsappModal.value = true;
-}
-function closeWhatsappModal() {
-  showWhatsappModal.value = false;
-  whatsappStudent.value = null;
-}
-async function sendWhatsappMessage() {
-  const webhookUrl = import.meta.env.VITE_WEBHOOK_URL;
-  if (!webhookUrl) {
-    alert("Error: No está definida la URL del webhook (VITE_WEBHOOK_URL)");
-    return;
-  }
-  const payload = {
-    studentId: whatsappStudent.value.studentId,
-    nombre: studentName(whatsappStudent.value.studentId),
-    phones: selectedPhones.value,
-    message: whatsappMessage.value,
-    tipo: "invitacion-mensaje",
+  // Obtener datos del representante
+  const representanteName = student.representante?.nombre || student.madre?.nombre || student.padre?.nombre || 'Representante';
+  const representantePhone = student.representante?.telefono || student.madre?.telefono || student.padre?.telefono || '';
+  
+  // Obtener datos de la clase
+  const classData = classesStore.classes.find(c => c.id === selectedStudentForWhatsApp.value.classId);
+  const className = classData?.name || 'Clase Musical';
+  const teacherName = authStore.user?.displayName || 'Maestro';
+  
+  return {
+    studentName: `${student.nombre} ${student.apellido}`.trim(),
+    representanteName,
+    representantePhone,
+    className,
+    date: new Date().toLocaleDateString('es-ES'),
+    absences: selectedStudentForWhatsApp.value.absences || 0,
+    teacherName,
+    institutionName: 'Academia de Música'
   };
-  try {
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-    closeWhatsappModal();
-    alert("Mensaje enviado");
-  } catch (e) {
-    alert("Error enviando el mensaje al webhook");
-  }
-}
-async function handleAmmonition(student: any) {
-  try {
-    const webhookUrl = import.meta.env.VITE_WEBHOOK_URL;
-    if (!webhookUrl) {
-      alert("Error: No está definida la URL del webhook (VITE_WEBHOOK_URL)");
-      return;
-    }
-    
-    // Obtener datos del estudiante
-    const studentData = studentsStore.getStudentById(student.studentId);
-    const nombreCompleto = studentName(student.studentId);
-    const instrumento = studentData?.instrumento || "";
-    
-    // Rellenar datos para el PDF
-    const pdfContent = document.getElementById("pdf-amonestacion");
-    pdfAmonestacionData.value = {
-      nombre: nombreCompleto,
-      fecha: new Date().toLocaleDateString(),
-      motivo: "Acumulación de 4 inasistencias",
-      mensaje: getAmonestacionTexto(nombreCompleto, instrumento, student.studentId),
-    };
-    
-    await nextTick();
-    
-    // Configuración optimizada para html2pdf
-    const opt = {
-      margin: 10,
-      filename: `amonestacion_${student.studentId}.pdf`,
-      html2canvas: { 
-        scale: 2,
-        logging: false,
-        useCORS: true
-      },
-      jsPDF: { 
-        unit: "mm", 
-        format: "a4", 
-        orientation: "portrait",
-        compress: true
-      },
-    };
-    
-    try {
-      // Generar PDF y obtener base64
-      const pdfBlob = await html2pdf().from(pdfContent).set(opt).outputPdf("blob");
-      // Descargar localmente
-      html2pdf().from(pdfContent).set(opt).save();
-      // Convertir a base64
-      const base64 = await blobToBase64(pdfBlob);
-      
-      // Enviar al webhook
-      const payload = {
-        studentId: student.studentId,
-        nombre: nombreCompleto,
-        tipo: "amonestacion",
-        mensaje: "Se ha generado una amonestación por 4 inasistencias",
-        fecha: new Date().toISOString(),
-        pdfBase64: base64,
-      };
-      
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-      
-      alert("PDF de amonestación generado, descargado y enviado al webhook");
-    } catch (error) {
-      console.error("Error generando o enviando el PDF:", error);
-      alert("Error al generar el PDF. Se descargará una copia local.");
-      // Intentar solo la descarga local como fallback
-      html2pdf().from(pdfContent).set(opt).save();
-    }
-  } catch (error) {
-    console.error("Error en el procesamiento de la amonestación:", error);
-    alert("Se produjo un error al procesar la amonestación. Por favor, inténtelo nuevamente.");
-  }
-}
-
-async function handleRetiro(student: any) {
-  try {
-    const webhookUrl = import.meta.env.VITE_WEBHOOK_URL;
-    if (!webhookUrl) {
-      alert("Error: No está definida la URL del webhook (VITE_WEBHOOK_URL)");
-      return;
-    }
-    
-    // Obtener datos del estudiante
-    const studentData = studentsStore.getStudentById(student.studentId);
-    const nombreCompleto = studentName(student.studentId);
-    const instrumento = studentData?.instrumento || "";
-    
-    // Rellenar datos para el PDF
-    const pdfContent = document.getElementById("pdf-retiro");
-    pdfRetiroData.value = {
-      nombre: nombreCompleto,
-      fecha: new Date().toLocaleDateString(),
-      motivo: "Acumulación de 5 inasistencias",
-      mensaje: getRetiroTexto(nombreCompleto, instrumento, student.studentId),
-    };
-    
-    await nextTick();
-    
-    // Configuración optimizada para html2pdf
-    const opt = {
-      margin: 10,
-      filename: `retiro_${student.studentId}.pdf`,
-      html2canvas: { 
-        scale: 2,
-        logging: false,
-        useCORS: true
-      },
-      jsPDF: { 
-        unit: "mm", 
-        format: "a4", 
-        orientation: "portrait",
-        compress: true
-      },
-    };
-    
-    try {
-      // Generar PDF y obtener base64
-      const pdfBlob = await html2pdf().from(pdfContent).set(opt).outputPdf("blob");
-      // Descargar localmente
-      html2pdf().from(pdfContent).set(opt).save();
-      // Convertir a base64
-      const base64 = await blobToBase64(pdfBlob);
-      
-      // Enviar al webhook
-      const payload = {
-        studentId: student.studentId,
-        nombre: nombreCompleto,
-        tipo: "retiro",
-        mensaje: "Por 5 inasistencias, se solicita devolución del instrumento y se notifica retiro del programa. Puede reingresar en el futuro.",
-        fecha: new Date().toISOString(),
-        pdfBase64: base64,
-      };
-      
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-      
-      alert("PDF de retiro generado, descargado y enviado al webhook");
-    } catch (error) {
-      console.error("Error generando o enviando el PDF:", error);
-      alert("Error al generar el PDF. Se descargará una copia local.");
-      // Intentar solo la descarga local como fallback
-      html2pdf().from(pdfContent).set(opt).save();
-    }
-  } catch (error) {
-    console.error("Error en el procesamiento del retiro:", error);
-    alert("Se produjo un error al procesar el documento de retiro. Por favor, inténtelo nuevamente.");
-  }
-}
-
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve((reader.result as string).split(",")[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-const pdfAmonestacionData = ref({
-  nombre: "",
-  fecha: "",
-  motivo: "",
-  mensaje: "",
 });
-
-const pdfRetiroData = ref({ nombre: "", fecha: "", motivo: "", mensaje: "" });
 </script>
 
 <style scoped>
