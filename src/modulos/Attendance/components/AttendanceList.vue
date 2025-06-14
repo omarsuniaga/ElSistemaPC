@@ -134,15 +134,18 @@ const verifyClassExists = async (classId: string) => {
       return false;
     }
     
-    // PASO 1: Refrescar clases para obtener datos actualizados
-    console.log(`[ClassDebug] Refrescando clases desde Firestore...`);
-    await classesStore.fetchClasses();
+    // PASO 1: Intentar obtener la clase específica por ID desde Firestore
+    // Esto funciona tanto para clases propias como compartidas
+    console.log(`[ClassDebug] Obteniendo clase específica por ID desde Firestore...`);
+    let classData = await classesStore.fetchClassById(classId);
     
-    // PASO 2: Buscar la clase por ID en TODAS las clases (no solo las del maestro actual)
-    // Esto es crucial para clases compartidas donde el asistente debe acceder 
-    // a clases creadas por el maestro titular
-    const allClasses = classesStore.getAllClasses();
-    const classData = allClasses.find(cls => cls.id === classId);
+    // PASO 2: Si no se encuentra, intentar refrescar todas las clases como fallback
+    if (!classData) {
+      console.log(`[ClassDebug] Clase no encontrada individualmente, refrescando todas las clases...`);
+      await classesStore.fetchClasses();
+      const allClasses = classesStore.getAllClasses;
+      classData = allClasses.find(cls => cls.id === classId);
+    }
     
     if (!classData) {
       console.error(`[ClassDebug] Clase con ID=${classId} no encontrada en Firestore`);

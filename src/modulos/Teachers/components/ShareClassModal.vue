@@ -149,7 +149,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, defineProps, defineEmits } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue';
 import { useTeachersStore } from '../store/teachers';
 import { useTeacherCollaboration } from '../../Classes/composables/useTeacherCollaboration';

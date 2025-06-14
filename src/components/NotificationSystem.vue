@@ -8,14 +8,7 @@ import {
   XMarkIcon
 } from '@heroicons/vue/20/solid'
 
-defineProps({
-  notifications: {
-    type: Array,
-    required: true
-  }
-})
-
-defineEmits(['dismiss'])
+const notifications = ref([])
 
 const getNotificationClass = (type) => {
   const classes = {

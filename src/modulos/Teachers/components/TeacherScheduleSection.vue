@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue';
 import { PlusIcon } from '@heroicons/vue/24/outline';
 import TeacherWeeklySchedule from './TeacherWeeklySchedule.vue'; // Assuming path relative to components folder
 

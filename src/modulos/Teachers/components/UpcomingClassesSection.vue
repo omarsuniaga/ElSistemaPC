@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps, defineEmits, type PropType } from 'vue';
+import { type PropType } from 'vue';
 import { PencilIcon, UserGroupIcon } from '@heroicons/vue/24/outline';
 
 // Define types for class data

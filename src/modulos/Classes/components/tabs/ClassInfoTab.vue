@@ -52,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, PropType } from 'vue';
+import { PropType } from 'vue';
 import type { ClassData } from '../../types/class'; // Adjust path as necessary
 
 // Define a basic Teacher type, replace with actual type from your store/types

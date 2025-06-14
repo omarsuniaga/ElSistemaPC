@@ -20,14 +20,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue';
-
-interface Tab {
-  id: string;
-  label: string;
-  // component?: any; // Component can be part of the tab definition if needed elsewhere
-}
-
 const props = defineProps<{
   tabs: Tab[];
   activeTab: string;

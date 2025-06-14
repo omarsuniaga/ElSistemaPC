@@ -12,20 +12,31 @@
               Sistema de gestión académica - El Sistema PC
             </p>
           </div>
-          
-          <!-- Stats rápidas -->
+            <!-- Actions and Stats -->
           <div class="flex items-center space-x-6">
-            <div class="text-center">
-              <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ stats.totalStudents }}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">Estudiantes</div>
-            </div>
-            <div class="text-center">
-              <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ stats.totalTeachers }}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">Maestros</div>
-            </div>
-            <div class="text-center">
-              <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ stats.totalClasses }}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">Clases</div>
+            <!-- Super Admin Button -->
+            <RouterLink 
+              to="/admin/super"
+              class="bg-gradient-to-r from-purple-500 to-blue-600 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-2"
+            >
+              <BoltIcon class="w-5 h-5" />
+              <span>Superpoderes</span>
+            </RouterLink>
+            
+            <!-- Stats rápidas -->
+            <div class="flex items-center space-x-4">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ stats.totalStudents }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Estudiantes</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ stats.totalTeachers }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Maestros</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ stats.totalClasses }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Clases</div>
+              </div>
             </div>
           </div>
         </div>
@@ -238,6 +249,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { BoltIcon } from '@heroicons/vue/24/outline'
 import { useAdminDashboard } from '../composables/useAdminDashboard'
 import QuickActionCard from '../components/QuickActionCard.vue'
 import DashboardSection from '../components/DashboardSection.vue'

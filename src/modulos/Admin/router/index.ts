@@ -4,9 +4,9 @@ const adminRoutes: RouteRecordRaw[] = [
   {
     path: '/admin',
     name: 'AdminModule',
-    component: () => import('../views/AdminDashboard.vue'),
+    component: () => import('../views/SuperAdminDashboard.vue'),
     meta: {
-      title: 'Panel de Administración',
+      title: 'Super Admin Dashboard',
       requiresAuth: true,
       permissions: {
         module: 'admin',
@@ -24,6 +24,19 @@ const adminRoutes: RouteRecordRaw[] = [
       permissions: {
         module: 'admin',
         action: 'view_dashboard'
+      }
+    }
+  },
+  {
+    path: '/admin/super',
+    name: 'SuperAdminDashboard',
+    component: () => import('../views/SuperAdminDashboard.vue'),
+    meta: {
+      title: 'Super Admin Dashboard',
+      requiresAuth: true,
+      permissions: {
+        module: 'admin',
+        action: 'super_admin'
       }
     }
   },

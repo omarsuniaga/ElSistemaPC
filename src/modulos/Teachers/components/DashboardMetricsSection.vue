@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps, type FunctionalComponent } from 'vue';
+import { type FunctionalComponent } from 'vue';
 import { UserGroupIcon, ClockIcon, BookOpenIcon, CalendarIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps<{

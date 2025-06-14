@@ -136,7 +136,7 @@
               <button
                 v-if="student.absences === 3"
                 class="bg-green-500 hover:bg-green-600 text-white p-1.5 rounded text-xs mr-1 flex items-center"
-                @click="openWhatsappModal(student)"
+                @click="openWhatsAppModalForWarning(student)"
                 title="Enviar WhatsApp"
               >
                 <ChatBubbleOvalLeftEllipsisIcon class="h-4 w-4 mr-1" />
@@ -243,7 +243,7 @@
           <button
             v-if="student.absences === 3"
             class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm flex items-center"
-            @click="openWhatsappModal(student)"
+            @click="openWhatsAppModalForWarning(student)"
           >
             <ChatBubbleOvalLeftEllipsisIcon class="h-5 w-5 mr-1.5" />
             WhatsApp
@@ -378,7 +378,7 @@
       </div>
     </div>
     <div
-      v-if="showWhatsappModal"
+      v-if="showWhatsAppModal"
       class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4"
     >
       <div
@@ -390,41 +390,19 @@
         </div>
         <div class="mb-2">
           <strong>Alumno:</strong>
-          {{ whatsappStudent ? studentName(whatsappStudent.studentId) : "" }}
+          {{ selectedStudentForWhatsApp ? studentName(selectedStudentForWhatsApp.studentId) : "" }}
         </div>
         <div class="mb-2">
-          <strong>Teléfonos:</strong>
-          <div v-if="selectedPhones.length">
-            <ul>
-              <li v-for="phone in selectedPhones" :key="phone">{{ phone }}</li>
-            </ul>
-          </div>
-          <div v-else class="text-red-500 text-xs">
-            No hay teléfonos registrados
-          </div>
-        </div>
-        <div class="mb-2">
-          <label class="block text-sm font-medium mb-1">Mensaje:</label>
-          <textarea
-            v-model="whatsappMessage"
-            rows="3"
-            class="w-full border rounded px-3 py-2 text-sm dark:text-black"
-          ></textarea>
+          <strong>Ausencias:</strong>
+          {{ selectedStudentForWhatsApp?.absences || 0 }}
         </div>
         <div class="flex justify-end gap-2 mt-4">
           <button
-            @click="closeWhatsappModal"
+            @click="closeWhatsAppModal"
             class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 text-gray-700 flex items-center"
           >
             <XMarkIcon class="h-5 w-5 mr-1.5" />
             Cancelar
-          </button>
-          <button
-            @click="sendWhatsappMessage"
-            class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white flex items-center"
-          >
-            <PaperAirplaneIcon class="h-5 w-5 mr-1.5" />
-            Enviar
           </button>
         </div>
       </div>
@@ -662,7 +640,7 @@ Esperamos su comprensión y colaboración.`
       margin: 1,
       filename: `amonestacion_${studentName.replace(/\s+/g, '_')}_${currentDate.replace(/\//g, '-')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
+      html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
     
@@ -709,7 +687,7 @@ Lamentamos no haber podido contar con la colaboración necesaria para mantener l
       margin: 1,
       filename: `retiro_${studentName.replace(/\s+/g, '_')}_${currentDate.replace(/\//g, '-')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
+      html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
     
@@ -905,13 +883,6 @@ onMounted(async () => {
   await calcularTopAbsentees();
 });
 
-const showWhatsappModal = ref(false);
-const whatsappStudent = ref<any>(null);
-const whatsappMessage = ref(
-  "Estimado representante, su representado tiene 3 inasistencias. Por favor, comuníquese con la coordinación."
-);
-const selectedPhones = ref<string[]>([]);
-
 // Variables para el modal de WhatsApp
 const showWhatsAppModal = ref(false);
 const selectedStudentForWhatsApp = ref<any>(null);
@@ -943,13 +914,13 @@ const whatsAppMessageData = computed((): MessageData | null => {
   if (!student) return null;
   
   // Obtener datos del representante
-  const representanteName = student.representante?.nombre || student.madre?.nombre || student.padre?.nombre || 'Representante';
-  const representantePhone = student.representante?.telefono || student.madre?.telefono || student.padre?.telefono || '';
+  const representanteName = (student as any).representante?.nombre || (student as any).madre?.nombre || (student as any).padre?.nombre || 'Representante';
+  const representantePhone = (student as any).representante?.telefono || (student as any).madre?.telefono || (student as any).padre?.telefono || '';
   
   // Obtener datos de la clase
   const classData = classesStore.classes.find(c => c.id === selectedStudentForWhatsApp.value.classId);
   const className = classData?.name || 'Clase Musical';
-  const teacherName = authStore.user?.displayName || 'Maestro';
+  const teacherName = (authStore.user as any)?.displayName || 'Maestro';
   
   return {
     studentName: `${student.nombre} ${student.apellido}`.trim(),

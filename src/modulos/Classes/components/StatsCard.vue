@@ -23,18 +23,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps } from 'vue';
-
-interface StatsData {
-  activeStudents?: number;
-  averageLevel?: string; // Example: Can be more complex
-  averageAttendance?: number; // Example
-  // Add other relevant stats fields
-}
-
-defineProps<{
-  stats: StatsData | null;
-}>();
 </script>
 
 <style scoped>

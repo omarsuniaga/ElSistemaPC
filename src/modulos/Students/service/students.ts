@@ -90,14 +90,39 @@ const mapGrupoData = (grupo: any): string[] => {
 const getTeacherClasses = async (teacherId: string): Promise<any[]> => {
   try {
     const classesCollection = collection(db, 'CLASES');
-    const teacherQuery = query(classesCollection, where('teacherId', '==', teacherId));
-    const querySnapshot = await getDocs(teacherQuery);
     
-    return querySnapshot.docs.map(doc => ({
+    // Obtener todas las clases para filtrar por maestro titular Y asistente
+    const allClassesQuery = query(classesCollection);
+    const querySnapshot = await getDocs(allClassesQuery);
+    
+    const teacherClasses = querySnapshot.docs.filter(doc => {
+      const data = doc.data();
+      
+      // Verificar si es maestro titular
+      if (data.teacherId === teacherId) {
+        return true;
+      }
+      
+      // Verificar si es maestro asistente en clases compartidas
+      if (data.teachers && Array.isArray(data.teachers)) {
+        return data.teachers.some((teacher: any) => 
+          teacher.teacherId === teacherId && 
+          (teacher.role === 'assistant' || teacher.role === 'asistente')
+        );
+      }
+      
+      return false;
+    });
+    
+    const result = teacherClasses.map(doc => ({
       id: doc.id,
       ...doc.data(),
       studentIds: doc.data().studentIds || []
     }));
+    
+    console.log(`[getTeacherClasses] Maestro ${teacherId} tiene acceso a ${result.length} clases (titular + asistente)`);
+    return result;
+    
   } catch (error) {
     console.error('Error obteniendo clases del maestro:', error);
     return [];
@@ -428,3 +453,46 @@ export const deleteStudentFirebase = async (id: string): Promise<void> => {
     throw new Error('Error al eliminar el estudiante')
   }
 }
+
+// Función para obtener estudiantes de una clase específica (sin restricciones de permisos)
+export const getStudentsByClassFirebase = async (classId: string): Promise<Student[]> => {
+  try {
+    console.log(`[getStudentsByClassFirebase] Obteniendo estudiantes para clase: ${classId}`);
+    
+    // Primero obtener la información de la clase para conseguir los studentIds
+    const classDoc = await getDoc(doc(db, 'CLASES', classId));
+    
+    if (!classDoc.exists()) {
+      console.log(`[getStudentsByClassFirebase] Clase ${classId} no encontrada`);
+      return [];
+    }
+    
+    const classData = classDoc.data();
+    const studentIds = classData.studentIds || [];
+    
+    if (studentIds.length === 0) {
+      console.log(`[getStudentsByClassFirebase] No hay estudiantes asignados a la clase ${classId}`);
+      return [];
+    }
+    
+    console.log(`[getStudentsByClassFirebase] Encontrados ${studentIds.length} IDs de estudiantes en la clase`);
+    
+    // Obtener todos los estudiantes de la clase
+    const studentsCollection = collection(db, COLLECTION_NAME);
+    const querySnapshot = await getDocs(studentsCollection);
+    
+    const students = querySnapshot.docs
+      .filter(doc => studentIds.includes(doc.id))
+      .map(doc => {
+        const data = doc.data();
+        return mapStudentData(doc.id, data);
+      });
+    
+    console.log(`[getStudentsByClassFirebase] Obtenidos ${students.length} estudiantes para la clase ${classId}`);
+    return students;
+    
+  } catch (error) {
+    console.error(`[getStudentsByClassFirebase] Error obteniendo estudiantes para clase ${classId}:`, error);
+    return [];
+  }
+};

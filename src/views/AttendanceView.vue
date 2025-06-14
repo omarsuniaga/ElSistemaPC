@@ -675,6 +675,11 @@ const selectClass = async (className: string) => {
     loadingMessage.value = 'Cargando datos de clase...'
     
     selectedClass.value = className
+    
+    // Cargar estudiantes específicos de la clase primero
+    console.log(`[AttendanceView] Cargando estudiantes para clase: ${className}`)
+    await studentsStore.fetchStudentsByClass(className)
+    
     await loadAttendanceData(className)
     updateView('attendance-form')
     

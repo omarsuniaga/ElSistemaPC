@@ -393,6 +393,44 @@ export const useClassesStore = defineStore('classes', {
       });
     },
 
+    /**
+     * Obtiene una clase específica por ID desde Firestore
+     * Esta función es útil para clases compartidas donde el maestro asistente
+     * necesita acceso a clases que no están en su lista personal
+     */
+    async fetchClassById(classId: string): Promise<ClassData | null> {
+      if (!classId) {
+        console.error('[ClassStore] No se puede obtener clase sin ID');
+        return null;
+      }
+
+      try {
+        console.log(`[ClassStore] Obteniendo clase por ID: ${classId}`);
+        const classData = await getClassByIdFirestore(classId);
+        
+        if (classData) {
+          const normalizedClass = this.normalizeClassData(classData);
+          
+          // Agregar o actualizar la clase en el store si no existe
+          const existingIndex = this.classes.findIndex(c => c.id === classId);
+          if (existingIndex >= 0) {
+            this.classes[existingIndex] = normalizedClass;
+          } else {
+            this.classes.push(normalizedClass);
+          }
+          
+          console.log(`[ClassStore] ✅ Clase obtenida: "${normalizedClass.name}"`);
+          return normalizedClass;
+        } else {
+          console.log(`[ClassStore] ❌ No se encontró clase con ID: ${classId}`);
+          return null;
+        }
+      } catch (error) {
+        console.error(`[ClassStore] Error al obtener clase ${classId}:`, error);
+        return null;
+      }
+    },
+
     /* ===== FUNCIONES AUXILIARES ===== */
 
     /**

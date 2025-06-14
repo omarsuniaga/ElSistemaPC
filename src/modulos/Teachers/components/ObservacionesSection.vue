@@ -11,7 +11,8 @@ import {
   CalendarIcon,
   UserIcon,
   ClockIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  MusicalNoteIcon
 } from '@heroicons/vue/24/outline';
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue';
 import { format } from 'date-fns';
@@ -95,6 +96,80 @@ const formatDate = (dateString: string) => {
   }
 };
 
+// Función para formatear el horario/slots con iconos
+const formatScheduleWithIcons = (schedule: string | undefined, slots: any) => {
+  if (!schedule && !slots) return 'Horario no definido';
+  
+  // Si slots es un array de objetos
+  if (Array.isArray(slots)) {
+    return slots.map(slot => {
+      const day = slot.day || slot.dia || '';
+      const time = slot.time || slot.hora || '';
+      return `${day} ${time}`;
+    }).join(', ');
+  }
+  
+  // Si slots es un objeto
+  if (slots && typeof slots === 'object') {
+    const day = slots.day || slots.dia || '';
+    const time = slots.time || slots.hora || '';
+    return `${day} ${time}`;
+  }
+  
+  // Si slots es un string
+  if (typeof slots === 'string') {
+    return slots;
+  }
+  
+  // Fallback al schedule original
+  return schedule || 'Horario no definido';
+};
+
+// Función para obtener los días de la semana en formato legible
+const formatDaysOfWeek = (slots: any) => {
+  if (!slots) return [];
+  
+  const daysMap: Record<string, string> = {
+    'monday': 'Lunes',
+    'tuesday': 'Martes', 
+    'wednesday': 'Miércoles',
+    'thursday': 'Jueves',
+    'friday': 'Viernes',
+    'saturday': 'Sábado',
+    'sunday': 'Domingo',
+    'lunes': 'Lunes',
+    'martes': 'Martes',
+    'miercoles': 'Miércoles',
+    'miércoles': 'Miércoles',
+    'jueves': 'Jueves',
+    'viernes': 'Viernes',
+    'sabado': 'Sábado',
+    'sábado': 'Sábado',
+    'domingo': 'Domingo'
+  };
+  
+  if (Array.isArray(slots)) {
+    return slots.map(slot => {
+      const day = slot.day || slot.dia || '';
+      const time = slot.time || slot.hora || '';
+      return {
+        day: daysMap[day.toLowerCase()] || day,
+        time: time
+      };
+    });
+  }
+  
+  if (typeof slots === 'object' && slots !== null) {
+    const day = slots.day || slots.dia || '';
+    const time = slots.time || slots.hora || '';
+    return [{
+      day: daysMap[day.toLowerCase()] || day,
+      time: time
+    }];
+  }
+    return [];
+};
+
 // Función para obtener el nombre del autor de la observación
 const getAuthorName = (observation: any) => {
   return observation.authorName || observation.teacherName || 'Autor desconocido';
@@ -150,14 +225,35 @@ onMounted(() => {
                 <ChevronDownIcon
                   v-else
                   class="w-4 h-4 text-gray-500"
-                />
-                <div>
+                />                <div>
                   <h3 class="font-medium text-gray-900 dark:text-white">
                     {{ classItem.name || classItem.nombre }}
                   </h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ classItem.instrument || classItem.tipo }} - {{ classItem.schedule || 'Horario no definido' }}
-                  </p>
+                  <div class="flex items-center space-x-3 text-sm text-gray-500 dark:text-gray-400">
+                    <span class="flex items-center">
+                      <MusicalNoteIcon class="w-4 h-4 mr-1" />
+                      {{ classItem.instrument || classItem.tipo }}
+                    </span>
+                    <span class="flex items-center">
+                      <ClockIcon class="w-4 h-4 mr-1" />
+                      {{ formatScheduleWithIcons(classItem.schedule, classItem.slots) }}
+                    </span>
+                  </div>
+                  <!-- Mostrar detalles de horarios si hay slots estructurados -->
+                  <div v-if="formatDaysOfWeek(classItem.slots).length > 0" class="mt-1">
+                    <div class="flex flex-wrap gap-2">
+                      <span 
+                        v-for="slot in formatDaysOfWeek(classItem.slots)"
+                        :key="`${slot.day}-${slot.time}`"
+                        class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
+                      >
+                        <CalendarIcon class="w-3 h-3 mr-1" />
+                        {{ slot.day }}
+                        <ClockIcon class="w-3 h-3 ml-1 mr-1" />
+                        {{ slot.time }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </button>
             </div>

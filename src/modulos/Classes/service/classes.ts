@@ -135,8 +135,37 @@ export const getClassByIdFirestore = async (id: string): Promise<ClassData | nul
     } as ClassData;
     if (currentUser) {
       const role = currentUser.role;
-      if (role === 'teacher' && classData.teacherId !== currentUser.id) return null;
-      else if (role === 'student' && !classData.studentIds?.includes(currentUser.id)) return null;
+      if (role === 'teacher') {
+        // Verificar si el maestro es titular de la clase
+        const isOwner = classData.teacherId === currentUser.id;
+        
+        // Verificar si el maestro está en la lista de maestros colaboradores
+        const isCollaborator = classData.teachers && 
+                              Array.isArray(classData.teachers) &&
+                              classData.teachers.some((teacher: any) => teacher.teacherId === currentUser.id);
+        
+        // Verificar si está en el campo assistantTeachers (por compatibilidad)
+        const hasAssistantField = (classData as any).assistantTeachers && 
+                                 Array.isArray((classData as any).assistantTeachers) && 
+                                 (classData as any).assistantTeachers.includes(currentUser.id);
+        
+        // Permitir acceso si es titular, colaborador o asistente
+        if (!isOwner && !isCollaborator && !hasAssistantField) {
+          console.log(`[ClassService] Maestro ${currentUser.id} no tiene acceso a clase ${id}`);
+          console.log(`[ClassService] - No es titular (${classData.teacherId})`);
+          console.log(`[ClassService] - No es colaborador (${classData.teachers || 'sin colaboradores'})`);
+          console.log(`[ClassService] - No es asistente (${(classData as any).assistantTeachers || 'sin asistentes'})`);
+          return null;
+        }
+        
+        console.log(`[ClassService] ✅ Maestro ${currentUser.id} tiene acceso a clase ${id}`);
+        console.log(`[ClassService] - Es titular: ${isOwner}`);
+        console.log(`[ClassService] - Es colaborador: ${isCollaborator}`);
+        console.log(`[ClassService] - Es asistente: ${hasAssistantField}`);
+        
+      } else if (role === 'student' && !classData.studentIds?.includes(currentUser.id)) {
+        return null;
+      }
     } else {
       return null;
     }

@@ -38,23 +38,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps } from 'vue';
-
-interface ClassSummaryData {
-  title?: string;
-  instrument?: string;
-  level?: string;
-  teacherName?: string;
-  dayOfWeek?: string;
-  startTime?: string;
-  durationMinutes?: number;
-  nextSession?: string;
-  // Add other relevant summary fields here
-}
-
-defineProps<{
-  summary: ClassSummaryData | null;
-}>();
 </script>
 
 <style scoped>

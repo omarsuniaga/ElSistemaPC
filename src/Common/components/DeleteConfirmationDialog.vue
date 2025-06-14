@@ -28,24 +28,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue';
-
-const props = defineProps({
-  show: {
-    type: Boolean,
-    required: true
-  },
-  title: {
-    type: String,
-    default: 'Confirmar Acción'
-  },
-  message: {
-    type: String,
-    default: '¿Estás seguro de que quieres realizar esta acción?'
-  }
-});
-
-const emit = defineEmits(['confirm', 'cancel']);
 </script>
 
 <style scoped>

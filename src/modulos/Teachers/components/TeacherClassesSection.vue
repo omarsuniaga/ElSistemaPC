@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps, defineEmits, ref, computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { PlusIcon } from '@heroicons/vue/24/outline';
 import TeacherClassesCard from './TeacherClassesCard.vue';
@@ -89,15 +89,6 @@ const sortedClasses = computed(() => {
     return distanceA - distanceB;
   });
 });
-
-// Emits for actions from this component
-const emit = defineEmits([
-  'add-class',         // Emitido al hacer clic en "Nueva Clase"
-  'edit-class',        // Re-emitido desde TeacherClassesCard
-  'delete-class',      // Re-emitido desde TeacherClassesCard
-  'manage-students',   // Re-emitido desde TeacherClassesCard
-  'collaboration-updated'  // Re-emitido desde TeacherClassesCard
-]);
 
 const router = useRouter(); // <-- Inicializamos router
 

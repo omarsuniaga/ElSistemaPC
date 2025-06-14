@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue';
 import { PencilIcon, UserGroupIcon, ClockIcon, MapPinIcon, CalendarIcon } from '@heroicons/vue/24/outline';
 import type { Class } from '@/modulos/Classes/models/Class'; // Asegúrate de que la ruta y el tipo sean correctos
 
@@ -8,13 +7,6 @@ const props = defineProps<{
   upcomingClasses: (Class & { nextSessionDate: Date })[]; // Clases con la fecha de la próxima sesión añadida
   formatDateTime: (date: Date) => string; // Función para formatear fechas
   getNextSession: (classItem: Class) => Date; // Función para obtener la próxima sesión
-}>();
-
-// Definir los eventos que emitirá el componente
-const emit = defineEmits<{ 
-  (e: 'edit-class', classId: string): void;
-  (e: 'manage-students', classId: string): void;
-  (e: 'view-class', classId: string): void;
 }>();
 
 // Funciones para emitir eventos al componente padre

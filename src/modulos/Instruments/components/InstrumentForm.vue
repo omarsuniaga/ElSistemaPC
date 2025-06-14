@@ -1,17 +1,12 @@
 // Instruments/components/InstrumentForm.vue
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, defineProps, defineEmits } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import type { Instrument } from '../types/instrumentsTypes';
 
 // Props y Emits
 const props = defineProps<{
   instrument?: Instrument;
   isCreating?: boolean;
-}>();
-
-const emit = defineEmits<{
-  (e: 'save', instrument: Partial<Instrument>): void;
-  (e: 'cancel'): void;
 }>();
 
 // Estados locales
@@ -68,11 +63,11 @@ watch(() => props.instrument, (newInstrument) => {
 
 // Métodos
 const guardar = () => {
-  emit('save', instrumentForm.value);
+  // Implementar la lógica para guardar el instrumento
 };
 
 const cancelar = () => {
-  emit('cancel');
+  // Implementar la lógica para cancelar la operación
 };
 
 const addAccessory = () => {

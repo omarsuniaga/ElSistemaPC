@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineProps, defineEmits, watch, computed, onMounted } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import { format, formatISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { XMarkIcon } from '@heroicons/vue/24/outline';

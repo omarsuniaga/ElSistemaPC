@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, PropType } from 'vue';
+import { PropType } from 'vue';
 import type { ClassData, ScheduleSlot } from '../../types/class'; // Adjust path as necessary
 
 const props = defineProps({

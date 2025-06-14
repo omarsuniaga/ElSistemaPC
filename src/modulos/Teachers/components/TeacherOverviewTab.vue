@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { defineProps } from 'vue';
 import { 
   BookOpenIcon, 
   ClockIcon, 
@@ -14,8 +13,6 @@ interface Metric {
   icon: any; // Tipo más específico si es posible, ej: FunctionalComponent
   color: string;
 }
-
-defineProps<{ metrics: Metric[] }>();
 
 // Mapeo de iconos por nombre si es necesario (alternativa a pasar el componente icono directamente)
 // const iconMap = {

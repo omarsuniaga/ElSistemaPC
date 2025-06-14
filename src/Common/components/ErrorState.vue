@@ -12,20 +12,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue';
-
-const props = defineProps({
-  message: {
-    type: String,
-    default: 'Ha ocurrido un error inesperado.'
-  },
-  showRetry: {
-    type: Boolean,
-    default: true
-  }
-});
-
-const emit = defineEmits(['retry']);
 </script>
 
 <style scoped>

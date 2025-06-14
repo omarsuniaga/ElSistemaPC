@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onUnmounted, defineProps, defineEmits } from 'vue';
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
   message: {
@@ -30,8 +30,6 @@ const props = defineProps({
     default: 3000 // ms
   }
 });
-
-const emit = defineEmits(['dismiss']);
 
 const visible = ref(true);
 let timeoutId: number | null = null;

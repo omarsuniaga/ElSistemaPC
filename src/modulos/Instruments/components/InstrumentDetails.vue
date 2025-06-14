@@ -1,17 +1,11 @@
 // Instruments/components/InstrumentDetails.vue
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { Instrument } from '../types/instrumentsTypes';
 
 const props = defineProps<{
   instrument: Instrument;
-}>();
-
-const emit = defineEmits<{
-  (e: 'edit'): void;
-  (e: 'delete'): void;
 }>();
 
 // Formatear fechas

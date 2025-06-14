@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps, defineEmits, type FunctionalComponent, computed } from 'vue';
+import { type FunctionalComponent, computed } from 'vue';
 import { BookOpenIcon, ChartBarSquareIcon, CalendarIcon, ClockIcon, BellIcon } from '@heroicons/vue/24/outline';
 import { useGeneralNotifications } from '../composables/useGeneralNotifications';
 import { useAuthStore } from '../../../stores/auth';

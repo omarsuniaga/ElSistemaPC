@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, ref, PropType } from 'vue';
+import { ref, PropType } from 'vue';
 import type { ClassData } from '../../types/class'; // Adjust path as necessary
 
 // Define observation history entry interface
