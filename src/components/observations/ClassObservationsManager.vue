@@ -230,10 +230,13 @@
               </svg>
             </button>
           </div>
-        </div>
-
-        <!-- Contenido del modal con formulario inteligente -->
+        </div>        <!-- Contenido del modal con formulario inteligente -->
         <div class="overflow-y-auto max-h-[85vh]">
+          <!-- TEMPORAL: SmartObservationForm comentado para debugging -->
+          <div class="p-6">
+            <p class="text-gray-600">Formulario inteligente temporalmente deshabilitado para debugging.</p>
+          </div>
+          <!--
           <SmartObservationForm
             :class-id="props.classId"
             :class-name="props.className || 'Clase'"
@@ -244,7 +247,8 @@
             @observation-saved="handleSmartFormSave"
             @form-updated="handleFormUpdate"
             @cancel="cancelFormEditing"
-          />        </div>
+          />
+          --></div>
       </div>
     </div>
 
@@ -287,7 +291,8 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useTeacherObservations } from '../../composables/useObservationManagement';
 import { useAuthStore } from '../../stores/auth';
-import SmartObservationForm from './SmartObservationForm.vue';
+// TEMPORAL: SmartObservationForm comentado para debugging
+// import SmartObservationForm from './SmartObservationForm.vue';
 import type { ObservationData } from '../../stores/observations';
 
 // Props

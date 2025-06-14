@@ -393,8 +393,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useRBACStore } from '@/stores/RBAC'
-import { useAdminTeachersStore } from '@/modulos/Admin/store/adminTeachers'
+import { useRBACStore } from '../../../stores/rbacStore'
+import { useAdminTeachersStore } from '../store/admin'
 import { 
   HomeIcon, 
   PlusIcon,
@@ -412,7 +412,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 // Components (would need to be created)
-import TeacherCard from '../components/TeacherCard.vue'
+import TeacherCard from '../../Classes/components/TeacherCard.vue'
 import TeachersTable from '../components/TeachersTable.vue'
 import TeacherCreateModal from '../components/TeacherCreateModal.vue'
 import TeacherEditModal from '../components/TeacherEditModal.vue'

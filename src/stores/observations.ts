@@ -1,6 +1,6 @@
 // Store principal para gestión de observaciones unificadas
 import { defineStore } from 'pinia';
-import { ref, computed, readonly } from 'vue';
+import { ref, computed, readonly, Ref, ComputedRef } from 'vue';
 import { 
   collection, 
   query, 

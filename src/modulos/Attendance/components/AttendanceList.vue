@@ -69,8 +69,9 @@ const teachersStore = useTeachersStore();
 const route = useRoute();
 
 // Import the observations store for the unified system
-import { useObservationsStore } from '../../../stores/observations';
-const observationsStore = useObservationsStore();
+// TEMPORAL: Comentado para debugging
+// import { useObservationsStore } from '../../../stores/observations';
+// const observationsStore = useObservationsStore();
 
 // Estado local para datos y carga
 const localStudents = ref<Student[]>([]);
@@ -206,14 +207,16 @@ const hasObservations = computed(() => {
     return false;
   }
   
+  // TEMPORAL: Comentado para debugging
   // Filtrar observaciones por clase y fecha del store
-  const allObservations = observationsStore.filteredObservations;
-  const todayObservations = allObservations.filter(obs => 
-    obs.classId === currentSelectedClass.value && 
-    obs.date === currentSelectedDate.value
-  );
+  // const allObservations = observationsStore.filteredObservations;
+  // const todayObservations = allObservations.filter(obs => 
+  //   obs.classId === currentSelectedClass.value && 
+  //   obs.date === currentSelectedDate.value
+  // );
   
-  return todayObservations.length > 0;
+  // return todayObservations.length > 0;
+  return false; // Temporal
 });
 
 const shouldAnimateObservationsButton = computed(() => {
@@ -584,11 +587,12 @@ onMounted(async () => {
     // PASO 6: Cargar observaciones del sistema unificado
     try {
       console.log('[AttendanceDebug] 📝 Cargando observaciones de la clase y fecha actual');
-      await observationsStore.fetchObservations({ 
-        classId: classIdToUse,
-        date: dateToUse 
-      });
-      console.log('[AttendanceDebug] ✓ Observaciones cargadas correctamente');
+      // TEMPORAL: Comentado para debugging
+      // await observationsStore.fetchObservations({ 
+      //   classId: classIdToUse,
+      //   date: dateToUse 
+      // });
+      console.log('[AttendanceDebug] ✓ Observaciones cargadas correctamente (comentado temporalmente)');
     } catch (error) {
       console.warn('[AttendanceDebug] ⚠️ Error al cargar observaciones:', error.message);
       // No bloquear la carga de asistencia por errores en observaciones
@@ -1372,7 +1376,7 @@ const sortedStudents = computed(() => {
       <div v-else>
         <!-- Header with action buttons -->
         <AttendanceHeader 
-          :class-name="props.selectedClassName || 'Clase'" 
+          :class-name="props.selectedClassName || currentSelectedClass || 'Clase'" 
           :pending-changes-count="attendanceActions.pendingChangesCount.value"
           :is-disabled="props.isDisabled"
           :observations="attendanceStore.getObservations"
@@ -1432,16 +1436,14 @@ const sortedStudents = computed(() => {
     />
 
     <!-- Modal profesional de observaciones unificadas -->
-    <!-- Temporalmente comentado para debugging -->
-    <!--
+    <!-- ClassObservationsManager Modal -->
     <ClassObservationsManager
       :is-open="showClassObservationsManager"
-      :class-id="currentSelectedClass"
-      :class-name="props.selectedClassName || 'Clase sin nombre'"
+      :class-id="currentSelectedClass || props.classId"
+      :class-name="props.selectedClassName || currentSelectedClass || 'Clase sin nombre'"
       :selected-date="currentSelectedDate"
       @close="showClassObservationsManager = false"
     />
-    -->
 
     <AttendanceObservation
       v-if="attendanceObservationModalOpen"

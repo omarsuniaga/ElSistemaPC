@@ -302,6 +302,11 @@
 </template>
 
 <script setup lang="ts">
+// Define component name
+defineOptions({
+  name: 'StudentsTable'
+})
+
 import { 
   ChevronUpDownIcon,
   ChevronUpIcon,
@@ -440,30 +445,36 @@ const handleToggleStatus = (student: Student) => {
   emit('toggle-status', student)
 }
 </script>
-<script>
-export default {
-  components: {
-    name: 'StudentsTable',
-  }
-}
-</script>
+
 <style scoped>
 /* Table row hover effects */
 tbody tr:hover {
-  @apply bg-gray-50 dark:bg-gray-700;
+  background-color: rgb(249 250 251);
+}
+
+@media (prefers-color-scheme: dark) {
+  tbody tr:hover {
+    background-color: rgb(55 65 81);
+  }
 }
 
 /* Sortable header hover effects */
 th.cursor-pointer:hover {
-  @apply bg-gray-100 dark:bg-gray-600;
+  background-color: rgb(243 244 246);
+}
+
+@media (prefers-color-scheme: dark) {
+  th.cursor-pointer:hover {
+    background-color: rgb(75 85 99);
+  }
 }
 
 /* Action button hover effects */
 td button {
-  @apply transition-all duration-150;
+  transition: all 150ms;
 }
 
 td button:hover {
-  @apply scale-110;
+  transform: scale(1.1);
 }
 </style>

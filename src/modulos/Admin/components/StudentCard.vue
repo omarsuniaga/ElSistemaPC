@@ -189,6 +189,11 @@
 </template>
 
 <script setup lang="ts">
+// Define component name
+defineOptions({
+  name: 'StudentCard'
+})
+
 import { ref, computed } from 'vue'
 import { 
   EllipsisVerticalIcon,
@@ -345,13 +350,6 @@ const vClickOutside = {
   },
   unmounted(el: HTMLElement) {
     document.removeEventListener('click', el.clickOutsideEvent)
-  }
-}
-</script>
-<script>
-export default {
-  components: {
-    name: 'StudentCard',
   }
 }
 </script>

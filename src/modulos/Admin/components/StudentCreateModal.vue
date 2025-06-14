@@ -285,6 +285,11 @@
 </template>
 
 <script setup lang="ts">
+// Define component name
+defineOptions({
+  name: 'StudentCreateModal'
+})
+
 import { ref, reactive } from 'vue'
 import { XMarkIcon } from '@heroicons/vue/24/outline'
 import { useAdminStudentsStore } from '../store/adminStudents'
@@ -439,24 +444,20 @@ const handleCancel = () => {
   emit('close')
 }
 </script>
-<script>
-export default {
-  components: {
-    name: 'StudentCreateModal',
-  }
-}
-</script>
+
 <style scoped>
 /* Custom styles for form elements */
 input:focus,
 select:focus,
 textarea:focus {
-  @apply ring-2 ring-blue-500 ring-offset-2;
+  box-shadow: 0 0 0 2px rgb(59 130 246), 0 0 0 4px rgb(59 130 246 / 0.1);
+  outline: none;
 }
 
 /* Checkbox styles */
 input[type="checkbox"]:checked {
-  @apply bg-blue-600 border-blue-600;
+  background-color: rgb(37 99 235);
+  border-color: rgb(37 99 235);
 }
 
 /* Loading spinner */
