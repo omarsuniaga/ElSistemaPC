@@ -128,6 +128,31 @@ const verifyClassExists = async (classId: string) => {
     console.log(`[ClassDebug] Verificando existencia de clase con ID=${classId}`);
     console.log(`[ClassDebug] Store selectedClass=${attendanceStore.selectedClass}, Route classId=${route.params.classId}`);
     
+    // Obtener el ID del maestro actual
+    const currentTeacherId = authStore.user?.uid;
+    
+    // Verificar si el maestro tiene acceso a la clase (como titular o asistente)
+    if (currentTeacherId) {
+      const hasAccess = classesStore.hasTeacherAccessToClass(classId, currentTeacherId);
+      if (hasAccess) {
+        console.log(`[ClassDebug] Maestro ${currentTeacherId} tiene acceso a clase ${classId} (titular o asistente)`);
+        return true;
+      } else {
+        console.log(`[ClassDebug] Maestro ${currentTeacherId} NO tiene acceso a clase ${classId}`);
+        
+        // Si no tiene acceso inmediato, refrescar clases desde Firestore por si hay cambios
+        console.log(`[ClassDebug] Refrescando clases desde Firestore para verificar acceso...`);
+        await classesStore.fetchClasses();
+        const hasAccessAfterRefresh = classesStore.hasTeacherAccessToClass(classId, currentTeacherId);
+        
+        if (hasAccessAfterRefresh) {
+          console.log(`[ClassDebug] Después de refrescar: Maestro ${currentTeacherId} tiene acceso a clase ${classId}`);
+          return true;
+        }
+      }
+    }
+    
+    // Fallback: verificación básica sin considerar permisos (mantener compatibilidad)
     // Primero intentamos obtener la clase del store (cache)
     const classFromStore = classesStore.getClassById(classId);
     if (classFromStore) {

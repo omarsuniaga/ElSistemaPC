@@ -133,6 +133,30 @@ export const useClassesStore = defineStore('classes', {
         (c.teachers && c.teachers.some((teacher: any) => teacher.teacherId === teacherId))
       );
     },
+
+    /**
+     * Obtiene una clase por ID si el maestro tiene acceso (como titular o asistente)
+     */
+    getClassByIdForTeacher: (state) => (classId: string, teacherId: string) => {
+      if (!classId || !teacherId) return null;
+      return state.classes.find((c: ClassData) => 
+        c.id === classId && (
+          c.teacherId === teacherId || 
+          (c.teachers && c.teachers.some((teacher: any) => teacher.teacherId === teacherId))
+        )
+      );
+    },
+
+    /**
+     * Verifica si un maestro tiene acceso a una clase específica
+     */
+    hasTeacherAccessToClass: (state) => (classId: string, teacherId: string) => {
+      if (!classId || !teacherId) return false;
+      const classData = state.classes.find(c => c.id === classId);
+      if (!classData) return false;
+      return classData.teacherId === teacherId || 
+        (classData.teachers && classData.teachers.some((teacher: any) => teacher.teacherId === teacherId));
+    },
   },
   // Actions para manejar la lógica de negocio y la comunicación con Firestore
 

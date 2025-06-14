@@ -351,12 +351,11 @@ const handleTakeAttendance = () => {
     console.warn('No tienes permisos para tomar asistencia en esta clase');
     return;
   }
-  
-  const today = new Date();
+    const today = new Date();
   const dateString = format(today, 'yyyyMMdd');
   
   router.push({
-    name: 'AttendanceList',
+    name: 'attendance',
     params: {
       classId: props.classData.id,
       date: dateString

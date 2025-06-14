@@ -37,22 +37,12 @@ export async function rbacGuard(
       console.log(`✅ RBAC Guard: Acceso maestro permitido para ruta teacher: ${to.path}`);
       return next();
     }
-    
-    // Redirección especial para maestros que intentan acceder a rutas de admin
+      // Redirección especial para maestros que intentan acceder a rutas de admin
     if (userRole?.toLowerCase() === 'maestro' && to.path.startsWith('/attendance/')) {
-      console.log(`🔄 RBAC Guard: Redirigiendo maestro de ruta admin ${to.path} a ruta teacher`);
-      const pathParts = to.path.split('/');
-      // Extraer date y classId si están presentes: /attendance/:date/:classId
-      if (pathParts.length >= 4) {
-        const date = pathParts[2];
-        const classId = pathParts[3];
-        return next(`/teacher/attendance/${date}/${classId}`);
-      } else if (pathParts.length >= 3) {
-        const date = pathParts[2];
-        return next(`/teacher/attendance/${date}`);
-      } else {
-        return next('/teacher/attendance/calendar');
-      }
+      console.log(`🔄 RBAC Guard: Permitiendo acceso maestro a ruta de asistencia: ${to.path}`);
+      // Permitir acceso directo a rutas de asistencia para maestros
+      // Ya no redirigir automáticamente, permitir que accedan
+      return next();
     }// Verificar si hay roles permitidos definidos directamente en la ruta
     if (to.meta.allowedRoles && Array.isArray(to.meta.allowedRoles)) {
       // Comparación case-insensitive para mayor robustez
@@ -124,8 +114,11 @@ function checkRolePermissionAccess(role: string | undefined, moduleKey: string, 
     // Acceso completo a funcionalidades de maestro
     if (moduleKey === 'teacher' && permission === 'dashboard_view') return true;
     
-    // ACCESO COMPLETO A ASISTENCIA para maestros
+    // ACCESO COMPLETO A ASISTENCIA para maestros (incluyendo rutas /attendance/)
     if (moduleKey === 'attendance') return true;
+    
+    // Permitir acceso a rutas de asistencia específicas
+    if (to?.path?.startsWith('/attendance/')) return true;
     
     // Otros permisos de maestro
     if (moduleKey === 'schedule' && permission === 'teacher_view') return true;
