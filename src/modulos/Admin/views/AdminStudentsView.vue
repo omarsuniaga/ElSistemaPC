@@ -334,8 +334,8 @@ import {
 
 // Components
 import StudentCard from '../components/StudentCard.vue'
-import { StudentsTable } from '../components/StudentsTable.vue'
-import { StudentCreateModal } from '../components/StudentCreateModal.vue'
+import StudentsTable from '../components/StudentsTable.vue'
+import StudentCreateModal from '../components/StudentCreateModal.vue'
 import StudentEditModal from '../components/StudentEditModal.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
 
