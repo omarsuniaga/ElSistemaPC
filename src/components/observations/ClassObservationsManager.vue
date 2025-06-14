@@ -232,11 +232,6 @@
           </div>
         </div>        <!-- Contenido del modal con formulario inteligente -->
         <div class="overflow-y-auto max-h-[85vh]">
-          <!-- TEMPORAL: SmartObservationForm comentado para debugging -->
-          <div class="p-6">
-            <p class="text-gray-600">Formulario inteligente temporalmente deshabilitado para debugging.</p>
-          </div>
-          <!--
           <SmartObservationForm
             :class-id="props.classId"
             :class-name="props.className || 'Clase'"
@@ -247,8 +242,7 @@
             @observation-saved="handleSmartFormSave"
             @form-updated="handleFormUpdate"
             @cancel="cancelFormEditing"
-          />
-          --></div>
+          /></div>
       </div>
     </div>
 
@@ -270,10 +264,9 @@
           <button
             @click="confirmDelete"
             :disabled="deleting"
-            class="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-          >
+            class="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"          >
             <span v-if="deleting">🗑️ Eliminando...</span>
-            <span v-else">🗑️ Sí, eliminar</span>
+            <span v-else>🗑️ Sí, eliminar</span>
           </button>
           <button
             @click="observationToDelete = null"
@@ -291,8 +284,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useTeacherObservations } from '../../composables/useObservationManagement';
 import { useAuthStore } from '../../stores/auth';
-// TEMPORAL: SmartObservationForm comentado para debugging
-// import SmartObservationForm from './SmartObservationForm.vue';
+import SmartObservationForm from './SmartObservationForm.vue';
 import type { ObservationData } from '../../stores/observations';
 
 // Props

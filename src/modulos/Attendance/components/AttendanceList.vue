@@ -69,9 +69,8 @@ const teachersStore = useTeachersStore();
 const route = useRoute();
 
 // Import the observations store for the unified system
-// TEMPORAL: Comentado para debugging
-// import { useObservationsStore } from '../../../stores/observations';
-// const observationsStore = useObservationsStore();
+import { useObservationsStore } from '../../../stores/observations';
+const observationsStore = useObservationsStore();
 
 // Estado local para datos y carga
 const localStudents = ref<Student[]>([]);
@@ -207,16 +206,14 @@ const hasObservations = computed(() => {
     return false;
   }
   
-  // TEMPORAL: Comentado para debugging
   // Filtrar observaciones por clase y fecha del store
-  // const allObservations = observationsStore.filteredObservations;
-  // const todayObservations = allObservations.filter(obs => 
-  //   obs.classId === currentSelectedClass.value && 
-  //   obs.date === currentSelectedDate.value
-  // );
+  const allObservations = observationsStore.filteredObservations;
+  const todayObservations = allObservations.filter(obs => 
+    obs.classId === currentSelectedClass.value && 
+    obs.date === currentSelectedDate.value
+  );
   
-  // return todayObservations.length > 0;
-  return false; // Temporal
+  return todayObservations.length > 0;
 });
 
 const shouldAnimateObservationsButton = computed(() => {
@@ -587,12 +584,11 @@ onMounted(async () => {
     // PASO 6: Cargar observaciones del sistema unificado
     try {
       console.log('[AttendanceDebug] 📝 Cargando observaciones de la clase y fecha actual');
-      // TEMPORAL: Comentado para debugging
-      // await observationsStore.fetchObservations({ 
-      //   classId: classIdToUse,
-      //   date: dateToUse 
-      // });
-      console.log('[AttendanceDebug] ✓ Observaciones cargadas correctamente (comentado temporalmente)');
+      await observationsStore.fetchObservations({ 
+        classId: classIdToUse,
+        date: dateToUse 
+      });
+      console.log('[AttendanceDebug] ✓ Observaciones cargadas correctamente');
     } catch (error) {
       console.warn('[AttendanceDebug] ⚠️ Error al cargar observaciones:', error.message);
       // No bloquear la carga de asistencia por errores en observaciones
