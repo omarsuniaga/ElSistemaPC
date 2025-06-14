@@ -1,13 +1,12 @@
 <template>
-  <div class="app-container" :class="{ 'dark-mode': isDarkMode }">
-    <!-- Loading overlay during auth initialization -->
+  <div class="app-container" :class="{ 'dark-mode': isDarkMode }">    <!-- Loading overlay during auth initialization -->
     <div 
       v-if="!authStore.isInitialized" 
-      class="fixed inset-0 bg-white dark:bg-gray-900 flex items-center justify-center z-50"
+      class="fixed inset-0 bg-background flex items-center justify-center z-50"
     >
       <div class="text-center">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p class="text-gray-600 dark:text-gray-400">Iniciando aplicación...</p>
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" style="border-color: var(--color-primary);"></div>
+        <p class="text-secondary">Iniciando aplicación...</p>
       </div>
     </div>
     
@@ -88,6 +87,8 @@ onMounted(async () => {
   flex-direction: column;
   min-height: 100vh;
   padding-bottom: 70px; /* Espacio para el footer */
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
   transition: background-color 0.3s, color 0.3s;
 }
 
@@ -101,26 +102,8 @@ onMounted(async () => {
   height: 108px; /* Altura del header con el buscador */
 }
 
-/* Variables para el tema claro (predeterminado) */
-:root {
-  --bg-color: #f8f9fa;
-  --text-color: #212529;
-  --card-bg: #ffffff;
-  --border-color: #dee2e6;
-  --shadow-color: rgba(0, 0, 0, 0.1);
-}
-
-/* Variables para el tema oscuro */
-.dark-mode {
-  --bg-color: #121212;
-  --text-color: #e9ecef;
-  --card-bg: #212529;
-  --border-color: #495057;
-  --shadow-color: rgba(0, 0, 0, 0.3);
-}
-
 body {
-  background-color: var(--bg-color);
-  color: var(--text-color);
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
 }
 </style>

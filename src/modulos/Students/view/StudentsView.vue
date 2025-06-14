@@ -267,30 +267,28 @@ watch(sortOrder, (newValue) => {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
         </svg>
       </button>
-    </div>
-
-    <!-- Search Bar -->
+    </div>    <!-- Search Bar -->
     <div class="relative mb-2">
       <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" />
+        <MagnifyingGlassIcon class="h-5 w-5 text-muted" />
       </div>
         <input
         v-model="searchQuery"
         type="text"
         placeholder="Buscar alumnos..."
-        class="pl-10 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 py-2 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white"
+        class="input pl-10 w-full"
         />
     </div>
 
     <!-- Loading State -->
     <div v-if="isLoading" class="flex justify-center items-center py-12">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
     </div>
 
     <!-- Error State -->
     <div 
       v-else-if="error" 
-      class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-4 rounded-lg mb-4"
+      class="bg-destructive/10 text-destructive p-4 rounded-lg mb-4"
     >
       {{ error }}
       <button 
@@ -302,13 +300,13 @@ watch(sortOrder, (newValue) => {
     </div>
 
     <!-- Students List (WhatsApp/Telegram Style) -->
-    <div v-else-if="sortedStudents.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-      <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+    <div v-else-if="sortedStudents.length > 0" class="card overflow-hidden">
+      <ul class="divide-y divide-border">
         <li 
           v-for="student in sortedStudents" 
           :key="student.id"
           @click="openStudentDrawer(student)"
-          class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+          class="hover:bg-muted cursor-pointer transition-colors"
         >
           <div class="px-2 py-1 flex items-start space-x-1">
             <!-- Avatar -->            <div class="flex-shrink-0">
@@ -318,11 +316,10 @@ watch(sortOrder, (newValue) => {
                 size="lg"
               />
             </div>
-            
-            <!-- Student Info -->
+              <!-- Student Info -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                <p class="text-sm font-medium text-foreground truncate">
                   {{ student.nombre }} {{ student.apellido }}
                 </p>
                 <div class="flex items-center">
@@ -330,26 +327,26 @@ watch(sortOrder, (newValue) => {
                   <div class="relative">
                     <button 
                       @click="toggleMenu($event, student.id)" 
-                      class="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      class="p-1 rounded-full hover:bg-muted transition-colors"
                     >
-                      <EllipsisVerticalIcon class="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                      <EllipsisVerticalIcon class="h-5 w-5 text-secondary" />
                     </button>
                     
                     <!-- Dropdown menu -->
                     <div 
                       v-if="activeMenu === student.id"
-                      class="absolute right-0 mt-1 w-36 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
+                      class="absolute right-0 mt-1 w-36 bg-card rounded-md shadow-lg z-10 border border-border"
                     >
                       <div class="py-1">
                         <button
                           @click="handleEditFromMenu($event, student.id)"
-                          class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          class="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted"
                         >
                           Editar
                         </button>
                         <button
                           @click="handleDeleteFromMenu($event, student.id)"
-                          class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          class="w-full text-left px-4 py-2 text-sm text-destructive hover:bg-muted"
                         >
                           Eliminar
                         </button>
@@ -359,7 +356,7 @@ watch(sortOrder, (newValue) => {
                 </div>
               </div>
               <!-- Instrument -->
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 truncate">
+              <p class="mt-1 text-sm text-secondary truncate">
                 {{ student.instrumento || "Sin instrumento asignado" }}
               </p>
             </div>
@@ -367,12 +364,10 @@ watch(sortOrder, (newValue) => {
           </div>
         </li>
       </ul>
-    </div>
-
-    <!-- Empty State -->
+    </div>    <!-- Empty State -->
     <div 
       v-else 
-      class="text-center py-12 text-gray-500 dark:text-gray-400"
+      class="text-center py-12 text-secondary"
     >
       No hay alumnos registrados
     </div>
@@ -402,7 +397,7 @@ watch(sortOrder, (newValue) => {
     <!-- Floating Action Button for adding new student -->
     <button
       @click="router.push({ name: 'NewStudent' })"
-      class="fixed bottom-24 right-12 rounded-full bg-primary-600 hover:bg-primary-700 text-white shadow-lg flex items-center justify-center z-10 transition-all duration-200 hover:scale-105"
+      class="fixed bottom-24 right-12 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg flex items-center justify-center z-10 transition-all duration-200 hover:scale-105"
       title="Añadir Alumno"
     >
       <PlusCircleIcon class="w-12 h-12" />

@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="min-h-screen bg-surface">
     <!-- Header with breadcrumb and actions -->
-    <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <header class="bg-card shadow-sm border-b border-border">
       <div class="px-6 py-4">
         <!-- Breadcrumb -->
         <nav class="flex mb-4" aria-label="Breadcrumb">
@@ -9,7 +9,7 @@
             <li class="inline-flex items-center">
               <router-link 
                 to="/admin" 
-                class="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+                class="text-secondary hover:text-primary"
               >
                 <HomeIcon class="w-4 h-4 mr-2" />
                 Admin
@@ -17,8 +17,8 @@
             </li>
             <li>
               <div class="flex items-center">
-                <ChevronRightIcon class="w-4 h-4 text-gray-400" />
-                <span class="ml-1 text-gray-500 dark:text-gray-400">Maestros</span>
+                <ChevronRightIcon class="w-4 h-4 text-muted" />
+                <span class="ml-1 text-muted">Maestros</span>
               </div>
             </li>
           </ol>
@@ -26,10 +26,10 @@
 
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 class="text-2xl font-bold text-foreground">
               Gestión de Maestros
             </h1>
-            <div class="mt-2 flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400">
+            <div class="mt-2 flex items-center space-x-6 text-sm text-secondary">
               <span>Total: {{ totalTeachers }}</span>
               <span>Activos: {{ activeTeachers }}</span>
               <span>Especialidades: {{ totalSpecialties }}</span>
@@ -40,7 +40,7 @@
           <div class="flex items-center space-x-3">
             <button
               @click="exportTeachers"
-              class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              class="btn btn-secondary btn-sm"
             >
               <ArrowDownTrayIcon class="w-4 h-4 mr-2" />
               Exportar
@@ -49,7 +49,7 @@
             <button
               @click="showCreateModal = true"
               v-if="canCreateTeacher"
-              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+              class="btn btn-primary btn-sm"
             >
               <PlusIcon class="w-4 h-4 mr-2" />
               Nuevo Maestro
@@ -57,24 +57,22 @@
           </div>
         </div>
       </div>
-    </header>
-
-    <!-- Main Content -->
+    </header>    <!-- Main Content -->
     <main class="p-6">
       <!-- Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="card">
           <div class="p-5">
             <div class="flex items-center">
               <div class="flex-shrink-0">
-                <UsersIcon class="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                <UsersIcon class="h-8 w-8 text-primary" />
               </div>
               <div class="ml-5 w-0 flex-1">
                 <dl>
-                  <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  <dt class="text-sm font-medium text-secondary truncate">
                     Total Maestros
                   </dt>
-                  <dd class="text-lg font-semibold text-gray-900 dark:text-white">
+                  <dd class="text-lg font-semibold text-foreground">
                     {{ totalTeachers }}
                   </dd>
                 </dl>
@@ -83,18 +81,18 @@
           </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="card">
           <div class="p-5">
             <div class="flex items-center">
               <div class="flex-shrink-0">
-                <CheckCircleIcon class="h-8 w-8 text-green-600 dark:text-green-400" />
+                <CheckCircleIcon class="h-8 w-8 text-success" />
               </div>
               <div class="ml-5 w-0 flex-1">
                 <dl>
-                  <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  <dt class="text-sm font-medium text-secondary truncate">
                     Activos
                   </dt>
-                  <dd class="text-lg font-semibold text-gray-900 dark:text-white">
+                  <dd class="text-lg font-semibold text-foreground">
                     {{ activeTeachers }}
                   </dd>
                 </dl>
@@ -103,18 +101,18 @@
           </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="card">
           <div class="p-5">
             <div class="flex items-center">
               <div class="flex-shrink-0">
-                <AcademicCapIcon class="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                <AcademicCapIcon class="h-8 w-8 text-accent" />
               </div>
               <div class="ml-5 w-0 flex-1">
                 <dl>
-                  <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  <dt class="text-sm font-medium text-secondary truncate">
                     Clases Asignadas
                   </dt>
-                  <dd class="text-lg font-semibold text-gray-900 dark:text-white">
+                  <dd class="text-lg font-semibold text-foreground">
                     {{ totalAssignedClasses }}
                   </dd>
                 </dl>
@@ -123,18 +121,18 @@
           </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="card">
           <div class="p-5">
             <div class="flex items-center">
               <div class="flex-shrink-0">
-                <MusicalNoteIcon class="h-8 w-8 text-orange-600 dark:text-orange-400" />
+                <MusicalNoteIcon class="h-8 w-8 text-warning" />
               </div>
               <div class="ml-5 w-0 flex-1">
                 <dl>
-                  <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  <dt class="text-sm font-medium text-secondary truncate">
                     Especialidades
                   </dt>
-                  <dd class="text-lg font-semibold text-gray-900 dark:text-white">
+                  <dd class="text-lg font-semibold text-foreground">
                     {{ totalSpecialties }}
                   </dd>
                 </dl>
@@ -145,25 +143,24 @@
       </div>
 
       <!-- Filters and Search -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div class="card p-6 mb-6">        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <!-- Search -->
           <div class="relative lg:col-span-2">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" />
+              <MagnifyingGlassIcon class="h-5 w-5 text-muted" />
             </div>
             <input
               v-model="searchQuery"
               type="text"
               placeholder="Buscar maestros..."
-              class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              class="input pl-10"
             />
           </div>
           
           <!-- Status Filter -->
           <select
             v-model="statusFilter"
-            class="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            class="select"
           >
             <option value="">Todos los estados</option>
             <option value="active">Activos</option>
@@ -174,10 +171,10 @@
           <!-- Specialty Filter -->
           <select
             v-model="specialtyFilter"
-            class="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            class="select"
           >
             <option value="">Todas las especialidades</option>
-            <option v-for="specialty in uniqueSpecialties" :key="specialty" :value="specialty">
+            <option v-for="specialty in uniqueSpecialities" :key="specialty" :value="specialty">
               {{ getSpecialtyName(specialty) }}
             </option>
           </select>
@@ -185,7 +182,7 @@
           <!-- Experience Filter -->
           <select
             v-model="experienceFilter"
-            class="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            class="select"
           >
             <option value="">Toda la experiencia</option>
             <option value="junior">Menor a 2 años</option>
@@ -199,7 +196,7 @@
           <div class="flex items-center space-x-4">
             <button
               @click="clearFilters"
-              class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              class="text-sm text-secondary hover:text-foreground"
             >
               Limpiar filtros
             </button>
@@ -394,7 +391,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRBACStore } from '../../../stores/rbacStore'
-import { useAdminTeachersStore } from '../store/admin'
+import { useAdminTeachersStore } from '../store/teachers'
 import { 
   HomeIcon, 
   PlusIcon,
@@ -465,10 +462,10 @@ const uniqueSpecialties = computed(() => {
 })
 
 // Permissions
-const canCreateTeacher = computed(() => rbacStore.hasPermission('teachers', 'create'))
-const canViewTeacher = computed(() => rbacStore.hasPermission('teachers', 'view'))
-const canEditTeacher = computed(() => rbacStore.hasPermission('teachers', 'edit'))
-const canDeleteTeacher = computed(() => rbacStore.hasPermission('teachers', 'delete'))
+const canCreateTeacher = computed(() => rbacStore.hasPermission('teachers_create'))
+const canViewTeacher = computed(() => rbacStore.hasPermission('teachers_view'))
+const canEditTeacher = computed(() => rbacStore.hasPermission('teachers_edit'))
+const canDeleteTeacher = computed(() => rbacStore.hasPermission('teachers_delete'))
 
 // Filters
 const hasActiveFilters = computed(() => 

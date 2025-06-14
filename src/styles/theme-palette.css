@@ -1,0 +1,314 @@
+/* 
+ * Sistema de Paleta de Colores Unificado para Music Academy App
+ * Este archivo centraliza todos los colores del sistema para facilitar cambios globales
+ */
+
+:root {
+  /* === COLORES PRINCIPALES === */
+  --color-primary: #3b82f6;      /* Blue-500 */
+  --color-primary-light: #60a5fa; /* Blue-400 */
+  --color-primary-dark: #2563eb;  /* Blue-600 */
+  --color-primary-darker: #1d4ed8; /* Blue-700 */
+
+  /* === COLORES SECUNDARIOS === */
+  --color-secondary: #8b5cf6;     /* Violet-500 */
+  --color-secondary-light: #a78bfa; /* Violet-400 */
+  --color-secondary-dark: #7c3aed;  /* Violet-600 */
+
+  /* === COLORES DE ACENTO === */
+  --color-accent: #10b981;        /* Emerald-500 */
+  --color-accent-light: #34d399;  /* Emerald-400 */
+  --color-accent-dark: #059669;   /* Emerald-600 */
+
+  /* === COLORES DE ESTADO === */
+  --color-success: #10b981;       /* Green-500 */
+  --color-success-light: #34d399; /* Green-400 */
+  --color-success-dark: #059669;  /* Green-600 */
+  --color-success-bg: #d1fae5;    /* Green-100 */
+  --color-success-text: #065f46;  /* Green-800 */
+
+  --color-warning: #f59e0b;       /* Amber-500 */
+  --color-warning-light: #fbbf24; /* Amber-400 */
+  --color-warning-dark: #d97706;  /* Amber-600 */
+  --color-warning-bg: #fef3c7;    /* Amber-100 */
+  --color-warning-text: #92400e;  /* Amber-800 */
+
+  --color-error: #ef4444;         /* Red-500 */
+  --color-error-light: #f87171;   /* Red-400 */
+  --color-error-dark: #dc2626;    /* Red-600 */
+  --color-error-bg: #fee2e2;      /* Red-100 */
+  --color-error-text: #991b1b;    /* Red-800 */
+
+  --color-info: #3b82f6;          /* Blue-500 */
+  --color-info-light: #60a5fa;    /* Blue-400 */
+  --color-info-dark: #2563eb;     /* Blue-600 */
+  --color-info-bg: #dbeafe;       /* Blue-100 */
+  --color-info-text: #1e40af;     /* Blue-800 */
+
+  /* === COLORES NEUTROS - MODO CLARO === */
+  --color-background: #ffffff;     /* White */
+  --color-background-secondary: #f9fafb; /* Gray-50 */
+  --color-background-tertiary: #f3f4f6;  /* Gray-100 */
+
+  --color-surface: #ffffff;        /* White */
+  --color-surface-secondary: #f9fafb; /* Gray-50 */
+  --color-surface-elevated: #ffffff;  /* White with shadow */
+
+  --color-text-primary: #111827;   /* Gray-900 */
+  --color-text-secondary: #6b7280; /* Gray-500 */
+  --color-text-tertiary: #9ca3af;  /* Gray-400 */
+  --color-text-inverse: #ffffff;   /* White */
+
+  --color-border: #e5e7eb;         /* Gray-200 */
+  --color-border-light: #f3f4f6;   /* Gray-100 */
+  --color-border-strong: #d1d5db;  /* Gray-300 */
+
+  /* === COLORES DE COMPONENTES === */
+  --color-card-bg: #ffffff;
+  --color-card-border: #e5e7eb;
+  --color-card-shadow: rgba(0, 0, 0, 0.1);
+
+  --color-button-primary: var(--color-primary);
+  --color-button-primary-hover: var(--color-primary-dark);
+  --color-button-secondary: #6b7280;
+  --color-button-secondary-hover: #4b5563;
+
+  --color-input-bg: #ffffff;
+  --color-input-border: #d1d5db;
+  --color-input-border-focus: var(--color-primary);
+  --color-input-text: var(--color-text-primary);
+
+  --color-header-bg: #ffffff;
+  --color-header-text: var(--color-text-primary);
+  --color-header-border: var(--color-border);
+
+  --color-sidebar-bg: #ffffff;
+  --color-sidebar-text: var(--color-text-primary);
+  --color-sidebar-hover: #f3f4f6;
+
+  /* === COLORES ESPECÍFICOS DE LA APP === */
+  --color-student: #3b82f6;       /* Blue */
+  --color-teacher: #8b5cf6;       /* Violet */
+  --color-class: #10b981;         /* Emerald */
+  --color-instrument: #f59e0b;    /* Amber */
+  --color-attendance: #ef4444;    /* Red */
+  --color-observation: #6366f1;   /* Indigo */
+}
+
+/* === MODO OSCURO === */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* === COLORES NEUTROS - MODO OSCURO === */
+    --color-background: #111827;     /* Gray-900 */
+    --color-background-secondary: #1f2937; /* Gray-800 */
+    --color-background-tertiary: #374151;  /* Gray-700 */
+
+    --color-surface: #1f2937;        /* Gray-800 */
+    --color-surface-secondary: #111827; /* Gray-900 */
+    --color-surface-elevated: #374151;  /* Gray-700 */
+
+    --color-text-primary: #f9fafb;   /* Gray-50 */
+    --color-text-secondary: #9ca3af; /* Gray-400 */
+    --color-text-tertiary: #6b7280;  /* Gray-500 */
+    --color-text-inverse: #111827;   /* Gray-900 */
+
+    --color-border: #374151;         /* Gray-700 */
+    --color-border-light: #4b5563;   /* Gray-600 */
+    --color-border-strong: #6b7280;  /* Gray-500 */
+
+    /* === COLORES DE COMPONENTES - MODO OSCURO === */
+    --color-card-bg: #1f2937;
+    --color-card-border: #374151;
+    --color-card-shadow: rgba(0, 0, 0, 0.3);
+
+    --color-input-bg: #374151;
+    --color-input-border: #4b5563;
+    --color-input-text: var(--color-text-primary);
+
+    --color-header-bg: #1f2937;
+    --color-header-text: var(--color-text-primary);
+    --color-header-border: var(--color-border);
+
+    --color-sidebar-bg: #111827;
+    --color-sidebar-text: var(--color-text-primary);
+    --color-sidebar-hover: #374151;
+
+    /* === AJUSTES DE COLORES DE ESTADO PARA MODO OSCURO === */
+    --color-success-bg: #064e3b;     /* Green-900 */
+    --color-success-text: #a7f3d0;   /* Green-200 */
+
+    --color-warning-bg: #78350f;     /* Amber-900 */
+    --color-warning-text: #fde68a;   /* Amber-200 */
+
+    --color-error-bg: #7f1d1d;       /* Red-900 */
+    --color-error-text: #fca5a5;     /* Red-300 */
+
+    --color-info-bg: #1e3a8a;        /* Blue-900 */
+    --color-info-text: #93c5fd;      /* Blue-300 */
+  }
+}
+
+/* === CLASES UTILITARIAS PARA USO EN COMPONENTES === */
+
+/* Backgrounds */
+.bg-primary { background-color: var(--color-primary); }
+.bg-secondary { background-color: var(--color-secondary); }
+.bg-accent { background-color: var(--color-accent); }
+.bg-surface { background-color: var(--color-surface); }
+.bg-surface-secondary { background-color: var(--color-surface-secondary); }
+.bg-background { background-color: var(--color-background); }
+
+/* Text Colors */
+.text-primary { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary { color: var(--color-text-tertiary); }
+.text-inverse { color: var(--color-text-inverse); }
+
+/* Border Colors */
+.border-default { border-color: var(--color-border); }
+.border-light { border-color: var(--color-border-light); }
+.border-strong { border-color: var(--color-border-strong); }
+
+/* Status Colors */
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-error { color: var(--color-error); }
+.text-info { color: var(--color-info); }
+
+.bg-success { background-color: var(--color-success-bg); }
+.bg-warning { background-color: var(--color-warning-bg); }
+.bg-error { background-color: var(--color-error-bg); }
+.bg-info { background-color: var(--color-info-bg); }
+
+/* === COMPATIBILIDAD CON TAILWIND EXISTENTE === */
+
+/* Reemplazos para colores comunes de Tailwind */
+.bg-white { background-color: var(--color-surface); }
+.bg-gray-50 { background-color: var(--color-surface-secondary); }
+.bg-gray-100 { background-color: var(--color-background-tertiary); }
+.bg-gray-200 { background-color: var(--color-background-tertiary); }
+.bg-gray-700 { background-color: var(--color-surface-elevated); }
+.bg-gray-800 { background-color: var(--color-surface); }
+.bg-gray-900 { background-color: var(--color-background); }
+
+.text-white { color: var(--color-text-inverse); }
+.text-gray-100 { color: var(--color-text-tertiary); }
+.text-gray-200 { color: var(--color-text-tertiary); }
+.text-gray-300 { color: var(--color-text-tertiary); }
+.text-gray-400 { color: var(--color-text-tertiary); }
+.text-gray-500 { color: var(--color-text-secondary); }
+.text-gray-600 { color: var(--color-text-secondary); }
+.text-gray-700 { color: var(--color-text-primary); }
+.text-gray-800 { color: var(--color-text-primary); }
+.text-gray-900 { color: var(--color-text-primary); }
+
+.border-gray-100 { border-color: var(--color-border-light); }
+.border-gray-200 { border-color: var(--color-border); }
+.border-gray-300 { border-color: var(--color-border-strong); }
+.border-gray-600 { border-color: var(--color-border-strong); }
+.border-gray-700 { border-color: var(--color-border); }
+
+/* Hover states usando nuestras variables */
+.hover\:bg-gray-50:hover { background-color: var(--color-surface-secondary); }
+.hover\:bg-gray-100:hover { background-color: var(--color-background-tertiary); }
+.hover\:bg-gray-200:hover { background-color: var(--color-background-tertiary); }
+.hover\:bg-gray-600:hover { background-color: var(--color-surface-elevated); }
+.hover\:bg-gray-700:hover { background-color: var(--color-surface-elevated); }
+
+/* Colores específicos preservados pero adaptados */
+.bg-blue-50 { background-color: var(--color-info-bg); }
+.bg-blue-100 { background-color: var(--color-info-bg); }
+.bg-blue-600 { background-color: var(--color-primary); }
+.bg-blue-700 { background-color: var(--color-primary-dark); }
+.text-blue-600 { color: var(--color-primary); }
+.text-blue-700 { color: var(--color-primary-dark); }
+.text-blue-800 { color: var(--color-info-text); }
+.text-blue-200 { color: var(--color-info-text); }
+
+.bg-green-100 { background-color: var(--color-success-bg); }
+.text-green-800 { color: var(--color-success-text); }
+.text-green-200 { color: var(--color-success-text); }
+
+.bg-red-100 { background-color: var(--color-error-bg); }
+.text-red-800 { color: var(--color-error-text); }
+.text-red-300 { color: var(--color-error-text); }
+
+.bg-yellow-100 { background-color: var(--color-warning-bg); }
+.text-yellow-800 { color: var(--color-warning-text); }
+.text-yellow-200 { color: var(--color-warning-text); }
+
+/* Button Styles */
+.btn-primary {
+  background-color: var(--color-button-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-button-primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-button-primary-hover);
+  border-color: var(--color-button-primary-hover);
+}
+
+.btn-secondary {
+  background-color: var(--color-button-secondary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-button-secondary);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-button-secondary-hover);
+  border-color: var(--color-button-secondary-hover);
+}
+
+/* Input Styles */
+.input-default {
+  background-color: var(--color-input-bg);
+  border-color: var(--color-input-border);
+  color: var(--color-input-text);
+}
+
+.input-default:focus {
+  border-color: var(--color-input-border-focus);
+  box-shadow: 0 0 0 1px var(--color-input-border-focus);
+}
+
+/* Card Styles */
+.card-default {
+  background-color: var(--color-card-bg);
+  border-color: var(--color-card-border);
+  box-shadow: 0 1px 3px var(--color-card-shadow);
+}
+
+/* Header Styles */
+.header-default {
+  background-color: var(--color-header-bg);
+  color: var(--color-header-text);
+  border-color: var(--color-header-border);
+}
+
+/* Sidebar Styles */
+.sidebar-default {
+  background-color: var(--color-sidebar-bg);
+  color: var(--color-sidebar-text);
+}
+
+.sidebar-item:hover {
+  background-color: var(--color-sidebar-hover);
+}
+
+/* === ANIMACIONES Y TRANSICIONES === */
+.transition-colors {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.transition-all {
+  transition: all 0.2s ease;
+}
+
+/* === RESPONSIVE UTILITIES === */
+@media (max-width: 768px) {
+  :root {
+    /* Ajustes para móviles si es necesario */
+    --spacing-mobile: 0.75rem;
+  }
+}

@@ -11,6 +11,8 @@ import './utils/testingUtils'
 import './utils/pwaTester'
 
 import './style.css'
+import './styles/theme-palette.css'
+import { setupGlobalTheme } from './composables/useTheme'
 
 // Auto-verificación de RBAC en desarrollo
 async function verifyRBACSetup() {
