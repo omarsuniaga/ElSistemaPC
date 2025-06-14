@@ -20,6 +20,8 @@ export const useClassesStore = defineStore('classes', {
   }),
 
   getters: {
+    // Retorna todas las clases sin filtrar
+    getAllClasses: (state) => state.classes,
     // Retorna la clase por id
     getClassById: (state) => (id: string) => state.classes.find(classItem => classItem.id === id),
     // Filtra clases por nivel

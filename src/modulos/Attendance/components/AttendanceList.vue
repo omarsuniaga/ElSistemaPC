@@ -117,72 +117,71 @@ const displayToast = (message: string, type: 'success' | 'error' | 'warning' | '
   showToast.value = true;
 };
 
-// Funcion para verificar la existencia de una clase en Firestore
+// Funcion para verificar la existencia de una clase en Firestore y permisos de acceso
 const verifyClassExists = async (classId: string) => {
   if (!classId) {
-    console.error('No se puede verificar la existencia de una clase sin ID');
+    console.error('[ClassDebug] No se puede verificar la existencia de una clase sin ID');
     return false;
   }
   
   try {
     console.log(`[ClassDebug] Verificando existencia de clase con ID=${classId}`);
-    console.log(`[ClassDebug] Store selectedClass=${attendanceStore.selectedClass}, Route classId=${route.params.classId}`);
     
     // Obtener el ID del maestro actual
     const currentTeacherId = authStore.user?.uid;
-    
-    // Verificar si el maestro tiene acceso a la clase (como titular o asistente)
-    if (currentTeacherId) {
-      const hasAccess = classesStore.hasTeacherAccessToClass(classId, currentTeacherId);
-      if (hasAccess) {
-        console.log(`[ClassDebug] Maestro ${currentTeacherId} tiene acceso a clase ${classId} (titular o asistente)`);
-        return true;
-      } else {
-        console.log(`[ClassDebug] Maestro ${currentTeacherId} NO tiene acceso a clase ${classId}`);
-        
-        // Si no tiene acceso inmediato, refrescar clases desde Firestore por si hay cambios
-        console.log(`[ClassDebug] Refrescando clases desde Firestore para verificar acceso...`);
-        await classesStore.fetchClasses();
-        const hasAccessAfterRefresh = classesStore.hasTeacherAccessToClass(classId, currentTeacherId);
-        
-        if (hasAccessAfterRefresh) {
-          console.log(`[ClassDebug] Después de refrescar: Maestro ${currentTeacherId} tiene acceso a clase ${classId}`);
-          return true;
-        }
-      }
+    if (!currentTeacherId) {
+      console.error('[ClassDebug] No hay maestro autenticado');
+      return false;
     }
     
-    // Fallback: verificación básica sin considerar permisos (mantener compatibilidad)
-    // Primero intentamos obtener la clase del store (cache)
-    const classFromStore = classesStore.getClassById(classId);
-    if (classFromStore) {
-      console.log(`[ClassDebug] Clase encontrada en el store con ID=${classId}:`, classFromStore);
-      return true;
-    } else {
-      console.log(`[ClassDebug] Clase no encontrada en store con ID=${classId}`);
-    }
-    
-    // Si no esta en el store, intentamos cargar todas las clases
+    // PASO 1: Refrescar clases para obtener datos actualizados
     console.log(`[ClassDebug] Refrescando clases desde Firestore...`);
     await classesStore.fetchClasses();
-    const classAfterFetch = classesStore.getClassById(classId);
     
-    if (classAfterFetch) {
+    // PASO 2: Buscar la clase por ID en TODAS las clases (no solo las del maestro actual)
+    // Esto es crucial para clases compartidas donde el asistente debe acceder 
+    // a clases creadas por el maestro titular
+    const allClasses = classesStore.getAllClasses();
+    const classData = allClasses.find(cls => cls.id === classId);
+    
+    if (!classData) {
+      console.error(`[ClassDebug] Clase con ID=${classId} no encontrada en Firestore`);
+      return false;
+    }
+    
+    console.log(`[ClassDebug] Clase encontrada: "${classData.name}", Titular: ${classData.teacherId}`);
+    
+    // PASO 3: Verificar permisos de acceso
+    // El maestro puede acceder si es:
+    // 1. El titular de la clase (teacherId coincide)
+    // 2. Un asistente autorizado en la clase compartida
+    
+    if (classData.teacherId === currentTeacherId) {
+      console.log(`[ClassDebug] ✅ Maestro ${currentTeacherId} es TITULAR de la clase ${classId}`);
       return true;
     }
     
-    // Intenta con el classId alternativo del store
-    if (attendanceStore.selectedClass && attendanceStore.selectedClass !== classId) {
-      console.log(`[ClassDebug] Intentando con classId alternativo del store=${attendanceStore.selectedClass}`);
-      const altClass = classesStore.getClassById(attendanceStore.selectedClass);
-      if (altClass) {
-        console.log(`[ClassDebug] Clase alternativa encontrada con ID=${attendanceStore.selectedClass}:`, altClass);
+    // Verificar si es asistente en una clase compartida
+    if (classData.assistantTeachers && Array.isArray(classData.assistantTeachers)) {
+      const isAssistant = classData.assistantTeachers.includes(currentTeacherId);
+      if (isAssistant) {
+        console.log(`[ClassDebug] ✅ Maestro ${currentTeacherId} es ASISTENTE autorizado en clase ${classId}`);
         return true;
       }
     }
     
-    console.error(`[ClassDebug] Clase con ID=${classId} no encontrada en Firestore ni en el store`);
+    // Verificar usando el método del store como fallback
+    const hasAccess = classesStore.hasTeacherAccessToClass(classId, currentTeacherId);
+    if (hasAccess) {
+      console.log(`[ClassDebug] ✅ Maestro ${currentTeacherId} tiene acceso verificado por store a clase ${classId}`);
+      return true;
+    }
+    
+    console.log(`[ClassDebug] ❌ Maestro ${currentTeacherId} NO tiene acceso a clase ${classId}`);
+    console.log(`[ClassDebug] - No es titular (${classData.teacherId})`);
+    console.log(`[ClassDebug] - No es asistente (${classData.assistantTeachers || 'sin asistentes'})`);
     return false;
+    
   } catch (error) {
     console.error(`[ClassDebug] Error al verificar la existencia de la clase ${classId}:`, error);
     return false;
