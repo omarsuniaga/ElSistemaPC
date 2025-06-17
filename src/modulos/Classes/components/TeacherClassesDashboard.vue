@@ -1,14 +1,13 @@
 <!-- src/modulos/Classes/components/TeacherClassesDashboard.vue -->
 <template>
-  <div class="teacher-classes-dashboard">
-    <!-- Header -->
+  <div class="teacher-classes-dashboard">    <!-- Header -->
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold text-gray-900">Mis Clases</h2>
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Mis Clases</h2>
       <div class="flex items-center space-x-4">
         <!-- Filtros -->
         <select 
           v-model="selectedFilter" 
-          class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         >
           <option value="all">Todas las clases</option>
           <option value="lead">Como Encargado</option>
@@ -16,14 +15,14 @@
         </select>
         
         <!-- Vista -->
-        <div class="flex bg-gray-100 rounded-md p-1">
+        <div class="flex bg-gray-100 dark:bg-gray-700 rounded-md p-1">
           <button
             @click="viewMode = 'cards'"
             :class="[
               'px-3 py-1 text-sm rounded-md transition-colors',
               viewMode === 'cards' 
-                ? 'bg-white text-blue-600 shadow-sm' 
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' 
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
             ]"
           >
             <ViewColumnsIcon class="h-4 w-4 inline mr-1" />
@@ -34,8 +33,8 @@
             :class="[
               'px-3 py-1 text-sm rounded-md transition-colors',
               viewMode === 'list' 
-                ? 'bg-white text-blue-600 shadow-sm' 
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' 
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
             ]"
           >
             <Bars3Icon class="h-4 w-4 inline mr-1" />
@@ -43,24 +42,22 @@
           </button>
         </div>
       </div>
-    </div>
-
-    <!-- Loading State -->
+    </div>    <!-- Loading State -->
     <div v-if="isLoading" class="flex justify-center items-center py-12">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      <span class="ml-2 text-gray-600">Cargando clases...</span>
+      <span class="ml-2 text-gray-600 dark:text-gray-400">Cargando clases...</span>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+    <div v-else-if="error" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4 mb-6">
       <div class="flex">
         <ExclamationTriangleIcon class="h-5 w-5 text-red-400" />
         <div class="ml-3">
-          <h3 class="text-sm font-medium text-red-800">Error al cargar las clases</h3>
-          <p class="mt-2 text-sm text-red-700">{{ error }}</p>
+          <h3 class="text-sm font-medium text-red-800 dark:text-red-200">Error al cargar las clases</h3>
+          <p class="mt-2 text-sm text-red-700 dark:text-red-300">{{ error }}</p>
           <button 
             @click="loadTeacherClasses"
-            class="mt-2 text-sm text-red-600 hover:text-red-500 underline"
+            class="mt-2 text-sm text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300 underline"
           >
             Intentar de nuevo
           </button>
@@ -70,9 +67,9 @@
 
     <!-- Empty State -->
     <div v-else-if="filteredClasses.length === 0" class="text-center py-12">
-      <AcademicCapIcon class="mx-auto h-12 w-12 text-gray-400" />
-      <h3 class="mt-2 text-sm font-semibold text-gray-900">No hay clases</h3>
-      <p class="mt-1 text-sm text-gray-500">
+      <AcademicCapIcon class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+      <h3 class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">No hay clases</h3>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
         {{ selectedFilter === 'all' 
           ? 'No tienes clases asignadas.' 
           : selectedFilter === 'lead'
@@ -94,11 +91,9 @@
           @take-attendance="handleTakeAttendance"
           @view-attendance="handleViewAttendance"
         />
-      </div>
-
-      <!-- Vista de Lista -->
-      <div v-else class="bg-white shadow overflow-hidden sm:rounded-md">
-        <ul class="divide-y divide-gray-200">
+      </div>      <!-- Vista de Lista -->
+      <div v-else class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
+        <ul class="divide-y divide-gray-200 dark:divide-gray-700">
           <TeacherClassListItem
             v-for="classData in filteredClasses"
             :key="classData.id"
@@ -112,36 +107,34 @@
           />
         </ul>
       </div>
-    </div>
-
-    <!-- Stats Summary -->
+    </div>    <!-- Stats Summary -->
     <div v-if="!isLoading && !error && filteredClasses.length > 0" class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="bg-blue-50 rounded-lg p-4">
+      <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
         <div class="flex items-center">
-          <UserIcon class="h-8 w-8 text-blue-600" />
+          <UserIcon class="h-8 w-8 text-blue-600 dark:text-blue-400" />
           <div class="ml-3">
-            <p class="text-sm font-medium text-blue-600">Clases como Encargado</p>
-            <p class="text-2xl font-semibold text-blue-900">{{ leadClassesCount }}</p>
+            <p class="text-sm font-medium text-blue-600 dark:text-blue-400">Clases como Encargado</p>
+            <p class="text-2xl font-semibold text-blue-900 dark:text-blue-200">{{ leadClassesCount }}</p>
           </div>
         </div>
       </div>
       
-      <div class="bg-green-50 rounded-lg p-4">
+      <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
         <div class="flex items-center">
-          <UsersIcon class="h-8 w-8 text-green-600" />
+          <UsersIcon class="h-8 w-8 text-green-600 dark:text-green-400" />
           <div class="ml-3">
-            <p class="text-sm font-medium text-green-600">Clases como Asistente</p>
-            <p class="text-2xl font-semibold text-green-900">{{ assistantClassesCount }}</p>
+            <p class="text-sm font-medium text-green-600 dark:text-green-400">Clases como Asistente</p>
+            <p class="text-2xl font-semibold text-green-900 dark:text-green-200">{{ assistantClassesCount }}</p>
           </div>
         </div>
       </div>
       
-      <div class="bg-purple-50 rounded-lg p-4">
+      <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
         <div class="flex items-center">
-          <AcademicCapIcon class="h-8 w-8 text-purple-600" />
+          <AcademicCapIcon class="h-8 w-8 text-purple-600 dark:text-purple-400" />
           <div class="ml-3">
-            <p class="text-sm font-medium text-purple-600">Total de Estudiantes</p>
-            <p class="text-2xl font-semibold text-purple-900">{{ totalStudents }}</p>
+            <p class="text-sm font-medium text-purple-600 dark:text-purple-400">Total de Estudiantes</p>
+            <p class="text-2xl font-semibold text-purple-900 dark:text-purple-200">{{ totalStudents }}</p>
           </div>
         </div>
       </div>

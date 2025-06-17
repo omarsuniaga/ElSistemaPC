@@ -8,25 +8,33 @@ const THEME_STORAGE_KEY = 'music-academy-theme'
 const currentTheme = ref<ThemeMode>('auto')
 const isDarkMode = ref(false)
 
-export function useTheme() {
-  // Detectar preferencia del sistema
+export function useTheme() {  // Detectar preferencia del sistema
   const getSystemTheme = (): 'light' | 'dark' => {
+    if (typeof window === 'undefined') return 'light'
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   }
 
   // Aplicar tema al HTML
   const applyTheme = (theme: 'light' | 'dark') => {
+    if (typeof document === 'undefined') return
+    
     const html = document.documentElement
+    const body = document.body
     
     if (theme === 'dark') {
       html.classList.add('dark')
+      body.classList.add('dark')
       html.setAttribute('data-theme', 'dark')
       isDarkMode.value = true
     } else {
       html.classList.remove('dark')
+      body.classList.remove('dark')
       html.setAttribute('data-theme', 'light')
       isDarkMode.value = false
     }
+    
+    // Forzar recálculo de estilos
+    html.style.colorScheme = theme
   }
 
   // Actualizar tema basado en la configuración actual
@@ -56,9 +64,10 @@ export function useTheme() {
       setTheme(currentTheme.value === 'dark' ? 'light' : 'dark')
     }
   }
-
   // Inicializar tema
   const initTheme = () => {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') return
+    
     // Cargar tema guardado
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode
     if (savedTheme && ['light', 'dark', 'auto'].includes(savedTheme)) {
@@ -101,9 +110,9 @@ export function useTheme() {
   const themeClass = computed(() => {
     return isCurrentlyDark.value ? 'dark' : 'light'
   })
-
   // Obtener colores CSS actuales
   const getThemeColor = (cssVar: string): string => {
+    if (typeof document === 'undefined') return ''
     return getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim()
   }
 

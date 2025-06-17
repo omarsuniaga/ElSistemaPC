@@ -6,7 +6,7 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'AdminModule',
     component: () => import('../views/SuperAdminDashboard.vue'),
     meta: {
-      title: 'Super Admin Dashboard',
+      title: 'Panel de Administración',
       requiresAuth: true,
       permissions: {
         module: 'admin',
@@ -17,26 +17,28 @@ const adminRoutes: RouteRecordRaw[] = [
   {
     path: '/admin/dashboard',
     name: 'AdminDashboard',
-    component: () => import('../views/AdminDashboard.vue'),
+    redirect: '/admin', // Redirigir al SuperAdmin
     meta: {
-      title: 'Dashboard Administrativo',
-      requiresAuth: true,
-      permissions: {
-        module: 'admin',
-        action: 'view_dashboard'
-      }
+      requiresAuth: true
+    }
+  },  {
+    path: '/admin/super',
+    name: 'SuperAdminDashboard',
+    redirect: '/admin', // Redirigir al SuperAdmin principal
+    meta: {
+      requiresAuth: true
     }
   },
   {
-    path: '/admin/super',
-    name: 'SuperAdminDashboard',
-    component: () => import('../views/SuperAdminDashboard.vue'),
+    path: '/admin/monitoring',
+    name: 'DailyMonitoring',
+    component: () => import('../../../views/DailyMonitoringView.vue'),
     meta: {
-      title: 'Super Admin Dashboard',
+      title: 'Monitoreo Diario',
       requiresAuth: true,
       permissions: {
         module: 'admin',
-        action: 'super_admin'
+        action: 'view_monitoring'
       }
     }
   },

@@ -97,18 +97,18 @@
                 :src="student.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.nombre || '')}+${encodeURIComponent(student.apellido || '')}&background=random`" 
                 :alt="`${student.nombre || ''} ${student.apellido || ''}`"
                 class="w-10 h-10 rounded-full mr-3 object-cover"
-              >
-              <div class="flex-1">
-                <p class="font-medium text-foreground">{{ student.nombre || '' }} {{ student.apellido || '' }}</p>
+              >              <div class="flex-1">
+                <p class="font-medium text-gray-900 dark:text-white">{{ student.nombre || '' }} {{ student.apellido || '' }}</p>
                 <div class="flex items-center text-xs">
-                  <span class="text-secondary">
+                  <span class="text-gray-600 dark:text-gray-400">
                     {{ student.instrumento || 'Estudiante' }}
-                  </span>                  <span v-if="student.grado" class="ml-2 bg-primary/10 text-primary px-1.5 py-0.5 rounded-full text-xs">
+                  </span>
+                  <span v-if="student.grado" class="ml-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full text-xs">
                     {{ student.grado }}
                   </span>
                 </div>
               </div>
-              <ChevronRightIcon class="h-5 w-5 text-muted" />
+              <ChevronRightIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
             </div>
           </div>
         </div>
@@ -117,70 +117,65 @@
   </header>
   
   <!-- Modal de detalles del estudiante -->
-  <Teleport to="body">
-    <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div class="bg-card rounded-lg shadow-xl w-full max-w-md overflow-hidden border border-border">
-        <!-- Header del modal -->
-        <div class="bg-gradient-to-r from-primary to-accent p-4 text-white relative">
+  <Teleport to="body">    <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md overflow-hidden border border-gray-200 dark:border-gray-700">        <!-- Header del modal -->
+        <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white relative">
           <button @click="closeModal" class="absolute right-4 top-4 text-white hover:text-gray-200">
             <XMarkIcon class="h-6 w-6" />
           </button>
           <h3 class="text-xl font-bold mb-1">Detalles del Estudiante</h3>
-          <p class="text-sm text-primary-foreground/80">ID: {{ selectedStudent?.id }}</p>
+          <p class="text-sm text-blue-100">ID: {{ selectedStudent?.id }}</p>
         </div>
         
         <!-- Contenido del modal -->
-        <div v-if="selectedStudent" class="p-4">
-          <div class="flex items-center mb-4">
+        <div v-if="selectedStudent" class="p-4">          <div class="flex items-center mb-4">
             <img 
               :src="selectedStudent.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedStudent.nombre || '')}+${encodeURIComponent(selectedStudent.apellido || '')}&background=random&size=128`" 
               :alt="`${selectedStudent.nombre || ''} ${selectedStudent.apellido || ''}`"
-              class="w-20 h-20 rounded-full mr-4 object-cover border-2 border-border"
+              class="w-20 h-20 rounded-full mr-4 object-cover border-2 border-gray-200 dark:border-gray-600"
             >
             <div>
-              <h4 class="text-lg font-bold text-foreground">
+              <h4 class="text-lg font-bold text-gray-900 dark:text-white">
                 {{ selectedStudent.nombre || '' }} {{ selectedStudent.apellido || '' }}
               </h4>
-              <p class="text-sm text-secondary">
+              <p class="text-sm text-gray-600 dark:text-gray-400">
                 {{ selectedStudent.email || 'No hay email registrado' }}
               </p>
               <div class="mt-1 flex items-center">
-                <AcademicCapIcon class="h-4 w-4 text-secondary mr-1" />
-                <span class="text-sm font-medium text-foreground">
+                <AcademicCapIcon class="h-4 w-4 text-gray-600 dark:text-gray-400 mr-1" />
+                <span class="text-sm font-medium text-gray-900 dark:text-white">
                   {{ selectedStudent.instrumento || 'Instrumento no asignado' }}
                 </span>
-                <span v-if="selectedStudent.grado" class="ml-2 bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">
+                <span v-if="selectedStudent.grado" class="ml-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full text-xs">
                   {{ selectedStudent.grado }}
                 </span>
               </div>
             </div>
           </div>
-          
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div class="bg-muted p-3 rounded-lg">
-              <p class="text-xs text-secondary">Teléfono</p>
-              <p class="font-medium">{{ selectedStudent.telefono || 'No registrado' }}</p>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+              <p class="text-xs text-gray-600 dark:text-gray-400">Teléfono</p>
+              <p class="font-medium text-gray-900 dark:text-white">{{ selectedStudent.telefono || 'No registrado' }}</p>
             </div>
-            <div class="bg-muted p-3 rounded-lg">
-              <p class="text-xs text-secondary">Fecha de Inscripción</p>
-              <p class="font-medium">{{ formatDate(selectedStudent.fechaInscripcion) }}</p>
+            <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+              <p class="text-xs text-gray-600 dark:text-gray-400">Fecha de Inscripción</p>
+              <p class="font-medium text-gray-900 dark:text-white">{{ formatDate(selectedStudent.fechaInscripcion) }}</p>
             </div>
-            <div class="bg-muted p-3 rounded-lg col-span-2">
-              <p class="text-xs text-secondary">Dirección</p>
-              <p class="font-medium">{{ selectedStudent.direccion || 'No registrada' }}</p>
+            <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg col-span-2">
+              <p class="text-xs text-gray-600 dark:text-gray-400">Dirección</p>
+              <p class="font-medium text-gray-900 dark:text-white">{{ selectedStudent.direccion || 'No registrada' }}</p>
             </div>
           </div>
           
-          <div class="flex justify-end gap-3 mt-4 border-t border-border pt-4">
-            <button 
+          <div class="flex justify-end gap-3 mt-4 border-t border-gray-200 dark:border-gray-600 pt-4">            <button 
               @click="closeModal"
-              class="btn btn-secondary"
+              class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
             >
               Cerrar
             </button>
             <button 
               @click="navigateToStudentProfile(selectedStudent.id)"
-              class="btn btn-primary"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Ver Perfil Completo
             </button>
@@ -408,7 +403,7 @@ const isAdminOrDirector = computed(() => {
 // Función para ir al SuperAdmin
 const goToSuperAdmin = () => {
   showMenu.value = false
-  router.push('/admin/super')
+  router.push('/admin')
 }
 
 // Cerrar menús al hacer clic fuera

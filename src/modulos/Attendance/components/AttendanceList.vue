@@ -1539,65 +1539,101 @@ button:not(:disabled):active {
   transform: translateY(0);
 }
 
-/* Define button status classes that will be used by child components */
+/* Define button status classes with dark mode support */
 .btn-success-active {
-  background-color: theme('colors.green.700');
+  background-color: #047857; /* green-700 */
   color: white;
-  box-shadow: 0 0 0 2px theme('colors.green.300');
+  box-shadow: 0 0 0 2px #86efac; /* green-300 */
 }
 
 .btn-success {
-  background-color: theme('colors.green.200');
-  color: theme('colors.green.700');
+  background-color: #bbf7d0; /* green-200 */
+  color: #047857; /* green-700 */
+}
+
+.dark .btn-success {
+  background-color: rgba(6, 78, 59, 0.3); /* green-900/30 */
+  color: #86efac; /* green-300 */
 }
 
 .btn-success:hover {
-  background-color: theme('colors.green.300');
+  background-color: #86efac; /* green-300 */
+}
+
+.dark .btn-success:hover {
+  background-color: rgba(6, 78, 59, 0.5); /* green-800/50 */
 }
 
 .btn-danger-active {
-  background-color: theme('colors.red.700');
+  background-color: #b91c1c; /* red-700 */
   color: white;
-  box-shadow: 0 0 0 2px theme('colors.red.300');
+  box-shadow: 0 0 0 2px #fca5a5; /* red-300 */
 }
 
 .btn-danger {
-  background-color: theme('colors.red.200');
-  color: theme('colors.red.700');
+  background-color: #fecaca; /* red-200 */
+  color: #b91c1c; /* red-700 */
+}
+
+.dark .btn-danger {
+  background-color: rgba(127, 29, 29, 0.3); /* red-900/30 */
+  color: #fca5a5; /* red-300 */
 }
 
 .btn-danger:hover {
-  background-color: theme('colors.red.300');
+  background-color: #fca5a5; /* red-300 */
+}
+
+.dark .btn-danger:hover {
+  background-color: rgba(127, 29, 29, 0.5); /* red-800/50 */
 }
 
 .btn-warning-active {
-  background-color: theme('colors.yellow.700');
+  background-color: #b45309; /* amber-700 */
   color: white;
-  box-shadow: 0 0 0 2px theme('colors.yellow.300');
+  box-shadow: 0 0 0 2px #fcd34d; /* amber-300 */
 }
 
 .btn-warning {
-  background-color: theme('colors.yellow.200');
-  color: theme('colors.yellow.700');
+  background-color: #fde68a; /* amber-200 */
+  color: #b45309; /* amber-700 */
+}
+
+.dark .btn-warning {
+  background-color: rgba(120, 53, 15, 0.3); /* amber-900/30 */
+  color: #fcd34d; /* amber-300 */
 }
 
 .btn-warning:hover {
-  background-color: theme('colors.yellow.300');
+  background-color: #fcd34d; /* amber-300 */
+}
+
+.dark .btn-warning:hover {
+  background-color: rgba(120, 53, 15, 0.5); /* amber-800/50 */
 }
 
 .btn-info-active {
-  background-color: theme('colors.blue.700');
+  background-color: #1d4ed8; /* blue-700 */
   color: white;
-  box-shadow: 0 0 0 2px theme('colors.blue.300');
+  box-shadow: 0 0 0 2px #93c5fd; /* blue-300 */
 }
 
 .btn-info {
-  background-color: theme('colors.blue.200');
-  color: theme('colors.blue.700');
+  background-color: #bfdbfe; /* blue-200 */
+  color: #1d4ed8; /* blue-700 */
+}
+
+.dark .btn-info {
+  background-color: rgba(30, 58, 138, 0.3); /* blue-900/30 */
+  color: #93c5fd; /* blue-300 */
 }
 
 .btn-info:hover {
-  background-color: theme('colors.blue.300');
+  background-color: #93c5fd; /* blue-300 */
+}
+
+.dark .btn-info:hover {
+  background-color: rgba(30, 58, 138, 0.5); /* blue-800/50 */
 }
 
 /* Button disabled state */

@@ -13,10 +13,9 @@
     <div class="mb-6">
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
         Seleccionar estudiante para análisis:
-      </label>
-      <select 
+      </label>      <select 
         v-model="selectedStudentId"
-        class="block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-100 dark:text-black"
+        class="block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         @change="analyzeStudent"
       >
         <option value="">Seleccione un estudiante...</option>
@@ -50,21 +49,20 @@
     <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
         ➕ Simular Nueva Clase
-      </h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <select v-model="newClass.day" class="p-2 border rounded dark:bg-gray-100 dark:text-black">
+      </h3>      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <select v-model="newClass.day" class="p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
           <option value="">Seleccionar día</option>
           <option v-for="day in days" :key="day" :value="day">{{ day }}</option>
         </select>
         <input 
           type="time" 
           v-model="newClass.startTime" 
-          class="p-2 border rounded dark:bg-gray-100 dark:text-black"
+          class="p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         />
         <input 
           type="time" 
           v-model="newClass.endTime" 
-          class="p-2 border rounded dark:bg-gray-100 dark:text-black"
+          class="p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         />
       </div>
       <button 

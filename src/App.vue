@@ -1,12 +1,13 @@
 <template>
-  <div class="app-container" :class="{ 'dark-mode': isDarkMode }">    <!-- Loading overlay during auth initialization -->
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+    <!-- Loading overlay during auth initialization -->
     <div 
       v-if="!authStore.isInitialized" 
-      class="fixed inset-0 bg-background flex items-center justify-center z-50"
+      class="fixed inset-0 bg-gray-50 dark:bg-gray-900 flex items-center justify-center z-50"
     >
       <div class="text-center">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" style="border-color: var(--color-primary);"></div>
-        <p class="text-secondary">Iniciando aplicación...</p>
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+        <p class="text-gray-600 dark:text-gray-400">Iniciando aplicación...</p>
       </div>
     </div>
     
@@ -14,10 +15,13 @@
     <template v-else>
       <HeaderApp />
       <!-- Espaciador para compensar el header fijo -->
-      <div class="header-spacer"></div>
-      <RouterView />
+      <div class="h-16"></div>
+      <main class="min-h-[calc(100vh-8rem)]">
+        <RouterView />
+      </main>
       <FooterNavigation />
-        <!-- Gestor de invitaciones para maestros -->
+      
+      <!-- Gestor de invitaciones para maestros -->
       <TeacherInvitationManager v-if="shouldShowInvitationManager" />
       
       <!-- Panel de depuración (solo en desarrollo) -->
@@ -32,13 +36,13 @@ import { onMounted, watch, computed } from 'vue';
 import { setupPersistence } from './firebase';
 import FooterNavigation from './components/FooterNavigation.vue';
 import { useAuthStore } from './stores/auth';
-import { provideTheme } from './contexts/ThemeContext';
+import { useThemeSetup } from './composables/useTheme';
 import HeaderApp from './components/HeaderApp.vue';
 import TeacherInvitationManager from './modulos/Teachers/components/TeacherInvitationManager.vue';
 import DebugInvitations from './components/DebugInvitations.vue';
 
-// Proveer el contexto de tema para toda la aplicación
-const { isDarkMode } = provideTheme();
+// Configurar tema para toda la aplicación
+const { isDarkMode } = useThemeSetup();
 
 const authStore = useAuthStore();
 const user = authStore.user;
@@ -67,43 +71,9 @@ onMounted(async () => {
 
   // Inicializar autenticación para evitar el flash de login
   try {
-    await authStore.checkAuth();
-    console.log('🔐 Autenticación inicializada correctamente');
+    await authStore.checkAuth();    console.log('🔐 Autenticación inicializada correctamente');
   } catch (error) {
     console.warn('🔐 Error al inicializar autenticación:', error);
   }
 });
 </script>
-
-<style>
-#app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.app-container {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  padding-bottom: 70px; /* Espacio para el footer */
-  background-color: var(--color-background);
-  color: var(--color-text-primary);
-  transition: background-color 0.3s, color 0.3s;
-}
-
-/* Espaciador para el header fijo */
-.header-spacer {
-  height: 56px; /* Altura base del header */
-}
-
-/* Cuando el buscador está abierto, añadir más espacio */
-.header-has-search .header-spacer {
-  height: 108px; /* Altura del header con el buscador */
-}
-
-body {
-  background-color: var(--color-background);
-  color: var(--color-text-primary);
-}
-</style>

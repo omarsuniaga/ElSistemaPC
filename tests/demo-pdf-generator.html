@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo - Generador de PDFs Music Academy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">
+            🎵 Demo - Generador de PDFs Music Academy
+        </h1>
+        
+        <!-- Control Panel -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Configuración del PDF</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Reporte</label>
+                    <select id="reportType" class="w-full p-2 border border-gray-300 rounded-lg">
+                        <option value="all">Todos los Estudiantes</option>
+                        <option value="by_class">Por Clase</option>
+                        <option value="by_teacher">Por Maestro</option>
+                        <option value="stats">Con Estadísticas</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Incluir</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="includePhotos" class="mr-2"> Fotos
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="includeStats" class="mr-2" checked> Estadísticas
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Formato</label>
+                    <select id="orientation" class="w-full p-2 border border-gray-300 rounded-lg">
+                        <option value="portrait">Vertical</option>
+                        <option value="landscape">Horizontal</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button onclick="generateDemoPDF()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                📄 Generar PDF Demo
+            </button>
+        </div>
+
+        <!-- Preview Area -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Vista Previa</h2>
+            <div id="pdfContent" class="border p-4 bg-gray-50">
+                <!-- PDF Content will be generated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data
+        const sampleStudents = [
+            {
+                nombre: "Juan Pérez García",
+                edad: 25,
+                telefono: "555-1234",
+                email: "juan@email.com",
+                clase: "Guitarra Básica",
+                instrumento: "Guitarra",
+                maestro: "Prof. Ana Rodríguez",
+                fechaInscripcion: "2024-01-15",
+                activo: true,
+                tutor: "María García"
+            },
+            {
+                nombre: "María López Santos",
+                edad: 22,
+                telefono: "555-5678",
+                email: "maria@email.com",
+                clase: "Piano Intermedio",
+                instrumento: "Piano",
+                maestro: "Prof. Carlos Mendoza",
+                fechaInscripcion: "2024-02-01",
+                activo: true,
+                tutor: "Pedro López"
+            },
+            {
+                nombre: "Carlos Rivera",
+                edad: 28,
+                telefono: "555-9999",
+                email: "carlos@email.com",
+                clase: "Violín Avanzado",
+                instrumento: "Violín",
+                maestro: "Prof. Laura Vega",
+                fechaInscripcion: "2024-01-20",
+                activo: true,
+                tutor: "Ana Rivera"
+            },
+            {
+                nombre: "Ana Martínez",
+                edad: 19,
+                telefono: "555-7777",
+                email: "ana@email.com",
+                clase: "Batería Básica",
+                instrumento: "Batería",
+                maestro: "Prof. Miguel Torres",
+                fechaInscripcion: "2024-03-01",
+                activo: false,
+                tutor: "José Martínez"
+            },
+            {
+                nombre: "Luis Hernández",
+                edad: 31,
+                telefono: "555-3333",
+                email: "luis@email.com",
+                clase: "Guitarra Básica",
+                instrumento: "Guitarra",
+                maestro: "Prof. Ana Rodríguez",
+                fechaInscripcion: "2024-01-10",
+                activo: true,
+                tutor: "Carmen Hernández"
+            }
+        ];
+
+        function generateStatistics(students) {
+            const total = students.length;
+            const active = students.filter(s => s.activo).length;
+            const avgAge = (students.reduce((sum, s) => sum + s.edad, 0) / total).toFixed(1);
+            const classes = [...new Set(students.map(s => s.clase))].length;
+            
+            const instruments = students.reduce((acc, s) => {
+                acc[s.instrumento] = (acc[s.instrumento] || 0) + 1;
+                return acc;
+            }, {});
+
+            return `
+                <div style="background-color: #f8f9fa; padding: 15px; margin-bottom: 25px; border-radius: 5px;">
+                    <h3 style="color: #333; margin-bottom: 15px; font-size: 16px;">📊 Estadísticas Generales</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div style="background: white; padding: 10px; border-radius: 3px; border-left: 4px solid #007bff;">
+                            <strong>Total de Estudiantes:</strong> ${total}
+                        </div>
+                        <div style="background: white; padding: 10px; border-radius: 3px; border-left: 4px solid #28a745;">
+                            <strong>Estudiantes Activos:</strong> ${active}
+                        </div>
+                        <div style="background: white; padding: 10px; border-radius: 3px; border-left: 4px solid #ffc107;">
+                            <strong>Edad Promedio:</strong> ${avgAge} años
+                        </div>
+                        <div style="background: white; padding: 10px; border-radius: 3px; border-left: 4px solid #dc3545;">
+                            <strong>Clases Diferentes:</strong> ${classes}
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <h4 style="color: #555; font-size: 14px; margin-bottom: 8px;">Distribución por Instrumento:</h4>
+                        <div style="font-size: 12px; color: #666;">
+                            ${Object.entries(instruments).map(([inst, count]) => `${inst}: ${count}`).join(' • ')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateStudentTable(students, includePhotos = false) {
+            let table = `
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <thead>
+                        <tr style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white;">
+                            ${includePhotos ? '<th style="border: 1px solid #dee2e6; padding: 10px; text-align: center; width: 60px;">Foto</th>' : ''}
+                            <th style="border: 1px solid #dee2e6; padding: 10px; text-align: left; font-weight: 600;">Nombre</th>
+                            <th style="border: 1px solid #dee2e6; padding: 10px; text-align: left; font-weight: 600;">Edad</th>
+                            <th style="border: 1px solid #dee2e6; padding: 10px; text-align: left; font-weight: 600;">Teléfono</th>
+                            <th style="border: 1px solid #dee2e6; padding: 10px; text-align: left; font-weight: 600;">Clase</th>
+                            <th style="border: 1px solid #dee2e6; padding: 10px; text-align: left; font-weight: 600;">Instrumento</th>
+                            <th style="border: 1px solid #dee2e6; padding: 10px; text-align: left; font-weight: 600;">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            students.forEach((student, index) => {
+                const isActive = student.activo;
+                table += `
+                    <tr style="background-color: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
+                        ${includePhotos ? `<td style="border: 1px solid #dee2e6; padding: 8px; text-align: center; color: #999;">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: #e9ecef; display: flex; align-items: center; justify-content: center; font-size: 16px; margin: 0 auto;">👤</div>
+                        </td>` : ''}
+                        <td style="border: 1px solid #dee2e6; padding: 8px;">${student.nombre}</td>
+                        <td style="border: 1px solid #dee2e6; padding: 8px; text-align: center;">${student.edad} años</td>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;">📞 ${student.telefono}</td>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;">📚 ${student.clase}</td>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;">🎵 ${student.instrumento}</td>
+                        <td style="border: 1px solid #dee2e6; padding: 8px; color: ${isActive ? '#28a745' : '#dc3545'}; font-weight: 500;">
+                            ${isActive ? '✅ Activo' : '❌ Inactivo'}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            table += `
+                    </tbody>
+                </table>
+            `;
+
+            return table;
+        }
+
+        function groupBy(array, key) {
+            return array.reduce((groups, item) => {
+                const group = item[key];
+                groups[group] = groups[group] || [];
+                groups[group].push(item);
+                return groups;
+            }, {});
+        }
+
+        function generatePDFContent() {
+            const reportType = document.getElementById('reportType').value;
+            const includeStats = document.getElementById('includeStats').checked;
+            const includePhotos = document.getElementById('includePhotos').checked;
+            const currentDate = new Date().toLocaleDateString('es-ES');
+
+            let content = `
+                <div style="font-family: Arial, sans-serif; max-width: 100%; margin: 0 auto; padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
+                        <h1 style="color: #333; font-size: 24px; margin-bottom: 5px;">🎵 ACADEMIA DE MÚSICA</h1>
+                        <h2 style="color: #666; font-size: 18px; margin-bottom: 5px;">Listado de Estudiantes</h2>
+                        <p style="color: #888; font-size: 12px;">Generado el: ${currentDate}</p>
+                    </div>
+            `;
+
+            if (includeStats) {
+                content += generateStatistics(sampleStudents);
+            }
+
+            if (reportType === 'by_class') {
+                const groupedByClass = groupBy(sampleStudents, 'clase');
+                Object.entries(groupedByClass).forEach(([className, students]) => {
+                    content += `
+                        <div style="margin-bottom: 30px; page-break-inside: avoid;">
+                            <h3 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px; margin-bottom: 15px; font-size: 16px; border-radius: 5px;">
+                                🎵 ${className} (${students.length} estudiantes)
+                            </h3>
+                            ${generateStudentTable(students, includePhotos)}
+                        </div>
+                    `;
+                });
+            } else if (reportType === 'by_teacher') {
+                const groupedByTeacher = groupBy(sampleStudents, 'maestro');
+                Object.entries(groupedByTeacher).forEach(([teacherName, students]) => {
+                    content += `
+                        <div style="margin-bottom: 30px; page-break-inside: avoid;">
+                            <h3 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px; margin-bottom: 15px; font-size: 16px; border-radius: 5px;">
+                                👨‍🏫 ${teacherName} (${students.length} estudiantes)
+                            </h3>
+                            ${generateStudentTable(students, includePhotos)}
+                        </div>
+                    `;
+                });
+            } else {
+                content += generateStudentTable(sampleStudents, includePhotos);
+            }
+
+            content += `</div>`;
+            return content;
+        }
+
+        function updatePreview() {
+            const content = generatePDFContent();
+            document.getElementById('pdfContent').innerHTML = content;
+        }
+
+        function generateDemoPDF() {
+            const content = generatePDFContent();
+            const orientation = document.getElementById('orientation').value;
+            
+            const element = document.createElement('div');
+            element.innerHTML = content;
+            document.body.appendChild(element);
+
+            const opt = {
+                margin: 0.5,
+                filename: 'demo-listado-estudiantes-music-academy.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { 
+                    unit: 'in', 
+                    format: 'letter', 
+                    orientation: orientation 
+                }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                document.body.removeChild(element);
+                alert('¡PDF generado exitosamente! 🎉');
+            });
+        }
+
+        // Event listeners
+        document.getElementById('reportType').addEventListener('change', updatePreview);
+        document.getElementById('includeStats').addEventListener('change', updatePreview);
+        document.getElementById('includePhotos').addEventListener('change', updatePreview);
+
+        // Initial preview
+        updatePreview();
+    </script>
+</body>
+</html>

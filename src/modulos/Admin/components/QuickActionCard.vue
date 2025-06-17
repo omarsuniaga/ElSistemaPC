@@ -124,60 +124,9 @@ const handleClick = () => {
   transform: translateY(-2px) scale(1.02);
 }
 
-/* Color classes for dynamic styling */
-.text-blue-600 { color: #2563eb; }
-.text-green-600 { color: #16a34a; }
-.text-purple-600 { color: #9333ea; }
-.text-orange-600 { color: #ea580c; }
-.text-red-600 { color: #dc2626; }
-.text-yellow-600 { color: #ca8a04; }
-.text-indigo-600 { color: #4f46e5; }
+/* Solo estilos que no pueden ser manejados por Tailwind */
 
-.bg-blue-50 { background-color: #eff6ff; }
-.bg-green-50 { background-color: #f0fdf4; }
-.bg-purple-50 { background-color: #faf5ff; }
-.bg-orange-50 { background-color: #fff7ed; }
-.bg-red-50 { background-color: #fef2f2; }
-.bg-yellow-50 { background-color: #fefce8; }
-.bg-indigo-50 { background-color: #eef2ff; }
 
-.hover\:bg-blue-100:hover { background-color: #dbeafe; }
-.hover\:bg-green-100:hover { background-color: #dcfce7; }
-.hover\:bg-purple-100:hover { background-color: #f3e8ff; }
-.hover\:bg-orange-100:hover { background-color: #fed7aa; }
-.hover\:bg-red-100:hover { background-color: #fee2e2; }
-.hover\:bg-yellow-100:hover { background-color: #fef3c7; }
-.hover\:bg-indigo-100:hover { background-color: #e0e7ff; }
-
-.bg-blue-500 { background-color: #3b82f6; }
-.bg-green-500 { background-color: #22c55e; }
-.bg-purple-500 { background-color: #a855f7; }
-.bg-orange-500 { background-color: #f97316; }
-.bg-red-500 { background-color: #ef4444; }
-.bg-yellow-500 { background-color: #eab308; }
-.bg-indigo-500 { background-color: #6366f1; }
-
-/* Dark mode colors */
-.dark .text-blue-400 { color: #60a5fa; }
-.dark .text-green-400 { color: #4ade80; }
-.dark .text-purple-400 { color: #c084fc; }
-.dark .text-orange-400 { color: #fb923c; }
-.dark .text-red-400 { color: #f87171; }
-.dark .text-yellow-400 { color: #facc15; }
-.dark .text-indigo-400 { color: #818cf8; }
-
-.dark .bg-blue-900\/20 { background-color: rgb(30 58 138 / 0.2); }
-.dark .bg-green-900\/20 { background-color: rgb(20 83 45 / 0.2); }
-.dark .bg-purple-900\/20 { background-color: rgb(88 28 135 / 0.2); }
-.dark .bg-orange-900\/20 { background-color: rgb(154 52 18 / 0.2); }
-.dark .bg-red-900\/20 { background-color: rgb(153 27 27 / 0.2); }
-.dark .bg-yellow-900\/20 { background-color: rgb(133 77 14 / 0.2); }
-.dark .bg-indigo-900\/20 { background-color: rgb(55 48 163 / 0.2); }
-
-.dark .group:hover .bg-blue-900\/30 { background-color: rgb(30 58 138 / 0.3); }
-.dark .group:hover .bg-green-900\/30 { background-color: rgb(20 83 45 / 0.3); }
-.dark .group:hover .bg-purple-900\/30 { background-color: rgb(88 28 135 / 0.3); }
-.dark .group:hover .bg-orange-900\/30 { background-color: rgb(154 52 18 / 0.3); }
 .dark .group:hover .bg-red-900\/30 { background-color: rgb(153 27 27 / 0.3); }
 .dark .group:hover .bg-yellow-900\/30 { background-color: rgb(133 77 14 / 0.3); }
 .dark .group:hover .bg-indigo-900\/30 { background-color: rgb(55 48 163 / 0.3); }

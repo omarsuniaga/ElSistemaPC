@@ -3,6 +3,16 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { PlusIcon } from '@heroicons/vue/24/outline';
 import TeacherClassesCard from './TeacherClassesCard.vue';
+
+// Define emits
+const emit = defineEmits<{
+  'edit-class': [classId: string]
+  'delete-class': [classId: string]
+  'manage-students': [classId: string]
+  'add-class': []
+  'collaboration-updated': []
+}>()
+
 // Define types for class data
 interface ClassData {
   id: string;
@@ -152,7 +162,13 @@ const handleCardView = async (classId: string) => {
 const handleCardAction = (action: 'edit-class' | 'delete-class' | 'manage-students', classId: string) => {
     // El evento 'take-attendance' es manejado internamente por TeacherClassesCard
     // y realiza la navegación directamente, no necesita re-emitirse aquí.
-    emit(action, classId);
+    if (action === 'edit-class') {
+        emit('edit-class', classId);
+    } else if (action === 'delete-class') {
+        emit('delete-class', classId);
+    } else if (action === 'manage-students') {
+        emit('manage-students', classId);
+    }
 };
 </script>
 
@@ -205,9 +221,8 @@ const handleCardAction = (action: 'edit-class' | 'delete-class' | 'manage-studen
             </button>
           </div>
           
-          <!-- Botón Nueva Clase mejorado -->
-          <button
-            @click="$emit('add-class')"
+          <!-- Botón Nueva Clase mejorado -->          <button
+            @click="emit('add-class')"
             class="group flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 transform border border-blue-500/20"
           >
             <PlusIcon class="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
@@ -252,7 +267,7 @@ const handleCardAction = (action: 'edit-class' | 'delete-class' | 'manage-studen
             @manage-students="(classId) => handleCardAction('manage-students', classId)"
             @take-attendance="handleCardView"
             @view-history="handleCardView"
-            @collaboration-updated="() => emit('collaboration-updated')"
+            @collaboration-updated="emit('collaboration-updated')"
             :class="[
               'transition-all duration-300',
               viewMode === 'list' ? 'hover:z-50 relative' : ''
@@ -271,9 +286,8 @@ const handleCardAction = (action: 'edit-class' | 'delete-class' | 'manage-studen
             </h3>
             <p class="text-gray-600 dark:text-gray-400 mb-6">
               No tienes clases asignadas actualmente. Crea tu primera clase para comenzar a enseñar música.
-            </p>
-            <button 
-              @click="$emit('add-class')" 
+            </p>            <button 
+              @click="emit('add-class')" 
               class="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 transform"
             >
               <PlusIcon class="w-5 h-5" />

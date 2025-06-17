@@ -268,9 +268,8 @@ watch(sortOrder, (newValue) => {
         </svg>
       </button>
     </div>    <!-- Search Bar -->
-    <div class="relative mb-2">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <MagnifyingGlassIcon class="h-5 w-5 text-muted" />
+    <div class="relative mb-2">      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <MagnifyingGlassIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
       </div>
         <input
         v-model="searchQuery"
@@ -297,16 +296,14 @@ watch(sortOrder, (newValue) => {
       >
         Reintentar
       </button>
-    </div>
-
-    <!-- Students List (WhatsApp/Telegram Style) -->
+    </div>    <!-- Students List (WhatsApp/Telegram Style) -->
     <div v-else-if="sortedStudents.length > 0" class="card overflow-hidden">
-      <ul class="divide-y divide-border">
+      <ul class="divide-y divide-gray-200 dark:divide-gray-700">
         <li 
           v-for="student in sortedStudents" 
           :key="student.id"
           @click="openStudentDrawer(student)"
-          class="hover:bg-muted cursor-pointer transition-colors"
+          class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
         >
           <div class="px-2 py-1 flex items-start space-x-1">
             <!-- Avatar -->            <div class="flex-shrink-0">
@@ -317,9 +314,8 @@ watch(sortOrder, (newValue) => {
               />
             </div>
               <!-- Student Info -->
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-foreground truncate">
+            <div class="flex-1 min-w-0">              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {{ student.nombre }} {{ student.apellido }}
                 </p>
                 <div class="flex items-center">
@@ -327,26 +323,25 @@ watch(sortOrder, (newValue) => {
                   <div class="relative">
                     <button 
                       @click="toggleMenu($event, student.id)" 
-                      class="p-1 rounded-full hover:bg-muted transition-colors"
+                      class="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
                     >
-                      <EllipsisVerticalIcon class="h-5 w-5 text-secondary" />
+                      <EllipsisVerticalIcon class="h-5 w-5 text-gray-600 dark:text-gray-400" />
                     </button>
-                    
-                    <!-- Dropdown menu -->
+                      <!-- Dropdown menu -->
                     <div 
                       v-if="activeMenu === student.id"
-                      class="absolute right-0 mt-1 w-36 bg-card rounded-md shadow-lg z-10 border border-border"
+                      class="absolute right-0 mt-1 w-36 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
                     >
                       <div class="py-1">
                         <button
                           @click="handleEditFromMenu($event, student.id)"
-                          class="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted"
+                          class="w-full text-left px-4 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
                           Editar
                         </button>
                         <button
                           @click="handleDeleteFromMenu($event, student.id)"
-                          class="w-full text-left px-4 py-2 text-sm text-destructive hover:bg-muted"
+                          class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
                           Eliminar
                         </button>
@@ -367,7 +362,7 @@ watch(sortOrder, (newValue) => {
     </div>    <!-- Empty State -->
     <div 
       v-else 
-      class="text-center py-12 text-secondary"
+      class="text-center py-12 text-gray-600 dark:text-gray-400"
     >
       No hay alumnos registrados
     </div>

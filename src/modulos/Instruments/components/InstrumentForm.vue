@@ -96,65 +96,63 @@ const removeAccessory = (index: number) => {
 };
 
 // Obtener clase CSS según el estado
-const getStatusClass = (status: string | undefined): string => {
-  const statusMap: Record<string, string> = {
-    'excelente': 'bg-green-100 text-green-800',
-    'bueno': 'bg-blue-100 text-blue-800',
-    'regular': 'bg-yellow-100 text-yellow-800',
-    'funcional': 'bg-orange-100 text-orange-800',
-    'necesitaReparacion': 'bg-red-100 text-red-800',
-    'malo': 'bg-red-100 text-red-800',
-    'faltante': 'bg-gray-100 text-gray-800'
+const getStatusClass = (status: string | undefined): string => {  const statusMap: Record<string, string> = {
+    'excelente': 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
+    'bueno': 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200',
+    'regular': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200',
+    'funcional': 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200',
+    'necesitaReparacion': 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200',
+    'malo': 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200',
+    'faltante': 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
   };
   
-  return statusMap[status || ''] || 'bg-gray-100 text-gray-800';
+  return statusMap[status || ''] || 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
 };
 </script>
 
-<template>
-  <form @submit.prevent="guardar" class="space-y-4">
+<template>  <form @submit.prevent="guardar" class="space-y-4">
     <!-- Acordeón: Información Básica -->
-    <div class="border rounded-md overflow-hidden">
+    <div class="border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden">
       <div 
         @click="accordionOpen.info = !accordionOpen.info"
-        class="flex justify-between items-center p-3 bg-gray-50 cursor-pointer"
+        class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 cursor-pointer"
       >
-        <h3 class="font-medium">Información Básica</h3>
-        <svg class="w-5 h-5 transition-transform" :class="accordionOpen.info ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <h3 class="font-medium text-gray-900 dark:text-white">Información Básica</h3>
+        <svg class="w-5 h-5 transition-transform text-gray-600 dark:text-gray-400" :class="accordionOpen.info ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
       </div>
       
-      <div v-if="accordionOpen.info" class="p-3 border-t space-y-3">
+      <div v-if="accordionOpen.info" class="p-3 border-t border-gray-200 dark:border-gray-600 space-y-3">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700">Nombre *</label>
-            <input v-model="instrumentForm.nombre" type="text" required class="mt-1 block w-full border rounded-md px-3 py-2" />
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre *</label>
+            <input v-model="instrumentForm.nombre" type="text" required class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700">Familia</label>
-            <input v-model="instrumentForm.familia" type="text" class="mt-1 block w-full border rounded-md px-3 py-2" />
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Familia</label>
+            <input v-model="instrumentForm.familia" type="text" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700">Tamaño/Tipo</label>
-            <input v-model="instrumentForm.tamaño" type="text" class="mt-1 block w-full border rounded-md px-3 py-2" />
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tamaño/Tipo</label>
+            <input v-model="instrumentForm.tamaño" type="text" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700">Ubicación</label>
-            <input v-model="instrumentForm.ubicacion" type="text" class="mt-1 block w-full border rounded-md px-3 py-2" />
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ubicación</label>
+            <input v-model="instrumentForm.ubicacion" type="text" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700">Fecha de Ingreso</label>
-            <input v-model="instrumentForm.fechaIngreso" type="date" class="mt-1 block w-full border rounded-md px-3 py-2" />
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha de Ingreso</label>
+            <input v-model="instrumentForm.fechaIngreso" type="date" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700">Estado</label>
-            <select v-model="instrumentForm.activo" class="mt-1 block w-full border rounded-md px-3 py-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estado</label>
+            <select v-model="instrumentForm.activo" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
               <option :value="true">Activo</option>
               <option :value="false">Inactivo</option>
             </select>
@@ -164,53 +162,52 @@ const getStatusClass = (status: string | undefined): string => {
     </div>
     
     <!-- Acordeón: Detalles Técnicos -->
-    <div class="border rounded-md overflow-hidden">
+    <div class="border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden">
       <div 
         @click="accordionOpen.details = !accordionOpen.details"
-        class="flex justify-between items-center p-3 bg-gray-50 cursor-pointer"
+        class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 cursor-pointer"
       >
-        <h3 class="font-medium">Detalles Técnicos</h3>
-        <svg class="w-5 h-5 transition-transform" :class="accordionOpen.details ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <h3 class="font-medium text-gray-900 dark:text-white">Detalles Técnicos</h3>
+        <svg class="w-5 h-5 transition-transform text-gray-600 dark:text-gray-400" :class="accordionOpen.details ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
       </div>
       
-      <div v-if="accordionOpen.details" class="p-3 border-t space-y-3">
+      <div v-if="accordionOpen.details" class="p-3 border-t border-gray-200 dark:border-gray-600 space-y-3">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700">Marca</label>
-            <input v-model="instrumentForm.marca" type="text" class="mt-1 block w-full border rounded-md px-3 py-2" />
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Marca</label>
+            <input v-model="instrumentForm.marca" type="text" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700">Modelo</label>
-            <input v-model="instrumentForm.modelo" type="text" class="mt-1 block w-full border rounded-md px-3 py-2" />
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Modelo</label>
+            <input v-model="instrumentForm.modelo" type="text" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700">Número de Serie</label>
-            <input v-model="instrumentForm.serial" type="text" class="mt-1 block w-full border rounded-md px-3 py-2" />
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Número de Serie</label>
+            <input v-model="instrumentForm.serial" type="text" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
           </div>
         </div>
       </div>
     </div>
     
     <!-- Acordeón: Estado del Instrumento -->
-    <div class="border rounded-md overflow-hidden">
-      <div 
+    <div class="border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden">      <div 
         @click="accordionOpen.status = !accordionOpen.status"
-        class="flex justify-between items-center p-3 bg-gray-50 cursor-pointer"
+        class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 cursor-pointer"
       >
-        <h3 class="font-medium">Estado del Instrumento</h3>
-        <svg class="w-5 h-5 transition-transform" :class="accordionOpen.status ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <h3 class="font-medium text-gray-900 dark:text-white">Estado del Instrumento</h3>
+        <svg class="w-5 h-5 transition-transform text-gray-600 dark:text-gray-400" :class="accordionOpen.status ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
       </div>
       
-      <div v-if="accordionOpen.status" class="p-3 border-t space-y-3">
+      <div v-if="accordionOpen.status" class="p-3 border-t border-gray-200 dark:border-gray-600 space-y-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700">Condición</label>
-          <select v-model="instrumentForm.estado" class="mt-1 block w-full border rounded-md px-3 py-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Condición</label>
+          <select v-model="instrumentForm.estado" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
             <option value="excelente">Excelente</option>
             <option value="bueno">Bueno</option>
             <option value="regular">Regular</option>
@@ -220,65 +217,65 @@ const getStatusClass = (status: string | undefined): string => {
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700">Detalles del estado</label>
-          <textarea v-model="instrumentForm.detallesEstado" rows="3" class="mt-1 block w-full border rounded-md px-3 py-2"></textarea>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Detalles del estado</label>
+          <textarea v-model="instrumentForm.detallesEstado" rows="3" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700">Observaciones generales</label>
-          <textarea v-model="instrumentForm.observaciones" rows="3" class="mt-1 block w-full border rounded-md px-3 py-2"></textarea>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Observaciones generales</label>
+          <textarea v-model="instrumentForm.observaciones" rows="3" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
         </div>
       </div>
     </div>
     
     <!-- Acordeón: Accesorios y Estuche -->
-    <div class="border rounded-md overflow-hidden">
+    <div class="border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden">
       <div 
         @click="accordionOpen.accessories = !accordionOpen.accessories"
-        class="flex justify-between items-center p-3 bg-gray-50 cursor-pointer"
+        class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 cursor-pointer"
       >
-        <h3 class="font-medium">Accesorios y Estuche</h3>
-        <svg class="w-5 h-5 transition-transform" :class="accordionOpen.accessories ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <h3 class="font-medium text-gray-900 dark:text-white">Accesorios y Estuche</h3>
+        <svg class="w-5 h-5 transition-transform text-gray-600 dark:text-gray-400" :class="accordionOpen.accessories ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
       </div>
       
-      <div v-if="accordionOpen.accessories" class="p-3 border-t space-y-3">
+      <div v-if="accordionOpen.accessories" class="p-3 border-t border-gray-200 dark:border-gray-600 space-y-3">
         <!-- Estuche -->
-        <div class="border-b pb-3">
-          <h4 class="font-medium mb-2">Estuche</h4>
+        <div class="border-b border-gray-200 dark:border-gray-600 pb-3">
+          <h4 class="font-medium mb-2 text-gray-900 dark:text-white">Estuche</h4>
           <div class="flex items-center mb-2">
-            <input type="checkbox" v-model="instrumentForm.estuche!.tiene" class="mr-2" />
-            <label>Incluye estuche</label>
+            <input type="checkbox" v-model="instrumentForm.estuche!.tiene" class="mr-2 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded" />
+            <label class="text-gray-700 dark:text-gray-300">Incluye estuche</label>
           </div>
           
           <div v-if="instrumentForm.estuche?.tiene">
-            <label class="block text-sm font-medium text-gray-700">Estado del estuche</label>
-            <select v-model="instrumentForm.estuche!.estado" class="mt-1 block w-full border rounded-md px-3 py-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estado del estuche</label>
+            <select v-model="instrumentForm.estuche!.estado" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
               <option value="excelente">Excelente</option>
               <option value="bueno">Bueno</option>
               <option value="regular">Regular</option>
               <option value="malo">Malo</option>
             </select>
             
-            <label class="block text-sm font-medium text-gray-700 mt-2">Observaciones</label>
-            <input v-model="instrumentForm.estuche!.observacion" type="text" class="mt-1 block w-full border rounded-md px-3 py-2" />
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mt-2">Observaciones</label>
+            <input v-model="instrumentForm.estuche!.observacion" type="text" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
           </div>
         </div>
         
         <!-- Accesorios -->
         <div>
-          <h4 class="font-medium mb-2">Accesorios</h4>
+          <h4 class="font-medium mb-2 text-gray-900 dark:text-white">Accesorios</h4>
           
           <!-- Lista de accesorios actuales -->
           <div v-if="instrumentForm.accesorios && instrumentForm.accesorios.length > 0" class="mb-4">
             <div 
               v-for="(acc, idx) in instrumentForm.accesorios" 
               :key="idx"
-              class="flex justify-between items-center p-2 bg-gray-50 mb-1 rounded"
+              class="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 mb-1 rounded"
             >
               <div>
-                <span class="font-medium">{{ acc.nombre }}</span>
+                <span class="font-medium text-gray-900 dark:text-white">{{ acc.nombre }}</span>
                 <span 
                   class="ml-2 text-xs px-2 py-0.5 rounded-full"
                   :class="getStatusClass(acc.estado)"
@@ -289,7 +286,7 @@ const getStatusClass = (status: string | undefined): string => {
               <button 
                 type="button" 
                 @click="removeAccessory(idx)" 
-                class="text-red-600 hover:text-red-800"
+                class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -299,12 +296,12 @@ const getStatusClass = (status: string | undefined): string => {
           </div>
           
           <!-- Formulario para agregar nuevo accesorio -->
-          <div class="border p-3 rounded-md">
-            <h5 class="text-sm font-medium mb-2">Agregar accesorio</h5>
+          <div class="border border-gray-300 dark:border-gray-600 p-3 rounded-md">
+            <h5 class="text-sm font-medium mb-2 text-gray-900 dark:text-white">Agregar accesorio</h5>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
-              <input v-model="newAccessory.nombre" type="text" placeholder="Nombre" class="px-3 py-1 border rounded-md" />
+              <input v-model="newAccessory.nombre" type="text" placeholder="Nombre" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
               
-              <select v-model="newAccessory.estado" class="px-3 py-1 border rounded-md">
+              <select v-model="newAccessory.estado" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                 <option value="excelente">Excelente</option>
                 <option value="bueno">Bueno</option>
                 <option value="regular">Regular</option>
@@ -312,13 +309,13 @@ const getStatusClass = (status: string | undefined): string => {
                 <option value="faltante">Faltante</option>
               </select>
               
-              <input v-model="newAccessory.observacion" type="text" placeholder="Observaciones" class="px-3 py-1 border rounded-md" />
+              <input v-model="newAccessory.observacion" type="text" placeholder="Observaciones" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
             </div>
             
             <button 
               type="button" 
               @click="addAccessory" 
-              class="px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 w-full"
+              class="px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 w-full disabled:opacity-50"
               :disabled="!newAccessory.nombre"
             >
               Agregar
@@ -333,7 +330,7 @@ const getStatusClass = (status: string | undefined): string => {
       <button 
         type="button" 
         @click="cancelar" 
-        class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800"
       >
         Cancelar
       </button>

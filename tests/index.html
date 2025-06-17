@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Índice de Pruebas - Music Academy App</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .section h2 {
+            color: #555;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .file-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+        .file-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+        .file-card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 1.1em;
+        }
+        .file-card p {
+            margin: 0;
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+        .file-card a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .file-card a:hover {
+            text-decoration: underline;
+        }
+        .badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        .badge.html { background: #28a745; }
+        .badge.js { background: #ffc107; color: #333; }
+        .badge.ts { background: #3178c6; }
+        .badge.sh { background: #6c757d; }
+        .badge.ps1 { background: #012456; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Índice de Pruebas y Utilidades</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 40px;">
+            Music Academy App - Colección completa de archivos de prueba, debug y utilidades
+        </p>
+
+        <div class="section">
+            <h2>🌐 Pruebas HTML Interactivas</h2>
+            <div class="file-grid">
+                <div class="file-card">
+                    <h3><a href="test-avatar.html">test-avatar.html</a> <span class="badge html">HTML</span></h3>
+                    <p>Sistema de pruebas para avatares de usuario y gestión de imágenes de perfil.</p>
+                </div>
+                <div class="file-card">
+                    <h3><a href="test-invitations.html">test-invitations.html</a> <span class="badge html">HTML</span></h3>
+                    <p>Pruebas del sistema de invitaciones para nuevos usuarios y maestros.</p>
+                </div>
+                <div class="file-card">
+                    <h3><a href="test-notifications-fixed.html">test-notifications-fixed.html</a> <span class="badge html">HTML</span></h3>
+                    <p>Pruebas de notificaciones corregidas con indicadores y badges funcionando.</p>
+                </div>
+                <div class="file-card">
+                    <h3><a href="test-pdf-generator.html">test-pdf-generator.html</a> <span class="badge html">HTML</span></h3>
+                    <p>Generador de PDFs de estudiantes con filtros y opciones avanzadas.</p>
+                </div>
+                <div class="file-card">
+                    <h3><a href="test-superadmin-components.html">test-superadmin-components.html</a> <span class="badge html">HTML</span></h3>
+                    <p>Componentes del panel SuperAdmin con funcionalidades completas.</p>
+                </div>
+                <div class="file-card">
+                    <h3><a href="test-superadmin-datos-reales.html">test-superadmin-datos-reales.html</a> <span class="badge html">HTML</span></h3>
+                    <p>Panel SuperAdmin conectado con datos reales de Firebase.</p>
+                </div>
+                <div class="file-card">
+                    <h3><a href="test-unified-observations.html">test-unified-observations.html</a> <span class="badge html">HTML</span></h3>
+                    <p>Sistema unificado de observaciones con interfaz completa.</p>
+                </div>
+                <div class="file-card">
+                    <h3><a href="demo-pdf-generator.html">demo-pdf-generator.html</a> <span class="badge html">HTML</span></h3>
+                    <p>Demo interactiva del generador de PDFs con vista previa.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🔧 Scripts de Debug y Utilidades</h2>
+            <div class="file-grid">
+                <div class="file-card">
+                    <h3>debug-notifications.js <span class="badge js">JS</span></h3>
+                    <p>Debug del sistema de notificaciones para Node.js.</p>
+                </div>
+                <div class="file-card">
+                    <h3>debug-notifications-browser.js <span class="badge js">JS</span></h3>
+                    <p>Debug de notificaciones optimizado para navegador.</p>
+                </div>
+                <div class="file-card">
+                    <h3>debug-rbac.js <span class="badge js">JS</span></h3>
+                    <p>Sistema de debug para roles y permisos (RBAC).</p>
+                </div>
+                <div class="file-card">
+                    <h3>fix-rbac-browser.js <span class="badge js">JS</span></h3>
+                    <p>Correcciones del sistema RBAC para navegador.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Sistema de Observaciones</h2>
+            <div class="file-grid">
+                <div class="file-card">
+                    <h3>analyze-observations.js <span class="badge js">JS</span></h3>
+                    <p>Análisis detallado de observaciones de estudiantes.</p>
+                </div>
+                <div class="file-card">
+                    <h3>firebase-observation-analyzer.js <span class="badge js">JS</span></h3>
+                    <p>Analizador de observaciones específico para Firebase.</p>
+                </div>
+                <div class="file-card">
+                    <h3>migrate-observations.js <span class="badge js">JS</span></h3>
+                    <p>Script principal de migración de observaciones.</p>
+                </div>
+                <div class="file-card">
+                    <h3>test-unified-observations-system.js <span class="badge js">JS</span></h3>
+                    <p>Pruebas completas del sistema unificado de observaciones.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🔔 Sistema de Notificaciones</h2>
+            <div class="file-grid">
+                <div class="file-card">
+                    <h3>test-notification-system.js <span class="badge js">JS</span></h3>
+                    <p>Pruebas completas del sistema de notificaciones.</p>
+                </div>
+                <div class="file-card">
+                    <h3>test-notification-indicator.js <span class="badge js">JS</span></h3>
+                    <p>Pruebas del indicador animado de notificaciones.</p>
+                </div>
+                <div class="file-card">
+                    <h3>repair-notifications.js <span class="badge js">JS</span></h3>
+                    <p>Script de reparación para notificaciones problemáticas.</p>
+                </div>
+                <div class="file-card">
+                    <h3>cleanup-invalid-notifications.js <span class="badge js">JS</span></h3>
+                    <p>Limpieza de notificaciones inválidas de la base de datos.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Pruebas de Funcionalidades</h2>
+            <div class="file-grid">
+                <div class="file-card">
+                    <h3>test-admin-dashboard.js <span class="badge js">JS</span></h3>
+                    <p>Pruebas del dashboard de administración.</p>
+                </div>
+                <div class="file-card">
+                    <h3>test-share-class-system.js <span class="badge js">JS</span></h3>
+                    <p>Sistema de compartir clases entre maestros.</p>
+                </div>
+                <div class="file-card">
+                    <h3>test-teacher-attendance-filter.js <span class="badge js">JS</span></h3>
+                    <p>Filtrado de asistencia por maestro.</p>
+                </div>
+                <div class="file-card">
+                    <h3>test-student-registration.ts <span class="badge ts">TS</span></h3>
+                    <p>Pruebas de registro de estudiantes en TypeScript.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🛠️ Scripts del Sistema</h2>
+            <div class="file-grid">
+                <div class="file-card">
+                    <h3>find-duplicate.ps1 <span class="badge ps1">PS1</span></h3>
+                    <p>Script PowerShell para encontrar archivos duplicados.</p>
+                </div>
+                <div class="file-card">
+                    <h3>install-migration-deps.sh <span class="badge sh">SH</span></h3>
+                    <p>Instalación de dependencias para scripts de migración.</p>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+            <p style="color: #666;">
+                <strong>📂 Total de archivos organizados:</strong> 45+ archivos de prueba y utilidades<br>
+                <strong>🗓️ Última actualización:</strong> 17 de junio de 2025
+            </p>
+        </div>
+    </div>
+</body>
+</html>

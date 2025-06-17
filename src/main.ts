@@ -53,6 +53,9 @@ app.use(pinia)
 // Luego inicializar el router
 app.use(router)
 
+// Configurar tema global
+setupGlobalTheme()
+
 // Crear función de debugging global en desarrollo
 if (import.meta.env.DEV) {
     createBrowserDebugFunction()

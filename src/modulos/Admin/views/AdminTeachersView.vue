@@ -1,15 +1,13 @@
-<template>
-  <div class="min-h-screen bg-surface">
+<template>  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- Header with breadcrumb and actions -->
-    <header class="bg-card shadow-sm border-b border-border">
+    <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
       <div class="px-6 py-4">
         <!-- Breadcrumb -->
         <nav class="flex mb-4" aria-label="Breadcrumb">
           <ol class="inline-flex items-center space-x-1 md:space-x-3">
-            <li class="inline-flex items-center">
-              <router-link 
+            <li class="inline-flex items-center">              <router-link 
                 to="/admin" 
-                class="text-secondary hover:text-primary"
+                class="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
               >
                 <HomeIcon class="w-4 h-4 mr-2" />
                 Admin
@@ -17,19 +15,18 @@
             </li>
             <li>
               <div class="flex items-center">
-                <ChevronRightIcon class="w-4 h-4 text-muted" />
-                <span class="ml-1 text-muted">Maestros</span>
+                <ChevronRightIcon class="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                <span class="ml-1 text-gray-400 dark:text-gray-500">Maestros</span>
               </div>
             </li>
           </ol>
         </nav>
 
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-2xl font-bold text-foreground">
+        <div class="flex items-center justify-between">          <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
               Gestión de Maestros
             </h1>
-            <div class="mt-2 flex items-center space-x-6 text-sm text-secondary">
+            <div class="mt-2 flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400">
               <span>Total: {{ totalTeachers }}</span>
               <span>Activos: {{ activeTeachers }}</span>
               <span>Especialidades: {{ totalSpecialties }}</span>
@@ -67,12 +64,11 @@
               <div class="flex-shrink-0">
                 <UsersIcon class="h-8 w-8 text-primary" />
               </div>
-              <div class="ml-5 w-0 flex-1">
-                <dl>
-                  <dt class="text-sm font-medium text-secondary truncate">
+              <div class="ml-5 w-0 flex-1">                <dl>
+                  <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
                     Total Maestros
                   </dt>
-                  <dd class="text-lg font-semibold text-foreground">
+                  <dd class="text-lg font-semibold text-gray-900 dark:text-white">
                     {{ totalTeachers }}
                   </dd>
                 </dl>
@@ -87,12 +83,11 @@
               <div class="flex-shrink-0">
                 <CheckCircleIcon class="h-8 w-8 text-success" />
               </div>
-              <div class="ml-5 w-0 flex-1">
-                <dl>
-                  <dt class="text-sm font-medium text-secondary truncate">
+              <div class="ml-5 w-0 flex-1">                <dl>
+                  <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
                     Activos
                   </dt>
-                  <dd class="text-lg font-semibold text-foreground">
+                  <dd class="text-lg font-semibold text-gray-900 dark:text-white">
                     {{ activeTeachers }}
                   </dd>
                 </dl>
@@ -107,12 +102,11 @@
               <div class="flex-shrink-0">
                 <AcademicCapIcon class="h-8 w-8 text-accent" />
               </div>
-              <div class="ml-5 w-0 flex-1">
-                <dl>
-                  <dt class="text-sm font-medium text-secondary truncate">
+              <div class="ml-5 w-0 flex-1">                <dl>
+                  <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
                     Clases Asignadas
                   </dt>
-                  <dd class="text-lg font-semibold text-foreground">
+                  <dd class="text-lg font-semibold text-gray-900 dark:text-white">
                     {{ totalAssignedClasses }}
                   </dd>
                 </dl>
@@ -127,12 +121,11 @@
               <div class="flex-shrink-0">
                 <MusicalNoteIcon class="h-8 w-8 text-warning" />
               </div>
-              <div class="ml-5 w-0 flex-1">
-                <dl>
-                  <dt class="text-sm font-medium text-secondary truncate">
+              <div class="ml-5 w-0 flex-1">                <dl>
+                  <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
                     Especialidades
                   </dt>
-                  <dd class="text-lg font-semibold text-foreground">
+                  <dd class="text-lg font-semibold text-gray-900 dark:text-white">
                     {{ totalSpecialties }}
                   </dd>
                 </dl>
@@ -145,9 +138,8 @@
       <!-- Filters and Search -->
       <div class="card p-6 mb-6">        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <!-- Search -->
-          <div class="relative lg:col-span-2">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon class="h-5 w-5 text-muted" />
+          <div class="relative lg:col-span-2">            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
             </div>
             <input
               v-model="searchQuery"
@@ -174,7 +166,7 @@
             class="select"
           >
             <option value="">Todas las especialidades</option>
-            <option v-for="specialty in uniqueSpecialities" :key="specialty" :value="specialty">
+            <option v-for="specialty in uniqueSpecialties" :key="specialty" :value="specialty">
               {{ getSpecialtyName(specialty) }}
             </option>
           </select>
@@ -193,10 +185,9 @@
         
         <!-- Actions -->
         <div class="mt-4 flex justify-between items-center">
-          <div class="flex items-center space-x-4">
-            <button
+          <div class="flex items-center space-x-4">            <button
               @click="clearFilters"
-              class="text-sm text-secondary hover:text-foreground"
+              class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             >
               Limpiar filtros
             </button>
@@ -287,18 +278,17 @@
 
       <!-- Pagination -->
       <div v-if="totalPages > 1" class="mt-6 flex items-center justify-between">
-        <div class="flex-1 flex justify-between sm:hidden">
-          <button
+        <div class="flex-1 flex justify-between sm:hidden">          <button
             @click="previousPage"
             :disabled="currentPage === 1"
-            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Anterior
           </button>
           <button
             @click="nextPage"
             :disabled="currentPage === totalPages"
-            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Siguiente
           </button>
