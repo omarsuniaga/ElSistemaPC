@@ -13,6 +13,16 @@ import {
   orderBy
 } from 'firebase/firestore'
 import { db } from '@/firebase'
+// Importar servicio avanzado
+import { 
+  advancedStudentsService, 
+  type ImportResult, 
+  type EmailMessage, 
+  type ProgressReport,
+  type SatisfactionMetrics,
+  type ChurnPrediction,
+  type Document as StudentDocument
+} from '../services/advancedStudents'
 
 interface Student {
   id: string
@@ -491,6 +501,224 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     clearFilters()
   }
 
+  // ==========================================
+  // FUNCIONES AVANZADAS - FASE 1
+  // ==========================================
+
+  // IMPORTACIÓN DE DATOS
+  const importStudentsFromCSV = async (file: File): Promise<ImportResult> => {
+    try {
+      isLoading.value = true
+      error.value = null
+      
+      const result = await advancedStudentsService.importStudentsFromCSV(file)
+      
+      // Recargar estudiantes si hubo importaciones exitosas
+      if (result.imported > 0) {
+        await loadStudents()
+      }
+      
+      return result
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const importStudentsFromExcel = async (file: File): Promise<ImportResult> => {
+    try {
+      isLoading.value = true
+      error.value = null
+      
+      const result = await advancedStudentsService.importStudentsFromExcel(file)
+      
+      if (result.imported > 0) {
+        await loadStudents()
+      }
+      
+      return result
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // COMUNICACIÓN MASIVA
+  const sendBulkEmailToStudents = async (studentIds: string[], message: EmailMessage): Promise<void> => {
+    try {
+      isLoading.value = true
+      error.value = null
+      
+      await advancedStudentsService.sendBulkEmailToStudents(studentIds, message)
+      
+      console.log('✅ Emails enviados exitosamente:', studentIds.length)
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const sendWhatsAppToParents = async (studentIds: string[], message: string): Promise<void> => {
+    try {
+      isLoading.value = true
+      error.value = null
+      
+      await advancedStudentsService.sendWhatsAppToParents(studentIds, message)
+      
+      console.log('✅ WhatsApp enviados exitosamente:', studentIds.length)
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // REPORTES AVANZADOS
+  const generateStudentProgressReport = async (studentId: string): Promise<ProgressReport> => {
+    try {
+      isLoading.value = true
+      error.value = null
+      
+      const report = await advancedStudentsService.generateStudentProgressReport(studentId)
+      
+      console.log('✅ Reporte de progreso generado:', report.studentName)
+      return report
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const generateClassRosterPDF = async (classId: string): Promise<Blob> => {
+    try {
+      isLoading.value = true
+      error.value = null
+      
+      const pdfBlob = await advancedStudentsService.generateClassRosterPDF(classId)
+      
+      console.log('✅ PDF de lista de clase generado')
+      return pdfBlob
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const generateAttendanceCertificate = async (studentId: string): Promise<Blob> => {
+    try {
+      isLoading.value = true
+      error.value = null
+      
+      const certificateBlob = await advancedStudentsService.generateAttendanceCertificate(studentId)
+      
+      console.log('✅ Certificado de asistencia generado')
+      return certificateBlob
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // ANÁLISIS Y MÉTRICAS
+  const getStudentRetentionRate = async (period: { start: Date; end: Date }): Promise<number> => {
+    try {
+      isLoading.value = true
+      error.value = null
+      
+      const retentionRate = await advancedStudentsService.getStudentRetentionRate(period)
+      
+      console.log('✅ Tasa de retención calculada:', retentionRate + '%')
+      return retentionRate
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const getStudentSatisfactionMetrics = async (): Promise<SatisfactionMetrics> => {
+    try {
+      isLoading.value = true
+      error.value = null
+      
+      const metrics = await advancedStudentsService.getStudentSatisfactionMetrics()
+      
+      console.log('✅ Métricas de satisfacción obtenidas:', metrics.averageRating)
+      return metrics
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const predictStudentChurn = async (studentId: string): Promise<ChurnPrediction> => {
+    try {
+      isLoading.value = true
+      error.value = null
+      
+      const prediction = await advancedStudentsService.predictStudentChurn(studentId)
+      
+      console.log('✅ Predicción de deserción generada:', prediction.riskLevel)
+      return prediction
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // GESTIÓN DE DOCUMENTOS
+  const uploadStudentDocument = async (studentId: string, document: File): Promise<StudentDocument> => {
+    try {
+      isLoading.value = true
+      error.value = null
+      
+      const uploadedDoc = await advancedStudentsService.uploadStudentDocument(studentId, document)
+      
+      console.log('✅ Documento subido:', uploadedDoc.name)
+      return uploadedDoc
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const getStudentDocuments = async (studentId: string): Promise<StudentDocument[]> => {
+    try {
+      isLoading.value = true
+      error.value = null
+      
+      const documents = await advancedStudentsService.getStudentDocuments(studentId)
+      
+      console.log('✅ Documentos obtenidos:', documents.length)
+      return documents
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     // State
     students,
@@ -521,7 +749,21 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     bulkDeleteStudents,
     setFilters,
     clearFilters,
-    $reset
+    $reset,
+
+    // FUNCIONES AVANZADAS - FASE 1
+    importStudentsFromCSV,
+    importStudentsFromExcel,
+    sendBulkEmailToStudents,
+    sendWhatsAppToParents,
+    generateStudentProgressReport,
+    generateClassRosterPDF,
+    generateAttendanceCertificate,
+    getStudentRetentionRate,
+    getStudentSatisfactionMetrics,
+    predictStudentChurn,
+    uploadStudentDocument,
+    getStudentDocuments
   }
 })
 

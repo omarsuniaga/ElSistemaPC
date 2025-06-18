@@ -109,9 +109,8 @@
                   title="Editar usuario"
                 >
                   ✏️
-                </button>
-                <button 
-                  @click="toggleUserStatus(user)"
+                </button>                <button 
+                  @click="toggleUserStatus(user.id, !user.isActive)"
                   class="p-2 hover:bg-gray-100 rounded-md"
                   :class="user.isActive ? 'text-orange-600' : 'text-green-600'"
                   :title="user.isActive ? 'Desactivar usuario' : 'Activar usuario'"
@@ -186,94 +185,20 @@
           <p class="text-sm">Intenta ajustar los filtros de búsqueda</p>
         </div>
       </div>
-    </div>
-
-    <!-- Create User Modal -->
-    <div v-if="showCreateUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div class="p-6">
-          <h3 class="text-lg font-semibold mb-4">Crear Nuevo Usuario</h3>
-          
-          <form @submit.prevent="createNewUser">
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                <input 
-                  v-model="newUser.email" 
-                  type="email" 
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  placeholder="usuario@ejemplo.com"
-                >
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo *</label>
-                <input 
-                  v-model="newUser.displayName" 
-                  type="text" 
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nombre Apellido"
-                >
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Rol *</label>
-                <select 
-                  v-model="newUser.role" 
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Seleccionar rol...</option>
-                  <option value="Colaborador">Colaborador</option>
-                  <option value="Monitor">Monitor</option>
-                  <option value="Maestro">Maestro</option>
-                  <option value="Admin">Administrador</option>
-                  <option value="Director">Director</option>
-                  <option value="Superusuario">Superusuario</option>
-                </select>
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña temporal *</label>
-                <input 
-                  v-model="newUser.password" 
-                  type="password" 
-                  required
-                  minlength="6"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  placeholder="Mínimo 6 caracteres"
-                >
-              </div>
-            </div>
-            
-            <div class="flex justify-end space-x-3 mt-6">
-              <button 
-                type="button"
-                @click="showCreateUserModal = false"
-                class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
-              >
-                Cancelar
-              </button>
-              <button 
-                type="submit"
-                :disabled="creating"
-                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-              >
-                {{ creating ? 'Creando...' : 'Crear Usuario' }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+    </div>    <!-- Edit User Modal -->
+    <EditUserModal
+      :is-open="showEditUserModal"
+      :user="selectedUser"
+      @close="closeEditModal"
+      @saved="handleUserUpdated"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useSuperusuario } from '../composables/useSuperusuario'
+import EditUserModal from '../components/EditUserModal.vue'
 
 // Composable
 const { users, loading, error, loadUsers, createUser, toggleUserStatus } = useSuperusuario()
@@ -284,6 +209,8 @@ const roleFilter = ref('')
 const currentPage = ref(1)
 const pageSize = 10
 const showCreateUserModal = ref(false)
+const showEditUserModal = ref(false)
+const selectedUser = ref(null)
 const creating = ref(false)
 
 const newUser = ref({
@@ -391,8 +318,30 @@ const createNewUser = async () => {
 }
 
 const editUser = (user: any) => {
+  console.log('Navegando a módulo: usuarios')
   console.log('Editando usuario:', user.id)
-  // TODO: Implementar modal de edición
+  selectedUser.value = user
+  showEditUserModal.value = true
+  console.log('Modal de edición abierto para usuario:', user.email)
+  console.log('Datos del usuario seleccionado:', selectedUser.value)
+  console.log('Estado del modal de edición:', showEditUserModal.value)
+  console.log('Lista de usuarios actual:', users.value)
+}
+
+const closeEditModal = () => {
+  showEditUserModal.value = false
+  selectedUser.value = null
+}
+
+const handleUserUpdated = (updatedUser: any) => {
+  console.log('Usuario actualizado:', updatedUser)
+  // Actualizar la lista local si es necesario
+  const index = users.value?.findIndex(u => u.id === updatedUser.id)
+  if (index !== undefined && index >= 0 && users.value) {
+    users.value[index] = updatedUser
+  }
+  // Recargar la lista para asegurar datos consistentes
+  loadUsers()
 }
 
 const changeUserRole = (user: any) => {

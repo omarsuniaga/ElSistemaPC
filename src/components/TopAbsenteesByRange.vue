@@ -11,6 +11,16 @@
         Alumnos con más ausencias
       </h3>
       <div class="flex flex-wrap w-full lg:w-auto gap-2 items-center">
+        <!-- Botón de gestión de plantillas -->
+        <button
+          @click="openWhatsAppTemplateManager"
+          class="flex items-center px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors duration-200"
+          title="Gestionar Plantillas de WhatsApp"
+        >
+          <CogIcon class="w-4 h-4 mr-1" />
+          Plantillas
+        </button>
+        
         <div
           class="grid grid-cols-1 xs:grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto"
         >
@@ -451,6 +461,14 @@
     @close="closeWhatsAppModal"
     @message-sent="handleMessageSent"
   />
+
+  <!-- MODAL DE GESTIÓN DE PLANTILLAS -->
+  <WhatsAppTemplateManager
+    :is-open="showWhatsAppTemplateManager"
+    @close="closeWhatsAppTemplateManager"
+    @template-created="handleTemplateCreated"
+    @template-updated="handleTemplateUpdated"
+  />
 </template>
 
 <script setup lang="ts">
@@ -466,7 +484,8 @@ import {
   DocumentIcon,
   XMarkIcon,
   PaperAirplaneIcon,
-  CalendarIcon
+  CalendarIcon,
+  CogIcon
 } from "@heroicons/vue/24/outline";
 import { useAttendanceStore } from "../modulos/Attendance/store/attendance";
 import { useStudentsStore } from "../modulos/Students/store/students";
@@ -475,6 +494,7 @@ import { db } from "../firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useAuthStore } from "../stores/auth";
 import WhatsAppMessageModal from "./WhatsAppMessageModal.vue";
+import WhatsAppTemplateManager from "./WhatsAppTemplateManager.vue";
 import type { MessageData } from "../composables/useWhatsAppPresets";
 
 const props = defineProps<{ 
@@ -887,6 +907,9 @@ onMounted(async () => {
 const showWhatsAppModal = ref(false);
 const selectedStudentForWhatsApp = ref<any>(null);
 
+// Variables para el gestor de plantillas
+const showWhatsAppTemplateManager = ref(false);
+
 // Función para abrir modal de WhatsApp para amonestación
 const openWhatsAppModalForWarning = (student: any) => {
   selectedStudentForWhatsApp.value = student;
@@ -897,6 +920,25 @@ const openWhatsAppModalForWarning = (student: any) => {
 const closeWhatsAppModal = () => {
   showWhatsAppModal.value = false;
   selectedStudentForWhatsApp.value = null;
+};
+
+// Funciones para el gestor de plantillas
+const openWhatsAppTemplateManager = () => {
+  showWhatsAppTemplateManager.value = true;
+};
+
+const closeWhatsAppTemplateManager = () => {
+  showWhatsAppTemplateManager.value = false;
+};
+
+const handleTemplateCreated = (template: any) => {
+  console.log('Nueva plantilla creada:', template);
+  // Aquí puedes agregar lógica adicional si es necesario
+};
+
+const handleTemplateUpdated = (template: any) => {
+  console.log('Plantilla actualizada:', template);
+  // Aquí puedes agregar lógica adicional si es necesario
 };
 
 // Función para manejar cuando se envía un mensaje
@@ -922,6 +964,10 @@ const whatsAppMessageData = computed((): MessageData | null => {
   const className = classData?.name || 'Clase Musical';
   const teacherName = (authStore.user as any)?.displayName || 'Maestro';
   
+  // Generar detalles de ausencias si hay datos disponibles
+  const absenceDetails = selectedStudentForWhatsApp.value.absenceDetails || 
+    `El estudiante tiene ${selectedStudentForWhatsApp.value.absences} ausencias registradas.`;
+  
   return {
     studentName: `${student.nombre} ${student.apellido}`.trim(),
     representanteName,
@@ -930,7 +976,12 @@ const whatsAppMessageData = computed((): MessageData | null => {
     date: new Date().toLocaleDateString('es-ES'),
     absences: selectedStudentForWhatsApp.value.absences || 0,
     teacherName,
-    institutionName: 'Academia de Música'
+    institutionName: 'Academia de Música',
+    // Nuevas variables
+    startDate: formattedStartDate.value,
+    endDate: formattedEndDate.value,
+    attendanceRate: selectedStudentForWhatsApp.value.attendanceRate || 0,
+    absenceDetails
   };
 });
 </script>

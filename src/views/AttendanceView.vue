@@ -504,7 +504,8 @@ const selectDate = async (date: string | { date: string } | { date: string, [key
 
 // Fetch classes for the selected date
 const fetchClassesForDate = async (dateStr: string) => {
-  // esta funcion se encarga de obtener las clases para la fecha seleccionada
+  // Esta función se encarga de obtener las clases para la fecha seleccionada
+  // Incluye clases programadas, clases compartidas, y clases con asistencia registrada
   try {
     const date = parseISO(dateStr)
     const dayOfWeek = format(date, 'EEEE', { locale: es })
@@ -515,73 +516,193 @@ const fetchClassesForDate = async (dateStr: string) => {
       return []
     }
     
-    // Obtener clases del maestro utilizando el store de clases
-    console.log(`[AttendanceView] Buscando clases para el maestro ${teacherId} en el día ${dayOfWeek}`)
+    console.log(`[AttendanceView] Buscando clases para el maestro ${teacherId} en la fecha ${dateStr} (${dayOfWeek})`)
+    console.log(`[AttendanceView] Total de clases en el store:`, classesStore.classes.length)
+    console.log(`[AttendanceView] Clases con maestros:`, classesStore.classes.filter(c => c.teachers?.length > 0).length)
     
-    // Usamos el getter específico del store de clases para obtener clases por día y profesor
-    const classes = classesStore.getClassesByDayAndTeacherId(dayOfWeek, teacherId) || []
+    // 1. Obtener clases programadas donde el maestro es el encargado principal
+    const scheduledClasses = classesStore.getClassesByDayAndTeacherId(dayOfWeek, teacherId) || []
+    console.log(`[AttendanceView] Clases programadas como encargado para ${dayOfWeek}:`, scheduledClasses.length)
     
-    if (classes.length === 0) {
-      console.log(`[AttendanceView] No se encontraron clases para el día ${dayOfWeek}`)
-      return []
-    }
-    console.log(`[AttendanceView] Se encontraron ${classes.length} clases para el día ${dayOfWeek}`, classes)
+    // 2. Obtener clases compartidas donde el maestro es asistente
+    const sharedClasses = classesStore.classes.filter(cls => {
+      // Verificar si el maestro es asistente en esta clase
+      const isAssistant = cls.teachers?.some(teacher => 
+        teacher.teacherId === teacherId && teacher.role === 'ASSISTANT'
+      )
+      
+      if (!isAssistant) return false
+      
+      // Verificar si la clase está programada para este día
+      if (!cls.schedule?.slots || !Array.isArray(cls.schedule.slots)) {
+        console.log(`[AttendanceView] Clase compartida ${cls.name} no tiene schedule.slots válido`)
+        return false
+      }
+      
+      const hasSlotForDay = cls.schedule.slots.some(slot => {
+        const slotDay = slot.day?.toLowerCase()?.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        const currentDay = dayOfWeek.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        console.log(`[AttendanceView] Comparando días - Slot: '${slotDay}' vs Actual: '${currentDay}' (${slotDay === currentDay})`)
+        return slotDay === currentDay
+      })
+      
+      if (hasSlotForDay) {
+        console.log(`[AttendanceView] ✅ Clase compartida ${cls.name} coincide con el día ${dayOfWeek}`)
+      } else {
+        console.log(`[AttendanceView] ❌ Clase compartida ${cls.name} NO coincide con el día ${dayOfWeek}`)
+      }
+      
+      return hasSlotForDay
+    })
+    console.log(`[AttendanceView] Clases compartidas como asistente para ${dayOfWeek}:`, sharedClasses.length)
+    console.log(`[AttendanceView] Detalles de clases compartidas:`, sharedClasses.map(c => ({
+      id: c.id,
+      name: c.name,
+      teachers: c.teachers,
+      schedule: c.schedule
+    })))
     
-    // Verificar en Firestore si existen registros de asistencia para cada clase
-    const classesWithStatus = await Promise.all(classes.map(async (cls) => {
-      // Verificar registro de asistencia en la fecha seleccionada
+    // 3. Obtener clases que tienen asistencia registrada para esta fecha específica
+    const attendanceRecords = attendanceStore.attendanceDocuments.filter(record => 
+      record.fecha === dateStr && record.teacherId === teacherId
+    )
+    console.log(`[AttendanceView] Registros de asistencia para ${dateStr}:`, attendanceRecords.length)
+    
+    // 4. Crear un mapa para evitar duplicados y combinar información
+    const classMap = new Map()
+    
+    // Procesar clases programadas (encargado principal)
+    for (const cls of scheduledClasses) {
       const hasAttendance = attendanceStore.isClassRegistered(dateStr, cls.id)
       
+      classMap.set(cls.id, {
+        ...cls,
+        isScheduled: true,
+        hasAttendance: hasAttendance,
+        type: 'scheduled', // Tipo: clase programada
+        myRole: 'LEAD', // Rol del maestro en esta clase
+        registered: hasAttendance,
+        status: hasAttendance ? 'Registrada' : 'Pendiente'
+      })
+    }
+    
+    // Procesar clases compartidas (asistente)
+    for (const cls of sharedClasses) {
+      const hasAttendance = attendanceStore.isClassRegistered(dateStr, cls.id)
+      
+      // Obtener permisos del maestro asistente
+      const myTeacherData = cls.teachers?.find(t => t.teacherId === teacherId)
+      const canTakeAttendance = myTeacherData?.permissions?.canTakeAttendance || false
+      
+      console.log(`[AttendanceView] Procesando clase compartida ${cls.name}:`, {
+        hasAttendance,
+        myTeacherData,
+        canTakeAttendance
+      })
+      
+      classMap.set(cls.id, {
+        ...cls,
+        isScheduled: true,
+        hasAttendance: hasAttendance,
+        type: 'shared', // Tipo: clase compartida
+        myRole: 'ASSISTANT', // Rol del maestro en esta clase
+        myPermissions: myTeacherData?.permissions,
+        canTakeAttendance,
+        registered: hasAttendance,
+        status: hasAttendance ? 'Registrada' : 'Compartida'
+      })
+    }
+    
+    // Procesar clases con asistencia registrada (pueden ser clases extra o de recuperación)
+    for (const record of attendanceRecords) {
+      const existingClass = classMap.get(record.classId)
+      
+      if (existingClass) {
+        // Ya existe en las programadas/compartidas, actualizar info
+        existingClass.hasAttendance = true
+        existingClass.registered = true
+        existingClass.status = existingClass.type === 'shared' ? 'Registrada (Compartida)' : 'Registrada'
+        existingClass.attendanceRecord = record
+      } else {
+        // Clase no programada pero con asistencia (clase extra/recuperación)
+        // Intentar obtener información de la clase desde el store
+        const classInfo = classesStore.classes.find(c => c.id === record.classId)
+        
+        if (classInfo) {
+          classMap.set(record.classId, {
+            ...classInfo,
+            isScheduled: false,
+            hasAttendance: true,
+            type: 'recorded', // Tipo: clase con asistencia registrada
+            myRole: 'LEAD', // Asumir que es encargado si registró asistencia
+            registered: true,
+            status: 'Registrada (Extra)',
+            attendanceRecord: record
+          })
+        } else {
+          // Clase no encontrada en el store, crear entrada básica
+          classMap.set(record.classId, {
+            id: record.classId,
+            name: record.className || `Clase ${record.classId}`,
+            isScheduled: false,
+            hasAttendance: true,
+            type: 'recorded',
+            myRole: 'LEAD',
+            registered: true,
+            status: 'Registrada (Extra)',
+            attendanceRecord: record,
+            studentIds: []
+          })
+        }
+      }
+    }
+    
+    // 5. Convertir el mapa a array y procesar información adicional
+    const allClasses = Array.from(classMap.values())
+    
+    const classesWithStatus = await Promise.all(allClasses.map(async (cls) => {
       // Conseguir información del profesor
-      // Para mostrar un nombre más amigable que solo el ID
       let teacherInfo = ''
       
-      // Usamos el nombre de la clase como identificador principal
       if (cls.name) {
         teacherInfo = cls.name
       }
       
-      // Si tenemos el ID del profesor, intentar conseguir más información
       if (cls.teacherId) {
-        // Si es el usuario actual, usar su email como información adicional
         if (cls.teacherId === authStore.user?.uid && authStore.user?.email) {
           teacherInfo += ` (${authStore.user.email})`
-        } 
-        // Si no, mostrar un ID corto como referencia
-        else if (teacherInfo) {
+        } else if (teacherInfo) {
           teacherInfo += ` (ID: ${cls.teacherId.substring(0, 5)}...)`
         } else {
           teacherInfo = `Profesor ${cls.teacherId.substring(0, 6)}...` 
         }
       }
       
-      // Obtener horario formateado usando la estructura de datos del store de clases
+      // Obtener horario formateado
       let horarioFormateado = 'Horario no especificado'
       
       if (cls.schedule?.slots && cls.schedule.slots.length > 0) {
-        // Buscar el slot correspondiente al día de la semana
         const slot = cls.schedule.slots.find(s => {
-          // Comparamos ignorando acentos y en minúsculas para mayor robustez
           const slotDay = s.day.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
           const currentDay = dayOfWeek.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
           return slotDay === currentDay
         })
         
         if (slot) {
-          // Formateamos el horario para mostrar en formato 12h
           horarioFormateado = formatearHorario(slot.startTime, slot.endTime)
         }
+      } else if (cls.attendanceRecord) {
+        // Si no hay horario programado pero hay registro de asistencia, mostrar "Clase extra"
+        horarioFormateado = 'Clase extra/recuperación'
       }
       
       // Función para formatear horario en formato 12 horas
       function formatearHorario(inicio: string, fin: string): string {
         try {
-          // Función para convertir formato 24h a 12h (HH:MM a h:MM AM/PM)
           const formato12h = (timeStr: string) => {
             if (!timeStr) return ''
             if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr
             
-            // Si es formato HH:MM, convertirlo a 12h
             if (timeStr.includes(':')) {
               const [hours, minutes] = timeStr.split(':')
               const hour = parseInt(hours, 10)
@@ -599,16 +720,40 @@ const fetchClassesForDate = async (dateStr: string) => {
         }
       }
       
-      // Devolver objeto con todos los datos necesarios para el modal
       return {
         ...cls,
-        registered: hasAttendance,
-        status: hasAttendance ? 'Registrada' : 'Pendiente',
-        teacher: teacherInfo, // Nombre más amigable del profesor/clase
-        horario: horarioFormateado, // Horario formateado en formato 12h
-        studentCount: cls.studentIds?.length || 0
+        teacher: teacherInfo,
+        horario: horarioFormateado,
+        studentCount: cls.studentIds?.length || 0,
+        // Información adicional para el modal
+        classType: cls.type,
+        isScheduledClass: cls.isScheduled,
+        hasAttendanceRecord: cls.hasAttendance,
+        // Información específica de clases compartidas
+        isSharedClass: cls.type === 'shared',
+        teacherRole: cls.myRole,
+        teacherPermissions: cls.myPermissions
       }
     }))
+    
+    // 6. Ordenar las clases: primero las programadas, luego las compartidas, luego las extra
+    classesWithStatus.sort((a, b) => {
+      // Primero las programadas propias
+      if (a.type === 'scheduled' && b.type !== 'scheduled') return -1
+      if (a.type !== 'scheduled' && b.type === 'scheduled') return 1
+      
+      // Luego las compartidas
+      if (a.type === 'shared' && b.type !== 'shared' && b.type !== 'scheduled') return -1
+      if (a.type !== 'shared' && a.type !== 'scheduled' && b.type === 'shared') return 1
+      
+      // Dentro del mismo tipo, ordenar por nombre
+      return (a.name || '').localeCompare(b.name || '')
+    })
+    
+    console.log(`[AttendanceView] Total de clases encontradas: ${classesWithStatus.length}`)
+    console.log(`[AttendanceView] - Programadas (encargado): ${classesWithStatus.filter(c => c.type === 'scheduled').length}`)
+    console.log(`[AttendanceView] - Compartidas (asistente): ${classesWithStatus.filter(c => c.type === 'shared').length}`)
+    console.log(`[AttendanceView] - Con asistencia extra: ${classesWithStatus.filter(c => c.type === 'recorded').length}`)
     
     classesForDate.value = classesWithStatus
   } catch (error) {
@@ -1369,6 +1514,23 @@ const fetchInitialData = async () => {
     ])
     console.log('[AttendanceView] fetchInitialData: Initial data fetched.')
     console.log('[AttendanceView] Classes loaded:', classesStore.classes.length)
+    
+    // Debug: Verificar clases compartidas disponibles
+    const currentUserId = authStore.user?.uid
+    if (currentUserId) {
+      const sharedClassesDebug = classesStore.classes.filter(cls => {
+        return cls.teachers?.some(teacher => 
+          teacher.teacherId === currentUserId && teacher.role === 'ASSISTANT'
+        )
+      })
+      console.log(`[AttendanceView] DEBUG: Clases compartidas disponibles para ${currentUserId}:`, sharedClassesDebug.length)
+      console.log(`[AttendanceView] DEBUG: Detalles de clases compartidas:`, sharedClassesDebug.map(c => ({
+        id: c.id,
+        name: c.name,
+        teachers: c.teachers,
+        schedule: c.schedule?.slots
+      })))
+    }
     
     // Handle URL parameters
     if (props.date && props.classId) {

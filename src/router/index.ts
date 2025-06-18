@@ -259,7 +259,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/dashboard',
     name: 'AdminHomeView',
-    component: () => import('../modulos/Teachers/view/admin/AdminHomeView.vue'),
+    component: () => import('../modulos/Admin/views/SuperAdminDashboard.vue'),
     meta: { 
       requiresAuth: true,
       requiresRBAC: true,

@@ -22,6 +22,11 @@ const props = defineProps<{
     studentIds?: string[];
     isLoadingAttendance?: boolean;
     attendanceStatus?: boolean;
+    // Nuevas propiedades para clasificar tipos de clases
+    classType?: string;
+    isScheduledClass?: boolean;
+    hasAttendanceRecord?: boolean;
+    attendanceRecord?: any;
     schedule: {
       slots: {
         id: string;
@@ -128,6 +133,21 @@ const classesWithAttendanceStatus = computed(() => {
       attendanceStatus: hasAttendance
     };
   });
+});
+
+// Computed property for scheduled classes (programadas)
+const scheduledClasses = computed(() => {
+  return classesWithAttendanceStatus.value.filter(classItem => 
+    (classItem.isScheduledClass !== false && classItem.classType !== 'recorded') ||
+    classItem.classType === 'shared' // Incluir clases compartidas
+  );
+});
+
+// Computed property for extra/recovery classes (clases extra/recuperación)
+const extraClasses = computed(() => {
+  return classesWithAttendanceStatus.value.filter(classItem => 
+    classItem.isScheduledClass === false || classItem.classType === 'recorded'
+  );
 });
 
 // Watch for changes in props and trigger attendance checks
@@ -238,60 +258,148 @@ if (import.meta.env?.PROD === false) {
           <p class="text-gray-500 dark:text-gray-400">No hay clases programadas para este día.</p>
         </div>
         <div v-else class="space-y-4">
-          <div 
-            v-for="classItem in classesWithAttendanceStatus" 
-            :key="classItem.id" 
-            class="relative border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer"
-            @click="navigateToAttendance(classItem.id)"
-          >
-            <!-- Status Indicator -->
-            <div class="absolute top-3 right-3">
-              <span 
-                v-if="classItem.isLoadingAttendance"
-                class="text-xs font-semibold px-2 py-1 rounded-full bg-gray-300 text-gray-600 animate-pulse">
-                ...
-              </span>
-              <span 
-                v-else
-                :class="[
-                  'text-xs font-semibold px-2 py-1 rounded-full',
-                  classItem.hasAttendance 
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-yellow-400 text-black'
-                ]">
-                {{ classItem.hasAttendance ? 'Registrado' : 'Pendiente' }}
-              </span>
-            </div>
+          <!-- Sección de clases programadas -->
+          <div v-if="scheduledClasses.length > 0">
+            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Clases Programadas y Compartidas ({{ scheduledClasses.length }})
+            </h4>
+            <div class="space-y-3 mb-6">
+              <div 
+                v-for="classItem in scheduledClasses" 
+                :key="classItem.id" 
+                class="relative border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer"
+                @click="navigateToAttendance(classItem.id)"
+              >
+                <!-- Status Indicator -->
+                <div class="absolute top-3 right-3 flex flex-col items-end space-y-1">
+                  <!-- Indicador de clase compartida -->
+                  <span 
+                    v-if="classItem.classType === 'shared'"
+                    class="text-xs font-semibold px-2 py-1 rounded-full bg-purple-500 text-white">
+                    Compartida
+                  </span>
+                  
+                  <!-- Estado de asistencia -->
+                  <span 
+                    v-if="classItem.isLoadingAttendance"
+                    class="text-xs font-semibold px-2 py-1 rounded-full bg-gray-300 text-gray-600 animate-pulse">
+                    ...
+                  </span>
+                  <span 
+                    v-else
+                    :class="[
+                      'text-xs font-semibold px-2 py-1 rounded-full',
+                      classItem.hasAttendance 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-blue-400 text-white'
+                    ]">
+                    {{ classItem.hasAttendance ? 'Registrado' : 'Programada' }}
+                  </span>
+                </div>
 
-            <!-- Title -->
-            <h4 class="text-lg font-semibold text-gray-900 dark:text-white pr-24 mb-2">{{ classItem.name }}</h4>
-            
-            <!-- Schedule -->
-            <div v-if="classItem.schedule?.slots?.length" class="flex items-center text-gray-600 dark:text-gray-300 mb-1">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span v-for="(slot, idx) in classItem.schedule.slots" :key="slot.id" class="text-sm">
-                {{ formatTime(slot.startTime) }} - {{ formatTime(slot.endTime) }}
-                <span v-if="idx < classItem.schedule.slots.length - 1" class="mx-1">|</span>
-              </span>
+                <!-- Title -->
+                <h4 class="text-lg font-semibold text-gray-900 dark:text-white pr-24 mb-2">{{ classItem.name }}</h4>
+                
+                <!-- Schedule -->
+                <div v-if="classItem.schedule?.slots?.length" class="flex items-center text-gray-600 dark:text-gray-300 mb-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span v-for="(slot, idx) in classItem.schedule.slots" :key="slot.id" class="text-sm">
+                    {{ formatTime(slot.startTime) }} - {{ formatTime(slot.endTime) }}
+                    <span v-if="idx < classItem.schedule.slots.length - 1" class="mx-1">|</span>
+                  </span>
+                </div>
+                
+                <!-- Student Count -->
+                <div class="flex items-center text-gray-600 dark:text-gray-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <span class="text-sm">{{ classItem.studentIds?.length || classItem.students || 0 }} alumnos</span>
+                </div>
+                
+                <!-- Classroom (if available) -->
+                <div v-if="classItem.classroom" class="flex items-center text-gray-500 dark:text-gray-400 mt-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <span class="text-sm">{{ classItem.classroom }}</span>
+                </div>
+                
+                <!-- Información de clase compartida -->
+                <div v-if="classItem.classType === 'shared'" class="mt-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                  <div class="flex items-center text-purple-600 dark:text-purple-400 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-1a2 2 0 01-2 2h-1.5m-1.5 0h1.5a2 2 0 002-2M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-1a2 2 0 01-2 2h-1.5m-1.5 0h1.5a2 2 0 002-2" />
+                    </svg>
+                    <span class="font-medium">Eres asistente en esta clase</span>
+                  </div>
+                  <div v-if="classItem.teacherPermissions?.canTakeAttendance === false" class="text-xs text-red-600 dark:text-red-400 mt-1">
+                    • Sin permisos para tomar asistencia
+                  </div>
+                  <div v-else class="text-xs text-green-600 dark:text-green-400 mt-1">
+                    • Puedes gestionar la asistencia
+                  </div>
+                </div>
+              </div>
             </div>
-            
-            <!-- Student Count -->
-            <div class="flex items-center text-gray-600 dark:text-gray-300">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </div>
+
+          <!-- Sección de clases extra/recuperación -->
+          <div v-if="extraClasses.length > 0">
+            <h4 class="text-sm font-semibold text-orange-700 dark:text-orange-300 mb-3 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
-              <span class="text-sm">{{ classItem.studentIds?.length || classItem.students || 0 }} alumnos</span>
+              Clases Extra/Recuperación ({{ extraClasses.length }})
+            </h4>
+            <div class="space-y-3">
+              <div 
+                v-for="classItem in extraClasses" 
+                :key="classItem.id" 
+                class="relative border-2 border-orange-200 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20 rounded-lg p-5 hover:bg-orange-100 dark:hover:bg-orange-800/30 transition-all cursor-pointer"
+                @click="navigateToAttendance(classItem.id)"
+              >
+                <!-- Status Indicator -->
+                <div class="absolute top-3 right-3">
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full bg-green-500 text-white">
+                    Registrado
+                  </span>
+                </div>
+
+                <!-- Title -->
+                <h4 class="text-lg font-semibold text-gray-900 dark:text-white pr-24 mb-2">
+                  {{ classItem.name }}
+                </h4>
+                
+                <!-- Extra class indicator -->
+                <div class="flex items-center text-orange-600 dark:text-orange-400 mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span class="text-sm font-medium">Clase extra o de recuperación</span>
+                </div>
+                
+                <!-- Student Count -->
+                <div class="flex items-center text-gray-600 dark:text-gray-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <span class="text-sm">{{ classItem.studentIds?.length || classItem.students || 0 }} alumnos</span>
+                </div>
+              </div>
             </div>
-            
-            <!-- Classroom (if available) -->
-            <div v-if="classItem.classroom" class="flex items-center text-gray-500 dark:text-gray-400 mt-1">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-              <span class="text-sm">{{ classItem.classroom }}</span>
-            </div>
+          </div>
+
+          <!-- Mensaje si no hay clases extra pero sí programadas -->
+          <div v-if="scheduledClasses.length > 0 && extraClasses.length === 0" class="text-center py-4 border-t border-gray-200 dark:border-gray-700">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              No hay clases extra o de recuperación registradas para este día.
+            </p>
           </div>
         </div>
       </div>

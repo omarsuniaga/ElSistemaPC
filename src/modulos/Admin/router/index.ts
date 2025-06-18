@@ -41,8 +41,7 @@ const adminRoutes: RouteRecordRaw[] = [
         action: 'view_monitoring'
       }
     }
-  },
-  {
+  },  {
     path: '/admin/students',
     name: 'AdminStudents',
     component: () => import('../views/AdminStudentsView.vue'),
@@ -52,6 +51,19 @@ const adminRoutes: RouteRecordRaw[] = [
       permissions: {
         module: 'students',
         action: 'view_all'
+      }
+    }
+  },
+  {
+    path: '/admin/students/advanced',
+    name: 'AdminStudentsAdvanced',
+    component: () => import('../views/AdminStudentsAdvancedView.vue'),
+    meta: {
+      title: 'Gestión Avanzada de Estudiantes',
+      requiresAuth: true,
+      permissions: {
+        module: 'students',
+        action: 'advanced_management'
       }
     }
   },

@@ -16,8 +16,7 @@
         <div class="text-sm text-green-600 dark:text-green-400">+{{ recent }} esta semana</div>
       </div>
     </div>
-    
-    <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between">
       <RouterLink 
         :to="route"
         class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm"
@@ -40,6 +39,9 @@
         </button>
       </div>
     </div>
+    
+    <!-- Slot para acciones adicionales -->
+    <slot name="extra-actions"></slot>
   </div>
 </template>
 

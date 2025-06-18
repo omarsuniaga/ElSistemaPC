@@ -69,6 +69,7 @@
     "vue3-perfect-scrollbar": "^2.0.0",
     "vuedraggable": "^4.1.0",
     "workbox-window": "^7.0.0",
+    "xlsx": "^0.18.5",
     "yup": "^1.6.1"
   },
   "devDependencies": {

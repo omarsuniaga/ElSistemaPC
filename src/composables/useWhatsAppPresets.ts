@@ -36,6 +36,11 @@ export interface MessageData {
   absences: number;
   teacherName: string;
   institutionName: string;
+  // Nuevas variables para fechas de rango
+  startDate?: string;
+  endDate?: string;
+  absenceDetails?: string;
+  attendanceRate?: number;
 }
 
 const COLLECTION_NAME = 'WHATSAPP_PRESETS';
@@ -147,7 +152,33 @@ Para la reincorporación, deberá:
       isActive: true,
       createdBy: 'system',
       isSystem: true,
-      order: 4
+      order: 4    },
+    {
+      name: 'Informe de Ausencias por Período',
+      category: 'administrative',  
+      template: `📊 *INFORME DE AUSENCIAS - PERÍODO*
+
+Estimado/a {representanteName},
+
+Le informamos sobre las ausencias del estudiante *{studentName}* durante el período comprendido entre *{startDate}* y *{endDate}*:
+
+🎵 Clase: *{className}*
+📊 Total de ausencias: *{absences}*
+📈 Porcentaje de asistencia: *{attendanceRate}%*
+👨‍🏫 Maestro: {teacherName}
+
+{absenceDetails}
+
+Es importante mantener una asistencia regular para asegurar el progreso académico del estudiante.
+
+Agradecemos su atención.
+
+*{institutionName}*`,
+      variables: ['studentName', 'representanteName', 'className', 'startDate', 'endDate', 'absences', 'attendanceRate', 'absenceDetails', 'teacherName', 'institutionName'],
+      isActive: true,
+      createdBy: 'system',
+      isSystem: true,
+      order: 6
     },
     {
       name: 'Suspensión Permanente',
@@ -169,11 +200,10 @@ Los documentos del estudiante estarán disponibles para retiro en coordinación.
 
 *{institutionName}*
 *Dirección Académica*`,
-      variables: ['studentName', 'representanteName', 'className', 'date', 'absences', 'teacherName', 'institutionName'],
-      isActive: true,
+      variables: ['studentName', 'representanteName', 'className', 'date', 'absences', 'teacherName', 'institutionName'],      isActive: true,
       createdBy: 'system',
       isSystem: true,
-      order: 5
+      order: 7
     }
   ];
 
@@ -233,12 +263,11 @@ Los documentos del estudiante estarán disponibles para retiro en coordinación.
       console.error('Error initializing default presets:', err);
     }
   };
-
   // Procesar template con datos
   const processTemplate = (template: string, data: MessageData): string => {
     let processedTemplate = template;
     
-    // Reemplazar variables
+    // Reemplazar variables básicas
     processedTemplate = processedTemplate.replace(/{studentName}/g, data.studentName);
     processedTemplate = processedTemplate.replace(/{representanteName}/g, data.representanteName);
     processedTemplate = processedTemplate.replace(/{className}/g, data.className);
@@ -246,6 +275,12 @@ Los documentos del estudiante estarán disponibles para retiro en coordinación.
     processedTemplate = processedTemplate.replace(/{absences}/g, data.absences.toString());
     processedTemplate = processedTemplate.replace(/{teacherName}/g, data.teacherName);
     processedTemplate = processedTemplate.replace(/{institutionName}/g, data.institutionName);
+    
+    // Reemplazar nuevas variables opcionales
+    processedTemplate = processedTemplate.replace(/{startDate}/g, data.startDate || '');
+    processedTemplate = processedTemplate.replace(/{endDate}/g, data.endDate || '');
+    processedTemplate = processedTemplate.replace(/{absenceDetails}/g, data.absenceDetails || '');
+    processedTemplate = processedTemplate.replace(/{attendanceRate}/g, data.attendanceRate?.toString() || '0');
     
     return processedTemplate;
   };

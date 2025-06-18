@@ -24,12 +24,20 @@
       </div>
 
       <!-- Content -->
-      <div class="p-6 overflow-y-auto max-h-[calc(90vh-150px)]">
-        <!-- Preset Selector -->
+      <div class="p-6 overflow-y-auto max-h-[calc(90vh-150px)]">        <!-- Preset Selector -->
         <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-            Seleccionar tipo de mensaje:
-          </label>
+          <div class="flex items-center justify-between mb-3">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Seleccionar tipo de mensaje:
+            </label>
+            <button
+              @click="openTemplateManager"
+              class="flex items-center px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              <CogIcon class="w-4 h-4 mr-1" />
+              Gestionar Plantillas
+            </button>
+          </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <button
@@ -121,10 +129,17 @@
 
         <!-- Error State -->
         <div v-if="error" class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-200 p-4 rounded-lg mb-4">
-          {{ error }}
-        </div>
+          {{ error }}        </div>
       </div>
     </div>
+
+    <!-- Modal de gestión de plantillas -->
+    <WhatsAppTemplateManager
+      :is-open="showTemplateManager"
+      @close="closeTemplateManager"
+      @template-created="handleTemplateCreated"
+      @template-updated="handleTemplateUpdated"
+    />
   </div>
 </template>
 
@@ -134,10 +149,12 @@ import {
   XMarkIcon, 
   PhoneIcon, 
   DocumentDuplicateIcon, 
-  ClipboardDocumentIcon 
+  ClipboardDocumentIcon,
+  CogIcon
 } from '@heroicons/vue/24/outline';
 import { useWhatsAppPresets, type MessageData, type WhatsAppPreset } from '../composables/useWhatsAppPresets';
 import { useAuthStore } from '../stores/auth';
+import WhatsAppTemplateManager from './WhatsAppTemplateManager.vue';
 
 interface Props {
   isOpen: boolean;
@@ -157,6 +174,7 @@ const { presets, loading, error, loadPresets, processTemplate, copyToClipboard }
 
 const selectedPreset = ref<WhatsAppPreset | null>(null);
 const copying = ref<'phone' | 'message' | 'all' | null>(null);
+const showTemplateManager = ref(false);
 
 // Mensaje procesado con los datos del estudiante
 const processedMessage = computed(() => {
@@ -246,6 +264,29 @@ const closeModal = () => {
   selectedPreset.value = null;
   copying.value = null;
   emit('close');
+};
+
+// Gestión de plantillas
+const openTemplateManager = () => {
+  showTemplateManager.value = true;
+};
+
+const closeTemplateManager = () => {
+  showTemplateManager.value = false;
+};
+
+const handleTemplateCreated = (template: WhatsAppPreset) => {
+  // Recargar los presets para incluir la nueva plantilla
+  loadPresets();
+};
+
+const handleTemplateUpdated = (template: WhatsAppPreset) => {
+  // Recargar los presets para reflejar los cambios
+  loadPresets();
+  // Si la plantilla editada era la seleccionada, deseleccionarla para forzar recarga
+  if (selectedPreset.value?.id === template.id) {
+    selectedPreset.value = null;
+  }
 };
 
 // Cargar presets al abrir el modal

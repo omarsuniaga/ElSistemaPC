@@ -9,7 +9,6 @@ import {
   addDoc, 
   updateDoc, 
   deleteDoc,
-  where,
   orderBy 
 } from 'firebase/firestore'
 import { db } from '@/firebase'
@@ -61,13 +60,15 @@ export const useAdminTeachersStore = defineStore('adminTeachers', () => {
       const teachersRef = collection(db, 'MAESTROS')
       const q = query(teachersRef, orderBy('name'))
       const snapshot = await getDocs(q)
-      
-      teachers.value = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date()
-      })) as Teacher[]
+        teachers.value = snapshot.docs.map(doc => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt instanceof Date ? data.createdAt : new Date()),
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : (data.updatedAt instanceof Date ? data.updatedAt : new Date())
+        }
+      }) as Teacher[]
       
     } catch (err) {
       console.error('Error loading teachers:', err)

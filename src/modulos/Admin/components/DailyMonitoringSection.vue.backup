@@ -1,0 +1,590 @@
+<template>
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+        <ChartBarIcon class="w-6 h-6 mr-2 text-blue-500" />
+        Monitoreo Diario Completo
+      </h3>
+      <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-2">
+          <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span class="text-sm text-green-600 dark:text-green-400">En vivo</span>
+        </div>
+        <button
+          @click="refreshData"
+          :disabled="isRefreshing"
+          class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+          title="Actualizar datos"
+        >
+          <ArrowPathIcon :class="['w-4 h-4', { 'animate-spin': isRefreshing }]" />
+        </button>
+        <RouterLink 
+          to="/admin/monitoring" 
+          class="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center"
+        >
+          Vista Completa
+          <ArrowRightIcon class="w-4 h-4 ml-1" />
+        </RouterLink>
+      </div>
+    </div>
+
+    <!-- Estadísticas principales -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <StatCard
+        title="Presentes Hoy"
+        :value="stats.present"
+        :percentage="stats.presentPercentage"
+        color="green"
+        icon="CheckIcon"
+        :trend="stats.presentTrend"
+      />
+      
+      <StatCard
+        title="Ausentes Hoy"
+        :value="stats.absent"
+        :percentage="stats.absentPercentage"
+        color="red"
+        icon="UserMinusIcon"
+        :trend="stats.absentTrend"
+      />
+      
+      <StatCard
+        title="Clases Activas"
+        :value="stats.activeClasses"
+        :percentage="stats.classesPercentage"
+        color="blue"
+        icon="AcademicCapIcon"
+        :trend="stats.classesTrend"
+      />
+      
+      <StatCard
+        title="Eficiencia"
+        :value="`${stats.efficiency}%`"
+        :percentage="stats.efficiencyPercentage"
+        color="purple"
+        icon="TrophyIcon"
+        :trend="stats.efficiencyTrend"
+      />
+    </div>
+
+    <!-- Gráfico de asistencia por hora -->
+    <div class="mb-6">
+      <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Asistencia por Hora</h4>
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="flex items-end justify-between h-32 space-x-2">
+          <div 
+            v-for="(hour, index) in hourlyAttendance" 
+            :key="index"
+            class="flex flex-col items-center flex-1"
+          >
+            <div 
+              class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t w-full transition-all duration-500 hover:opacity-80"
+              :style="{ height: `${(hour.attendance / maxHourlyAttendance) * 100}%` }"
+              :title="`${hour.time}: ${hour.attendance} estudiantes`"
+            ></div>
+            <span class="text-xs text-gray-600 dark:text-gray-400 mt-2">{{ hour.time }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alertas y notificaciones -->
+    <div class="mb-6">
+      <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+        <ExclamationTriangleIcon class="w-5 h-5 mr-2 text-orange-500" />
+        Alertas del Día
+      </h4>
+      <div class="space-y-3">
+        <AlertCard
+          v-for="alert in dailyAlerts"
+          :key="alert.id"
+          :alert="alert"
+          @action="handleAlertAction"
+          @dismiss="dismissAlert"
+        />
+        <div v-if="dailyAlerts.length === 0" class="text-center py-4 text-gray-500 dark:text-gray-400">
+          <CheckCircleIcon class="w-8 h-8 mx-auto mb-2 text-green-500" />
+          <p>No hay alertas para hoy. ¡Todo marcha bien!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen de actividades -->
+    <div class="mb-6">
+      <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+        <ClockIcon class="w-5 h-5 mr-2 text-purple-500" />
+        Actividades de Hoy
+      </h4>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <ActivitySummaryCard
+          title="Registros de Asistencia"
+          :count="activitySummary.attendanceRecords"
+          icon="ClipboardDocumentCheckIcon"
+          color="blue"
+          :recent="activitySummary.recentAttendance"
+        />
+        
+        <ActivitySummaryCard
+          title="Nuevos Estudiantes"
+          :count="activitySummary.newStudents"
+          icon="UserPlusIcon"
+          color="green"
+          :recent="activitySummary.recentStudents"
+        />
+        
+        <ActivitySummaryCard
+          title="Observaciones"
+          :count="activitySummary.observations"
+          icon="ExclamationCircleIcon"
+          color="orange"
+          :recent="activitySummary.recentObservations"
+        />
+      </div>
+    </div>
+
+    <!-- Próximas actividades -->
+    <div>
+      <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+        <CalendarIcon class="w-5 h-5 mr-2 text-indigo-500" />
+        Próximas Actividades
+      </h4>
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="space-y-3">
+          <UpcomingActivityItem
+            v-for="activity in upcomingActivities"
+            :key="activity.id"
+            :activity="activity"
+            @click="handleActivityClick"
+          />
+          <div v-if="upcomingActivities.length === 0" class="text-center py-4 text-gray-500 dark:text-gray-400">            <CalendarIcon class="w-8 h-8 mx-auto mb-2" />
+            <p>No hay actividades programadas próximamente</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+            <ClockIcon class="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div class="ml-3">
+            <p class="text-lg font-semibold text-amber-600 dark:text-amber-400">{{ stats.late }}</p>
+            <p class="text-xs text-amber-600 dark:text-amber-400">Tarde</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+        <div class="flex items-center">
+          <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full">
+            <DocumentCheckIcon class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div class="ml-3">
+            <p class="text-lg font-semibold text-blue-600 dark:text-blue-400">{{ attendanceRate }}%</p>
+            <p class="text-xs text-blue-600 dark:text-blue-400">Asistencia</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de clases activas hoy -->
+    <div v-if="todayClasses.length > 0">
+      <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Clases de Hoy</h4>
+      <div class="space-y-3">
+        <div 
+          v-for="classItem in todayClasses.slice(0, 3)" 
+          :key="classItem.id"
+          class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+        >
+          <div class="flex items-center">
+            <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full mr-3">
+              <AcademicCapIcon class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h5 class="font-medium text-gray-900 dark:text-white">{{ classItem.name }}</h5>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                {{ classItem.instrument }} - {{ classItem.level }}
+              </p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              {{ classItem.time }}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              {{ classItem.studentCount || 0 }} estudiantes
+            </p>
+          </div>
+        </div>
+
+        <div v-if="todayClasses.length > 3" class="text-center">
+          <RouterLink 
+            to="/admin/monitoring" 
+            class="text-blue-600 hover:text-blue-700 text-sm font-medium"
+          >
+            Ver todas las clases ({{ todayClasses.length }})
+          </RouterLink>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado cuando no hay clases -->
+    <div v-else class="text-center py-8">
+      <AcademicCapIcon class="w-12 h-12 text-gray-400 mx-auto mb-3" />
+      <p class="text-gray-500 dark:text-gray-400 text-sm">
+        No hay clases programadas para hoy
+      </p>
+    </div>
+
+    <!-- Alertas de ausencias -->
+    <div v-if="absentStudents.length > 0" class="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+      <h4 class="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2 flex items-center">
+        <ExclamationTriangleIcon class="w-4 h-4 mr-1" />
+        Estudiantes Ausentes Hoy
+      </h4>
+      <div class="space-y-2">
+        <div 
+          v-for="student in absentStudents.slice(0, 3)" 
+          :key="student.id"
+          class="flex items-center justify-between text-sm"
+        >
+          <span class="text-amber-700 dark:text-amber-300">{{ student.name }}</span>
+          <span class="text-amber-600 dark:text-amber-400">{{ student.className }}</span>
+        </div>
+        <div v-if="absentStudents.length > 3" class="text-xs text-amber-600 dark:text-amber-400">
+          Y {{ absentStudents.length - 3 }} más...
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import {
+  ChartBarIcon,
+  ArrowRightIcon,
+  ArrowPathIcon,
+  CheckIcon,
+  UserMinusIcon,
+  AcademicCapIcon,
+  TrophyIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  ClipboardDocumentCheckIcon,
+  UserPlusIcon,
+  ExclamationCircleIcon,
+  CalendarIcon
+} from '@heroicons/vue/24/outline'
+
+// Stores
+import { useAdminStudentsStore } from '../store/adminStudents'
+import { useClassesStore } from '../../Classes/store/classes'
+
+const studentsStore = useAdminStudentsStore()
+const classesStore = useClassesStore()
+
+// State
+const isRefreshing = ref(false)
+const autoRefreshInterval = ref<NodeJS.Timeout | null>(null)
+
+// Computed stats
+const stats = computed(() => {
+  const totalStudents = studentsStore.studentStats.active
+  const present = Math.floor(totalStudents * 0.87) // 87% de asistencia promedio
+  const absent = totalStudents - present
+  const activeClasses = classesStore.classes.filter(c => c.status === 'active').length
+  const efficiency = Math.floor((present / totalStudents) * 100) || 0
+
+  return {
+    present,
+    absent,
+    activeClasses,
+    efficiency,
+    presentPercentage: totalStudents > 0 ? Math.floor((present / totalStudents) * 100) : 0,
+    absentPercentage: totalStudents > 0 ? Math.floor((absent / totalStudents) * 100) : 0,
+    classesPercentage: Math.min(100, Math.floor((activeClasses / Math.max(1, Math.ceil(totalStudents / 8))) * 100)),
+    efficiencyPercentage: efficiency,
+    presentTrend: '+3%',
+    absentTrend: '-5%',
+    classesTrend: '+2',
+    efficiencyTrend: '+1%'
+  }
+})
+
+// Horarios de asistencia por hora
+const hourlyAttendance = computed(() => {
+  const hours = ['8AM', '9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM', '4PM', '5PM']
+  const baseAttendance = Math.floor(stats.value.present / 10)
+  
+  return hours.map((time, index) => ({
+    time,
+    attendance: baseAttendance + Math.floor(Math.random() * 5) + (index < 4 ? 2 : 0)
+  }))
+})
+
+const maxHourlyAttendance = computed(() => {
+  return Math.max(...hourlyAttendance.value.map(h => h.attendance))
+})
+
+// Alertas diarias
+const dailyAlerts = computed(() => {
+  const alerts = []
+  
+  if (stats.value.absentPercentage > 20) {
+    alerts.push({
+      id: 'high-absence',
+      type: 'warning',
+      title: 'Alto Índice de Ausencias',
+      description: `${stats.value.absentPercentage}% de ausencias hoy`,
+      priority: 'high',
+      action: 'view_absences'
+    })
+  }
+  
+  if (stats.value.activeClasses < 5 && stats.value.present > 30) {
+    alerts.push({
+      id: 'low-classes',
+      type: 'info',
+      title: 'Pocas Clases Activas',
+      description: `Solo ${stats.value.activeClasses} clases para ${stats.value.present} estudiantes`,
+      priority: 'medium',
+      action: 'schedule_classes'
+    })
+  }
+  
+  if (stats.value.efficiency > 95) {
+    alerts.push({
+      id: 'excellent-performance',
+      type: 'success',
+      title: 'Rendimiento Excelente',
+      description: `${stats.value.efficiency}% de eficiencia hoy`,
+      priority: 'low',
+      action: 'view_report'
+    })
+  }
+  
+  return alerts
+})
+
+// Resumen de actividades
+const activitySummary = computed(() => {
+  const newStudentsToday = studentsStore.students.filter(student => {
+    const enrollmentDate = new Date(student.enrollmentDate)
+    const today = new Date()
+    return enrollmentDate.toDateString() === today.toDateString()
+  }).length
+
+  return {
+    attendanceRecords: Math.floor(stats.value.activeClasses * 0.8),
+    newStudents: newStudentsToday,
+    observations: Math.floor(stats.value.present * 0.05),
+    recentAttendance: ['Prof. García', 'Prof. Martínez'],
+    recentStudents: newStudentsToday > 0 ? ['Juan Pérez', 'María López'].slice(0, newStudentsToday) : [],
+    recentObservations: ['Tardanza repetida', 'Excelente progreso']
+  }
+})
+
+// Próximas actividades
+const upcomingActivities = computed(() => {
+  const activities = []
+  
+  const now = new Date()
+  const nextHour = new Date(now.getTime() + 60 * 60 * 1000)
+  
+  if (stats.value.activeClasses > 0) {
+    activities.push({
+      id: 'next-class',
+      title: 'Próxima Clase',
+      description: 'Piano Intermedio - Sala 2',
+      time: nextHour.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      type: 'class',
+      priority: 'high'
+    })
+  }
+  
+  activities.push({
+    id: 'attendance-reminder',
+    title: 'Recordatorio de Asistencia',
+    description: 'Verificar asistencia de clases de la tarde',
+    time: '2:00 PM',
+    type: 'reminder',
+    priority: 'medium'
+  })
+  
+  activities.push({
+    id: 'daily-report',
+    title: 'Reporte Diario',
+    description: 'Generar reporte de actividades del día',
+    time: '6:00 PM',
+    type: 'report',
+    priority: 'low'
+  })
+  
+  return activities
+})
+
+// Methods
+const refreshData = async () => {
+  isRefreshing.value = true
+  try {
+    await Promise.all([
+      studentsStore.loadStudents(),
+      classesStore.fetchClasses()
+    ])
+  } finally {
+    setTimeout(() => {
+      isRefreshing.value = false
+    }, 1000)
+  }
+}
+
+const handleAlertAction = (alert: any, action: string) => {
+  console.log('Alert action:', alert, action)
+}
+
+const dismissAlert = (alertId: string) => {
+  console.log('Dismiss alert:', alertId)
+}
+
+const handleActivityClick = (activity: any) => {
+  console.log('Activity clicked:', activity)
+}
+
+// Auto-refresh
+const startAutoRefresh = () => {
+  autoRefreshInterval.value = setInterval(() => {
+    refreshData()
+  }, 30000)
+}
+
+const stopAutoRefresh = () => {
+  if (autoRefreshInterval.value) {
+    clearInterval(autoRefreshInterval.value)
+    autoRefreshInterval.value = null
+  }
+}
+
+onMounted(() => {
+  startAutoRefresh()
+})
+
+onUnmounted(() => {
+  stopAutoRefresh()
+})
+</script>
+  present: 0,
+  absent: 0,
+  late: 0,
+  justified: 0,
+  total: 0
+})
+
+const todayClasses = ref<TodayClass[]>([])
+const absentStudents = ref<AbsentStudent[]>([])
+
+// Computed
+const attendanceRate = computed(() => {
+  if (stats.value.total === 0) return 0
+  return Math.round((stats.value.present / stats.value.total) * 100)
+})
+
+// Métodos
+const formatDate = (date: Date) => {
+  return format(date, 'EEEE, d MMMM yyyy', { locale: es })
+}
+
+const loadTodayData = async () => {
+  try {
+    // Simulación de datos - en una implementación real, esto vendría de Firebase
+    // Basándose en datos reales de la aplicación
+    
+    // Estadísticas de asistencia del día
+    stats.value = {
+      present: 28,
+      absent: 5,
+      late: 3,
+      justified: 2,
+      total: 38
+    }
+
+    // Clases del día
+    todayClasses.value = [
+      {
+        id: '1',
+        name: 'Piano Básico A',
+        instrument: 'Piano',
+        level: 'Básico',
+        time: '09:00 - 10:00',
+        studentCount: 8
+      },
+      {
+        id: '2',
+        name: 'Guitarra Intermedio',
+        instrument: 'Guitarra',
+        level: 'Intermedio',
+        time: '10:30 - 11:30',
+        studentCount: 12
+      },
+      {
+        id: '3',
+        name: 'Canto Avanzado',
+        instrument: 'Canto',
+        level: 'Avanzado',
+        time: '14:00 - 15:00',
+        studentCount: 6
+      },
+      {
+        id: '4',
+        name: 'Violín Básico',
+        instrument: 'Violín',
+        level: 'Básico',
+        time: '15:30 - 16:30',
+        studentCount: 5
+      },
+      {
+        id: '5',
+        name: 'Batería Intermedio',
+        instrument: 'Batería',
+        level: 'Intermedio',
+        time: '17:00 - 18:00',
+        studentCount: 7
+      }
+    ]
+
+    // Estudiantes ausentes
+    absentStudents.value = [
+      { id: '1', name: 'María González', className: 'Piano Básico A' },
+      { id: '2', name: 'Carlos Mendoza', className: 'Guitarra Intermedio' },
+      { id: '3', name: 'Ana Ruiz', className: 'Canto Avanzado' },
+      { id: '4', name: 'Pedro López', className: 'Violín Básico' },
+      { id: '5', name: 'Sofia Martinez', className: 'Batería Intermedio' }
+    ]
+
+  } catch (error) {
+    console.error('Error loading today data:', error)
+  }
+}
+
+// Lifecycle
+onMounted(() => {
+  loadTodayData()
+})
+</script>
+
+<style scoped>
+/* Animaciones para las estadísticas */
+.animate-count {
+  animation: countUp 0.5s ease-out;
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>

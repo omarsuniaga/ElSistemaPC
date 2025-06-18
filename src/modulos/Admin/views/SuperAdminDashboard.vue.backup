@@ -18,11 +18,10 @@
                 </p>
               </div>
             </div>
-            
-            <!-- Super Stats with Notifications -->
+              <!-- Super Stats -->
             <div class="flex items-center space-x-4">
               <!-- Real-time Notifications Bell -->
-              <div class="relative notifications-container">
+              <div class="relative">
                 <button 
                   @click="toggleNotifications"
                   class="relative p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
@@ -67,7 +66,7 @@
                             <div 
                               class="w-2 h-2 rounded-full"
                               :class="{
-                                'bg-red-500': notification.type === 'error',
+                                'bg-red-500': notification.type === 'critical',
                                 'bg-yellow-500': notification.type === 'warning',
                                 'bg-blue-500': notification.type === 'info',
                                 'bg-green-500': notification.type === 'success'
@@ -128,8 +127,7 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </div>    </div>
 
     <!-- Critical Alerts Banner -->
     <div v-if="criticalNotifications.length > 0" class="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
@@ -169,7 +167,7 @@
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          <!-- Super Action Cards -->
+          <!-- Crear Usuario -->
           <SuperActionCard
             title="Nuevo Usuario"
             description="Crear cualquier tipo de usuario"
@@ -178,6 +176,7 @@
             @click="handleCreateUser"
           />
           
+          <!-- Gestión Global -->
           <SuperActionCard
             title="Vista Global"
             description="Ver todo el sistema"
@@ -186,6 +185,7 @@
             @click="handleGlobalView"
           />
           
+          <!-- Reportes Avanzados -->
           <SuperActionCard
             title="Reportes Pro"
             description="Análisis avanzado"
@@ -193,7 +193,7 @@
             gradient="from-green-500 to-green-600"
             @click="handleAdvancedReports"
           />
-          
+            <!-- Configuración Sistema -->
           <SuperActionCard
             title="Config Sistema"
             description="Configuraciones avanzadas"
@@ -202,6 +202,7 @@
             @click="handleSystemConfig"
           />
           
+          <!-- Gestión de Temas -->
           <SuperActionCard
             title="Temas & Colores"
             description="Personalizar apariencia"
@@ -210,6 +211,24 @@
             @click="handleThemeManager"
           />
           
+          <!-- Respaldos -->
+          <SuperActionCard
+            title="Respaldos"
+            description="Backup y restore"
+            icon="CloudArrowUpIcon"
+            gradient="from-indigo-500 to-indigo-600"
+            @click="handleBackups"
+          />
+            <!-- Monitoreo -->
+          <SuperActionCard
+            title="Monitoreo"
+            description="Estado del sistema"
+            icon="EyeIcon"
+            gradient="from-red-500 to-red-600"
+            @click="handleMonitoring"
+          />
+          
+          <!-- Generador de PDFs -->
           <SuperActionCard
             title="PDFs Alumnos"
             description="Reportes y listados"
@@ -236,7 +255,8 @@
               </button>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">              <ManagementSuperCard
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <ManagementSuperCard
                 title="Estudiantes"
                 description="Gestionar todos los estudiantes"
                 icon="UsersIcon"
@@ -245,16 +265,7 @@
                 color="blue"
                 route="/admin/students"
                 @action="handleStudentsAction"
-              >
-                <template #extra-actions>
-                  <button
-                    @click="$router.push('/admin/students/advanced')"
-                    class="mt-2 w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white px-3 py-1.5 rounded-md text-xs font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-sm"
-                  >
-                    🚀 Gestión Avanzada
-                  </button>
-                </template>
-              </ManagementSuperCard>
+              />
               
               <ManagementSuperCard
                 title="Maestros"
@@ -293,8 +304,7 @@
               </div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-              <AnalyticsCard
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">              <AnalyticsCard
                 title="Asistencia Hoy"
                 :value="attendancePercentage"
                 :trend="attendanceTrend"
@@ -343,7 +353,7 @@
                 Ver Historial Completo
               </RouterLink>
             </div>
-            <RecentActivityFeed :activities="recentActivities" />
+              <RecentActivityFeed :activities="recentActivities" />
           </div>
 
           <!-- Daily Monitoring Section -->
@@ -358,6 +368,7 @@
               <CpuChipIcon class="w-5 h-5 mr-2 text-blue-500" />
               Estado del Sistema
             </h3>
+            <!-- Sistema simplificado -->
             <div class="bg-green-100 dark:bg-green-900/30 rounded-lg p-4">
               <div class="flex items-center">
                 <div class="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></div>
@@ -367,13 +378,29 @@
             </div>
           </div>
 
-          <!-- Recent Alerts -->
+          <!-- Pending Approvals -->
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-              <BellAlertIcon class="w-5 h-5 mr-2 text-red-500" />
-              Alertas Recientes
+              <ExclamationTriangleIcon class="w-5 h-5 mr-2 text-orange-500" />
+              Pendientes de Aprobación
             </h3>
-            <AlertsList :alerts="systemAlerts" @dismiss="handleDismissAlert" />
+            <!-- Lista simplificada de aprobaciones -->
+            <div class="space-y-3">
+              <div v-for="approval in pendingApprovals" :key="approval.id" class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div class="flex-1">
+import { ref, onMounted, onUnmounted, computed } from 'vue'gray-900 dark:text-white">{{ approval.title }}</h4>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">{{ approval.description }}</p>
+                </div>
+                <div class="flex space-x-2">
+                  <button @click="handleApprovalAction(approval, 'approve')" class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                    Aprobar
+                  </button>
+                  <button @click="handleApprovalAction(approval, 'reject')" class="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700">
+                    Rechazar
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Quick Access -->
@@ -387,12 +414,13 @@
                 title="Crear Clase Urgente"
                 icon="PlusCircleIcon"
                 color="red"
-                @click="handleUrgentClass"
-              />
-              <QuickAccessButton
-                title="Mensaje Global"
-                icon="MegaphoneIcon"
-                color="blue"
+                @click="  DocumentTextIcon,
+  CheckIcon,
+  UserMinusIcon,
+  DocumentCheckIcon,
+  ArrowRightIcon,
+  XMarkIcon
+} from '@heroicons/vue/24/outline'
                 @click="handleGlobalMessage"
               />
               <QuickAccessButton
@@ -409,16 +437,24 @@
               />
             </div>
           </div>
+
+          <!-- Recent Alerts -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+              <BellAlertIcon class="w-5 h-5 mr-2 text-red-500" />
+              Alertas Recientes
+            </h3>
+            <AlertsList :alerts="systemAlerts" @dismiss="handleDismissAlert" />
+          </div>
         </div>
       </div>
-    </div>
-
-    <!-- Modals -->
-    <CreateUserModal
-      v-if="showCreateUserModal"
-      @close="showCreateUserModal = false"
-      @created="handleUserCreated"
-    />
+    </div>    <!-- Modals -->
+// State
+const showCreateUserModal = ref(false)
+const showGlobalViewModal = ref(false)
+const showSystemConfigModal = ref(false)
+const showPDFGeneratorModal = ref(false)
+const showNotifications = ref(false)
     
     <GlobalViewModal
       v-if="showGlobalViewModal"
@@ -431,6 +467,7 @@
       @updated="handleSystemConfigUpdated"
     />
     
+    <!-- PDF Generator Modal -->
     <PDFGeneratorModal
       v-if="showPDFGeneratorModal"
       @close="showPDFGeneratorModal = false"
@@ -440,7 +477,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   CogIcon,
@@ -464,8 +501,13 @@ import {
   MegaphoneIcon,
   ArrowDownTrayIcon,
   SwatchIcon,
-  DocumentTextIcon,
-  XMarkIcon
+  SunIcon,
+  MoonIcon,
+  InformationCircleIcon,  DocumentTextIcon,
+  CheckIcon,
+  UserMinusIcon,
+  DocumentCheckIcon,
+  ArrowRightIcon
 } from '@heroicons/vue/24/outline'
 
 // Components
@@ -487,7 +529,6 @@ import { useAdminTeachersStore } from '../store/teachers'
 import { useClassesStore } from '../../Classes/store/classes'
 import { useAuthStore } from '../../../stores/auth'
 import { useTheme } from '../../../composables/useTheme'
-import { useRealTimeNotifications } from '../composables/useRealTimeNotifications'
 
 // Setup
 const router = useRouter()
@@ -507,13 +548,15 @@ const {
   dismissNotification,
   createNotification
 } = useRealTimeNotifications()
+const teachersStore = useAdminTeachersStore()
+const classesStore = useClassesStore()
+const { isDarkMode, toggleTheme: switchTheme } = useTheme()
 
 // State
 const showCreateUserModal = ref(false)
 const showGlobalViewModal = ref(false)
 const showSystemConfigModal = ref(false)
 const showPDFGeneratorModal = ref(false)
-const showNotifications = ref(false)
 
 // Computed
 const currentDate = computed(() => {
@@ -530,18 +573,22 @@ const stats = computed(() => {
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   
+  // Calcular estudiantes recientes (último mes)
   const recentStudents = studentsStore.students.filter(student => 
     new Date(student.enrollmentDate) >= startOfMonth
   ).length
 
+  // Calcular maestros recientes (último mes)
   const recentTeachers = teachersStore.teachers.filter(teacher => 
-    new Date(teacher.createdAt || new Date()) >= startOfMonth
+    new Date(teacher.createdAt) >= startOfMonth
   ).length
 
+  // Calcular clases recientes (último mes)
   const recentClasses = classesStore.classes.filter(classItem => 
     new Date(classItem.createdAt || new Date()) >= startOfMonth
   ).length
 
+  // Calcular usuarios activos (estudiantes + maestros activos)
   const activeUsers = studentStats.active + teachersStore.activeTeachers
 
   return {
@@ -555,7 +602,7 @@ const stats = computed(() => {
   }
 })
 
-// Analytics computed properties
+// Computed para las tarjetas de análisis
 const activeClassesCount = computed(() => {
   return classesStore.classes.filter(c => c.status === 'active').length
 })
@@ -563,57 +610,85 @@ const activeClassesCount = computed(() => {
 const attendancePercentage = computed(() => {
   const totalStudents = studentsStore.studentStats.active
   if (totalStudents === 0) return '0%'
-  const attendanceRate = Math.floor((totalStudents * 0.87))
+  // Simulación de asistencia basada en estudiantes activos
+  const attendanceRate = Math.floor((totalStudents * 0.87)) // 87% promedio
   return `${Math.floor((attendanceRate / totalStudents) * 100)}%`
 })
 
-const attendanceTrend = computed(() => '+5%')
-const classesTrend = computed(() => `+${stats.value.recentClasses}`)
-const observationsTrend = computed(() => '+1')
-const performanceTrend = computed(() => '+3%')
-
-const currentObservations = computed(() => {
-  const totalStudents = studentsStore.studentStats.total
-  return Math.floor(totalStudents * 0.03)
+const attendanceTrend = computed(() => {
+  const newStudents = studentsStore.studentStats.newThisMonth
+  return newStudents > 5 ? '+5%' : '+2%'
 })
 
-const performancePercentage = computed(() => '94%')
+const classesTrend = computed(() => {
+  const recentClasses = stats.value.recentClasses
+  return recentClasses > 0 ? `+${recentClasses}` : '0'
+})
 
-// Analytics data
+const currentObservations = computed(() => {
+  // Simulación de observaciones basada en estudiantes
+  const totalStudents = studentsStore.studentStats.total
+  return Math.floor(totalStudents * 0.03) // 3% promedio de observaciones
+})
+
+const observationsTrend = computed(() => {
+  const pendingStudents = studentsStore.studentStats.pending
+  return pendingStudents > 3 ? '+1' : '-1'
+})
+
+const performancePercentage = computed(() => {
+  const activeStudents = studentsStore.studentStats.active
+  if (activeStudents === 0) return '0%'
+  // Simulación de rendimiento basado en estudiantes activos
+  return '94%' // Valor optimista basado en estudiantes activos
+})
+
+const performanceTrend = computed(() => {
+  const newStudents = studentsStore.studentStats.newThisMonth
+  return newStudents > 8 ? '+3%' : '+1%'
+})
+
+// Analytics data basado en datos reales
 const attendanceData = computed(() => {
+  // Simulación de datos de asistencia basados en clases activas
   const totalClasses = classesStore.classes.length
-  const baseAttendance = Math.floor(totalClasses * 0.85)
+  const baseAttendance = Math.floor(totalClasses * 0.85) // 85% promedio
   return Array.from({ length: 7 }, (_, i) => 
     Math.max(baseAttendance + Math.floor(Math.random() * 10 - 5), totalClasses * 0.7)
   )
 })
 
 const classesData = computed(() => {
-  const activeClasses = activeClassesCount.value
+  // Datos de clases activas durante la semana
+  const activeClasses = classesStore.classes.filter(c => c.status === 'active').length
   return Array.from({ length: 7 }, (_, i) => 
     Math.max(activeClasses + Math.floor(Math.random() * 6 - 3), Math.floor(activeClasses * 0.8))
   )
 })
 
 const observationsData = computed(() => {
-  const avgObservations = Math.floor(studentsStore.studentStats.total * 0.05)
+  // Datos basados en observaciones reales (simplificado)
+  const totalStudents = studentsStore.studentStats.total
+  const avgObservations = Math.floor(totalStudents * 0.05) // 5% promedio
   return Array.from({ length: 7 }, (_, i) => 
     Math.max(avgObservations + Math.floor(Math.random() * 4 - 2), 0)
   )
 })
 
 const performanceData = computed(() => {
+  // Datos de rendimiento basados en estudiantes activos
   const activeStudents = studentsStore.studentStats.active
-  const basePerformance = Math.floor(activeStudents * 0.90)
+  const basePerformance = Math.floor(activeStudents * 0.90) // 90% promedio
   return Array.from({ length: 7 }, (_, i) => 
     Math.max(basePerformance + Math.floor(Math.random() * 10 - 5), activeStudents * 0.8)
   )
 })
 
-// Recent activities
+// Actividad reciente basada en datos reales
 const recentActivities = computed(() => {
   const activities = []
   
+  // Actividades de estudiantes recientes
   const recentStudents = studentsStore.students
     .filter(student => {
       const enrollmentDate = new Date(student.enrollmentDate)
@@ -634,13 +709,92 @@ const recentActivities = computed(() => {
     })
   })
 
-  return activities.slice(0, 5)
+  // Actividades de clases recientes
+  const recentClasses = classesStore.classes
+    .filter(classItem => {
+      const createdDate = new Date(classItem.createdAt || new Date())
+      const hourAgo = new Date(Date.now() - 60 * 60 * 1000)
+      return createdDate >= hourAgo
+    })
+    .slice(0, 2)
+
+  recentClasses.forEach((classItem, index) => {
+    activities.push({
+      id: `class-${classItem.id}`,
+      type: 'class_created',
+      title: 'Nueva clase creada',
+      description: `Clase de ${classItem.instrument} ${classItem.level} programada`,
+      time: `${(index + 1) * 15} min`,
+      icon: 'AcademicCapIcon',
+      color: 'green'
+    })
+  })
+
+  // Actividad de asistencia (simulada pero realista)
+  if (teachersStore.activeTeachers > 0) {
+    activities.push({
+      id: 'attendance-recent',
+      type: 'attendance_taken',
+      title: 'Asistencia registrada',
+      description: 'Profesores registraron asistencia',
+      time: '1 hora',
+      icon: 'ClipboardDocumentCheckIcon',
+      color: 'purple'
+    })
+  }
+
+  return activities.slice(0, 5) // Máximo 5 actividades
 })
 
-// System alerts
+// Aprobaciones pendientes basadas en datos reales
+const pendingApprovals = computed(() => {
+  const approvals = []
+  
+  // Estudiantes pendientes de aprobación
+  const pendingStudents = studentsStore.students.filter(student => student.status === 'pending')
+  pendingStudents.slice(0, 3).forEach(student => {
+    approvals.push({
+      id: `student-${student.id}`,
+      type: 'student_approval',
+      title: 'Aprobación de Estudiante',
+      description: `${student.name} requiere aprobación`,
+      priority: 'high'
+    })
+  })
+
+  // Maestros inactivos que podrían necesitar aprobación
+  const inactiveTeachers = teachersStore.teachers.filter(teacher => teacher.status === 'inactive')
+  inactiveTeachers.slice(0, 2).forEach(teacher => {
+    approvals.push({
+      id: `teacher-${teacher.id}`,
+      type: 'teacher_activation',
+      title: 'Activación de Maestro',
+      description: `${teacher.name} solicita reactivación`,
+      priority: 'medium'
+    })
+  })
+
+  // Si no hay aprobaciones reales, mostrar ejemplos basados en el contexto
+  if (approvals.length === 0) {
+    if (studentsStore.studentStats.total > 0) {
+      approvals.push({
+        id: 'system-maintenance',
+        type: 'system_maintenance',
+        title: 'Mantenimiento del Sistema',
+        description: 'Revisión programada del sistema',
+        priority: 'low'
+      })
+    }
+  }
+
+  return approvals.slice(0, 4) // Máximo 4 aprobaciones
+})
+
+// Alertas del sistema basadas en datos reales
 const systemAlerts = computed(() => {
   const alerts = []
   
+  // Alerta si hay muchos estudiantes pendientes
   const pendingCount = studentsStore.studentStats.pending
   if (pendingCount > 5) {
     alerts.push({
@@ -651,7 +805,31 @@ const systemAlerts = computed(() => {
       time: '1 hora'
     })
   }
+  // Alerta si hay pocas clases activas
+  const currentActiveClasses = activeClassesCount.value
+  if (currentActiveClasses < 5 && studentsStore.studentStats.active > 20) {
+    alerts.push({
+      id: 'low-classes',
+      type: 'info' as const,
+      title: 'Pocas Clases Activas',
+      description: `Solo ${currentActiveClasses} clases activas para ${studentsStore.studentStats.active} estudiantes`,
+      time: '2 horas'
+    })
+  }
 
+  // Alerta si no hay maestros activos suficientes
+  const activeTeachersCount = teachersStore.activeTeachers
+  if (activeTeachersCount < 3 && studentsStore.studentStats.active > 15) {
+    alerts.push({
+      id: 'few-teachers',
+      type: 'warning' as const,
+      title: 'Pocos Maestros Activos',
+      description: `Solo ${activeTeachersCount} maestros activos disponibles`,
+      time: '3 horas'
+    })
+  }
+
+  // Alerta informativa sobre el crecimiento
   const newStudentsThisMonth = studentsStore.studentStats.newThisMonth
   if (newStudentsThisMonth > 10) {
     alerts.push({
@@ -663,12 +841,13 @@ const systemAlerts = computed(() => {
     })
   }
 
-  return alerts.slice(0, 3)
+  return alerts.slice(0, 3) // Máximo 3 alertas
 })
 
 // Methods
 const loadData = async () => {
   try {
+    // Cargar datos de todos los stores
     await Promise.all([
       studentsStore.loadStudents(),
       teachersStore.loadTeachers(),
@@ -702,12 +881,124 @@ const handleSystemConfig = () => {
   showSystemConfigModal.value = true
 }
 
-const handleThemeManager = () => {
-  switchTheme()
-}
-
 const handlePDFGenerator = () => {
   showPDFGeneratorModal.value = true
+const handleSystemConfigUpdated = (config: any) => {
+  console.log('System config updated:', config)
+}
+
+// Lifecycle
+onMounted(async () => {
+  await loadData()
+  
+  // Generate demo notifications after data is loaded
+  setTimeout(() => {
+    generateDemoNotifications()
+  }, 2000)
+})
+
+// Close notifications when clicking outside
+const handleClickOutside = (event: Event) => {
+  const target = event.target as Element
+  if (showNotifications.value && !target.closest('.notifications-container')) {
+    showNotifications.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
+const markAllAsRead = async () => {
+  try {
+    await Promise.all(
+      recentNotifications.value
+        .filter(n => !n.read)
+        .map(n => markAsRead(n.id))
+    )
+  } catch (error) {
+    console.error('Error marking notifications as read:', error)
+  }
+}
+
+const goToNotifications = () => {
+  showNotifications.value = false
+  router.push('/admin/notifications')
+}
+
+const formatTimeAgo = (timestamp: any) => {
+  const now = new Date()
+  const time = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp)
+  const diff = now.getTime() - time.getTime()
+  
+  const minutes = Math.floor(diff / (1000 * 60))
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  
+  if (minutes < 1) return 'Ahora mismo'
+  if (minutes < 60) return `${minutes} min`
+  if (hours < 24) return `${hours} h`
+  return `${days} días`
+}
+
+// Auto-generate notifications for demo
+const generateDemoNotifications = async () => {
+  try {
+    // Critical notification for pending students
+    const pendingCount = studentsStore.studentStats.pending
+    if (pendingCount > 3) {
+      await createNotification({
+        title: 'Estudiantes Pendientes',
+        message: `${pendingCount} estudiantes requieren aprobación urgente`,
+        type: 'critical'
+      })
+    }
+    
+    // Info notification for new features
+    if (stats.value.totalStudents > 50) {
+      await createNotification({
+        title: 'Sistema Optimizado',
+        message: 'Nuevas funciones de análisis disponibles para academias grandes',
+        type: 'info'
+      })
+    }
+    
+    // Success notification for achievements
+    const activeRate = (studentsStore.studentStats.active / studentsStore.studentStats.total) * 100
+    if (activeRate > 85) {
+      await createNotification({
+        title: 'Excelente Retención',
+        message: `${activeRate.toFixed(1)}% de estudiantes activos - ¡Felicitaciones!`,
+        type: 'success'
+      })
+    }
+    
+    // Warning for system capacity
+    if (stats.value.totalClasses < 10 && studentsStore.studentStats.active > 30) {
+      await createNotification({
+        title: 'Capacidad de Clases',
+        message: 'Considera agregar más clases para la demanda actual',
+        type: 'warning'
+      })
+    }
+  } catch (error) {
+    console.error('Error generating demo notifications:', error)
+  }
+}onst handleBackups = () => {
+  router.push('/admin/system/backups')
+}
+
+const handleMonitoring = () => {
+  router.push('/admin/system/monitoring')
+}
+
+const handlePDFGeneration = (options: any) => {
+  console.log('Generating PDF with options:', options)
+  // This will be implemented in the modal component
 }
 
 // Management Action Handlers
@@ -720,7 +1011,7 @@ const handleStudentsAction = (action: string) => {
       router.push('/admin/students/create')
       break
     case 'export':
-      console.log('Export students')
+      // Handle export logic
       break
   }
 }
@@ -759,10 +1050,12 @@ const handleUrgentClass = () => {
 }
 
 const handleGlobalMessage = () => {
+  // Handle global message logic
   console.log('Send global message')
 }
 
 const handleExportData = () => {
+  // Handle export logic
   console.log('Export data')
 }
 
@@ -770,133 +1063,39 @@ const handleNotificationConfig = () => {
   router.push('/admin/notifications/config')
 }
 
+const handleThemeManager = () => {
+  console.log('Theme manager - simplified version')
+  // Simple theme toggle instead of complex manager
+  toggleAppTheme()
+}
+
+const toggleAppTheme = () => {
+  switchTheme()
+}
+
 // Other Handlers
-const handleDismissAlert = (alertId: string | number) => {
+const handleApprovalAction = (approval: any, action: string) => {
+  console.log('Approval action:', approval, action)
+}
+
+const handleDismissAlert = (alertId: number) => {
+  // Como systemAlerts es computed, no podemos modificarlo directamente
+  // En una implementación real, esto actualizaría el estado base que genera el computed
   console.log('Alert dismissed:', alertId)
 }
 
 const handleUserCreated = (user: any) => {
   console.log('User created:', user)
-  loadData()
+  loadData() // Recargar datos después de crear usuario
 }
 
 const handleSystemConfigUpdated = (config: any) => {
   console.log('System config updated:', config)
 }
 
-const handlePDFGeneration = (options: any) => {
-  console.log('Generating PDF with options:', options)
-}
-
-// Notification Methods
-const toggleNotifications = () => {
-  showNotifications.value = !showNotifications.value
-}
-
-const markAllAsRead = async () => {
-  try {
-    await Promise.all(
-      recentNotifications.value
-        .filter(n => !n.read)
-        .map(n => markAsRead(n.id))
-    )
-  } catch (error) {
-    console.error('Error marking notifications as read:', error)
-  }
-}
-
-const goToNotifications = () => {
-  showNotifications.value = false
-  router.push('/admin/notifications')
-}
-
-const formatTimeAgo = (timestamp: any) => {
-  const now = new Date()
-  const time = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp)
-  const diff = now.getTime() - time.getTime()
-  
-  const minutes = Math.floor(diff / (1000 * 60))
-  const hours = Math.floor(diff / (1000 * 60 * 60))
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  
-  if (minutes < 1) return 'Ahora mismo'
-  if (minutes < 60) return `${minutes} min`
-  if (hours < 24) return `${hours} h`
-  return `${days} días`
-}
-
-// Auto-generate notifications for demo
-const generateDemoNotifications = async () => {
-  try {
-    const pendingCount = studentsStore.studentStats.pending
-    if (pendingCount > 3) {      await createNotification({
-        title: 'Estudiantes Pendientes',
-        message: `${pendingCount} estudiantes requieren aprobación urgente`,
-        type: 'error',
-        source: 'students',
-        priority: 'high',
-        isRead: false
-      })
-    }
-    
-    if (stats.value.totalStudents > 50) {      await createNotification({
-        title: 'Sistema Optimizado',
-        message: 'Nuevas funciones de análisis disponibles para academias grandes',
-        type: 'info',
-        source: 'system',
-        priority: 'medium',
-        isRead: false
-      })
-    }
-    
-    const activeRate = (studentsStore.studentStats.active / studentsStore.studentStats.total) * 100
-    if (activeRate > 85) {      await createNotification({
-        title: 'Excelente Retención',
-        message: `${activeRate.toFixed(1)}% de estudiantes activos - ¡Felicitaciones!`,
-        type: 'success',
-        source: 'system',
-        priority: 'low',
-        isRead: false
-      })
-    }
-    
-    if (stats.value.totalClasses < 10 && studentsStore.studentStats.active > 30) {
-      await createNotification({
-        title: 'Capacidad de Clases',
-        message: 'Considera agregar más clases para la demanda actual',
-        type: 'warning',
-        source: 'classes',
-        priority: 'medium',
-        isRead: false
-      })
-    }
-  } catch (error) {
-    console.error('Error generating demo notifications:', error)
-  }
-}
-
-// Close notifications when clicking outside
-const handleClickOutside = (event: Event) => {
-  const target = event.target as Element
-  if (showNotifications.value && !target.closest('.notifications-container')) {
-    showNotifications.value = false
-  }
-}
-
 // Lifecycle
-onMounted(async () => {
-  await loadData()
-  
-  // Generate demo notifications after data is loaded
-  setTimeout(() => {
-    generateDemoNotifications()
-  }, 2000)
-
-  document.addEventListener('click', handleClickOutside)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
+onMounted(() => {
+  loadData()
 })
 </script>
 
@@ -913,9 +1112,5 @@ onUnmounted(() => {
   50% {
     opacity: .5;
   }
-}
-
-.notifications-container {
-  position: relative;
 }
 </style>
