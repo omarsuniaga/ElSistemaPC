@@ -58,6 +58,18 @@
               </option>
             </select>
           </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Maestro Responsable
+            </label>
+            <input
+              v-model="form.maestroResponsableNombre"
+              type="text"
+              disabled
+              class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 focus:outline-none"
+            >
+          </div>
         </div>
 
         <!-- Description -->
@@ -217,23 +229,25 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useMontaje } from '../composables/useMontaje'
-import type { PlanMontaje, Obra } from '../types'
+import type { PlanAccion, Obra } from '../types'
+import { useAuthStore } from '@/stores/auth';
 
 interface Props {
   isOpen: boolean
-  plan?: PlanMontaje | null
+  plan?: PlanAccion | null
   availableWorks: Obra[]
 }
 
 interface Emits {
   (e: 'close'): void
-  (e: 'saved', plan: PlanMontaje): void
+  (e: 'saved', plan: PlanAccion): void
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const { createPlan, updatePlan } = useMontaje()
+const authStore = useAuthStore();
 
 const isSubmitting = ref(false)
 
@@ -245,6 +259,8 @@ const form = ref({
   obraId: '',
   fechaInicio: '',
   fechaFin: '',
+  maestroResponsableId: authStore.user?.uid || '',
+  maestroResponsableNombre: authStore.user?.displayName || '',
   objetivos: [''],
   fases: [{
     nombre: '',
@@ -263,6 +279,8 @@ watch(() => props.plan, (newPlan) => {
       obraId: newPlan.obraId,
       fechaInicio: newPlan.fechaInicio.split('T')[0],
       fechaFin: newPlan.fechaFin.split('T')[0],
+      maestroResponsableId: newPlan.maestroResponsableId || authStore.user?.uid || '',
+      maestroResponsableNombre: newPlan.maestroResponsableNombre || authStore.user?.displayName || '',
       objetivos: newPlan.objetivos.length > 0 ? [...newPlan.objetivos] : [''],
       fases: newPlan.fases.length > 0 ? [...newPlan.fases] : [{
         nombre: '',
@@ -315,11 +333,13 @@ const handleSubmit = async () => {
       obraId: form.value.obraId,
       fechaInicio: form.value.fechaInicio,
       fechaFin: form.value.fechaFin,
+      maestroResponsableId: form.value.maestroResponsableId,
+      maestroResponsableNombre: form.value.maestroResponsableNombre,
       objetivos: form.value.objetivos.filter(obj => obj.trim() !== ''),
       fases: form.value.fases.filter(fase => fase.nombre.trim() !== '')
     }
 
-    let savedPlan: PlanMontaje
+    let savedPlan: PlanAccion
 
     if (isEditing.value && props.plan) {
       savedPlan = await updatePlan(props.plan.id, planData)
@@ -345,6 +365,8 @@ const closeModal = () => {
     obraId: '',
     fechaInicio: '',
     fechaFin: '',
+    maestroResponsableId: authStore.user?.uid || '',
+    maestroResponsableNombre: authStore.user?.displayName || '',
     objetivos: [''],
     fases: [{
       nombre: '',

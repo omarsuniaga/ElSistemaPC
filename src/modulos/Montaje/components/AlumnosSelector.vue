@@ -96,9 +96,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, PropType, watch, onMounted } from 'vue';
-import { useAttendanceStore } from '@/modulos/Attendance/store/attendance';
-import { useStudentStore } from '@/modulos/Students/store/student';
+import { ref, computed, watch, onMounted } from "vue";
+import { useAttendanceStore } from "@/modulos/Attendance/store/attendance";
+import { useStudentsStore } from "@/modulos/Students/store/students";
 
 // Tipo para los alumnos
 interface Alumno {
@@ -117,7 +117,7 @@ const props = defineProps({
   },
   title: {
     type: String,
-    default: 'Alumnos'
+    default: 'Selección de Alumnos'
   },
   filaId: {
     type: String,
@@ -133,15 +133,15 @@ const props = defineProps({
   },
   alumnosList: {
     type: Array as PropType<Alumno[]>,
-    default: null
+    default: () => []
   },
   withAttendanceFilter: {
     type: Boolean,
     default: false
   },
   fechaSesion: {
-    type: Date,
-    default: () => new Date()
+    type: [Date, String],
+    default: () => new Date().toISOString().split('T')[0]
   },
   hideCounter: {
     type: Boolean,
@@ -159,7 +159,7 @@ const isLoading = ref(false);
 const isLoadingAttendance = ref(false);
 
 // Stores
-const studentStore = useStudentStore();
+const studentStore = useStudentsStore();
 const attendanceStore = useAttendanceStore();
 
 // Alumnos filtrados por búsqueda
@@ -185,26 +185,34 @@ const cargarAlumnos = async () => {
   try {
     isLoading.value = true;
     
+    // Primero cargar todos los estudiantes
+    await studentStore.fetchStudents();
+    
     if (props.filaId) {
-      // Cargar alumnos de una fila específica
-      const alumnosFila = await studentStore.getStudentsByRow(props.filaId);
-      alumnos.value = alumnosFila.map(a => ({
+      // Para filas específicas, necesitaríamos integración con el módulo de clases
+      // Por ahora, cargamos todos los estudiantes activos
+      const estudiantesActivos = studentStore.activeStudents;
+      alumnos.value = estudiantesActivos.map(a => ({
         id: a.id,
         nombre: `${a.nombre} ${a.apellido}`,
         instrumento: a.instrumento,
-        nivel: a.nivel,
+        nivel: a.clase,
         filaId: props.filaId
       }));
     } 
     else if (props.claseId) {
-      // Cargar alumnos de una clase específica
-      const alumnosClase = await studentStore.getStudentsByClass(props.claseId);
+      // Cargar alumnos de una clase específica usando el campo grupo
+      const estudiantesActivos = studentStore.activeStudents;
+      const alumnosClase = estudiantesActivos.filter(a => 
+        a.grupo && Array.isArray(a.grupo) && a.grupo.includes(props.claseId)
+      );
+      
       alumnos.value = alumnosClase.map(a => ({
         id: a.id,
         nombre: `${a.nombre} ${a.apellido}`,
         instrumento: a.instrumento,
-        nivel: a.nivel,
-        filaId: a.filaId
+        nivel: a.clase,
+        filaId: a.classId
       }));
       
       // Si hay un instrumentoId, filtrar por instrumento

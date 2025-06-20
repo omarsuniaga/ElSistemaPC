@@ -246,23 +246,25 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useMontaje } from '../composables/useMontaje'
-import type { FraseMusical, Obra } from '../types'
+import { useMontajeStore } from '../store/montaje'
+import { Timestamp } from 'firebase/firestore'
+import type { FraseMontaje, Obra } from '../types'
 
 interface Props {
   isOpen: boolean
-  phrase?: FraseMusical | null
+  phrase?: FraseMontaje | null
   availableWorks: Obra[]
 }
 
 interface Emits {
   (e: 'close'): void
-  (e: 'saved', phrase: FraseMusical): void
+  (e: 'saved', phrase: FraseMontaje): void
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const { createPhrase, updatePhrase } = useMontaje()
+const montajeStore = useMontajeStore()
 
 const isSubmitting = ref(false)
 
@@ -300,14 +302,14 @@ watch(() => props.phrase, (newPhrase) => {
       nombre: newPhrase.nombre,
       obraId: newPhrase.obraId,
       descripcion: newPhrase.descripcion || '',
-      compases: newPhrase.compases || '',
-      tempo: newPhrase.tempo || '',
-      tonalidad: newPhrase.tonalidad || '',
+      compases: `${newPhrase.compasInicio}-${newPhrase.compasFinalizacion}`,
+      tempo: '',
+      tonalidad: '',
       dificultad: newPhrase.dificultad,
-      prioridad: newPhrase.prioridad,
-      aspectosTecnicos: [...newPhrase.aspectosTecnicos],
-      objetivosEstudio: newPhrase.objetivosEstudio.length > 0 ? [...newPhrase.objetivosEstudio] : [''],
-      notas: newPhrase.notas || ''
+      prioridad: 'media',
+      aspectosTecnicos: [...newPhrase.objetivosTecnicos],
+      objetivosEstudio: newPhrase.objetivosMusicales.length > 0 ? [...newPhrase.objetivosMusicales] : [''],
+      notas: ''
     }
   }
 }, { immediate: true })
@@ -325,27 +327,46 @@ const removeObjective = (index: number) => {
 const handleSubmit = async () => {
   isSubmitting.value = true
   
-  try {
-    const phraseData = {
+  try {    const phraseData = {
       nombre: form.value.nombre,
       obraId: form.value.obraId,
+      planAccionId: 'default-plan', // TODO: Get from context
       descripcion: form.value.descripcion,
-      compases: form.value.compases,
-      tempo: form.value.tempo,
-      tonalidad: form.value.tonalidad,
+      compasInicio: parseInt(form.value.compases.split('-')[0]) || 1,
+      compasFinalizacion: parseInt(form.value.compases.split('-')[1]) || parseInt(form.value.compases.split('-')[0]) || 1,
       dificultad: form.value.dificultad as any,
-      prioridad: form.value.prioridad as any,
-      aspectosTecnicos: form.value.aspectosTecnicos,
-      objetivosEstudio: form.value.objetivosEstudio.filter(obj => obj.trim() !== ''),
-      notas: form.value.notas
+      objetivosTecnicos: form.value.aspectosTecnicos,
+      objetivosMusicales: form.value.objetivosEstudio.filter(obj => obj.trim() !== ''),
+      metadatos: {
+        totalCompases: 0,
+        estadosCompases: {},
+        progresoPorcentaje: 0,
+        horasEnsayoAcumuladas: 0,
+        dificultadesIdentificadas: [],
+        logrosAlcanzados: []
+      }
     }
 
-    let savedPhrase: FraseMusical
+    let savedPhrase: FraseMontaje
 
     if (isEditing.value && props.phrase) {
-      savedPhrase = await updatePhrase(props.phrase.id, phraseData)
+      // TODO: Implement updatePhrase when available
+      console.log('Updating phrase:', phraseData)
+      savedPhrase = { ...props.phrase, ...phraseData }
     } else {
-      savedPhrase = await createPhrase(phraseData)
+      const fraseId = await montajeStore.crearFrase(phraseData)
+      // Create the saved phrase object with the returned ID
+      savedPhrase = {
+        id: fraseId,
+        ...phraseData,        auditoria: {
+          creadoPor: 'current-user-id', // TODO: Get from auth
+          fechaCreacion: Timestamp.now(),
+          modificadoPor: 'current-user-id',
+          fechaModificacion: Timestamp.now(),
+          version: 1,
+          activo: true
+        }
+      }
     }
 
     emit('saved', savedPhrase)

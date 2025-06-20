@@ -14,6 +14,7 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from '@/firebase';
+import { TipoInstrumento, EstadoCompass } from '../types';
 import type { 
   Obra,
   PlanAccion,
@@ -39,6 +40,16 @@ class MontajeService {
 
   private cache = new Map<string, { data: any; expiry: number }>();
   private readonly cacheExpiry = 5 * 60 * 1000; // 5 minutos
+
+  /**
+   * Crear objeto de instrumentos con estado por defecto
+   */
+  private crearEstadoInstrumentos = (estadoDefecto: EstadoCompass = EstadoCompass.SIN_TRABAJAR): Record<TipoInstrumento, EstadoCompass> => {
+    return Object.values(TipoInstrumento).reduce((acc, instrumento) => {
+      acc[instrumento] = estadoDefecto;
+      return acc;
+    }, {} as Record<TipoInstrumento, EstadoCompass>);
+  };
 
   // ================== GESTIÓN DE OBRAS ==================
   /**
@@ -548,13 +559,35 @@ class MontajeService {
     }
   }
 
-  // ================== EVALUACIONES CONTINUAS ==================
   /**
-   * Obtener evaluaciones continuas de una obra
+   * Actualizar frase existente
    */
-  async obtenerEvaluacionesContinuas(obraId: string): Promise<EvaluacionContinua[]> {
+  async actualizarFrase(id: string, datos: Partial<FraseMontaje>): Promise<void> {
     try {
-      const cacheKey = `eval_continuas_${obraId}`;
+      const docRef = doc(db, this.frasesCollection, id);
+      await updateDoc(docRef, {
+        ...datos,
+        'auditoria.fechaModificacion': Timestamp.now()
+      });
+      
+      // Invalidar caché relacionado
+      if (datos.planAccionId) {
+        this.invalidarCacheFrases(datos.planAccionId);
+      }
+      
+      console.log('✅ Frase actualizada:', id);
+    } catch (error) {
+      console.error('Error actualizando frase:', error);
+      throw new Error('No se pudo actualizar la frase');
+    }
+  }
+
+  /**
+   * Obtener estados de compases de una obra
+   */
+  async obtenerEstadosCompases(obraId: string): Promise<Array<[number, EstadoCompassDetalle]>> {
+    try {
+      const cacheKey = `estados_compases_${obraId}`;
       const cached = this.cache.get(cacheKey);
       
       if (cached && Date.now() < cached.expiry) {
@@ -562,21 +595,33 @@ class MontajeService {
       }
 
       const q = query(
-        collection(db, this.evaluacionesCollection),
-        where('obraId', '==', obraId),
-        orderBy('fecha', 'desc')
+        collection(db, 'estados_compases'),
+        where('obraId', '==', obraId)
       );
       
       const snapshot = await getDocs(q);
-      const evaluaciones = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EvaluacionContinua));
+      const estados: Array<[number, EstadoCompassDetalle]> = [];      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        estados.push([data.compas, {
+          compas: data.compas,
+          estado: data.estado,
+          instrumentos: data.instrumentos || this.crearEstadoInstrumentos(),
+          observaciones: data.observaciones || [],
+          fechaUltimaModificacion: data.fechaUltimaModificacion || Timestamp.now(),
+          modificadoPor: data.modificadoPor || '',
+          sesionesEnsayo: data.sesionesEnsayo || 0,
+          dificultadesEspecificas: data.dificultadesEspecificas || []
+        }]);
+      });
       
-      this.cache.set(cacheKey, { data: evaluaciones, expiry: Date.now() + this.cacheExpiry });
-      return evaluaciones;
+      this.cache.set(cacheKey, { data: estados, expiry: Date.now() + this.cacheExpiry });
+      return estados;
     } catch (error) {
-      console.error('Error obteniendo evaluaciones continuas:', error);
-      throw error;
+      console.error('Error obteniendo estados de compases:', error);
+      return [];
     }
   }
+
   // ================== GESTIÓN DE COMPASES ==================
   /**
    * Cambiar estado de un compás

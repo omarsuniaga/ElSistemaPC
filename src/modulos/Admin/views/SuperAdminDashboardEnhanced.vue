@@ -391,8 +391,8 @@ import { advancedTeachersService } from '../services/advancedTeachersService'
 import type { StudentMetrics, DropoutRisk } from '../services/advancedStudentsService'
 
 // Components
-import Modal from '../../../components/ui/Modal.vue'
-import AdvancedStudentsManagementNew from './AdvancedStudentsManagementNew.vue'
+import Modal from '../../../components/shared/Modal.vue'
+import AdvancedStudentsManagementNew from '../components/AdvancedStudentsManagementNew.vue'
 
 // Store
 const studentsStore = useAdminStudentsStore()

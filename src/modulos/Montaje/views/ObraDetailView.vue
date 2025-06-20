@@ -1,323 +1,197 @@
 <template>
-  <div class="obra-detail-view p-6">
-    <!-- Header -->
-    <div class="mb-6">
-      <div class="flex justify-between items-start">
-        <div>
-          <button
-            @click="$router.go(-1)"
-            class="mb-4 flex items-center text-blue-600 hover:text-blue-800"
-          >
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-            </svg>
-            Volver
-          </button>
-          <h1 class="text-2xl font-bold text-gray-900">{{ obra?.titulo }}</h1>
-          <p class="text-gray-600">{{ obra?.compositor }}</p>
-        </div>
-        <div class="flex space-x-3">
-          <button
-            @click="editObra"
-            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            Editar
-          </button>
-          <button
-            @click="generateReport"
-            class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-          >
-            Generar Reporte
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Información General -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-      <div class="lg:col-span-2">
-        <div class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-lg font-semibold mb-4">Información General</h2>
-          <div class="grid grid-cols-2 gap-4 my-4">
-            <div>
-              <span class="text-sm text-gray-500">Duración</span>
-              <p>{{ formatDuration(obra.value?.duracionEstimada || 0) }}</p>
-            </div>
-            <div>
-              <span class="text-sm font-medium text-gray-500">Nivel de Dificultad</span>
-              <div class="flex items-center">
-                <div class="flex space-x-1">
-                  <span 
-                    v-for="i in 5" 
-                    :key="i"
-                    class="w-3 h-3 rounded-full"
-                    :class="i <= (obra?.nivelDificultad || 0) ? 'bg-yellow-400' : 'bg-gray-200'"
-                  ></span>
-                </div>
-                <span class="ml-2 text-sm text-gray-600">{{ obra?.nivelDificultad }}/5</span>
-              </div>
-            </div>
-            <div>
-              <span class="text-sm text-gray-500">Dificultad</span>
-              <p class="flex items-center">
-                <span 
-                  class="px-2 py-1 text-xs font-medium rounded-full" 
-                  :class="getDifficultyClass(obra.value?.metadatos?.dificultad || 'INTERMEDIO')"
+  <div class="obra-detail-view min-h-screen bg-gray-50">
+    <!-- Professional Header -->
+    <div class="bg-white shadow-sm border-b">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="py-6">
+          <!-- Breadcrumb -->
+          <nav class="mb-4" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2 text-sm">
+              <li>
+                <button
+                  @click="$router.push('/montaje')"
+                  class="text-gray-500 hover:text-gray-700 transition-colors"
                 >
-                  {{ obra.value?.metadatos?.dificultad || 'INTERMEDIO' }}
-                </span>
-              </p>
-            </div>
-            <div>
-              <span class="text-sm font-medium text-gray-500">Fecha de Creación</span>
-              <p class="text-lg">{{ formatDate(obra?.fechaCreacion) }}</p>
-            </div>
-          </div>
-          <div v-if="obra?.descripcion" class="mt-4">
-            <span class="text-sm font-medium text-gray-500">Descripción</span>
-            <p class="text-gray-700">{{ obra.descripcion }}</p>
-          </div>
-        </div>
-      </div>
+                  Montaje
+                </button>
+              </li>
+              <li class="flex items-center">
+                <svg class="w-4 h-4 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-gray-700 font-medium">{{ obra?.titulo || 'Cargando...' }}</span>
+              </li>
+            </ol>
+          </nav>
 
-      <div>
-        <div class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-lg font-semibold mb-4">Progreso</h2>
-          <div class="space-y-4">
-            <div>
-              <div class="flex justify-between text-sm mb-1">
-                <span>Progreso General</span>
-                <span>{{ progressPercentage }}%</span>
+          <!-- Main Header -->
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center">
+                <button
+                  @click="$router.go(-1)"
+                  class="mr-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
+                  title="Volver"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <div>                  <h1 class="text-3xl font-bold text-gray-900 tracking-tight">
+                    {{ obra?.titulo || 'Cargando...' }}
+                  </h1>
+                  <div class="mt-1 flex items-center space-x-4">
+                    <p class="text-lg text-gray-600">{{ obra?.compositor || '' }}</p>
+                    <span
+                      v-if="obra?.estado"
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      :class="getEstadoBadgeClass(obra.estado)"
+                    >
+                      {{ obra.estado.replace('_', ' ') }}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div class="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  class="bg-blue-600 h-2 rounded-full"
-                  :style="{ width: `${progressPercentage}%` }"
-                ></div>
-              </div>
             </div>
-            <div v-if="obra?.frases?.length">
-              <span class="text-sm font-medium text-gray-500">Frases completadas</span>
-              <p class="text-2xl font-bold">{{ completedPhrases }}/{{ obra.frases.length }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tabs -->
-    <div class="bg-white rounded-lg shadow">
-      <div class="border-b border-gray-200">
-        <nav class="-mb-px flex space-x-8 px-6">
-          <button
-            v-for="tab in tabs"
-            :key="tab.id"
-            @click="activeTab = tab.id"
-            class="py-4 px-1 border-b-2 font-medium text-sm"
-            :class="activeTab === tab.id 
-              ? 'border-blue-500 text-blue-600' 
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-          >
-            {{ tab.name }}
-          </button>
-        </nav>
-      </div>
-
-      <div class="p-6">
-        <!-- Tab: Mapa de Calor -->
-        <div v-if="activeTab === 'mapa'">
-          <!-- Tab de mapa de calor -->
-          <HeatMap 
-            :obra-id="obraId" 
-            :compases="compases" 
-            @compas-updated="handleCompasUpdated"
-          />
-        </div>
-
-        <!-- Tab: Frases -->
-        <div v-if="activeTab === 'frases'">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-medium">Frases Musicales</h3>
-            <button
-              @click="addFrase"
-              class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md flex items-center text-sm"
-            >
-              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-              </svg>
-              Nueva Frase
-            </button>
-          </div>
-          <div class="space-y-4">
-            <!-- Empty state -->
-            <div v-if="!obra?.frases?.length" class="bg-white border border-gray-200 rounded-lg p-6 text-center">
-              <p class="text-gray-500">No hay frases definidas</p>
+            
+            <!-- Action Buttons -->
+            <div class="mt-4 lg:mt-0 flex space-x-3">
               <button
-                @click="addFrase"
-                class="mt-2 text-blue-600 hover:text-blue-800"
+                @click="generateReport"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
               >
-                Agregar frase
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Generar Reporte
+              </button>
+              <button
+                @click="editObra"
+                class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-sm"
+              >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Editar Obra
               </button>
             </div>
-
-            <!-- Phrases list -->
-            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div
-                v-for="frase in obra.frases"
-                :key="frase.id"
-                class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-              >
-                <div class="flex justify-between mb-2">
-                  <h4 class="font-medium">{{ frase.titulo }}</h4>
-                  <div class="flex space-x-1">
-                    <button
-                      @click="evaluateFrase(frase)"
-                      class="text-yellow-600 hover:text-yellow-800 p-1 hover:bg-yellow-50 rounded"
-                      title="Evaluar frase"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
-                      </svg>
-                    </button>
-                    <button
-                      @click="editFrase(frase)"
-                      class="text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded"
-                      title="Editar frase"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                      </svg>
-                    </button>
-                    <button
-                      @click="deleteFrase(frase)"
-                      class="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded"
-                      title="Eliminar frase"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                <div class="mb-3">
-                  <div class="flex justify-between text-sm mb-1">
-                    <span class="flex items-center">
-                      <span 
-                        class="inline-block w-2 h-2 rounded-full mr-1"
-                        :class="{
-                          'bg-green-500': frase.estado === 'COMPLETADA',
-                          'bg-yellow-500': frase.estado === 'EN_PROGRESO',
-                          'bg-red-500': frase.estado === 'PENDIENTE'
-                        }"
-                      ></span>
-                      {{ frase.estado }}
-                    </span>
-                    <span>{{ frase.progreso }}%</span>
-                  </div>
-                  <div class="w-full bg-gray-200 rounded-full h-1.5">
-                    <div 
-                      class="h-1.5 rounded-full"
-                      :class="{
-                        'bg-green-600': frase.progreso >= 75,
-                        'bg-blue-600': frase.progreso >= 40 && frase.progreso < 75,
-                        'bg-yellow-500': frase.progreso >= 20 && frase.progreso < 40,
-                        'bg-red-500': frase.progreso < 20
-                      }"
-                      :style="{ width: `${frase.progreso}%` }"
-                    ></div>
-                  </div>
-                </div>
-                <p class="text-sm text-gray-600 mb-2">{{ frase.descripcion }}</p>
-                <div class="text-xs text-gray-500 flex justify-between">
-                  <span>Compases: {{ frase.compasInicial }} - {{ frase.compasInicial + frase.totalCompases - 1 }}</span>
-                  <span>{{ formatDate(frase.fechaActualizacion) }}</span>
-                </div>
-              </div>
-            </div>
           </div>
-        </div>
-
-        <!-- Tab: Planes -->
-        <div v-if="activeTab === 'planes'">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-medium">Planes de Montaje</h3>
-            <button
-              @click="createPlan"
-              class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-            >
-              Crear Plan
-            </button>
-          </div>
-          <div class="space-y-4">
-            <PlanCard
-              v-for="plan in planes"
-              :key="plan.id"
-              :plan="plan"
-              @edit="editPlan"
-              @delete="deletePlan"
-              @view="viewPlan"
-            />
-          </div>
-        </div>
-
-        <!-- Tab: Evaluaciones -->
-        <div v-if="activeTab === 'evaluaciones'">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-medium">Evaluaciones</h3>
-            <button
-              @click="newEvaluation"
-              class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-            >
-              Nueva Evaluación
-            </button>
-          </div>
-          <div class="space-y-4">
-            <div
-              v-for="evaluacion in evaluaciones"
-              :key="evaluacion.id"
-              class="bg-white p-4 rounded-lg shadow-md"
-            >
-              <h3 class="text-lg font-semibold">Evaluación {{ evaluacion.tipo }}</h3>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                <div>
-                  <p class="text-sm font-medium text-gray-500">Evaluador</p>
-                  <p>{{ evaluacion.maestroEvaluadorId || 'No especificado' }}</p>
-                </div>
-                <div>
-                  <p class="text-sm font-medium text-gray-500">Fecha</p>
-                  <p>{{ evaluacion.fecha ? formatDate(evaluacion.fecha.toDate()) : 'No especificada' }}</p>
-                </div>
-              </div>
-              <div class="mt-4">
-                <p class="text-sm font-medium text-gray-500">Puntuación</p>
-                <div class="flex items-center mt-1">
-                  <div class="bg-blue-100 h-4 rounded-full w-full">
-                    <div class="bg-blue-500 h-4 rounded-full" :style="{width: `${evaluacion.calificacion || 0}%`}"></div>
-                  </div>
-                  <span class="ml-2 text-sm font-medium">{{ evaluacion.calificacion || 0 }}%</span>
-                </div>
-              </div>
-              <div class="mt-4">
-                <p class="text-sm font-medium text-gray-500">Comentarios</p>
-                <p class="mt-1 text-sm">{{ evaluacion.observaciones || 'Sin comentarios' }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab: Colaboración -->
-        <div v-if="activeTab === 'colaboracion'">
-          <CollaborationHub :obra-id="obraId" />
-        </div>
-
-        <!-- Tab: Historial -->
-        <div v-if="activeTab === 'historial'">
-          <HistoryTracker :entity-id="obraId" entity-type="obra" />
         </div>
       </div>
     </div>
 
-    <!-- Modals -->
+    <!-- Professional Tabs Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <!-- Tab Navigation -->
+        <div class="border-b border-gray-200">
+          <nav class="flex space-x-8 px-6" aria-label="Tabs">
+            <button
+              v-for="tab in tabs"
+              :key="tab.id"
+              @click="activeTab = tab.id"
+              class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-all"
+              :class="activeTab === tab.id 
+                ? 'border-blue-500 text-blue-600' 
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+            >
+              {{ tab.name }}
+              <span 
+                v-if="tab.count !== undefined" 
+                class="ml-2 py-0.5 px-2 rounded-full text-xs"
+                :class="activeTab === tab.id ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'"
+              >
+                {{ tab.count }}
+              </span>
+            </button>
+          </nav>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="p-6">
+          <!-- Tab: Heat Map -->
+          <div v-if="activeTab === 'mapa'" class="space-y-6">
+            <div class="text-center py-12">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">Mapa de Calor de Compases</h3>
+              <p class="mt-1 text-sm text-gray-500">El mapa de calor se cargará aquí cuando esté disponible.</p>
+            </div>
+          </div>
+
+          <!-- Tab: Phrases -->
+          <div v-if="activeTab === 'frases'" class="space-y-6">
+            <div class="text-center py-12">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">No hay frases definidas</h3>
+              <p class="mt-1 text-sm text-gray-500">Comienza agregando la primera frase musical de la obra.</p>
+              <div class="mt-6">
+                <button
+                  @click="addFrase"
+                  class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Agregar Primera Frase
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Plans -->
+          <div v-if="activeTab === 'planes'" class="space-y-6">
+            <div class="text-center py-12">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">No hay planes creados</h3>
+              <p class="mt-1 text-sm text-gray-500">Crea un plan de estudio para organizar el trabajo en esta obra.</p>
+              <div class="mt-6">
+                <button
+                  @click="createPlan"
+                  class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Crear Primer Plan
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Evaluations -->
+          <div v-if="activeTab === 'evaluaciones'" class="space-y-6">
+            <div class="text-center py-12">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">No hay evaluaciones</h3>
+              <p class="mt-1 text-sm text-gray-500">Comienza creando la primera evaluación de esta obra.</p>
+              <div class="mt-6">
+                <button
+                  @click="newEvaluation"
+                  class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Crear Primera Evaluación
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Students -->
+          <div v-if="activeTab === 'alumnos'" class="space-y-6">
+            <div class="text-center py-12">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">No hay alumnos asignados</h3>
+              <p class="mt-1 text-sm text-gray-500">Asigna estudiantes para que trabajen en esta obra.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Professional Modals -->
     <WorkFormModal
       v-if="showEditModal"
       :work="obra"
@@ -330,17 +204,14 @@
       v-if="showPhraseModal"
       :isOpen="showPhraseModal"
       :phrase="selectedFrase"
-      :availableWorks="obra.value ? [obra.value] : []"
+      :availableWorks="obra ? [obra] : []"
       :onClose="() => showPhraseModal = false"
       :onSaved="handlePhraseSave"
-    />
-
-    <EvaluationForm
-      v-if="showEvaluationModal"
-      :entity-id="obraId"
-      entity-type="obra"
+    />    <EvaluationForm
+      v-if="showEvaluationModal && obra"
+      :work="obra"
       @close="showEvaluationModal = false"
-      @save="saveEvaluation"
+      @submit="saveEvaluation"
     />
   </div>
 </template>
@@ -349,143 +220,150 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+// Component imports
+import WorkFormModal from '../components/WorkFormModal.vue'
+import PhraseFormModal from '../components/PhraseFormModal.vue'
+import EvaluationForm from '../components/EvaluationForm.vue'
+
 import type { 
   Obra, 
   FraseMontaje as Frase, 
   PlanAccion as Plan, 
-  EvaluacionContinua as Evaluacion 
+  EvaluacionContinua as Evaluacion,
+  CreateEvaluationInput
 } from '../types'
 import { useMontaje } from '../composables/useMontaje'
 import { useMontajeStore } from '../store/montaje'
 import { Compas } from '../service/compasService'
 import { formatDate, formatDuration } from '../utils'
 
-// Components
-import * as WorkFormModalModule from '../components/WorkFormModal.vue'
-import * as PhraseCardModule from '../components/PhraseCard.vue'
-import * as PhraseFormModalModule from '../components/PhraseFormModal.vue'
-import * as PlanCardModule from '../components/PlanCard.vue'
-import * as EvaluationFormModule from '../components/EvaluationForm.vue'
-import * as CollaborationHubModule from '../components/CollaborationHub.vue'
-import * as HistoryTrackerModule from '../components/HistoryTracker.vue'
-import * as HeatMapModule from '../components/HeatMap.vue'
-
-// Component registration
-const WorkFormModal = WorkFormModalModule.default || WorkFormModalModule
-const PhraseCard = PhraseCardModule.default || PhraseCardModule
-const PhraseFormModal = PhraseFormModalModule.default || PhraseFormModalModule
-const PlanCard = PlanCardModule.default || PlanCardModule
-const EvaluationForm = EvaluationFormModule.default || EvaluationFormModule
-const CollaborationHub = CollaborationHubModule.default || CollaborationHubModule
-const HistoryTracker = HistoryTrackerModule.default || HistoryTrackerModule
-const HeatMap = HeatMapModule.default || HeatMapModule
-
+// Router and Route
 const route = useRoute()
 const router = useRouter()
+
+// Stores
 const montajeStore = useMontajeStore()
+
+// Composable
+const montajeComposable = useMontaje()
 const { 
-  cargarObra: getObra,
-  guardarCompas,
-  cargarCompases, 
-  generarReporteObra,
-  crearObra: updateObraService 
-} = useMontaje()
+  cargarObra, 
+  cargarPlan,
+  obras,
+  obraActual,
+  frases,
+  planAccion
+} = montajeComposable
 
-const obraId = route.params.id as string
-const obra = ref(null)
-const frases = ref([])
-const planes = ref([])
-const evaluaciones = ref([])
-const compases = ref([])
-const cargando = ref(true)
-const showWorkModal = ref(false)
-const showPhraseModal = ref(false)
-const selectedFrase = ref(null)
-const selectedPlan = ref(null)
-const showEvaluationForm = ref(false)
+// Reactive data
+const obra = ref<Obra | null>(null)
+const frasesLocal = ref<Frase[]>([])
+const planes = ref<Plan[]>([])
+const evaluaciones = ref<Evaluacion[]>([])
+const alumnos = ref([])
+const loading = ref(true)
+const error = ref<string | null>(null)
 
+// UI State
 const activeTab = ref('mapa')
 const showEditModal = ref(false)
+const showPhraseModal = ref(false)
 const showEvaluationModal = ref(false)
+const selectedFrase = ref<Frase | null>(null)
 
-const progressPercentage = computed(() => {
-  if (!obra.value) return 0
-  return obra.value.metadatos?.progresoPorcentaje || 0
-})
+// Props
+const obraId = route.params.id as string
 
-const completedPhrases = computed(() => {
-  if (!obra.value || !frases.value || frases.value.length === 0) return 0
-  const frasesCompletadas = frases.value.filter(f => f.completada).length
-  return Math.round((frasesCompletadas / frases.value.length) * 100)
-})
+// Computed
+const tabs = computed(() => [
+  { id: 'mapa', name: 'Mapa de Calor', count: undefined },
+  { id: 'frases', name: 'Frases', count: frases.value?.length || frasesLocal.value.length },
+  { id: 'planes', name: 'Planes', count: planAccion.value ? 1 : 0 },
+  { id: 'evaluaciones', name: 'Evaluaciones', count: evaluaciones.value.length },
+  { id: 'alumnos', name: 'Alumnos', count: alumnos.value.length }
+])
 
-const progreso = computed(() => {
-  if (!obra.value || !frases.value || frases.value.length === 0) return 0
-  const frasesCompletadas = frases.value.filter(f => f.completada).length
-  return Math.round((frasesCompletadas / frases.value.length) * 100)
-})
-
-const loadData = async () => {
-  cargando.value = true
-  try {
-    if (getObra && typeof getObra === 'function') {
-      obra.value = await getObra(obraId)
-      
-      // Cargar planes
-      if (typeof montajeStore.obtenerPlanesPorObra === 'function') {
-        planes.value = await montajeStore.obtenerPlanesPorObra(obraId)
-      } else {
-        // Fallback: intentar usar cargarPlanes y filtrar después
-        await cargarPlanes()
-        planes.value = montajeStore.planes?.filter(plan => plan.obraId === obraId) || []
-      }
-      
-      // Cargar evaluaciones
-      // The property 'obtenerEvaluacionesPorObra' does not exist on 'montajeStore' type.
-      // Using fallback logic: load all evaluations via a store action (assumed to be 'cargarEvaluaciones')
-      // and then filter them.
-      if (montajeStore.cargarEvaluaciones && typeof montajeStore.cargarEvaluaciones === 'function') {
-        await montajeStore.cargarEvaluaciones();
-      } else {
-        // If the action 'cargarEvaluaciones' does not exist on the store,
-        // log a warning as evaluations might not be loaded or might be stale.
-        console.warn('Store action "cargarEvaluaciones" not found. Evaluations may not be up-to-date.');
-      }
-      evaluaciones.value = montajeStore.evaluacionesContinuas?.filter(
-        evaluacion => evaluacion.obraId === obraId
-      ) || [];
-      
-      // Cargar frases (sólo si no están cargadas todavía)
-      if (typeof montajeStore.obtenerFrasesPorObra === 'function') {
-        frases.value = await montajeStore.obtenerFrasesPorObra(obraId)
-      } else {
-        // Usar las frases del objeto obra si están disponibles, o un array vacío
-        frases.value = []
-      }
-      
-      // Cargar compases
-      if (cargarCompases && typeof cargarCompases === 'function') {
-        compases.value = await cargarCompases(obraId)
-      }
-    }
-  } catch (error) {
-    console.error('Error al cargar los datos:', error)
-  } finally {
-    cargando.value = false
+// Methods
+const getEstadoBadgeClass = (estado: string) => {
+  const baseClasses = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium'
+  switch (estado) {
+    case 'activa':
+      return `${baseClasses} bg-green-100 text-green-800`
+    case 'en_progreso':
+      return `${baseClasses} bg-blue-100 text-blue-800`
+    case 'completada':
+      return `${baseClasses} bg-gray-100 text-gray-800`
+    default:
+      return `${baseClasses} bg-gray-100 text-gray-800`
   }
 }
 
+const loadData = async () => {
+  try {
+    loading.value = true
+    error.value = null
+
+    // Load main data using composable methods
+    await cargarObra(obraId)
+    
+    // Get obra from store after loading
+    obra.value = obraActual.value
+    
+    // Load plan and frases if obra exists
+    if (obra.value) {
+      try {
+        await cargarPlan(obraId)
+        // frases and evaluaciones are loaded via the store's reactive state
+        frasesLocal.value = frases.value || []
+        evaluaciones.value = [] // TODO: Load evaluaciones when method is available
+      } catch (planError) {
+        console.warn('No plan found for obra:', obraId)
+        frasesLocal.value = []
+        evaluaciones.value = []
+      }
+    }
+
+    // Load students related to this obra
+    await loadAlumnos()
+    
+  } catch (err) {
+    console.error('Error loading obra data:', err)
+    error.value = err instanceof Error ? err.message : 'Error desconocido'
+    
+    // Fallback: try to find obra in existing obras array
+    const existingObra = obras.value.find(o => o.id === obraId)
+    if (existingObra) {
+      obra.value = existingObra
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+const loadAlumnos = async () => {
+  try {
+    // TODO: Load students related to this obra when students store is available
+    // For now, we'll use an empty array
+    alumnos.value = []
+    console.log('Students loaded successfully (placeholder)')
+  } catch (err) {
+    console.error('Error loading alumnos:', err)
+    alumnos.value = []
+  }
+}
+
+// Action Methods
 const editObra = () => {
   showEditModal.value = true
 }
 
-const updateObra = async (updatedObra: Obra) => {
+const generateReport = async () => {
   try {
-    await updateObraService(updatedObra.id, updatedObra)
-    obra.value = updatedObra
-    showEditModal.value = false
-  } catch (error) {
-    console.error('Error updating obra:', error)
+    // Generate PDF report for the obra
+    console.log('Generating report for obra:', obraId)
+    // TODO: Implement PDF generation
+  } catch (err) {
+    console.error('Error generating report:', err)
   }
 }
 
@@ -494,141 +372,90 @@ const addFrase = () => {
   showPhraseModal.value = true
 }
 
-const editFrase = (frase: Frase) => {
-  selectedFrase.value = frase
-  showPhraseModal.value = true
-}
-
-const deleteFrase = async (frase: Frase) => {
-  if (confirm('¿Estás seguro de que quieres eliminar esta frase?')) {
-    // Implementar eliminación de frase
-    console.log('Delete frase:', frase.id)
-  }
-}
-
-const closePhraseModal = () => {
-  showPhraseModal.value = false
-  selectedFrase.value = null
-}
-
-const saveFrase = async (frase: Frase) => {
-  // Implementar guardado de frase
-  closePhraseModal()
-  await loadData()
-}
-
-const handlePhraseDrop = (event, targetCompletedState) => {
-  const phraseId = event.dataTransfer.getData('phraseId')
-  const phrase = frases.value.find(f => f.id === phraseId)
-  
-  if (phrase) {
-    // Aquí iría la lógica para actualizar el estado de la frase
-    console.log(`Cambiando estado de frase ${phraseId} a ${targetCompletedState ? 'completada' : 'pendiente'}`)
-  }
-}
-
 const createPlan = () => {
-  router.push(`/montaje/planes/new?obraId=${obraId}`)
-}
-
-const editPlan = (plan: Plan) => {
-  router.push(`/montaje/planes/${plan.id}`)
-}
-
-const deletePlan = async (plan: Plan) => {
-  if (confirm('¿Estás seguro de que quieres eliminar este plan?')) {
-    // Implementar eliminación de plan
-    console.log('Delete plan:', plan.id)
-  }
-}
-
-const viewPlan = (plan: Plan) => {
-  router.push(`/montaje/planes/${plan.id}`)
+  console.log('Creating plan for obra:', obraId)
+  // TODO: Implement plan creation
 }
 
 const newEvaluation = () => {
   showEvaluationModal.value = true
 }
 
-const addEvaluation = () => {
-  showEvaluationForm.value = true
-}
-
-const saveEvaluation = async (evaluation: Evaluacion) => {
-  evaluaciones.value.unshift(evaluation)
-  showEvaluationModal.value = false
-}
-
-const generateReport = async () => {
+const updateObra = async (updatedObra: Obra) => {
   try {
-    if (generarReporteObra && typeof generarReporteObra === 'function') {
-      await generarReporteObra(obraId)
-    }
-  } catch (error) {
-    console.error('Error al generar el reporte:', error)
+    obra.value = updatedObra
+    showEditModal.value = false
+    // TODO: Update in store/API
+  } catch (err) {
+    console.error('Error updating obra:', err)
   }
 }
 
-const handleCompasUpdated = async (compasData) => {
+const handlePhraseSave = async (savedFrase: Frase) => {
   try {
-    if (guardarCompas && typeof guardarCompas === 'function') {
-      // Guardar el compás actualizado
-      await guardarCompas(obraId, compasData)
-      
-      // Actualizar la lista local de compases
-      const index = compases.value.findIndex(c => c.id === compasData.id)
+    if (savedFrase.id) {
+      // Update existing
+      const index = frasesLocal.value.findIndex(f => f.id === savedFrase.id)
       if (index !== -1) {
-        compases.value[index] = compasData
-      } else {
-        compases.value.push(compasData)
+        frasesLocal.value[index] = savedFrase
       }
+    } else {
+      // Add new
+      frasesLocal.value.push(savedFrase)
     }
-  } catch (error) {
-    console.error('Error al actualizar el compás:', error)
+    showPhraseModal.value = false
+  } catch (err) {
+    console.error('Error saving frase:', err)
   }
 }
 
-const updateProgress = (newProgress: number) => {
-  if (obra.value) {
-    obra.value = {
-      ...obra.value,
-      metadatos: {
-        ...obra.value.metadatos,
-        progresoPorcentaje: newProgress
-      }
-    }
+const saveEvaluation = async (evaluationData: CreateEvaluationInput) => {
+  try {
+    console.log('Saving evaluation:', evaluationData)
+    // TODO: Implement evaluation saving when the API is ready
+    // For now, just close the modal
+    showEvaluationModal.value = false
+  } catch (err) {
+    console.error('Error saving evaluation:', err)
   }
 }
 
-const getDifficultyClass = (dificultad: string) => {
-  const classes = {
-    'FACIL': 'bg-green-100 text-green-800',
-    'INTERMEDIO': 'bg-yellow-100 text-yellow-800',
-    'DIFICIL': 'bg-red-100 text-red-800',
-    // Add more difficulty levels and their corresponding classes as needed
-  }
-  return classes[dificultad.toUpperCase()] || 'bg-gray-100 text-gray-800'
-}
-
-const getEstadoBadgeClass = (estado: string) => {
-  const classes = {
-    'BORRADOR': 'bg-gray-100 text-gray-800',
-    'EN_REVISION': 'bg-yellow-100 text-yellow-800',
-    'EN_MONTAJE': 'bg-blue-100 text-blue-800',
-    'PAUSADA': 'bg-orange-100 text-orange-800',
-    'COMPLETADA': 'bg-green-100 text-green-800',
-    'CANCELADA': 'bg-red-100 text-red-800'
-  }
-  return classes[estado] || 'bg-gray-100 text-gray-800'
-}
-
-const getScoreClass = (score: number) => {
-  if (score >= 8) return 'bg-green-100 text-green-800'
-  if (score >= 6) return 'bg-yellow-100 text-yellow-800'
-  return 'bg-red-100 text-red-800'
-}
-
+// Lifecycle
 onMounted(() => {
   loadData()
 })
 </script>
+
+<style scoped>
+.obra-detail-view {
+  min-height: 100vh;
+}
+
+/* Professional transitions */
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Custom scrollbar for content areas */
+.space-y-6 {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+.space-y-6::-webkit-scrollbar {
+  width: 6px;
+}
+
+.space-y-6::-webkit-scrollbar-track {
+  background: #f7fafc;
+}
+
+.space-y-6::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+.space-y-6::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+</style>

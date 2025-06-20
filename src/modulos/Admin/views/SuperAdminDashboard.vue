@@ -477,7 +477,8 @@ import {
   ArrowDownTrayIcon,
   SwatchIcon,
   DocumentTextIcon,
-  XMarkIcon
+  XMarkIcon,
+  ChevronRightIcon
 } from '@heroicons/vue/24/outline'
 
 // Components

@@ -90,7 +90,7 @@
 <script setup lang="ts">
 import { ref, computed, PropType, watch } from 'vue';
 import { TipoInstrumento, INSTRUMENT_FAMILIES, INSTRUMENT_DISPLAY_NAMES } from '../types';
-import { useClassStore } from '@/modulos/Classes/store/class';
+import { useClassesStore } from '@/modulos/Classes/store/classes';
 
 const props = defineProps({
   // Valores inicialmente seleccionados
@@ -118,7 +118,7 @@ const emit = defineEmits(['update:modelValue', 'selection-change']);
 const selectedFamily = ref<string>('all');
 const selectedInstruments = ref<TipoInstrumento[]>(props.modelValue);
 const selectedRows = ref<string[]>([]);
-const classStore = useClassStore();
+const classStore = useClassesStore();
 
 // Familias de instrumentos
 const instrumentFamilies = [

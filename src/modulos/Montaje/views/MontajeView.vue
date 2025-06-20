@@ -150,56 +150,60 @@
                     Nueva Obra
                   </button>
                 </div>
-              </div>
-
-              <!-- Works list -->
+              </div>              <!-- Works list -->
               <div v-else class="space-y-4">
                 <div
                   v-for="work in filteredWorks"
                   :key="work.id"
-                  class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                  @click="openWorkDetail(work)"
                 >
                   <div class="flex items-center justify-between">
                     <div class="flex-1">
                       <h4 class="text-lg font-medium text-gray-900 dark:text-white">
-                        {{ work.title }}
+                        {{ work.titulo || work.title }}
                       </h4>
                       <p class="text-sm text-gray-600 dark:text-gray-400">
-                        {{ work.composer }}
+                        {{ work.compositor || work.composer }}
                       </p>
-                      <div class="mt-2 flex items-center space-x-4">
+                      <div class="mt-2 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
-                          {{ work.difficulty }}
+                          {{ work.metadatos?.complejidadGeneral || work.difficulty }}
                         </span>
-                        <span class="text-sm text-gray-500 dark:text-gray-400">
-                          {{ work.estimatedDuration }} min
+                        <span class="flex items-center">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          {{ work.duracionEstimada || work.estimatedDuration }} min
+                        </span>
+                        <span class="flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c-1.105 0-2-.895-2-2s.895-2 2-2 2 .895 2 2-.895 2-2 2zm12-3c-1.105 0-2-.895-2-2s.895-2 2-2 2 .895 2 2-.895 2-2 2z" /></svg>
+                          {{ work.metadatos?.totalCompases || 0 }} compases
                         </span>
                       </div>
-                    </div>
-                    <div class="flex items-center space-x-3">
+                    </div>                    <div class="flex items-center space-x-3">
                       <div class="text-right">
                         <div class="text-sm font-medium text-gray-900 dark:text-white">
-                          {{ work.progress || 0 }}%
+                          {{ work.metadatos?.progresoPorcentaje || work.progress || 0 }}%
                         </div>
                         <div class="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                           <div 
                             class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                            :style="{ width: (work.progress || 0) + '%' }"
+                            :style="{ width: (work.metadatos?.progresoPorcentaje || work.progress || 0) + '%' }"
                           ></div>
                         </div>
                       </div>
-                      <div class="flex space-x-2">
+                      <div class="flex space-x-2" @click.stop>
                         <button
                           @click="editWork(work)"
                           class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                          title="Editar obra"
                         >
                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                           </svg>
-                        </button>
-                        <button
+                        </button>                        <button
                           @click="deleteWork(work.id)"
                           class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                          title="Eliminar obra"
                         >
                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -293,12 +297,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useMontaje } from '../composables/useMontaje'
 import WorkFormModal from '../components/WorkFormModal.vue'
 import PlanModal from '../components/PlanModal.vue'
 import EvaluationModal from '../components/EvaluationModal.vue'
 import StatsCards from '../components/StatsCards.vue'
 import type { CreateWorkInput, CreateEvaluationInput } from '../types'
+
+// Router
+const router = useRouter()
 
 // Composable
 const {
@@ -409,6 +417,22 @@ const editWork = (work: any) => {
   selectedWork.value = work
   selectWork(work)
   showWorkModal.value = true
+}
+
+const openWorkDetail = (work: any) => {
+  console.log('🎵 Abriendo detalle de obra:', work.titulo || work.title || 'Sin título')
+  console.log('📄 Datos completos de la obra:', work)
+  
+  if (!work.id) {
+    console.error('❌ Error: La obra no tiene ID')
+    return
+  }
+  
+  // Navegar solo con el ID de la obra
+  router.push({
+    name: 'MontajeObraDetail',
+    params: { id: work.id }
+  })
 }
 
 const handleWorkSubmit = async (workData: CreateWorkInput) => {

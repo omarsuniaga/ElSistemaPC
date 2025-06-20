@@ -15,7 +15,7 @@ import type {
   FiltrosMontaje,
   CambioEstadoCompass
 } from '../types';
-import { EstadoCompass, DificultadFrase } from '../types';
+import { EstadoCompass, DificultadFrase, TipoInstrumento } from '../types';
 import { montajeService } from '../service/montajeService';
 import { useAuthStore } from '@/stores/auth';
 
@@ -117,22 +117,72 @@ export const useMontajeStore = defineStore('montaje', () => {
 
   /**
    * Cargar una obra específica
-   */
-  const cargarObra = async (obraId: string) => {
+   */  const cargarObra = async (obraId: string) => {
     try {
       isLoading.value = true;
       error.value = null;
       
-      const obra = await montajeService.obtenerObra(obraId);
+      console.log('🔍 Buscando obra en múltiples colecciones...');
+      
+      // Primero intentar en la colección 'obras'
+      let obra = await montajeService.obtenerObra(obraId);
+      
+      // Si no se encuentra, intentar en 'repertorios'
+      if (!obra) {
+        console.log('📚 Obra no encontrada en "obras", intentando en "repertorios"...');
+        try {
+          const { doc, getDoc } = await import('firebase/firestore');
+          const { db } = await import('@/firebase');
+          
+          const docRef = doc(db, 'repertorios', obraId);
+          const docSnap = await getDoc(docRef);
+          
+          if (docSnap.exists()) {
+            obra = {
+              id: docSnap.id,
+              ...docSnap.data()
+            } as any; // Convertir de repertorio a obra
+            console.log('✅ Obra encontrada en colección "repertorios"');
+          }
+        } catch (repoError) {
+          console.log('⚠️ Error buscando en repertorios:', repoError);
+        }
+      }
+      
+      // Si aún no se encuentra, intentar en 'montaje-repertorios'
+      if (!obra) {
+        console.log('📖 Intentando en "montaje-repertorios"...');
+        try {
+          const { doc, getDoc } = await import('firebase/firestore');
+          const { db } = await import('@/firebase');
+          
+          const docRef = doc(db, 'montaje-repertorios', obraId);
+          const docSnap = await getDoc(docRef);
+          
+          if (docSnap.exists()) {
+            obra = {
+              id: docSnap.id,
+              ...docSnap.data()
+            } as any;
+            console.log('✅ Obra encontrada en colección "montaje-repertorios"');
+          }
+        } catch (montajeRepoError) {
+          console.log('⚠️ Error buscando en montaje-repertorios:', montajeRepoError);
+        }
+      }
+      
       if (obra) {
         obraActual.value = obra;
         // También agregar a la lista si no está
         if (!obras.value.find(o => o.id === obraId)) {
           obras.value.push(obra);
         }
+        console.log('✅ Obra cargada:', obra?.titulo || obra?.title || obra?.nombre);
+      } else {
+        console.error('❌ Obra no encontrada en ninguna colección');
+        error.value = 'Obra no encontrada';
       }
       
-      console.log('✅ Obra cargada:', obra?.titulo);
     } catch (err) {
       console.error('❌ Error cargando obra:', err);
       error.value = 'No se pudo cargar la obra';
@@ -261,9 +311,9 @@ export const useMontajeStore = defineStore('montaje', () => {
       isLoading.value = true;
       error.value = null;
       
-      // TODO: Implementar servicio real cuando esté disponible
-      console.log('Cargando plan de acción para obra:', obraId);
-      planAccion.value = null; // await montajeService.obtenerPlanAccion(obraId);
+      console.log('🔍 Cargando plan de acción para obra:', obraId);
+      const planData = await montajeService.obtenerPlanAccion(obraId);
+      planAccion.value = planData;
       
       console.log('✅ Plan de acción cargado para obra:', obraId);
     } catch (err) {
@@ -283,7 +333,8 @@ export const useMontajeStore = defineStore('montaje', () => {
       isLoading.value = true;
       error.value = null;
       
-      const authStore = useAuthStore();      const datosCompletos: Omit<PlanAccion, 'id'> = {
+      const authStore = useAuthStore();
+      const datosCompletos: Omit<PlanAccion, 'id'> = {
         ...planData,
         auditoria: {
           creadoPor: authStore.user?.uid || 'unknown',
@@ -301,10 +352,16 @@ export const useMontajeStore = defineStore('montaje', () => {
         }
       };
       
-      // TODO: Implementar servicio real cuando esté disponible
-      console.log('Creando plan con datos:', datosCompletos);
-      const planId = `plan-${Date.now()}`;
-      console.log('✅ Plan de acción creado (simulado) con ID:', planId);
+      console.log('🔄 Creando plan de acción con datos:', datosCompletos);
+      const planId = await montajeService.crearPlanAccion(datosCompletos);
+      
+      // Cargar el plan creado
+      const planCreado = await montajeService.obtenerPlanAccion(planData.obraId);
+      if (planCreado) {
+        planAccion.value = planCreado;
+      }
+      
+      console.log('✅ Plan de acción creado con ID:', planId);
       return planId;
     } catch (err) {
       console.error('❌ Error creando plan de acción:', err);
@@ -314,6 +371,7 @@ export const useMontajeStore = defineStore('montaje', () => {
       isLoading.value = false;
     }
   };
+
   /**
    * Actualizar plan de acción
    */
@@ -322,9 +380,14 @@ export const useMontajeStore = defineStore('montaje', () => {
       isLoading.value = true;
       error.value = null;
       
-      // TODO: Implementar servicio real cuando esté disponible
-      console.log('Actualizando plan:', planId, 'con datos:', datos);
-      console.log('✅ Plan de acción actualizado (simulado):', planId);
+      await montajeService.actualizarPlanAccion(planId, datos);
+      
+      // Actualizar en el estado local
+      if (planAccion.value?.id === planId) {
+        planAccion.value = { ...planAccion.value, ...datos };
+      }
+      
+      console.log('✅ Plan de acción actualizado:', planId);
     } catch (err) {
       console.error('❌ Error actualizando plan de acción:', err);
       error.value = 'No se pudo actualizar el plan de acción';
@@ -333,7 +396,6 @@ export const useMontajeStore = defineStore('montaje', () => {
       isLoading.value = false;
     }
   };
-
   // ================== ACCIONES DE FRASES ==================
   /**
    * Cargar frases de un plan
@@ -343,10 +405,11 @@ export const useMontajeStore = defineStore('montaje', () => {
       isLoading.value = true;
       error.value = null;
       
-      // TODO: Implementar servicio real cuando esté disponible
-      console.log('Cargando frases para plan:', planAccionId);
-      frases.value = [];
-      console.log('✅ Frases cargadas (simuladas):', 0);
+      console.log('🔍 Cargando frases para plan:', planAccionId);
+      const frasesData = await montajeService.obtenerFrases(planAccionId);
+      frases.value = frasesData;
+      
+      console.log('✅ Frases cargadas:', frasesData.length);
     } catch (err) {
       console.error('❌ Error cargando frases:', err);
       error.value = 'No se pudieron cargar las frases';
@@ -364,7 +427,8 @@ export const useMontajeStore = defineStore('montaje', () => {
       isLoading.value = true;
       error.value = null;
       
-      const authStore = useAuthStore();      const datosCompletos: Omit<FraseMontaje, 'id'> = {
+      const authStore = useAuthStore();
+      const datosCompletos: Omit<FraseMontaje, 'id'> = {
         ...fraseData,
         auditoria: {
           creadoPor: authStore.user?.uid || 'unknown',
@@ -383,10 +447,13 @@ export const useMontajeStore = defineStore('montaje', () => {
         }
       };
       
-      // TODO: Implementar servicio real cuando esté disponible
-      console.log('Creando frase con datos:', datosCompletos);
-      const fraseId = `frase-${Date.now()}`;
-      console.log('✅ Frase creada (simulada) con ID:', fraseId);
+      console.log('🔄 Creando frase con datos:', datosCompletos);
+      const fraseId = await montajeService.crearFrase(datosCompletos);
+      
+      // Actualizar la lista de frases
+      await cargarFrases(fraseData.planAccionId);
+      
+      console.log('✅ Frase creada con ID:', fraseId);
       return fraseId;
     } catch (err) {
       console.error('❌ Error creando frase:', err);
@@ -397,6 +464,35 @@ export const useMontajeStore = defineStore('montaje', () => {
     }
   };
 
+  /**
+   * Actualizar frase existente
+   */
+  const actualizarFrase = async (fraseId: string, datos: Partial<FraseMontaje>) => {
+    try {
+      isLoading.value = true;
+      error.value = null;
+      
+      await montajeService.actualizarFrase(fraseId, datos);
+      
+      // Actualizar en el estado local
+      const index = frases.value.findIndex(f => f.id === fraseId);
+      if (index !== -1) {
+        frases.value[index] = { ...frases.value[index], ...datos };
+      }
+      
+      if (fraseActual.value?.id === fraseId) {
+        fraseActual.value = { ...fraseActual.value, ...datos };
+      }
+      
+      console.log('✅ Frase actualizada:', fraseId);
+    } catch (err) {
+      console.error('❌ Error actualizando frase:', err);
+      error.value = 'No se pudo actualizar la frase';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
   // ================== ACCIONES DE EVALUACIONES ==================
   /**
    * Cargar evaluaciones continuas
@@ -405,14 +501,36 @@ export const useMontajeStore = defineStore('montaje', () => {
     try {
       isLoading.value = true;
       error.value = null;
+        console.log('🔍 Cargando evaluaciones continuas para obra:', obraId);
+      const evaluacionesData = await montajeService.obtenerEvaluaciones(obraId, 'continua') as EvaluacionContinua[];
+      evaluacionesContinuas.value = evaluacionesData;
       
-      // TODO: Implementar servicio real cuando esté disponible
-      console.log('Cargando evaluaciones continuas para obra:', obraId);
-      evaluacionesContinuas.value = [];
-      console.log('✅ Evaluaciones continuas cargadas (simuladas):', 0);
+      console.log('✅ Evaluaciones continuas cargadas:', evaluacionesData.length);
     } catch (err) {
       console.error('❌ Error cargando evaluaciones continuas:', err);
       error.value = 'No se pudieron cargar las evaluaciones continuas';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
+   * Cargar evaluaciones finales
+   */
+  const cargarEvaluacionesFinales = async (obraId: string) => {
+    try {
+      isLoading.value = true;
+      error.value = null;
+      
+      console.log('🔍 Cargando evaluaciones finales para obra:', obraId);
+      const evaluacionesData = await montajeService.obtenerEvaluaciones(obraId, 'final') as EvaluacionFinal[];
+      evaluacionesFinales.value = evaluacionesData;
+      
+      console.log('✅ Evaluaciones finales cargadas:', evaluacionesData.length);
+    } catch (err) {
+      console.error('❌ Error cargando evaluaciones finales:', err);
+      error.value = 'No se pudieron cargar las evaluaciones finales';
       throw err;
     } finally {
       isLoading.value = false;
@@ -427,7 +545,8 @@ export const useMontajeStore = defineStore('montaje', () => {
       isLoading.value = true;
       error.value = null;
       
-      const authStore = useAuthStore();      const datosCompletos: Omit<EvaluacionContinua, 'id'> = {
+      const authStore = useAuthStore();
+      const datosCompletos: Omit<EvaluacionContinua, 'id'> = {
         ...evaluacionData,
         auditoria: {
           creadoPor: authStore.user?.uid || 'unknown',
@@ -437,14 +556,53 @@ export const useMontajeStore = defineStore('montaje', () => {
         }
       };
       
-      // TODO: Implementar servicio real cuando esté disponible
-      console.log('Creando evaluación con datos:', datosCompletos);
-      const evaluacionId = `evaluacion-${Date.now()}`;
-      console.log('✅ Evaluación continua creada (simulada) con ID:', evaluacionId);
+      console.log('🔄 Creando evaluación continua con datos:', datosCompletos);
+      const evaluacionId = await montajeService.crearEvaluacionContinua(datosCompletos);
+      
+      // Actualizar la lista de evaluaciones
+      await cargarEvaluacionesContinuas(evaluacionData.obraId);
+      
+      console.log('✅ Evaluación continua creada con ID:', evaluacionId);
       return evaluacionId;
     } catch (err) {
       console.error('❌ Error creando evaluación continua:', err);
       error.value = 'No se pudo crear la evaluación continua';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
+   * Crear evaluación final
+   */
+  const crearEvaluacionFinal = async (evaluacionData: Omit<EvaluacionFinal, 'id' | 'auditoria'>) => {
+    try {
+      isLoading.value = true;
+      error.value = null;
+      
+      const authStore = useAuthStore();
+      const datosCompletos: Omit<EvaluacionFinal, 'id'> = {
+        ...evaluacionData,
+        auditoria: {
+          creadoPor: authStore.user?.uid || 'unknown',
+          fechaCreacion: Timestamp.now(),
+          version: 1,
+          activo: true
+        }
+      };
+      
+      console.log('🔄 Creando evaluación final con datos:', datosCompletos);
+      const evaluacionId = await montajeService.crearEvaluacionFinal(datosCompletos);
+      
+      // Actualizar la lista de evaluaciones
+      await cargarEvaluacionesFinales(evaluacionData.obraId);
+      
+      console.log('✅ Evaluación final creada con ID:', evaluacionId);
+      return evaluacionId;
+    } catch (err) {
+      console.error('❌ Error creando evaluación final:', err);
+      error.value = 'No se pudo crear la evaluación final';
       throw err;
     } finally {
       isLoading.value = false;
@@ -500,7 +658,6 @@ export const useMontajeStore = defineStore('montaje', () => {
   };
 
   // ================== ACCIONES DE CAMBIO DE ESTADO ==================
-
   /**
    * Cambiar estado de compás
    */
@@ -513,7 +670,8 @@ export const useMontajeStore = defineStore('montaje', () => {
     try {
       const authStore = useAuthStore();
       const estadoAnterior = estadosCompases.value.get(compassNumber)?.estado || EstadoCompass.SIN_TRABAJAR;
-        const cambio: CambioEstadoCompass = {
+      
+      const cambio: CambioEstadoCompass = {
         id: `cambio-${Date.now()}`,
         obraId: obraActual.value?.id || '',
         fraseId,
@@ -526,12 +684,45 @@ export const useMontajeStore = defineStore('montaje', () => {
         fecha: Timestamp.now()
       };
       
-      // TODO: Implementar servicio real cuando esté disponible
-      console.log('Aplicando cambio de estado:', cambio);
-      console.log('✅ Estado de compás cambiado (simulado):', compassNumber, nuevoEstado);
+      console.log('🔄 Aplicando cambio de estado:', cambio);
+      await montajeService.cambiarEstadoCompass(compassNumber, nuevoEstado, cambio);      // Actualizar el estado local
+      estadosCompases.value.set(compassNumber, {
+        compas: compassNumber,
+        estado: nuevoEstado,
+        instrumentos: crearEstadoInstrumentos(nuevoEstado),
+        observaciones: razon ? [razon] : [],
+        fechaUltimaModificacion: Timestamp.now(),
+        modificadoPor: authStore.user?.uid || 'unknown',
+        sesionesEnsayo: 1,
+        dificultadesEspecificas: []
+      });
+      
+      console.log('✅ Estado de compás cambiado:', compassNumber, nuevoEstado);
     } catch (err) {
       console.error('❌ Error cambiando estado de compás:', err);
       throw err;
+    }
+  };
+
+  /**
+   * Cargar estados de compases de una obra
+   */
+  const cargarEstadosCompases = async (obraId: string) => {
+    try {
+      isLoading.value = true;
+      error.value = null;
+      
+      // Cargar estados desde el servicio
+      const estados = await montajeService.obtenerEstadosCompases(obraId);
+      estadosCompases.value = new Map(estados);
+      
+      console.log('✅ Estados de compases cargados:', estados.length);
+    } catch (err) {
+      console.error('❌ Error cargando estados de compases:', err);
+      error.value = 'No se pudieron cargar los estados de compases';
+      throw err;
+    } finally {
+      isLoading.value = false;
     }
   };
 
@@ -560,6 +751,18 @@ export const useMontajeStore = defineStore('montaje', () => {
    */
   const actualizarFiltros = (nuevosFiltros: Partial<FiltrosMontaje>) => {
     filtros.value = { ...filtros.value, ...nuevosFiltros };
+  };
+
+  // ================== UTILIDADES PRIVADAS ==================
+  
+  /**
+   * Crear objeto de instrumentos con estado por defecto
+   */
+  const crearEstadoInstrumentos = (estadoDefecto: EstadoCompass = EstadoCompass.SIN_TRABAJAR) => {
+    return Object.values(TipoInstrumento).reduce((acc, instrumento) => {
+      acc[instrumento] = estadoDefecto;
+      return acc;
+    }, {} as Record<TipoInstrumento, EstadoCompass>);
   };
 
   return {
@@ -600,24 +803,29 @@ export const useMontajeStore = defineStore('montaje', () => {
     cargarPlanAccion,
     crearPlanAccion,
     actualizarPlanAccion,
-    
-    // Acciones de frases
+      // Acciones de frases
     cargarFrases,
     crearFrase,
+    actualizarFrase,
     
     // Acciones de evaluaciones
     cargarEvaluacionesContinuas,
+    cargarEvaluacionesFinales,
     crearEvaluacionContinua,
+    crearEvaluacionFinal,
     
     // Acciones de notificaciones
     cargarNotificaciones,
     marcarNotificacionLeida,
-    
-    // Acciones de estados
+      // Acciones de estados
     cambiarEstadoCompass,
+    cargarEstadosCompases,
     
     // Utilidades
     limpiarEstado,
-    actualizarFiltros
+    actualizarFiltros,
+
+    // Utilidades privadas
+    crearEstadoInstrumentos
   };
 });

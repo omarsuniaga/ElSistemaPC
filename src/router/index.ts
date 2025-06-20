@@ -261,8 +261,7 @@ const routes: Array<RouteRecordRaw> = [
     name: 'AdminHomeView',
     component: () => import('../modulos/Admin/views/SuperAdminDashboard.vue'),
     meta: { 
-      requiresAuth: true,
-      requiresRBAC: true,
+      requiresAuth: true,      requiresRBAC: true,
       moduleKey: 'dashboard',
       permission: 'view'
     }

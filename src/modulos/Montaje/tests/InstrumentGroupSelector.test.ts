@@ -9,8 +9,8 @@ const mockClassStore = {
   fetchClassById: vi.fn().mockResolvedValue(true)
 };
 
-vi.mock('@/modulos/Classes/store/class', () => ({
-  useClassStore: () => mockClassStore
+vi.mock('@/modulos/Classes/store/classes', () => ({
+  useClassesStore: () => mockClassStore
 }));
 
 // Mock de datos de clase
