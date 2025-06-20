@@ -110,6 +110,7 @@ export const useRepertorioStore = defineStore('repertorio-montaje', () => {
           horasEstimadas: datos.metadatos?.horasEstimadas || 0,
           progresoPorcentaje: datos.metadatos?.progresoPorcentaje || 0
         },
+        participantes: datos.participantes || [],
         auditoria: {
           creadoPor: authStore.user?.uid || 'unknown',
           fechaCreacion: Timestamp.now(),
@@ -220,7 +221,7 @@ export const useRepertorioStore = defineStore('repertorio-montaje', () => {
       throw new Error('Repertorio no encontrado');
     }
 
-    const index = repertorio.participantes.findIndex(p => p.id === participanteId);
+    const index = repertorio.participantes.findIndex(p => p.estudianteId === participanteId);
     if (index === -1) {
       throw new Error('Participante no encontrado en el repertorio');
     }
@@ -240,7 +241,7 @@ export const useRepertorioStore = defineStore('repertorio-montaje', () => {
       throw new Error('Repertorio no encontrado');
     }
 
-    const participantesActualizados = repertorio.participantes.filter(p => p.userId !== userId);
+    const participantesActualizados = repertorio.participantes.filter(p => p.estudianteId !== userId);
     await updateRepertoireItem(repertorioId, { participantes: participantesActualizados });
   };
 

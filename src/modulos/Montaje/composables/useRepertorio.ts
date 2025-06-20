@@ -9,6 +9,7 @@ import type {
   UpdateParticipantInput,
   TipoInstrumento,
   DifficultyLevel,
+  InstrumentType,
   RepertoireStatus
 } from '../types'
 
@@ -40,7 +41,7 @@ export function useRepertorio() {
     // Filtro por búsqueda
     if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase()
-      filtered = filtered.filter(item =>
+      filtered = filtered.filter((item: RepertoireItem) =>
         item.nombre.toLowerCase().includes(query) ||
         (item.descripcion?.toLowerCase().includes(query) ?? false)
       )
@@ -54,7 +55,7 @@ export function useRepertorio() {
 
     // Filtro por estado
     if (selectedStatus.value !== 'all') {
-      filtered = filtered.filter(item =>
+      filtered = filtered.filter((item: RepertoireItem) =>
         item.estado === selectedStatus.value
       )
     }

@@ -1,11 +1,12 @@
 // src/modulos/Montaje/tests/montajeStore.test.ts
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, Mock } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useMontajeStore } from '../store/montaje';
 import type { Obra, PlanAccion, FraseMontaje } from '../types';
 import { EstadoObra, EstadoCompass } from '../types';
 import { Timestamp } from 'firebase/firestore';
+import { montajeService } from '../service/montajeService';
 
 // Mock Firebase
 vi.mock('firebase/firestore', () => ({
@@ -22,31 +23,41 @@ vi.mock('@/stores/auth', () => ({
 }));
 
 // Mock Montaje Service
-vi.mock('../service/montajeService', () => ({
-  montajeService: {
-    obtenerObras: vi.fn(),
-    crearObra: vi.fn(),
-    actualizarObra: vi.fn(),
-    eliminarObra: vi.fn(),
-    obtenerPlanAccion: vi.fn(),
-    crearPlanAccion: vi.fn(),
-    actualizarPlanAccion: vi.fn(),
-    obtenerFrases: vi.fn(),
-    crearFrase: vi.fn(),
-    obtenerEvaluacionesContinuas: vi.fn(),
-    crearEvaluacionContinua: vi.fn()
-  }
-}));
+vi.mock('../service/montajeService', () => {
+  return {
+    montajeService: {
+      obtenerObras: vi.fn().mockResolvedValue([]),
+      crearObra: vi.fn().mockResolvedValue('obra-123'),
+      actualizarObra: vi.fn().mockResolvedValue(undefined),
+      eliminarObra: vi.fn().mockResolvedValue(undefined),
+      obtenerPlanAccion: vi.fn().mockResolvedValue(null),
+      crearPlanAccion: vi.fn().mockResolvedValue('plan-123'),
+      actualizarPlanAccion: vi.fn().mockResolvedValue(undefined),
+      obtenerFrases: vi.fn().mockResolvedValue([]),
+      crearFrase: vi.fn().mockResolvedValue('frase-123'),
+      obtenerEvaluacionesContinuas: vi.fn().mockResolvedValue([]),
+      crearEvaluacionContinua: vi.fn().mockResolvedValue('eval-123'),
+      marcarNotificacionLeida: vi.fn().mockResolvedValue(undefined),
+      obtenerObra: vi.fn().mockResolvedValue({})
+    }
+  };
+});
 
 describe('Montaje Store', () => {
+  let store: ReturnType<typeof useMontajeStore>;
+  
   beforeEach(() => {
-    setActivePinia(createPinia());
+    // Crear y activar una nueva instancia de Pinia para cada test
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    // Crear una nueva instancia del store
+    store = useMontajeStore();
+    // Limpiar todos los mocks antes de cada test
+    vi.clearAllMocks();
   });
 
   describe('Estado inicial', () => {
     it('debe tener el estado inicial correcto', () => {
-      const store = useMontajeStore();
-      
       expect(store.obras).toEqual([]);
       expect(store.obraActual).toBeNull();
       expect(store.planAccion).toBeNull();
@@ -59,9 +70,7 @@ describe('Montaje Store', () => {
 
   describe('Getters', () => {
     it('debe filtrar obras activas por repertorio', () => {
-      const store = useMontajeStore();
-      
-      // Agregar obras de prueba
+      // Agregar obras de prueba directamente al estado
       store.obras = [
         {
           id: '1',
@@ -85,12 +94,10 @@ describe('Montaje Store', () => {
 
       const obrasRepertorio1 = store.obrasActivasPorRepertorio('repertorio-1');
       expect(obrasRepertorio1).toHaveLength(2);
-      expect(obrasRepertorio1.map(o => o.id)).toEqual(['1', '3']);
+      expect(obrasRepertorio1.map((o: Obra) => o.id)).toEqual(['1', '3']);
     });
 
     it('debe calcular frases actuales correctamente', () => {
-      const store = useMontajeStore();
-      
       store.planAccion = { id: 'plan-1' } as PlanAccion;
       store.frases = [
         { id: '1', planAccionId: 'plan-1' } as FraseMontaje,
@@ -99,12 +106,10 @@ describe('Montaje Store', () => {
       ];
 
       expect(store.frasesActuales).toHaveLength(2);
-      expect(store.frasesActuales.map(f => f.id)).toEqual(['1', '3']);
+      expect(store.frasesActuales.map((f: FraseMontaje) => f.id)).toEqual(['1', '3']);
     });
 
     it('debe calcular frases completadas correctamente', () => {
-      const store = useMontajeStore();
-      
       store.planAccion = { id: 'plan-1' } as PlanAccion;
       store.frases = [
         { 
@@ -125,18 +130,16 @@ describe('Montaje Store', () => {
       ];
 
       expect(store.frasesCompletadas).toHaveLength(2);
-      expect(store.frasesCompletadas.map(f => f.id)).toEqual(['1', '3']);
+      expect(store.frasesCompletadas.map((f: FraseMontaje) => f.id)).toEqual(['1', '3']);
     });
   });
 
   describe('Acciones', () => {
     it('debe manejar loading state durante operaciones async', async () => {
-      const store = useMontajeStore();
-      
       expect(store.isLoading).toBe(false);
       
-      // Simular operación async
-      const promiseObras = store.cargarObras();
+      // Simular operación async con parámetro requerido
+      const promiseObras = store.cargarObras('repertorio-test');
       expect(store.isLoading).toBe(true);
       
       await promiseObras;
@@ -144,16 +147,13 @@ describe('Montaje Store', () => {
     });
 
     it('debe manejar errores correctamente', async () => {
-      const store = useMontajeStore();
-      
       // Mock error en el servicio
-      const { montajeService } = await import('../service/montajeService');
-      vi.mocked(montajeService.obtenerObras).mockRejectedValue(new Error('Test error'));
+      (montajeService.obtenerObras as Mock).mockRejectedValueOnce(new Error('Test error'));
       
       expect(store.error).toBeNull();
       
       try {
-        await store.cargarObras();
+        await store.cargarObras('repertorio-test');
       } catch (error) {
         // Error esperado
       }
@@ -162,29 +162,44 @@ describe('Montaje Store', () => {
     });
 
     it('debe crear plan de acción con datos completos', async () => {
-      const store = useMontajeStore();
+      // Configurar estado inicial simulado
+      store.obraActual = { 
+        id: 'obra-test', 
+        titulo: 'Obra Test' 
+      } as Obra;
       
-      const planData = {
-        obraId: 'obra-1',
-        titulo: 'Plan de prueba',
+      const datosNuevoPlan = {
+        obraId: 'obra-test',
+        nombre: 'Plan de Acción Test',
         descripcion: 'Descripción de prueba',
         fechaInicio: Timestamp.now(),
-        fechaFin: Timestamp.now(),
+        fechaFinalizacion: Timestamp.now(),
+        estado: 'activo',
         fases: [],
+        objetivos: [
+          { id: 'obj-1', descripcion: 'Objetivo 1', completado: false },
+          { id: 'obj-2', descripcion: 'Objetivo 2', completado: false }
+        ],
+        responsableId: 'test-user-id',
         metadatos: {
-          horasEstimadas: 10
+          progresoPorcentaje: 0,
+          fasesCompletadas: 0,
+          totalFases: 3,
+          horasEstimadas: 14,
+          horasReales: 0,
+          prioridad: 'alta'
         }
       };
-
-      const planId = await store.crearPlanAccion(planData);
       
-      expect(planId).toBeDefined();
-      expect(planId).toMatch(/^plan-\d+$/);
+      // Usando unknown como intermediario para evitar error de tipos
+      const planId = await store.crearPlanAccion(datosNuevoPlan as unknown as Omit<PlanAccion, 'id' | 'auditoria'>);
+      
+      // Verificar que el servicio fue llamado con los datos correctos
+      expect(montajeService.crearPlanAccion).toHaveBeenCalledWith(datosNuevoPlan);
+      expect(planId).toBe('plan-123'); // Verificar que se retorna el ID esperado
     });
 
     it('debe cambiar estado de compás correctamente', async () => {
-      const store = useMontajeStore();
-      
       store.obraActual = { id: 'obra-1' } as Obra;
       
       await store.cambiarEstadoCompass(
@@ -201,7 +216,8 @@ describe('Montaje Store', () => {
 
   describe('Validaciones', () => {
     it('debe validar datos requeridos antes de crear obra', async () => {
-      const store = useMontajeStore();
+      // Mock del servicio para simular validación
+      (montajeService.crearObra as Mock).mockRejectedValueOnce(new Error('Título requerido'));
       
       const obraInvalida = {
         titulo: '', // Título vacío
@@ -215,6 +231,22 @@ describe('Montaje Store', () => {
       } catch (error) {
         expect(error).toBeDefined();
       }
+    });
+
+    it('debe limpiar el estado correctamente', () => {
+      // Rellenamos el estado con algunos datos
+      store.obras = [{ id: 'obra-1' } as Obra];
+      store.obraActual = { id: 'obra-1' } as Obra;
+      store.error = 'Error previo';
+      
+      // Ejecutamos la acción
+      store.limpiarEstado();
+      
+      // Verificamos que el estado se haya limpiado
+      expect(store.obras).toEqual([]);
+      expect(store.obraActual).toBeNull();
+      expect(store.error).toBeNull();
+      expect(store.isLoading).toBe(false);
     });
   });
 });

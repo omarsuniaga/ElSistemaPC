@@ -5,7 +5,7 @@
 
 import { ref } from 'vue';
 
-export interface AppError {
+export interface AppErrorInterface {
   code: string;
   message: string;
   details?: any;
@@ -13,7 +13,7 @@ export interface AppError {
 }
 
 export interface ErrorState {
-  error: AppError | null;
+  error: AppErrorInterface | null;
   loading: boolean;
 }
 
@@ -63,7 +63,7 @@ const errorMessages: Record<string, string> = {
  * Handles errors consistently across the application
  */
 export class ErrorHandler {
-  static handleError(error: any, context?: string): AppError {
+  static handleError(error: any, context?: string): AppErrorInterface {
     console.error(`[ErrorHandler] ${context || 'Unknown context'}:`, error);
     
     let code = 'unknown';
@@ -98,7 +98,7 @@ export class ErrorHandler {
   static async withErrorHandling<T>(
     operation: () => Promise<T>,
     context?: string
-  ): Promise<{ data: T | null; error: AppError | null }> {
+  ): Promise<{ data: T | null; error: AppErrorInterface | null }> {
     try {
       const data = await operation();
       return { data, error: null };
@@ -160,6 +160,79 @@ export class ErrorHandler {
  */
 export const useErrorHandler = ErrorHandler.useErrorHandler;
 
+export class AppError extends Error {
+  constructor(
+    public code: string,
+    message: string,
+    public statusCode: number = 400,
+    public context?: any
+  ) {
+    super(message)
+    this.name = 'AppError'
+  }
+}
+
+export class ValidationError extends AppError {
+  constructor(message: string, field?: string) {
+    super('VALIDATION_ERROR', message, 400, { field })
+  }
+}
+
+export class NetworkError extends AppError {
+  constructor(message: string = 'Error de conexión') {
+    super('NETWORK_ERROR', message, 500)
+  }
+}
+
+export class AuthError extends AppError {
+  constructor(message: string = 'Error de autenticación') {
+    super('AUTH_ERROR', message, 401)
+  }
+}
+
+// Global error state
+export const globalError = ref<AppError | null>(null)
+
+export const handleError = (error: unknown, showNotification = true) => {
+  console.error('[Error Handler]', error)
+  
+  let appError: AppError
+  
+  if (error instanceof AppError) {
+    appError = error
+  } else if (error instanceof Error) {
+    appError = new AppError('UNKNOWN_ERROR', error.message)
+  } else {
+    appError = new AppError('UNKNOWN_ERROR', 'Error inesperado')
+  }
+  
+  globalError.value = appError
+  
+  if (showNotification) {
+    // Aquí se puede integrar con el sistema de notificaciones
+    console.error(`[${appError.code}] ${appError.message}`)
+  }
+  
+  return appError
+}
+
+export const clearError = () => {
+  globalError.value = null
+}
+
+// Error boundary para async functions
+export const withErrorHandling = async <T>(
+  fn: () => Promise<T>,
+  fallback?: T
+): Promise<T | undefined> => {
+  try {
+    return await fn()
+  } catch (error) {
+    handleError(error)
+    return fallback
+  }
+}
+
 /**
  * Logging utility with environment-aware output
  */
@@ -213,8 +286,8 @@ export class Validator {
     return start <= end;
   }
   
-  static validateRequired(fields: Record<string, any>): AppError[] {
-    const errors: AppError[] = [];
+  static validateRequired(fields: Record<string, any>): AppErrorInterface[] {
+    const errors: AppErrorInterface[] = [];
     
     for (const [fieldName, value] of Object.entries(fields)) {
       if (!this.isRequired(value)) {

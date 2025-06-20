@@ -220,6 +220,18 @@
         </div>
       </section>
 
+      <!-- Enhanced Dashboard Button -->
+      <div class="hidden lg:flex">
+        <RouterLink
+          to="/admin/enhanced"
+          class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+        >
+          <CogIcon class="w-5 h-5" />
+          <span>Panel Integral</span>
+          <ChevronRightIcon class="w-4 h-4" />
+        </RouterLink>
+      </div>
+
       <!-- Main Content Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <!-- Left Column - Primary Management -->

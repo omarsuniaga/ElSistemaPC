@@ -1,0 +1,24 @@
+{
+  "recommendations": [
+    // Vue 3
+    "Vue.volar",
+    "Vue.vscode-typescript-vue-plugin",
+    
+    // TypeScript
+    "ms-vscode.vscode-typescript-next",
+    
+    // ESLint
+    "dbaeumer.vscode-eslint",
+    
+    // Prettier
+    "esbenp.prettier-vscode",
+    
+    // Otros útiles
+    "bradlc.vscode-tailwindcss",
+    "mikestead.dotenv",
+    "streetsidesoftware.code-spell-checker",
+    "eamodio.gitlens",
+    "mhutchie.git-graph",
+    "wix.vscode-import-cost"
+  ]
+}

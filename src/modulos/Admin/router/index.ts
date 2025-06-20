@@ -55,15 +55,28 @@ const adminRoutes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/enhanced',
+    name: 'AdminEnhanced',
+    component: () => import('../views/SuperAdminDashboardEnhanced.vue'),
+    meta: {
+      title: 'Panel Super Admin Integral',
+      requiresAuth: true,
+      permissions: {
+        module: 'admin',
+        action: 'view_enhanced_dashboard'
+      }
+    }
+  },
+  {
     path: '/admin/students/advanced',
     name: 'AdminStudentsAdvanced',
-    component: () => import('../views/AdminStudentsAdvancedView.vue'),
+    component: () => import('../components/AdvancedStudentsManagementNew.vue'),
     meta: {
       title: 'Gestión Avanzada de Estudiantes',
       requiresAuth: true,
       permissions: {
-        module: 'students',
-        action: 'advanced_management'
+        module: 'admin',
+        action: 'manage_students'
       }
     }
   },
@@ -131,6 +144,19 @@ const adminRoutes: RouteRecordRaw[] = [
       permissions: {
         module: 'teachers',
         action: 'view'
+      }
+    }
+  },
+  {
+    path: '/admin/teachers/advanced',
+    name: 'AdvancedTeachersManagement',
+    component: () => import('../components/AdvancedTeachersManagement.vue'),
+    meta: {
+      title: 'Gestión Avanzada de Maestros',
+      requiresAuth: true,
+      permissions: {
+        module: 'admin',
+        action: 'manage_teachers'
       }
     }
   },

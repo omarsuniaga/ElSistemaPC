@@ -24,6 +24,15 @@ import {
   type Document as StudentDocument
 } from '../services/advancedStudents'
 
+// Advanced Service Integration
+import { 
+  advancedStudentsService, 
+  type ImportResult, 
+  type StudentMetrics,
+  type DropoutRisk,
+  type ProgressReport
+} from '../services/advancedStudentsService'
+
 interface Student {
   id: string
   name: string

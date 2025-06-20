@@ -1,75 +1,86 @@
-# Music Academy App
+# Music Academy Manager
 
-Aplicación para la gestión de una academia de música.
+Sistema completo de gestión para academias de música con Vue 3, TypeScript y Firebase.
 
-## Características
+## 🚀 Características
 
-- Gestión de asistencia
-- Observaciones de clase
-- Justificaciones de ausencia
-- Gestión de estudiantes
-- Gestión de clases
-- Gestión de profesores
+- ✅ Gestión de asistencia con 4 estados
+- ✅ Sistema de observaciones de clase
+- ✅ Justificaciones de ausencias
+- ✅ Gestión de estudiantes y profesores
+- 🔄 Módulo de repertorio musical (en desarrollo)
+- 📊 Sistema de métricas y reportes
 
-## Requisitos
+## 🛠️ Stack Tecnológico
 
-- Node.js 16.x o superior
-- npm 7.x o superior
-- Firebase account
+- **Frontend**: Vue 3 + TypeScript + Vite
+- **Backend**: Firebase (Firestore, Auth)
+- **Estado**: Pinia
+- **Estilos**: Tailwind CSS
+- **Testing**: Vitest + Vue Test Utils
 
-## Configuración
+## 📋 Requisitos
 
-1. Clona el repositorio:
+- Node.js 18.x o superior
+- npm 9.x o superior
+- Cuenta de Firebase
+
+## ⚡ Instalación Rápida
+
 ```bash
-git clone https://github.com/your-username/music-academy-app.git
+# Clonar repositorio
+git clone [repo-url]
 cd music-academy-app
-```
 
-2. Instala las dependencias:
-```bash
+# Instalar dependencias
 npm install
-```
 
-3. Configura las variables de entorno:
-   - Copia el archivo `.env.example` a `.env`
-   - Actualiza las variables con tus credenciales de Firebase
+# Configurar variables de entorno
+cp .env.example .env
+# Editar .env con tus credenciales de Firebase
 
-4. Inicia el servidor de desarrollo:
-```bash
+# Ejecutar en desarrollo
 npm run dev
 ```
 
-## Estructura del Proyecto
+## 🔧 Scripts Disponibles
+
+```bash
+npm run dev          # Servidor de desarrollo
+npm run build        # Build de producción
+npm run test         # Ejecutar tests
+npm run lint         # Verificar código
+npm run format       # Formatear código
+npm run validate     # Lint + format + type-check
+```
+
+## 📁 Estructura del Proyecto
 
 ```
 src/
-  ├── modulos/
-  │   ├── Attendance/
-  │   │   ├── components/
-  │   │   ├── services/
-  │   │   ├── store/
-  │   │   └── types/
-  │   ├── Classes/
-  │   ├── Students/
-  │   └── Teachers/
-  ├── stores/
-  ├── firebase/
-  └── App.vue
+├── components/      # Componentes reutilizables
+├── modulos/        # Módulos de la aplicación
+│   ├── Attendance/ # Gestión de asistencia
+│   └── Montaje/    # Gestión de repertorio
+├── stores/         # Estados globales (Pinia)
+├── services/       # Servicios de API
+└── utils/          # Utilidades
 ```
 
-## Características de Asistencia
+## 🧪 Testing
 
-### Observaciones de Clase
-- Tipos de observaciones: general, comportamiento, logro, contenido, dinámica
-- Formato enriquecido con viñetas, estudiantes etiquetados, obras y dinámicas
-- Prioridad y seguimiento
-- Notificaciones a profesores
+```bash
+npm run test         # Ejecutar tests
+npm run test:watch   # Tests en modo watch
+npm run test:coverage # Cobertura de tests
+```
 
-### Justificaciones
-- Límite de tiempo de 48 horas
-- Documentos de respaldo
-- Estados: pendiente, aprobada, rechazada
-- Seguimiento de aprobaciones
+## 🚀 Despliegue
+
+```bash
+npm run build        # Build
+npm run deploy       # Deploy a Firebase
+```
 
 ## Contribución
 
