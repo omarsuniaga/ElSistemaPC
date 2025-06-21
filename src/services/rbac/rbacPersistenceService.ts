@@ -171,12 +171,20 @@ export class RBACPersistenceService {
    * Configuración de navegación por defecto
    */
   static getDefaultNavigationConfig(): NavigationItem[] {
-    return [
-      // Navegación para Maestros
+    return [      // Navegación para Maestros
       {
         id: 'dashboard-maestro',
         name: 'Dashboard',
         path: '/dashboard',
+        icon: '🏠',
+        roles: ['Maestro', 'Maestro Avanzado'],
+        isActive: true,
+        order: 1
+      },
+      {
+        id: 'teacher-dashboard-maestro',
+        name: 'Dashboard Maestro',
+        path: '/teacher',
         icon: '🏠',
         roles: ['Maestro', 'Maestro Avanzado'],
         isActive: true,
@@ -201,11 +209,19 @@ export class RBACPersistenceService {
         order: 3
       },
       {
+        id: 'teacher-attendance-maestro',
+        name: 'Asistencia Maestro',
+        path: '/teacher/attendance',
+        icon: '✅',
+        roles: ['Maestro', 'Maestro Avanzado'],
+        isActive: true,
+        order: 3
+      },{
         id: 'estudiantes-maestro',
         name: 'Estudiantes',
-        path: '/estudiantes',
+        path: '/students',
         icon: '🎓',
-        roles: ['Maestro Avanzado'], // Solo maestros avanzados por defecto
+        roles: ['Maestro', 'Maestro Avanzado'], // Todos los maestros pueden acceder
         isActive: true,
         order: 4
       },
@@ -219,11 +235,10 @@ export class RBACPersistenceService {
         roles: ['Director'],
         isActive: true,
         order: 1
-      },
-      {
+      },      {
         id: 'estudiantes-director',
         name: 'Estudiantes',
-        path: '/estudiantes',
+        path: '/students',
         icon: '🎓',
         roles: ['Director'],
         isActive: true,

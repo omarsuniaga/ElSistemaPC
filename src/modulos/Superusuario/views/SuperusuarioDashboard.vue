@@ -33,6 +33,10 @@
             <div class="text-2xl mb-2">🔐</div>
             <div class="text-sm font-medium">RBAC Dinámico</div>
           </button>
+          <button @click="navigateToModule('rbac-admin')" class="action-button">
+            <div class="text-2xl mb-2">🔧</div>
+            <div class="text-sm font-medium">Admin RBAC</div>
+          </button>
           <button @click="navigateToModule('roles')" class="action-button">
             <div class="text-2xl mb-2">🛡️</div>
             <div class="text-sm font-medium">Configurar Roles</div>
@@ -109,6 +113,54 @@
             }">
               <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Student Metrics -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="metric-card bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-indigo-100">Total Estudiantes</p>
+              <p class="text-3xl font-bold text-white">{{ dashboardData?.userStats.totalStudents || '0' }}</p>
+              <p class="text-xs text-indigo-200 mt-1">Registrados en el sistema</p>
+            </div>
+            <div class="text-indigo-200">
+              <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="metric-card bg-gradient-to-r from-green-500 to-teal-600 text-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-green-100">Estudiantes Activos</p>
+              <p class="text-3xl font-bold text-white">{{ dashboardData?.userStats.activeStudents || '0' }}</p>
+              <p class="text-xs text-green-200 mt-1">Con estado activo</p>
+            </div>
+            <div class="text-green-200">
+              <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="metric-card bg-gradient-to-r from-orange-500 to-red-600 text-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-orange-100">Nuevos Este Mes</p>
+              <p class="text-3xl font-bold text-white">{{ dashboardData?.userStats.newStudentsThisMonth || '0' }}</p>
+              <p class="text-xs text-orange-200 mt-1">Inscritos recientemente</p>
+            </div>
+            <div class="text-orange-200">
+              <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
               </svg>
             </div>
           </div>
@@ -463,10 +515,12 @@
             :disabled="!backupDescription.trim() || isCreatingBackup"
           >
             {{ isCreatingBackup ? 'Creando Backup...' : 'Crear Backup' }}
-          </button>
-        </div>
+          </button>        </div>
       </div>
     </div>
+
+    <!-- Componente de Prueba Rápida -->
+    <QuickTestTeacherAccess />
 
     </PermissionGuard>
   </div>
@@ -478,6 +532,7 @@ import { useRouter } from 'vue-router';
 import { useSuperusuario } from '../composables/useSuperusuario';
 import { UserRole } from '../types';
 import PermissionGuard from '@/modulos/Auth/components/PermissionGuard.vue';
+import QuickTestTeacherAccess from '@/components/QuickTestTeacherAccess.vue';
 
 const router = useRouter();
 
@@ -574,6 +629,9 @@ function navigateToModule(moduleName: string) {
       break;
     case 'rbac':
       router.push('/superusuario/rbac');
+      break;
+    case 'rbac-admin':
+      router.push('/superusuario/rbac-admin');
       break;
     case 'roles':
       router.push('/superusuario/roles');

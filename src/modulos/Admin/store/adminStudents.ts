@@ -13,47 +13,8 @@ import {
   orderBy
 } from 'firebase/firestore'
 import { db } from '@/firebase'
-// Importar servicio avanzado
-import { 
-  advancedStudentsService, 
-  type ImportResult, 
-  type EmailMessage, 
-  type ProgressReport,
-  type SatisfactionMetrics,
-  type ChurnPrediction,
-  type Document as StudentDocument
-} from '../services/advancedStudents'
-
-// Advanced Service Integration
-import { 
-  advancedStudentsService, 
-  type ImportResult, 
-  type StudentMetrics,
-  type DropoutRisk,
-  type ProgressReport
-} from '../services/advancedStudentsService'
-
-interface Student {
-  id: string
-  name: string
-  email: string
-  phone: string
-  birthDate: Date
-  address: string
-  parentName: string
-  parentPhone: string
-  parentEmail: string
-  instruments: string[]
-  grade: 'beginner' | 'intermediate' | 'advanced'
-  status: 'active' | 'inactive' | 'pending'
-  enrollmentDate: Date
-  classes: string[]
-  notes: string
-  avatar?: string
-  createdAt: Date
-  updatedAt: Date
-  createdBy: string
-}
+import type { Student } from '@/types'
+import { getStudentsFirebase } from '@/modulos/Students/service/students'
 
 interface StudentFilters {
   search: string
@@ -85,7 +46,6 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     instrument: '',
     class: ''
   })
-
   // Getters
   const studentStats = computed((): StudentStats => {
     const stats: StudentStats = {
@@ -102,101 +62,109 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
     students.value.forEach(student => {
-      // Status counts
-      stats[student.status]++
-
-      // New this month
-      if (new Date(student.enrollmentDate) >= startOfMonth) {
-        stats.newThisMonth++
+      // Status counts - usando el campo 'activo' de la estructura real
+      if (student.activo) {
+        stats.active++
+      } else {
+        stats.inactive++
+      }
+      
+      // Si hay un campo status específico, usarlo
+      if (student.status === 'pending') {
+        stats.pending++
       }
 
-      // By grade
-      stats.byGrade[student.grade] = (stats.byGrade[student.grade] || 0) + 1
+      // New this month - usando fecInscripcion
+      if (student.fecInscripcion) {
+        const enrollmentDate = new Date(student.fecInscripcion)
+        if (enrollmentDate >= startOfMonth) {
+          stats.newThisMonth++
+        }
+      }
 
-      // By instrument
-      student.instruments.forEach(instrument => {
-        stats.byInstrument[instrument] = (stats.byInstrument[instrument] || 0) + 1
-      })
+      // By instrument - usando el campo 'instrumento'
+      if (student.instrumento) {
+        stats.byInstrument[student.instrumento] = (stats.byInstrument[student.instrumento] || 0) + 1
+      }
     })
 
     return stats
   })
-
   const filteredStudents = computed(() => {
     let filtered = [...students.value]
 
-    // Search filter
+    // Search filter - usando campos reales de la estructura Student
     if (filters.value.search) {
       const searchTerm = filters.value.search.toLowerCase()
       filtered = filtered.filter(student =>
-        student.name.toLowerCase().includes(searchTerm) ||
-        student.email.toLowerCase().includes(searchTerm) ||
-        student.phone.includes(searchTerm) ||
-        student.parentName.toLowerCase().includes(searchTerm)
+        student.nombre?.toLowerCase().includes(searchTerm) ||
+        student.apellido?.toLowerCase().includes(searchTerm) ||
+        student.email?.toLowerCase().includes(searchTerm) ||
+        student.tlf?.includes(searchTerm) ||
+        student.madre?.toLowerCase().includes(searchTerm) ||
+        student.padre?.toLowerCase().includes(searchTerm)
       )
     }
 
-    // Status filter
+    // Status filter - usando campo 'activo'
     if (filters.value.status) {
-      filtered = filtered.filter(student => student.status === filters.value.status)
+      if (filters.value.status === 'active') {
+        filtered = filtered.filter(student => student.activo === true)
+      } else if (filters.value.status === 'inactive') {
+        filtered = filtered.filter(student => student.activo === false)
+      } else if (filters.value.status === 'pending') {
+        filtered = filtered.filter(student => student.status === 'pending')
+      }
     }
 
-    // Grade filter
-    if (filters.value.grade) {
-      filtered = filtered.filter(student => student.grade === filters.value.grade)
-    }
-
-    // Instrument filter
+    // Instrument filter - usando campo 'instrumento'
     if (filters.value.instrument) {
       filtered = filtered.filter(student => 
-        student.instruments.includes(filters.value.instrument)
+        student.instrumento === filters.value.instrument
       )
+    }
+
+    // Class filter - usando campo 'grupo' o 'clase'
+    if (filters.value.class) {
+      filtered = filtered.filter(student => {
+        if (student.grupo && Array.isArray(student.grupo)) {
+          return student.grupo.includes(filters.value.class)
+        }
+        return student.clase === filters.value.class
+      })
     }
 
     return filtered
   })
-
   const activeStudents = computed(() => 
-    students.value.filter(student => student.status === 'active')
+    students.value.filter(student => student.activo === true)
   )
 
   const recentStudents = computed(() =>
     students.value
-      .sort((a, b) => new Date(b.enrollmentDate).getTime() - new Date(a.enrollmentDate).getTime())
+      .filter(student => student.fecInscripcion)
+      .sort((a, b) => new Date(b.fecInscripcion!).getTime() - new Date(a.fecInscripcion!).getTime())
       .slice(0, 10)
   )
-
   // Actions
   const loadStudents = async () => {
     try {
       isLoading.value = true
       error.value = null
 
-      const studentsQuery = query(
-        collection(db, 'ALUMNOS'),
-        orderBy('name', 'asc')
-      )
+      // Usar el servicio existente que ya maneja la estructura correcta
+      const studentsData = await getStudentsFirebase()
+      students.value = studentsData
 
-      const snapshot = await getDocs(studentsQuery)
-      students.value = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        birthDate: doc.data().birthDate?.toDate() || new Date(),
-        enrollmentDate: doc.data().enrollmentDate?.toDate() || new Date(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date()
-      })) as Student[]
-
-      console.log('✅ Students loaded:', students.value.length)
+      console.log('✅ Students loaded from admin store:', students.value.length)
 
     } catch (err: any) {
-      console.error('❌ Error loading students:', err)
+      console.error('❌ Error loading students in admin store:', err)
       error.value = err.message
     } finally {
       isLoading.value = false
     }
   }
-
   const getStudent = async (studentId: string): Promise<Student | null> => {
     try {
       const docRef = doc(db, 'ALUMNOS', studentId)
@@ -207,10 +175,9 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
         return {
           id: docSnap.id,
           ...data,
-          birthDate: data.birthDate?.toDate() || new Date(),
-          enrollmentDate: data.enrollmentDate?.toDate() || new Date(),
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date()
+          fechaNacimiento: data.fechaNacimiento?.toDate() || data.fechaNacimiento,
+          createdAt: data.createdAt?.toDate() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate() || data.updatedAt
         } as Student
       }
 
@@ -220,7 +187,6 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       throw err
     }
   }
-
   const createStudent = async (studentData: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       isLoading.value = true
@@ -240,7 +206,7 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       }
 
       students.value.push(newStudent)
-      console.log('✅ Student created:', newStudent.name)
+      console.log('✅ Student created:', newStudent.nombre)
       
       return newStudent
 
@@ -309,7 +275,6 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       isLoading.value = false
     }
   }
-
   const searchStudents = async (searchTerm: string) => {
     try {
       if (!searchTerm.trim()) {
@@ -318,32 +283,32 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
 
       const searchQuery = searchTerm.toLowerCase()
       return students.value.filter(student =>
-        student.name.toLowerCase().includes(searchQuery) ||
-        student.email.toLowerCase().includes(searchQuery) ||
-        student.phone.includes(searchQuery) ||
-        student.parentName.toLowerCase().includes(searchQuery)
+        student.nombre?.toLowerCase().includes(searchQuery) ||
+        student.apellido?.toLowerCase().includes(searchQuery) ||
+        student.email?.toLowerCase().includes(searchQuery) ||
+        student.tlf?.includes(searchQuery) ||
+        student.madre?.toLowerCase().includes(searchQuery) ||
+        student.padre?.toLowerCase().includes(searchQuery)
       )
     } catch (err: any) {
       console.error('❌ Error searching students:', err)
       throw err
     }
   }
-
   const getStudentsByClass = async (classId: string) => {
     try {
       const studentsQuery = query(
         collection(db, 'ALUMNOS'),
-        where('classes', 'array-contains', classId)
+        where('grupo', 'array-contains', classId)
       )
 
       const snapshot = await getDocs(studentsQuery)
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        birthDate: doc.data().birthDate?.toDate() || new Date(),
-        enrollmentDate: doc.data().enrollmentDate?.toDate() || new Date(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date()
+        fechaNacimiento: doc.data().fechaNacimiento?.toDate() || doc.data().fechaNacimiento,
+        createdAt: doc.data().createdAt?.toDate() || doc.data().createdAt,
+        updatedAt: doc.data().updatedAt?.toDate() || doc.data().updatedAt
       })) as Student[]
 
     } catch (err: any) {
@@ -351,22 +316,20 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       throw err
     }
   }
-
   const getStudentsByInstrument = async (instrument: string) => {
     try {
       const studentsQuery = query(
         collection(db, 'ALUMNOS'),
-        where('instruments', 'array-contains', instrument)
+        where('instrumento', '==', instrument)
       )
 
       const snapshot = await getDocs(studentsQuery)
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        birthDate: doc.data().birthDate?.toDate() || new Date(),
-        enrollmentDate: doc.data().enrollmentDate?.toDate() || new Date(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date()
+        fechaNacimiento: doc.data().fechaNacimiento?.toDate() || doc.data().fechaNacimiento,
+        createdAt: doc.data().createdAt?.toDate() || doc.data().createdAt,
+        updatedAt: doc.data().updatedAt?.toDate() || doc.data().updatedAt
       })) as Student[]
 
     } catch (err: any) {
@@ -374,25 +337,26 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       throw err
     }
   }
-
   const exportStudents = (studentsToExport: Student[] = students.value) => {
     try {
       const csvContent = [
         // Headers
-        'Nombre,Email,Teléfono,Fecha Nacimiento,Padre/Tutor,Teléfono Padre,Email Padre,Instrumentos,Nivel,Estado,Fecha Inscripción',
+        'Nombre,Apellido,Email,Teléfono,Fecha Nacimiento,Madre,Padre,Teléfono Madre,Teléfono Padre,Instrumento,Estado,Fecha Inscripción,Grupo',
         // Data
         ...studentsToExport.map(student => [
-          student.name,
-          student.email,
-          student.phone,
-          student.birthDate.toLocaleDateString(),
-          student.parentName,
-          student.parentPhone,
-          student.parentEmail,
-          student.instruments.join('; '),
-          student.grade,
-          student.status,
-          student.enrollmentDate.toLocaleDateString()
+          student.nombre || '',
+          student.apellido || '',
+          student.email || '',
+          student.tlf || '',
+          student.fechaNacimiento ? new Date(student.fechaNacimiento).toLocaleDateString() : '',
+          student.madre || '',
+          student.padre || '',
+          student.tlf_madre || '',
+          student.tlf_padre || '',
+          student.instrumento || '',
+          student.activo ? 'Activo' : 'Inactivo',
+          student.fecInscripcion || '',
+          Array.isArray(student.grupo) ? student.grupo.join('; ') : (student.grupo || student.clase || '')
         ].join(','))
       ].join('\n')
 
@@ -415,14 +379,22 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       throw err
     }
   }
-
   const assignStudentToClass = async (studentId: string, classId: string) => {
     try {
       const student = students.value.find(s => s.id === studentId)
       if (!student) throw new Error('Student not found')
 
-      const updatedClasses = [...(student.classes || []), classId]
-      await updateStudent(studentId, { classes: updatedClasses })
+      // Usar el campo 'grupo' como array
+      let updatedGroups: string[] = []
+      if (Array.isArray(student.grupo)) {
+        updatedGroups = [...student.grupo, classId]
+      } else if (student.grupo) {
+        updatedGroups = [student.grupo, classId]
+      } else {
+        updatedGroups = [classId]
+      }
+
+      await updateStudent(studentId, { grupo: updatedGroups })
 
       console.log('✅ Student assigned to class:', { studentId, classId })
 
@@ -437,8 +409,15 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       const student = students.value.find(s => s.id === studentId)
       if (!student) throw new Error('Student not found')
 
-      const updatedClasses = (student.classes || []).filter(id => id !== classId)
-      await updateStudent(studentId, { classes: updatedClasses })
+      // Usar el campo 'grupo' como array
+      let updatedGroups: string[] = []
+      if (Array.isArray(student.grupo)) {
+        updatedGroups = student.grupo.filter(id => id !== classId)
+      } else if (student.grupo && student.grupo !== classId) {
+        updatedGroups = [student.grupo]
+      }
+
+      await updateStudent(studentId, { grupo: updatedGroups })
 
       console.log('✅ Student removed from class:', { studentId, classId })
 
@@ -727,7 +706,6 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       isLoading.value = false
     }
   }
-
   return {
     // State
     students,
@@ -758,21 +736,7 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     bulkDeleteStudents,
     setFilters,
     clearFilters,
-    $reset,
-
-    // FUNCIONES AVANZADAS - FASE 1
-    importStudentsFromCSV,
-    importStudentsFromExcel,
-    sendBulkEmailToStudents,
-    sendWhatsAppToParents,
-    generateStudentProgressReport,
-    generateClassRosterPDF,
-    generateAttendanceCertificate,
-    getStudentRetentionRate,
-    getStudentSatisfactionMetrics,
-    predictStudentChurn,
-    uploadStudentDocument,
-    getStudentDocuments
+    $reset
   }
 })
 

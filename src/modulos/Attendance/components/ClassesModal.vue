@@ -6,6 +6,7 @@ import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { useRouter } from 'vue-router';
 import { useAttendanceStore } from '../store/attendance';
 import { useOptimizedAttendance } from '../composables/useOptimizedAttendance';
+import { useAuthStore } from '../../../stores/auth';
 
 // Define props and emits
 const props = defineProps<{
@@ -15,6 +16,14 @@ const props = defineProps<{
     id: string;
     name: string;
     teacher?: string;
+    teacherId?: string; // ID del profesor principal
+    teachers?: { // Array de profesores para clases compartidas
+      teacherId: string;
+      role: string;
+      permissions?: {
+        canTakeAttendance?: boolean;
+      };
+    }[];
     time?: string;
     students?: number;
     hasAttendance?: boolean;
@@ -27,6 +36,9 @@ const props = defineProps<{
     isScheduledClass?: boolean;
     hasAttendanceRecord?: boolean;
     attendanceRecord?: any;
+    teacherPermissions?: {
+      canTakeAttendance?: boolean;
+    };
     schedule: {
       slots: {
         id: string;
@@ -41,6 +53,7 @@ const emit = defineEmits(['close', 'select-class']);
 
 const router = useRouter();
 const attendanceStore = useAttendanceStore();
+const authStore = useAuthStore();
 const { checkAttendanceExists } = useOptimizedAttendance();
 
 // Estado para los indicadores de asistencia
@@ -119,6 +132,10 @@ const debugAttendance = async () => {
 // Computed property for classes with attendance status
 const classesWithAttendanceStatus = computed(() => {
   if (!props.classes || !props.date) return [];
+  
+  // Las clases ya vienen filtradas por el componente padre (AttendanceView.vue o TeacherHome.vue)
+  // que usa fetchClassesForDate para filtrar por teacherId del usuario autenticado
+  console.log(`[ClassesModal] Procesando ${props.classes.length} clases ya filtradas para la fecha ${props.date}`);
   
   return props.classes.map(classItem => {
     const key = `${classItem.id}|${props.date}`;

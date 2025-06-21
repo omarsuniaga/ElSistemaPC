@@ -120,21 +120,19 @@ export class NavigationService {
    * Obtener navegación de respaldo según el rol
    */
   private getFallbackNavigation(userRole: string): NavigationMenuItem[] {
-    const fallbackMenus: Record<string, NavigationMenuItem[]> = {
-      'Maestro': [
+    const fallbackMenus: Record<string, NavigationMenuItem[]> = {      'Maestro': [
         { id: 'dashboard', name: 'Dashboard', path: '/dashboard', icon: '🏠', isActive: true, order: 1 },
         { id: 'clases', name: 'Mis Clases', path: '/clases', icon: '📚', isActive: true, order: 2 },
-        { id: 'asistencia', name: 'Asistencia', path: '/asistencia', icon: '✅', isActive: true, order: 3 }
-      ],
-      'Maestro Avanzado': [
-        { id: 'dashboard', name: 'Dashboard', path: '/dashboard', icon: '🏠', isActive: true, order: 1 },
-        { id: 'clases', name: 'Mis Clases', path: '/clases', icon: '📚', isActive: true, order: 2 },
-        { id: 'estudiantes', name: 'Estudiantes', path: '/estudiantes', icon: '🎓', isActive: true, order: 3 },
+        { id: 'estudiantes', name: 'Estudiantes', path: '/students', icon: '🎓', isActive: true, order: 3 },
         { id: 'asistencia', name: 'Asistencia', path: '/asistencia', icon: '✅', isActive: true, order: 4 }
-      ],
-      'Director': [
+      ],'Maestro Avanzado': [
         { id: 'dashboard', name: 'Dashboard', path: '/dashboard', icon: '🏠', isActive: true, order: 1 },
-        { id: 'estudiantes', name: 'Estudiantes', path: '/estudiantes', icon: '🎓', isActive: true, order: 2 },
+        { id: 'clases', name: 'Mis Clases', path: '/clases', icon: '📚', isActive: true, order: 2 },
+        { id: 'estudiantes', name: 'Estudiantes', path: '/students', icon: '🎓', isActive: true, order: 3 },
+        { id: 'asistencia', name: 'Asistencia', path: '/asistencia', icon: '✅', isActive: true, order: 4 }
+      ],      'Director': [
+        { id: 'dashboard', name: 'Dashboard', path: '/dashboard', icon: '🏠', isActive: true, order: 1 },
+        { id: 'estudiantes', name: 'Estudiantes', path: '/students', icon: '🎓', isActive: true, order: 2 },
         { id: 'maestros', name: 'Maestros', path: '/maestros', icon: '👨‍🏫', isActive: true, order: 3 },
         { id: 'clases', name: 'Clases', path: '/clases', icon: '📚', isActive: true, order: 4 },
         { id: 'reportes', name: 'Reportes', path: '/reportes', icon: '📊', isActive: true, order: 5 }
@@ -188,12 +186,13 @@ export class NavigationService {
    * Obtener todas las rutas disponibles para configuración
    */
   getAllAvailableRoutes(): { path: string; name: string; description: string }[] {
-    return [
-      { path: '/dashboard', name: 'Dashboard', description: 'Panel principal del usuario' },
+    return [      { path: '/dashboard', name: 'Dashboard', description: 'Panel principal del usuario' },
+      { path: '/teacher', name: 'Dashboard Maestro', description: 'Panel principal para maestros' },
       { path: '/clases', name: 'Clases', description: 'Gestión de clases' },
-      { path: '/estudiantes', name: 'Estudiantes', description: 'Gestión de estudiantes' },
+      { path: '/students', name: 'Estudiantes', description: 'Gestión de estudiantes' },
       { path: '/maestros', name: 'Maestros', description: 'Gestión de maestros' },
       { path: '/asistencia', name: 'Asistencia', description: 'Control de asistencia' },
+      { path: '/teacher/attendance', name: 'Asistencia Maestro', description: 'Control de asistencia para maestros' },
       { path: '/reportes', name: 'Reportes', description: 'Reportes y estadísticas' },
       { path: '/usuarios', name: 'Usuarios', description: 'Gestión de usuarios del sistema' },
       { path: '/sistema', name: 'Sistema', description: 'Configuración del sistema' },

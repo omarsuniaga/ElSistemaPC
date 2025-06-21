@@ -144,8 +144,14 @@ const isEdit = computed(() => !!props.permission)
 // Resetear formulario cuando se abre/cierra el modal
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
+    console.log('🔄 PermissionModal - Modal abierto:', {
+      isEdit: isEdit.value,
+      permission: props.permission
+    })
+    
     if (props.permission) {
       // Modo edición
+      console.log('🔄 PermissionModal - Inicializando en modo edición con permiso:', props.permission)
       formData.value = {
         name: props.permission.name,
         description: props.permission.description,
@@ -155,6 +161,7 @@ watch(() => props.isOpen, (newVal) => {
       }
     } else {
       // Modo creación
+      console.log('🔄 PermissionModal - Inicializando en modo creación')
       formData.value = {
         name: '',
         description: '',
@@ -163,14 +170,24 @@ watch(() => props.isOpen, (newVal) => {
         resource: ''
       }
     }
+    
+    console.log('🔄 PermissionModal - FormData inicializado:', formData.value)
   }
 })
 
 const handleSubmit = async () => {
   try {
+    console.log('🔄 PermissionModal - handleSubmit:', {
+      isEdit: isEdit.value,
+      permission: props.permission,
+      formData: formData.value
+    })
+    
     if (isEdit.value && props.permission) {
+      console.log('🔄 Modo edición - llamando updatePermission con ID:', props.permission.id)
       await updatePermission(props.permission.id, formData.value)
     } else {
+      console.log('🔄 Modo creación - llamando createPermission')
       await createPermission(formData.value)
     }
     

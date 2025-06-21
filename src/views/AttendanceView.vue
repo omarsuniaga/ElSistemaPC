@@ -210,6 +210,7 @@
       :attendanceDate="selectedDate"
       :initialObservation="observationToEdit"
       :classObservationMode="!selectedStudentForObs"
+      :teacherPermissions="availableClasses.find(cls => cls.id === selectedClass)?.teacherPermissions || null"
       @observation-saved="handleObservationAdded"
       @close="showObservationsModal = false"
     />
@@ -271,6 +272,9 @@ import { useStudentsStore } from '../modulos/Students/store/students'
 import { useClassesStore } from '../modulos/Classes/store/classes'
 import { useAuthStore } from '../stores/auth'
 import { useConfigStore } from '../stores/config'
+
+// Tipos
+import { TeacherRole } from '../modulos/Classes/types/class'
 
 // Componentes
 import AttendanceList from '../modulos/Attendance/components/AttendanceList.vue'
@@ -404,6 +408,11 @@ const simpleMarkedDates = computed(() => {
   return attendanceStore.datesWithRecords
 })
 
+// Available classes (computed from classesForDate)
+const availableClasses = computed(() => {
+  return classesForDate.value || []
+})
+
 // Available class dates based on schedule
 const availableClassDates = computed(() => {
   if (!selectedClass.value) return []
@@ -528,7 +537,7 @@ const fetchClassesForDate = async (dateStr: string) => {
     const sharedClasses = classesStore.classes.filter(cls => {
       // Verificar si el maestro es asistente en esta clase
       const isAssistant = cls.teachers?.some(teacher => 
-        teacher.teacherId === teacherId && teacher.role === 'ASSISTANT'
+        teacher.teacherId === teacherId && teacher.role === TeacherRole.ASSISTANT
       )
       
       if (!isAssistant) return false
@@ -567,8 +576,32 @@ const fetchClassesForDate = async (dateStr: string) => {
       record.fecha === dateStr && record.teacherId === teacherId
     )
     console.log(`[AttendanceView] Registros de asistencia para ${dateStr}:`, attendanceRecords.length)
+    console.log(`[AttendanceView] Detalles de registros de asistencia:`, attendanceRecords.map(r => ({
+      classId: r.classId,
+      fecha: r.fecha,
+      teacherId: r.teacherId
+    })))
     
-    // 4. Crear un mapa para evitar duplicados y combinar información
+    // 4. IMPORTANTE: También buscar clases por nombre si classId no coincide
+    const attendanceRecordsByName = attendanceStore.attendanceDocuments.filter(record => {
+      if (record.fecha === dateStr && record.teacherId === teacherId) {
+        // Si ya está en attendanceRecords por classId, no duplicar
+        const alreadyIncluded = attendanceRecords.some(ar => ar.classId === record.classId)
+        if (!alreadyIncluded) {
+          // Buscar la clase en el store para verificar que existe
+          const classInfo = classesStore.classes.find(c => c.id === record.classId)
+          return !!classInfo
+        }
+      }
+      return false
+    })
+    console.log(`[AttendanceView] Registros adicionales por nombre para ${dateStr}:`, attendanceRecordsByName.length)
+    
+    // Combinar ambos arrays de registros
+    const allAttendanceRecords = [...attendanceRecords, ...attendanceRecordsByName]
+    console.log(`[AttendanceView] Total de registros de asistencia (combinados): ${allAttendanceRecords.length}`)
+    
+    // 5. Crear un mapa para evitar duplicados y combinar información
     const classMap = new Map()
     
     // Procesar clases programadas (encargado principal)
@@ -614,21 +647,30 @@ const fetchClassesForDate = async (dateStr: string) => {
     }
     
     // Procesar clases con asistencia registrada (pueden ser clases extra o de recuperación)
-    for (const record of attendanceRecords) {
+    for (const record of allAttendanceRecords) {
+      console.log(`[AttendanceView] Procesando registro de asistencia:`, {
+        classId: record.classId,
+        fecha: record.fecha
+      })
+      
       const existingClass = classMap.get(record.classId)
       
       if (existingClass) {
         // Ya existe en las programadas/compartidas, actualizar info
+        console.log(`[AttendanceView] Clase ${record.classId} ya existe en el mapa, actualizando...`)
         existingClass.hasAttendance = true
         existingClass.registered = true
         existingClass.status = existingClass.type === 'shared' ? 'Registrada (Compartida)' : 'Registrada'
         existingClass.attendanceRecord = record
       } else {
         // Clase no programada pero con asistencia (clase extra/recuperación)
+        console.log(`[AttendanceView] Clase ${record.classId} NO existe en el mapa, buscando información...`)
+        
         // Intentar obtener información de la clase desde el store
-        const classInfo = classesStore.classes.find(c => c.id === record.classId)
+        let classInfo = classesStore.classes.find(c => c.id === record.classId)
         
         if (classInfo) {
+          console.log(`[AttendanceView] ✅ Información de clase encontrada para ${record.classId}, agregando al mapa`)
           classMap.set(record.classId, {
             ...classInfo,
             isScheduled: false,
@@ -641,9 +683,10 @@ const fetchClassesForDate = async (dateStr: string) => {
           })
         } else {
           // Clase no encontrada en el store, crear entrada básica
+          console.log(`[AttendanceView] ❌ Clase no encontrada en store, creando entrada básica para ${record.classId}`)
           classMap.set(record.classId, {
             id: record.classId,
-            name: record.className || `Clase ${record.classId}`,
+            name: `Clase ${record.classId}`,
             isScheduled: false,
             hasAttendance: true,
             type: 'recorded',
@@ -823,7 +866,7 @@ const selectClass = async (className: string) => {
     
     // Cargar estudiantes específicos de la clase primero
     console.log(`[AttendanceView] Cargando estudiantes para clase: ${className}`)
-    await studentsStore.fetchStudentsByClass(className)
+    await studentsStore.getStudentsByClass(className)
     
     await loadAttendanceData(className)
     updateView('attendance-form')
@@ -1073,6 +1116,28 @@ const isDateInClassSchedule = (date: string, classId: string): boolean => {
 const handleOpenObservation = async (student: SelectedStudent | null, observation?: ClassObservation | null) => {
   console.log('[Aqui] handleOpenObservation llamado con estudiante:', student, 'y observación:', observation)
   console.log('[Aqui] Estado anterior de showObservationsModal:', showObservationsModal.value)
+  
+  // Validar permisos antes de abrir el modal (con verificación segura)
+  const currentClass = availableClasses.value?.find(cls => cls.id === selectedClass.value)
+  if (currentClass?.isSharedClass && currentClass?.teacherPermissions) {
+    const canAdd = currentClass.teacherPermissions.canAddObservations
+    const canView = currentClass.teacherPermissions.canViewObservations
+    
+    if (!canAdd && !canView) {
+      showToast('No tienes permisos para gestionar observaciones en esta clase compartida', 'error')
+      return
+    }
+    
+    if (observation && !canView) {
+      showToast('No tienes permisos para ver observaciones en esta clase compartida', 'error')
+      return
+    }
+    
+    if (!observation && !canAdd) {
+      showToast('No tienes permisos para crear observaciones en esta clase compartida', 'error')
+      return
+    }
+  }
   
   selectedStudentForObs.value = student
   observationToEdit.value = observation || null; // Set the observation to edit/view
@@ -1520,7 +1585,7 @@ const fetchInitialData = async () => {
     if (currentUserId) {
       const sharedClassesDebug = classesStore.classes.filter(cls => {
         return cls.teachers?.some(teacher => 
-          teacher.teacherId === currentUserId && teacher.role === 'ASSISTANT'
+          teacher.teacherId === currentUserId && teacher.role === TeacherRole.ASSISTANT
         )
       })
       console.log(`[AttendanceView] DEBUG: Clases compartidas disponibles para ${currentUserId}:`, sharedClassesDebug.length)

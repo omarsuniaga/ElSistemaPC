@@ -42,7 +42,7 @@
         <!-- Tabs para cambiar entre añadir observación e historial -->
         <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
           <ul class="flex flex-wrap -mb-px">
-            <li class="mr-2">
+            <li class="mr-2" v-if="canAddObservations">
               <button
                 @click="activeTab = 'new'"
                 :class="[
@@ -55,7 +55,7 @@
                 Nueva Observación
               </button>
             </li>
-            <li class="mr-2">
+            <li class="mr-2" v-if="canViewObservations">
               <button
                 @click="activeTab = 'history'"
                 :class="[
@@ -164,8 +164,9 @@
               </button>
               <button
                 @click="saveObservation"
-                :disabled="!(typeof newObservation === 'string' && newObservation.trim()) || isLoading || characterCount > 1000"
+                :disabled="!(typeof newObservation === 'string' && newObservation.trim()) || isLoading || characterCount > 1000 || !canAddObservations"
                 class="btn btn-primary"
+                :title="!canAddObservations ? 'No tienes permisos para agregar observaciones' : ''"
               >
                 <span v-if="isLoading" class="flex items-center">
                   <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -423,6 +424,11 @@ const props = defineProps<{
   existingObservation?: any;
   initialObservation?: any;
   classObservationMode?: boolean;
+  teacherPermissions?: {
+    canAddObservations?: boolean;
+    canViewObservations?: boolean;
+    canEditObservations?: boolean;
+  };
 }>();
 
 // Definición de emits con TypeScript
@@ -449,6 +455,19 @@ const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'inf
 const attendanceStore = useAttendanceStore();
 const authStore = useAuthStore();
 const teachersStore = useTeachersStore();
+
+// Computed para manejar permisos de forma segura
+const teacherPermissions = computed(() => {
+  return props.teacherPermissions || null;
+});
+
+const canAddObservations = computed(() => {
+  return !teacherPermissions.value || teacherPermissions.value.canAddObservations !== false;
+});
+
+const canViewObservations = computed(() => {
+  return !teacherPermissions.value || teacherPermissions.value.canViewObservations !== false;
+});
 
 // Function to get teacher name by ID
 const getTeacherName = async (teacherId: string): Promise<string> => {
@@ -551,6 +570,20 @@ watch(() => props.modelValue || props.isVisible, (newValue, oldValue) => {
     isVisible: props.isVisible,
     timestamp: new Date().toISOString()
   });
+  
+  // Establecer tab por defecto basado en permisos
+  if (newValue) {
+    if (canAddObservations.value && !canViewObservations.value) {
+      activeTab.value = 'new';
+    } else if (!canAddObservations.value && canViewObservations.value) {
+      activeTab.value = 'history';
+    } else if (canAddObservations.value && canViewObservations.value) {
+      activeTab.value = 'new'; // Por defecto si tiene ambos permisos
+    } else {
+      // Si no tiene ningún permiso, mostrar un mensaje o cerrar el modal
+      console.warn('Usuario sin permisos para observaciones');
+    }
+  }
 }, { immediate: true });
 
 // Watch for initial observation changes
@@ -613,6 +646,13 @@ const handleEditRequestFromHistory = (observationToEdit: any) => {
 const saveObservation = async () => {
   // newObservation.value is from useRichEditor
   if (!newObservation.value.trim() || characterCount.value > 1000) return;
+  
+  // Validar permisos antes de guardar (con verificación segura)
+  if (!canAddObservations.value) {
+    showToast('No tienes permisos para agregar observaciones en esta clase compartida', 'error');
+    return;
+  }
+  
   isLoading.value = true;
   try {
     // Get teacher name instead of email

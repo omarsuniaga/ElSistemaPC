@@ -51,6 +51,16 @@ export const superusuarioRoutes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/superusuario/rbac-admin',
+    name: 'SuperusuarioRBACAdmin',
+    component: () => import('../components/RBACAdminPanel.vue'),
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['Superusuario'],
+      title: 'Panel de Administración RBAC'
+    }
+  },
+  {
     path: '/superusuario/navigation',
     name: 'SuperusuarioNavigation',
     component: () => import('../views/NavigationManagement.vue'),

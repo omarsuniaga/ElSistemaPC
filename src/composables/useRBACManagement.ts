@@ -281,16 +281,39 @@ export function useRBACManagement() {
   const initializeDefaultData = async () => {
     await forceInitializeRBAC()
   }
-
   // Función para inicializar el composable manualmente
   const initialize = async () => {
-    await loadRoles()
-    await loadPermissions()
-    await loadNavigationConfig()
-    
-    // Si no hay datos, inicializar automáticamente
-    if (roles.value.length === 0 || permissions.value.length === 0) {
-      await forceInitializeRBAC()
+    try {
+      console.log('🔄 Inicializando RBAC Management...')
+      
+      await loadRoles()
+      await loadPermissions()
+      await loadNavigationConfig()
+      
+      console.log('📊 Estado después de cargar:', {
+        roles: roles.value.length,
+        permissions: permissions.value.length,
+        navigation: navigationConfig.value.length
+      })
+      
+      // Si no hay datos, inicializar automáticamente
+      if (roles.value.length === 0 || permissions.value.length === 0) {
+        console.log('⚠️ No se encontraron datos, inicializando automáticamente...')
+        await forceInitializeRBAC()
+        
+        // Verificar que se crearon los datos
+        console.log('📊 Estado después de inicializar:', {
+          roles: roles.value.length,
+          permissions: permissions.value.length,
+          navigation: navigationConfig.value.length
+        })
+      } else {
+        console.log('✅ Datos RBAC cargados correctamente')
+      }
+    } catch (error) {
+      console.error('❌ Error en initialize:', error)
+      error.value = 'Error al inicializar RBAC'
+      throw error
     }
   }
 
@@ -388,17 +411,48 @@ export function useRBACManagement() {
     } finally {
       loading.value = false
     }
+  }  // Función de diagnóstico para permisos
+  const debugPermissions = () => {
+    console.log('=== DIAGNÓSTICO DE PERMISOS ===')
+    console.log('Total de permisos cargados:', permissions.value.length)
+    console.log('Permisos detallados:')
+    permissions.value.forEach((permission, index) => {
+      console.log(`  ${index + 1}. ID: "${permission.id}" | Nombre: "${permission.name}"`)
+    })
+    console.log('=== FIN DIAGNÓSTICO ===')
+    return {
+      totalPermissions: permissions.value.length,
+      permissions: permissions.value.map(p => ({ id: p.id, name: p.name }))
+    }
   }
 
   // Actualizar un permiso existente
   const updatePermission = async (permissionId: string, updates: Partial<Permission>) => {
     try {
       loading.value = true
+      
+      console.log('🔄 Actualizando permiso:', {
+        permissionId,
+        updates,
+        totalPermissions: permissions.value.length,
+        permissionIds: permissions.value.map(p => ({ id: p.id, name: p.name }))
+      })
+      
+      // Ejecutar diagnóstico antes de buscar
+      debugPermissions()
+      
       const permissionIndex = permissions.value.findIndex(p => p.id === permissionId)
       
       if (permissionIndex === -1) {
-        throw new Error('Permiso no encontrado')
+        console.error('❌ Permiso no encontrado:', {
+          searchId: permissionId,
+          availableIds: permissions.value.map(p => p.id),
+          availablePermissions: permissions.value.map(p => ({ id: p.id, name: p.name }))
+        })
+        throw new Error(`Permiso no encontrado. ID buscado: ${permissionId}`)
       }
+      
+      console.log('✅ Permiso encontrado en índice:', permissionIndex)
       
       permissions.value[permissionIndex] = {
         ...permissions.value[permissionIndex],
@@ -450,7 +504,6 @@ export function useRBACManagement() {
       loading.value = false
     }
   }
-
   return {
     roles,
     permissions,
@@ -478,6 +531,7 @@ export function useRBACManagement() {
     deleteRole,
     createPermission,
     updatePermission,
-    deletePermission
+    deletePermission,
+    debugPermissions
   }
 }

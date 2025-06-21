@@ -13,14 +13,26 @@
         <div class="flex justify-between items-center">
           <div class="text-sm text-gray-600">
             Roles: {{ roles.length }} | Permisos: {{ permissions.length }}
+            <span v-if="roles.length === 0 || permissions.length === 0" class="text-red-600 font-semibold">
+              - ⚠️ Sin datos cargados
+            </span>
           </div>
-          <button 
-            @click="forceInitializeRBAC"
-            :disabled="loading"
-            class="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-          >
-            🔄 Inicializar Datos por Defecto
-          </button>
+          <div class="flex gap-2">
+            <button 
+              @click="forceLoadData"
+              :disabled="loading"
+              class="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            >
+              📥 Cargar Datos
+            </button>
+            <button 
+              @click="forceInitializeRBAC"
+              :disabled="loading"
+              class="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+            >
+              🔄 Inicializar por Defecto
+            </button>
+          </div>
         </div>
       </div>
 
@@ -211,7 +223,11 @@ const {
   deletePermission,
   getPermissionsByModule,
   forceInitializeRBAC,
-  initialize
+  initialize,
+  loadRoles,
+  loadPermissions,
+  loadNavigationConfig,
+  debugPermissions
 } = useRBACManagement()
 
 const activeTab = ref('roles')
@@ -307,8 +323,49 @@ const confirmDeletePermission = async (permission: Permission) => {
 
 // Inicialización
 onMounted(async () => {
-  await initialize()
+  console.log('🔄 RBACManagement - Iniciando carga de datos...')
+  try {
+    await initialize()
+    console.log('✅ RBACManagement - Datos cargados:', {
+      roles: roles.value.length,
+      permissions: permissions.value.length
+    })
+    
+    // Si no hay datos después de initialize, mostrar advertencia
+    if (roles.value.length === 0 || permissions.value.length === 0) {
+      console.warn('⚠️ RBACManagement - No se cargaron datos. Es necesario inicializar.')
+    }
+  } catch (error) {
+    console.error('❌ RBACManagement - Error en inicialización:', error)
+  }
 })
+
+// Función para forzar la carga de datos
+const forceLoadData = async () => {
+  try {
+    console.log('🔄 Forzando carga de datos RBAC...')
+    await loadRoles()
+    await loadPermissions()
+    await loadNavigationConfig()
+    
+    console.log('✅ Datos cargados:', {
+      roles: roles.value.length,
+      permissions: permissions.value.length
+    })
+    
+    // Ejecutar diagnóstico para ver qué se cargó
+    debugPermissions()
+    
+    if (roles.value.length === 0 || permissions.value.length === 0) {
+      alert('⚠️ No se encontraron datos en Firestore. Usa "Inicializar por Defecto" para crear los datos iniciales.')
+    } else {
+      alert(`✅ Datos cargados correctamente: ${roles.value.length} roles, ${permissions.value.length} permisos`)
+    }
+  } catch (error) {
+    console.error('Error cargando datos:', error)
+    alert('❌ Error al cargar datos. Revisa la consola para más detalles.')
+  }
+}
 </script>
 
 <style scoped>

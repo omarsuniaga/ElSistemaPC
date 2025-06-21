@@ -203,11 +203,13 @@ export interface SuperusuarioDashboardData {
     uptime: number;
     lastError?: Date;
     version: string;
-  };
-  userStats: {
+  };  userStats: {
     totalUsers: number;
     activeUsers: number;
     newUsersThisMonth: number;
+    totalStudents: number;
+    activeStudents: number;
+    newStudentsThisMonth: number;
     usersByRole: Record<UserRole, number>;
   };
   activityStats: {

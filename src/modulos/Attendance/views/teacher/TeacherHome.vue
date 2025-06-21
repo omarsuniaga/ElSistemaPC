@@ -13,15 +13,17 @@ import ClassesModal from "../../components/ClassesModal.vue";
 
 // Composables y store
 import { useAttendanceState } from "../../composables/useAttendanceState";
-import { useAttendanceActions } from "../../composables/useAttendanceActions";
+import { useAttendanceActionsSimple as useAttendanceActions } from "../../composables/useAttendanceActionsSimple";
 import { useModal } from "../../composables/useModal";
 import { useToast } from "../../composables/useToast";
 import { useAttendanceStore } from "../../store/attendance";
+import { useAuthStore } from "../../../../stores/auth";
 
 // Obtener las clases del maestro
-import { useClassesStore } from '@/modulos/Classes/store/classes'
+import { useClassesStore } from '../../../Classes/store/classes'
 
 const classesStore = useClassesStore();
+const authStore = useAuthStore();
 
 const {
   selectedDate,
@@ -44,7 +46,7 @@ const attendanceActions = useAttendanceActions({
   localAttendanceRecords: attendanceRecords, // Pass the attendanceRecords ref
   pendingChanges: ref(new Set<string>()), // Create a new ref for pendingChanges, or get from state if appropriate
   pendingJustifications: ref(new Map<string, { reason?: string; documentURL?: string }>()), // Create new ref for justifications
-  displayToast: toast.display, // Pass the displayToast function
+  displayToast: toast.success, // Pass the success toast function
   isProcessing: loading, // Pass the loading ref from useAttendanceState
   selectedDate: selectedDate, // Pass selectedDate ref
   selectedClass: selectedClass, // Pass selectedClass ref
@@ -87,34 +89,182 @@ async function handleDateChange(date: string) {
 
 // Función para obtener las clases programadas en una fecha específica
 async function fetchClassesForDate(date: string) {
-  const formattedDate = format(parseISO(date), 'EEEE').toLowerCase();
-  // Obtener todas las clases primero
-  await classesStore.fetchClasses();
-  
-  // Filtrar las clases para el día de la semana
-  const classesForDay = classesStore.getClassesByDay(formattedDate);
-  
-  // Comprobar cuáles tienen registro de asistencia
-  const classesWithAttendance = await attendanceStore.fetchAttendanceDocuments();
-  
-  // Preparar datos para el modal
-  classesForDate.value = classesForDay.map(classItem => {
-    // Verificar si la clase ya tiene registro de asistencia
-    // Usando isClassRegistered para mantener coherencia con AttendanceView.vue
-    const hasAttendance = attendanceStore.isClassRegistered(date, classItem.id);
+  try {
+    const dayOfWeek = format(parseISO(date), 'EEEE').toLowerCase();
+    const teacherId = authStore.user?.uid;
     
-    return {
-      id: classItem.id,
-      name: classItem.name,
-      teacher: classItem.teacherName || '',
-      time: classItem.schedule?.slots.find(slot => slot.day.toLowerCase() === formattedDate)
-        ? `${classItem.schedule?.slots.find(slot => slot.day.toLowerCase() === formattedDate)?.startTime} - 
-           ${classItem.schedule?.slots.find(slot => slot.day.toLowerCase() === formattedDate)?.endTime}`
-        : '',
-      students: classItem.studentIds?.length || 0,
-      hasAttendance
-    };
-  });
+    if (!teacherId) {
+      console.error('[TeacherHome] No hay un usuario logueado con uid');
+      classesForDate.value = [];
+      return;
+    }
+    
+    console.log(`[TeacherHome] Buscando clases para el maestro ${teacherId} en la fecha ${date} (${dayOfWeek})`);
+    
+    // Obtener todas las clases primero
+    await classesStore.fetchClasses();
+    
+    // 1. Obtener clases programadas donde el maestro es el encargado principal
+    const scheduledClasses = classesStore.getClassesByDayAndTeacherId(dayOfWeek, teacherId) || [];
+    console.log(`[TeacherHome] Clases programadas como encargado para ${dayOfWeek}:`, scheduledClasses.length);
+    
+    // 2. Obtener clases compartidas donde el maestro es asistente
+    const sharedClasses = classesStore.classes.filter(cls => {
+      // Verificar si el maestro es asistente en esta clase
+      const isAssistant = cls.teachers?.some(teacher => 
+        teacher.teacherId === teacherId && teacher.role.toString() === 'ASSISTANT'
+      );
+      
+      if (!isAssistant) return false;
+      
+      // Verificar si la clase está programada para este día
+      if (!cls.schedule?.slots || !Array.isArray(cls.schedule.slots)) {
+        return false;
+      }
+      
+      const hasSlotForDay = cls.schedule.slots.some(slot => {
+        const slotDay = slot.day?.toLowerCase()?.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const currentDay = dayOfWeek.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return slotDay === currentDay;
+      });
+      
+      return hasSlotForDay;
+    });
+    console.log(`[TeacherHome] Clases compartidas como asistente para ${dayOfWeek}:`, sharedClasses.length);
+    
+    // 3. Obtener clases que tienen asistencia registrada para esta fecha específica
+    await attendanceStore.fetchAttendanceDocuments();
+    const attendanceRecords = attendanceStore.attendanceDocuments.filter(record => 
+      record.fecha === date && record.teacherId === teacherId
+    );
+    console.log(`[TeacherHome] Registros de asistencia para ${date}:`, attendanceRecords.length);
+    
+    // 4. Crear un mapa para evitar duplicados y combinar información
+    const classMap = new Map();
+    
+    // Procesar clases programadas (encargado principal)
+    for (const cls of scheduledClasses) {
+      const hasAttendance = attendanceStore.isClassRegistered(date, cls.id);
+      
+      classMap.set(cls.id, {
+        ...cls,
+        teacher: `Profesor ${cls.teacherId?.substring(0, 6) || 'N/A'}`,
+        teacherId: cls.teacherId,
+        hasAttendance: hasAttendance,
+        classType: 'scheduled',
+        isScheduledClass: true,
+        schedule: cls.schedule
+      });
+    }
+    
+    // Procesar clases compartidas (asistente)
+    for (const cls of sharedClasses) {
+      const hasAttendance = attendanceStore.isClassRegistered(date, cls.id);
+      
+      // Obtener permisos del maestro asistente
+      const myTeacherData = cls.teachers?.find(t => t.teacherId === teacherId);
+      const canTakeAttendance = myTeacherData?.permissions?.canTakeAttendance || false;
+      
+      classMap.set(cls.id, {
+        ...cls,
+        teacher: `Profesor ${cls.teacherId?.substring(0, 6) || 'N/A'}`,
+        teacherId: cls.teacherId,
+        teachers: cls.teachers,
+        hasAttendance: hasAttendance,
+        classType: 'shared',
+        isScheduledClass: true,
+        teacherPermissions: {
+          canTakeAttendance: canTakeAttendance
+        },
+        schedule: cls.schedule
+      });
+    }
+    
+    // Procesar clases con asistencia registrada (pueden ser clases extra o de recuperación)
+    for (const record of attendanceRecords) {
+      const existingClass = classMap.get(record.classId);
+      
+      if (existingClass) {
+        // Ya existe en las programadas/compartidas, actualizar info
+        existingClass.hasAttendance = true;
+        existingClass.attendanceRecord = record;
+      } else {
+        // Clase no programada pero con asistencia (clase extra/recuperación)
+        const classInfo = classesStore.classes.find(c => c.id === record.classId);
+        
+        if (classInfo) {
+          classMap.set(record.classId, {
+            ...classInfo,
+            teacher: `Profesor ${classInfo.teacherId?.substring(0, 6) || 'N/A'}`,
+            teacherId: classInfo.teacherId,
+            hasAttendance: true,
+            classType: 'recorded',
+            isScheduledClass: false,
+            attendanceRecord: record,
+            schedule: classInfo.schedule || { slots: [] }
+          });
+        } else {
+          // Clase no encontrada en el store, crear entrada básica
+          classMap.set(record.classId, {
+            id: record.classId,
+            name: `Clase ${record.classId}`,
+            teacher: '',
+            teacherId: teacherId,
+            hasAttendance: true,
+            classType: 'recorded',
+            isScheduledClass: false,
+            attendanceRecord: record,
+            schedule: { slots: [] },
+            studentIds: []
+          });
+        }
+      }
+    }
+    
+    // Convertir el mapa a array
+    const allClasses = Array.from(classMap.values());
+    
+    // Preparar datos para el modal con el formato esperado
+    classesForDate.value = allClasses.map(classItem => {
+      // Obtener horario formateado
+      let timeString = '';
+      if (classItem.schedule?.slots && classItem.schedule.slots.length > 0) {
+        const slot = classItem.schedule.slots.find(s => {
+          const slotDay = s.day?.toLowerCase()?.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          const currentDay = dayOfWeek.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          return slotDay === currentDay;
+        });
+        
+        if (slot) {
+          timeString = `${slot.startTime} - ${slot.endTime}`;
+        }
+      }
+      
+      return {
+        id: classItem.id,
+        name: classItem.name,
+        teacher: classItem.teacher,
+        teacherId: classItem.teacherId,
+        teachers: classItem.teachers,
+        time: timeString,
+        students: classItem.studentIds?.length || 0,
+        studentIds: classItem.studentIds,
+        hasAttendance: classItem.hasAttendance,
+        classType: classItem.classType,
+        isScheduledClass: classItem.isScheduledClass,
+        hasAttendanceRecord: classItem.hasAttendance,
+        attendanceRecord: classItem.attendanceRecord,
+        teacherPermissions: classItem.teacherPermissions,
+        schedule: classItem.schedule
+      };
+    });
+    
+    console.log(`[TeacherHome] Total de clases encontradas para ${teacherId}:`, classesForDate.value.length);
+    
+  } catch (error) {
+    console.error('[TeacherHome] Error al obtener las clases:', error);
+    classesForDate.value = [];
+  }
 }
 
 function handleClassSelect(classId: string) {
