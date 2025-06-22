@@ -1,29 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { collection, query, getDocs, orderBy, limit, where, doc, getDoc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore'
-import { db } from '@/firebase'
-
-interface DashboardStats {
-  totalStudents: number
-  totalTeachers: number
-  totalClasses: number
-  totalSchedules: number
-  activeUsers: number
-  attendanceRate: number
-  performanceAverage: number
-  inventoryItems: number
-}
-
-interface Activity {
-  id: string
-  type: 'create' | 'update' | 'delete' | 'login' | 'assignment'
-  entity: string
-  description: string
-  user: string
-  timestamp: Date
-  icon: string
-  color: string
-}
+import { 
+  DashboardStats, 
+  Activity,
+  adminService 
+} from '../services/adminService'
 
 interface SystemStatus {
   database: 'online' | 'offline' | 'warning'
@@ -95,37 +76,16 @@ export const useAdminStore = defineStore('admin', () => {
       isLoading.value = true
       error.value = null
 
-      // Load students count
-      const studentsQuery = query(collection(db, 'STUDENTS'))
-      const studentsSnapshot = await getDocs(studentsQuery)
-      dashboardStats.value.totalStudents = studentsSnapshot.size
-
-      // Load teachers count
-      const teachersQuery = query(
-        collection(db, 'USERS'),
-        where('role', '==', 'Maestro')
-      )
-      const teachersSnapshot = await getDocs(teachersQuery)
-      dashboardStats.value.totalTeachers = teachersSnapshot.size
-
-      // Load classes count
-      const classesQuery = query(collection(db, 'CLASSES'))
-      const classesSnapshot = await getDocs(classesQuery)
-      dashboardStats.value.totalClasses = classesSnapshot.size
-
-      // Load schedules count
-      const schedulesQuery = query(collection(db, 'SCHEDULES'))
-      const schedulesSnapshot = await getDocs(schedulesQuery)
-      dashboardStats.value.totalSchedules = schedulesSnapshot.size
-
-      // Calculate attendance rate (example calculation)
-      dashboardStats.value.attendanceRate = 92.5
-
-      // Calculate performance average (example calculation)
-      dashboardStats.value.performanceAverage = 87.3
+      // Obtener estadísticas usando el servicio
+      const stats = await adminService.getDashboardStats()
+      dashboardStats.value = {
+        ...stats,
+        // Mantener valores calculados que no vienen del servicio
+        attendanceRate: 92.5, // Ejemplo - se puede calcular aquí
+        performanceAverage: 87.3 // Ejemplo - se puede calcular aquí
+      }
 
       console.log('📊 Dashboard stats loaded:', dashboardStats.value)
-
     } catch (err: any) {
       console.error('Error loading dashboard stats:', err)
       error.value = err.message
@@ -136,22 +96,13 @@ export const useAdminStore = defineStore('admin', () => {
 
   const loadRecentActivities = async () => {
     try {
-      // Load from activity log collection
-      const activitiesQuery = query(
-        collection(db, 'ACTIVITY_LOG'),
-        orderBy('timestamp', 'desc'),
-        limit(10)
-      )
+      // Cargar actividades usando el servicio
+      const activities = await adminService.getRecentActivities(10)
       
-      const activitiesSnapshot = await getDocs(activitiesQuery)
-      recentActivities.value = activitiesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate() || new Date()
-      })) as Activity[]
-
-      // If no activities exist, create sample data
-      if (recentActivities.value.length === 0) {
+      if (activities.length > 0) {
+        recentActivities.value = activities
+      } else {
+        // Datos de ejemplo si no hay actividades
         recentActivities.value = [
           {
             id: '1',
@@ -185,7 +136,6 @@ export const useAdminStore = defineStore('admin', () => {
           }
         ]
       }
-
     } catch (err: any) {
       console.error('Error loading recent activities:', err)
       error.value = err.message
@@ -194,66 +144,60 @@ export const useAdminStore = defineStore('admin', () => {
 
   const loadSystemStatus = async () => {
     try {
-      // Check system status (simplified for demo)
-      systemStatus.value = {
-        database: 'online',
-        storage: 'online',
-        auth: 'online',
-        lastBackup: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-        systemLoad: Math.random() * 100,
-        activeConnections: Math.floor(Math.random() * 50) + 10
-      }
-
+      // Obtener estado del sistema usando el servicio
+      systemStatus.value = await adminService.getSystemStatus()
     } catch (err: any) {
       console.error('Error loading system status:', err)
       error.value = err.message
+      
+      // Estado por defecto en caso de error
+      systemStatus.value = {
+        database: 'offline',
+        storage: 'offline',
+        auth: 'offline',
+        lastBackup: new Date(),
+        systemLoad: 0,
+        activeConnections: 0
+      }
     }
   }
 
   const loadPendingApprovals = async () => {
     try {
-      const approvalsQuery = query(
-        collection(db, 'PENDING_APPROVALS'),
-        where('status', '==', 'pending'),
-        orderBy('requestedAt', 'desc')
-      )
+      // Cargar aprobaciones pendientes usando el servicio
+      const approvals = await adminService.getPendingApprovals()
       
-      const approvalsSnapshot = await getDocs(approvalsQuery)
-      pendingApprovals.value = approvalsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        requestedAt: doc.data().requestedAt?.toDate() || new Date()
-      })) as PendingApproval[]
-
-      // Sample data if empty
-      if (pendingApprovals.value.length === 0) {
+      if (approvals.length > 0) {
+        pendingApprovals.value = approvals as PendingApproval[]
+      } else {
+        // Datos de ejemplo si no hay aprobaciones
         pendingApprovals.value = [
           {
             id: '1',
             type: 'teacher_registration',
-            title: 'Nuevo maestro de violín',
-            description: 'Carlos Méndez solicita registro como maestro',
+            title: 'Nuevo Maestro por Aprobar',
+            description: 'Carlos Méndez ha solicitado registro como maestro',
             requestedBy: 'Carlos Méndez',
-            requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
+            requestedAt: new Date(Date.now() - 1000 * 60 * 30), // 30 minutos atrás
             priority: 'high',
-            data: { teacherId: 'teacher_123' }
+            data: { userId: 'user123' }
           },
           {
             id: '2',
             type: 'schedule_change',
-            title: 'Cambio de horario - Piano Básico',
-            description: 'Solicitud de cambio de horario para clase de piano',
+            title: 'Cambio de Horario Solicitado',
+            description: 'Prof. Ana López solicita cambiar horario de clase de piano',
             requestedBy: 'Ana López',
-            requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 48),
+            requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 horas atrás
             priority: 'medium',
-            data: { classId: 'class_456' }
+            data: { classId: 'class456', currentTime: '16:00', requestedTime: '17:00' }
           }
         ]
       }
-
     } catch (err: any) {
       console.error('Error loading pending approvals:', err)
       error.value = err.message
+      pendingApprovals.value = []
     }
   }
 

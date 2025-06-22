@@ -5,13 +5,15 @@ import router from './router'
 import App from './App.vue'
 import { registerServiceWorker } from './registerServiceWorker'
 import { createBrowserDebugFunction } from './utils/testAttendanceSystem'
-// Importar herramientas de debug PWA y testing
+
+// Importar estilos
+import './style.css'
+import './styles/main.scss'
+
+// Import tools and utilities
 import './utils/musicAcademyDebugTools'
 import './utils/testingUtils'
 import './utils/pwaTester'
-
-import './style.css'
-import './styles/theme-palette.css'
 import { setupGlobalTheme } from './composables/useTheme'
 
 // Auto-verificación de RBAC en desarrollo
@@ -37,9 +39,6 @@ async function verifyRBACSetup() {
 // Crear la aplicación
 const app = createApp(App)
 
-// Primero crear el pinia store y configurarlo
-const pinia = createPinia()
-
 // Configurar manejador global de errores
 app.config.errorHandler = (err, instance, info) => {
     console.error('Error de aplicación:', err)
@@ -47,27 +46,28 @@ app.config.errorHandler = (err, instance, info) => {
     console.log('Info:', info)
 }
 
-// IMPORTANTE: Inicializar Pinia antes que cualquier otra cosa
+// Configurar Pinia
+const pinia = createPinia()
 app.use(pinia)
 
-// Luego inicializar el router
+// Configurar Router
 app.use(router)
 
 // Configurar tema global
 setupGlobalTheme()
 
-// Crear función de debugging global en desarrollo
+// Configurar función de debugging global en desarrollo
 if (import.meta.env.DEV) {
     createBrowserDebugFunction()
     console.log('🔧 Modo desarrollo: funciones de debugging disponibles')
     console.log('   - window.debugObservationIssue() para diagnosticar modal de observaciones')
 }
 
-// Finalmente montar la app
+// Montar la aplicación
 app.mount('#app')
 
-// Verificar RBAC después de montar la app
+// Verificar configuración RBAC
 verifyRBACSetup()
 
-// Registrar el Service Worker para PWA
+// Registrar Service Worker para PWA
 registerServiceWorker()

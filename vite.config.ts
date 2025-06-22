@@ -2,7 +2,10 @@ import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'url'
+import vuetify from 'vite-plugin-vuetify'
 
+// https://vitejs.dev/config/
+// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Cargar variables de entorno según el modo (development, production)
   const env = loadEnv(mode, process.cwd(), '');
@@ -31,7 +34,19 @@ export default defineConfig(({ mode }) => {
   // Configuración de Vite
   return {
     plugins: [
-      vue(), 
+      vue({
+        template: {
+          compilerOptions: {
+            isCustomElement: (tag) => ['md-linedivider'].includes(tag),
+          },
+        },
+      }),
+      vuetify({
+        autoImport: true,
+        styles: {
+          configFile: 'src/styles/vuetify/settings.scss',
+        },
+      }),
       VitePWA({
         registerType: 'prompt',
         injectRegister: false, // Usaremos nuestro registro personalizado
@@ -46,20 +61,32 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: {
-        '@': fileURLToPath(new URL('./src', import.meta.url))
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+        'vue': 'vue/dist/vue.esm-bundler.js'
+      }
+    },
+    css: {
+      preprocessorOptions: {
+        scss: {
+          additionalData: `
+            @use 'sass:math';
+            @use 'sass:color';
+            @import './src/styles/vuetify/settings.scss';
+          `
+        }
       }
     },
     define: {
       // Definir explícitamente las variables de entorno de Firebase
-      'import.meta.env.VITE_APP_API_KEY': JSON.stringify(env.VITE_APP_API_KEY),
-      'import.meta.env.VITE_APP_AUTH_DOMAIN': JSON.stringify(env.VITE_APP_AUTH_DOMAIN),
-      'import.meta.env.VITE_APP_PROJECT_ID': JSON.stringify(env.VITE_APP_PROJECT_ID),
-      'import.meta.env.VITE_APP_STORAGE_BUCKET': JSON.stringify(env.VITE_APP_STORAGE_BUCKET),
-      'import.meta.env.VITE_APP_MESSAGING_SENDER_ID': JSON.stringify(env.VITE_APP_MESSAGING_SENDER_ID),
-      'import.meta.env.VITE_APP_APP_ID': JSON.stringify(env.VITE_APP_APP_ID),
-      'import.meta.env.VITE_APP_MEASUREMENT_ID': JSON.stringify(env.VITE_APP_MEASUREMENT_ID),
-      'import.meta.env.VITE_APP_DATABASE_URL': JSON.stringify(env.VITE_APP_DATABASE_URL),
-      'import.meta.env.VITE_USE_EMULATORS': JSON.stringify(env.VITE_USE_EMULATORS)
+      'process.env.VITE_APP_API_KEY': JSON.stringify(env.VITE_APP_API_KEY),
+      'process.env.VITE_APP_AUTH_DOMAIN': JSON.stringify(env.VITE_APP_AUTH_DOMAIN),
+      'process.env.VITE_APP_PROJECT_ID': JSON.stringify(env.VITE_APP_PROJECT_ID),
+      'process.env.VITE_APP_STORAGE_BUCKET': JSON.stringify(env.VITE_APP_STORAGE_BUCKET),
+      'process.env.VITE_APP_MESSAGING_SENDER_ID': JSON.stringify(env.VITE_APP_MESSAGING_SENDER_ID),
+      'process.env.VITE_APP_APP_ID': JSON.stringify(env.VITE_APP_APP_ID),
+      'process.env.VITE_APP_MEASUREMENT_ID': JSON.stringify(env.VITE_APP_MEASUREMENT_ID),
+      'process.env.VITE_APP_DATABASE_URL': JSON.stringify(env.VITE_APP_DATABASE_URL),
+      'process.env.VITE_USE_EMULATORS': JSON.stringify(env.VITE_USE_EMULATORS)
     },
     server: {
       port: 3000,

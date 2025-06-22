@@ -2,27 +2,30 @@
   <div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
     <!-- Hero Header -->
     <div class="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
-      <div class="px-6 py-8">
+      <div class="px-4 sm:px-6 py-6 sm:py-8">
         <div class="max-w-7xl mx-auto">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-              <div class="bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-xl">
-                <CogIcon class="w-8 h-8 text-white" />
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0">
+            <div class="flex items-center space-x-3 sm:space-x-4">
+              <div class="bg-gradient-to-r from-blue-500 to-purple-600 p-2 sm:p-3 rounded-xl">
+                <CogIcon class="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
               <div>
-                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Panel de Administración
                 </h1>
-                <p class="text-gray-600 dark:text-gray-400 mt-1 text-lg">
-                  Sistema de gestión académica avanzado - {{ currentDate }}
+                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
+                  Sistema de gestión académica avanzado
+                </p>
+                <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-500">
+                  {{ currentDate }}
                 </p>
               </div>
             </div>
             
             <!-- Super Stats with Notifications -->
-            <div class="flex items-center space-x-4">
+            <div class="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3 md:space-x-4">
               <!-- Real-time Notifications Bell -->
-              <div class="relative notifications-container">
+              <div class="relative self-end sm:self-center notifications-container">
                 <button 
                   @click="toggleNotifications"
                   class="relative p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
@@ -104,24 +107,23 @@
                     </button>
                   </div>
                 </div>
-              </div>
-              
+              </div>           
               <!-- Stats Grid -->
-              <div class="grid grid-cols-4 gap-4">
-                <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white text-center">
-                  <div class="text-2xl font-bold">{{ stats.totalStudents }}</div>
+              <div class="w-full grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-3 sm:p-4 text-white text-center">
+                  <div class="text-xl sm:text-2xl font-bold">{{ stats.totalStudents }}</div>
                   <div class="text-xs opacity-90">Estudiantes</div>
                 </div>
-                <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white text-center">
-                  <div class="text-2xl font-bold">{{ stats.totalTeachers }}</div>
+                <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-3 sm:p-4 text-white text-center">
+                  <div class="text-xl sm:text-2xl font-bold">{{ stats.totalTeachers }}</div>
                   <div class="text-xs opacity-90">Maestros</div>
                 </div>
-                <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-4 text-white text-center">
-                  <div class="text-2xl font-bold">{{ stats.totalClasses }}</div>
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-3 sm:p-4 text-white text-center">
+                  <div class="text-xl sm:text-2xl font-bold">{{ stats.totalClasses }}</div>
                   <div class="text-xs opacity-90">Clases</div>
                 </div>
-                <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-4 text-white text-center">
-                  <div class="text-2xl font-bold">{{ stats.activeUsers }}</div>
+                <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-3 sm:p-4 text-white text-center">
+                  <div class="text-xl sm:text-2xl font-bold">{{ stats.activeUsers }}</div>
                   <div class="text-xs opacity-90">Usuarios Activos</div>
                 </div>
               </div>
@@ -157,18 +159,18 @@
     </div>
 
     <!-- Main Dashboard -->
-    <div class="max-w-7xl mx-auto px-6 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
       <!-- Super Actions Row -->
       <section class="mb-8">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Acciones de Superpoderes</h2>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 space-y-2 sm:space-y-0">
+          <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Acciones de Superpoderes</h2>
           <div class="flex items-center space-x-2">
-            <span class="text-sm text-gray-500 dark:text-gray-400">Modo Admin</span>
+            <span class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Modo Admin</span>
             <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
           </div>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
           <!-- Super Action Cards -->
           <SuperActionCard
             title="Nuevo Usuario"
@@ -233,12 +235,12 @@
       </div>
 
       <!-- Main Content Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
         <!-- Left Column - Primary Management -->
-        <div class="lg:col-span-3 space-y-6">
+        <div class="lg:col-span-3 space-y-4 sm:space-y-6">
           <!-- Gestión Principal -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <div class="flex items-center justify-between mb-6">
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 space-y-2 sm:space-y-0">
               <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
                 <UsersIcon class="w-6 h-6 mr-2 text-blue-500" />
                 Gestión Principal
@@ -344,11 +346,11 @@
             </div>
           </div>
 
-          <!-- Recent Activity -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <div class="flex items-center justify-between mb-6">
-              <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
-                <ClockIcon class="w-6 h-6 mr-2 text-purple-500" />
+          <!-- Actividad Reciente -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 space-y-2 sm:space-y-0">
+              <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                <ClockIcon class="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-purple-500" />
                 Actividad Reciente
               </h3>
               <RouterLink to="/admin/activity" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
@@ -363,11 +365,11 @@
         </div>
 
         <!-- Right Column - Quick Access & Alerts -->
-        <div class="space-y-6">
+        <div class="space-y-4 sm:space-y-6">
           <!-- System Status -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-              <CpuChipIcon class="w-5 h-5 mr-2 text-blue-500" />
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+            <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center">
+              <ServerIcon class="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-green-500" />
               Estado del Sistema
             </h3>
             <div class="bg-green-100 dark:bg-green-900/30 rounded-lg p-4">
@@ -379,20 +381,20 @@
             </div>
           </div>
 
-          <!-- Recent Alerts -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-              <BellAlertIcon class="w-5 h-5 mr-2 text-red-500" />
-              Alertas Recientes
+          <!-- Alerts -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+            <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center">
+              <ExclamationTriangleIcon class="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-red-500" />
+              Alertas Importantes
             </h3>
             <AlertsList :alerts="systemAlerts" @dismiss="handleDismissAlert" />
           </div>
 
-          <!-- Quick Access -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-              <BoltIcon class="w-5 h-5 mr-2 text-yellow-500" />
-              Acceso Rápido
+          <!-- Quick Actions -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+            <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center">
+              <BoltIcon class="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-yellow-500" />
+              Acciones Rápidas
             </h3>
             <div class="space-y-3">
               <QuickAccessButton
@@ -478,7 +480,8 @@ import {
   SwatchIcon,
   DocumentTextIcon,
   XMarkIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  ServerIcon
 } from '@heroicons/vue/24/outline'
 
 // Components

@@ -293,7 +293,9 @@
               <label for="groupByClass" class="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Agrupar por clase
               </label>
-            </div>            <!-- Include Statistics -->
+            </div>
+
+            <!-- Include Statistics -->
             <div class="flex items-center space-x-3">
               <input 
                 type="checkbox" 
@@ -327,14 +329,17 @@
               <select 
                 v-model="pdfOptions.sortBy"
                 class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >                <option value="name">Nombre</option>
+              >
+                <option value="name">Nombre</option>
                 <option value="age">Edad</option>
                 <option value="class">Clase</option>
                 <option value="instrument">Instrumento</option>
                 <option value="enrollment">Fecha de Inscripción</option>
               </select>
             </div>
-          </div>          <!-- Header Customization -->
+          </div>
+
+          <!-- Header Customization -->
           <div v-if="pdfOptions.includeHeader" class="mt-6">
             <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
               <DocumentTextIcon class="w-4 h-4 mr-2 text-purple-500" />
@@ -536,33 +541,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { 
-  DocumentTextIcon, 
-  XMarkIcon, 
-  CogIcon, 
-  FunnelIcon, 
-  ClipboardDocumentListIcon,
-  DocumentIcon,
-  EyeIcon,
-  DocumentArrowDownIcon,
-  CheckCircleIcon,
-  AcademicCapIcon,
-  UserGroupIcon,
-  CalendarDaysIcon,
-  UsersIcon,
-  TableCellsIcon
-} from '@heroicons/vue/24/outline'
+// Importar todos los composables y funcionalidades del original
 import { usePDFGenerator } from '../composables/usePDFGenerator'
+import { usePDFReportTypes } from '../composables/usePDFReportTypes'
 
-// Emits
-defineEmits<{
-  close: []
-  generate: [options: any]
-}>()
-
+// Usar todos los composables para mantener la funcionalidad completa
 const {
-  // State
+  // Estado
   selectedReportType,
   selectedClass,
   selectedTeacher,
@@ -591,48 +576,24 @@ const {
   institutionalLogoUrl,
   hasInstitutionalLogo,
   
-  // Methods
+  // Métodos
   generatePreview,
   generatePDF,
   handleLogoUpload,
-  removeTempLogo: originalRemoveTempLogo,
+  removeTempLogo,
   getIconColor,
   showToast,
-  debouncedGeneratePreview,
-  getReportTypes
+  debouncedGeneratePreview
 } = usePDFGenerator()
 
-const reportTypes = getReportTypes()
+// Importar tipos de reportes
+const { reportTypes, availableFields } = usePDFReportTypes()
 
-// Available Fields for PDF
-const availableFields = ref([
-  { id: 'contador', label: 'N°' },
-  { id: 'nombre', label: 'Nombre' },
-  { id: 'apellido', label: 'Apellido' },
-  { id: 'edad', label: 'Edad' },
-  { id: 'fechaNacimiento', label: 'Fecha de Nacimiento' },
-  { id: 'telefono', label: 'Teléfono' },
-  { id: 'email', label: 'Email' },
-  { id: 'direccion', label: 'Dirección' },
-  { id: 'madre', label: 'Madre' },
-  { id: 'padre', label: 'Padre' },
-  { id: 'tutor', label: 'Tutor' },
-  { id: 'clase', label: 'Clase' },
-  { id: 'instrumento', label: 'Instrumento' },
-  { id: 'maestro', label: 'Maestro' },
-  { id: 'horario', label: 'Horario' },
-  { id: 'fecInscripcion', label: 'Fecha de Inscripción' },
-  { id: 'activo', label: 'Estado' }
-])
-
-const logoInput = ref<HTMLInputElement>()
-
-const removeTempLogo = () => {
-  originalRemoveTempLogo()
-  if (logoInput.value) {
-    logoInput.value.value = ''
-  }
-}
+// Emits
+defineEmits<{
+  close: []
+  generate: [options: any]
+}>()
 </script>
 
 <style scoped>
@@ -722,4 +683,4 @@ button:disabled {
 .fixed.bottom-4.right-4 {
   animation: slideInRight 0.3s ease-out;
 }
-</style>
+</style> 

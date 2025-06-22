@@ -163,13 +163,13 @@ const adminRoutes: RouteRecordRaw[] = [
   {
     path: '/admin/classes',
     name: 'AdminClasses',
-    component: () => import('../views/AdminClassesView.vue'),
+    component: () => import('../../../modulos/Classes/view/AdminClassesView.vue'),
     meta: {
       title: 'Gestión de Clases',
       requiresAuth: true,
       permissions: {
         module: 'classes',
-        action: 'view_all'
+        action: 'manage'
       }
     }
   },
