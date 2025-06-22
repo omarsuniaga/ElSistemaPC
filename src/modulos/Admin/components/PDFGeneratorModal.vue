@@ -1,4 +1,5 @@
 <template>
+  <!-- PDFGeneratorModal v2.0 - Refactored without preview -->
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
       <!-- Header -->
@@ -6,14 +7,14 @@
         <div class="flex items-center justify-between">
           <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
             <DocumentTextIcon class="w-6 h-6 mr-2 text-emerald-500" />
-            Generador de PDFs - Listados de Alumnos
+            Generador de PDFs - Reportes de Academia
           </h2>
           <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
             <XMarkIcon class="w-6 h-6" />
           </button>
         </div>
         <p class="text-gray-600 dark:text-gray-400 mt-2">
-          Generar reportes personalizados con diferentes filtros y formatos
+          Generar reportes personalizados con diferentes filtros y formatos profesionales
         </p>
       </div>
 
@@ -75,10 +76,8 @@
             <div v-if="showClassFilter">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Clase Específica
-              </label>
-              <select 
+              </label>              <select 
                 v-model="selectedClass"
-                @change="debouncedGeneratePreview"
                 class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Todas las clases</option>
@@ -92,10 +91,8 @@
             <div v-if="showTeacherFilter">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Maestro Específico
-              </label>
-              <select 
+              </label>              <select 
                 v-model="selectedTeacher"
-                @change="debouncedGeneratePreview"
                 class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Todos los maestros</option>
@@ -109,10 +106,8 @@
             <div v-if="showDayFilter">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Día de la Semana
-              </label>
-              <select 
+              </label>              <select 
                 v-model="selectedDay"
-                @change="debouncedGeneratePreview"
                 class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Todos los días</option>
@@ -131,10 +126,8 @@
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Rango de Edad
               </label>
-              <div class="flex space-x-2">
-                <input 
+              <div class="flex space-x-2">                <input 
                   v-model.number="ageRange.min"
-                  @input="debouncedGeneratePreview"
                   type="number"
                   placeholder="Min"
                   min="0"
@@ -143,7 +136,6 @@
                 />
                 <input 
                   v-model.number="ageRange.max"
-                  @input="debouncedGeneratePreview"
                   type="number"
                   placeholder="Max"
                   min="0"
@@ -157,10 +149,8 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Estado del Alumno
-              </label>
-              <select 
+              </label>              <select 
                 v-model="selectedStatus"
-                @change="debouncedGeneratePreview"
                 class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Todos</option>
@@ -184,12 +174,10 @@
               :key="field.id"
               class="flex items-center space-x-2 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
               :class="{ 'bg-blue-50 dark:bg-blue-900/20 border-blue-500': selectedFields.includes(field.id) }"
-            >
-              <input 
+            >              <input 
                 type="checkbox" 
                 :value="field.id"
                 v-model="selectedFields"
-                @change="debouncedGeneratePreview"
                 class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ field.label }}</span>
@@ -363,127 +351,34 @@
                       Esta información se carga automáticamente y se puede modificar desde la configuración del sistema
                     </p>
                   </div>
-                </div>
-              </div>
+                </div>              </div>
 
-              <!-- Manual Logo Upload (Temporal Override) -->
-              <div>
-                <div class="flex items-center justify-between mb-2">
-                  <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Logo temporal para este PDF (opcional)
-                  </label>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">
-                    Sobrescribe el logo institucional solo para este reporte
-                  </span>
-                </div>
-                
-                <div class="space-y-2">
-                  <input 
-                    type="file"
-                    ref="logoInput"
-                    @change="handleLogoUpload"
-                    accept="image/*"
-                    class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
-                  
-                  <!-- Temporal Logo Preview -->
-                  <div v-if="logoPreview" class="flex items-center space-x-2">
-                    <img 
-                      :src="logoPreview" 
-                      alt="Logo temporal preview" 
-                      class="w-12 h-12 object-contain border border-gray-200 dark:border-gray-600 rounded"
-                    />
-                    <div class="flex-1">
-                      <p class="text-sm text-gray-600 dark:text-gray-400">Logo temporal cargado</p>
-                      <button 
-                        @click="removeTempLogo"
-                        class="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                      >
-                        Usar logo institucional
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <!-- Upload Status -->
-                  <div v-if="isUploadingLogo" class="flex items-center space-x-2 text-sm text-blue-600 dark:text-blue-400">
-                    <div class="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    <span>Procesando logo...</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            </div>          </div>
         </div>
 
-        <!-- Preview Section -->
-        <div v-if="selectedReportType && previewData.length > 0">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-            <EyeIcon class="w-5 h-5 mr-2 text-indigo-500" />
-            Vista Previa ({{ previewData.length }} registros)
-          </h3>
-          
-          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 max-h-60 overflow-y-auto">
-            <div class="text-xs text-gray-600 dark:text-gray-400 mb-2">
-              Mostrando primeros {{ Math.min(previewData.length, 5) }} estudiantes de {{ previewData.length }} total
+        <!-- Información del Reporte Seleccionado -->
+        <div v-if="selectedReportType" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+          <div class="flex items-center">
+            <component :is="getReportTypes().find(r => r.id === selectedReportType)?.icon" class="w-5 h-5 mr-2 text-blue-500" />
+            <div>
+              <h3 class="text-sm font-medium text-blue-900 dark:text-blue-100">
+                {{ getReportTypes().find(r => r.id === selectedReportType)?.title }}
+              </h3>
+              <p class="text-xs text-blue-700 dark:text-blue-300">
+                {{ getReportTypes().find(r => r.id === selectedReportType)?.description }}
+              </p>
             </div>
-            <div class="space-y-2">
-              <div 
-                v-for="(student, index) in previewData.slice(0, 5)" 
-                :key="student.id"
-                class="flex items-center justify-between p-2 bg-white dark:bg-gray-600 rounded border"
-              >
-                <div class="flex items-center space-x-2">
-                  <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                    <span class="text-xs font-medium text-blue-600 dark:text-blue-300">{{ index + 1 }}</span>
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white">
-                      {{ student.nombre }} {{ student.apellido }}
-                    </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                      {{ student.clase || 'Sin clase' }} • {{ student.edad || 'N/A' }} años
-                    </p>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ student.instrumento || 'Sin instrumento' }}</p>
-                  <span 
-                    class="inline-flex px-2 py-1 text-xs rounded-full"
-                    :class="student.activo ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'"
-                  >
-                    {{ student.activo ? 'Activo' : 'Inactivo' }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Loading State -->
-        <div v-if="isLoading" class="flex items-center justify-center py-8">
-          <div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
-          <span class="ml-3 text-gray-600 dark:text-gray-400">Cargando datos...</span>
-        </div>
-
-        <!-- Empty State -->
-        <div v-if="selectedReportType && previewData.length === 0 && !isLoading" class="text-center py-8">
-          <div class="text-gray-400 dark:text-gray-500 mb-4">
-            <DocumentTextIcon class="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <p class="text-lg font-medium">No se encontraron estudiantes</p>
-            <p class="text-sm">Ajusta los filtros para obtener resultados</p>
           </div>
         </div>
       </div>
 
       <!-- Actions -->
-      <div class="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-700 dark:bg-gray-750">
-        <div class="flex items-center justify-between">
+      <div class="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-700 dark:bg-gray-750"><div class="flex items-center justify-between">
           <div class="text-sm text-gray-600 dark:text-gray-100">
-            <span v-if="previewData.length > 0">
-              {{ previewData.length }} estudiantes encontrados
+            <span v-if="selectedReportType">
+              Reporte: {{ getReportTypes().find(r => r.id === selectedReportType)?.title }}
             </span>
-          </div>
-          
+          </div>          
           <div class="flex space-x-3">
             <button 
               @click="$emit('close')"
@@ -493,17 +388,8 @@
             </button>
             
             <button 
-              @click="generatePreview"
-              :disabled="!selectedReportType || isLoading"
-              class="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors flex items-center"
-            >
-              <EyeIcon class="w-4 h-4 mr-2" />
-              Vista Previa
-            </button>
-            
-            <button 
               @click="generatePDF"
-              :disabled="!selectedReportType || previewData.length === 0 || isGenerating"
+              :disabled="!selectedReportType || isGenerating"
               class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white rounded-lg transition-colors flex items-center"
             >
               <DocumentArrowDownIcon v-if="!isGenerating" class="w-4 h-4 mr-2" />
@@ -570,16 +456,12 @@ const {
   selectedStatus,
   ageRange,
   selectedFields,
-  previewData,
   isGenerating,
   isLoading,
   showSuccessToast,
   showErrorToast,
   errorMessage,
   pdfOptions,
-  logoFile,
-  logoPreview,
-  isUploadingLogo,
   
   // Computed
   availableClasses,
@@ -592,13 +474,9 @@ const {
   hasInstitutionalLogo,
   
   // Methods
-  generatePreview,
   generatePDF,
-  handleLogoUpload,
-  removeTempLogo: originalRemoveTempLogo,
   getIconColor,
   showToast,
-  debouncedGeneratePreview,
   getReportTypes
 } = usePDFGenerator()
 
@@ -616,23 +494,12 @@ const availableFields = ref([
   { id: 'direccion', label: 'Dirección' },
   { id: 'madre', label: 'Madre' },
   { id: 'padre', label: 'Padre' },
-  { id: 'tutor', label: 'Tutor' },
   { id: 'clase', label: 'Clase' },
   { id: 'instrumento', label: 'Instrumento' },
   { id: 'maestro', label: 'Maestro' },
   { id: 'horario', label: 'Horario' },
-  { id: 'fecInscripcion', label: 'Fecha de Inscripción' },
-  { id: 'activo', label: 'Estado' }
+  { id: 'fechaInscripcion', label: 'Fecha de Inscripción' }
 ])
-
-const logoInput = ref<HTMLInputElement>()
-
-const removeTempLogo = () => {
-  originalRemoveTempLogo()
-  if (logoInput.value) {
-    logoInput.value.value = ''
-  }
-}
 </script>
 
 <style scoped>

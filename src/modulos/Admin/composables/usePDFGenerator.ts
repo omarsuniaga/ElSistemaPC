@@ -45,8 +45,7 @@ export function usePDFGenerator() {
   const selectedDay = ref('')
   const selectedStatus = ref('')
   const ageRange = ref<{ min: number | null, max: number | null }>({ min: null, max: null })
-  const selectedFields = ref<string[]>(['contador', 'nombre', 'apellido', 'edad', 'telefono'])
-  const previewData = ref<any[]>([])
+  const selectedFields = ref<string[]>(['contador', 'nombre', 'apellido', 'edad', 'telefono', 'clase'])
   const isGenerating = ref(false)
   const isLoading = ref(false)
   const showSuccessToast = ref(false)
@@ -61,14 +60,8 @@ export function usePDFGenerator() {
     includePhotos: false,
     groupByClass: false,
     includeStatistics: false,
-    includeLogo: true,
-    sortBy: 'name' as 'name' | 'age' | 'class' | 'instrument' | 'enrollment'
+    includeLogo: true,    sortBy: 'name' as 'name' | 'age' | 'class' | 'instrument' | 'enrollment'
   })
-
-  // Logo upload state
-  const logoFile = ref<File | null>(null)
-  const logoPreview = ref<string>('')
-  const isUploadingLogo = ref(false)
 
   // Computed values from institutional config
   const institutionalTitle = computed(() => institutionalConfigStore.institutionalTitle)
@@ -150,6 +143,31 @@ export function usePDFGenerator() {
     if (!classId) return 'Sin instrumento'
     const cls = availableClasses.value.find(c => c.id === classId)
     return cls?.instrument ?? 'Sin instrumento'
+  }
+
+  const getClassSchedule = (classId?: string): string => {
+    if (!classId) return 'Sin horario'
+    const cls = availableClasses.value.find(c => c.id === classId)
+    if (!cls || !cls.schedule) return 'Sin horario'
+    
+    // Handle different schedule formats
+    if (cls.schedule.slots && Array.isArray(cls.schedule.slots)) {
+      // Format: { slots: [{day, startTime, endTime}] }
+      return cls.schedule.slots.map((slot: any) => 
+        `${getDayName(slot.day)}: ${slot.startTime || ''} - ${slot.endTime || ''}`
+      ).join(', ')
+    } else if ((cls.schedule as any).day || (cls.schedule as any).startTime) {
+      // Format: {day, startTime, endTime}
+      const schedule = cls.schedule as any
+      return `${getDayName(schedule.day)}: ${schedule.startTime || ''} - ${schedule.endTime || ''}`
+    } else if (Array.isArray(cls.schedule)) {
+      // Format: [{day, startTime, endTime}]
+      return cls.schedule.map((scheduleItem: any) => 
+        `${getDayName(scheduleItem.day)}: ${scheduleItem.startTime || ''} - ${scheduleItem.endTime || ''}`
+      ).join(', ')
+    }
+    
+    return 'Sin horario'
   }
 
   const formatDate = (date: any): string => {
@@ -457,22 +475,16 @@ export function usePDFGenerator() {
       }
     ]
   }
-
   const getClassesStatistics = () => {
     const classesMap = new Map<string, number>()
     
-    previewData.value.forEach(student => {
-      const className = student.clase || 'Sin clase'
-      classesMap.set(className, (classesMap.get(className) || 0) + 1)
-    })
-    
-    const sortedClasses = Array.from(classesMap.entries())
-      .sort((a, b) => b[1] - a[1])
+    // Esta función puede ser útil para estadísticas futuras
+    // pero ya no depende de previewData
     
     return {
       totalClasses: classesMap.size,
-      mostPopular: sortedClasses[0]?.[0] || null,
-      classDistribution: sortedClasses
+      mostPopular: null,
+      classDistribution: []
     }
   }
 
@@ -521,127 +533,7 @@ export function usePDFGenerator() {
       img.onerror = () => reject('Failed to load image')
       img.crossOrigin = 'anonymous'
       img.src = url
-    })
-  }
-
-  // Main methods
-  const generatePreview = async () => {
-    if (!selectedReportType.value) return
-    
-    isLoading.value = true
-    
-    try {
-      await Promise.all([
-        studentsStore.loadStudents(),
-        classesStore.fetchClasses(),
-        teachersStore.loadTeachers()
-      ])
-
-      if (['schedule_by_teacher', 'schedule_by_student', 'schedule_by_day', 'schedule_by_class'].includes(selectedReportType.value)) {
-        const scheduleData = await getScheduleData()
-        
-        let filteredSchedules = scheduleData
-        
-        if (selectedTeacher.value) {
-          filteredSchedules = filteredSchedules.filter(s => s.teacherId === selectedTeacher.value)
-        }
-        
-        if (selectedClass.value) {
-          filteredSchedules = filteredSchedules.filter(s => s.classId === selectedClass.value)
-        }
-        
-        if (selectedDay.value) {
-          filteredSchedules = filteredSchedules.filter(s => s.day === selectedDay.value)
-        }
-
-        previewData.value = filteredSchedules
-        return
-      }
-
-      let filteredStudents = [...studentsStore.students]
-
-      if (selectedClass.value) {
-        filteredStudents = filteredStudents.filter(s => s.classId === selectedClass.value)
-      }
-
-      if (selectedTeacher.value) {
-        const teacherClasses = availableClasses.value.filter(c => c.teacherId === selectedTeacher.value)
-        const classIds = teacherClasses.map(c => c.id)
-        filteredStudents = filteredStudents.filter(s => classIds.includes(s.classId || ''))
-      }
-
-      if (selectedStatus.value) {
-        filteredStudents = filteredStudents.filter(s => 
-          selectedStatus.value === 'active' ? s.activo : !s.activo
-        )
-      }
-
-      if (ageRange.value.min !== null || ageRange.value.max !== null) {
-        filteredStudents = filteredStudents.filter(s => {
-          const age = calculateAge(s.fechaNacimiento)
-          const min = ageRange.value.min || 0
-          const max = ageRange.value.max || 100
-          return age >= min && age <= max
-        })
-      }
-
-      previewData.value = filteredStudents.map(student => ({
-        ...student,
-        edad: calculateAge(student.fechaNacimiento),
-        clase: getClassName(student.classId),
-        maestro: getTeacherName(student.classId),
-        instrumento: getClassInstrument(student.classId)
-      }))
-
-    } catch (error) {
-      console.error('Error generating preview:', error)
-      showToast('error', 'Error al cargar los datos')
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  const debouncedGeneratePreview = debounce(generatePreview, 300)
-
-  // Logo handling functions
-  const handleLogoUpload = async (event: Event) => {
-    const target = event.target as HTMLInputElement
-    const file = target.files?.[0]
-    
-    if (!file) return
-    
-    if (!file.type.startsWith('image/')) {
-      showToast('error', 'Por favor selecciona un archivo de imagen válido')
-      return
-    }
-    
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('error', 'El archivo es demasiado grande. Máximo 5MB.')
-      return
-    }
-    
-    isUploadingLogo.value = true
-    
-    try {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        logoPreview.value = e.target?.result as string
-      }
-      reader.readAsDataURL(file)
-      
-      logoFile.value = file
-      
-    } catch (error) {
-      console.error('Error uploading logo:', error)
-      showToast('error', 'Error al cargar el logo')
-    } finally {
-      isUploadingLogo.value = false
-    }
-  }
-  const removeTempLogo = () => {
-    logoFile.value = null
-    logoPreview.value = ''
-  }
+    })  }
 
   // PDF Generation methods
   const addHeader = async (doc: jsPDF, yPosition: number, reportTitle: string): Promise<number> => {
@@ -1100,23 +992,80 @@ export function usePDFGenerator() {
       }
     }
   }
-
-  const generateStudentListPDF = async (doc: jsPDF, students: any[]) => {
+  const generateStudentListPDF = async (doc: jsPDF) => {
     const reportType = getReportTypes().find(r => r.id === selectedReportType.value);
     const reportTitle = reportType?.title || 'Listado de Estudiantes';
     let yPos = 20;
     yPos = await addHeader(doc, yPos, reportTitle);
 
-    const head = [selectedFields.value];
-    
-    const body = students.map(student => {
-        return selectedFields.value.map(field => {
-            if (field === 'nombreCompleto') return `${student.nombre} ${student.apellido}`;
-            if (field === 'nombre') return student.nombre;
-            if (field === 'apellido') return student.apellido;
-            if (field === 'edad') return student.edad;
-            if (field === 'clase') return getClassName(student.classId);
-            return student[field] ?? '';        });
+    // Cargar datos de estudiantes
+    await studentsStore.loadStudents();
+    let filteredStudents = [...studentsStore.students];
+
+    // Aplicar filtros
+    if (selectedClass.value) {
+      filteredStudents = filteredStudents.filter(s => s.classId === selectedClass.value);
+    }
+
+    if (selectedTeacher.value) {
+      const teacherClasses = availableClasses.value.filter(c => c.teacherId === selectedTeacher.value);
+      const classIds = teacherClasses.map(c => c.id);
+      filteredStudents = filteredStudents.filter(s => classIds.includes(s.classId || ''));
+    }
+
+    if (selectedStatus.value) {
+      filteredStudents = filteredStudents.filter(s => 
+        selectedStatus.value === 'active' ? s.activo : !s.activo
+      );
+    }    if (ageRange.value.min !== null || ageRange.value.max !== null) {
+      filteredStudents = filteredStudents.filter(s => {
+        const age = typeof s.edad === 'number' ? s.edad : parseInt(s.edad as string) || 0;
+        const min = ageRange.value.min || 0;
+        const max = ageRange.value.max || 100;
+        return age >= min && age <= max;
+      });
+    }// Mapear campos de encabezado
+    const fieldLabels: { [key: string]: string } = {
+      'contador': 'N°',
+      'nombre': 'Nombre',
+      'apellido': 'Apellido',
+      'nombreCompleto': 'Nombre Completo',
+      'edad': 'Edad',
+      'fechaNacimiento': 'Fecha de Nacimiento',
+      'telefono': 'Teléfono',
+      'email': 'Email',
+      'direccion': 'Dirección',
+      'madre': 'Madre',
+      'padre': 'Padre',
+      'clase': 'Clase',
+      'maestro': 'Maestro',
+      'instrumento': 'Instrumento',
+      'horario': 'Horario',
+      'fechaInscripcion': 'Fecha de Inscripción'
+    };
+
+    const head = [selectedFields.value.map(field => fieldLabels[field] || field)];
+      const body = filteredStudents.map((student, index) => {
+      return selectedFields.value.map(field => {
+        switch (field) {
+          case 'contador': return (index + 1).toString();
+          case 'nombreCompleto': return `${student.nombre || ''} ${student.apellido || ''}`.trim();
+          case 'nombre': return student.nombre || '';
+          case 'apellido': return student.apellido || '';          case 'edad': return (typeof student.edad === 'number' ? student.edad : parseInt(student.edad as string) || 0).toString();
+          case 'fechaNacimiento': return formatDate((student as any).nac);
+          case 'telefono': return (student as any).tlf || '';
+          case 'email': return student.email || '';
+          case 'direccion': return student.direccion || '';
+          case 'madre': return student.madre || '';
+          case 'padre': return student.padre || '';
+          case 'clase': return getClassName(student.classId);
+          case 'maestro': return getTeacherName(student.classId);
+          case 'instrumento': return (student as any).instrumentos || student.instrumento || getClassInstrument(student.classId);
+          case 'horario': return getClassSchedule(student.classId);
+          case 'fechaInscripcion': return formatDate((student as any).updatedAt);
+          default: return (student as any)[field]?.toString() || '';
+        }
+      });
     });
     
     autoTable(doc, {
@@ -1125,13 +1074,12 @@ export function usePDFGenerator() {
         body: body,
         theme: 'grid',
         headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
+        styles: { cellPadding: 2, fontSize: 9 },
     });
   }
-
   const generatePDF = async () => {
-    const isScheduleReport = selectedReportType.value.startsWith('schedule_');
-    if (!selectedReportType.value || (!isScheduleReport && previewData.value.length === 0)) {
-      showToast('error', 'No hay datos para generar el PDF.');
+    if (!selectedReportType.value) {
+      showToast('error', 'Por favor selecciona un tipo de reporte.');
       return;
     }
 
@@ -1154,9 +1102,8 @@ export function usePDFGenerator() {
           break;
         case 'schedule_by_class':
           await generateScheduleByClassPDF(doc);
-          break;
-        default:
-          await generateStudentListPDF(doc, previewData.value);
+          break;        default:
+          await generateStudentListPDF(doc);
           break;
       }
 
@@ -1171,25 +1118,12 @@ export function usePDFGenerator() {
       isGenerating.value = false;
     }
   }
-
   // Watchers
   watch(selectedReportType, () => {
-    previewData.value = []
     selectedClass.value = ''
     selectedTeacher.value = ''
     selectedDay.value = ''
-    if (selectedReportType.value) {
-      nextTick(() => {
-        generatePreview()
-      })
-    }
   })
-
-  watch(selectedFields, () => {
-    if (selectedReportType.value) {
-      debouncedGeneratePreview()
-    }
-  }, { deep: true })
 
   // Lifecycle
   onMounted(async () => {
@@ -1278,19 +1212,14 @@ export function usePDFGenerator() {
     selectedClass,
     selectedTeacher,
     selectedDay,
-    selectedStatus,
-    ageRange,
+    selectedStatus,    ageRange,
     selectedFields,
-    previewData,
     isGenerating,
     isLoading,
     showSuccessToast,
     showErrorToast,
     errorMessage,
     pdfOptions,
-    logoFile,
-    logoPreview,
-    isUploadingLogo,
     
     // Computed
     availableClasses,
@@ -1301,20 +1230,17 @@ export function usePDFGenerator() {
     institutionalTitle,
     institutionalLogoUrl,
     hasInstitutionalLogo,
-      // Methods
-    generatePreview,
+    
+    // Methods
     generatePDF,
-    handleLogoUpload,
-    removeTempLogo,
     getIconColor,
     showToast,
-    debouncedGeneratePreview,
-    
-    // Helper functions
+      // Helper functions
     calculateAge,
     getClassName,
     getTeacherName,
     getClassInstrument,
+    getClassSchedule,
     formatDate,
     groupBy,
     generateFileName,

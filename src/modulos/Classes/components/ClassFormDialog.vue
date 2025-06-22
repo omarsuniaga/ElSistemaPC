@@ -232,7 +232,7 @@
                     @click.stop
                   >
                   <div>
-                    <p class="text-sm font-medium text-gray-900">{{ student.fullName }}</p>
+                    <p class="text-sm font-medium text-gray-900">{{ student.name }}</p>
                     <p class="text-sm text-gray-500">{{ student.email }}</p>
                   </div>
                 </li>
@@ -271,7 +271,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import { useTeachersStore } from '@/stores/teachers';
-import { useStudentsStore } from '@/stores/students';
+import { useStudentsStore } from '@/modulos/Students/store/students';
 
 // Interfaces
 interface ClassScheduleSlot {
@@ -416,10 +416,11 @@ const availableTeachers = computed<TeacherOption[]>(() => {
 const availableStudents = computed<StudentOption[]>(() => {
   const studentsStore = useStudentsStore();
   return studentsStore.students.map(student => ({
-    ...student,
-    fullName: `${student.nombre} ${student.apellido}`.trim(),
-    instrument: student.instrumento || '',
-    level: student.nivel || '',
+    id: student.id,
+    name: `${student.nombre} ${student.apellido}`.trim(),
+    email: student.email || '',
+    instrument: (student as any).instrumento || student.instrumento || '',
+    level: (student as any).nivel || '',
     isSelected: formData.value.studentIds.includes(student.id)
   }));
 });
@@ -429,7 +430,7 @@ const filteredStudents = computed<StudentOption[]>(() => {
   
   const query = studentSearch.value.toLowerCase().trim();
   return availableStudents.value.filter(student => 
-    student.fullName.toLowerCase().includes(query) ||
+    student.name.toLowerCase().includes(query) ||
     student.email?.toLowerCase().includes(query) ||
     student.instrument.toLowerCase().includes(query) ||
     (student.level && student.level.toLowerCase().includes(query))
@@ -443,7 +444,7 @@ const selectedStudents = computed<StudentOption[]>(() => {
 });
 
 const hasScheduleError = computed<boolean>(() => {
-  return formData.value.schedule.some(slot => {
+  return formData.value.schedule.slots.some(slot => {
     if (!slot.startTime || !slot.endTime) return false;
     const start = new Date(`1970/01/01 ${slot.startTime}`);
     const end = new Date(`1970/01/01 ${slot.endTime}`);
@@ -458,7 +459,7 @@ const isFormValid = computed<boolean>(() => {
     formData.value.instrument.trim() !== '' &&
     formData.value.teacherId.trim() !== '' &&
     !hasScheduleError.value &&
-    formData.value.schedule.length > 0
+    formData.value.schedule.slots.length > 0
   );
 });
 
@@ -478,6 +479,17 @@ const toggleStudent = (student: StudentOption) => {
 
 const isStudentSelected = (studentId: string): boolean => {
   return formData.value.studentIds.includes(studentId);
+};
+
+const checkTeacherAvailability = () => {
+  // Basic availability check - this could be enhanced with actual schedule conflict detection
+  const teachersStore = useTeachersStore();
+  teachersStore.teachers.forEach(teacher => {
+    teacherAvailability.value[teacher.id] = {
+      available: true,
+      reason: ''
+    };
+  });
 };
 
 const addScheduleSlot = () => {

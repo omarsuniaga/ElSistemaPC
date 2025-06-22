@@ -100,75 +100,41 @@
                 <span>Gestión Avanzada</span>
               </button>
             </div>
-            
-            <!-- Students Quick Stats -->
+              <!-- Students Quick Stats -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                <div class="flex items-center">
-                  <UsersIcon class="w-8 h-8 text-blue-600 dark:text-blue-400" />
-                  <div class="ml-3">
-                    <p class="text-lg font-semibold text-blue-900 dark:text-blue-100">{{ studentMetrics.totalStudents }}</p>
-                    <p class="text-blue-700 dark:text-blue-300 text-sm">Total</p>
-                  </div>
-                </div>
-              </div>
+              <MetricCard
+                :icon="UsersIcon"
+                :value="studentMetrics.totalStudents"
+                label="Total"
+                color="blue"
+              />
               
-              <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
-                <div class="flex items-center">
-                  <CheckCircleIcon class="w-8 h-8 text-green-600 dark:text-green-400" />
-                  <div class="ml-3">
-                    <p class="text-lg font-semibold text-green-900 dark:text-green-100">{{ studentMetrics.activeStudents }}</p>
-                    <p class="text-green-700 dark:text-green-300 text-sm">Activos</p>
-                  </div>
-                </div>
-              </div>
+              <MetricCard
+                :icon="CheckCircleIcon"
+                :value="studentMetrics.activeStudents"
+                label="Activos"
+                color="green"
+              />
               
-              <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
-                <div class="flex items-center">
-                  <ExclamationTriangleIcon class="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
-                  <div class="ml-3">
-                    <p class="text-lg font-semibold text-yellow-900 dark:text-yellow-100">{{ studentMetrics.riskStudents }}</p>
-                    <p class="text-yellow-700 dark:text-yellow-300 text-sm">En Riesgo</p>
-                  </div>
-                </div>
-              </div>
+              <MetricCard
+                :icon="ExclamationTriangleIcon"
+                :value="studentMetrics.riskStudents"
+                label="En Riesgo"
+                color="yellow"
+              />
               
-              <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
-                <div class="flex items-center">
-                  <CurrencyDollarIcon class="w-8 h-8 text-purple-600 dark:text-purple-400" />
-                  <div class="ml-3">
-                    <p class="text-lg font-semibold text-purple-900 dark:text-purple-100">${{ studentMetrics.revenueImpact.toLocaleString() }}</p>
-                    <p class="text-purple-700 dark:text-purple-300 text-sm">Ingresos</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Recent Students -->
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Estudiantes Recientes</h3>
-              <div class="space-y-3">                <div v-for="student in recentStudents" :key="student.id" class="flex items-center justify-between bg-white dark:bg-gray-800 p-3 rounded-lg">
-                  <div class="flex items-center">
-                    <img 
-                      :src="student.avatar || `https://ui-avatars.com/api/?name=${student.name}&background=random`"
-                      :alt="student.name"
-                      class="w-10 h-10 rounded-full"
-                    />
-                    <div class="ml-3">
-                      <p class="text-sm font-medium text-gray-900 dark:text-white">
-                        {{ student.name }}
-                      </p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">
-                        {{ student.instruments?.join(', ') || 'No asignado' }}
-                      </p>
-                    </div>
-                  </div>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">
-                    {{ formatDate(student.createdAt) }}
-                  </span>
-                </div>
-              </div>
-            </div>
+              <MetricCard
+                :icon="CurrencyDollarIcon"
+                :value="`$${studentMetrics.revenueImpact.toLocaleString()}`"
+                label="Ingresos"
+                color="purple"
+              />
+            </div>            <!-- Recent Students -->
+            <StudentsList 
+              :students="recentStudents"
+              title="Estudiantes Recientes"
+              :show-status="true"
+            />
           </div>          <!-- Teachers Tab -->
           <div v-if="activeTab === 'teachers'" class="space-y-6">
             <div class="flex items-center justify-between">
@@ -220,28 +186,32 @@
             </div>
 
             <!-- Quick Actions for Teachers -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Acciones Rápidas - Maestros</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-6">              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Acciones Rápidas - Maestros</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <button 
+                <ActionButton
+                  :icon="ChartBarIcon"
+                  title="Análisis de Desempeño"
+                  color="purple"
                   @click="$router.push('/admin/teachers/advanced')"
-                  class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <ChartBarIcon class="w-8 h-8 text-purple-500 mx-auto mb-2" />
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">Análisis de Desempeño</p>
-                </button>
-                <button class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                  <ClockIcon class="w-8 h-8 text-blue-500 mx-auto mb-2" />
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">Horarios</p>
-                </button>
-                <button class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                  <CurrencyDollarIcon class="w-8 h-8 text-green-500 mx-auto mb-2" />
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">Nómina</p>
-                </button>
-                <button class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                  <DocumentTextIcon class="w-8 h-8 text-orange-500 mx-auto mb-2" />
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">Reportes</p>
-                </button>
+                />
+                <ActionButton
+                  :icon="ClockIcon"
+                  title="Horarios"
+                  color="blue"
+                  @click="() => {}"
+                />
+                <ActionButton
+                  :icon="CurrencyDollarIcon"
+                  title="Nómina"
+                  color="green"
+                  @click="() => {}"
+                />
+                <ActionButton
+                  :icon="DocumentTextIcon"
+                  title="Reportes"
+                  color="orange"
+                  @click="() => {}"
+                />
               </div>
             </div>
           </div>
@@ -334,15 +304,21 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Advanced Students Modal -->
-    <Modal v-model="showAdvancedStudentsModal" size="fullscreen">
+    </div>    <!-- Advanced Students Modal -->
+    <Modal 
+      :show="showAdvancedStudentsModal" 
+      title="Gestión Avanzada de Estudiantes"
+      @close="showAdvancedStudentsModal = false"
+    >
       <AdvancedStudentsManagementNew />
     </Modal>
 
     <!-- Alerts Modal -->
-    <Modal v-model="showAlertsModal" size="large">
+    <Modal 
+      :show="showAlertsModal" 
+      title="Alertas Críticas"
+      @close="showAlertsModal = false"
+    >
       <div class="p-6">
         <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Alertas Críticas</h2>
         <div class="space-y-4">
@@ -393,6 +369,11 @@ import type { StudentMetrics, DropoutRisk } from '../services/advancedStudentsSe
 // Components
 import Modal from '../../../components/shared/Modal.vue'
 import AdvancedStudentsManagementNew from '../components/AdvancedStudentsManagementNew.vue'
+import MetricCard from '../components/MetricCard.vue'
+import ActionButton from '../components/ActionButton.vue'
+import TabContainer from '../components/TabContainer.vue'
+import StudentsList from '../components/StudentsList.vue'
+import QuickActionsCard from '../components/QuickActionsCard.vue'
 
 // Store
 const studentsStore = useAdminStudentsStore()
@@ -441,30 +422,30 @@ const managementTabs = computed(() => [
   {
     id: 'students',
     name: 'Estudiantes',
-    icon: 'UsersIcon',
+    icon: UsersIcon,
     count: studentMetrics.value.totalStudents
   },
   {
     id: 'teachers',
     name: 'Maestros',
-    icon: 'AcademicCapIcon',
+    icon: AcademicCapIcon,
     count: 0
   },
   {
     id: 'classes',
     name: 'Clases',
-    icon: 'BookOpenIcon',
+    icon: BookOpenIcon,
     count: 0
   },
   {
     id: 'analytics',
     name: 'Análisis',
-    icon: 'ChartBarIcon'
+    icon: ChartBarIcon
   },
   {
     id: 'system',
     name: 'Sistema',
-    icon: 'Cog6ToothIcon'
+    icon: Cog6ToothIcon
   }
 ])
 
@@ -479,6 +460,52 @@ const recentStudents = computed(() => {
     })
     .slice(0, 5)
 })
+
+// Quick Actions Data
+const importExportActions = computed(() => [
+  {
+    id: 'import-students',
+    label: 'Importar Estudiantes',
+    icon: DocumentArrowUpIcon,
+    color: 'green' as const
+  },
+  {
+    id: 'export-data',
+    label: 'Exportar Datos',
+    icon: DocumentArrowDownIcon,
+    color: 'blue' as const
+  }
+])
+
+const communicationActions = computed(() => [
+  {
+    id: 'mass-email',
+    label: 'Envío Masivo Email',
+    icon: EnvelopeIcon,
+    color: 'purple' as const
+  },
+  {
+    id: 'mass-whatsapp',
+    label: 'WhatsApp Masivo',
+    icon: ChatBubbleLeftRightIcon,
+    color: 'green' as const
+  }
+])
+
+const reportsActions = computed(() => [
+  {
+    id: 'attendance-report',
+    label: 'Reporte de Asistencia',
+    icon: DocumentTextIcon,
+    color: 'indigo' as const
+  },
+  {
+    id: 'financial-analysis',
+    label: 'Análisis Financiero',
+    icon: ChartBarIcon,
+    color: 'yellow' as const
+  }
+])
 
 // Methods
 const loadData = async () => {
@@ -530,6 +557,39 @@ const formatDate = (date: any) => {
   // Handle Firestore Timestamp or Date objects
   const d = date instanceof Date ? date : new Date(date || 0)
   return d.toLocaleDateString('es-ES')
+}
+
+const handleQuickAction = (actionId: string) => {
+  console.log('Quick action clicked:', actionId)
+  
+  switch (actionId) {
+    case 'import-students':
+      // TODO: Implement student import functionality
+      console.log('Opening student import dialog...')
+      break
+    case 'export-data':
+      // TODO: Implement data export functionality
+      console.log('Starting data export...')
+      break
+    case 'mass-email':
+      // TODO: Implement mass email functionality
+      console.log('Opening mass email dialog...')
+      break
+    case 'mass-whatsapp':
+      // TODO: Implement mass WhatsApp functionality
+      console.log('Opening mass WhatsApp dialog...')
+      break
+    case 'attendance-report':
+      // TODO: Implement attendance report functionality
+      console.log('Generating attendance report...')
+      break
+    case 'financial-analysis':
+      // TODO: Implement financial analysis functionality
+      console.log('Opening financial analysis...')
+      break
+    default:
+      console.log('Unknown action:', actionId)
+  }
 }
 
 // Initialize

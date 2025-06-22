@@ -236,7 +236,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { collection, query, where, onSnapshot, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { useTeachersStore } from '@/stores/teachers';
-import { useStudentsStore } from '@/stores/students';
+import { useStudentsStore } from '@/modulos/Students/store/students';
 import { useClassesStore } from '@/stores/classes';
 import { useAuthStore } from '@/stores/auth';
 import DashboardHeader from '@/components/DashboardHeader.vue';
