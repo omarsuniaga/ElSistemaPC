@@ -1,63 +1,29 @@
 <template>
   <div class="class-schedule">
-    <v-row class="mb-4">
-      <v-col cols="12" md="4">
-        <v-text-field
-          v-model="search"
-          append-icon="mdi-magnify"
-          label="Buscar clases"
-          single-line
-          hide-details
-        ></v-text-field>
-      </v-col>
-      <v-col cols="12" md="4" class="d-flex align-center">
-        <v-btn-toggle
-          v-model="viewMode"
-          mandatory
-          color="primary"
-        >
-          <v-btn value="week">Semana</v-btn>
-          <v-btn value="day">Día</v-btn>
-          <v-btn value="list">Lista</v-btn>
-        </v-btn-toggle>
-      </v-col>
-    </v-row>
+    <!-- Import the new WeeklyScheduleView component -->
+    <WeeklyScheduleView :classes="classes" />
+  </div>
+</template>
 
-    <v-card v-if="viewMode === 'week'" class="mb-4">
-      <v-calendar
-        ref="calendar"
-        v-model="calendarDate"
-        :events="calendarEvents"
-        :event-color="getEventColor"
-        :event-ripple="false"
-        @click:event="showEvent"
-        @click:time="addEvent"
-        type="week"
-        first-interval="7"
-        interval-count="13"
-        interval-minutes="60"
-        :event-height="30"
-        :event-margin-bottom="4"
-      >
-        <template v-slot:event="{ event }">
-          <div class="event-item">
-            <div class="event-time">
-              {{ formatTime(event.start) }} - {{ formatTime(event.end) }}
-            </div>
-            <div class="event-title">{{ event.name }}</div>
-            <div class="event-teacher">{{ event.teacherName }}</div>
-          </div>
-        </template>
-      </v-calendar>
-    </v-card>
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useClassesStore } from '../store/classes';
+import WeeklyScheduleView from '../components/WeeklyScheduleView.vue';
 
-    <v-card v-else-if="viewMode === 'day'" class="mb-4">
-      <v-calendar
-        ref="calendarDay"
-        v-model="calendarDate"
-        :events="filteredEvents"
-        :event-color="getEventColor"
-        type="day"
+const classesStore = useClassesStore();
+
+// Computed properties
+const classes = computed(() => classesStore.classes);
+
+// Lifecycle
+onMounted(async () => {
+  try {
+    await classesStore.loadClasses();
+  } catch (error) {
+    console.error('Error loading classes:', error);
+  }
+});
+</script>
         first-interval="7"
         interval-count="13"
         interval-minutes="60"

@@ -1,0 +1,12 @@
+{
+  "name": "import-conflict-resolver",
+  "version": "1.0.0",
+  "description": "Script para resolver conflictos de imports dinámicos vs estáticos",
+  "scripts": {
+    "fix-imports": "node scripts/fix-import-conflicts.js",
+    "analyze-imports": "node scripts/fix-import-conflicts.js --analyze-only"
+  },
+  "dependencies": {
+    "glob": "^8.0.0"
+  }
+}

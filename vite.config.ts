@@ -118,20 +118,75 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            vue: ['vue', 'vue-router', 'pinia'],
-            firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
-            ui: ['@headlessui/vue', '@heroicons/vue'],
-            utils: ['date-fns', 'jspdf', 'jspdf-autotable'],
-            charts: ['chart.js', 'vue-chartjs']
+          manualChunks: (id) => {
+            // Core Vue ecosystem
+            if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) {
+              return 'vendor-vue'
+            }
+            
+            // Firebase
+            if (id.includes('firebase')) {
+              return 'vendor-firebase'
+            }
+            
+            // UI Libraries
+            if (id.includes('@headlessui') || id.includes('@heroicons') || id.includes('vuetify')) {
+              return 'vendor-ui'
+            }
+            
+            // PDF and Utils
+            if (id.includes('jspdf') || id.includes('date-fns') || id.includes('chart.js')) {
+              return 'vendor-utils'
+            }
+            
+            // Admin modules
+            if (id.includes('/modulos/Admin/') || id.includes('/modulos/Superusuario/')) {
+              return 'module-admin'
+            }
+            
+            // Teachers module
+            if (id.includes('/modulos/Teachers/')) {
+              return 'module-teachers'
+            }
+            
+            // Students module
+            if (id.includes('/modulos/Students/')) {
+              return 'module-students'
+            }
+            
+            // Classes module
+            if (id.includes('/modulos/Classes/')) {
+              return 'module-classes'
+            }
+            
+            // Attendance module
+            if (id.includes('/modulos/Attendance/')) {
+              return 'module-attendance'
+            }
+            
+            // Montaje module
+            if (id.includes('/modulos/Montaje/')) {
+              return 'module-montaje'
+            }
+            
+            // Analytics module
+            if (id.includes('/modulos/Analytics/')) {
+              return 'module-analytics'
+            }
+            
+            // Other node_modules
+            if (id.includes('node_modules')) {
+              return 'vendor-others'
+            }
           }
         },
         onwarn(warning, warn) {
           if (warning.code === 'MODULE_LEVEL_DIRECTIVE') return;
+          if (warning.code === 'DYNAMIC_IMPORT_WILL_NOT_MOVE_MODULE') return;
           warn(warning);
         }
       },
-      chunkSizeWarningLimit: 1000,
+      chunkSizeWarningLimit: 600,
       sourcemap: mode === 'development'
     }
   }

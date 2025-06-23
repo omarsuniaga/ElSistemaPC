@@ -1,123 +1,308 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-4 sm:p-6">
-    <!-- Container principal con ancho máximo -->
-    <div class="max-w-7xl mx-auto">
-      <!-- Header con título y acciones -->
-      <div class="mb-8">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Administración de Clases</h1>
-            <p class="mt-1 text-sm text-gray-500">Gestiona todas las clases y horarios de la academia</p>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <!-- Container principal con responsive mejorado -->
+    <div class="px-4 py-6 sm:px-6 lg:px-8">
+      <div class="max-w-7xl mx-auto">
+        <!-- Header con título y acciones - Mejorado responsive -->
+        <div class="mb-6 lg:mb-8">
+          <div class="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+            <!-- Título section -->
+            <div class="flex-1 min-w-0">
+              <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white transition-colors">
+                Administración de Clases
+              </h1>
+              <p class="mt-1 text-sm sm:text-base text-gray-500 dark:text-gray-400 transition-colors">
+                Gestiona todas las clases, horarios y asignaciones de la academia
+              </p>
+              
+              <!-- Stats rápidas en mobile -->
+              <div class="mt-3 flex items-center space-x-4 lg:hidden">
+                <div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                  <AcademicCapIcon class="h-4 w-4 mr-1" />
+                  <span>{{ classes.length }} clases</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                  <UsersIcon class="h-4 w-4 mr-1" />
+                  <span>{{ totalStudents }} estudiantes</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Action buttons - Responsive mejorado -->
+            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+              <!-- Botón de filtros (mobile) -->
+              <button 
+                @click="showFilters = !showFilters"
+                class="sm:hidden inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900 transition-colors duration-200"
+              >
+                <FunnelIcon class="h-5 w-5 mr-2" />
+                Filtros
+              </button>
+              
+              <!-- Botón nueva clase -->
+              <button 
+                @click="showCreateDialog = true"
+                class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900 transition-colors duration-200"
+              >
+                <PlusIcon class="h-5 w-5 mr-2" />
+                <span class="hidden sm:inline">Nueva Clase</span>
+                <span class="sm:hidden">Nueva</span>
+              </button>
+            </div>
           </div>
-          <button 
-            @click="showCreateDialog = true"
-            class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
-          >
-            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 01-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-            </svg>
-            Nueva Clase
-          </button>
+          
+          <!-- Stats desktop -->
+          <div class="hidden lg:flex mt-4 space-x-6">
+            <div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
+              <AcademicCapIcon class="h-5 w-5 mr-2 text-indigo-500" />
+              <span class="font-medium">{{ classes.length }}</span>
+              <span class="ml-1">clases activas</span>
+            </div>
+            <div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
+              <UsersIcon class="h-5 w-5 mr-2 text-green-500" />
+              <span class="font-medium">{{ totalStudents }}</span>
+              <span class="ml-1">estudiantes inscritos</span>
+            </div>
+            <div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
+              <UserGroupIcon class="h-5 w-5 mr-2 text-purple-500" />
+              <span class="font-medium">{{ activeTeachers }}</span>
+              <span class="ml-1">maestros activos</span>
+            </div>
+          </div>
         </div>
 
-        <!-- Pestañas -->
-        <div class="mt-6 border-b border-gray-200">
-          <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-            <button 
-              @click="tab = 'classes'"
-              :class="{
-                'border-indigo-500 text-indigo-600': tab === 'classes',
-                'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'classes'
-              }"
-              class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center"
-              :aria-current="tab === 'classes' ? 'page' : undefined"
-            >
-              <svg class="mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-              </svg>
-              Todas las Clases
-              <span 
-                v-if="classes.length > 0"
-                class="ml-2 bg-indigo-100 text-indigo-600 text-xs font-medium px-2.5 py-0.5 rounded-full"
-              >
-                {{ classes.length }}
-              </span>
-            </button>
-            <button 
-              @click="tab = 'schedule'"
-              :class="{
-                'border-indigo-500 text-indigo-600': tab === 'schedule',
-                'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'schedule'
-              }"
-              class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center"
-            >
-              <svg class="mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
-              </svg>
-              Horarios
-            </button>
-          </nav>
+        <!-- Filtros y pestañas mejorados -->
+        <div class="space-y-4">
+          <!-- Filtros (visible en mobile cuando se activa) -->
+          <div :class="[
+            'lg:block',
+            showFilters ? 'block' : 'hidden'
+          ]">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 transition-colors">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Búsqueda -->
+                <div class="relative">
+                  <MagnifyingGlassIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    v-model="searchQuery"
+                    type="text"
+                    placeholder="Buscar clases..."
+                    class="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  />
+                </div>
+                
+                <!-- Filtro por instrumento -->
+                <select
+                  v-model="selectedInstrument"
+                  class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                >
+                  <option value="">Todos los instrumentos</option>
+                  <option v-for="instrument in availableInstruments" :key="instrument" :value="instrument">
+                    {{ instrument }}
+                  </option>
+                </select>
+                
+                <!-- Filtro por maestro -->
+                <select
+                  v-model="selectedTeacher"
+                  class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                >
+                  <option value="">Todos los maestros</option>
+                  <option v-for="teacher in teachers" :key="teacher.id" :value="teacher.id">
+                    {{ teacher.name }}
+                  </option>
+                </select>
+                
+                <!-- Filtro por estado -->
+                <select
+                  v-model="selectedStatus"
+                  class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                >
+                  <option value="">Todos los estados</option>
+                  <option value="active">Activas</option>
+                  <option value="inactive">Inactivas</option>
+                  <option value="shared">Compartidas</option>
+                </select>
+              </div>
+              
+              <!-- Filtros activos -->
+              <div v-if="hasActiveFilters" class="mt-3 flex flex-wrap gap-2">
+                <span class="text-xs text-gray-500 dark:text-gray-400">Filtros activos:</span>
+                <button
+                  v-if="searchQuery"
+                  @click="searchQuery = ''"
+                  class="inline-flex items-center px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-full"
+                >
+                  "{{ searchQuery }}"
+                  <XMarkIcon class="ml-1 h-3 w-3" />
+                </button>
+                <button
+                  v-if="selectedInstrument"
+                  @click="selectedInstrument = ''"
+                  class="inline-flex items-center px-2 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full"
+                >
+                  {{ selectedInstrument }}
+                  <XMarkIcon class="ml-1 h-3 w-3" />
+                </button>
+                <button
+                  @click="clearAllFilters"
+                  class="inline-flex items-center px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600"
+                >
+                  Limpiar todo
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pestañas mejoradas -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
+            <div class="border-b border-gray-200 dark:border-gray-700">
+              <nav class="flex overflow-x-auto" aria-label="Tabs">
+                <button 
+                  @click="tab = 'classes'"
+                  :class="[
+                    'whitespace-nowrap py-4 px-4 sm:px-6 border-b-2 font-medium text-sm flex items-center transition-colors',
+                    tab === 'classes'
+                      ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                  ]"
+                >
+                  <AcademicCapIcon class="mr-2 h-5 w-5" />
+                  <span class="hidden sm:inline">Todas las Clases</span>
+                  <span class="sm:hidden">Clases</span>
+                  <span 
+                    v-if="filteredClasses.length > 0"
+                    class="ml-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 text-xs font-medium px-2.5 py-0.5 rounded-full"
+                  >
+                    {{ filteredClasses.length }}
+                  </span>
+                </button>
+                <button 
+                  @click="tab = 'schedule'"
+                  :class="[
+                    'whitespace-nowrap py-4 px-4 sm:px-6 border-b-2 font-medium text-sm flex items-center transition-colors',
+                    tab === 'schedule'
+                      ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                  ]"
+                >
+                  <CalendarIcon class="mr-2 h-5 w-5" />
+                  <span class="hidden sm:inline">Horarios</span>
+                  <span class="sm:hidden">Agenda</span>
+                </button>
+                <button 
+                  @click="tab = 'shared'"
+                  :class="[
+                    'whitespace-nowrap py-4 px-4 sm:px-6 border-b-2 font-medium text-sm flex items-center transition-colors',
+                    tab === 'shared'
+                      ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                  ]"
+                >
+                  <ShareIcon class="mr-2 h-5 w-5" />
+                  <span class="hidden sm:inline">Clases Compartidas</span>
+                  <span class="sm:hidden">Compartidas</span>
+                  <span 
+                    v-if="sharedClasses.length > 0"
+                    class="ml-2 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 text-xs font-medium px-2.5 py-0.5 rounded-full"
+                  >
+                    {{ sharedClasses.length }}
+                  </span>
+                </button>
+              </nav>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Contenido principal -->
-      <div class="mt-6">
-        <!-- Estado de carga -->
-        <div v-if="loading" class="flex justify-center items-center py-12 bg-white rounded-lg shadow">
-          <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      <div class="space-y-6">
+        <!-- Estado de carga mejorado -->
+        <div v-if="loading" class="flex justify-center items-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
+          <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Cargando clases...</p>
+          </div>
         </div>
 
-        <!-- Contenido principal -->
+        <!-- Contenido principal mejorado -->
         <template v-else>
           <!-- Vista de clases -->
-          <div v-if="tab === 'classes'" class="bg-white shadow overflow-hidden sm:rounded-lg">
-            <!-- Lista vacía -->
-            <div v-if="classes.length === 0" class="text-center py-12 px-4">
-              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-              <h3 class="mt-2 text-lg font-medium text-gray-900">No hay clases registradas</h3>
-              <p class="mt-1 text-sm text-gray-500">Comienza creando una nueva clase.</p>
-              <div class="mt-6">
-                <button
-                  @click="showCreateDialog = true"
-                  class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 01-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                  </svg>
-                  Nueva Clase
-                </button>
+          <div v-if="tab === 'classes'">
+            <!-- Lista vacía mejorada -->
+            <div v-if="filteredClasses.length === 0" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
+              <div class="text-center py-12 px-4">
+                <div class="mx-auto h-24 w-24 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
+                  <AcademicCapIcon class="h-12 w-12 text-gray-400 dark:text-gray-500" />
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  {{ hasActiveFilters ? 'No se encontraron clases' : 'No hay clases registradas' }}
+                </h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                  {{ hasActiveFilters 
+                    ? 'Intenta ajustar los filtros para encontrar las clases que buscas.' 
+                    : 'Comienza creando una nueva clase para organizar los estudiantes y horarios.' 
+                  }}
+                </p>
+                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    v-if="hasActiveFilters"
+                    @click="clearAllFilters"
+                    class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                  >
+                    <XMarkIcon class="mr-2 h-4 w-4" />
+                    Limpiar Filtros
+                  </button>
+                  <button
+                    @click="showCreateDialog = true"
+                    class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                  >
+                    <PlusIcon class="mr-2 h-4 w-4" />
+                    Nueva Clase
+                  </button>
+                </div>
               </div>
             </div>
 
-            <!-- Lista de clases -->
+            <!-- Lista de clases mejorada -->
             <ClassList 
               v-else
-              :classes="classes" 
+              :classes="filteredClasses" 
+              :loading="loading"
               @edit="editClass"
               @delete="confirmDelete"
               @view-schedule="viewSchedule"
-              class="divide-y divide-gray-200"
+              @manage-sharing="manageSharing"
+              class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors"
             />
           </div>
           
           <!-- Vista de horarios -->
-          <div v-else-if="tab === 'schedule'" class="bg-white shadow overflow-hidden sm:rounded-lg">
-            <ClassScheduleView />
+          <div v-else-if="tab === 'schedule'" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
+            <ClassScheduleView :classes="filteredClasses" />
+          </div>
+
+          <!-- Vista de clases compartidas -->
+          <div v-else-if="tab === 'shared'" class="space-y-6">
+            <SharedClassesList 
+              :classes="classes"
+              @edit="editClass"
+              @manage-permissions="managePermissions"
+              @view-schedule="viewSchedule"
+            />
           </div>
         </template>
       </div>
+    </div>
 
     <!-- Diálogo de creación/edición -->
     <ClassFormDialog 
-      v-model="showCreateDialog"
+      :open="showCreateDialog"
       :class-data="editingClass"
-      :is-editing="!!editingClass"
       @save="handleSave"
       @close="() => {
-        showCreateDialog.value = false;
-        editingClass.value = null;
+        showCreateDialog = false;
+        editingClass = null;
       }"
     />
 
@@ -181,7 +366,81 @@
         </div>
       </div>
   </div>
-</div>
+
+  <!-- Permissions Modal -->
+  <div v-if="showPermissionsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" @click="closePermissionsModal">
+    <div class="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full" @click.stop>
+      <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-start justify-between">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+              Compartir Clase
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              {{ selectedClassForPermissions?.name }}
+            </p>
+          </div>
+          <button 
+            @click="closePermissionsModal"
+            class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+      
+      <div class="p-6">
+        <div class="space-y-4">
+          <div v-if="getSharedTeachers(selectedClassForPermissions).length === 0" class="text-center py-4 text-gray-500 dark:text-gray-400">
+            <p>Esta clase no está compartida con otros maestros.</p>
+          </div>
+          <div v-else>
+            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Maestros con acceso:</h4>
+            <div class="space-y-3">
+              <div 
+                v-for="teacherInfo in getSharedTeachers(selectedClassForPermissions)" 
+                :key="teacherInfo.id"
+                class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+              >
+                <div>
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                    {{ teacherInfo.name }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ getPermissionText(getTeacherPermissions(selectedClassForPermissions, teacherInfo.id)) }}
+                  </p>
+                </div>
+                <select
+                  :value="getPermissionLevel(selectedClassForPermissions, teacherInfo.id)"
+                  @change="updatePermission(teacherInfo.id, ($event.target as HTMLSelectElement)?.value || 'read')"
+                  class="ml-4 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
+                  <option value="read">Solo lectura</option>
+                  <option value="write">Editor</option>
+                  <option value="manage">Administrador</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 flex justify-end space-x-3">
+          <button
+            @click="closePermissionsModal"
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            @click="savePermissions"
+            class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+          >
+            Guardar Cambios
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -191,92 +450,184 @@ import { storeToRefs } from 'pinia';
 import { useClassesStore } from '../store/classes';
 import { useTeachersStore } from '../../Teachers/store/teachers';
 import { useStudentsStore } from '../../Students/store/students';
-
-// Import components with defineAsyncComponent for better code splitting
 import { defineAsyncComponent, type Component } from 'vue';
 
-// Define component types
+// Heroicons
+import {
+  AcademicCapIcon,
+  UsersIcon,
+  UserGroupIcon,
+  PlusIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  XMarkIcon,
+  CalendarIcon,
+  ShareIcon,
+  ExclamationTriangleIcon
+} from '@heroicons/vue/24/outline';
+
+// Tipos
+import type { ClassData } from '../types/class';
+
+// Helper function para async components
 type ComponentModule = { default: Component };
 type ComponentLoader = () => Promise<ComponentModule>;
 
-// Define a type for async component options
-interface AsyncComponentOptions {
-  loadingComponent: string;
-  errorComponent: string;
-  delay?: number;
-  timeout?: number;
-}
-
-// Helper function to create async components with proper typing
-function createAsyncComponent(
-  loader: ComponentLoader,
-  { loadingComponent, errorComponent, delay = 200, timeout = 3000 }: AsyncComponentOptions
-) {
+function createAsyncComponent(loader: ComponentLoader, delay = 200, timeout = 3000) {
   return defineAsyncComponent({
     loader: async () => {
       const component = await loader();
       return component;
     },
-    loadingComponent: { template: `<div>${loadingComponent}</div>` },
-    errorComponent: { template: `<div>${errorComponent}</div>` },
     delay,
     timeout
   });
 }
 
-// Import components
+// Componentes async
 const ClassList = createAsyncComponent(
-  () => import('../components/ClassList.vue'),
-  {
-    loadingComponent: 'Cargando lista de clases...',
-    errorComponent: 'Error al cargar la lista de clases'
-  }
+  () => import('../components/ClassList.vue')
 );
 
 const ClassFormDialog = createAsyncComponent(
-  () => import('../components/ClassFormDialog.vue'),
-  {
-    loadingComponent: 'Cargando formulario...',
-    errorComponent: 'Error al cargar el formulario'
-  }
+  () => import('../components/ClassFormDialog.vue')
 );
 
 const ClassScheduleView = createAsyncComponent(
-  () => import('./ClassScheduleView.vue'),
-  {
-    loadingComponent: 'Cargando horarios...',
-    errorComponent: 'Error al cargar los horarios'
-  }
+  () => import('../components/WeeklyScheduleView.vue')
 );
 
-import type { ClassData } from '../types/class';
+const SharedClassesList = createAsyncComponent(
+  () => import('../components/SharedClassesList.vue')
+);
 
-// Component registration
-const components = {
-  ClassList,
-  ClassFormDialog,
-  ClassScheduleView
-};
-
-// Router and stores
+// Router y stores
 const router = useRouter();
 const classesStore = useClassesStore();
 const teachersStore = useTeachersStore();
 const studentsStore = useStudentsStore();
 
-// Reactive state
-const tab = ref<'classes' | 'schedule'>('classes');
+// Estado reactivo
+const tab = ref<'classes' | 'schedule' | 'shared'>('classes');
 const showCreateDialog = ref(false);
 const showDeleteDialog = ref(false);
+const showFilters = ref(false);
 const editingClass = ref<ClassData | null>(null);
 const loading = ref(true);
 const deleting = ref(false);
 
+// Permissions modal
+const showPermissionsModal = ref(false);
+const selectedClassForPermissions = ref<ClassData | null>(null);
+const tempPermissions = ref<Record<string, string[]>>({});
+
+// Filtros
+const searchQuery = ref('');
+const selectedInstrument = ref('');
+const selectedTeacher = ref('');
+const selectedStatus = ref('');
+
 // Obtener datos del store
 const { classes } = storeToRefs(classesStore);
+const { teachers } = storeToRefs(teachersStore);
+const { students } = storeToRefs(studentsStore);
 
-// Computed properties
-const hasClasses = computed(() => classes.value.length > 0);
+// Computed properties mejoradas
+const filteredClasses = computed(() => {
+  let filtered = [...classes.value];
+
+  // Filtro por búsqueda
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase();
+    filtered = filtered.filter(cls => 
+      cls.name?.toLowerCase().includes(query) ||
+      cls.level?.toLowerCase().includes(query) ||
+      cls.instrument?.toLowerCase().includes(query) ||
+      getTeacherName(cls.teacherId).toLowerCase().includes(query)
+    );
+  }
+
+  // Filtro por instrumento
+  if (selectedInstrument.value) {
+    filtered = filtered.filter(cls => cls.instrument === selectedInstrument.value);
+  }
+
+  // Filtro por maestro
+  if (selectedTeacher.value) {
+    filtered = filtered.filter(cls => 
+      cls.teacherId === selectedTeacher.value || 
+      (cls.teachers && Array.isArray(cls.teachers) && cls.teachers.includes(selectedTeacher.value))
+    );
+  }
+
+  // Filtro por estado
+  if (selectedStatus.value) {
+    switch (selectedStatus.value) {
+      case 'active':
+        filtered = filtered.filter(cls => cls.status === 'active');
+        break;
+      case 'inactive':
+        filtered = filtered.filter(cls => cls.status === 'inactive');
+        break;
+      case 'shared':
+        filtered = filtered.filter(cls => 
+          cls.teachers && Array.isArray(cls.teachers) && cls.teachers.length > 0
+        );
+        break;
+    }
+  }
+
+  return filtered;
+});
+
+const sharedClasses = computed(() => {
+  // Usar la nueva lógica con la propiedad 'teachers' de Firestore
+  const shared = classes.value.filter(cls => 
+    cls.teachers && 
+    Array.isArray(cls.teachers) && 
+    cls.teachers.length > 0
+  );
+  
+  console.log('🔗 AdminClassesView - Clases compartidas encontradas:', shared.length);
+  shared.forEach(cls => {
+    console.log(`- ${cls.name}: teachers = [${cls.teachers?.join(', ')}]`);
+  });
+  
+  return shared;
+});
+
+const availableInstruments = computed(() => {
+  const instruments = new Set(classes.value.map(cls => cls.instrument).filter(Boolean));
+  return Array.from(instruments).sort();
+});
+
+const totalStudents = computed(() => {
+  return classes.value.reduce((total, cls) => total + (cls.studentIds?.length || 0), 0);
+});
+
+const activeTeachers = computed(() => {
+  const teacherIds = new Set(classes.value.map(cls => cls.teacherId).filter(Boolean));
+  return teacherIds.size;
+});
+
+const hasActiveFilters = computed(() => {
+  return !!(searchQuery.value || selectedInstrument.value || selectedTeacher.value || selectedStatus.value);
+});
+
+// Métodos auxiliares
+const getTeacherName = (teacherId?: string): string => {
+  if (!teacherId) return 'Sin asignar';
+  const teacher = teachers.value.find(t => t.id === teacherId);
+  return teacher ? teacher.name : 'Maestro no encontrado';
+};
+
+const clearAllFilters = () => {
+  searchQuery.value = '';
+  selectedInstrument.value = '';
+  selectedTeacher.value = '';
+  selectedStatus.value = '';
+  showFilters.value = false;
+};
 
 // Cargar datos iniciales
 const loadInitialData = async () => {
@@ -294,7 +645,7 @@ const loadInitialData = async () => {
   }
 };
 
-// Cargar datos cuando se monta el componente
+// Lifecycle
 onMounted(loadInitialData);
 
 // Métodos de la UI
@@ -313,34 +664,155 @@ const viewSchedule = (classItem: ClassData) => {
   // Aquí podrías añadir lógica para resaltar el horario de la clase seleccionada
 };
 
+const manageSharing = (classItem: ClassData) => {
+  // Implementar gestión de compartir clases
+  editingClass.value = { ...classItem };
+  selectedClassForPermissions.value = classItem;
+  tempPermissions.value = { ...classItem.permissions } || {};
+  showPermissionsModal.value = true;
+};
+
+const managePermissions = (classItem: ClassData) => {
+  // Implementar gestión de permisos para clases compartidas
+  editingClass.value = { ...classItem };
+  selectedClassForPermissions.value = classItem;
+  tempPermissions.value = { ...classItem.permissions } || {};
+  showPermissionsModal.value = true;
+};
+
+// Funciones de gestión de permisos
+const closePermissionsModal = () => {
+  showPermissionsModal.value = false;
+  selectedClassForPermissions.value = null;
+  tempPermissions.value = {};
+};
+
+const getSharedTeachers = (classItem: ClassData | null) => {
+  if (!classItem?.teachers || !Array.isArray(classItem.teachers)) return [];
+  
+  return classItem.teachers
+    .filter(teacherItem => {
+      const teacherId = typeof teacherItem === 'string' ? teacherItem : teacherItem.teacherId;
+      return teacherId !== classItem.teacherId; // Exclude the owner
+    })
+    .map(teacherItem => {
+      const teacherId = typeof teacherItem === 'string' ? teacherItem : teacherItem.teacherId;
+      const teacher = teachers.value?.find(t => t.id === teacherId);
+      return {
+        id: teacherId,
+        name: teacher?.name || `Maestro ${teacherId}`
+      };
+    });
+};
+
+const getTeacherPermissions = (classItem: ClassData | null, teacherId: string): string[] => {
+  if (!classItem?.permissions || typeof classItem.permissions !== 'object') return ['read'];
+  
+  return classItem.permissions[teacherId] || ['read'];
+};
+
+const getPermissionText = (permissions: string[]): string => {
+  if (!permissions || permissions.length === 0) return 'Sin permisos';
+  
+  if (permissions.includes('manage')) return 'Administrador';
+  if (permissions.includes('write')) return 'Editor';
+  if (permissions.includes('read')) return 'Solo lectura';
+  
+  return 'Permisos personalizados';
+};
+
+const getPermissionLevel = (classItem: ClassData | null, teacherId: string): string => {
+  const permissions = getTeacherPermissions(classItem, teacherId);
+  
+  if (permissions.includes('manage')) return 'manage';
+  if (permissions.includes('write')) return 'write';
+  return 'read';
+};
+
+const updatePermission = (teacherId: string, level: string) => {
+  switch (level) {
+    case 'read':
+      tempPermissions.value[teacherId] = ['read'];
+      break;
+    case 'write':
+      tempPermissions.value[teacherId] = ['read', 'write'];
+      break;
+    case 'manage':
+      tempPermissions.value[teacherId] = ['read', 'write', 'manage'];
+      break;
+    default:
+      tempPermissions.value[teacherId] = ['read'];
+  }
+};
+
+const savePermissions = async () => {
+  if (!selectedClassForPermissions.value) return;
+  
+  try {
+    loading.value = true;
+    
+    // Update the class with new permissions
+    const updatedClass = {
+      ...selectedClassForPermissions.value,
+      permissions: tempPermissions.value
+    };
+    
+    await classesStore.updateClass(selectedClassForPermissions.value.id, updatedClass);
+    
+    closePermissionsModal();
+    
+    // Refresh data to reflect changes
+    await loadInitialData();
+    
+  } catch (error) {
+    console.error('Error al guardar permisos:', error);
+  } finally {
+    loading.value = false;
+  }
+};
+
 const closeDialog = () => {
   showCreateDialog.value = false;
   editingClass.value = null;
 };
 
-// Métodos CRUD
+// Métodos CRUD mejorados
 const handleSave = async (classData: ClassData) => {
   try {
-    if (editingClass.value) {
-      await classesStore.updateClass(editingClass.value.id, classData);
+    if (editingClass.value?.id) {
+      await classesStore.updateClass(editingClass.value.id, {
+        ...classData,
+        // Asegurar que los campos de compartir se mantengan
+        sharedWith: editingClass.value.sharedWith || [],
+        permissions: editingClass.value.permissions || {}
+      });
     } else {
-      await classesStore.addClass(classData);
+      await classesStore.addClass({
+        ...classData,
+        // Configurar permisos por defecto
+        sharedWith: [],
+        permissions: classData.teacherId ? {
+          [classData.teacherId]: ['read', 'write', 'manage']
+        } : {},
+        createdAt: new Date(),
+        status: 'active'
+      });
     }
     closeDialog();
+    await loadInitialData(); // Recargar datos
   } catch (error) {
     console.error('Error al guardar la clase:', error);
   }
 };
 
 const deleteClass = async () => {
-  if (!editingClass.value) return;
+  if (!editingClass.value?.id) return;
   
   deleting.value = true;
   try {
     await classesStore.removeClass(editingClass.value.id);
     showDeleteDialog.value = false;
-    
-    // Recargar datos para asegurar consistencia
+    editingClass.value = null;
     await loadInitialData();
   } catch (error) {
     console.error('Error al eliminar la clase:', error);
@@ -349,7 +821,6 @@ const deleteClass = async () => {
   }
 };
 
-// Cerrar diálogo de confirmación
 const closeDeleteDialog = (): void => {
   showDeleteDialog.value = false;
   editingClass.value = null;

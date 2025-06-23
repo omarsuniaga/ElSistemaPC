@@ -53,12 +53,21 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import * as HeroIcons from '@heroicons/vue/24/outline'
 import { 
   ArrowTrendingUpIcon, 
   ArrowRightIcon, 
   PlusIcon, 
-  DocumentArrowDownIcon 
+  DocumentArrowDownIcon,
+  CogIcon,
+  // Common icons that might be used
+  UsersIcon,
+  AcademicCapIcon,
+  ChartBarIcon,
+  ClockIcon,
+  BookOpenIcon,
+  MusicalNoteIcon,
+  UserIcon,
+  CalendarIcon
 } from '@heroicons/vue/24/outline'
 
 interface Props {
@@ -77,8 +86,21 @@ const emit = defineEmits<{
   action: [action: string]
 }>()
 
+// Icon mapping for commonly used icons
+const iconMap: Record<string, any> = {
+  CogIcon,
+  UsersIcon,
+  AcademicCapIcon,
+  ChartBarIcon,
+  ClockIcon,
+  BookOpenIcon,
+  MusicalNoteIcon,
+  UserIcon,
+  CalendarIcon
+}
+
 const iconComponent = computed(() => {
-  return (HeroIcons as any)[props.icon] || HeroIcons.CogIcon
+  return iconMap[props.icon] || CogIcon
 })
 
 const iconContainerClasses = computed(() => {

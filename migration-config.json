@@ -1,0 +1,43 @@
+{
+  "searchStrategy": {
+    "exactMatch": {
+      "enabled": true,
+      "weight": 1.0,
+      "description": "Coincidencia exacta de nombre completo"
+    },
+    "partialMatch": {
+      "enabled": true,
+      "weight": 0.7,
+      "minSimilarity": 0.8,
+      "description": "Coincidencia parcial (80% similitud)"
+    },
+    "instrumentMatch": {
+      "enabled": true,
+      "weight": 0.3,
+      "description": "Considerar instrumento como factor adicional"
+    }
+  },
+  "updatePolicy": {
+    "preserveExisting": true,
+    "overwriteEmpty": true,
+    "updateFields": [
+      "inscripcion",
+      "nacimiento", 
+      "telefono",
+      "edad",
+      "instrumento",
+      "grupos",
+      "instrumentoId"
+    ]
+  },
+  "validation": {
+    "requireMinimumMatch": 0.6,
+    "manualReviewThreshold": 0.8,
+    "skipAmbiguous": true
+  },
+  "segmentation": {
+    "byInstrument": true,
+    "byAge": false,
+    "byGroup": true
+  }
+}

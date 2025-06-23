@@ -249,7 +249,7 @@ export const getStudentsFirebase = async (): Promise<Student[]> => {
     
     if (canViewAll) {
       // Usuario con permiso para ver todos los estudiantes
-      console.log('[RBAC] Obteniendo todos los estudiantes')
+      // console.log('[RBAC] Obteniendo todos los estudiantes')
       const querySnapshot = await getDocs(baseQuery)
       const students = querySnapshot.docs.map(doc => {
         const data = doc.data()
@@ -266,17 +266,17 @@ export const getStudentsFirebase = async (): Promise<Student[]> => {
         console.warn('Error al guardar caché de estudiantes:', e)
       }
       
-      console.log(`[Firebase] Obtenidos ${students.length} estudiantes en total`)
+      // console.log(`[Firebase] Obtenidos ${students.length} estudiantes en total`)
       return students
     } else {
       // Usuario con permiso solo para ver estudiantes de sus clases
-      console.log(`[RBAC] Usuario con permisos limitados: solo estudiantes de sus clases`)
+      // console.log(`[RBAC] Usuario con permisos limitados: solo estudiantes de sus clases`)
       
       // 1. Obtener clases del maestro (ya filtradas por teacherId)
       const teacherClasses = await getTeacherClasses(uid)
       
       if (teacherClasses.length === 0) {
-        console.log('[Filtro] El maestro no tiene clases asignadas')
+        // console.log('[Filtro] El maestro no tiene clases asignadas')
         return []
       }
       
@@ -289,11 +289,11 @@ export const getStudentsFirebase = async (): Promise<Student[]> => {
       })
       
       if (studentIds.size === 0) {
-        console.log('[Filtro] No hay estudiantes asignados a las clases del maestro')
+        // console.log('[Filtro] No hay estudiantes asignados a las clases del maestro')
         return []
       }
       
-      console.log(`[Filtro] Encontrados ${studentIds.size} estudiantes en ${teacherClasses.length} clases`)
+      // console.log(`[Filtro] Encontrados ${studentIds.size} estudiantes en ${teacherClasses.length} clases`)
       
       // 3. Obtener todos los estudiantes y filtrar por los IDs recopilados
       const querySnapshot = await getDocs(baseQuery)

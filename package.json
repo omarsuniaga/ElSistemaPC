@@ -36,7 +36,16 @@
     "deploy": "npm run build && firebase deploy",
     "setup-permissions": "tsx scripts/setup-permissions.ts",
     "validate-permissions": "tsx scripts/validate-permissions.ts",
-    "test-permissions": "tsx scripts/test-permissions.ts"
+    "test-permissions": "tsx scripts/test-permissions.ts",    "fix-imports": "node scripts/safe-import-analyzer.js",
+    "fix-imports:quick": "node scripts/quick-import-fix.js",
+    "fix-imports:advanced": "node scripts/advanced-import-resolver.js",
+    "fix-imports:full": "node scripts/fix-import-conflicts.js",
+    "fix-imports:analyze": "node scripts/safe-import-analyzer.js",    "fix-imports:windows": "powershell -ExecutionPolicy Bypass -File scripts/fix-imports.ps1",    "backup:alumnos": "node scripts/backup-alumnos.js",
+    "backup:list": "node -e \"import('./scripts/backup-alumnos.js').then(m => m.listAvailableBackups())\"",
+    "analyze:alumnos": "node scripts/analyze-alumnos-collection.js",
+    "migrate:safe-process": "node scripts/safe-migration-process.js",
+    "migrate:analyze-csv": "node scripts/analyze-csv-data.js",
+    "migrate:students-csv": "node scripts/migrate-students-from-csv.js"
   },
   "dependencies": {
     "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
@@ -100,6 +109,7 @@
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.5.0",
     "eslint-plugin-vue": "^9.20.1",
+    "glob": "^11.0.3",
     "happy-dom": "^12.10.3",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.3",

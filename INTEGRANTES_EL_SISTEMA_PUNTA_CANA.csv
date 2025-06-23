@@ -1,0 +1,159 @@
+contador,Nombre,inscripcion,nac,instrumento,edad,tlf,Preparatoria,Teoria Musical,Coro,Orquesta,InstrumentoID
+1,Geily Yosairy Diviche,,,Clarinete,13,809-460-9313,TRUE,,TRUE,TRUE,22.102
+2,Rousse Angelina Martinez,07-02-2025,17-12-2012,Clarinete,12,829-848-6575,TRUE,,TRUE,TRUE,22.104
+3,Ana Giselle Taveras Fulgencia ,,,Clarinete,13,809-330-7598,,TRUE,,TRUE,23.069
+4,Jose Angel Lopez Matos,10-02-2025,24-03-2014,Clarinete,11,829-853-3972,TRUE,,,TRUE,23.071
+5,Rebecca Jeanpierre,,,Clarinete,27,809-456-5948,,,,TRUE,22.100.
+6,Yangel Jair Medina Ramirez,,,Clarinete,10,829-324-6576,,,,TRUE,23.070.
+7,Jazlin Gomez Burgos,,,Clarinete,9,829-887-7990,,TRUE,TRUE,TRUE,ESPCCLT05NU
+8,Williams Abraham Fariñas Solano,,,Contrabajo,17,809-648-5562,,TRUE,TRUE,TRUE,22.086
+9,Nairoby Jean,,,Contrabajo,16,829-840-9444,,TRUE,TRUE,TRUE,23.051
+10,Laura Gil Santana ,,,Contrabajo,11,829-663-8698,,TRUE,,TRUE,ESPCCTB10YA
+11,Christina Pierre,,,Contrabajo,12,829-839-7825,,TRUE,,TRUE,ESPCCTB11YA
+12,Maia Santana Aracena ,,,Contrabajo,13,829-663-8698,,TRUE,,TRUE,ESPCCTB12YA
+13,Julianny Dalexa Mendez,12-02-2025,02-06-2014,Contrabajo,11,809-804-6949,TRUE,,,TRUE,COMPARTIDO
+14,Mabel Schlenker Morales ,,,Contrabajo,13,809-757-1554,,TRUE,,TRUE,COMPARTIDO
+15,Samuel Eliezer Vasquez Garcia ,,,Contrabajo,16,829-375-8965,,TRUE,,TRUE,COMPARTIDO
+16,Nissi Rosibel Peguero Santana,21-02-2025,03-07-2013,Contrabajo,11,829-348-0007,TRUE,,,TRUE,COMPARTIDO
+17,Yvelande Achemetre,10-02-2025,13-11-2009,Corno,15,809-855-1842,TRUE,,,TRUE,ESPCCRN01NU
+18,Maria Elizabeth Leonardo,07-02-2025,05-02-2011,Corno,14,829-383-8824,TRUE,,,TRUE,22.117
+19,Diafreisi Dumond,,,Corno,15,809-961-7864,,,,TRUE,24.094
+20,Alegna Cuello Medina ,,,Flauta,9,809-875-5523,,TRUE,TRUE,TRUE,22.095
+21,Zara Isabella Diaz Bodre,,,Flauta,12,829-394-1017,,TRUE,TRUE,TRUE,22.095
+22,Debora Dumond,,,Flauta,13,809-442-2941,,,,TRUE,22.096
+23,Alina Marola Jimenez Vargas ,,,Flauta,10,809-304-2080,,TRUE,TRUE,TRUE,22.097
+24,Ansherlin Zoe Contreras Polanco ,,,Flauta,10,829-977-4033,TRUE,,,TRUE,24.091
+25,Jacob David Rojas Arellán,,,Flauta,7,809-437-7577,,TRUE,,TRUE,ESPCFLT08NU
+26,Isabella Anthonieta Salazar Rangel,,,Oboe,12,809-998-2592,TRUE,,,TRUE,22.119
+27,Josias Alejandro Fariñas Solano ,,,Oboe,14,829-648-5562,,TRUE,TRUE,TRUE,23.067
+28,Cher Akemi Corredor,,,Oboe,11,829-439-8064,TRUE,,,TRUE,23.068
+29,Bryan Agustin Peguero Acevedo ,,,Percusión,16,829-558-0279,,TRUE,,TRUE,
+30,Elisha Sosa ,,,Percusión,12,829-750-1155,,TRUE,,TRUE,
+31,Marthin Alejandro Ramos,,,Percusión,10,809-215-9387,TRUE,,,TRUE,
+32,Zoe García Acevedo,,,Percusión,15,829-850-0005,,TRUE,,TRUE,
+33,Nathanael Thomas Minyetty Monasi,19-02-2025,12-11-2015,Percusión,9,809-750-1160,TRUE,,,TRUE,
+34,Nolberto Enriquez Brito,11-02-2025,15-04-2013,Percusión,12,809-876-9226,TRUE,,,TRUE,
+35,Albert Isael Medina Soriano,11-02-2025,09-02-2014,Percusión,11,829-717-5212,TRUE,,,TRUE,
+36,Sandel Aquino Garcia,19-02-2025,07-11-2011,Percusión,13,829-395-0431,TRUE,,,TRUE,
+37,Yorgelis Adalgisa Ballestero,,,Percusión,8,829-364-5200,,TRUE,TRUE,TRUE,
+38,Esther Simond Rodriguez,,,Piano,15,849-628-6867,TRUE,,TRUE,TRUE,
+39,Nathan Rhayluis Novas Ramírez,,,Trombón,12,829-551-8479,,TRUE,TRUE,TRUE,ESPCTBN02MA
+40,Noah Bismar Peralta Silvestre ,,,Trombón,10,809-779-5683,,TRUE,TRUE,TRUE,22.108
+41,Mauricio José Urquia ,,,Trombón,12,829-355-1711,,TRUE,,TRUE,22.109
+42,Mathias Alejandro Ramos,,,Trompeta,11,809-215-9387,TRUE,,,TRUE,22.111
+43,Darwin Jonas Tavarez,,,Trompeta,13,809-394-6650,TRUE,,,TRUE,22.112
+44,Diamilca Dumond,,,Trompeta,11,809-961-7864,,,,TRUE,22.113
+45,Yeseña Joseph Bless,,,Trompeta,14,809-280-5920,,TRUE,,TRUE,22.114
+46,Feder de los Santos Gonzales ,,,Trompeta,12,829-928-1188,,TRUE,,TRUE,22.115
+47,Jose Tomás Lorenzo Ogando,,,Trompeta,12,809-803-3158,,TRUE,,TRUE,22.110.
+48,Axel Meitslitzer,,,Trompeta,11,809-850-4075,,TRUE,,TRUE,PERSONAL
+49,Lewis Rhayniel Novas Ramírez,,,Trompeta,10,829-551-8479,,TRUE,TRUE,TRUE,PERSONAL
+50,Jhoennsy Sariel Castillo Batista,,,Tuba,10,809-228-1971,,TRUE,,TRUE,22.121
+51,Marcos David Mejia,,,Tuba,11,829-653-4501,,TRUE,,TRUE,22.120.
+52,María Naroldy Hilario,,,Viola,15,849-873-0530,,TRUE,TRUE,TRUE,23.053
+53,Jaime de la Cruz,,,Viola,15,829-278-9337,,TRUE,,TRUE,23.054
+54,Rafreisis Marte Mateo,,,Viola,15,809-617-5724,,TRUE,TRUE,TRUE,24.088
+55,Branyan Francisco Peguero ,,,Viola,14,829-558-0279,,,,TRUE,ESPCVLA21JA
+56,Dariel Aquino Mejia,,,Viola,12,829-887-7671,TRUE,,,TRUE,ESPCVLA22EX
+57,Yarolin Miguelina Jimenez Ramírez ,,,Viola,16,809-392-7583,,TRUE,,TRUE,ESPCVLA23EX
+58,Micka Edouard La Foret,,,Viola,14,809-973-0712,,TRUE,TRUE,TRUE,ESPCVLA24EX
+59,Diarilin Canela Castillo,,,Viola,14,809-330-8166,TRUE,,,TRUE,ESPCVLN30RO
+60,Ysmel Viola,,,Viola,10,829-839-4234,,,,TRUE,ESPCVLN38EX
+61,Jhouse Manuel Lacen,,,Viola,12,829-558-3023,TRUE,,,TRUE,ESPCVLN39EX
+62,Helen Sofia Alvarado Pérez,,,Viola,9,809-710-6176,,TRUE,,TRUE,ESPCVLN44RO
+63,Amelia Marlin Gutierrez,,,Viola,10,809-967-6171,TRUE,,,TRUE,22.088
+64,Escarlet Lisbeth Martinez ,,,Violín 1,11,849-266-5100,,TRUE,,TRUE,22.081
+65,Ayleen Joanny Ramos Angeles ,,,Violín 1,11,849-852-9330,,TRUE,,TRUE,22.082
+66,Elianny Mejia,,,Violín 1,12,809-982-1853,,TRUE,,TRUE,22.083
+67,Angelita St Juste  Philogene ,,,Violín 1,11,829-557-7515,,TRUE,TRUE,TRUE,22.087
+68,Agostina Celeste Nardelli Ramirez ,,,Violín 1,9,829-491-4750,,TRUE,TRUE,TRUE,22.091
+69,Edelyn Abreu Mejia ,,,Violín 1,14,829-863-6465,,TRUE,,TRUE,23.056
+70,Yeiri Alexandra Germain Michel ,,,Violín 1,13,809-258-5632,,TRUE,,TRUE,23.059
+71,Angenie St Juste Philogene,,,Violín 1,13,829-557-7515,,TRUE,TRUE,TRUE,23.061
+72,Yurma Stjuste Philogene,,,Violín 1,13,849-868-2014,,,,TRUE,23.062
+73,Emmanuel De los Santos Tavarez ,,,Violín 1,9,829-886-1050,,TRUE,TRUE,TRUE,23.066
+74,María Victoria Albornoz Madrano ,,,Violín 1,14,829-667-5486,,TRUE,,TRUE,24.089
+75,Yorgelis Antonella Caricote Hernandez,,,Violín 1,17,809-768-7342,,TRUE,,TRUE,23.060.
+76,Dyakenson Lamerique,,,Violín 1,15,829-928-7837,,TRUE,,TRUE,ESPCVLN42MU
+77,Zoe Marte Mateo ,,,Violín 1,14,809-617-5724,,TRUE,TRUE,TRUE,ESPCVLN43LI
+78,Liam Rhaylin Novas Ramírez,,,Violín 1,9,829-551-8479,,TRUE,TRUE,TRUE,PERSONAL
+79,Dialisa Baltazar,,,Violín 1,16,829-979-5529,,TRUE,,TRUE,ESPCVLN36RO
+80,Cesar Andres Mendoza Gimenez,31-01-2025,01-09-2011,Violín 1,13,829-840-6942,TRUE,,,TRUE,23.058
+81,Daraling Peguero,19-02-2025,19-01-2012,Violín 2,13,829-250-8691,TRUE,,TRUE,TRUE,22.084
+82,Eva Taveras,,,Violín 2,10,829-672-6826,,TRUE,TRUE,TRUE,22.089
+83,Charlotte Taveras ,,,Violín 2,8,809-330-7598,,TRUE,,TRUE,22.092
+84,Branny Melani Peguero ,,,Violín 2,9,829-558-0279,,,,TRUE,23.063
+85,Clarilus Castillo Díaz,,,Violín 2,11,809-979-9258,,,,TRUE,23.064
+86,Robner Allan García Acevedo ,,,Violín 2,9,829-850-0005,,,,TRUE,23.065
+87,Yereni Esther Germain Michel,,,Violín 2,9,809-258-5632,TRUE,,,TRUE,24.090.
+88,Alanna Pilier,,,Violín 2,8,829-680-7245,,TRUE,,TRUE,ESPCVLN25SG
+89,Nicole Castillo Díaz,,,Violín 2,10,809-979-9258,,,,TRUE,ESPCVLN26SG
+90,Santa Isaura Castillo Díaz ,,,Violín 2,9,809-979-9258,,,,TRUE,ESPCVLN27SG
+91,Ashley Saint Philippe,,,Violín 2,10,829-604-8490,,,TRUE,TRUE,ESPCVLN37RO
+92,Lia Annelise Lopez Matos,10-02-2025,23-08-2016,Violín 2,8,829-853-3972,TRUE,,,TRUE,ESPCVLN45SG
+93,Camille Urbaez Brito,,,Violín 2,9,829-741-1600,,TRUE,,TRUE,PERSONAL
+94,Isabella Alejandra Delgadillo Arellán,,,Violín 2,13,809-437-7577,,TRUE,,TRUE,PERSONAL
+95,Jeydhen Andres Peguero Cortorreal,,,Violín 2,10,809-841-9649,,,TRUE,TRUE,PERSONAL
+96,Rosyairy Gabriel Reyes ,,,Violín 2,9,809-364-2097,,,TRUE,TRUE,ESPCVLN34RO
+97,Gabriela Jireh Marte Colome,,,Violín 2,12,829-753-9979,TRUE,,TRUE,TRUE,22.085
+98,Daniel Monfismon Peralte,,,Violín 2,8,829-274-8894,TRUE,,,TRUE,
+99,Ysabella Valentina Brito Suniaga,,,Violoncello,12,809-215-6273,,TRUE,,TRUE,22.077
+100,Eliauris Adel Vasquez García ,,,Violoncello,14,829-375-8965,,TRUE,,TRUE,22.078
+101,Amy Balbuena,,,Violoncello,14,829-913-6681,,TRUE,TRUE,TRUE,24.087
+102,Alondra Lorenzo Ogando ,,,Violoncello,16,809-803-3158,,TRUE,,TRUE,ESPCVLC14EX
+103,Dinora Amanda Evangelista Paniagua ,,,Violoncello,10,809-219-8782,TRUE,,,TRUE,ESPCVLC15EX
+104,Kenia Pilier,,,Violoncello,10,829-680-7245,,TRUE,TRUE,TRUE,ESPCVLC16EX
+105,Lia Bonilla Santana,,,Violoncello,14,829-846-8470,,TRUE,TRUE,TRUE,ESPCVLC17EX
+106,Sol Marte,,,Violoncello,9,809-617-5724,,,,TRUE,ESPCVLC19RO
+107,Sebastian Elias Santana Jesus,,,Violoncello,9,809-858-2390,,TRUE,TRUE,TRUE,ESPCVLC20RO
+108,Aarón Di Lorenzo,,,Violoncello,11,829-341-7693,,N B,,TRUE,PERSONAL
+109,Genesis Mariel Sosa Silverio,,,Violoncello,15,829-750-1155,,TRUE,,TRUE,23.052
+110,Alexandra Vielma,,,,13,809-426-2330,TRUE,,TRUE,,
+111,Abigail Monfismon Peralte,,,,11,829-274-8894,TRUE,,TRUE,,
+112,Abril Mendoza ,,,,11,829-270-5358,,TRUE,TRUE,,
+113,Alba Casoliba,07-02-2025,24-10-2013,,11,829-841-7320,TRUE,,,,
+114,Alejandra Annaly Pérez ,,,,12,849-245-8848,TRUE,,TRUE,,
+115,Alexa Yahizmin Gonzalez,,,,14,809-764-1049,TRUE,,TRUE,,
+116,Alicia Casoliba,07-02-2025,20-10-2016,,8,829-841-7320,TRUE,,,,
+117,Alicia Martinez,01-03-2025,17-06-2017,,8,849-254-4311,TRUE,,,,
+118,Alisha Noemi Oviedo  Viloria ,,,,7,809-906-2465,,,TRUE,,
+119,Ambar Giselle Martinez Papadia,04-02-2025,24-06-2014,,11,849-362-2087,TRUE,,,,
+120,Ange-Berline Colastin,,,,18,829-577-9498,TRUE,,TRUE,,
+121,Argeiris Yudeny Pacheco Pinales,,,,14,849-456-1545,,,TRUE,,
+122,Ariel Junior Guzman,,,,9,829-331-3909,TRUE,,,,
+123,Audrey Isabel Diviche,,,,14,829-477-4812,TRUE,,TRUE,,
+124,Daihana Rachel Minaya,,,,8,809-705-7202,TRUE,,,,
+125,Darlenys Garcia,04-02-2025,27-01-2010,,15,809-953-3236,TRUE,,,,
+126,Dylan Antonio Cruz Frias,19-02-2025,29-07-2016,,8,829-396-7400,TRUE,,,,
+127,Edward Guillermo Alonzo,06-02-2025,16-01-2016,,9,829-934-9367,TRUE,,,,
+128,Eleonor Rodríguez Leonardo,,,,8,829-727-5443,,TRUE,TRUE,,
+129,Elian Jose Romero Medina,07-02-2025,15-11-2013,,11,809-916-5003,TRUE,,,,
+130,Francisco Emmanuel Lopez Castro,,,,10,829-968-2746,TRUE,,TRUE,,
+131,Franny Baquero Medina ,,,,7,809-972-1020,,TRUE,TRUE,,
+132,Harlenys Yumilses Lewis Reyes,19-02-2025,,,13,829-379-8388,TRUE,,,,
+133,Ian Samuel Garcia ,,,,8,809-867-5029,TRUE,,,,
+134,Irvin Daniel Garcia,04-02-2025,05-02-2013,,12,809-953-3236,TRUE,,,,
+135,Isaac Aaron Santos Lorenzo,14-02-2025,26-06-2015,,10,829-204-2611,TRUE,,,,
+136,Isabella Esther Veras ,,,,11,809-729-8576,,,TRUE,,
+137,Jael Caba Espinal,,,,8,829-527-4826,TRUE,,,,
+138,Jaslene Darieth Santana Jesus,,,,15,809-851-6518,,,TRUE,,
+139,Jennifer Ramirez,11-02-2025,,,9,809-392-7583,TRUE,,,,
+140,Karla Marie Nuñez Mejia ,,,,9,829-706-0793,,TRUE,TRUE,,
+141,Lesli Ramírez Leonardo,,,,16,829-779-3756,,TRUE,TRUE,,
+142,Lucas Gutierrez Pérez,,,,7,809-967-6171,TRUE,,,,
+143,Luz Marli Mejia Marte,,,,13,829-931-6951,TRUE,,,,
+144,Mabel Ramirez,10-02-2025,01-11-2016,,8,829-325-0262,TRUE,,,,
+145,Moises Vilorio,10-02-2025,09-02-2017,,8,829-454-8454,TRUE,,,,
+146,Montserrat Alejandra Peña,,,,13,829-203-9459,TRUE,,,,
+147,Montserrat González Polanco ,,,,12,809-756-4646,,,TRUE,,
+148,Nascaela Mado,,,,8,829-792-1681,,TRUE,TRUE,,
+149,Orlando Sebastian Castro,,,,15,849-538-4835,TRUE,,,,
+150,Rosbehanny Peguero Santana,21-02-2025,05-04-2016,,9,829-348-0007,TRUE,,TRUE,,
+151,Ruth Esther Caba Espinal,,,,11,829-527-4826,TRUE,,,,
+152,Ruth Esther Camille Jn Simon,,,,15,809-999-6334,TRUE,,TRUE,,
+153,Ryan Lender Rodriguez Ortiz,17-02-2025,15-09-2016,,8,829-665-9130,TRUE,,,,
+154,Samuel Sosa Silverio ,,,,13,829-750-1155,,TRUE,TRUE,,
+155,Sirianny Aquino Garcia,19-02-2025,05-01-2015,,10,829-395-0431,TRUE,,,,
+156,Stephen Jose Rosa Valdez,11-02-2025,25-05-2016,,9,829-706-5178,TRUE,,,,
+157,Tracy Dariana Mendoza,10-02-2025,10-10-2016,,8,829-904-1564,TRUE,,,,
+158,Zoe Castro Herrera,,,,8,849-538-4835,TRUE,,TRUE,,

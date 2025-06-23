@@ -1,615 +1,642 @@
 <template>
-  <div v-if="dialog" class="fixed inset-0 z-50 overflow-y-auto">
-    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-      <!-- Fondo oscuro -->
-      <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-        <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
-      </div>
-      
-      <!-- Contenido del diálogo -->
-      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-        <!-- Encabezado -->
-        <div class="bg-blue-600 px-4 py-3 sm:px-6 sm:flex sm:items-center sm:justify-between">
-          <h3 class="text-lg font-medium text-white">
-            {{ isEditing ? 'Editar Clase' : 'Nueva Clase' }}
-          </h3>
-          <button @click="closeDialog" class="text-white hover:text-gray-200 focus:outline-none">
-            <span class="sr-only">Cerrar</span>
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+  <Dialog :open="open" @close="$emit('close')" class="relative z-50">
+    <div class="fixed inset-0 bg-black/30 dark:bg-black/50" aria-hidden="true" />
+    
+    <div class="fixed inset-0 flex w-screen items-start justify-center p-4 pb-20 overflow-y-auto">
+      <div class="flex min-h-full items-center justify-center">
+        <DialogPanel class="mx-auto max-w-3xl w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl max-h-[calc(100vh-8rem)] flex flex-col my-8">
+        <!-- Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-lg">
+          <div>
+            <DialogTitle as="h3" class="text-lg font-semibold leading-6 text-gray-900 dark:text-white">
+              {{ isEditing ? 'Editar Clase' : 'Nueva Clase' }}
+            </DialogTitle>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ isEditing ? 'Modifica los detalles de la clase' : 'Configura una nueva clase con maestros y estudiantes' }}
+            </p>
+          </div>
+          <button
+            @click="$emit('close')"
+            class="rounded-md text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+          >
+            <XMarkIcon class="h-6 w-6" />
           </button>
         </div>
 
-        <!-- Formulario -->
-        <form ref="form" @submit.prevent="save" class="p-6 space-y-6">
-          <!-- Información Básica -->
+        <!-- Form -->
+        <div class="flex-1 overflow-y-auto">
+          <form id="class-form" @submit.prevent="handleSubmit" class="p-6 space-y-6">
+          <!-- Basic Information -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Nombre de la clase -->
-            <div>
-              <label for="name" class="block text-sm font-medium text-gray-700">
-                Nombre de la clase <span class="text-red-500">*</span>
-              </label>
-              <input 
-                v-model="formData.name" 
-                type="text" 
-                id="name" 
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" 
-                required
-              >
-            </div>
-
-            <!-- Nivel -->
-            <div>
-              <label for="level" class="block text-sm font-medium text-gray-700">
-                Nivel <span class="text-red-500">*</span>
-              </label>
-              <select 
-                v-model="formData.level" 
-                id="level" 
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" 
-                required
-              >
-                <option v-for="level in levels" :key="level" :value="level">
-                  {{ level }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Instrumento -->
-            <div>
-              <label for="instrument" class="block text-sm font-medium text-gray-700">
-                Instrumento <span class="text-red-500">*</span>
-              </label>
-              <select 
-                v-model="formData.instrument" 
-                id="instrument" 
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                required
-              >
-                <option v-for="instrument in instruments" :key="instrument" :value="instrument">
-                  {{ instrument }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Profesor -->
-            <div>
-              <label for="teacherId" class="block text-sm font-medium text-gray-700">
-                Profesor <span class="text-red-500">*</span>
-              </label>
-              <select 
-                v-model="formData.teacherId" 
-                id="teacherId" 
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                required
-              >
-                <option 
-                  v-for="teacher in availableTeachers" 
-                  :key="teacher.id" 
-                  :value="teacher.id"
-                >
-                  {{ teacher.fullName }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Descripción -->
+            <!-- Class Name -->
             <div class="md:col-span-2">
-              <label for="description" class="block text-sm font-medium text-gray-700">
-                Descripción
+              <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Nombre de la Clase *
               </label>
-              <textarea 
-                v-model="formData.description" 
-                id="description" 
-                rows="3"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              ></textarea>
+              <input
+                id="name"
+                v-model="form.name"
+                type="text"
+                required
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Ej: Piano Intermedio A"
+              />
+            </div>
+
+            <!-- Instrument -->
+            <div>
+              <label for="instrument" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Instrumento *
+              </label>
+              <input
+                id="instrument"
+                v-model="form.instrument"
+                type="text"
+                required
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Ej: Piano, Guitarra, Violín, Flauta, etc."
+              />
+            </div>
+
+            <!-- Programs -->
+            <div>
+              <label for="level" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Programas *
+              </label>
+              <select
+                id="level"
+                v-model="form.level"
+                required
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="">Seleccionar programa</option>
+                <option value="preparatoria">Preparatoria</option>
+                <option value="teoria-musical">Teoría Musical</option>
+                <option value="coro">Coro</option>
+                <option value="orquesta">Orquesta</option>
+                <option value="otros">Otros</option>
+              </select>
+            </div>
+
+            <!-- Status -->
+            <div>
+              <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Estado *
+              </label>
+              <select
+                id="status"
+                v-model="form.status"
+                required
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="active">Activa</option>
+                <option value="inactive">Inactiva</option>
+                <option value="suspended">Suspendida</option>
+              </select>
+            </div>
+
+            <!-- Capacity -->
+            <div>
+              <label for="capacity" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Capacidad Máxima
+              </label>
+              <input
+                id="capacity"
+                v-model.number="form.capacity"
+                type="number"
+                min="1"
+                max="50"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="8"
+              />
             </div>
           </div>
 
-          <!-- Horario de Clases -->
-          <div class="border-t border-gray-200 pt-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Horario de Clases</h3>
-            <p class="text-sm text-gray-500 mb-4">
-              Agrega los horarios en los que se impartirá esta clase
-            </p>
+          <!-- Description -->
+          <div>
+            <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Descripción
+            </label>
+            <textarea
+              id="description"
+              v-model="form.description"
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              placeholder="Descripción de la clase, objetivos, metodología..."
+            />
+          </div>
 
-            <!-- Lista de horarios -->
-            <div v-for="(slot, index) in formData.schedule.slots" :key="`slot-${index}`" class="mb-4 p-4 border border-gray-200 rounded-lg">
-              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <!-- Día de la semana -->
-                <div>
-                  <label :for="`day-${index}`" class="block text-sm font-medium text-gray-700">
-                    Día <span class="text-red-500">*</span>
-                  </label>
+          <!-- Teachers Section -->
+          <div class="space-y-4">
+            <h4 class="text-md font-medium text-gray-900 dark:text-white">Maestros</h4>
+            
+            <!-- Main Teacher -->
+            <div>
+              <label for="teacherId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Maestro Principal *
+              </label>
+              <select
+                id="teacherId"
+                v-model="form.teacherId"
+                required
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="">Seleccionar maestro principal</option>
+                <option v-for="teacher in teachers" :key="teacher.id" :value="teacher.id">
+                  {{ teacher.name }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Shared Teachers -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Maestros Colaboradores
+              </label>
+              <div class="max-h-40 overflow-y-auto space-y-2 border border-gray-200 dark:border-gray-600 rounded-md p-2 bg-gray-50 dark:bg-gray-700">
+                <div v-for="teacher in availableSharedTeachers" :key="teacher.id" class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800">
+                  <div class="flex items-center">
+                    <input
+                      :id="`teacher-${teacher.id}`"
+                      v-model="form.sharedWith"
+                      type="checkbox"
+                      :value="teacher.id"
+                      class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
+                    />
+                    <label :for="`teacher-${teacher.id}`" class="ml-3 text-sm text-gray-700 dark:text-gray-200">
+                      {{ teacher.name }}
+                    </label>
+                  </div>
+                  
                   <select
-                    v-model="slot.day"
-                    :id="`day-${index}`"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    required
+                    v-if="form.sharedWith.includes(teacher.id)"
+                    :value="getTeacherPermissionLevel(teacher.id)"
+                    @change="updateTeacherPermission(teacher.id, ($event.target as HTMLSelectElement)?.value || 'read')"
+                    class="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                   >
-                    <option v-for="day in daysOfWeek" :key="day.value" :value="day.value">
-                      {{ day.label }}
-                    </option>
+                    <option value="read">Solo lectura</option>
+                    <option value="write">Editor</option>
+                    <option value="manage">Administrador</option>
                   </select>
                 </div>
-
-                <!-- Hora de inicio -->
-                <div>
-                  <label :for="`start-time-${index}`" class="block text-sm font-medium text-gray-700">
-                    Hora inicio <span class="text-red-500">*</span>
-                  </label>
-                  <input
-                    v-model="slot.startTime"
-                    type="time"
-                    :id="`start-time-${index}`"
-                    @change="updateEndTimeMin(index)"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    required
-                  >
+                <!-- Empty state -->
+                <div v-if="availableSharedTeachers.length === 0" class="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+                  No hay maestros disponibles para colaborar
                 </div>
+              </div>
+            </div>
+          </div>
 
-                <!-- Hora de fin -->
-                <div>
-                  <label :for="`end-time-${index}`" class="block text-sm font-medium text-gray-700">
-                    Hora fin <span class="text-red-500">*</span>
-                  </label>
-                  <input
-                    v-model="slot.endTime"
-                    type="time"
-                    :id="`end-time-${index}`"
-                    :min="slot.startTime"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    required
-                  >
-                </div>
+          <!-- Students Section -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Estudiantes
+            </label>
+            
+            <!-- Search Input -->
+            <div class="mb-3">
+              <input
+                v-model="studentSearchTerm"
+                type="text"
+                placeholder="Buscar por nombre, apellido o instrumento..."
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+            
+            <div class="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700">
+              <div v-for="student in filteredStudents" :key="student.id" class="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-600 border-b border-gray-100 dark:border-gray-600 last:border-b-0">
+                <input
+                  :id="`student-${student.id}`"
+                  v-model="form.studentIds"
+                  type="checkbox"
+                  :value="student.id"
+                  @change="onStudentSelected"
+                  class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-500 rounded"
+                />
+                <label :for="`student-${student.id}`" class="ml-3 text-sm text-gray-700 dark:text-gray-200 flex-1">
+                  {{ student.nombre }} {{ student.apellido }}
+                  <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                    {{ student.instrumento || 'Sin instrumento' }}
+                  </span>
+                </label>
+              </div>
+              <!-- Empty state -->
+              <div v-if="filteredStudents.length === 0 && studentSearchTerm.trim() !== ''" class="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+                No se encontraron estudiantes que coincidan con "{{ studentSearchTerm }}"
+              </div>
+              <div v-else-if="students.length === 0" class="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+                No hay estudiantes disponibles
+              </div>
+            </div>
+          </div>
 
-                <!-- Botón para eliminar horario -->
-                <div class="flex items-end">
+          <!-- Schedule Section -->
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <h4 class="text-md font-medium text-gray-900 dark:text-white">Horarios</h4>
+              <button
+                type="button"
+                @click="addScheduleSlot"
+                class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"
+              >
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Agregar Horario
+              </button>
+            </div>
+            
+            <!-- Multiple Schedule Slots -->
+            <div class="space-y-3">
+              <div
+                v-for="(slot, index) in form.schedules"
+                :key="index"
+                class="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700"
+              >
+                <div class="flex items-start justify-between mb-3">
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Horario {{ index + 1 }}
+                  </span>
                   <button
-                    v-if="formData.schedule.slots.length > 1"
+                    v-if="form.schedules.length > 1"
                     type="button"
                     @click="removeScheduleSlot(index)"
-                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                    title="Eliminar horario"
+                    class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                   >
-                    <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                     </svg>
-                    Eliminar
                   </button>
                 </div>
-              </div>
-            </div>
-
-            <!-- Botón para agregar nuevo horario -->
-            <button
-              type="button"
-              @click="addScheduleSlot"
-              class="mt-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Agregar horario
-            </button>
-          </div>
-
-          <!-- Lista de Estudiantes -->
-          <div class="border-t border-gray-200 pt-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Estudiantes</h3>
-            
-            <!-- Barra de búsqueda -->
-            <div class="relative mb-4">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                v-model="studentSearch"
-                type="text"
-                class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Buscar estudiantes..."
-              >
-            </div>
-            
-            <!-- Lista de estudiantes -->
-            <div class="border border-gray-200 rounded-lg overflow-hidden">
-              <ul class="divide-y divide-gray-200 max-h-60 overflow-y-auto">
-                <li 
-                  v-for="student in filteredStudents" 
-                  :key="student.id"
-                  @click="toggleStudent(student)"
-                  :class="{ 'bg-blue-50': isStudentSelected(student.id) }"
-                  class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="isStudentSelected(student.id)"
-                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-3"
-                    @click.stop
-                  >
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <p class="text-sm font-medium text-gray-900">{{ student.name }}</p>
-                    <p class="text-sm text-gray-500">{{ student.email }}</p>
+                    <label :for="`day-${index}`" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Día de la Semana
+                    </label>
+                    <select
+                      :id="`day-${index}`"
+                      v-model="slot.day"
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="">Seleccionar día</option>
+                      <option value="monday">Lunes</option>
+                      <option value="tuesday">Martes</option>
+                      <option value="wednesday">Miércoles</option>
+                      <option value="thursday">Jueves</option>
+                      <option value="friday">Viernes</option>
+                      <option value="saturday">Sábado</option>
+                    </select>
                   </div>
-                </li>
-              </ul>
+
+                  <div>
+                    <label :for="`startTime-${index}`" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Hora de Inicio
+                    </label>
+                    <input
+                      :id="`startTime-${index}`"
+                      v-model="slot.startTime"
+                      type="time"
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label :for="`endTime-${index}`" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Hora de Fin
+                    </label>
+                    <input
+                      :id="`endTime-${index}`"
+                      v-model="slot.endTime"
+                      type="time"
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+                
+                <!-- Schedule Summary -->
+                <div v-if="slot.day && slot.startTime && slot.endTime" class="mt-3 p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-md">
+                  <p class="text-sm text-indigo-700 dark:text-indigo-300">
+                    <span class="font-medium">{{ getDayName(slot.day) }}</span>
+                    de {{ formatTime(slot.startTime) }} a {{ formatTime(slot.endTime) }}
+                  </p>
+                </div>
+              </div>
+              
+              <!-- Empty state -->
+              <div v-if="form.schedules.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p class="mt-2 text-sm">No hay horarios configurados</p>
+                <button
+                  type="button"
+                  @click="addScheduleSlot"
+                  class="mt-2 inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"
+                >
+                  Agregar primer horario
+                </button>
+              </div>
             </div>
           </div>
-
-          <!-- Acciones del formulario -->
-          <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-            <button
-              type="button"
-              @click="closeDialog"
-              class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              :disabled="loading"
-              class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          </form>
+        </div>
+        
+        <!-- Actions - Fixed at bottom -->
+        <div class="flex items-center justify-end space-x-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-6 py-4 rounded-b-lg">
+          <button
+            type="button"
+            @click="$emit('close')"
+            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form="class-form"
+            :disabled="!isFormValid || saving"
+            class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <span v-if="saving" class="flex items-center">
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              {{ loading ? 'Guardando...' : 'Guardar' }}
-            </button>
-          </div>
-        </form>
+              Guardando...
+            </span>
+            <span v-else>
+              {{ isEditing ? 'Guardar Cambios' : 'Crear Clase' }}
+            </span>
+          </button>
+        </div>
+        </DialogPanel>
       </div>
     </div>
-  </div>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
-import { v4 as uuidv4 } from 'uuid';
-import { useTeachersStore } from '@/stores/teachers';
-import { useStudentsStore } from '@/modulos/Students/store/students';
-
-// Interfaces
-interface ClassScheduleSlot {
-  day: string;
-  startTime: string;
-  endTime: string;
-}
-
-interface ClassData {
-  id: string;
-  name: string;
-  level: string;
-  instrument: string;
-  description: string;
-  teacherId: string;
-  studentIds: string[];
-  schedule: { slots: ClassScheduleSlot[] };
-  status: string;
-  room: string;
-  requirements: string[];
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-interface Teacher {
-  id: string;
-  fullName: string;
-  email: string;
-  isActive: boolean;
-}
-
-interface Student {
-  id: string;
-  fullName: string;
-  email: string;
-  instrument: string;
-  level: string;
-  isActive: boolean;
-}
-
-interface TeacherOption extends Teacher {
-  name: string;
-  isAvailable: boolean;
-}
-
-interface StudentOption {
-  id: string;
-  name: string;
-  email: string;
-  instrument: string;
-  level: string;
-  isSelected: boolean;
-}
-
-interface ClassFormData extends Omit<ClassData, 'schedule'> {
-  schedule: { slots: ClassScheduleSlot[] };
-}
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/vue';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useStudentsStore } from '../../Students/store/students';
+import type { ClassData } from '../types/class';
 
 const props = defineProps<{
-  modelValue: boolean;
-  classData?: ClassData;
+  open: boolean;
+  classData?: ClassData | null;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean): void;
-  (e: 'saved', classData: ClassData): void;
+  (e: 'close'): void;
+  (e: 'save', data: Partial<ClassData>): void;
 }>();
 
-// Constants
-const daysOfWeek = [
-  { label: 'Lunes', value: 'monday' },
-  { label: 'Martes', value: 'tuesday' },
-  { label: 'Miércoles', value: 'wednesday' },
-  { label: 'Jueves', value: 'thursday' },
-  { label: 'Viernes', value: 'friday' },
-  { label: 'Sábado', value: 'saturday' },
-  { label: 'Domingo', value: 'sunday' }
-];
+const teachersStore = useTeachersStore();
+const studentsStore = useStudentsStore();
 
-const levels = [
-  'Principiante',
-  'Intermedio',
-  'Avanzado',
-  'Profesional'
-];
+const saving = ref(false);
+const studentSearchTerm = ref('');
 
-const instruments = [
-  'Piano',
-  'Guitarra',
-  'Violín',
-  'Violonchelo',
-  'Contrabajo',
-  'Flauta',
-  'Clarinete',
-  'Saxofón',
-  'Trompeta',
-  'Trombón',
-  'Batería',
-  'Percusión',
-  'Canto',
-  'Otro'
-];
-
-// Reactive data
-const dialog = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
-});
-
-const form = ref<HTMLFormElement | null>(null);
-const loading = ref(false);
-const studentSearch = ref('');
-const teacherAvailability = ref<Record<string, { available: boolean; reason?: string }>>({});
-
-// Form data
-const formData = ref<ClassFormData>({
-  id: '',
+const form = ref({
   name: '',
-  level: '',
   instrument: '',
+  level: '',
+  status: 'active' as 'active' | 'inactive' | 'suspended',
   description: '',
+  capacity: 8,
   teacherId: '',
-  studentIds: [],
-  schedule: { slots: [{ day: 'monday', startTime: '09:00', endTime: '10:00' }] },
-  status: 'active',
-  room: '',
-  requirements: []
+  studentIds: [] as string[],
+  sharedWith: [] as string[],
+  permissions: {} as Record<string, string[]>,
+  schedules: [{
+    day: '',
+    startTime: '',
+    endTime: ''
+  }] as { day: string; startTime: string; endTime: string }[]
 });
 
-// Computed properties
-const isEditing = computed(() => !!props.classData?.id);
+const isEditing = computed(() => !!props.classData);
 
-const availableTeachers = computed<TeacherOption[]>(() => {
-  const teachersStore = useTeachersStore();
-  return teachersStore.teachers.map(teacher => ({
-    ...teacher,
-    fullName: `${teacher.nombre} ${teacher.apellido}`.trim(),
-    isAvailable: isTeacherAvailable(teacher.id)
-  }));
-});
+const teachers = computed(() => teachersStore.teachers);
+const students = computed(() => studentsStore.students);
 
-const availableStudents = computed<StudentOption[]>(() => {
-  const studentsStore = useStudentsStore();
-  return studentsStore.students.map(student => ({
-    id: student.id,
-    name: `${student.nombre} ${student.apellido}`.trim(),
-    email: student.email || '',
-    instrument: (student as any).instrumento || student.instrumento || '',
-    level: (student as any).nivel || '',
-    isSelected: formData.value.studentIds.includes(student.id)
-  }));
-});
-
-const filteredStudents = computed<StudentOption[]>(() => {
-  if (!studentSearch.value.trim()) return availableStudents.value;
+const filteredStudents = computed(() => {
+  if (!studentSearchTerm.value.trim()) {
+    return students.value;
+  }
   
-  const query = studentSearch.value.toLowerCase().trim();
-  return availableStudents.value.filter(student => 
-    student.name.toLowerCase().includes(query) ||
-    student.email?.toLowerCase().includes(query) ||
-    student.instrument.toLowerCase().includes(query) ||
-    (student.level && student.level.toLowerCase().includes(query))
-  );
-});
-
-const selectedStudents = computed<StudentOption[]>(() => {
-  return availableStudents.value.filter(student => 
-    formData.value.studentIds.includes(student.id)
-  );
-});
-
-const hasScheduleError = computed<boolean>(() => {
-  return formData.value.schedule.slots.some(slot => {
-    if (!slot.startTime || !slot.endTime) return false;
-    const start = new Date(`1970/01/01 ${slot.startTime}`);
-    const end = new Date(`1970/01/01 ${slot.endTime}`);
-    return start >= end;
+  const searchTerm = studentSearchTerm.value.toLowerCase().trim();
+  return students.value.filter(student => {
+    const fullName = `${student.nombre} ${student.apellido}`.toLowerCase();
+    const instrument = (student.instrumento || '').toLowerCase();
+    
+    return fullName.includes(searchTerm) || instrument.includes(searchTerm);
   });
 });
 
-const isFormValid = computed<boolean>(() => {
-  return (
-    formData.value.name.trim() !== '' &&
-    formData.value.level.trim() !== '' &&
-    formData.value.instrument.trim() !== '' &&
-    formData.value.teacherId.trim() !== '' &&
-    !hasScheduleError.value &&
-    formData.value.schedule.slots.length > 0
-  );
+const availableSharedTeachers = computed(() => 
+  teachers.value.filter(teacher => teacher.id !== form.value.teacherId)
+);
+
+const isFormValid = computed(() => {
+  return form.value.name.trim() !== '' &&
+         form.value.instrument !== '' &&
+         form.value.level !== '' &&
+         form.value.teacherId !== '';
 });
 
-// Methods
-const isTeacherAvailable = (teacherId: string): boolean => {
-  return teacherAvailability.value[teacherId]?.available !== false;
+// Helper functions for permissions
+const getTeacherPermissionLevel = (teacherId: string): string => {
+  const permissions = form.value.permissions[teacherId];
+  if (!permissions || permissions.length === 0) return 'read';
+  
+  if (permissions.includes('manage')) return 'manage';
+  if (permissions.includes('write')) return 'write';
+  return 'read';
 };
 
-const toggleStudent = (student: StudentOption) => {
-  const index = formData.value.studentIds.indexOf(student.id);
-  if (index === -1) {
-    formData.value.studentIds.push(student.id);
-  } else {
-    formData.value.studentIds.splice(index, 1);
+const updateTeacherPermission = (teacherId: string, level: string) => {
+  switch (level) {
+    case 'read':
+      form.value.permissions[teacherId] = ['read'];
+      break;
+    case 'write':
+      form.value.permissions[teacherId] = ['read', 'write'];
+      break;
+    case 'manage':
+      form.value.permissions[teacherId] = ['read', 'write', 'manage'];
+      break;
+    default:
+      form.value.permissions[teacherId] = ['read'];
   }
 };
 
-const isStudentSelected = (studentId: string): boolean => {
-  return formData.value.studentIds.includes(studentId);
+// Function to clear search when a student is selected
+const onStudentSelected = () => {
+  // Clear search term after selection to allow searching for more students
+  studentSearchTerm.value = '';
 };
 
-const checkTeacherAvailability = () => {
-  // Basic availability check - this could be enhanced with actual schedule conflict detection
-  const teachersStore = useTeachersStore();
-  teachersStore.teachers.forEach(teacher => {
-    teacherAvailability.value[teacher.id] = {
-      available: true,
-      reason: ''
-    };
-  });
-};
-
+// Functions for managing multiple schedules
 const addScheduleSlot = () => {
-  formData.value.schedule.slots.push({
-    day: 'monday',
-    startTime: '09:00',
-    endTime: '10:00'
+  form.value.schedules.push({
+    day: '',
+    startTime: '',
+    endTime: ''
   });
 };
 
 const removeScheduleSlot = (index: number) => {
-  if (formData.value.schedule.slots.length > 1) {
-    formData.value.schedule.slots.splice(index, 1);
+  if (form.value.schedules.length > 1) {
+    form.value.schedules.splice(index, 1);
   }
 };
 
-const updateEndTimeMin = (index: number) => {
-  const slot = formData.value.schedule.slots[index];
-  if (slot.startTime >= slot.endTime) {
-    // Add 30 minutes to start time
-    const [hours, minutes] = slot.startTime.split(':').map(Number);
-    const date = new Date();
-    date.setHours(hours, minutes + 30, 0, 0);
-    
-    // Format as HH:MM
-    const newEndTime = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-    slot.endTime = newEndTime;
-  }
+// Helper functions for schedule display
+const getDayName = (day: string): string => {
+  const dayNames: Record<string, string> = {
+    monday: 'Lunes',
+    tuesday: 'Martes',
+    wednesday: 'Miércoles',
+    thursday: 'Jueves',
+    friday: 'Viernes',
+    saturday: 'Sábado'
+  };
+  return dayNames[day] || day;
 };
 
-const save = async () => {
-  if (!form.value?.checkValidity()) {
-    form.value?.reportValidity();
-    return;
+const formatTime = (time: string): string => {
+  if (!time) return '';
+  const [hours, minutes] = time.split(':');
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minutes} ${ampm}`;
+};
+
+// Watch for changes in shared teachers to clean up permissions
+watch(() => form.value.sharedWith, (newSharedWith, oldSharedWith) => {
+  // Remove permissions for teachers that are no longer shared
+  if (oldSharedWith) {
+    oldSharedWith.forEach(teacherId => {
+      if (!newSharedWith.includes(teacherId)) {
+        delete form.value.permissions[teacherId];
+      }
+    });
   }
-
-  try {
-    loading.value = true;
-    
-    const classData: ClassData = {
-      ...formData.value,
-      updatedAt: new Date(),
-      schedule: formData.value.schedule
-    };
-
-    // Save to store or API
-    if (isEditing.value) {
-      // Update existing class
-      // await classesStore.updateClass(classData);
-      console.log('Updating class:', classData);
-    } else {
-      // Create new class
-      classData.createdAt = new Date();
-      // await classesStore.createClass(classData);
-      console.log('Creating class:', classData);
+  
+  // Add default permissions for new shared teachers
+  newSharedWith.forEach(teacherId => {
+    if (!form.value.permissions[teacherId]) {
+      form.value.permissions[teacherId] = ['read'];
     }
+  });
+}, { deep: true });
 
-    // Emit saved event
-    emit('saved', classData);
+// Watch for classData changes to populate form
+watch(() => props.classData, (classData) => {
+  if (classData) {
+    // Handle schedule conversion from old format to new format
+    let schedules: { day: string; startTime: string; endTime: string }[] = [];
     
-    // Close dialog
-    close();
-  } catch (error) {
-    console.error('Error saving class:', error);
-    // Show error message
-  } finally {
-    loading.value = false;
-  }
-};
-
-const initForm = () => {
-  if (props.classData) {
-    // Editing existing class
-    formData.value = {
-      ...props.classData,
-      schedule: props.classData.schedule || { slots: [] },
-      room: props.classData.room || '',
-      requirements: props.classData.requirements || []
+    if (classData.schedule) {
+      if ('slots' in classData.schedule && Array.isArray(classData.schedule.slots)) {
+        // New format: multiple schedules
+        schedules = classData.schedule.slots;
+      } else if ('day' in classData.schedule) {
+        // Old format: single schedule
+        schedules = [{
+          day: classData.schedule.day || '',
+          startTime: classData.schedule.startTime || '',
+          endTime: classData.schedule.endTime || ''
+        }];
+      }
+    }
+    
+    // Ensure at least one empty schedule slot
+    if (schedules.length === 0) {
+      schedules = [{
+        day: '',
+        startTime: '',
+        endTime: ''
+      }];
+    }
+    
+    form.value = {
+      name: classData.name || '',
+      instrument: classData.instrument || '',
+      level: classData.level || '',
+      status: classData.status || 'active',
+      description: classData.description || '',
+      capacity: classData.capacity || 8,
+      teacherId: classData.teacherId || '',
+      studentIds: classData.studentIds || [],
+      sharedWith: classData.sharedWith || [],
+      permissions: classData.permissions || {} as Record<string, string[]>,
+      schedules: schedules
     };
   } else {
-    // New class
-    formData.value = {
-      id: uuidv4(),
-      name: '',
-      level: '',
-      instrument: '',
-      description: '',
-      teacherId: '',
-      studentIds: [],
-      schedule: {
-        slots: [
-          { day: 'monday', startTime: '09:00', endTime: '10:00' }
-        ]
-      },
-      status: 'active',
-      room: '',
-      requirements: []
+    resetForm();
+  }
+}, { immediate: true });
+
+function resetForm() {
+  form.value = {
+    name: '',
+    instrument: '',
+    level: '',
+    status: 'active',
+    description: '',
+    capacity: 8,
+    teacherId: '',
+    studentIds: [],
+    sharedWith: [],
+    permissions: {},
+    schedules: [{
+      day: '',
+      startTime: '',
+      endTime: ''
+    }]
+  };
+  studentSearchTerm.value = '';
+}
+
+async function handleSubmit() {
+  if (!isFormValid.value || saving.value) return;
+  
+  saving.value = true;
+  
+  try {
+    // Filter out empty schedules and prepare valid schedules
+    const validSchedules = form.value.schedules.filter(schedule => 
+      schedule.day && schedule.startTime && schedule.endTime
+    );
+    
+    const classData: Partial<ClassData> = {
+      name: form.value.name.trim(),
+      instrument: form.value.instrument,
+      level: form.value.level,
+      status: form.value.status,
+      description: form.value.description.trim(),
+      capacity: form.value.capacity,
+      teacherId: form.value.teacherId,
+      studentIds: form.value.studentIds,
+      sharedWith: form.value.sharedWith,
+      permissions: form.value.permissions,
+      schedule: validSchedules.length > 0 ? { slots: validSchedules } : undefined
     };
+    
+    if (isEditing.value && props.classData) {
+      classData.id = props.classData.id;
+    }
+    
+    emit('save', classData);
+  } finally {
+    saving.value = false;
   }
-  
-  // Reset student search
-  studentSearch.value = '';
-  
-  // Load teacher availability
-  checkTeacherAvailability();
-};
-
-watch(dialog, (isOpen) => {
-  if (isOpen) {
-    initForm();
-  }
-});
-
-const close = () => {
-  dialog.value = false;
-};
-
-const closeDialog = () => {
-  close();
-};
+}
 
 onMounted(async () => {
   try {
@@ -618,11 +645,11 @@ onMounted(async () => {
       teachersStore.fetchTeachers(),
       studentsStore.fetchStudents()
     ]);
-    initForm();
   } catch (error) {
     console.error('Error loading data:', error);
   }
 });
+
 </script>
 
 <style scoped>
@@ -648,5 +675,50 @@ onMounted(async () => {
 
 .overflow-y-auto {
   overflow-y: auto;
+}
+
+/* Custom scrollbar styles */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background-color: #f3f4f6;
+  border-radius: 0.375rem;
+}
+
+.dark .overflow-y-auto::-webkit-scrollbar-track {
+  background-color: #374151;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 0.375rem;
+}
+
+.dark .overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: #6b7280;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
+}
+
+.dark .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
+}
+
+/* Ensure proper spacing for mobile navigation */
+@media (max-width: 768px) {
+  .fixed.inset-0 {
+    padding-bottom: 5rem; /* Space for mobile navigation */
+  }
+}
+
+/* Smooth transitions */
+.transition-colors {
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
 </style>

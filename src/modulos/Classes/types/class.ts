@@ -23,8 +23,10 @@ export interface ClassTeacher {
     canTakeAttendance: boolean;
     canAddObservations: boolean;
     canViewAttendanceHistory: boolean;
-    canEditClass: boolean;        // Solo para LEAD
-    canManageTeachers: boolean;   // Solo para LEAD
+    canEditClass: boolean;
+    canManageTeachers: boolean;
+    canManageStudents: boolean;
+    canManageSchedule: boolean;
   };
 }
 
@@ -39,8 +41,12 @@ export interface ClassData {
   level?: string;
   instrument?: string;
   teacherId?: string; // Mantener por compatibilidad (será el lead teacher)
-  teachers?: ClassTeacher[]; // Nueva estructura de maestros
+  teachers?: (string | ClassTeacher)[]; // Permitir tanto strings como objetos ClassTeacher
   studentIds?: string[];
+  // Nuevos campos para clases compartidas
+  sharedWith?: string[]; // IDs de maestros con los que se comparte
+  permissions?: Record<string, string[]>; // Permisos por maestro
+  capacity?: number; // Capacidad máxima de estudiantes
   // El horario se representa siempre como un objeto con un arreglo de sesiones.
   schedule?: {
     slots: {
@@ -48,10 +54,14 @@ export interface ClassData {
       startTime: string;
       endTime: string;
     }[];
+  } | {
+    day: string;
+    startTime: string;
+    endTime: string;
   };
   classroom?: string;
   contentIds?: string[];
-  status?: string;
+  status?: 'active' | 'inactive' | 'suspended';
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -177,6 +187,55 @@ export interface AssistantInvitationResponse {
   invitationId: string;
   accepted: boolean;
   respondedAt: Date;
+}
+
+/**
+ * Permisos disponibles para maestros en clases compartidas
+ */
+export type SharedClassPermission = 'read' | 'write' | 'manage';
+
+/**
+ * Datos para compartir una clase con otro maestro
+ */
+export interface ShareClassData {
+  classId: string;
+  teacherId: string;
+  permissions: SharedClassPermission[];
+  sharedBy: string;
+  sharedAt: Date;
+}
+
+/**
+ * Información de una clase compartida desde la perspectiva del maestro
+ */
+export interface SharedClassInfo extends ClassData {
+  isShared: true;
+  sharedBy: string;
+  sharedAt: Date;
+  myPermissions: SharedClassPermission[];
+  isOwner: boolean;
+}
+
+/**
+ * Solicitud para modificar permisos de una clase compartida
+ */
+export interface UpdateSharedPermissionsData {
+  classId: string;
+  teacherId: string;
+  permissions: SharedClassPermission[];
+  updatedBy: string;
+}
+
+/**
+ * Estadísticas de una clase
+ */
+export interface ClassStats {
+  totalStudents: number;
+  activeStudents: number;
+  averageAttendance: number;
+  totalSessions: number;
+  completedSessions: number;
+  sharedWithCount: number;
 }
 
 /* Tipos para operaciones CRUD */

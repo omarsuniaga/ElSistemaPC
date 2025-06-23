@@ -218,7 +218,7 @@ export const acceptClassInvitation = async (notificationId: string): Promise<voi
       
       // Listar clases disponibles para debug
       try {
-        const { getDocs, collection } = await import('firebase/firestore');
+        // getDocs y collection ya están importados arriba
         const classesSnapshot = await getDocs(collection(db, 'classes'));
         console.log('📋 [acceptClassInvitation] Clases disponibles:');
         classesSnapshot.docs.forEach(doc => {
@@ -411,7 +411,7 @@ export const createGeneralNotification = async (
  */
 const verifyClassExists = async (classId: string): Promise<boolean> => {
   try {
-    const { doc, getDoc } = await import('firebase/firestore');
+    // doc y getDoc ya están importados arriba
     const classRef = doc(db, 'classes', classId);
     const classDoc = await getDoc(classRef);
     return classDoc.exists();

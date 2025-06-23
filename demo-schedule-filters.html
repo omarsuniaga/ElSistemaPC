@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo - Filtros de Horario con Solapamiento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: 100px repeat(6, 1fr);
+            gap: 1px;
+            background-color: #e5e7eb;
+        }
+        .time-slot {
+            min-height: 60px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #6b7280;
+        }
+        .day-header {
+            background: #f9fafb;
+            padding: 1rem;
+            text-align: center;
+            font-weight: 600;
+            color: #374151;
+        }
+        .class-slot {
+            background: white;
+            min-height: 60px;
+            position: relative;
+            padding: 4px;
+        }
+        .class-item {
+            background: #3b82f6;
+            color: white;
+            padding: 8px;
+            border-radius: 6px;
+            margin: 2px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .class-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .class-piano { background: #3b82f6; }
+        .class-guitar { background: #10b981; }
+        .class-violin { background: #8b5cf6; }
+        .class-drums { background: #f59e0b; }
+        .overlap-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            height: 100%;
+        }
+        .stats-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                🎵 Demo: Sistema de Filtros de Horario
+            </h1>
+            <p class="text-gray-600">
+                Filtros por período del día y visualización con solapamiento de clases
+            </p>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-6">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+                        <span>Clases mostradas: <strong id="visible-classes">12</strong></span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 bg-blue-400 rounded-full"></div>
+                        <span>Rango horario: <strong id="time-range">7:00 AM - 11:00 PM</strong></span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 bg-purple-400 rounded-full"></div>
+                        <span>Modo: <strong id="view-mode">Con solapamiento</strong></span>
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="resetFilters()" class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-sm transition-colors">
+                        Resetear
+                    </button>
+                    <button onclick="showAllDay()" class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-sm transition-colors">
+                        Todo el día
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border mb-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Time Filters -->
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700 mb-3">Períodos del día:</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="morning" checked onchange="updateTimeFilters()" 
+                                   class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-sm">🌅 Mañana (7am-2pm)</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="afternoon" checked onchange="updateTimeFilters()" 
+                                   class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-sm">☀️ Tarde (2pm-7pm)</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="evening" checked onchange="updateTimeFilters()" 
+                                   class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-sm">🌙 Noche (7pm-11pm)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- View Mode -->
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700 mb-3">Modo de vista:</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="radio" name="viewMode" value="standard" onchange="updateViewMode()" 
+                                   class="text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-sm">📋 Estándar (una clase por slot)</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="radio" name="viewMode" value="overlap" checked onchange="updateViewMode()" 
+                                   class="text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-sm">📚 Con solapamiento (múltiples clases)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Grid -->
+        <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div class="schedule-grid" id="schedule-grid">
+                <!-- Headers will be generated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="mt-6 bg-white p-4 rounded-lg shadow-sm border">
+            <h3 class="text-sm font-medium text-gray-700 mb-3">Leyenda de instrumentos:</h3>
+            <div class="flex flex-wrap gap-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-blue-500 rounded"></div>
+                    <span class="text-sm">Piano</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-green-500 rounded"></div>
+                    <span class="text-sm">Guitarra</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-purple-500 rounded"></div>
+                    <span class="text-sm">Violín</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-yellow-500 rounded"></div>
+                    <span class="text-sm">Batería</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data
+        const sampleClasses = [
+            {id: 1, name: "Piano Básico A", instrument: "Piano", teacher: "Prof. García", day: "monday", startTime: "08:00", endTime: "09:00"},
+            {id: 2, name: "Guitarra Intermedio", instrument: "Guitar", teacher: "Prof. López", day: "monday", startTime: "08:30", endTime: "09:30"},
+            {id: 3, name: "Violín Avanzado", instrument: "Violin", teacher: "Prof. Martín", day: "monday", startTime: "10:00", endTime: "11:00"},
+            {id: 4, name: "Piano Básico B", instrument: "Piano", teacher: "Prof. García", day: "monday", startTime: "14:00", endTime: "15:00"},
+            {id: 5, name: "Batería Principiante", instrument: "Drums", teacher: "Prof. Ruiz", day: "tuesday", startTime: "15:30", endTime: "16:30"},
+            {id: 6, name: "Guitarra Básico", instrument: "Guitar", teacher: "Prof. López", day: "tuesday", startTime: "16:00", endTime: "17:00"},
+            {id: 7, name: "Piano Intermedio", instrument: "Piano", teacher: "Prof. García", day: "wednesday", startTime: "19:00", endTime: "20:00"},
+            {id: 8, name: "Violín Básico", instrument: "Violin", teacher: "Prof. Martín", day: "wednesday", startTime: "19:30", endTime: "20:30"},
+            {id: 9, name: "Ensamble Jazz", instrument: "Piano", teacher: "Prof. Silva", day: "thursday", startTime: "20:00", endTime: "21:00"},
+            {id: 10, name: "Coro Infantil", instrument: "Canto", teacher: "Prof. Vega", day: "friday", startTime: "09:00", endTime: "10:00"},
+            {id: 11, name: "Teoría Musical", instrument: "Teoría", teacher: "Prof. Romero", day: "friday", startTime: "11:00", endTime: "12:00"},
+            {id: 12, name: "Orquesta Juvenil", instrument: "Conjunto", teacher: "Prof. Torres", day: "saturday", startTime: "10:00", endTime: "12:00"},
+        ];
+
+        const days = [
+            {key: 'monday', name: 'Lunes'},
+            {key: 'tuesday', name: 'Martes'},
+            {key: 'wednesday', name: 'Miércoles'},
+            {key: 'thursday', name: 'Jueves'},
+            {key: 'friday', name: 'Viernes'},
+            {key: 'saturday', name: 'Sábado'},
+        ];
+
+        let currentConfig = {
+            morning: true,
+            afternoon: true,
+            evening: true,
+            viewMode: 'overlap'
+        };
+
+        function generateTimeSlots() {
+            const slots = [];
+            let startHour = 7, endHour = 23;
+
+            if (!currentConfig.morning && !currentConfig.afternoon && !currentConfig.evening) {
+                // If no periods selected, show all
+                startHour = 7;
+                endHour = 23;
+            } else {
+                if (currentConfig.morning) {
+                    startHour = Math.min(startHour, 7);
+                    endHour = Math.max(endHour, 14);
+                }
+                if (currentConfig.afternoon) {
+                    startHour = Math.min(startHour, 14);
+                    endHour = Math.max(endHour, 19);
+                }
+                if (currentConfig.evening) {
+                    startHour = Math.min(startHour, 19);
+                    endHour = Math.max(endHour, 23);
+                }
+            }
+
+            for (let hour = startHour; hour < endHour; hour++) {
+                for (let minutes = 0; minutes < 60; minutes += 30) {
+                    const timeStr = `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                    slots.push(timeStr);
+                }
+            }
+            return slots;
+        }
+
+        function formatTime(timeStr) {
+            const [hours, minutes] = timeStr.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12;
+            return `${displayHour}:${minutes} ${ampm}`;
+        }
+
+        function getClassColor(instrument) {
+            const colors = {
+                'Piano': 'class-piano',
+                'Guitar': 'class-guitar',
+                'Violin': 'class-violin',
+                'Drums': 'class-drums'
+            };
+            return colors[instrument] || 'class-piano';
+        }
+
+        function getClassesForSlot(day, timeSlot) {
+            return sampleClasses.filter(classItem => {
+                if (classItem.day !== day) return false;
+                
+                const [slotHours, slotMinutes] = timeSlot.split(':').map(Number);
+                const slotTime = slotHours * 60 + slotMinutes;
+                
+                const [startHours, startMinutes] = classItem.startTime.split(':').map(Number);
+                const startTime = startHours * 60 + startMinutes;
+                
+                const [endHours, endMinutes] = classItem.endTime.split(':').map(Number);
+                const endTime = endHours * 60 + endMinutes;
+                
+                return slotTime >= startTime && slotTime < endTime;
+            });
+        }
+
+        function renderSchedule() {
+            const grid = document.getElementById('schedule-grid');
+            const timeSlots = generateTimeSlots();
+            
+            // Clear grid
+            grid.innerHTML = '';
+            
+            // Add header row
+            grid.appendChild(createHeader('Hora'));
+            days.forEach(day => {
+                grid.appendChild(createHeader(day.name));
+            });
+            
+            // Add time slots
+            timeSlots.forEach(timeSlot => {
+                // Time label
+                const timeLabel = document.createElement('div');
+                timeLabel.className = 'time-slot';
+                timeLabel.textContent = formatTime(timeSlot);
+                grid.appendChild(timeLabel);
+                
+                // Day columns
+                days.forEach(day => {
+                    const dayColumn = document.createElement('div');
+                    dayColumn.className = 'class-slot';
+                    
+                    const classes = getClassesForSlot(day.key, timeSlot);
+                    
+                    if (classes.length === 0) {
+                        dayColumn.innerHTML = '<div class="text-gray-300 text-center text-xs">-</div>';
+                    } else if (currentConfig.viewMode === 'standard') {
+                        // Standard view: show only first class
+                        const classItem = classes[0];
+                        dayColumn.innerHTML = `
+                            <div class="class-item ${getClassColor(classItem.instrument)}">
+                                <div class="font-bold">${classItem.name}</div>
+                                <div class="text-xs opacity-75">${classItem.teacher}</div>
+                            </div>
+                        `;
+                    } else {
+                        // Overlap view: show all classes
+                        dayColumn.innerHTML = '<div class="overlap-container">' + 
+                            classes.map(classItem => `
+                                <div class="class-item ${getClassColor(classItem.instrument)}" style="font-size: 0.65rem;">
+                                    <div class="font-bold">${classItem.name}</div>
+                                    <div class="opacity-75">${classItem.teacher}</div>
+                                </div>
+                            `).join('') + 
+                        '</div>';
+                    }
+                    
+                    grid.appendChild(dayColumn);
+                });
+            });
+            
+            updateStats();
+        }
+
+        function createHeader(text) {
+            const header = document.createElement('div');
+            header.className = 'day-header';
+            header.textContent = text;
+            return header;
+        }
+
+        function updateStats() {
+            const timeSlots = generateTimeSlots();
+            const startTime = timeSlots.length > 0 ? formatTime(timeSlots[0]) : '7:00 AM';
+            const endTime = timeSlots.length > 0 ? formatTime(timeSlots[timeSlots.length - 1]) : '11:00 PM';
+            
+            document.getElementById('visible-classes').textContent = sampleClasses.length;
+            document.getElementById('time-range').textContent = `${startTime} - ${endTime}`;
+            document.getElementById('view-mode').textContent = currentConfig.viewMode === 'standard' ? 'Estándar' : 'Con solapamiento';
+        }
+
+        function updateTimeFilters() {
+            currentConfig.morning = document.getElementById('morning').checked;
+            currentConfig.afternoon = document.getElementById('afternoon').checked;
+            currentConfig.evening = document.getElementById('evening').checked;
+            renderSchedule();
+        }
+
+        function updateViewMode() {
+            const selected = document.querySelector('input[name="viewMode"]:checked');
+            currentConfig.viewMode = selected.value;
+            renderSchedule();
+        }
+
+        function resetFilters() {
+            document.getElementById('morning').checked = true;
+            document.getElementById('afternoon').checked = true;
+            document.getElementById('evening').checked = true;
+            document.querySelector('input[value="standard"]').checked = true;
+            
+            currentConfig = {
+                morning: true,
+                afternoon: true,
+                evening: true,
+                viewMode: 'standard'
+            };
+            
+            renderSchedule();
+        }
+
+        function showAllDay() {
+            document.getElementById('morning').checked = true;
+            document.getElementById('afternoon').checked = true;
+            document.getElementById('evening').checked = true;
+            
+            currentConfig.morning = true;
+            currentConfig.afternoon = true;
+            currentConfig.evening = true;
+            
+            renderSchedule();
+        }
+
+        // Initial render
+        document.addEventListener('DOMContentLoaded', function() {
+            renderSchedule();
+        });
+    </script>
+</body>
+</html>

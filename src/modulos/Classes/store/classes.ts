@@ -6,7 +6,12 @@ import {
   updateClassFirestore,
   removeClassFirestore,
   getClassByIdFirestore,
-  fetchClassesByStudentIdFirestore
+  fetchClassesByStudentIdFirestore,
+  getTeacherClasses,
+  inviteAssistantTeacher,
+  removeAssistantTeacher,
+  updateAssistantPermissions,
+  checkTeacherPermission
 } from "../service/classes";
 import type { ClassData, ClassCreate } from "../types/class";
 import { useQualificationStore } from '../../Qualifications/store/qualification';
@@ -799,7 +804,7 @@ export const useClassesStore = defineStore('classes', {
         if (!teacherId) return [];
         
         // Importar función del servicio
-        const { getTeacherClasses } = await import('../service/classes');
+        // getTeacherClasses ya está importado estáticamente
         const teacherClasses = await getTeacherClasses(teacherId);
         
         // Actualizar clases en el store
@@ -821,14 +826,14 @@ export const useClassesStore = defineStore('classes', {
      */
     async inviteAssistant(inviteData: any) {
       return await this.withLoading(async () => {
-        const { inviteAssistantTeacher } = await import('../service/classes');
+        // inviteAssistantTeacher ya está importado estáticamente
         await inviteAssistantTeacher(inviteData);
         
         // Actualizar la clase en el store
         const classIndex = this.classes.findIndex(c => c.id === inviteData.classId);
         if (classIndex >= 0) {
           // Recargar la clase desde Firestore para obtener los datos actualizados
-          const { getClassByIdFirestore } = await import('../service/classes');
+          // getClassByIdFirestore ya está importado estáticamente
           const updatedClass = await getClassByIdFirestore(inviteData.classId);
           if (updatedClass) {
             this.classes[classIndex] = this.normalizeClassData(updatedClass);
@@ -842,13 +847,13 @@ export const useClassesStore = defineStore('classes', {
      */
     async removeAssistant(classId: string, assistantId: string, removedBy: string) {
       return await this.withLoading(async () => {
-        const { removeAssistantTeacher } = await import('../service/classes');
+        // removeAssistantTeacher ya está importado estáticamente
         await removeAssistantTeacher(classId, assistantId, removedBy);
         
         // Actualizar la clase en el store
         const classIndex = this.classes.findIndex(c => c.id === classId);
         if (classIndex >= 0) {
-          const { getClassByIdFirestore } = await import('../service/classes');
+          // getClassByIdFirestore ya está importado estáticamente
           const updatedClass = await getClassByIdFirestore(classId);
           if (updatedClass) {
             this.classes[classIndex] = this.normalizeClassData(updatedClass);
@@ -862,13 +867,13 @@ export const useClassesStore = defineStore('classes', {
      */
     async updateAssistantPermissions(classId: string, assistantId: string, permissions: any, updatedBy: string) {
       return await this.withLoading(async () => {
-        const { updateAssistantPermissions } = await import('../service/classes');
+        // updateAssistantPermissions ya está importado estáticamente
         await updateAssistantPermissions(classId, assistantId, permissions, updatedBy);
         
         // Actualizar la clase en el store
         const classIndex = this.classes.findIndex(c => c.id === classId);
         if (classIndex >= 0) {
-          const { getClassByIdFirestore } = await import('../service/classes');
+          // getClassByIdFirestore ya está importado estáticamente
           const updatedClass = await getClassByIdFirestore(classId);
           if (updatedClass) {
             this.classes[classIndex] = this.normalizeClassData(updatedClass);
@@ -881,7 +886,7 @@ export const useClassesStore = defineStore('classes', {
      * Verifica si un maestro tiene permisos específicos en una clase
      */
     async checkTeacherPermission(classId: string, teacherId: string, permission: string) {
-      const { checkTeacherPermission } = await import('../service/classes');
+      // checkTeacherPermission ya está importado estáticamente
       return await checkTeacherPermission(classId, teacherId, permission);
     },
   }

@@ -128,10 +128,9 @@ export const useMontajeStore = defineStore('montaje', () => {
       let obra = await montajeService.obtenerObra(obraId);
       
       // Si no se encuentra, intentar en 'repertorios'
-      if (!obra) {
-        console.log('📚 Obra no encontrada en "obras", intentando en "repertorios"...');
+      if (!obra) {        console.log('📚 Obra no encontrada en "obras", intentando en "repertorios"...');
         try {
-          const { doc, getDoc } = await import('firebase/firestore');
+          // doc y getDoc ya están importados arriba
           const { db } = await import('@/firebase');
           
           const docRef = doc(db, 'repertorios', obraId);
@@ -150,10 +149,9 @@ export const useMontajeStore = defineStore('montaje', () => {
       }
       
       // Si aún no se encuentra, intentar en 'montaje-repertorios'
-      if (!obra) {
-        console.log('📖 Intentando en "montaje-repertorios"...');
+      if (!obra) {        console.log('📖 Intentando en "montaje-repertorios"...');
         try {
-          const { doc, getDoc } = await import('firebase/firestore');
+          // doc y getDoc ya están importados arriba
           const { db } = await import('@/firebase');
           
           const docRef = doc(db, 'montaje-repertorios', obraId);
