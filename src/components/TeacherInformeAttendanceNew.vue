@@ -174,7 +174,7 @@
               </div>
               <div class="text-right">
                 <div class="text-sm text-gray-600 dark:text-gray-400">
-                  {{ getAttendancePercentageSync(classData) }}% asistencia
+                  {{ getAttendancePercentage(classData) }}% asistencia
                 </div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">
                   {{ getClassStudentsCount(classData) }} estudiantes
@@ -197,11 +197,11 @@
                     :is="expandedStudents.has(`${classData.id}-${student.id}`) ? ChevronDownIcon : ChevronRightIcon" 
                     class="h-4 w-4 text-gray-400 mr-2" 
                   />
-                  <span class="font-medium text-gray-800 dark:text-gray-200">{{ student.nombre }} {{ student.apellido }}</span>
+                  <span class="font-medium text-gray-800 dark:text-gray-200">{{ student.name }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <span class="text-sm text-gray-600 dark:text-gray-400">
-                    {{ getStudentAttendancePercentageSync(classData.id, student.id) }}% asistencia
+                    {{ getStudentAttendancePercentage(classData.id, student.id) }}% asistencia
                   </span>
                   <button
                     @click.stop="showObservationsModal(classData.id, student.id)"
@@ -216,7 +216,7 @@
               <!-- Detalle de asistencias del estudiante -->
               <div v-if="expandedStudents.has(`${classData.id}-${student.id}`)" class="mt-3 pl-6">
                 <div class="space-y-2">
-                  <div v-for="attendance in getStudentAttendancesSync(classData.id, student.id)" :key="attendance.date"
+                  <div v-for="attendance in getStudentAttendances(classData.id, student.id)" :key="attendance.date"
                        class="flex items-center justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">
                       {{ formatDate(attendance.date) }}
@@ -226,9 +226,10 @@
                         :class="getStatusClass(attendance.status)"
                         class="px-2 py-1 rounded text-xs font-medium"
                       >
-                        {{ attendance.status === 'justificado' && attendance.justification 
-                            ? `Justificado - ${attendance.justification}` 
-                            : getStatusText(attendance.status) }}
+                        {{ getStatusText(attendance.status) }}
+                      </span>
+                      <span v-if="attendance.justification" class="text-xs text-blue-600 dark:text-blue-400">
+                        {{ attendance.justification }}
                       </span>
                     </div>
                   </div>
@@ -268,7 +269,7 @@
               </div>
               <div class="text-right">
                 <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                  {{ getAttendancePercentageSync(classData) }}%
+                  {{ getAttendancePercentage(classData) }}%
                 </div>
                 <div class="text-sm text-gray-600 dark:text-gray-400">asistencia</div>
               </div>
@@ -300,20 +301,20 @@
                         :is="expandedStudents.has(`${classData.id}-${student.id}`) ? ChevronDownIcon : ChevronRightIcon" 
                         class="h-4 w-4 text-gray-400 mr-2" 
                       />
-                      <span class="font-medium text-gray-800 dark:text-gray-200">{{ student.nombre }} {{ student.apellido }}</span>
+                      <span class="font-medium text-gray-800 dark:text-gray-200">{{ student.name }}</span>
                     </div>
                   </td>
                   <td class="text-center py-3 text-sm text-gray-600 dark:text-gray-400">
-                    {{ getStudentAttendancePercentageSync(classData.id, student.id) }}%
+                    {{ getStudentAttendancePercentage(classData.id, student.id) }}%
                   </td>
                   <td class="text-center py-3 text-sm text-green-600 dark:text-green-400">
-                    {{ getStudentAttendanceCountSync(classData.id, student.id, 'presente') }}
+                    {{ getStudentAttendanceCount(classData.id, student.id, 'presente') }}
                   </td>
                   <td class="text-center py-3 text-sm text-red-600 dark:text-red-400">
-                    {{ getStudentAttendanceCountSync(classData.id, student.id, 'ausente') }}
+                    {{ getStudentAttendanceCount(classData.id, student.id, 'ausente') }}
                   </td>
                   <td class="text-center py-3 text-sm text-yellow-600 dark:text-yellow-400">
-                    {{ getStudentAttendanceCountSync(classData.id, student.id, 'tarde') }}
+                    {{ getStudentAttendanceCount(classData.id, student.id, 'tarde') }}
                   </td>
                   <td class="text-center py-3">
                     <button
@@ -331,9 +332,9 @@
             <!-- Detalle de asistencias expandido -->
             <div v-for="student in getClassStudents(classData)" :key="`detail-${student.id}`">
               <div v-if="expandedStudents.has(`${classData.id}-${student.id}`)" class="mt-4 p-4 bg-gray-50 dark:bg-gray-600 rounded-lg">
-                <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-3">Detalle de asistencias - {{ student.nombre }} {{ student.apellido }}</h4>
+                <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-3">Detalle de asistencias - {{ student.name }}</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <div v-for="attendance in getStudentAttendancesSync(classData.id, student.id)" :key="attendance.date"
+                  <div v-for="attendance in getStudentAttendances(classData.id, student.id)" :key="attendance.date"
                        class="flex items-center justify-between p-2 bg-white dark:bg-gray-700 rounded border">
                     <span class="text-sm text-gray-600 dark:text-gray-400">
                       {{ formatDate(attendance.date) }}
@@ -343,9 +344,10 @@
                         :class="getStatusClass(attendance.status)"
                         class="px-2 py-1 rounded text-xs font-medium"
                       >
-                        {{ attendance.status === 'justificado' && attendance.justification 
-                            ? `Justificado - ${attendance.justification}` 
-                            : getStatusText(attendance.status) }}
+                        {{ getStatusText(attendance.status) }}
+                      </span>
+                      <span v-if="attendance.justification" class="text-xs text-blue-600 dark:text-blue-400">
+                        {{ attendance.justification }}
                       </span>
                     </div>
                   </div>
@@ -492,10 +494,6 @@ const classObservations = ref<ClassObservation[]>([])
 const selectedClassId = ref('')
 const selectedClassName = ref('')
 
-// Cache de asistencias por estudiante
-const studentAttendances = ref<Record<string, AttendanceRecord[]>>({})
-const attendancePercentages = ref<Record<string, number>>({})
-
 // Fechas
 const dateFrom = ref('')
 const dateTo = ref('')
@@ -524,38 +522,22 @@ const totalStudents = computed(() => {
   return studentIds.size
 })
 
-// Estadísticas generales (ahora como refs reactivos)
-const totalPresentes = ref(0)
-const totalAusentes = ref(0)
-const totalTardes = ref(0)
-const totalJustificados = ref(0)
+// Estadísticas generales
+const totalPresentes = computed(() => {
+  return getTotalAttendanceCount('presente')
+})
 
-async function updateStatistics() {
-  try {
-    // Solo calcular estadísticas de clases expandidas que ya tienen datos cargados
-    let presentes = 0, ausentes = 0, tardes = 0, justificados = 0
-    
-    for (const classId of expandedClasses.value) {
-      const classData = classesStore.getClassById(classId)
-      if (!classData?.studentIds) continue
-      
-      for (const studentId of classData.studentIds) {
-        const attendances = getStudentAttendancesSync(classId, studentId)
-        presentes += attendances.filter(a => a.status === 'presente').length
-        ausentes += attendances.filter(a => a.status === 'ausente').length
-        tardes += attendances.filter(a => a.status === 'tarde').length
-        justificados += attendances.filter(a => a.status === 'justificado').length
-      }
-    }
-    
-    totalPresentes.value = presentes
-    totalAusentes.value = ausentes
-    totalTardes.value = tardes
-    totalJustificados.value = justificados
-  } catch (error) {
-    console.error('Error actualizando estadísticas:', error)
-  }
-}
+const totalAusentes = computed(() => {
+  return getTotalAttendanceCount('ausente')
+})
+
+const totalTardes = computed(() => {
+  return getTotalAttendanceCount('tarde')
+})
+
+const totalJustificados = computed(() => {
+  return getTotalAttendanceCount('justificado')
+})
 
 // Métodos
 function goBack() {
@@ -576,10 +558,6 @@ function toggleClassExpansion(classId: string) {
     expandedClasses.value.delete(classId)
   } else {
     expandedClasses.value.add(classId)
-    // Cargar asistencias solo cuando se expande la clase
-    if (dateFrom.value && dateTo.value) {
-      loadStudentAttendancesForClass(classId)
-    }
   }
 }
 
@@ -610,40 +588,11 @@ function getClassStudentsCount(classData: any): number {
 }
 
 function getClassStudents(classData: any) {
-  if (!classData.studentIds) {
-    console.log(`⚠️ Clase ${classData.name} no tiene studentIds`)
-    return []
-  }
-  
-  const students = studentsStore.students.filter(s => classData.studentIds.includes(s.id))
-  console.log(`👥 Clase ${classData.name}: ${students.length}/${classData.studentIds.length} estudiantes encontrados`)
-  
-  if (students.length !== classData.studentIds.length) {
-    const foundIds = students.map(s => s.id)
-    const missingIds = classData.studentIds.filter((id: string) => !foundIds.includes(id))
-    console.log(`❓ IDs faltantes:`, missingIds)
-  }
-  
-  return students
+  if (!classData.studentIds) return []
+  return studentsStore.students.filter(s => classData.studentIds.includes(s.id))
 }
 
-// Funciones síncronas para el template (obtienen datos del cache)
-function getStudentAttendancesSync(classId: string, studentId: string): AttendanceRecord[] {
-  const key = `${classId}-${studentId}`
-  return studentAttendances.value[key] || []
-}
-
-function getStudentAttendancePercentageSync(classId: string, studentId: string): number {
-  const key = `${classId}-${studentId}`
-  return attendancePercentages.value[key] || 0
-}
-
-function getStudentAttendanceCountSync(classId: string, studentId: string, status: string): number {
-  const attendances = getStudentAttendancesSync(classId, studentId)
-  return attendances.filter(a => a.status === status).length
-}
-
-function getAttendancePercentageSync(classData: any): number {
+function getAttendancePercentage(classData: any): number {
   const students = getClassStudents(classData)
   if (students.length === 0) return 0
   
@@ -651,93 +600,62 @@ function getAttendancePercentageSync(classData: any): number {
   let totalSessions = 0
   
   students.forEach(student => {
-    const attendances = getStudentAttendancesSync(classData.id, student.id)
+    const attendances = getStudentAttendances(classData.id, student.id)
     totalSessions += attendances.length
-    totalPresentes += attendances.filter(a => a.status === 'presente' || a.status === 'justificado').length
+    totalPresentes += attendances.filter(a => a.status === 'presente').length
   })
   
   return totalSessions > 0 ? Math.round((totalPresentes / totalSessions) * 100) : 0
 }
-// Función para cargar todas las asistencias de estudiantes SOLO cuando se expanda una clase
-async function loadStudentAttendancesForClass(classId: string) {
-  console.log(`🎯 === INICIANDO CARGA DE ASISTENCIAS PARA CLASE ${classId} ===`);
+
+function getStudentAttendancePercentage(classId: string, studentId: string): number {
+  const attendances = getStudentAttendances(classId, studentId)
+  if (attendances.length === 0) return 0
   
-  const classData = classesStore.getClassById(classId)
-  if (!classData || !classData.studentIds || classData.studentIds.length === 0) {
-    console.log(`⚠️ Clase ${classId} no tiene estudiantes asignados`)
-    return
-  }
-
-  console.log(`🔄 Cargando asistencias para clase: ${classData.name}`)
-  console.log(`📅 Rango de fechas: ${dateFrom.value} - ${dateTo.value}`)
-  console.log(`👥 Estudiantes en la clase:`, classData.studentIds)
-
-  try {
-    // Usar la función optimizada del store
-    console.log('📞 Llamando a attendanceStore.fetchAttendanceByDateRangeAndClasses...')
-    const attendanceRecords = await attendanceStore.fetchAttendanceByDateRangeAndClasses(
-      dateFrom.value,
-      dateTo.value,
-      [classId]
-    )
-
-    console.log(`📊 Se obtuvieron ${attendanceRecords.length} registros para la clase ${classData.name}`)
-    console.log('📋 Registros obtenidos:', attendanceRecords)
-
-    // Agrupar por estudiante
-    const newAttendances: Record<string, AttendanceRecord[]> = {}
-    const newPercentages: Record<string, number> = {}
-
-    // Inicializar para todos los estudiantes de la clase
-    classData.studentIds.forEach(studentId => {
-      const key = `${classId}-${studentId}`
-      const studentRecords = attendanceRecords.filter(record => record.studentId === studentId)
-      
-      // Mapear al formato local del componente
-      const mappedRecords: AttendanceRecord[] = studentRecords.map(record => ({
-        date: record.fecha, // usar 'fecha' del store
-        status: mapFirebaseStatusToLocal(record.status),
-        justification: typeof record.justification === 'object' && record.justification?.reason 
-          ? record.justification.reason 
-          : (typeof record.justification === 'string' ? record.justification : undefined)
-      }))
-      
-      newAttendances[key] = mappedRecords
-      
-      if (mappedRecords.length > 0) {
-        const presentes = mappedRecords.filter(r => r.status === 'presente' || r.status === 'justificado').length
-        newPercentages[key] = Math.round((presentes / mappedRecords.length) * 100)
-      } else {
-        newPercentages[key] = 0
-      }
-      
-      console.log(`👤 Estudiante ${studentId}: ${mappedRecords.length} registros, ${newPercentages[key]}% asistencia`)
-    })
-
-    // Actualizar el cache
-    Object.assign(studentAttendances.value, newAttendances)
-    Object.assign(attendancePercentages.value, newPercentages)
-
-  } catch (error) {
-    console.error(`❌ Error cargando asistencias para clase ${classId}:`, error)
-  }
+  const presentes = attendances.filter(a => a.status === 'presente').length
+  return Math.round((presentes / attendances.length) * 100)
 }
 
-// Funciones auxiliares para mapear estados
-function mapFirebaseStatusToLocal(status: string): 'presente' | 'ausente' | 'tarde' | 'justificado' {
-  switch (status.toLowerCase()) {
-    case 'presente':
-      return 'presente';
-    case 'ausente':
-      return 'ausente';
-    case 'tarde':
-    case 'tardanza':
-      return 'tarde';
-    case 'justificado':
-      return 'justificado';
-    default:
-      return 'ausente';
+function getStudentAttendanceCount(classId: string, studentId: string, status: string): number {
+  const attendances = getStudentAttendances(classId, studentId)
+  return attendances.filter(a => a.status === status).length
+}
+
+function getStudentAttendances(classId: string, studentId: string): AttendanceRecord[] {
+  // Aquí deberías obtener las asistencias reales del store
+  // Por ahora retornamos datos de ejemplo
+  const attendances: AttendanceRecord[] = []
+  
+  // Simular datos de asistencia para el rango de fechas
+  if (dateFrom.value && dateTo.value) {
+    const startDate = new Date(dateFrom.value)
+    const endDate = new Date(dateTo.value)
+    const currentDate = new Date(startDate)
+    
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0]
+      attendances.push({
+        date: dateStr,
+        status: Math.random() > 0.3 ? 'presente' : 'ausente',
+        justification: Math.random() > 0.8 ? 'Justificación médica' : undefined
+      })
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
   }
+  
+  return attendances
+}
+
+function getTotalAttendanceCount(status: string): number {
+  let total = 0
+  teacherClasses.value.forEach(cls => {
+    const students = getClassStudents(cls)
+    students.forEach(student => {
+      const attendances = getStudentAttendances(cls.id, student.id)
+      total += attendances.filter(a => a.status === status).length
+    })
+  })
+  return total
 }
 
 function getStatusClass(status: string): string {
@@ -790,12 +708,12 @@ async function showObservationsModal(classId: string, studentId?: string) {
     // Obtener observaciones de la clase
     const observations = await attendanceStore.fetchObservationsForClass(classId)
     
-    // Filtrar por rango de fechas si est� definido
+    // Filtrar por rango de fechas si está definido
     let filteredObservations = observations
     if (dateFrom.value && dateTo.value) {
       filteredObservations = observations.filter(obs => {
         const obsDate = obs.date || obs.fecha
-        return obsDate && obsDate >= dateFrom.value && obsDate <= dateTo.value
+        return obsDate >= dateFrom.value && obsDate <= dateTo.value
       })
     }
     
@@ -851,60 +769,16 @@ async function loadAttendanceData() {
   
   try {
     // Cargar datos necesarios
-    console.log('🔄 Cargando datos básicos...')
     await Promise.all([
       teachersStore.fetchTeachers(),
       classesStore.fetchClasses(),
       studentsStore.fetchStudents()
     ])
     
-    // Debug: Verificar datos cargados
-    console.log('📊 Datos cargados:')
-    console.log('- Teachers:', teachersStore.teachers.length)
-    console.log('- Classes:', classesStore.classes.length)
-    console.log('- Students:', studentsStore.students.length)
-    console.log('- Teacher ID:', teacherId.value)
-    
-    // Verificar clases del maestro
-    const teacherClassesData = classesStore.classes.filter(c => c.teacherId === teacherId.value)
-    console.log('- Teacher Classes:', teacherClassesData.length)
-    teacherClassesData.forEach(cls => {
-      console.log(`  📚 Clase: ${cls.name}, Estudiantes: ${cls.studentIds?.length || 0}`)
-      if (cls.studentIds) {
-        console.log(`    👥 Student IDs:`, cls.studentIds)
-      }
-    })
-    
-    // Verificar estudiantes disponibles
-    if (teacherClassesData.length > 0) {
-      const allStudentIds = new Set<string>()
-      teacherClassesData.forEach(cls => {
-        if (cls.studentIds) {
-          cls.studentIds.forEach(id => allStudentIds.add(id))
-        }
-      })
-      console.log('📝 Estudiantes únicos encontrados:', allStudentIds.size)
-      
-      // Verificar si los estudiantes existen en el store
-      const studentsFound = Array.from(allStudentIds).map(id => {
-        const student = studentsStore.students.find(s => s.id === id)
-        return student ? `${student.nombre} ${student.apellido}` : `ID: ${id} (NO ENCONTRADO)`
-      })
-      console.log('👤 Estudiantes:', studentsFound)
-    }
-    
-    // Cargar datos de asistencia si hay rango de fechas
-    if (dateFrom.value && dateTo.value) {
-      console.log('📅 Cargando asistencias...', { dateFrom: dateFrom.value, dateTo: dateTo.value })
-      await attendanceStore.fetchAttendanceByDateRange(dateFrom.value, dateTo.value, teacherId.value)
-      // Las asistencias se cargarán automáticamente cuando el usuario expanda cada clase
-      // Actualizar estadísticas (que solo incluirá clases expandidas)
-      await updateStatistics()
-    }
-    
-    console.log('✅ Datos cargados correctamente')
+    // Aquí podrías cargar datos específicos de asistencia si es necesario
+    console.log('Datos cargados correctamente')
   } catch (err) {
-    console.error('❌ Error cargando datos:', err)
+    console.error('Error cargando datos:', err)
     error.value = 'Error al cargar los datos. Por favor, intenta de nuevo.'
   } finally {
     loading.value = false
@@ -938,4 +812,4 @@ onMounted(async () => {
     grid-template-columns: repeat(1, 1fr);
   }
 }
-</style>
+</style> 

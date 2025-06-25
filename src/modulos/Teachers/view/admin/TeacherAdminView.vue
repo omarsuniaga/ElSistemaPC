@@ -1,5 +1,5 @@
 <template>
-  <div class="teachers-admin-view p-4 lg:p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+  <div class="teachers-admin-view p-4 mb-16 lg:p-6 bg-gray-50 dark:bg-gray-900 min-h-screen mb-16">
     <!-- Dashboard Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
       <div>
@@ -189,7 +189,7 @@
           <div class="flex items-start space-x-3">
             <MusicalNoteIcon class="h-5 w-5 text-gray-400 flex-shrink-0" />
             <span class="text-sm text-gray-700 dark:text-gray-300">
-              {{ getInstrumentName(teacher.instrumentId) || 'No especificado' }}
+              {{ getInstrumentName(teacher.specialties[0]) || 'No especificado' }}
             </span>
           </div>
           
@@ -209,7 +209,7 @@
           <div class="flex items-start space-x-3 mt-2">
             <AcademicCapIcon class="h-5 w-5 text-gray-400 flex-shrink-0" />
             <span class="text-sm text-gray-700 dark:text-gray-300">
-              {{ getTeacherClassCount(teacher.id) }} clases · {{ getTeacherStudentsCount(teacher.id) }} estudiantes
+              {{ getTeacherClassCount(teacher.id) }} clases  - {{ getTeacherStudentsCount(teacher.id) }} estudiantes
             </span>
           </div>
         </div>
@@ -324,7 +324,7 @@
           <template v-for="page in displayedPages" :key="page">
             <button
               v-if="page !== '...'"
-              @click="currentPage = page"
+              @click="currentPage = Number(page)"
               :class=" [
                 'px-4 py-1 rounded-md border focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
                 currentPage === page
@@ -412,13 +412,13 @@
           <div class="px-6 py-4 bg-green-600 dark:bg-green-700">
             <h3 class="text-lg font-medium text-white flex items-center">
               <AcademicCapIcon class="h-5 w-5 mr-2" />
-              Gestionar Clases - {{ selectedTeacher?.name }}
+              Gestionar Clases - {{ selectedTeacher?.name || 'Maestro' }} - {{ selectedTeacher?.specialties?.[0] || 'Sin especialidad' }}
             </h3>
           </div>
           <div class="p-6">
             <TeacherClassesManager 
-              :teacherId="selectedTeacher?.id" 
-              :teacherName="selectedTeacher?.name"
+              :teacherId="selectedTeacher?.id || ''" 
+              :teacherName="selectedTeacher?.name || ''"
               @close="showClassesManager = false" 
             />
           </div>
@@ -440,6 +440,14 @@ import TeacherForm from '../../components/TeacherForm.vue';
 import TeacherClassesManager from '../../components/TeacherClassesManager.vue';
 import ConfirmModal from '../../../../components/ConfirmModal.vue';
 import { useToast } from '../../../../components/ui/toast/use-toast';
+import { 
+  safeArrayLength,
+  safeGet,
+  safeStoreAccess,
+  safeMath,
+  isValidArray,
+  safeFind
+} from '../../../../utils/safeAccess';
 import { 
   UserIcon, 
   AcademicCapIcon, 
@@ -520,7 +528,21 @@ const filteredTeachers = computed(() => {
   return result;
 });
 
-const instruments = computed(() => instrumentsStore.instruments);
+// obtener la especialidad de teacher usando getTeachersBySpecialty
+const instruments = computed(() => {
+  const allInstruments = instrumentsStore.instruments;
+  if (!allInstruments || !Array.isArray(allInstruments)) return [];
+  
+  // Ensure we have unique instruments
+  const uniqueInstruments = new Map();
+  allInstruments.forEach(instrument => {
+    if (instrument && instrument.id && instrument.name) {
+      uniqueInstruments.set(instrument.id, instrument);
+    }
+  });
+  
+  return Array.from(uniqueInstruments.values());
+});
 
 const totalPages = computed(() => Math.ceil(filteredTeachers.value.length / pageSize.value));
 
@@ -636,22 +658,25 @@ function getTeacherStudentsCount(teacherId: string): number {
     if (!teacherId || !studentsStore.students || !classesStore.classes) return 0;
     
     // Get all class IDs for this teacher
-    const teacherClassIds = classesStore.classes
-      .filter(cls => cls.teacherId === teacherId)
-      .map(cls => cls.id);
-    
+    const teacherClassIds = classesStore.classes.filter(cls => cls.teacherId === teacherId)
+     
     if (teacherClassIds.length === 0) return 0;
     
-    // Create a Set to track unique student IDs
     const uniqueStudentIds = new Set<string>();
-    
-    // For each student in our store, check if they belong to any of the teacher's classes
-    studentsStore.students.forEach(student => {
-      if (student.classId && teacherClassIds.includes(student.classId)) {
-        uniqueStudentIds.add(student.id);
-      }
-    });
-    
+      // iterar teacherClassIds y obtener el length de la propiedad studentsIds
+      teacherClassIds.forEach(cls => {
+        if (!cls.studentIds || !Array.isArray(cls.studentIds)) {
+          cls.studentIds = []; // Ensure studentIds is an array
+        }
+        // console.log('Teacher Class IDs:', cls.studentIds);
+        cls.studentIds.forEach(studentId => {
+          if (studentId) {
+            uniqueStudentIds.add(studentId);
+          }
+        });
+        return uniqueStudentIds.size;
+      });
+      
     return uniqueStudentIds.size;
   } catch (error) {
     console.error('Error counting teacher students:', error);
@@ -766,7 +791,7 @@ function viewTeacherSchedule(teacherId) {
 }
 
 function viewTeacherAttendance(teacherId) {
-  // Update to navigate to the correct informe route with teacherId as query parameter
+  // Redirigir al componente TeacherInformeAttendance con el teacherId
   router.push({
     path: '/attendance/informe',
     query: { teacherId }

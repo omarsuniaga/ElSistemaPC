@@ -19,7 +19,10 @@ import type {
 
 // Importar el servicio centralizado
 import * as attendanceService from '../../../service/attendance';
-import { fetchAttendanceByDateRangeFirebase } from '../service/attendance';
+import { 
+  fetchAttendanceByDateRangeFirebase, 
+  fetchAttendanceByDateRangeAndClassesFirebase 
+} from '../service/attendance';
 import { useStudentsStore } from '../../Students/store/students'; // Assuming path to students store
 
 import { 
@@ -1131,6 +1134,41 @@ export const useAttendanceStore = defineStore('attendance', () => {
   };
 
   /**
+   * Función optimizada para obtener asistencias de clases específicas en un rango de fechas
+   * Ideal para informes de maestros
+   */
+  const fetchAttendanceByDateRangeAndClasses = async (
+    startDate: string,
+    endDate: string,
+    classIds: string[]
+  ): Promise<AttendanceRecord[]> => {
+    loading.value = true;
+    error.value = null;
+    
+    try {
+      console.log(`🔍 Obteniendo asistencias para ${classIds.length} clases entre ${startDate} y ${endDate}`);
+      
+      // Usar el servicio optimizado
+      const attendanceRecords = await fetchAttendanceByDateRangeAndClassesFirebase(
+        startDate, 
+        endDate, 
+        classIds
+      );
+      
+      console.log(`✅ Se obtuvieron ${attendanceRecords.length} registros de asistencia`);
+      return attendanceRecords;
+      
+    } catch (error: any) {
+      const errorMessage = `Error obteniendo asistencias por clases: ${error.message || String(error)}`;
+      console.error(errorMessage);
+      error.value = errorMessage;
+      return [];
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  /**
    * Función para obtener todas las observaciones de un maestro
    * Usa el servicio de attendance para obtener observaciones estructuradas
    */
@@ -1475,6 +1513,83 @@ export const useAttendanceStore = defineStore('attendance', () => {
     );
   };
 
+  // Método para obtener documentos de asistencia de un profesor específico
+  const fetchAttendanceDocumentsByTeacher = async (
+    teacherId: string, 
+    startDate?: string, 
+    endDate?: string
+  ) => {
+    try {
+      loading.value = true;
+      error.value = null;
+
+      if (!teacherId) {
+        throw new Error('teacherId es requerido');
+      }
+
+      console.log(`🔍 Obteniendo documentos de asistencia para profesor: ${teacherId}`);
+      
+      let documents: AttendanceDocument[] = [];
+      
+      if (startDate && endDate) {
+        console.log(`📅 Rango de fechas: ${startDate} a ${endDate}`);
+        // Usar el servicio centralizado para obtener documentos por rango de fechas y profesor
+        documents = await attendanceService.getAttendanceDocumentsByDateRange(
+          startDate, 
+          endDate, 
+          teacherId
+        );
+      } else {
+        console.log('📅 Obteniendo todas las fechas registradas para el profesor');
+        // Obtener todas las fechas registradas para este profesor
+        const registeredDates = await attendanceService.getRegisteredAttendanceDates(teacherId);
+        
+        // Filtrar solo fechas válidas (no IDs) 
+        const validDates = registeredDates.filter(date => {
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (!dateRegex.test(date)) {
+            console.warn(`Fecha inválida encontrada: ${date}`);
+            return false;
+          }
+          return true;
+        });
+        
+        if (validDates.length === 0) {
+          documents = [];
+        } else {
+          // Obtener documentos para todas las fechas válidas
+          const promises = validDates.map(date => 
+            attendanceService.getAttendanceDocumentsByDate(date, teacherId)
+          );
+          
+          const results = await Promise.all(promises);
+          documents = results.flat();
+        }
+      }
+
+      console.log(`📄 Documentos obtenidos: ${documents.length}`);
+      
+      // Debug: mostrar algunos documentos
+      if (documents.length > 0) {
+        console.log('📊 Primeros 3 documentos:', documents.slice(0, 3).map(doc => ({
+          id: doc.id,
+          fecha: doc.fecha,
+          classId: doc.classId,
+          teacherId: doc.teacherId || doc.uid
+        })));
+      }
+
+      return documents;
+    } catch (err) {
+      const errorMessage = `Error al cargar documentos de asistencia para profesor ${teacherId}`;
+      error.value = errorMessage;
+      console.error('❌', errorMessage, err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     // Estado
     attendanceRecords,
@@ -1501,6 +1616,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     // Acciones
     fetchAttendance,
     fetchAttendanceDocuments,
+    fetchAttendanceDocumentsByTeacher,
     fetchAttendanceDocument,
     fetchAttendanceByDateRange,
     getStudentAbsencesByDateRange,
@@ -1529,6 +1645,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     getStudentAttendanceByDateRange,
     deleteObservation,
     fetchTopAbsentStudentsByTeacher,
+    fetchAttendanceByDateRangeAndClasses,
     
     // Método para resetear el store (requerido para el logout)
     $reset() {

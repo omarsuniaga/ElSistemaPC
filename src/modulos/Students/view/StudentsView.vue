@@ -8,6 +8,7 @@ import { PlusCircleIcon, MagnifyingGlassIcon, EllipsisVerticalIcon } from '@hero
 import ConfirmModal from '../../../components/ConfirmModal.vue'
 import StudentDrawer from '../components/StudentDrawer.vue'
 import StudentAvatar from '../components/StudentAvatar.vue'
+import StudentCard from '../components/StudentCard.vue'
 // import BaseCard from '../../../components/BaseCard.vue'
 
 // Student interface definition
@@ -126,6 +127,13 @@ const handleDeleteFromMenu = (event: Event, id: string): void => {
 onMounted(async () => {
   try {
     await studentsStore.fetchStudents()
+    // Cargar asistencias del último mes
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setMonth(endDate.getMonth() - 1)
+    // Formatear fechas a yyyy-MM-dd
+    const formatDate = (date: Date) => date.toISOString().split('T')[0]
+    await attendanceStore.fetchAttendanceDocuments(formatDate(startDate), formatDate(endDate))
   } catch (err: any) {
     error.value = err.message || 'Error al cargar los estudiantes'
   } finally {
@@ -239,6 +247,26 @@ const reloadStudents = async () => {
 watch(sortOrder, (newValue) => {
   localStorage.setItem('students-sort-order', newValue)
 })
+
+// Agregar función para calcular el porcentaje de asistencia de un alumno
+function getStudentAttendance(studentId: string): number {
+  // Buscar asistencias del alumno en attendanceStore.attendanceDocuments
+  const records = attendanceStore.attendanceDocuments?.flatMap((doc: any) => {
+    const status =
+      doc.data.presentes?.includes(studentId) ? 'P' :
+      doc.data.ausentes?.includes(studentId) ? 'A' :
+      doc.data.tarde?.includes(studentId) ? 'T' :
+      doc.data.justificacion?.some((j: any) => j.id === studentId) ? 'J' : null
+    return status ? [{ status }] : []
+  }) || []
+  if (!records.length) return 0
+  let presentes = 0, total = 0
+  records.forEach((a: any) => {
+    if (a.status === 'P' || a.status === 'J') presentes++
+    if (a.status) total++
+  })
+  return total > 0 ? Math.round((presentes / total) * 100) : 0
+}
 </script>
 
 <template>
@@ -296,70 +324,19 @@ watch(sortOrder, (newValue) => {
       >
         Reintentar
       </button>
-    </div>    <!-- Students List (WhatsApp/Telegram Style) -->
-    <div v-else-if="sortedStudents.length > 0" class="card overflow-hidden">
-      <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-        <li 
-          v-for="student in sortedStudents" 
-          :key="student.id"
-          @click="openStudentDrawer(student)"
-          class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-        >
-          <div class="px-2 py-1 flex items-start space-x-1">
-            <!-- Avatar -->            <div class="flex-shrink-0">
-              <StudentAvatar
-                :first-name="student.nombre || ''"
-                :last-name="student.apellido || ''"
-                size="lg"
-              />
-            </div>
-              <!-- Student Info -->
-            <div class="flex-1 min-w-0">              <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {{ student.nombre }} {{ student.apellido }}
-                </p>
-                <div class="flex items-center">
-                  <!-- Three dots menu button -->
-                  <div class="relative">
-                    <button 
-                      @click="toggleMenu($event, student.id)" 
-                      class="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    >
-                      <EllipsisVerticalIcon class="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                    </button>
-                      <!-- Dropdown menu -->
-                    <div 
-                      v-if="activeMenu === student.id"
-                      class="absolute right-0 mt-1 w-36 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
-                    >
-                      <div class="py-1">
-                        <button
-                          @click="handleEditFromMenu($event, student.id)"
-                          class="w-full text-left px-4 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          @click="handleDeleteFromMenu($event, student.id)"
-                          class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- Instrument -->
-              <p class="mt-1 text-sm text-secondary truncate">
-                {{ student.instrumento || "Sin instrumento asignado" }}
-              </p>
-            </div>
-            <!-- No action buttons here as per new requirements -->
-          </div>
-        </li>
-      </ul>
-    </div>    <!-- Empty State -->
+    </div>    <!-- Grilla de alumnos -->
+    <div v-else-if="sortedStudents.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <StudentCard
+        v-for="student in sortedStudents"
+        :key="student.id"
+        :student="student"
+        :attendance="getStudentAttendance(student.id)"
+        @open="openStudentDrawer(student)"
+        @profile="handleViewProfile(student.id)"
+      />
+    </div>
+
+    <!-- Empty State -->
     <div 
       v-else 
       class="text-center py-12 text-gray-600 dark:text-gray-400"

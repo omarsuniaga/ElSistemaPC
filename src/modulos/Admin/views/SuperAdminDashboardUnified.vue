@@ -678,61 +678,6 @@ onUnmounted(() => {
   }
 })
 </script>
-}
-
-const handleBulkAction = (action: string, selection: any[]) => {
-  bulkActionType.value = action
-  bulkSelection.value = selection
-  showBulkActionModal.value = true
-}
-
-const handleBulkActionExecute = (action: string, data: any) => {
-  // Implementar ejecución de acciones masivas
-  console.log('Executing bulk action:', action, data)
-  showBulkActionModal.value = false
-}
-
-const handleCommunicationAction = (toolId: string) => {
-  // Implementar herramientas de comunicación
-  console.log('Communication action:', toolId)
-}
-
-const handleDataAction = (toolId: string) => {
-  // Implementar herramientas de datos
-  console.log('Data action:', toolId)
-}
-
-const handleDismissAlert = (alertId: string) => {
-  dismissNotification(alertId)
-}
-
-const handleUserCreated = (user: any) => {
-  console.log('User created:', user)
-  showCreateUserModal.value = false
-  refreshData()
-}
-
-const handleSystemConfigUpdated = (config: any) => {
-  console.log('System config updated:', config)
-  showSystemConfigModal.value = false
-}
-
-// Lifecycle
-onMounted(async () => {
-  try {
-    await loadAllData()
-    autoRefreshInterval.value = startAutoRefresh()
-  } catch (error) {
-    console.error('Error loading dashboard data:', error)
-  }
-})
-
-onUnmounted(() => {
-  if (autoRefreshInterval.value) {
-    clearInterval(autoRefreshInterval.value)
-  }
-})
-</script>
 
 <style scoped>
 .bg-clip-text {

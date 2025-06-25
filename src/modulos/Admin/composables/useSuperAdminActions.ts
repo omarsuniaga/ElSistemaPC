@@ -3,7 +3,7 @@ import { useRouter } from 'vue-router'
 import { useAdminStudentsStore } from '../store/adminStudents'
 import { useAdminTeachersStore } from '../store/teachers'
 import { useClassesStore } from '../../Classes/store/classes'
-import { useNotificationStore } from '../../../stores/notifications'
+import { useNotificationsStore } from '../../../stores/notifications'
 
 /**
  * Composable para manejo de acciones rápidas del Super Administrador
@@ -13,7 +13,7 @@ export function useSuperAdminActions() {
   const studentsStore = useAdminStudentsStore()
   const teachersStore = useAdminTeachersStore()
   const classesStore = useClassesStore()
-  const notificationStore = useNotificationStore()
+  const notificationStore = useNotificationsStore()
 
   // Estados de las acciones
   const isProcessing = ref(false)

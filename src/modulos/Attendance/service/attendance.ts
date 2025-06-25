@@ -11,6 +11,7 @@ import {
   where,
   addDoc,
   orderBy,
+  limit,
   Timestamp,
   deleteDoc,
   getFirestore
@@ -22,7 +23,8 @@ import type {
   JustificationData, 
   AttendanceRecord,
   ClassObservationData,
-  ObservationRecord
+  ObservationRecord,
+  AttendanceStatus
 } from '../types/attendance';
 import { auth } from '../../../firebase';
 import { fetchAttendanceByDateFirebase as fetchByDate } from './attendance/fetchByDate';
@@ -856,7 +858,7 @@ export async function getObservationsHistoryFirebase(
 }
 
 // Reference to the attendance collection
-const attendanceCollection = collection(db, 'attendance');
+const attendanceCollection = collection(db, ATTENDANCE_COLLECTION);
 
 // Helper to convert Firebase timestamp to string date
 const formatDate = (timestamp: any) => {
@@ -867,38 +869,31 @@ const formatDate = (timestamp: any) => {
   return date.toISOString().split('T')[0]; // YYYY-MM-DD
 };
 
-// Fetch all attendance records
+/**
+ * @deprecated Esta función está obsoleta. Use fetchAttendanceByDateRangeFirebase en su lugar.
+ * Esta función asume un formato de datos incorrecto para la colección ASISTENCIAS.
+ * 
+ * Fetch all attendance records
+ */
 export async function fetchAttendanceRecords(startDate?: string, endDate?: string) {
+  console.warn('⚠️ fetchAttendanceRecords está obsoleta. Use fetchAttendanceByDateRangeFirebase en su lugar.');
+  
+  // Redirigir a la función correcta
+  if (startDate && endDate) {
+    return await fetchAttendanceByDateRangeFirebase(startDate, endDate);
+  }
+  
   try {
-    let q;
+    // Para retrocompatibilidad, devolver datos usando la función correcta
+    const today = new Date().toISOString().split('T')[0];
+    const monthAgo = new Date();
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
+    const startDefault = monthAgo.toISOString().split('T')[0];
     
-    // If date range is provided, add query filters
-    if (startDate && endDate) {
-      q = query(
-        attendanceCollection,
-        where('date', '>=', startDate),
-        where('date', '<=', endDate)
-      );
-    } else {
-      q = attendanceCollection;
-    }
-    
-    const snapshot = await getDocs(q);
-    
-    return snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        studentId: data.studentId,
-        classId: data.classId,
-        date: formatDate(data.date) || data.date,
-        status: data.status,
-        notes: data.notes
-      };
-    });
+    return await fetchAttendanceByDateRangeFirebase(startDefault, today);
   } catch (error) {
-    console.error('Error fetching attendance records:', error);
-    throw error;
+    console.error('Error in deprecated fetchAttendanceRecords:', error);
+    return [];
   }
 }
 
@@ -995,7 +990,7 @@ export async function deleteAttendanceRecord(id: string): Promise<{ success: boo
 export async function getTeacherAttendanceDocsFirebase(teacherId: string, fromDate: string, toDate: string): Promise<AttendanceDocument[]> {
   try {
     const db = getFirestore();
-    const attendanceRef = collection(db, 'attendance');
+    const attendanceRef = collection(db, ATTENDANCE_COLLECTION);
     
     // Create a query with the provided filters
     let q = query(attendanceRef);
@@ -1156,3 +1151,162 @@ export async function updateAttendanceRecordWithPermissions(
     throw error;
   }
 }
+
+/**
+ * Obtiene asistencias por rango de fechas para un conjunto específico de clases
+ * Optimizado para el informe de maestros
+ */
+export const fetchAttendanceByDateRangeAndClassesFirebase = async (
+  startDate: string, 
+  endDate: string, 
+  classIds: string[]
+): Promise<AttendanceRecord[]> => {
+  try {
+    if (!classIds || classIds.length === 0) {
+      console.log('❌ No se proporcionaron classIds');
+      return [];
+    }
+
+    console.log(`🔍 Buscando asistencias para ${classIds.length} clases entre ${startDate} y ${endDate}`);
+    console.log('📋 ClassIds:', classIds);
+
+    // Hacer una consulta simple para ver TODOS los documentos primero
+    console.log('🔬 === CONSULTANDO TODOS LOS DOCUMENTOS DE ASISTENCIAS ===');
+    const allDocsQuery = query(collection(db, ATTENDANCE_COLLECTION));
+    const allSnapshot = await getDocs(allDocsQuery);
+    
+    console.log(`� Total de documentos en ASISTENCIAS: ${allSnapshot.size}`);
+    
+    // Mostrar algunos ejemplos de la estructura
+    let exampleCount = 0;
+    allSnapshot.docs.forEach((doc) => {
+      if (exampleCount < 3) {
+        const data = doc.data();
+        console.log(`📄 Ejemplo ${exampleCount + 1} - Doc ID: ${doc.id}:`, {
+          keys: Object.keys(data),
+          hasData: !!data.data,
+          fecha: data.fecha,
+          date: data.date,
+          classId: data.classId,
+          fullData: data
+        });
+        exampleCount++;
+      }
+    });
+
+    // Ahora filtrar por las clases que nos interesan
+    const allRecords: AttendanceRecord[] = [];
+    
+    allSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      const documentDate = data.fecha || data.date;
+      const documentClassId = data.classId;
+      
+      // Verificar si este documento corresponde a una de nuestras clases
+      if (documentClassId && classIds.includes(documentClassId)) {
+        console.log(`✅ Documento encontrado para clase ${documentClassId}:`, {
+          id: doc.id,
+          fecha: documentDate,
+          classId: documentClassId,
+          data: data.data
+        });
+        
+        if (data.data) {
+          // Procesar el documento con estructura nueva
+          const { data: attendanceData } = data;
+          
+          // Procesar estudiantes presentes
+          if (attendanceData.presentes && Array.isArray(attendanceData.presentes)) {
+            console.log(`👥 Presentes (${attendanceData.presentes.length}):`, attendanceData.presentes);
+            attendanceData.presentes.forEach((studentId: string) => {
+              allRecords.push({
+                id: `${doc.id}_${studentId}_presente`,
+                studentId,
+                classId: documentClassId,
+                fecha: documentDate,
+                status: 'Presente' as AttendanceStatus,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              });
+            });
+          }
+
+          // Procesar estudiantes ausentes
+          if (attendanceData.ausentes && Array.isArray(attendanceData.ausentes)) {
+            console.log(`❌ Ausentes (${attendanceData.ausentes.length}):`, attendanceData.ausentes);
+            attendanceData.ausentes.forEach((studentId: string) => {
+              allRecords.push({
+                id: `${doc.id}_${studentId}_ausente`,
+                studentId,
+                classId: documentClassId,
+                fecha: documentDate,
+                status: 'Ausente' as AttendanceStatus,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              });
+            });
+          }
+
+          // Procesar estudiantes con tardanza
+          if (attendanceData.tarde && Array.isArray(attendanceData.tarde)) {
+            console.log(`⏰ Tarde (${attendanceData.tarde.length}):`, attendanceData.tarde);
+            attendanceData.tarde.forEach((studentId: string) => {
+              allRecords.push({
+                id: `${doc.id}_${studentId}_tarde`,
+                studentId,
+                classId: documentClassId,
+                fecha: documentDate,
+                status: 'Tardanza' as AttendanceStatus,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              });
+            });
+          }
+
+          // Procesar estudiantes justificados
+          if (attendanceData.justificacion && Array.isArray(attendanceData.justificacion)) {
+            console.log(`📝 Justificados (${attendanceData.justificacion.length}):`, attendanceData.justificacion);
+            attendanceData.justificacion.forEach((justificationData: any) => {
+              const studentId = justificationData.studentId || justificationData.id;
+              const reason = justificationData.reason || justificationData.justification || '';
+              
+              allRecords.push({
+                id: `${doc.id}_${studentId}_justificado`,
+                studentId,
+                classId: documentClassId,
+                fecha: documentDate,
+                status: 'Justificado' as AttendanceStatus,
+                justification: { reason },
+                createdAt: new Date(),
+                updatedAt: new Date()
+              });
+            });
+          }
+        } else {
+          // Estructura antigua o directa
+          console.log('📋 Documento con estructura directa (no anidada)');
+          if (data.studentId && data.status) {
+            allRecords.push({
+              id: doc.id,
+              studentId: data.studentId,
+              classId: documentClassId,
+              fecha: documentDate,
+              status: data.status,
+              justification: data.justification,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+          }
+        }
+      }
+    });
+
+    console.log(`✅ Total de registros procesados: ${allRecords.length}`);
+    console.log('📋 Registros encontrados:', allRecords);
+    return allRecords;
+
+  } catch (error) {
+    console.error('Error fetching attendance by date range and classes:', error);
+    throw new Error('Error al obtener las asistencias por rango de fechas y clases');
+  }
+};

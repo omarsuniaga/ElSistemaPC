@@ -1,16 +1,17 @@
-<template>  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+<template>  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
     <!-- Header with breadcrumb and actions -->
-    <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-      <div class="px-6 py-4">
+    <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
+      <div class="px-4 sm:px-6 py-4">
         <!-- Breadcrumb -->
         <nav class="flex mb-4" aria-label="Breadcrumb">
           <ol class="inline-flex items-center space-x-1 md:space-x-3">
-            <li class="inline-flex items-center">              <router-link 
+            <li class="inline-flex items-center">
+              <router-link 
                 to="/admin" 
-                class="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                class="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
               >
                 <HomeIcon class="w-4 h-4 mr-2" />
-                Admin
+                <span class="hidden sm:inline">Admin</span>
               </router-link>
             </li>
             <li>
@@ -22,22 +23,23 @@
           </ol>
         </nav>
 
-        <div class="flex items-center justify-between">          <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
               Gestión de Maestros
             </h1>
-            <div class="mt-2 flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400">
-              <span>Total: {{ totalTeachers }}</span>
-              <span>Activos: {{ activeTeachers }}</span>
-              <span>Especialidades: {{ totalSpecialties }}</span>
+            <div class="mt-2 flex flex-wrap items-center gap-4 lg:gap-6 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+              <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">Total: {{ totalTeachers }}</span>
+              <span class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-md">Activos: {{ activeTeachers }}</span>
+              <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-md">Especialidades: {{ totalSpecialties }}</span>
             </div>
           </div>
           
           <!-- Actions -->
-          <div class="flex items-center space-x-3">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <button
               @click="exportTeachers"
-              class="btn btn-secondary btn-sm"
+              class="inline-flex items-center justify-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition-colors duration-200"
             >
               <ArrowDownTrayIcon class="w-4 h-4 mr-2" />
               Exportar
@@ -46,29 +48,32 @@
             <button
               @click="showCreateModal = true"
               v-if="canCreateTeacher"
-              class="btn btn-primary btn-sm"
+              class="inline-flex items-center justify-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition-colors duration-200"
             >
               <PlusIcon class="w-4 h-4 mr-2" />
-              Nuevo Maestro
+              <span class="hidden sm:inline">Nuevo</span> Maestro
             </button>
           </div>
         </div>
       </div>
     </header>    <!-- Main Content -->
-    <main class="p-6">
+    <main class="p-4 sm:p-6">
       <!-- Stats Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="card">
-          <div class="p-5">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div class="p-3 sm:p-5">
             <div class="flex items-center">
               <div class="flex-shrink-0">
-                <UsersIcon class="h-8 w-8 text-primary" />
+                <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <UsersIcon class="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
+                </div>
               </div>
-              <div class="ml-5 w-0 flex-1">                <dl>
-                  <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
+              <div class="ml-3 sm:ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
                     Total Maestros
                   </dt>
-                  <dd class="text-lg font-semibold text-gray-900 dark:text-white">
+                  <dd class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                     {{ totalTeachers }}
                   </dd>
                 </dl>
@@ -77,17 +82,20 @@
           </div>
         </div>
 
-        <div class="card">
-          <div class="p-5">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div class="p-3 sm:p-5">
             <div class="flex items-center">
               <div class="flex-shrink-0">
-                <CheckCircleIcon class="h-8 w-8 text-success" />
+                <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <CheckCircleIcon class="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
+                </div>
               </div>
-              <div class="ml-5 w-0 flex-1">                <dl>
-                  <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
+              <div class="ml-3 sm:ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
                     Activos
                   </dt>
-                  <dd class="text-lg font-semibold text-gray-900 dark:text-white">
+                  <dd class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                     {{ activeTeachers }}
                   </dd>
                 </dl>
@@ -96,17 +104,20 @@
           </div>
         </div>
 
-        <div class="card">
-          <div class="p-5">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div class="p-3 sm:p-5">
             <div class="flex items-center">
               <div class="flex-shrink-0">
-                <AcademicCapIcon class="h-8 w-8 text-accent" />
+                <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                  <AcademicCapIcon class="h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
+                </div>
               </div>
-              <div class="ml-5 w-0 flex-1">                <dl>
-                  <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
-                    Clases Asignadas
+              <div class="ml-3 sm:ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
+                    <span class="hidden sm:inline">Clases</span> Asignadas
                   </dt>
-                  <dd class="text-lg font-semibold text-gray-900 dark:text-white">
+                  <dd class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                     {{ totalAssignedClasses }}
                   </dd>
                 </dl>
@@ -115,17 +126,20 @@
           </div>
         </div>
 
-        <div class="card">
-          <div class="p-5">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div class="p-3 sm:p-5">
             <div class="flex items-center">
               <div class="flex-shrink-0">
-                <MusicalNoteIcon class="h-8 w-8 text-warning" />
+                <div class="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                  <MusicalNoteIcon class="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600 dark:text-yellow-400" />
+                </div>
               </div>
-              <div class="ml-5 w-0 flex-1">                <dl>
-                  <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
+              <div class="ml-3 sm:ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
                     Especialidades
                   </dt>
-                  <dd class="text-lg font-semibold text-gray-900 dark:text-white">
+                  <dd class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                     {{ totalSpecialties }}
                   </dd>
                 </dl>
@@ -133,26 +147,26 @@
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Filters and Search -->
-      <div class="card p-6 mb-6">        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      </div>      <!-- Filters and Search -->
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4 sm:p-6 mb-6 transition-colors duration-300">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           <!-- Search -->
-          <div class="relative lg:col-span-2">            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <div class="relative lg:col-span-2">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <MagnifyingGlassIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
             </div>
             <input
               v-model="searchQuery"
               type="text"
               placeholder="Buscar maestros..."
-              class="input pl-10"
+              class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 dark:focus:placeholder-gray-300 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 sm:text-sm transition-colors duration-200"
             />
           </div>
           
           <!-- Status Filter -->
           <select
             v-model="statusFilter"
-            class="select"
+            class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 sm:text-sm transition-colors duration-200"
           >
             <option value="">Todos los estados</option>
             <option value="active">Activos</option>
@@ -163,7 +177,7 @@
           <!-- Specialty Filter -->
           <select
             v-model="specialtyFilter"
-            class="select"
+            class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 sm:text-sm transition-colors duration-200"
           >
             <option value="">Todas las especialidades</option>
             <option v-for="specialty in uniqueSpecialties" :key="specialty" :value="specialty">
@@ -174,7 +188,7 @@
           <!-- Experience Filter -->
           <select
             v-model="experienceFilter"
-            class="select"
+            class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 sm:text-sm transition-colors duration-200"
           >
             <option value="">Toda la experiencia</option>
             <option value="junior">Menor a 2 años</option>
@@ -184,61 +198,74 @@
         </div>
         
         <!-- Actions -->
-        <div class="mt-4 flex justify-between items-center">
-          <div class="flex items-center space-x-4">            <button
+        <div class="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+            <button
               @click="clearFilters"
-              class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 underline"
             >
               Limpiar filtros
             </button>
-            <span v-if="hasActiveFilters" class="text-sm text-blue-600 dark:text-blue-400">
-              {{ filteredTeachers.length }} resultados
+            <span v-if="hasActiveFilters" class="text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-md">
+              {{ filteredTeachers.length }} resultado{{ filteredTeachers.length !== 1 ? 's' : '' }}
             </span>
           </div>
           
           <!-- View toggle -->
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <button
               @click="viewMode = 'grid'"
               :class="[
-                'p-2 rounded-md',
+                'p-2 rounded-md transition-colors duration-200',
                 viewMode === 'grid' 
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400' 
-                  : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                  ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               ]"
+              title="Vista de cuadrícula"
             >
               <Squares2X2Icon class="w-5 h-5" />
             </button>
             <button
               @click="viewMode = 'list'"
               :class="[
-                'p-2 rounded-md',
+                'p-2 rounded-md transition-colors duration-200',
                 viewMode === 'list' 
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400' 
-                  : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                  ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               ]"
+              title="Vista de lista"
             >
               <ListBulletIcon class="w-5 h-5" />
             </button>
           </div>
         </div>
-      </div>
-
-      <!-- Teachers Grid/List -->
+      </div>      <!-- Teachers Grid/List -->
       <div v-if="isLoading" class="flex justify-center py-12">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div class="flex flex-col items-center">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Cargando maestros...</p>
+        </div>
       </div>
 
-      <div v-else-if="filteredTeachers.length === 0" class="text-center py-12">
-        <UserGroupIcon class="mx-auto h-12 w-12 text-gray-400" />
+      <div v-else-if="filteredTeachers.length === 0" class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <UserGroupIcon class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
         <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No hay maestros</h3>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {{ hasActiveFilters ? 'No se encontraron maestros con los filtros aplicados.' : 'Comienza registrando un nuevo maestro.' }}
         </p>
+        <div v-if="!hasActiveFilters && canCreateTeacher" class="mt-6">
+          <button
+            @click="showCreateModal = true"
+            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition-colors duration-200"
+          >
+            <PlusIcon class="w-4 h-4 mr-2" />
+            Crear primer maestro
+          </button>
+        </div>
       </div>
 
       <!-- Grid View -->
-      <div v-else-if="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div v-else-if="viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
         <TeacherCard
           v-for="teacher in paginatedTeachers"
           :key="teacher.id"
@@ -253,6 +280,7 @@
             canEdit: canEditTeacher,
             canDelete: canDeleteTeacher
           }"
+          class="transform hover:scale-105 transition-transform duration-200"
         />
       </div>
 
@@ -274,27 +302,37 @@
             canDelete: canDeleteTeacher
           }"
         />
-      </div>
-
-      <!-- Pagination -->
-      <div v-if="totalPages > 1" class="mt-6 flex items-center justify-between">
-        <div class="flex-1 flex justify-between sm:hidden">          <button
+      </div>      <!-- Pagination -->
+      <div v-if="totalPages > 1" class="mt-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 transition-colors duration-300">
+        <!-- Mobile pagination -->
+        <div class="flex justify-between sm:hidden">
+          <button
             @click="previousPage"
             :disabled="currentPage === 1"
-            class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
           >
+            <ChevronLeftIcon class="h-4 w-4 mr-1" />
             Anterior
           </button>
+          
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 dark:text-gray-300">
+              {{ currentPage }} de {{ totalPages }}
+            </span>
+          </div>
+          
           <button
             @click="nextPage"
             :disabled="currentPage === totalPages"
-            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
           >
             Siguiente
+            <ChevronRightIcon class="h-4 w-4 ml-1" />
           </button>
         </div>
         
-        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <!-- Desktop pagination -->
+        <div class="hidden sm:flex items-center justify-between">
           <div>
             <p class="text-sm text-gray-700 dark:text-gray-300">
               Mostrando
@@ -303,7 +341,7 @@
               <span class="font-medium">{{ Math.min(endIndex, filteredTeachers.length) }}</span>
               de
               <span class="font-medium">{{ filteredTeachers.length }}</span>
-              resultados
+              resultado{{ filteredTeachers.length !== 1 ? 's' : '' }}
             </p>
           </div>
           
@@ -312,7 +350,8 @@
               <button
                 @click="previousPage"
                 :disabled="currentPage === 1"
-                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                title="Página anterior"
               >
                 <ChevronLeftIcon class="h-5 w-5" />
               </button>
@@ -322,7 +361,7 @@
                 :key="page"
                 @click="goToPage(page)"
                 :class="[
-                  'relative inline-flex items-center px-4 py-2 border text-sm font-medium',
+                  'relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors duration-200',
                   page === currentPage
                     ? 'z-10 bg-blue-50 dark:bg-blue-900 border-blue-500 text-blue-600 dark:text-blue-400'
                     : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
@@ -334,7 +373,8 @@
               <button
                 @click="nextPage"
                 :disabled="currentPage === totalPages"
-                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                title="Página siguiente"
               >
                 <ChevronRightIcon class="h-5 w-5" />
               </button>
@@ -342,17 +382,18 @@
           </div>
         </div>
       </div>
-    </main>
-
-    <!-- Modals -->
+    </main>    <!-- Modals -->
+    <!--
     <TeacherCreateModal
       v-if="showCreateModal"
+      :isVisible="showCreateModal"
       @close="showCreateModal = false"
       @created="handleTeacherCreated"
     />
 
     <TeacherEditModal
       v-if="showEditModal && selectedTeacher"
+      :isVisible="showEditModal"
       :teacher="selectedTeacher"
       @close="showEditModal = false"
       @updated="handleTeacherUpdated"
@@ -360,17 +401,20 @@
 
     <ClassAssignmentModal
       v-if="showAssignModal && selectedTeacher"
+      :isVisible="showAssignModal"
       :teacher="selectedTeacher"
       @close="showAssignModal = false"
       @assigned="handleClassesAssigned"
     />
+    -->
 
     <ConfirmationModal
       v-if="showDeleteModal"
+      :isVisible="showDeleteModal"
       title="Eliminar Maestro"
       :message="`¿Estás seguro de que deseas eliminar al maestro ${selectedTeacher?.name}? Esta acción no se puede deshacer.`"
       confirm-text="Eliminar"
-      confirm-variant="danger"
+      type="danger"
       @confirm="confirmDelete"
       @cancel="showDeleteModal = false"
     />
@@ -398,12 +442,12 @@ import {
   ChevronRightIcon
 } from '@heroicons/vue/24/outline'
 
-// Components (would need to be created)
+// Components
 import TeacherCard from '../../Classes/components/TeacherCard.vue'
 import TeachersTable from '../components/TeachersTable.vue'
-import TeacherCreateModal from '../components/TeacherCreateModal.vue'
-import TeacherEditModal from '../components/TeacherEditModal.vue'
-import ClassAssignmentModal from '../components/ClassAssignmentModal.vue'
+// import TeacherCreateModal from '../components/TeacherCreateModal.vue'
+// import TeacherEditModal from '../components/TeacherEditModal.vue'
+// import ClassAssignmentModal from '../components/ClassAssignmentModal.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
 
 // Stores
@@ -438,15 +482,15 @@ const totalTeachers = computed(() => teachers.value.length)
 const activeTeachers = computed(() => teachers.value.filter(t => t.status === 'active').length)
 const totalAssignedClasses = computed(() => teachers.value.reduce((sum, t) => sum + (t.assignedClasses?.length || 0), 0))
 const totalSpecialties = computed(() => {
-  const specialties = new Set()
-  teachers.value.forEach(t => t.specialties?.forEach(s => specialties.add(s)))
+  const specialties = new Set<string>()
+  teachers.value.forEach(t => t.specialty?.forEach((s: string) => specialties.add(s)))
   return specialties.size
 })
 
 const uniqueSpecialties = computed(() => {
   const specialties = new Set<string>()
   teachers.value.forEach(teacher => {
-    teacher.specialties?.forEach(specialty => specialties.add(specialty))
+    teacher.specialty?.forEach((specialty: string) => specialties.add(specialty))
   })
   return Array.from(specialties)
 })
@@ -471,7 +515,7 @@ const filteredTeachers = computed(() => {
     filtered = filtered.filter(teacher => 
       teacher.name.toLowerCase().includes(query) ||
       teacher.email.toLowerCase().includes(query) ||
-      teacher.phone.toLowerCase().includes(query)
+      (teacher.phone && teacher.phone.toLowerCase().includes(query))
     )
   }
   
@@ -483,14 +527,14 @@ const filteredTeachers = computed(() => {
   // Specialty filter
   if (specialtyFilter.value) {
     filtered = filtered.filter(teacher => 
-      teacher.specialties?.includes(specialtyFilter.value)
+      teacher.specialty?.includes(specialtyFilter.value)
     )
   }
   
   // Experience filter
   if (experienceFilter.value) {
     filtered = filtered.filter(teacher => {
-      const years = teacher.experienceYears || 0
+      const years = teacher.experience || 0
       switch (experienceFilter.value) {
         case 'junior': return years < 2
         case 'mid': return years >= 2 && years <= 5
@@ -502,8 +546,8 @@ const filteredTeachers = computed(() => {
   
   // Sorting
   filtered.sort((a, b) => {
-    const aValue = a[sortField.value]
-    const bValue = b[sortField.value]
+    const aValue = (a as any)[sortField.value]
+    const bValue = (b as any)[sortField.value]
     
     if (typeof aValue === 'string' && typeof bValue === 'string') {
       return sortOrder.value === 'asc' 
@@ -665,11 +709,212 @@ onMounted(() => {
 /* Component-specific styles */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.15s ease;
+  transition: opacity 0.3s ease;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Card hover effects */
+.hover\:scale-105:hover {
+  transform: scale(1.02);
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #f3f4f6;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background-color: #374151;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280;
+}
+
+/* Loading animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Button focus states */
+button:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+/* Enhanced mobile responsiveness */
+@media (max-width: 640px) {
+  .stats-mobile-compact .grid-cols-2 {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .mobile-hide-extra > div:nth-child(n+3) {
+    display: none;
+  }
+  
+  .mobile-show-all > div {
+    display: block !important;
+  }
+}
+
+/* Enhanced accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .bg-gray-50 {
+    background-color: white;
+  }
+  
+  .dark .bg-gray-900 {
+    background-color: black;
+  }
+  
+  .border-gray-200,
+  .border-gray-300 {
+    border-color: #4b5563;
+  }
+  
+  .dark .border-gray-700,
+  .dark .border-gray-600 {
+    border-color: #d1d5db;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .bg-white {
+    background: white !important;
+  }
+  
+  .text-gray-900 {
+    color: black !important;
+  }
+  
+  .shadow-sm,
+  .shadow-md {
+    box-shadow: none !important;
+  }
+  
+  button {
+    display: none !important;
+  }
+  
+  .pagination {
+    display: none !important;
+  }
+}
+
+/* Focus indicators for better accessibility */
+.focus\:ring-blue-500:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.dark .focus\:ring-blue-400:focus {
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+}
+
+/* Improved button states */
+.btn-primary {
+  background-color: #2563eb;
+  color: white;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.dark .btn-primary {
+  background-color: #3b82f6;
+}
+
+.dark .btn-primary:hover {
+  background-color: #2563eb;
+}
+
+.btn-secondary {
+  background-color: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #f9fafb;
+}
+
+.dark .btn-secondary {
+  background-color: #374151;
+  color: #d1d5db;
+  border-color: #4b5563;
+}
+
+.dark .btn-secondary:hover {
+  background-color: #4b5563;
+}
+
+/* Enhanced card animations */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.dark .card-hover:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
 }
 </style>
