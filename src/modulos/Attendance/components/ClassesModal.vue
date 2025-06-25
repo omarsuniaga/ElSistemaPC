@@ -22,6 +22,8 @@ const props = defineProps<{
       role: string;
       permissions?: {
         canTakeAttendance?: boolean;
+        canEditClass?: boolean;
+        canViewReports?: boolean;
       };
     }[];
     time?: string;
@@ -39,6 +41,9 @@ const props = defineProps<{
     teacherPermissions?: {
       canTakeAttendance?: boolean;
     };
+    // Propiedades agregadas desde TeacherHome para clases compartidas
+    isSharedWithMe?: boolean;
+    userRole?: string;
     schedule: {
       slots: {
         id: string;
@@ -118,46 +123,411 @@ const checkAttendanceStatus = async (classId: string, date: string) => {
 const debugAttendance = async () => {
   console.log('=== MANUAL DEBUG ATTENDANCE (ClassesModal) ===');
   console.log('Current date:', props.date);
+  console.log('Current user:', authStore.user?.uid);
   console.log('Attendance store documents:', attendanceStore.attendanceDocuments);
   console.log('Classes:', props.classes);
   
   // Manually test each class
   for (const classItem of props.classes) {
-    console.log(`Testing class: ${classItem.name} (${classItem.id})`);
+    console.log(`\n--- Testing class: ${classItem.name} (${classItem.id}) ---`);
+    console.log('Teachers array:', classItem.teachers);
+    console.log('Primary teacherId:', classItem.teacherId);
+    console.log('Class type:', classItem.classType);
+    
     const hasRecord = await hasAttendanceRecord(classItem.id, props.date);
-    console.log(`Result for ${classItem.name}: ${hasRecord}`);
+    console.log(`Attendance result for ${classItem.name}: ${hasRecord}`);
+    
+    // Test shared class logic
+    const currentUserId = authStore.user?.uid;
+    const hasTeachersArray = classItem.teachers && Array.isArray(classItem.teachers) && classItem.teachers.length > 0;
+    const isPrimaryTeacher = classItem.teacherId === currentUserId;
+    const userTeacher = hasTeachersArray && classItem.teachers ? classItem.teachers.find(t => t.teacherId === currentUserId) : null;
+    
+    console.log('Shared class analysis:', {
+      hasTeachersArray,
+      isPrimaryTeacher,
+      userTeacher,
+      isUserInTeachersArray: !!userTeacher,
+      wouldBeSharedClass: hasTeachersArray && classItem.teachers && (classItem.teachers.length > 1 || !isPrimaryTeacher),
+      isSharedWithCurrentUser: hasTeachersArray && classItem.teachers && classItem.teachers.some(t => t.teacherId === currentUserId),
+      currentUserRole: userTeacher?.role || 'none',
+      studentCount: classItem.studentIds?.length || classItem.students || 0,
+      isLargeClass: (classItem.studentIds?.length || classItem.students || 0) >= 90,
+      classType: classItem.classType,
+      isSharedWithMe: classItem.isSharedWithMe
+    });
+    
+    // Verificar específicamente si es la clase con 95+ estudiantes como asistente
+    const studentCount = classItem.studentIds?.length || classItem.students || 0;
+    if (studentCount >= 90 && userTeacher && !isPrimaryTeacher) {
+      console.log(`🎯🎯🎯 CLASE OBJETIVO ENCONTRADA: ${classItem.name}`, {
+        studentCount,
+        myRole: userTeacher.role,
+        permissions: userTeacher.permissions,
+        shouldAppearInModal: true
+      });
+    }
   }
+};
+
+// Function for debug específico para clases con 95+ estudiantes
+const debugLargeClasses = () => {
+  console.log('🎯 === DEBUG ESPECÍFICO: CLASES CON 95+ ESTUDIANTES ===');
+  console.log('Current date:', props.date);
+  console.log('Current user:', authStore.user?.uid);
+  console.log('Total classes received:', props.classes.length);
+  
+  const currentUserId = authStore.user?.uid;
+  let largeClassesFound = 0;
+  let assistantClassesFound = 0;
+  
+  props.classes.forEach((classItem, index) => {
+    const studentCount = classItem.studentIds?.length || classItem.students || 0;
+    const isLargeClass = studentCount >= 90;
+    
+    if (isLargeClass) {
+      largeClassesFound++;
+      console.log(`\n🎓 CLASE GRANDE #${largeClassesFound}: ${classItem.name}`);
+      console.log(`  📊 Estudiantes: ${studentCount}`);
+      console.log(`  👑 Profesor principal: ${classItem.teacherId}`);
+      console.log(`  👥 Teachers array:`, classItem.teachers);
+      console.log(`  🏷️  Class type: ${classItem.classType}`);
+      console.log(`  🤝 isSharedWithMe: ${classItem.isSharedWithMe}`);
+      
+      // Verificar si el usuario actual está en teachers
+      const userInTeachers = classItem.teachers?.find(t => t.teacherId === currentUserId);
+      if (userInTeachers) {
+        assistantClassesFound++;
+        console.log(`  ✅ USUARIO ENCONTRADO EN TEACHERS:`, {
+          role: userInTeachers.role,
+          permissions: userInTeachers.permissions,
+          isPrimaryTeacher: classItem.teacherId === currentUserId
+        });
+        
+        if (classItem.teacherId !== currentUserId) {
+          console.log(`  🎯 ESTA ES UNA CLASE COMPARTIDA DONDE SOY ASISTENTE`);
+          console.log(`  ⚡ DEBE APARECER EN EL MODAL PARA REGISTRAR ASISTENCIA`);
+        }
+      } else {
+        console.log(`  ❌ Usuario NO encontrado en teachers array`);
+      }
+    }
+  });
+  
+  console.log(`\n📈 RESUMEN:`);
+  console.log(`🎓 Clases con 90+ estudiantes encontradas: ${largeClassesFound}`);
+  console.log(`🤝 De esas, soy asistente en: ${assistantClassesFound}`);
+  
+  if (assistantClassesFound === 0) {
+    console.log(`❌ PROBLEMA: No se encontraron clases grandes donde seas asistente`);
+    console.log(`💡 Posibles causas:`);
+    console.log(`   - La clase no está siendo enviada desde TeacherHome.vue`);
+    console.log(`   - El filtrado por día no está funcionando`);
+    console.log(`   - El teachers array no está configurado correctamente`);
+  } else {
+    console.log(`✅ Clases objetivo encontradas. Verificar si aparecen en el modal.`);
+  }
+  
+  return { largeClassesFound, assistantClassesFound };
 };
 
 // Computed property for classes with attendance status
 const classesWithAttendanceStatus = computed(() => {
   if (!props.classes || !props.date) return [];
   
+  const currentUserId = authStore.user?.uid;
+  
   // Las clases ya vienen filtradas por el componente padre (AttendanceView.vue o TeacherHome.vue)
-  // que usa fetchClassesForDate para filtrar por teacherId del usuario autenticado
-  console.log(`[ClassesModal] Procesando ${props.classes.length} clases ya filtradas para la fecha ${props.date}`);
+  console.log(`[ClassesModal] Procesando ${props.classes.length} clases para la fecha ${props.date}`);
+  console.log(`[ClassesModal] Usuario actual: ${currentUserId}`);
+  
+  // Log detallado de cada clase recibida
+  props.classes.forEach((classItem, index) => {
+    console.log(`[ClassesModal] Clase ${index + 1}: ${classItem.name}`, {
+      id: classItem.id,
+      teacherId: classItem.teacherId,
+      teachers: classItem.teachers,
+      classType: classItem.classType,
+      hasTeachersArray: !!(classItem.teachers && Array.isArray(classItem.teachers) && classItem.teachers.length > 0)
+    });
+  });
   
   return props.classes.map(classItem => {
     const key = `${classItem.id}|${props.date}`;
     const isLoading = attendanceStatusLoading.value[key];
     const hasAttendance = attendanceStatus.value[key];
     
+    // Verificar si es una clase compartida y el rol del usuario actual
+    const hasTeachersArray = classItem.teachers && Array.isArray(classItem.teachers) && classItem.teachers.length > 0;
+    const isPrimaryTeacher = classItem.teacherId === currentUserId;
+    
+    // Buscar al usuario actual en el array de teachers
+    let userTeacherInfo = null;
+    let userRole = null;
+    let userPermissions = null;
+    let isSharedClass = false;
+    let isCollaboratingTeacher = false;
+    
+    // PASO 1: Verificar si el usuario está en el array de teachers
+    if (hasTeachersArray && currentUserId && classItem.teachers) {
+      userTeacherInfo = classItem.teachers.find(teacher => teacher.teacherId === currentUserId);
+      if (userTeacherInfo) {
+        isCollaboratingTeacher = true;
+        userRole = userTeacherInfo.role || 'assistant';
+        userPermissions = userTeacherInfo.permissions;
+        console.log(`[ClassesModal] ✅ Usuario encontrado en teachers array de ${classItem.name}:`, {
+          role: userRole,
+          permissions: userPermissions,
+          isPrimaryTeacher
+        });
+      }
+    }
+    
+    // PASO 2: Determinar si es una clase compartida basándose en múltiples criterios
+    if (hasTeachersArray && classItem.teachers) {
+      // Es una clase compartida si hay un array de teachers configurado
+      isSharedClass = classItem.teachers.length > 0;
+      console.log(`[ClassesModal] 🔍 Clase ${classItem.name} tiene teachers array con ${classItem.teachers.length} miembros`);
+    }
+    
+    // PASO 3: También considerar clases compartidas por el classType existente
+    if (classItem.classType === 'shared') {
+      isSharedClass = true;
+      console.log(`[ClassesModal] 📋 Clase ${classItem.name} marcada como 'shared' por classType`);
+    }
+    
+    // PASO 4: CRÍTICO - Si el usuario está en teachers pero NO es el profesor principal, 
+    // definitivamente es una clase compartida CON ÉL
+    if (hasTeachersArray && currentUserId && classItem.teachers && !isPrimaryTeacher) {
+      const userInTeachers = classItem.teachers.find(teacher => teacher.teacherId === currentUserId);
+      if (userInTeachers) {
+        console.log(`[ClassesModal] 🎯 CLASE COMPARTIDA DETECTADA: ${classItem.name}`, {
+          userInTeachers: true,
+          isPrimaryTeacher,
+          userRole: userInTeachers.role,
+          classType: classItem.classType
+        });
+        isSharedClass = true;
+        isCollaboratingTeacher = true;
+        userTeacherInfo = userInTeachers;
+        userRole = userInTeachers.role || 'assistant';
+        userPermissions = userInTeachers.permissions;
+      }
+    }
+    
+    // PASO 5: Verificar si es clase compartida desde TeacherHome.vue
+    if (classItem.isSharedWithMe === true) {
+      console.log(`[ClassesModal] 📨 Clase marcada como isSharedWithMe: ${classItem.name}`);
+      isSharedClass = true;
+      if (!isCollaboratingTeacher && classItem.userRole) {
+        isCollaboratingTeacher = true;
+        userRole = classItem.userRole;
+        userPermissions = classItem.teacherPermissions;
+      }
+    }
+    
+    // PASO 6: Determinar el tipo de participación del usuario de forma más robusta
+    let participationType = 'none';
+    
+    if (isPrimaryTeacher && isSharedClass) {
+      participationType = 'primary-shared';
+      console.log(`[ClassesModal] 👑 ${classItem.name}: Usuario es profesor principal de clase compartida`);
+    } else if (isPrimaryTeacher && !isSharedClass) {
+      participationType = 'primary-solo';
+      console.log(`[ClassesModal] 🎓 ${classItem.name}: Usuario es profesor principal único`);
+    } else if (isCollaboratingTeacher) {
+      // El usuario está en el array teachers - fue invitado a colaborar
+      participationType = 'collaborator';
+      console.log(`[ClassesModal] 🤝 ${classItem.name}: Usuario es colaborador (${userRole})`);
+    } else if (isSharedClass && hasTeachersArray) {
+      // Si es una clase compartida pero el usuario no está en el array,
+      // podría ser que tenga acceso por otras razones
+      participationType = 'viewer';
+      console.log(`[ClassesModal] 👁️ ${classItem.name}: Usuario tiene acceso como viewer`);
+    }
+    
+    // PASO 7: VERIFICACIÓN FINAL CRÍTICA - Asegurar que las clases compartidas se detecten
+    if (hasTeachersArray && currentUserId && classItem.teachers && !isPrimaryTeacher) {
+      const isInvitedCollaborator = classItem.teachers.some(teacher => teacher.teacherId === currentUserId);
+      if (isInvitedCollaborator) {
+        console.log(`[ClassesModal] 🚨 FORZAR INCLUSIÓN: ${classItem.name} - Usuario definitivamente está invitado`);
+        participationType = 'collaborator';
+        isCollaboratingTeacher = true;
+        isSharedClass = true;
+        
+        // Si no tenemos la info del usuario, buscarla de nuevo
+        if (!userTeacherInfo) {
+          userTeacherInfo = classItem.teachers.find(teacher => teacher.teacherId === currentUserId);
+          if (userTeacherInfo) {
+            userRole = userTeacherInfo.role || 'assistant';
+            userPermissions = userTeacherInfo.permissions;
+          }
+        }
+      }
+    }
+    
+    // PASO 8: Verificación adicional para clases marcadas desde TeacherHome
+    if (classItem.classType === 'shared' && classItem.isSharedWithMe === true) {
+      console.log(`[ClassesModal] 📬 CLASE COMPARTIDA CONFIRMADA desde TeacherHome: ${classItem.name}`);
+      participationType = 'collaborator';
+      isSharedClass = true;
+      isCollaboratingTeacher = true;
+    }
+    
+    console.log(`[ClassesModal] 📊 RESULTADO FINAL - Clase: ${classItem.name}`, {
+      id: classItem.id,
+      hasTeachersArray,
+      teachersCount: classItem.teachers?.length || 0,
+      isPrimaryTeacher,
+      isCollaboratingTeacher,
+      isSharedClass,
+      participationType,
+      userRole,
+      canTakeAttendance: userPermissions?.canTakeAttendance !== false || isPrimaryTeacher,
+      userPermissions,
+      teachersArray: classItem.teachers,
+      currentUserId,
+      classType: classItem.classType,
+      originalClassType: classItem.classType,
+      studentCount: classItem.studentIds?.length || classItem.students || 0,
+      // Información específica sobre si la clase fue compartida con el usuario
+      isSharedWithMe: isCollaboratingTeacher && !isPrimaryTeacher,
+      primaryTeacherId: classItem.teacherId,
+      amIInvited: hasTeachersArray && classItem.teachers && classItem.teachers.some(t => t.teacherId === currentUserId),
+      // Verificaciones de debug críticas
+      SHOULD_BE_INCLUDED: participationType !== 'none',
+      IS_ASSISTANT_CLASS: isCollaboratingTeacher && !isPrimaryTeacher,
+      HAS_95_STUDENTS: (classItem.studentIds?.length || classItem.students || 0) >= 90
+    });
+    
     return {
       ...classItem,
       // Use the async status check results
       hasAttendance: hasAttendance === true,
       isLoadingAttendance: isLoading === true,
-      attendanceStatus: hasAttendance
+      attendanceStatus: hasAttendance,
+      // Nuevas propiedades para manejo de clases compartidas
+      isSharedClass,
+      isPrimaryTeacher,
+      isCollaboratingTeacher,
+      participationType,
+      userRole,
+      userPermissions: userPermissions || classItem.teacherPermissions,
+      userTeacherInfo,
+      // Mantener compatibilidad con la lógica existente
+      classType: isSharedClass ? 'shared' : (classItem.classType || 'regular'),
+      // Propiedades adicionales para mejor control
+      canTakeAttendance: userPermissions?.canTakeAttendance !== false || isPrimaryTeacher,
+      hasTeachersArray,
+      // Nueva propiedad para identificar clases compartidas conmigo
+      isSharedWithMe: isCollaboratingTeacher && !isPrimaryTeacher,
+      originalTeacherId: classItem.teacherId
     };
+  }).map((classItem, index, arr) => {
+    // Log del resultado final en el último elemento
+    if (index === arr.length - 1) {
+      console.log(`[ClassesModal] ===== RESULTADO FINAL =====`);
+      console.log(`[ClassesModal] Total clases procesadas: ${arr.length}`);
+      
+      const sharedWithMe = arr.filter(cls => cls.isSharedWithMe);
+      const myPrimaryClasses = arr.filter(cls => cls.isPrimaryTeacher);
+      const mySharedClasses = arr.filter(cls => cls.isPrimaryTeacher && cls.isSharedClass);
+      
+      console.log(`[ClassesModal] 📊 Resumen:`);
+      console.log(`[ClassesModal] - Mis clases principales: ${myPrimaryClasses.length}`);
+      console.log(`[ClassesModal] - Mis clases compartidas (soy principal): ${mySharedClasses.length}`);
+      console.log(`[ClassesModal] - Clases compartidas conmigo: ${sharedWithMe.length}`);
+      
+      if (sharedWithMe.length > 0) {
+        console.log(`[ClassesModal] 📩 Clases compartidas conmigo:`);
+        sharedWithMe.forEach(cls => {
+          console.log(`[ClassesModal]   - ${cls.name} (by: ${cls.teacher || cls.originalTeacherId})`);
+        });
+      }
+      
+      arr.forEach(cls => {
+        console.log(`[ClassesModal] - ${cls.name}: participationType=${cls.participationType}, isSharedClass=${cls.isSharedClass}, classType=${cls.classType}`);
+      });
+    }
+    return classItem;
   });
 });
 
 // Computed property for scheduled classes (programadas)
 const scheduledClasses = computed(() => {
-  return classesWithAttendanceStatus.value.filter(classItem => 
-    (classItem.isScheduledClass !== false && classItem.classType !== 'recorded') ||
-    classItem.classType === 'shared' // Incluir clases compartidas
-  );
+  const filtered = classesWithAttendanceStatus.value.filter(classItem => {
+    // Incluir clases si:
+    // 1. Son clases programadas regulares (no son clases extra/recuperación)
+    // 2. Son clases compartidas (independientemente del tipo)
+    // 3. El usuario tiene algún tipo de participación en la clase (incluyendo 'viewer')
+    // 4. CRÍTICO: Si es una clase donde el usuario es asistente, SIEMPRE incluir
+    
+    const isScheduled = classItem.isScheduledClass !== false && classItem.classType !== 'recorded';
+    const isShared = classItem.isSharedClass || classItem.classType === 'shared';
+    const hasParticipation = classItem.participationType !== 'none';
+    
+    // VERIFICACIÓN ESPECIAL: Si es una clase compartida con el usuario como asistente
+    const isSharedWithMeAsAssistant = classItem.isSharedWithMe && 
+                                     classItem.participationType === 'collaborator' &&
+                                     !classItem.isPrimaryTeacher;
+    
+    // VERIFICACIÓN ADICIONAL: Si tiene 95 estudiantes y es compartida, definitivamente incluir
+    const isLargeSharedClass = (classItem.studentIds?.length || classItem.students || 0) >= 90 && 
+                              (isShared || classItem.isSharedWithMe);
+    
+    // Decidir si incluir la clase
+    const shouldInclude = (isScheduled || isShared || isSharedWithMeAsAssistant || isLargeSharedClass) && hasParticipation;
+    
+    // Debug log para ver qué está pasando con el filtrado
+    console.log(`[ClassesModal] 🔍 Filtrado de clase ${classItem.name}:`, {
+      isScheduled,
+      isShared,
+      hasParticipation,
+      isSharedWithMeAsAssistant,
+      isLargeSharedClass,
+      participationType: classItem.participationType,
+      classType: classItem.classType,
+      isSharedClass: classItem.isSharedClass,
+      studentCount: classItem.studentIds?.length || classItem.students || 0,
+      willBeIncluded: shouldInclude,
+      reasons: {
+        isScheduledOK: isScheduled,
+        isSharedOK: isShared,
+        hasParticipationOK: hasParticipation,
+        isAssistantClassOK: isSharedWithMeAsAssistant,
+        isLargeClassOK: isLargeSharedClass
+      }
+    });
+    
+    return shouldInclude;
+  });
+  
+  console.log(`[ClassesModal] ===== CLASES PROGRAMADAS FILTRADAS =====`);
+  console.log(`[ClassesModal] Total clases programadas: ${filtered.length}`);
+  
+  // Log detallado de cada clase
+  filtered.forEach(cls => {
+    const studentCount = cls.studentIds?.length || cls.students || 0;
+    const isLargeClass = studentCount >= 90;
+    console.log(`[ClassesModal] ✅ ${cls.name}: ${cls.participationType} (shared: ${cls.isSharedClass}, students: ${studentCount}${isLargeClass ? ' 🎯' : ''})`);
+  });
+  
+  // Verificar específicamente clases grandes como asistente
+  const largeAssistantClasses = filtered.filter(cls => {
+    const studentCount = cls.studentIds?.length || cls.students || 0;
+    return studentCount >= 90 && cls.participationType === 'collaborator' && cls.isSharedWithMe;
+  });
+  
+  if (largeAssistantClasses.length > 0) {
+    console.log(`[ClassesModal] 🎯🎯🎯 CLASE(S) OBJETIVO ENCONTRADA(S): ${largeAssistantClasses.length}`);
+    largeAssistantClasses.forEach(cls => {
+      console.log(`[ClassesModal] 📚 ${cls.name} - ${cls.studentIds?.length || cls.students || 0} estudiantes - LISTA PARA ASISTENCIA`);
+    });
+  } else {
+    console.log(`[ClassesModal] ❌ NO se encontraron clases grandes (90+ estudiantes) donde seas asistente`);
+  }
+  
+  return filtered;
 });
 
 // Computed property for extra/recovery classes (clases extra/recuperación)
@@ -292,11 +662,26 @@ if (import.meta.env?.PROD === false) {
               >
                 <!-- Status Indicator -->
                 <div class="absolute top-3 right-3 flex flex-col items-end space-y-1">
-                  <!-- Indicador de clase compartida -->
+                  <!-- Indicador de clase compartida mejorada -->
                   <span 
-                    v-if="classItem.classType === 'shared'"
-                    class="text-xs font-semibold px-2 py-1 rounded-full bg-purple-500 text-white">
-                    Compartida
+                    v-if="classItem.isSharedClass"
+                    :class="[
+                      'text-xs font-semibold px-2 py-1 rounded-full',
+                      classItem.participationType === 'primary-shared' 
+                        ? 'bg-indigo-500 text-white' 
+                        : classItem.participationType === 'collaborator' && classItem.isSharedWithMe
+                        ? 'bg-green-500 text-white'
+                        : classItem.participationType === 'collaborator'
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-purple-400 text-white'
+                    ]">
+                    {{ 
+                      classItem.participationType === 'primary-shared' ? 'Principal' :
+                      classItem.participationType === 'collaborator' && classItem.isSharedWithMe ? 'Compartida' :
+                      classItem.participationType === 'collaborator' ? 'Colaborador' :
+                      classItem.participationType === 'viewer' ? 'Acceso' :
+                      'Compartida'
+                    }}
                   </span>
                   
                   <!-- Estado de asistencia -->
@@ -347,19 +732,67 @@ if (import.meta.env?.PROD === false) {
                   <span class="text-sm">{{ classItem.classroom }}</span>
                 </div>
                 
-                <!-- Información de clase compartida -->
-                <div v-if="classItem.classType === 'shared'" class="mt-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                  <div class="flex items-center text-purple-600 dark:text-purple-400 text-sm">
+                <!-- Información de clase compartida mejorada -->
+                <div v-if="classItem.isSharedClass" class="mt-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+                  <!-- Rol del usuario -->
+                  <div class="flex items-center text-purple-600 dark:text-purple-400 text-sm mb-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-1a2 2 0 01-2 2h-1.5m-1.5 0h1.5a2 2 0 002-2M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-1a2 2 0 01-2 2h-1.5m-1.5 0h1.5a2 2 0 002-2" />
                     </svg>
-                    <span class="font-medium">Eres asistente en esta clase</span>
+                    <span class="font-medium">
+                      {{ 
+                        classItem.participationType === 'primary-shared' ? 'Eres el profesor principal' :
+                        classItem.participationType === 'collaborator' && classItem.isSharedWithMe ? 'Clase compartida contigo' :
+                        classItem.participationType === 'collaborator' ? `Eres ${classItem.userRole || 'colaborador'}` :
+                        classItem.participationType === 'viewer' ? 'Tienes acceso a esta clase' :
+                        'Participas en esta clase'
+                      }}
+                    </span>
                   </div>
-                  <div v-if="classItem.teacherPermissions?.canTakeAttendance === false" class="text-xs text-red-600 dark:text-red-400 mt-1">
-                    • Sin permisos para tomar asistencia
+                  
+                  <!-- Información del profesor principal (si la clase fue compartida conmigo) -->
+                  <div v-if="classItem.isSharedWithMe && classItem.originalTeacherId" class="text-xs text-purple-600 dark:text-purple-400 mb-2 bg-purple-100 dark:bg-purple-800/30 px-2 py-1 rounded">
+                    <span class="font-medium">📩 Compartida por:</span>
+                    <span class="ml-1">{{ classItem.teacher || 'Profesor principal' }}</span>
                   </div>
-                  <div v-else class="text-xs text-green-600 dark:text-green-400 mt-1">
-                    • Puedes gestionar la asistencia
+                  
+                  <!-- Información de profesores -->
+                  <div v-if="classItem.hasTeachersArray" class="text-xs text-purple-700 dark:text-purple-300 mb-2">
+                    <span class="font-medium">Profesores ({{ classItem.teachers?.length || 0 }}):</span>
+                    <div class="mt-1 space-y-1">
+                      <div 
+                        v-for="teacher in classItem.teachers" 
+                        :key="teacher.teacherId"
+                        :class="[
+                          'flex items-center justify-between px-2 py-1 rounded',
+                          teacher.teacherId === classItem.teacherId ? 'bg-indigo-100 dark:bg-indigo-800/30' : 'bg-purple-100 dark:bg-purple-800/30'
+                        ]"
+                      >
+                        <span>
+                          {{ teacher.teacherId === classItem.teacherId ? '👑' : '🤝' }}
+                          {{ teacher.role || 'colaborador' }}
+                          {{ teacher.teacherId === authStore.user?.uid ? ' (tú)' : '' }}
+                        </span>
+                        <span v-if="teacher.permissions?.canTakeAttendance === false" class="text-red-500">
+                          Sin permisos
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Permisos del usuario actual -->
+                  <div class="flex items-center text-xs">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span 
+                      :class="[
+                        'font-medium',
+                        classItem.canTakeAttendance ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                      ]"
+                    >
+                      {{ classItem.canTakeAttendance ? 'Puedes gestionar la asistencia' : 'Sin permisos para tomar asistencia' }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -423,14 +856,21 @@ if (import.meta.env?.PROD === false) {
 
       <!-- Modal footer -->
       <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-3 flex justify-between">
-        <!-- Debug button (development only) -->
-        <button 
-          v-if="isDevelopment"
-          @click="debugAttendance"
-          class="px-3 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors focus:outline-none"
-        >
-          Debug
-        </button>
+        <!-- Debug buttons (development only) -->
+        <div v-if="isDevelopment" class="flex space-x-2">
+          <button 
+            @click="debugAttendance"
+            class="px-3 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors focus:outline-none"
+          >
+            Debug General
+          </button>
+          <button 
+            @click="debugLargeClasses"
+            class="px-3 py-1 text-xs bg-purple-500 hover:bg-purple-600 text-white rounded transition-colors focus:outline-none"
+          >
+            Debug 95+ Estudiantes
+          </button>
+        </div>
         <div v-else></div>
         
         <button 

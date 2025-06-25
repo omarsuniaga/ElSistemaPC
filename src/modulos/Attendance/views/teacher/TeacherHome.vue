@@ -108,14 +108,17 @@ async function fetchClassesForDate(date: string) {
     const scheduledClasses = classesStore.getClassesByDayAndTeacherId(dayOfWeek, teacherId) || [];
     console.log(`[TeacherHome] Clases programadas como encargado para ${dayOfWeek}:`, scheduledClasses.length);
     
-    // 2. Obtener clases compartidas donde el maestro es asistente
+    // 2. Obtener clases compartidas donde el maestro es colaborador
     const sharedClasses = classesStore.classes.filter(cls => {
-      // Verificar si el maestro es asistente en esta clase
-      const isAssistant = cls.teachers?.some(teacher => 
-        teacher.teacherId === teacherId && teacher.role.toString() === 'ASSISTANT'
+      // Verificar si el maestro está en el array de teachers (cualquier rol)
+      const isCollaborator = cls.teachers?.some(teacher => 
+        teacher.teacherId === teacherId
       );
       
-      if (!isAssistant) return false;
+      if (!isCollaborator) return false;
+      
+      // Verificar que NO sea el profesor principal (para evitar duplicados)
+      if (cls.teacherId === teacherId) return false;
       
       // Verificar si la clase está programada para este día
       if (!cls.schedule?.slots || !Array.isArray(cls.schedule.slots)) {
@@ -130,7 +133,11 @@ async function fetchClassesForDate(date: string) {
       
       return hasSlotForDay;
     });
-    console.log(`[TeacherHome] Clases compartidas como asistente para ${dayOfWeek}:`, sharedClasses.length);
+    console.log(`[TeacherHome] Clases compartidas como colaborador para ${dayOfWeek}:`, sharedClasses.length);
+    sharedClasses.forEach(cls => {
+      const myRole = cls.teachers?.find(t => t.teacherId === teacherId)?.role || 'unknown';
+      console.log(`[TeacherHome] - ${cls.name}: rol=${myRole}, teacherId=${cls.teacherId}`);
+    });
     
     // 3. Obtener clases que tienen asistencia registrada para esta fecha específica
     await attendanceStore.fetchAttendanceDocuments();
@@ -157,18 +164,26 @@ async function fetchClassesForDate(date: string) {
       });
     }
     
-    // Procesar clases compartidas (asistente)
+    // Procesar clases compartidas (colaborador)
     for (const cls of sharedClasses) {
       const hasAttendance = attendanceStore.isClassRegistered(date, cls.id);
       
-      // Obtener permisos del maestro asistente
+      // Obtener información del maestro colaborador
       const myTeacherData = cls.teachers?.find(t => t.teacherId === teacherId);
-      const canTakeAttendance = myTeacherData?.permissions?.canTakeAttendance || false;
+      const canTakeAttendance = myTeacherData?.permissions?.canTakeAttendance !== false; // Default true si no se especifica
+      const myRole = myTeacherData?.role || 'colaborador';
+      
+      console.log(`[TeacherHome] Procesando clase compartida: ${cls.name}`, {
+        myRole,
+        canTakeAttendance,
+        teacherId: cls.teacherId,
+        myTeacherData
+      });
       
       classMap.set(cls.id, {
         ...cls,
         teacher: `Profesor ${cls.teacherId?.substring(0, 6) || 'N/A'}`,
-        teacherId: cls.teacherId,
+        teacherId: cls.teacherId, // Mantener el ID del profesor principal
         teachers: cls.teachers,
         hasAttendance: hasAttendance,
         classType: 'shared',
@@ -176,6 +191,8 @@ async function fetchClassesForDate(date: string) {
         teacherPermissions: {
           canTakeAttendance: canTakeAttendance
         },
+        userRole: myRole, // Agregar el rol del usuario actual
+        isSharedWithMe: true, // Indicar que es una clase compartida conmigo
         schedule: cls.schedule
       });
     }
@@ -260,6 +277,28 @@ async function fetchClassesForDate(date: string) {
     });
     
     console.log(`[TeacherHome] Total de clases encontradas para ${teacherId}:`, classesForDate.value.length);
+    console.log(`[TeacherHome] ===== RESUMEN CLASES PARA MODAL =====`);
+    console.log(`[TeacherHome] Fecha: ${date} (${dayOfWeek})`);
+    console.log(`[TeacherHome] Usuario: ${teacherId}`);
+    
+    const programadas = classesForDate.value.filter(c => c.classType === 'scheduled');
+    const compartidas = classesForDate.value.filter(c => c.classType === 'shared');
+    const registradas = classesForDate.value.filter(c => c.classType === 'recorded');
+    
+    console.log(`[TeacherHome] - Clases programadas (principal): ${programadas.length}`);
+    console.log(`[TeacherHome] - Clases compartidas (colaborador): ${compartidas.length}`);
+    console.log(`[TeacherHome] - Clases solo registradas: ${registradas.length}`);
+    
+    if (compartidas.length > 0) {
+      console.log(`[TeacherHome] 📩 Clases compartidas encontradas:`);
+      compartidas.forEach(c => {
+        console.log(`[TeacherHome]   - ${c.name} (principal: ${c.teacherId})`);
+      });
+    }
+    
+    classesForDate.value.forEach(c => {
+      console.log(`[TeacherHome] 📋 ${c.name}: type=${c.classType}, scheduled=${c.isScheduledClass}, hasAttendance=${c.hasAttendance}`);
+    });
     
   } catch (error) {
     console.error('[TeacherHome] Error al obtener las clases:', error);

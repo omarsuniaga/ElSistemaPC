@@ -1,29 +1,31 @@
 // Test script ACTUALIZADO para verificar clases compartidas específicamente
-// Ejecutar en la consola del navegador o como script independiente
+// Con datos que simulan tu caso real: 1 clase compartida con 95 estudiantes
 
 function testSharedClassesLogic() {
   console.log('🧪 === PROBANDO LÓGICA DE CLASES COMPARTIDAS ===');
+  console.log('🎯 CASO ESPECÍFICO: Verificar clase como asistente con 95 estudiantes');
   
   // Simular datos como los que podrían venir de Firestore
   const currentUserId = 'pzoktB8EIdYNKq8wCZ3YQbE3jMF3'; // Tu ID de usuario real
   
   const sampleClasses = [
     {
-      id: 'class1',
-      name: 'Orquesta Sinfónica',
-      teacherId: 'otro-profesor-id', // Otro profesor es el principal
+      id: 'large-class-id',
+      name: 'Clase Grande (95 Estudiantes)', // Tu clase real con 95 estudiantes
+      teacherId: 'otro-profesor-principal-id', // Otro profesor es el principal
       teachers: [
         {
-          teacherId: currentUserId, // TÚ estás en el array
-          role: 'ASSISTANT', 
+          teacherId: 'otro-profesor-principal-id', // El profesor principal
+          role: 'PRINCIPAL',
           permissions: { canTakeAttendance: true }
         },
         {
-          teacherId: 'otro-profesor-id',
-          role: 'PRINCIPAL',
+          teacherId: currentUserId, // TÚ estás en el array como asistente
+          role: 'ASSISTANT', 
           permissions: { canTakeAttendance: true }
         }
       ],
+      studentIds: Array.from({length: 95}, (_, i) => `student-${i}`), // 95 estudiantes
       schedule: {
         slots: [
           {
@@ -32,13 +34,17 @@ function testSharedClassesLogic() {
             endTime: '17:30'
           }
         ]
-      }
+      },
+      classType: 'shared',
+      isSharedWithMe: true,
+      userRole: 'ASSISTANT'
     },
     {
       id: 'class2', 
       name: 'Mi Clase Principal',
       teacherId: currentUserId, // TÚ eres el principal
       teachers: [],
+      studentIds: Array.from({length: 12}, (_, i) => `student-${i}`), // 12 estudiantes
       schedule: {
         slots: [
           {
@@ -51,7 +57,7 @@ function testSharedClassesLogic() {
     },
     {
       id: 'class3',
-      name: 'Coro Mixto', 
+      name: 'Coro Mixto (Día Diferente)', 
       teacherId: 'profesor-x',
       teachers: [
         {
@@ -60,6 +66,7 @@ function testSharedClassesLogic() {
           permissions: { canTakeAttendance: true }
         }
       ],
+      studentIds: Array.from({length: 25}, (_, i) => `student-${i}`), // 25 estudiantes
       schedule: {
         slots: [
           {
@@ -76,6 +83,15 @@ function testSharedClassesLogic() {
   console.log(`Usuario actual: ${currentUserId}`);
   console.log(`Total clases en DB: ${sampleClasses.length}`);
   
+  // Mostrar resumen de clases
+  sampleClasses.forEach(cls => {
+    const studentCount = cls.studentIds?.length || 0;
+    const isUserInTeachers = cls.teachers?.some(t => t.teacherId === currentUserId);
+    const userRole = cls.teachers?.find(t => t.teacherId === currentUserId)?.role;
+    
+    console.log(`  - ${cls.name}: ${studentCount} estudiantes, usuario en teachers: ${isUserInTeachers}, rol: ${userRole || 'ninguno'}`);
+  });
+  
   const dayOfWeek = 'martes';
   console.log(`\n🔍 PROBANDO LÓGICA PARA ${dayOfWeek.toUpperCase()}:`);
   
@@ -83,21 +99,23 @@ function testSharedClassesLogic() {
   
   // 1. Clases donde soy principal
   const myPrimaryClasses = sampleClasses.filter(cls => cls.teacherId === currentUserId);
-  console.log(`\n� Mis clases principales: ${myPrimaryClasses.length}`);
-  myPrimaryClasses.forEach(cls => console.log(`  - ${cls.name}`));
+  console.log(`\n👑 Mis clases principales: ${myPrimaryClasses.length}`);
+  myPrimaryClasses.forEach(cls => console.log(`  - ${cls.name} (${cls.studentIds?.length || 0} estudiantes)`));
   
   // 2. Clases compartidas donde soy colaborador (LÓGICA CORREGIDA)
   const sharedClasses = sampleClasses.filter(cls => {
+    console.log(`\n🔍 Evaluando clase: ${cls.name}`);
+    
     // Verificar si estoy en el array de teachers
     const isCollaborator = cls.teachers?.some(teacher => teacher.teacherId === currentUserId);
     if (!isCollaborator) {
-      console.log(`  ⏭️  ${cls.name}: No estoy en teachers array`);
+      console.log(`  ⏭️  No estoy en teachers array`);
       return false;
     }
     
     // Verificar que NO sea el profesor principal (evitar duplicados)
     if (cls.teacherId === currentUserId) {
-      console.log(`  ⏭️  ${cls.name}: Soy el profesor principal`);
+      console.log(`  ⏭️  Soy el profesor principal`);
       return false;
     }
     
@@ -108,11 +126,11 @@ function testSharedClassesLogic() {
     });
     
     if (!hasSlotForDay) {
-      console.log(`  ⏭️  ${cls.name}: No tiene horario para ${dayOfWeek}`);
+      console.log(`  ⏭️  No tiene horario para ${dayOfWeek}`);
       return false;
     }
     
-    console.log(`  ✅ ${cls.name}: Cumple todos los criterios`);
+    console.log(`  ✅ Cumple todos los criterios`);
     return true;
   });
   
@@ -120,49 +138,41 @@ function testSharedClassesLogic() {
   sharedClasses.forEach(cls => {
     const myRole = cls.teachers?.find(t => t.teacherId === currentUserId)?.role;
     const myPermissions = cls.teachers?.find(t => t.teacherId === currentUserId)?.permissions;
+    const studentCount = cls.studentIds?.length || 0;
     console.log(`  - ${cls.name} (rol: ${myRole}, principal: ${cls.teacherId})`);
-    console.log(`    Permisos:`, myPermissions);
+    console.log(`    📊 Estudiantes: ${studentCount}`);
+    console.log(`    🔐 Permisos:`, myPermissions);
   });
   
   // 3. Total para el modal
   const totalForModal = [...myPrimaryClasses, ...sharedClasses];
-  console.log(`\n� TOTAL CLASES PARA MODAL: ${totalForModal.length}`);
+  console.log(`\n📱 TOTAL CLASES PARA MODAL: ${totalForModal.length}`);
   totalForModal.forEach(cls => {
     const isPrimary = cls.teacherId === currentUserId;
     const type = isPrimary ? 'PRINCIPAL' : 'COMPARTIDA';
-    console.log(`  - ${cls.name} (${type})`);
+    const studentCount = cls.studentIds?.length || 0;
+    console.log(`  - ${cls.name} (${type}) - ${studentCount} estudiantes`);
   });
   
   console.log('\n🎯 RESULTADO ESPERADO:');
-  console.log('✅ Si ves "Orquesta Sinfónica" en COMPARTIDA, la lógica funciona!');
+  console.log('✅ "Clase Grande (95 Estudiantes)" debe aparecer como COMPARTIDA');
   console.log('✅ "Mi Clase Principal" debe aparecer como PRINCIPAL');
   console.log('❌ "Coro Mixto" NO debe aparecer (día diferente)');
   
-  return { totalForModal, sharedClasses, myPrimaryClasses };
-}
-
-// Ejecutar test automáticamente
-window.testSharedClassesLogic = testSharedClassesLogic;
-  console.log('2. Verifica que aparezcan las clases demo');
-  console.log('3. Prueba los filtros (Todas, Mis clases, Compartidas conmigo)');
-  console.log('4. Haz clic en "Compartir Nueva Clase"');
-  console.log('5. Prueba editar permisos de una clase');
-  
-  console.log('\n✨ Sistema listo para pruebas!');
-};
-
-// Auto-ejecutar en modo desarrollo
-if (window.location.hostname === 'localhost') {
-  console.log('🔧 Modo desarrollo detectado');
-  console.log('💡 Ejecuta testSharedClasses() para probar el sistema');
-}
-
-// Verificar errores en tiempo real
-window.addEventListener('error', (event) => {
-  if (event.message.includes('SharedClassesList') || event.message.includes('length')) {
-    console.error('🚨 Error detectado en SharedClassesList:', event.message);
-    console.log('🔧 Posible solución: Recargar la página o verificar props');
+  // Verificación específica para tu caso
+  const myLargeSharedClass = sharedClasses.find(cls => (cls.studentIds?.length || 0) >= 90);
+  if (myLargeSharedClass) {
+    console.log('\n🎯🎯🎯 CLASE OBJETIVO ENCONTRADA:');
+    console.log(`📚 Nombre: ${myLargeSharedClass.name}`);
+    console.log(`👥 Estudiantes: ${myLargeSharedClass.studentIds?.length || 0}`);
+    console.log(`🎭 Mi rol: ${myLargeSharedClass.teachers?.find(t => t.teacherId === currentUserId)?.role}`);
+    console.log(`✅ DEBE APARECER EN EL MODAL para registrar asistencia`);
+  } else {
+    console.log('\n❌ NO SE ENCONTRÓ LA CLASE CON 95 ESTUDIANTES COMO ASISTENTE');
   }
-});
+  
+  return { totalForModal, sharedClasses, myPrimaryClasses, myLargeSharedClass };
+}
 
-console.log('🎵 Script de prueba cargado. Usa testSharedClasses() para verificar el sistema.');
+// Auto-ejecutar
+testSharedClassesLogic();

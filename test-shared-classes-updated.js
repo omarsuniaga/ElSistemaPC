@@ -83,21 +83,23 @@ function testSharedClassesLogic() {
   
   // 1. Clases donde soy principal
   const myPrimaryClasses = sampleClasses.filter(cls => cls.teacherId === currentUserId);
-  console.log(`\n� Mis clases principales: ${myPrimaryClasses.length}`);
+  console.log(`\n👑 Mis clases principales: ${myPrimaryClasses.length}`);
   myPrimaryClasses.forEach(cls => console.log(`  - ${cls.name}`));
   
   // 2. Clases compartidas donde soy colaborador (LÓGICA CORREGIDA)
   const sharedClasses = sampleClasses.filter(cls => {
+    console.log(`\n🔍 Evaluando clase: ${cls.name}`);
+    
     // Verificar si estoy en el array de teachers
     const isCollaborator = cls.teachers?.some(teacher => teacher.teacherId === currentUserId);
     if (!isCollaborator) {
-      console.log(`  ⏭️  ${cls.name}: No estoy en teachers array`);
+      console.log(`  ⏭️  No estoy en teachers array`);
       return false;
     }
     
     // Verificar que NO sea el profesor principal (evitar duplicados)
     if (cls.teacherId === currentUserId) {
-      console.log(`  ⏭️  ${cls.name}: Soy el profesor principal`);
+      console.log(`  ⏭️  Soy el profesor principal`);
       return false;
     }
     
@@ -108,11 +110,11 @@ function testSharedClassesLogic() {
     });
     
     if (!hasSlotForDay) {
-      console.log(`  ⏭️  ${cls.name}: No tiene horario para ${dayOfWeek}`);
+      console.log(`  ⏭️  No tiene horario para ${dayOfWeek}`);
       return false;
     }
     
-    console.log(`  ✅ ${cls.name}: Cumple todos los criterios`);
+    console.log(`  ✅ Cumple todos los criterios`);
     return true;
   });
   
@@ -126,7 +128,7 @@ function testSharedClassesLogic() {
   
   // 3. Total para el modal
   const totalForModal = [...myPrimaryClasses, ...sharedClasses];
-  console.log(`\n� TOTAL CLASES PARA MODAL: ${totalForModal.length}`);
+  console.log(`\n📱 TOTAL CLASES PARA MODAL: ${totalForModal.length}`);
   totalForModal.forEach(cls => {
     const isPrimary = cls.teacherId === currentUserId;
     const type = isPrimary ? 'PRINCIPAL' : 'COMPARTIDA';
@@ -141,28 +143,18 @@ function testSharedClassesLogic() {
   return { totalForModal, sharedClasses, myPrimaryClasses };
 }
 
-// Ejecutar test automáticamente
-window.testSharedClassesLogic = testSharedClassesLogic;
-  console.log('2. Verifica que aparezcan las clases demo');
-  console.log('3. Prueba los filtros (Todas, Mis clases, Compartidas conmigo)');
-  console.log('4. Haz clic en "Compartir Nueva Clase"');
-  console.log('5. Prueba editar permisos de una clase');
-  
-  console.log('\n✨ Sistema listo para pruebas!');
-};
-
-// Auto-ejecutar en modo desarrollo
-if (window.location.hostname === 'localhost') {
-  console.log('🔧 Modo desarrollo detectado');
-  console.log('💡 Ejecuta testSharedClasses() para probar el sistema');
+// Para ejecutar en la consola del navegador
+if (typeof window !== 'undefined') {
+  window.testSharedClassesLogic = testSharedClassesLogic;
+  console.log('🎵 Script cargado. Usa testSharedClassesLogic() para probar la lógica.');
 }
 
-// Verificar errores en tiempo real
-window.addEventListener('error', (event) => {
-  if (event.message.includes('SharedClassesList') || event.message.includes('length')) {
-    console.error('🚨 Error detectado en SharedClassesList:', event.message);
-    console.log('🔧 Posible solución: Recargar la página o verificar props');
-  }
-});
+// Para ejecutar en Node.js
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { testSharedClassesLogic };
+}
 
-console.log('🎵 Script de prueba cargado. Usa testSharedClasses() para verificar el sistema.');
+// Auto-ejecutar si se ejecuta directamente
+if (require.main === module) {
+  testSharedClassesLogic();
+}
