@@ -330,7 +330,7 @@ function getStudentAttendance(studentId: string): number {
         v-for="student in sortedStudents"
         :key="student.id"
         :student="student"
-        :attendance="getStudentAttendance(student.id)"
+        :attendance="0"
         @open="openStudentDrawer(student)"
         @profile="handleViewProfile(student.id)"
       />

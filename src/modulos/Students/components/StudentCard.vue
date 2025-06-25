@@ -13,8 +13,24 @@
         {{ student.grupo.join(', ') }}
       </div>
       <div class="mt-1">
-        <span :class="attendanceColor" class="font-semibold" :title="attendance + '% asistencia'">
-          {{ attendance }}% asistencia
+        <span 
+          v-if="!loadingAttendance"
+          :class="attendanceColor" 
+          class="font-semibold" 
+          :title="attendanceTooltip"
+        >
+          {{ displayAttendance }}% asistencia
+        </span>
+        <span 
+          v-else
+          class="text-gray-400 text-sm font-semibold"
+          title="Calculando asistencia..."
+        >
+          <svg class="animate-spin -ml-1 mr-2 h-3 w-3 text-gray-400 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Calculando...
         </span>
       </div>
     </div>
@@ -34,24 +50,118 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import { useAttendanceStore } from '../../Attendance/store/attendance'
 import StudentAvatar from './StudentAvatar.vue'
 
-const props = defineProps({
-  student: {
-    type: Object,
-    required: true
-  },
-  attendance: {
-    type: Number,
-    required: true
+interface Props {
+  student: any
+  attendance?: number
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  attendance: 0
+})
+
+const attendanceStore = useAttendanceStore()
+const lastMonthAttendance = ref<number>(0)
+const loadingAttendance = ref<boolean>(true)
+
+// Cache estático para evitar múltiples llamadas por el mismo estudiante
+const attendanceCache = new Map<string, { value: number; timestamp: number }>()
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutos
+
+// Calcular el porcentaje de asistencia del último mes
+const calculateLastMonthAttendance = async () => {
+  try {
+    loadingAttendance.value = true
+    
+    // Verificar cache primero
+    const cacheKey = props.student.id
+    const cached = attendanceCache.get(cacheKey)
+    const now = Date.now()
+    
+    if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+      lastMonthAttendance.value = cached.value
+      loadingAttendance.value = false
+      return
+    }
+    
+    const today = new Date()
+    const oneMonthAgo = new Date(today)
+    oneMonthAgo.setMonth(today.getMonth() - 1)
+    
+    const startDate = oneMonthAgo.toISOString().split('T')[0]
+    const endDate = today.toISOString().split('T')[0]
+    
+    // Obtener registros de asistencia del estudiante en el último mes
+    const attendanceRecords = await attendanceStore.getStudentAttendanceByDateRange(
+      props.student.id,
+      startDate,
+      endDate
+    )
+    
+    if (!attendanceRecords || attendanceRecords.length === 0) {
+      lastMonthAttendance.value = 0
+      // Guardar en cache
+      attendanceCache.set(cacheKey, { value: 0, timestamp: now })
+      return
+    }
+    
+    // Calcular porcentaje de asistencia
+    const presentCount = attendanceRecords.filter(record => 
+      record.status === 'Presente' || record.status === 'Justificado'
+    ).length
+    
+    const totalCount = attendanceRecords.length
+    const percentage = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0
+    
+    lastMonthAttendance.value = percentage
+    
+    // Guardar en cache
+    attendanceCache.set(cacheKey, { value: percentage, timestamp: now })
+    
+  } catch (error) {
+    console.error('Error calculating last month attendance for student:', props.student.id, error)
+    lastMonthAttendance.value = 0
+  } finally {
+    loadingAttendance.value = false
   }
+}
+
+// Computed para el porcentaje de asistencia a mostrar (prioriza último mes)
+const displayAttendance = computed(() => {
+  return lastMonthAttendance.value || props.attendance
+})
+
+// Computed para el tooltip informativo
+const attendanceTooltip = computed(() => {
+  if (loadingAttendance.value) {
+    return 'Calculando asistencia...'
+  }
+  
+  const now = new Date()
+  const oneMonthAgo = new Date(now)
+  oneMonthAgo.setMonth(now.getMonth() - 1)
+  
+  const formatDate = (date: Date) => date.toLocaleDateString('es-ES', { 
+    day: '2-digit', 
+    month: '2-digit', 
+    year: 'numeric' 
+  })
+  
+  return `${displayAttendance.value}% asistencia (${formatDate(oneMonthAgo)} - ${formatDate(now)})`
 })
 
 const attendanceColor = computed(() => {
-  if (props.attendance >= 90) return 'text-green-600'
-  if (props.attendance >= 75) return 'text-yellow-600'
+  const attendance = displayAttendance.value
+  if (attendance >= 90) return 'text-green-600'
+  if (attendance >= 75) return 'text-yellow-600'
   return 'text-red-600'
+})
+
+onMounted(() => {
+  calculateLastMonthAttendance()
 })
 </script>
 
