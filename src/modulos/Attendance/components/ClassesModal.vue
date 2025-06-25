@@ -476,7 +476,17 @@ const scheduledClasses = computed(() => {
                               (isShared || classItem.isSharedWithMe);
     
     // Decidir si incluir la clase
-    const shouldInclude = (isScheduled || isShared || isSharedWithMeAsAssistant || isLargeSharedClass) && hasParticipation;
+    // REGLA FUNDAMENTAL: Si es una clase compartida Y tengo permisos de asistencia, SIEMPRE incluir
+    const hasAttendancePermissions = classItem.canTakeAttendance === true || 
+                                    classItem.userPermissions?.canTakeAttendance === true ||
+                                    classItem.teacherPermissions?.canTakeAttendance === true;
+    
+    // VERIFICACIÓN PRIORITARIA: Clase compartida con permisos de asistencia
+    const isSharedWithAttendancePermissions = (isShared || classItem.isSharedWithMe) && 
+                                             hasAttendancePermissions &&
+                                             classItem.participationType === 'collaborator';
+    
+    const shouldInclude = (isScheduled || isShared || isSharedWithMeAsAssistant || isLargeSharedClass || isSharedWithAttendancePermissions) && hasParticipation;
     
     // Debug log para ver qué está pasando con el filtrado
     console.log(`[ClassesModal] 🔍 Filtrado de clase ${classItem.name}:`, {
@@ -485,17 +495,24 @@ const scheduledClasses = computed(() => {
       hasParticipation,
       isSharedWithMeAsAssistant,
       isLargeSharedClass,
+      hasAttendancePermissions,
+      isSharedWithAttendancePermissions,
       participationType: classItem.participationType,
       classType: classItem.classType,
       isSharedClass: classItem.isSharedClass,
       studentCount: classItem.studentIds?.length || classItem.students || 0,
+      canTakeAttendance: classItem.canTakeAttendance,
+      userPermissions: classItem.userPermissions,
+      teacherPermissions: classItem.teacherPermissions,
       willBeIncluded: shouldInclude,
       reasons: {
         isScheduledOK: isScheduled,
         isSharedOK: isShared,
         hasParticipationOK: hasParticipation,
         isAssistantClassOK: isSharedWithMeAsAssistant,
-        isLargeClassOK: isLargeSharedClass
+        isLargeClassOK: isLargeSharedClass,
+        hasAttendancePermissionsOK: hasAttendancePermissions,
+        isSharedWithAttendancePermissionsOK: isSharedWithAttendancePermissions
       }
     });
     
