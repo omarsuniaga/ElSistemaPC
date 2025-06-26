@@ -21,7 +21,9 @@ export const useClassesStore = defineStore('classes', {
     classes: [] as ClassData[],
     loading: false,
     error: null as string | null,
-    lastSync: null as Date | null
+    lastSync: null as Date | null,
+    // Caché específico para clases de maestros (usando objeto en lugar de Map para compatibilidad con Pinia)
+    teacherClassesCache: {} as Record<string, { data: any[], lastSync: Date }>
   }),
 
   getters: {
@@ -34,7 +36,13 @@ export const useClassesStore = defineStore('classes', {
     // Filtra clases por instrumento
     getClassesByInstrument: (state) => (instrument: string) => state.classes.filter(classItem => classItem.instrument === instrument),
     // Filtra clases por maestro
-    getClassesByTeacher: (state) => (teacherId: string) => state.classes.filter(classItem => classItem.teacherId === teacherId),
+    getClassesByTeacher: (state) => (teacherId: string) => {
+      return state.classes.filter(classItem => {
+        if (classItem.teacherId !== teacherId) return false;
+        const schedule = classItem.schedule as { slots?: any[] };
+        return schedule && Array.isArray(schedule.slots) && schedule.slots.length > 0;
+      });
+    },
     // Filtra clases por alumno
     getClassesByStudent: (state) => (studentId: string) => state.classes.filter(classItem => classItem.studentIds && classItem.studentIds.includes(studentId)),
     // Retorna clases que tienen definido un horario
@@ -56,10 +64,11 @@ export const useClassesStore = defineStore('classes', {
     
     // obtener clases por dias de la semana
     getClassByDaysAndTeacher: (state) => (teacherId: string, day: string) => {
-      return state.classes.filter(classItem =>
-        classItem.teacherId === teacherId &&
-        classItem.schedule?.slots.some(slot => slot.day === day)
-      );
+      return state.classes.filter(classItem => {
+        if (classItem.teacherId !== teacherId) return false;
+        const schedule = classItem.schedule as { slots?: any[] };
+        return schedule && Array.isArray(schedule.slots) && schedule.slots.some((slot: any) => slot.day === day);
+      });
     },
     // Clases filtradas por ID de maestro
     getClassesByTeacherId: (state) => (teacherId: string) => {
@@ -70,12 +79,11 @@ export const useClassesStore = defineStore('classes', {
     // Clases programadas filtradas por ID de maestro
     getScheduledClassesByTeacherId: (state) => (teacherId: string) => {
       if (!teacherId) return [];
-      return state.classes.filter(c =>
-        c.teacherId === teacherId &&
-        c.schedule &&
-        c.schedule.slots &&
-        c.schedule.slots.length > 0
-      );
+      return state.classes.filter(c => {
+        if (c.teacherId !== teacherId) return false;
+        const schedule = c.schedule as { slots?: any[] };
+        return schedule && Array.isArray(schedule.slots) && schedule.slots.length > 0;
+      });
     },    // Clases por día de la semana filtradas por ID de maestro
     getClassesByDayAndTeacherId: (state) => (day: string | number, teacherId: string) => {
       const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -90,18 +98,13 @@ export const useClassesStore = defineStore('classes', {
       if (!teacherId || dayIndex === -1) return [];
 
       return state.classes.filter(c => {
-        // Verificar que la clase pertenece al maestro
         if (c.teacherId !== teacherId) return false;
-
-        // Verificar que la clase tiene horario configurado
-        if (!c.schedule?.slots || !Array.isArray(c.schedule.slots)) return false;
-
-        // Buscar si la clase está programada para ese día
-        return c.schedule.slots.some(slot => {
+        const schedule = c.schedule as { slots?: any[] };
+        if (!schedule || !Array.isArray(schedule.slots)) return false;
+        return schedule.slots.some((slot: any) => {
           if (typeof slot.day === 'number') {
             return slot.day === dayIndex;
-          }
-          if (typeof slot.day === 'string') {
+          } else if (typeof slot.day === 'string') {
             return dayNames[dayIndex] === slot.day.toLowerCase();
           }
           return false;
@@ -173,24 +176,25 @@ export const useClassesStore = defineStore('classes', {
      * Normaliza la data de una clase para asegurar que el campo "schedule" tenga la estructura esperada.
      */
     normalizeClassData(classItem: any): ClassData {
+      let normalizedSchedule;
+      if (classItem.schedule && Array.isArray(classItem.schedule.slots)) {
+        normalizedSchedule = { slots: classItem.schedule.slots };
+      } else if (classItem.schedule && classItem.schedule.day) {
+        normalizedSchedule = { slots: [{
+          day: classItem.schedule.day,
+          startTime: classItem.schedule.startTime || '',
+          endTime: classItem.schedule.endTime || ''
+        }] };
+      } else {
+        normalizedSchedule = { slots: [] };
+      }
       return {
         ...classItem,
         id: String(classItem.id),
-        // Normalizar studentIds para garantizar que siempre sea un array
         studentIds: Array.isArray(classItem.studentIds)
           ? classItem.studentIds
           : (classItem.studentIds ? [classItem.studentIds] : []),
-        schedule: (classItem.schedule && classItem.schedule.slots && Array.isArray(classItem.schedule.slots))
-          ? classItem.schedule
-          : {
-            slots: classItem.schedule
-              ? [{
-                day: classItem.schedule.days || '',
-                startTime: classItem.schedule.startTime || '',
-                endTime: classItem.schedule.endTime || ''
-              }]
-              : []
-          },
+        schedule: normalizedSchedule,
       };
     },
 
@@ -526,7 +530,7 @@ export const useClassesStore = defineStore('classes', {
     ) {
       return await this.withLoading(async () => {
         const classData = this.classes.filter(classItem =>
-          classItem.schedule?.slots.some(slot => slot.day === day) &&
+          Array.isArray(classItem.schedule?.slots) ? classItem.schedule.slots.some(slot => slot.day === day) : false &&
           classItem.teacherId === teacherId
         );
         return classData;
@@ -711,7 +715,7 @@ export const useClassesStore = defineStore('classes', {
         if (dayIndex === -1) dayIndex = daysEn.indexOf(dayLower);
       }
       return this.classes.filter(classItem =>
-        classItem.schedule?.slots && Array.isArray(classItem.schedule.slots) &&
+        classItem.schedule && Array.isArray(classItem.schedule.slots) &&
         classItem.schedule.slots.some(slot => {
           if (typeof slot.day === 'string') {
             const slotDayLower = slot.day.toLowerCase();
@@ -889,5 +893,119 @@ export const useClassesStore = defineStore('classes', {
       // checkTeacherPermission ya está importado estáticamente
       return await checkTeacherPermission(classId, teacherId, permission);
     },
-  }
+
+    /**
+     * Obtiene todas las clases desde Firestore y actualiza el store SOLO si es necesario.
+     * Si ya hay datos y lastSync es reciente, retorna los datos cacheados.
+     */
+    async fetchClassesIfNeeded() {
+      const now = Date.now();
+      const FIVE_MINUTES = 5 * 60 * 1000;
+      if (this.classes.length > 0 && this.lastSync && (now - new Date(this.lastSync).getTime() < FIVE_MINUTES)) {
+        // Retornar datos cacheados
+        return this.classes;
+      }
+      // Si no hay datos o están desactualizados, hace fetch
+      await this.fetchClasses();
+      return this.classes;
+    },
+
+    /**
+     * Obtiene las clases de un maestro específico usando caché inteligente
+     * Si ya hay datos cacheados y son recientes, los retorna sin consultar Firestore
+     */
+    async fetchTeacherClassesIfNeeded(teacherId: string) {
+      if (!teacherId) return [];
+      
+      const now = new Date();
+      const FIVE_MINUTES = 5 * 60 * 1000;
+      
+      // Verificar si tenemos datos cacheados para este maestro
+      const cachedData = this.teacherClassesCache[teacherId];
+      if (cachedData && (now.getTime() - new Date(cachedData.lastSync).getTime() < FIVE_MINUTES)) {
+        console.log(`[ClassesStore] Usando caché para maestro ${teacherId}`);
+        return cachedData.data;
+      }
+      
+      // Si no hay caché o está desactualizado, consultar servicio
+      console.log(`[ClassesStore] Consultando Firestore para maestro ${teacherId}`);
+      try {
+        let teacherClasses;
+        
+        // Intentar usar el servicio específico de maestros primero
+        try {
+          teacherClasses = await getTeacherClasses(teacherId);
+        } catch (serviceError) {
+          console.warn(`[ClassesStore] Servicio getTeacherClasses falló, usando fallback:`, serviceError);
+          
+          // Fallback: obtener todas las clases y filtrar localmente
+          await this.fetchClasses();
+          teacherClasses = this.getAllTeacherClasses(teacherId);
+        }
+        
+        // Actualizar caché
+        this.teacherClassesCache[teacherId] = {
+          data: teacherClasses,
+          lastSync: now
+        };
+        
+        console.log(`[ClassesStore] ✅ Clases del maestro ${teacherId} cargadas: ${teacherClasses.length}`);
+        return teacherClasses;
+      } catch (error) {
+        console.error('Error fetching teacher classes:', error);
+        throw error;
+      }
+    },
+
+    /**
+     * Fuerza la actualización del caché para un maestro específico
+     */
+    async refreshTeacherClassesCache(teacherId: string) {
+      if (!teacherId) return [];
+      
+      console.log(`[ClassesStore] Forzando actualización de caché para maestro ${teacherId}`);
+      delete this.teacherClassesCache[teacherId]; // Eliminar caché existente
+      
+      try {
+        return await this.fetchTeacherClassesIfNeeded(teacherId);
+      } catch (error) {
+        console.error(`[ClassesStore] Error al refrescar caché para maestro ${teacherId}:`, error);
+        
+        // Fallback: intentar obtener del caché local existente
+        const localClasses = this.getAllTeacherClasses(teacherId);
+        console.log(`[ClassesStore] Usando datos locales como fallback: ${localClasses.length} clases`);
+        return localClasses;
+      }
+    },
+
+    /**
+     * Limpia todo el caché de clases de maestros
+     */
+    clearTeacherClassesCache() {
+      console.log(`[ClassesStore] Limpiando caché de clases de maestros`);
+      this.teacherClassesCache = {};
+    },
+
+    /**
+     * Obtiene clases del caché local del store usando getters
+     * Sin hacer consultas a Firestore
+     */
+    getCachedTeacherClasses(teacherId: string) {
+      if (!teacherId) return [];
+      
+      // Primero intentar obtener del caché específico de maestros
+      const cachedData = this.teacherClassesCache[teacherId];
+      if (cachedData) {
+        const now = new Date();
+        const FIVE_MINUTES = 5 * 60 * 1000;
+        if (now.getTime() - new Date(cachedData.lastSync).getTime() < FIVE_MINUTES) {
+          return cachedData.data;
+        }
+      }
+      
+      // Si no hay caché específico, usar los getters locales como fallback
+      return this.getAllTeacherClasses(teacherId);
+    }
+  },
+  persist: true
 });

@@ -14,7 +14,6 @@ const firebaseConfig = {
 
 // Inicializar Firebase solo si no existe una instancia
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-
 // Exportar instancias de los servicios
 export const db = getFirestore(app);
 export const storage = getStorage(app);

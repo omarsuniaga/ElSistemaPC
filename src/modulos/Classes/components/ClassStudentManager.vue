@@ -31,6 +31,7 @@ const searchQuery = ref('');
 const isLoading = ref(false);
 const multiSelectMode = ref(false);
 const selectedForAddition = ref<string[]>([]);
+const searchInput = ref<HTMLInputElement | null>(null);
 
 // Computed properties for filtering students
 const availableStudents = computed(() => {
@@ -42,8 +43,10 @@ const filteredAvailableStudents = computed(() => {
   
   const query = searchQuery.value.toLowerCase();
   return availableStudents.value.filter(student => {
-    const fullName = `${student.nombre || ''} ${student.apellido || ''}`.toLowerCase();
-    return fullName.includes(query);
+    const fullName = `${student.nombre || ''} ${student.apellido || ''}`.toLowerCase().trim();
+    const email = (student.email || '').toLowerCase();
+    const instrument = (student.instrumento || '').toLowerCase();
+    return fullName.includes(query) || email.includes(query) || instrument.includes(query);
   });
 });
 
@@ -56,13 +59,58 @@ const filteredSelectedStudents = computed(() => {
   
   const query = searchQuery.value.toLowerCase();
   return selectedStudents.value.filter(student => {
-    const fullName = `${student.nombre || ''} ${student.apellido || ''}`.toLowerCase();
-    return fullName.includes(query);
+    const fullName = `${student.nombre || ''} ${student.apellido || ''}`.toLowerCase().trim();
+    const email = (student.email || '').toLowerCase();
+    const instrument = (student.instrumento || '').toLowerCase();
+    return fullName.includes(query) || email.includes(query) || instrument.includes(query);
   });
 });
 
+// Helper function to format student names
+const formatStudentName = (student: any) => {
+  const firstName = (student.nombre || '').trim();
+  const lastName = (student.apellido || '').trim();
+  
+  if (!firstName && !lastName) {
+    return '👤 Sin nombre asignado';
+  }
+  
+  // Si solo tiene un nombre, lo mostramos
+  if (!lastName) return firstName;
+  if (!firstName) return lastName;
+  
+  return `${firstName} ${lastName}`;
+};
+
+// Helper function to get student secondary info
+const getStudentSecondaryInfo = (student: any) => {
+  const info = [];
+  
+  if (student.instrumento) {
+    info.push(`🎵 ${student.instrumento}`);
+  }
+  
+  if (student.nivel) {
+    info.push(`📚 ${student.nivel}`);
+  }
+  
+  if (student.email) {
+    info.push(`📧 ${student.email}`);
+  }
+  
+  if (student.telefono) {
+    info.push(`📱 ${student.telefono}`);
+  }
+  
+  if (info.length === 0) {
+    return '📝 Sin información adicional';
+  }
+  
+  return info.join(' • ');
+};
+
 // Methods
-const addStudent = (studentId) => {
+const addStudent = (studentId: string) => {
   if (!selectedStudentIds.value.includes(studentId)) {
     // Verificar que el estudiante exista en el store
     const studentExists = studentsStore.students.some(s => s.id === studentId);
@@ -70,17 +118,15 @@ const addStudent = (studentId) => {
       console.warn(`Advertencia: Se intentó agregar un estudiante con ID ${studentId} que no existe en el store`);
       return;
     }
-    
     // Agregar el estudiante a la lista de seleccionados
     selectedStudentIds.value.push(studentId);
     console.log(`Estudiante agregado a la lista temporal: ${studentId}`);
-    
-    // Limpiar búsqueda
-    searchQuery.value = '';
+    // NO limpiar búsqueda para permitir múltiples selecciones con el mismo filtro
+    // searchQuery.value = '';
   }
 };
 
-const toggleStudentSelection = (studentId) => {
+const toggleStudentSelection = (studentId: string) => {
   const index = selectedForAddition.value.indexOf(studentId);
   if (index === -1) {
     // Verificar que el estudiante exista antes de seleccionarlo
@@ -89,7 +135,6 @@ const toggleStudentSelection = (studentId) => {
       console.warn(`Advertencia: Se intentó seleccionar un estudiante con ID ${studentId} que no existe en el store`);
       return;
     }
-    
     selectedForAddition.value.push(studentId);
   } else {
     selectedForAddition.value.splice(index, 1);
@@ -114,10 +159,11 @@ const addSelectedStudents = () => {
   }
   selectedForAddition.value = [];
   multiSelectMode.value = false;
-  searchQuery.value = '';
+  // NO limpiar búsqueda para permitir múltiples operaciones con el mismo filtro
+  // searchQuery.value = '';
 };
 
-const removeStudent = (studentId) => {
+const removeStudent = (studentId: string) => {
   selectedStudentIds.value = selectedStudentIds.value.filter(id => id !== studentId);
 };
 
@@ -134,6 +180,15 @@ const saveChanges = async () => {
 
     if (!Array.isArray(selectedStudentIds.value)) {
       throw new Error('La lista de estudiantes no es válida');
+    }
+
+    // Limpiar IDs inválidos antes de guardar
+    const prevLength = selectedStudentIds.value.length;
+    selectedStudentIds.value = selectedStudentIds.value.filter(id =>
+      studentsStore.students.some(student => student.id === id)
+    );
+    if (selectedStudentIds.value.length !== prevLength) {
+      console.warn('Se eliminaron IDs de estudiantes inválidos antes de guardar.');
     }
 
     // Verificar que todos los IDs sean válidos y existan en el store
@@ -175,14 +230,14 @@ const saveChanges = async () => {
         const student = studentsStore.students.find(s => s.id === id);
         return {
           id,
-          name: student ? `${student.nombre} ${student.apellido}` : 'Desconocido'
+          name: student ? formatStudentName(student) : 'Estudiante desconocido'
         };
       }),
       removed: removed.map(id => {
         const student = studentsStore.students.find(s => s.id === id);
         return {
           id,
-          name: student ? `${student.nombre} ${student.apellido}` : 'Desconocido'
+          name: student ? formatStudentName(student) : 'Estudiante desconocido'
         };
       })
     };    // Emitir evento con los IDs validados y esperar respuesta
@@ -234,9 +289,6 @@ onMounted(async () => {
   if (studentsStore.students.length === 0) {
     isLoading.value = true;
     try {
-      // Usar fetchStudents() que ahora usa RBAC para determinar
-      // si el usuario puede ver todos los estudiantes o solo los de sus clases
-      // El permiso se controla desde el panel de superusuario
       await studentsStore.fetchStudents();
     } catch (error) {
       console.error('Error al cargar estudiantes:', error);
@@ -244,6 +296,22 @@ onMounted(async () => {
       isLoading.value = false;
     }
   }
+  
+  // Limpiar IDs inválidos después de cargar estudiantes
+  const prevLength = selectedStudentIds.value.length;
+  selectedStudentIds.value = selectedStudentIds.value.filter(id =>
+    studentsStore.students.some(student => student.id === id)
+  );
+  if (selectedStudentIds.value.length !== prevLength) {
+    console.warn('Se eliminaron IDs de estudiantes inválidos de la selección inicial.');
+  }
+  
+  // Enfocar el campo de búsqueda después de montar el componente
+  setTimeout(() => {
+    if (searchInput.value) {
+      searchInput.value.focus();
+    }
+  }, 100); // Pequeño delay para asegurar que el DOM esté completamente renderizado
 });
 </script>
 
@@ -252,10 +320,12 @@ onMounted(async () => {
     <!-- Search Bar -->
     <div class="mb-6 relative">
       <input
+        ref="searchInput"
         v-model="searchQuery"
         type="text"
-        placeholder="Buscar estudiantes..."
-        class="w-full p-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
+        placeholder="Buscar por nombre, instrumento o email..."
+        class="w-full p-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-gray-300 placeholder-gray-500 dark:placeholder-gray-400"
+        autofocus
       />
       <MagnifyingGlassIcon class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
     </div>
@@ -275,11 +345,17 @@ onMounted(async () => {
         </div>
         
         <div class="border border-gray-200 dark:border-gray-700 rounded-md h-64 overflow-y-auto bg-white dark:bg-gray-800">
-          <div v-if="isLoading" class="flex justify-center items-center h-full">
-            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+          <div v-if="isLoading" class="flex flex-col justify-center items-center h-full py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-3"></div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Cargando estudiantes...</p>
           </div>
-          <div v-else-if="filteredAvailableStudents.length === 0" class="p-4 text-center text-gray-500 dark:text-gray-400">
-            No hay estudiantes disponibles
+          <div v-else-if="searchQuery && filteredAvailableStudents.length === 0" class="p-6 text-center text-gray-500 dark:text-gray-400">
+            <MagnifyingGlassIcon class="h-8 w-8 mx-auto mb-2 text-gray-400" />
+            <p class="text-sm">No se encontraron estudiantes con "<strong>{{ searchQuery }}</strong>"</p>
+          </div>
+          <div v-else-if="filteredAvailableStudents.length === 0" class="p-6 text-center text-gray-500 dark:text-gray-400">
+            <span class="text-2xl mb-2 block">✅</span>
+            <p class="text-sm">Todos los estudiantes ya están asignados a esta clase</p>
           </div>
           <div v-else class="divide-y divide-gray-200 dark:divide-gray-700">
             <div 
@@ -294,17 +370,19 @@ onMounted(async () => {
                     <CheckIcon v-if="selectedForAddition.includes(student.id)" class="h-4 w-4 text-white" />
                   </div>
                 </div>
-                <div>
-                  <span class="font-medium">{{ student.nombre }} {{ student.apellido }}</span>
-                  <p class="text-sm text-gray-600 dark:text-gray-400">
-                    {{ student.grupo || 'Sin correo' }}
-                  </p>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-gray-900 dark:text-gray-100 truncate">
+                    {{ formatStudentName(student) }}
+                  </div>
+                  <div class="text-sm text-gray-600 dark:text-gray-400 truncate">
+                    {{ getStudentSecondaryInfo(student) }}
+                  </div>
                 </div>
               </div>
               <button 
                 v-if="!multiSelectMode"
-                class="p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"
-                title="Agregar estudiante"
+                class="p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 flex-shrink-0"
+                :title="`Agregar ${formatStudentName(student)} a la clase`"
               >
                 <UserPlusIcon class="h-5 w-5" />
               </button>
@@ -328,11 +406,18 @@ onMounted(async () => {
         <h3 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Estudiantes Asignados ({{ filteredSelectedStudents.length }})</h3>
         
         <div class="border border-gray-200 dark:border-gray-700 rounded-md h-64 overflow-y-auto bg-white dark:bg-gray-800">
-          <div v-if="isLoading" class="flex justify-center items-center h-full">
-            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+          <div v-if="isLoading" class="flex flex-col justify-center items-center h-full py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-3"></div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Cargando estudiantes...</p>
           </div>
-          <div v-else-if="filteredSelectedStudents.length === 0" class="p-4 text-center text-gray-500 dark:text-gray-400">
-            No hay estudiantes asignados
+          <div v-else-if="searchQuery && filteredSelectedStudents.length === 0" class="p-6 text-center text-gray-500 dark:text-gray-400">
+            <MagnifyingGlassIcon class="h-8 w-8 mx-auto mb-2 text-gray-400" />
+            <p class="text-sm">No se encontraron estudiantes asignados con "<strong>{{ searchQuery }}</strong>"</p>
+          </div>
+          <div v-else-if="filteredSelectedStudents.length === 0" class="p-6 text-center text-gray-500 dark:text-gray-400">
+            <span class="text-2xl mb-2 block">👥</span>
+            <p class="text-sm">No hay estudiantes asignados a esta clase</p>
+            <p class="text-xs mt-1">Agrega estudiantes desde la columna de la izquierda</p>
           </div>
           <div v-else class="divide-y divide-gray-200 dark:divide-gray-700">
             <div 
@@ -340,16 +425,18 @@ onMounted(async () => {
               :key="student.id"
               class="p-3 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              <div>
-                <span class="font-medium">{{ student.nombre }} {{ student.apellido }}</span>
-                <p class="text-sm text-gray-600 dark:text-gray-400">
-                  {{ student.email || 'Sin correo' }}
-                </p>
+              <div class="flex-1 min-w-0 mr-3">
+                <div class="font-medium text-gray-900 dark:text-gray-100 truncate">
+                  {{ formatStudentName(student) }}
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-400 truncate">
+                  {{ getStudentSecondaryInfo(student) }}
+                </div>
               </div>
               <button 
                 @click="removeStudent(student.id)"
-                class="p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                title="Quitar estudiante"
+                class="p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 flex-shrink-0"
+                :title="`Quitar ${formatStudentName(student)} de la clase`"
               >
                 <UserMinusIcon class="h-5 w-5" />
               </button>

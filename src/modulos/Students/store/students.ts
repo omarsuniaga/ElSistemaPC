@@ -29,7 +29,7 @@ export const useStudentsStore = defineStore('students', {
       })
     },
     
-    getStudentById: (state) => (id: string) => {
+    getStudentById: (state) => (id: string): Student | undefined => {
       return state.students.find(student => student.id === id)
     },
 
@@ -57,7 +57,7 @@ export const useStudentsStore = defineStore('students', {
       return state.students.find(student => student.id === id)
     },
 
-    getStudentsByClass: (state) => (classId: string) => {
+    getStudentsByClass: (state) => (classId: string): Student[] => {
       if (!classId) return [];
       
       // Primero buscar por studentIds en las clases
@@ -317,5 +317,6 @@ export const useStudentsStore = defineStore('students', {
         throw error
       }
     }
-  }
+  },
+  persist: true
 })

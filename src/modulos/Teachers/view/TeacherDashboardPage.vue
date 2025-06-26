@@ -284,8 +284,11 @@ function cleanData(obj: any): any {
 // --- Handlers (Methods triggered by events from children or directly) ---
 const handleCollaborationUpdated = async () => {
   // Recargar las clases cuando se actualiza una colaboración
-  await fetchMyClasses();
-  console.log('Colaboración actualizada, clases recargadas');
+  if (currentTeacherId.value) {
+    await classesStore.refreshTeacherClassesCache(currentTeacherId.value);
+    await fetchMyClasses();
+    console.log('Colaboración actualizada, caché actualizado');
+  }
 };
 
 const handleAddClass = () => {
@@ -327,6 +330,12 @@ const handleDeleteClass = async (classId: string) => {
         title: "Clase Eliminada",
         description: "La clase ha sido eliminada exitosamente."
       });
+
+      // Actualizar el caché específico del maestro después de cambios
+      if (currentTeacherId.value) {
+        await classesStore.refreshTeacherClassesCache(currentTeacherId.value);
+        await fetchMyClasses(); // También actualizar el composable
+      }
 
       // Deselect if the deleted class was selected
       if (selectedClassId.value === classId) {
@@ -376,6 +385,11 @@ const handleSaveClass = async (classData: any) => { // Define classData type
       toast({ title: "Clase Creada", description: `La clase "${preparedData.name}" ha sido creada exitosamente.` });
       selectedClassId.value = newClass.id; // Optional: Auto-select the new class
     }
+    
+    // Actualizar el caché específico del maestro después de cambios
+    await classesStore.refreshTeacherClassesCache(currentTeacherId.value);
+    await fetchMyClasses(); // También actualizar el composable
+    
     showForm.value = false;
   } catch (error) {
     console.error('Error al guardar la clase:', error);
@@ -402,6 +416,13 @@ const handleStudentChange = async (studentIds: string[]) => { // Define type for
       title: "Estudiantes Actualizados",
       description: "La lista de estudiantes ha sido actualizada exitosamente."
     });
+    
+    // Actualizar el caché específico del maestro después de cambios
+    if (currentTeacherId.value) {
+      await classesStore.refreshTeacherClassesCache(currentTeacherId.value);
+      await fetchMyClasses(); // También actualizar el composable
+    }
+    
     showStudentManager.value = false;
   } catch (error) {
     console.error('Error al actualizar estudiantes:', error);
@@ -440,40 +461,52 @@ const handleTakeAttendance = (classId: string) => {
 onMounted(async () => {
   loading.value = true;
   try {
-    console.log('🔄 Iniciando carga de datos...');
-    const promises: Promise<any>[] = [];
-
     // 1. Fetch teachers first to get current teacher ID
-    if (teachersStore && typeof teachersStore.fetchTeachers === 'function') {
+    let shouldFetchTeachers = true;
+    const now = Date.now();
+    const FIVE_MINUTES = 5 * 60 * 1000;
+    if (teachersStore && teachersStore.teachers.length > 0 && teachersStore.lastSync && (now - new Date(teachersStore.lastSync).getTime() < FIVE_MINUTES)) {
+      shouldFetchTeachers = false;
+    }
+    if (shouldFetchTeachers && typeof teachersStore.fetchTeachers === 'function') {
       await teachersStore.fetchTeachers();
-      // Find the teacher ID based on auth UID
-      if (authStore.user?.uid) {
-        // Assuming fetchTeacherByAuthUid exists and returns teacher object or null
-        const teacher = await teachersStore.fetchTeacherByAuthUid(authStore.user.uid);
-        if (teacher) {
-          currentTeacherId.value = teacher.id; // Use teacher ID from store
-          currentTeacher.value = teacher;
-        } else {
-          console.warn('⚠️ No teacher found with auth UID:', authStore.user.uid, 'Using UID as fallback.');
-          currentTeacherId.value = authStore.user.uid; // Fallback to auth UID
-        }
+    }
+    
+    // 2. Find the teacher ID based on auth UID
+    if (authStore.user?.uid) {
+      const teacher = await teachersStore.fetchTeacherByAuthUid(authStore.user.uid);
+      if (teacher) {
+        currentTeacherId.value = teacher.id;
+        currentTeacher.value = teacher;
       } else {
-        console.warn('⚠️ No authenticated user found.');
-        // Optionally set a default or handle unauthenticated state
-      }    } else {
-      console.warn('⚠️ teachersStore or its fetch method not available.');
-      // If teacher store is crucial, you might want to stop here or show an error
+        console.warn('⚠️ No teacher found with auth UID:', authStore.user.uid, 'Using UID as fallback.');
+        currentTeacherId.value = authStore.user.uid;
+      }
+    } else {
+      console.warn('⚠️ No authenticated user found.');
     }
 
-    // 2. Fetch teacher's classes using collaboration composable (includes shared classes)
-    await fetchMyClasses();
+    // 3. Una vez que tenemos el teacher ID, cargar sus clases usando caché inteligente
+    if (currentTeacherId.value) {
+      console.log(`🔍 Cargando clases para maestro: ${currentTeacherId.value}`);
+      
+      // Usar el método de caché inteligente específico para clases del maestro
+      await classesStore.fetchTeacherClassesIfNeeded(currentTeacherId.value);
+      
+      // También actualizar el composable de colaboración con los datos actuales
+      await fetchMyClasses();
+    }
 
-    // 3. Fetch students (can run in parallel)
-    if (studentsStore && typeof studentsStore.fetchStudents === 'function') {
+    // 4. Fetch students (en paralelo)
+    const promises: Promise<any>[] = [];
+    let shouldFetchStudents = true;
+    if (studentsStore && studentsStore.students.length > 0 && studentsStore.lastSync && (now - new Date(studentsStore.lastSync).getTime() < FIVE_MINUTES)) {
+      shouldFetchStudents = false;
+    }
+    if (shouldFetchStudents && typeof studentsStore.fetchStudents === 'function') {
       promises.push(studentsStore.fetchStudents());
-    } else { console.warn('⚠️ studentsStore or its fetchStudents method not available.'); }
-
-    await Promise.all(promises.filter(p => p !== undefined)); // Filter out any undefined promises
+    }
+    await Promise.all(promises.filter(p => p !== undefined));
 
     console.log(`✅ Datos cargados. Clases del profesor (${currentTeacherId.value}): ${teacherClasses.value.length}`);
     console.log(`📋 Clases donde es encargado: ${leadClasses.value.length}`);
@@ -491,19 +524,18 @@ onMounted(async () => {
   }
 });
 
-// Watch for changes in currentTeacherId or explicit class store sync
+// Watch for changes in currentTeacherId
 watch([currentTeacherId, () => classesStore.lastSync], async ([newTeacherId], [oldTeacherId]) => {
     if (newTeacherId && newTeacherId !== oldTeacherId) {
-        console.log('🔄 Teacher ID changed. Re-fetching classes.');
+        console.log('🔄 Teacher ID changed. Re-fetching classes using cache.');
          try {
-             if (classesStore && (typeof classesStore.forceSync === 'function' || typeof classesStore.fetchClasses === 'function')) {
-                await (classesStore.forceSync ? classesStore.forceSync() : classesStore.fetchClasses());
-                console.log('✅ Re-fetched classes.');
-             } else {
-                console.warn('⚠️ classesStore or its fetch method not available for re-fetch.');
-             }
+             // Usar el método de caché específico para el maestro
+             await classesStore.fetchTeacherClassesIfNeeded(newTeacherId);
+             // También actualizar el composable de colaboración
+             await fetchMyClasses();
+             console.log('✅ Re-fetched teacher classes from cache.');
          } catch (error) {
-             console.error('❌ Error re-fetching classes:', error);
+             console.error('❌ Error re-fetching teacher classes:', error);
          }
     }
      // Also re-calculate current day for sorting on mount/watch

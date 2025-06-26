@@ -146,7 +146,7 @@ const roleIndicator = computed(() => {
 // Formatear horarios para mostrar
 const formatSchedule = computed(() => {
   if (props.classData.horarios && props.classData.horarios.length > 0) {
-    return props.classData.horarios.map(h => 
+    return props.classData.horarios.map((h: { day: string; startTime: string; endTime: string }) =>
       `${h.day}: ${h.startTime} - ${h.endTime}`
     ).join(', ');
   }
@@ -164,12 +164,13 @@ const hasCollaborators = computed(() => {
 // Obtener lista de colaboradores para mostrar
 const collaboratorsList = computed(() => {
   if (!hasCollaborators.value) return [];
-  return props.classData.assistantTeachers?.map(teacher => teacher.name || 'Maestro') || [];
+  return (props.classData.assistantTeachers?.map((teacher: { name?: string }) => teacher.name || 'Maestro')) || [];
 });
 
 // Función para obtener el color del día
 const getDayColor = computed(() => {
-  if (!props.classData.schedule?.slots?.[0]?.day) {
+  const day = props.classData.schedule?.slots?.[0]?.day as string;
+  if (!day) {
     return {
       border: 'border-t-gray-400',
       bg: 'bg-gray-50 dark:bg-gray-700',
@@ -178,8 +179,7 @@ const getDayColor = computed(() => {
       shadow: 'shadow-gray-200'
     };
   }
-  
-  const day = props.classData.schedule.slots[0].day;
+  const normalizedDay = typeof day === 'string' ? day.toLowerCase().trim() : String(day);
   const dayColors = {
     // Lunes - Azul
     'lunes': { border: 'border-t-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-300', accent: 'accent-blue-500', shadow: 'shadow-blue-200' },
@@ -226,8 +226,7 @@ const getDayColor = computed(() => {
     '0': { border: 'border-t-red-500', bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-300', accent: 'accent-red-500', shadow: 'shadow-red-200' }
   };
   
-  const normalizedDay = typeof day === 'string' ? day.toLowerCase().trim() : day.toString();
-  return dayColors[normalizedDay] || { border: 'border-t-gray-400', bg: 'bg-gray-50 dark:bg-gray-700', text: 'text-gray-600 dark:text-gray-300', accent: 'accent-gray-500', shadow: 'shadow-gray-200' };
+  return (dayColors as Record<string, any>)[normalizedDay] || { border: 'border-t-gray-400', bg: 'bg-gray-50 dark:bg-gray-700', text: 'text-gray-600 dark:text-gray-300', accent: 'accent-gray-500', shadow: 'shadow-gray-200' };
 });
 
 // Formatear nombre del día
@@ -287,15 +286,15 @@ const additionalStudents = computed(() => {
 // Obtiene todos los estudiantes para el modal
 const allStudents = computed(() => {
   if (!hasStudentIds.value) return [];
-
-  return props.classData.studentIds.map(id => {
+  return props.classData.studentIds.map((id: string) => {
     const student = studentsStore.getStudentById(id);
     return {
       id: student?.id || id,
       name: student ? `${student.nombre || ''} ${student.apellido || ''}`.trim() : `Estudiante ${id}`,
       instrument: student?.instrumento || 'No especificado',
       age: student?.edad || 'N/A'
-    };  });
+    };
+  });
 });
 
 // Manejadores de eventos
@@ -378,16 +377,17 @@ const handlePrintClass = async () => {
     const doc = new jsPDF();
     
     // Título principal
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
-    doc.setFont(undefined, 'bold');
     doc.text('Reporte de Clase', 20, 30);
     
     // Información básica de la clase
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(16);
     doc.text(`Clase: ${props.classData.name}`, 20, 50);
     
     doc.setFontSize(12);
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.text(`Descripción: ${props.classData.description || 'Sin descripción'}`, 20, 65);
     
     // Obtener información del maestro
@@ -503,7 +503,7 @@ const handleLeaveCollaboration = async () => {
     // Emitir evento para que el padre actualice la lista
     emit('collaboration-updated');
   } catch (error) {
-    console.error('Error abandonando colaboración:', error);
+    console.error('Error abandoning colaboration:', error);
     alert('Error al abandonar la colaboración');
   } finally {
     isLoading.value = false;
@@ -527,7 +527,7 @@ const removeCollaborator = async (teacherId: string) => {
     // Emitir evento para que el padre actualice la lista
     emit('collaboration-updated');
   } catch (error) {
-    console.error('Error removiendo colaborador:', error);
+    console.error('Error removing collaborator:', error);
     alert('Error al remover colaborador');
   } finally {
     isLoading.value = false;
@@ -543,6 +543,10 @@ onMounted(async () => {
     await teachersStore.fetchTeachers();
   }
 });
+
+const studentCount = computed(() => {
+  return studentsStore.getStudentsByClass(props.classData.id).length;
+});
 </script>
 
 <template>  <div 
@@ -552,6 +556,7 @@ onMounted(async () => {
       getDayColor.shadow,
       viewMode === 'list' ? 'flex items-center p-4 space-x-4 mb-2 list-view-card' : ''
     ]"
+    class="flex flex-col h-full min-h-[340px]"
   >
     <!-- Vista de Lista -->
     <template v-if="viewMode === 'list'">
@@ -593,7 +598,7 @@ onMounted(async () => {
         <div class="sm:col-span-1 lg:col-span-1">
           <div class="flex items-center text-gray-600 dark:text-gray-400">
             <UserGroupIcon class="h-4 w-4 mr-2 flex-shrink-0" />
-            <span class="text-sm font-medium whitespace-nowrap">{{ hasStudentIds ? classData.studentIds.length : 0 }} estudiantes</span>
+            <span class="text-sm font-medium whitespace-nowrap">{{ studentCount }} estudiantes</span>
           </div>
         </div>
         
@@ -927,20 +932,21 @@ onMounted(async () => {
             </div>
             <div class="text-left">
               <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Estudiantes</div>
-              <span class="text-lg font-bold text-gray-900 dark:text-white">{{ hasStudentIds ? classData.studentIds.length : 0 }}</span>
+              <span class="text-lg font-bold text-gray-900 dark:text-white">{{ studentCount }}</span>
             </div>
           </div>
           <div class="text-right">
             <div class="flex items-center text-xs text-green-600 dark:text-green-400 font-medium">
               <div class="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
-              Lista completa
+              Lista completaes
             </div>
           </div>
         </button><!-- Lista de estudiantes mejorada -->
        
       </div>      <!-- Footer con botones de acción mejorados (solo iconos) -->
-      <div class="px-6 py-4 bg-gradient-to-r from-gray-50 via-white to-gray-50 dark:from-gray-700/30 dark:via-gray-800/50 dark:to-gray-700/30 border-t border-gray-100 dark:border-gray-700/50">
-        <div class="flex justify-center space-x-4">          <button
+      <div class="mt-auto px-6 pt-4 pb-0 bg-gradient-to-r from-gray-50 via-white to-gray-50 dark:from-gray-700/30 dark:via-gray-800/50 dark:to-gray-700/30 border-t border-gray-100 dark:border-gray-700/50">
+        <div class="flex justify-center space-x-4">
+          <button
             @click="handleView"
             class="action-button group flex items-center justify-center w-12 h-12 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
             title="Ver Detalles"
@@ -948,45 +954,42 @@ onMounted(async () => {
           >
             <EyeIcon class="h-5 w-5 group-hover:scale-110 transition-transform" />
           </button>
-          
           <button
             @click="handleManageStudents"
-            class="action-button group flex items-center justify-center w-12 h-12 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
-            title="Gestionar Estudiantes"
+            :disabled="isSharedClass && !myPermissions.canManageStudents"
+            :class="['action-button group flex items-center justify-center w-12 h-12 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md', (isSharedClass && !myPermissions.canManageStudents) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer']"
+            :title="(isSharedClass && !myPermissions.canManageStudents) ? 'No tienes permiso para gestionar estudiantes' : 'Gestionar Estudiantes'"
             style="pointer-events: auto; position: relative; z-index: 10;"
           >
             <UserPlusIcon class="h-5 w-5 group-hover:rotate-12 transition-transform" />
           </button>
-          
           <button
             @click="handleTakeAttendance"
-            class="action-button group flex items-center justify-center w-12 h-12 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
-            title="Tomar Asistencia"
+            :disabled="isSharedClass && !myPermissions.canTakeAttendance"
+            :class="['action-button group flex items-center justify-center w-12 h-12 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md', (isSharedClass && !myPermissions.canTakeAttendance) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer']"
+            :title="(isSharedClass && !myPermissions.canTakeAttendance) ? 'No tienes permiso para tomar asistencia' : 'Tomar Asistencia'"
             style="pointer-events: auto; position: relative; z-index: 10;"
           >
             <ClipboardDocumentCheckIcon class="h-5 w-5 group-hover:rotate-12 transition-transform" />
           </button>
-          
           <button
             @click="handleViewHistory"
-            class="action-button group flex items-center justify-center w-12 h-12 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
-            title="Ver Historial"
+            :disabled="isSharedClass && !myPermissions.canViewAttendanceHistory"
+            :class="['action-button group flex items-center justify-center w-12 h-12 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md', (isSharedClass && !myPermissions.canViewAttendanceHistory) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer']"
+            :title="(isSharedClass && !myPermissions.canViewAttendanceHistory) ? 'No tienes permiso para ver historial' : 'Ver Historial'"
             style="pointer-events: auto; position: relative; z-index: 10;"
           >
             <DocumentTextIcon class="h-5 w-5 group-hover:rotate-12 transition-transform" />
           </button>
-
-          <!-- Botón de compartir clase (solo para maestros principales) -->
           <button
-            v-if="canShareClass"
+            :disabled="!canShareClass"
             @click="showShareModal = true"
-            class="action-button group flex items-center justify-center w-12 h-12 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
-            title="Compartir Clase"
+            :class="['action-button group flex items-center justify-center w-12 h-12 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md', !canShareClass ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer']"
+            :title="!canShareClass ? 'No tienes permiso para compartir clase' : 'Compartir Clase'"
             style="pointer-events: auto; position: relative; z-index: 10;"
           >
             <ShareIcon class="h-5 w-5 group-hover:rotate-12 transition-transform" />
           </button>
-          
           <button
             @click="handlePrintClass"
             class="action-button group flex items-center justify-center w-12 h-12 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
@@ -1032,8 +1035,8 @@ onMounted(async () => {
                 
                 <div class="space-y-3 max-h-64 overflow-y-auto">
                   <div
-                    v-for="student in allStudents"
-                    :key="student.id"
+                    v-for="(student, idx) in allStudents"
+                    :key="student.id + '-' + idx"
                     class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                   >
                     <div>

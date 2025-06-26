@@ -15,9 +15,11 @@ import {
   checkTeacherPermission
 } from '../service/classes';
 import { useAuthStore } from '../../../stores/auth';
+import { useClassesStore } from '../store/classes';
 
 export const useTeacherCollaboration = () => {
   const authStore = useAuthStore();
+  const classesStore = useClassesStore();
   
   // Estado
   const isLoading = ref(false);
@@ -26,6 +28,7 @@ export const useTeacherCollaboration = () => {
 
   /**
    * Obtiene todas las clases del maestro actual (como encargado y asistente)
+   * Usa el caché inteligente del store para evitar consultas innecesarias
    */
   const fetchMyClasses = async () => {
     if (!authStore.user?.uid) {
@@ -37,11 +40,56 @@ export const useTeacherCollaboration = () => {
     error.value = null;
 
     try {
-      const classes = await getTeacherClasses(authStore.user.uid);
+      // Usar el método de caché inteligente del store
+      const classes = await classesStore.fetchTeacherClassesIfNeeded(authStore.user.uid);
       myClasses.value = classes;
+      console.log(`[useTeacherCollaboration] Clases cargadas desde caché: ${classes.length}`);
     } catch (err) {
-      error.value = 'Error al cargar las clases';
-      console.error('Error fetching teacher classes:', err);
+      console.error('[useTeacherCollaboration] Error principal, intentando fallback:', err);
+      
+      // Fallback: obtener clases del caché local del store
+      try {
+        const localClasses = classesStore.getCachedTeacherClasses(authStore.user.uid);
+        myClasses.value = localClasses;
+        console.log(`[useTeacherCollaboration] Usando fallback local: ${localClasses.length} clases`);
+      } catch (fallbackErr) {
+        error.value = 'Error al cargar las clases';
+        console.error('Error en fallback también:', fallbackErr);
+      }
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
+   * Fuerza la actualización del caché y recarga las clases
+   */
+  const refreshClasses = async () => {
+    if (!authStore.user?.uid) {
+      error.value = 'Usuario no autenticado';
+      return;
+    }
+
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      // Forzar la actualización del caché
+      const classes = await classesStore.refreshTeacherClassesCache(authStore.user.uid);
+      myClasses.value = classes;
+      console.log(`[useTeacherCollaboration] Caché actualizado: ${classes.length} clases`);
+    } catch (err) {
+      console.error('[useTeacherCollaboration] Error al actualizar, intentando fallback:', err);
+      
+      // Fallback: usar datos locales
+      try {
+        const localClasses = classesStore.getCachedTeacherClasses(authStore.user.uid);
+        myClasses.value = localClasses;
+        console.log(`[useTeacherCollaboration] Usando fallback local en refresh: ${localClasses.length} clases`);
+      } catch (fallbackErr) {
+        error.value = 'Error al actualizar las clases';
+        console.error('Error en fallback durante refresh:', fallbackErr);
+      }
     } finally {
       isLoading.value = false;
     }
@@ -64,8 +112,8 @@ export const useTeacherCollaboration = () => {
         invitedBy: authStore.user.uid
       });
       
-      // Recargar clases para reflejar cambios
-      await fetchMyClasses();
+      // Usar el método optimizado para recargar clases
+      await refreshClasses();
     } catch (err: any) {
       error.value = err.message || 'Error al invitar maestro asistente';
       throw err;
@@ -88,8 +136,8 @@ export const useTeacherCollaboration = () => {
     try {
       await removeAssistantTeacher(classId, assistantTeacherId, authStore.user.uid);
       
-      // Recargar clases para reflejar cambios
-      await fetchMyClasses();
+      // Usar el método optimizado para recargar clases
+      await refreshClasses();
     } catch (err: any) {
       error.value = err.message || 'Error al remover maestro asistente';
       throw err;
@@ -116,8 +164,8 @@ export const useTeacherCollaboration = () => {
     try {
       await updateAssistantPermissions(classId, assistantTeacherId, newPermissions, authStore.user.uid);
       
-      // Recargar clases para reflejar cambios
-      await fetchMyClasses();
+      // Usar el método optimizado para recargar clases
+      await refreshClasses();
     } catch (err: any) {
       error.value = err.message || 'Error al actualizar permisos';
       throw err;
@@ -220,6 +268,7 @@ export const useTeacherCollaboration = () => {
 
     // Acciones
     fetchMyClasses,
+    refreshClasses,
     inviteAssistant,
     removeAssistant,
     updatePermissions,

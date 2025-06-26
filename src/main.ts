@@ -5,6 +5,8 @@ import router from './router'
 import App from './App.vue'
 import { registerServiceWorker } from './registerServiceWorker'
 import { createBrowserDebugFunction } from './utils/testAttendanceSystem'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
+import './firebase/config'
 
 // Importar estilos
 import './style.css'
@@ -48,6 +50,7 @@ app.config.errorHandler = (err, instance, info) => {
 
 // Configurar Pinia
 const pinia = createPinia()
+pinia.use(piniaPluginPersistedstate)
 app.use(pinia)
 
 // Configurar Router
