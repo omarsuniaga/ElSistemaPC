@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Calendar Component</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .debug-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin: 20px 0;
+        }
+        .calendar-day {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .calendar-day:hover {
+            background-color: #e3f2fd;
+        }
+        .calendar-day.selected {
+            background-color: #2196f3;
+            color: white;
+        }
+        .calendar-day.other-month {
+            color: #999;
+        }
+        .weekday {
+            font-weight: bold;
+            background-color: #f5f5f5;
+            padding: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="test-container">
+            <h1>Test Calendar - Problema de Desfase de Fechas</h1>
+            
+            <div class="debug-info">
+                <h3>Información de Debug:</h3>
+                <p><strong>Fecha seleccionada:</strong> {{ selectedDate || 'Ninguna' }}</p>
+                <p><strong>Mes actual:</strong> {{ currentMonthStr }}</p>
+                <p><strong>Última fecha clickeada:</strong> {{ lastClickedDate || 'Ninguna' }}</p>
+                <p><strong>Último día clickeado:</strong> {{ lastClickedDay || 'Ninguno' }}</p>
+            </div>
+
+            <div>
+                <h3>Calendario Simulado (Enero 2025)</h3>
+                <div class="calendar-grid">
+                    <!-- Días de la semana -->
+                    <div class="weekday" v-for="day in weekdays" :key="day">{{ day }}</div>
+                    
+                    <!-- Días del mes -->
+                    <div 
+                        v-for="day in calendarDays" 
+                        :key="day.date"
+                        class="calendar-day"
+                        :class="{
+                            'selected': selectedDate === day.date,
+                            'other-month': !day.isCurrentMonth
+                        }"
+                        @click="handleDayClick(day)"
+                    >
+                        {{ day.dayOfMonth }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="debug-info">
+                <h3>Test Manual:</h3>
+                <p>Haz clic en el <strong>1 de enero</strong> y verifica que la fecha seleccionada sea <strong>2025-01-01</strong></p>
+                <p>Si aparece una fecha diferente (como 2025-01-02), significa que hay un problema de zona horaria.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed } = Vue;
+        const { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isToday } = dateFns;
+
+        createApp({
+            setup() {
+                const selectedDate = ref(null);
+                const lastClickedDate = ref(null);
+                const lastClickedDay = ref(null);
+                const currentMonth = ref(new Date(2025, 0, 1)); // Enero 2025
+
+                const currentMonthStr = computed(() => {
+                    return format(currentMonth.value, 'MMMM yyyy');
+                });
+
+                const weekdays = ref(['L', 'M', 'X', 'J', 'V', 'S', 'D']);
+
+                const calendarDays = computed(() => {
+                    // Implementación mejorada como en el componente corregido
+                    const monthStart = startOfMonth(currentMonth.value);
+                    const monthEnd = endOfMonth(currentMonth.value);
+                    const start = startOfWeek(monthStart, { weekStartsOn: 1 });
+                    const end = endOfWeek(monthEnd, { weekStartsOn: 1 });
+                    
+                    const days = [];
+                    let currentDate = new Date(start);
+                    
+                    while (currentDate <= end) {
+                        // Crear fecha en zona horaria local para evitar problemas de desfase
+                        const localDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+                        const dateStr = format(localDate, 'yyyy-MM-dd');
+                        
+                        days.push({
+                            date: dateStr,
+                            dayOfMonth: localDate.getDate(),
+                            isCurrentMonth: isSameMonth(localDate, currentMonth.value),
+                            isToday: isToday(localDate)
+                        });
+                        
+                        currentDate = addDays(currentDate, 1);
+                    }
+                    
+                    return days;
+                });
+
+                const handleDayClick = (day) => {
+                    selectedDate.value = day.date;
+                    lastClickedDate.value = day.date;
+                    lastClickedDay.value = day.dayOfMonth;
+                    
+                    console.log("Click en día:", day.dayOfMonth, "fecha generada:", day.date);
+                    console.log("Objeto day completo:", day);
+                };
+
+                return {
+                    selectedDate,
+                    lastClickedDate,
+                    lastClickedDay,
+                    currentMonthStr,
+                    weekdays,
+                    calendarDays,
+                    handleDayClick
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

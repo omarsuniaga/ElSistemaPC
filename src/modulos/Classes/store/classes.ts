@@ -529,10 +529,23 @@ export const useClassesStore = defineStore('classes', {
       day: string, teacherId: string
     ) {
       return await this.withLoading(async () => {
-        const classData = this.classes.filter(classItem =>
-          Array.isArray(classItem.schedule?.slots) ? classItem.schedule.slots.some(slot => slot.day === day) : false &&
-          classItem.teacherId === teacherId
-        );
+        const classData = this.classes.filter(classItem => {
+          // First check teacher match
+          if (classItem.teacherId !== teacherId) return false;
+          
+          // Then check schedule match based on structure
+          if (!classItem.schedule) return false;
+          
+          if ('slots' in classItem.schedule && Array.isArray(classItem.schedule.slots)) {
+            // Handle structure with slots array
+            return classItem.schedule.slots.some(slot => slot.day === day);
+          } else if ('day' in classItem.schedule) {
+            // Handle direct day property structure
+            return classItem.schedule.day === day;
+          }
+          
+          return false;
+        });
         return classData;
       });
     },

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
-import { format, formatISO } from 'date-fns';
+import { format, formatISO, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { useRouter } from 'vue-router';
@@ -600,11 +600,18 @@ const formattedDate = ref('');
 
 watch(() => props.date, (newDate) => {
   if (newDate) {
-    const dateObj = new Date(newDate);
+    console.log('[ClassesModal] Formateando fecha:', newDate)
+    
+    // Usar parseISO para evitar problemas de zona horaria
+    const dateObj = parseISO(newDate);
+    console.log('[ClassesModal] Fecha parseada:', dateObj)
+    
     // Format: "Lunes, 24 de junio de 2024"
     formattedDate.value = format(dateObj, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
     // Capitalize first letter
     formattedDate.value = formattedDate.value.charAt(0).toUpperCase() + formattedDate.value.slice(1);
+    
+    console.log('[ClassesModal] Fecha formateada final:', formattedDate.value)
   }
 }, { immediate: true });
 

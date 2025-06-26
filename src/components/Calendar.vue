@@ -115,8 +115,20 @@ const isDateMarked = (dateStr: string): boolean => {
 
 // Generar la grilla del calendario
 const calendarDays = computed(() => {
-  const start = startOfWeek(startOfMonth(currentMonth.value), { weekStartsOn: props.firstDayOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6 })
-  const end = endOfWeek(endOfMonth(currentMonth.value), { weekStartsOn: props.firstDayOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6 })
+  console.log("Generando calendario para mes:", currentMonth.value)
+  
+  // Trabajar directamente con fechas en zona horaria local
+  const currentMonthLocal = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth(), 1)
+  
+  // Inicio y fin del mes en zona local
+  const monthStart = new Date(currentMonthLocal.getFullYear(), currentMonthLocal.getMonth(), 1)
+  const monthEnd = new Date(currentMonthLocal.getFullYear(), currentMonthLocal.getMonth() + 1, 0)
+  
+  // Inicio y fin de la semana (usando date-fns pero con fechas locales)
+  const start = startOfWeek(monthStart, { weekStartsOn: props.firstDayOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6 })
+  const end = endOfWeek(monthEnd, { weekStartsOn: props.firstDayOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6 })
+  
+  console.log("Rango del calendario:", format(start, 'yyyy-MM-dd'), "a", format(end, 'yyyy-MM-dd'))
   
   const days: {
     date: string
@@ -128,24 +140,39 @@ const calendarDays = computed(() => {
     markedInfo?: MarkedDate
   }[] = []
   
-  let currentDate = start
+  let currentDate = new Date(start)
   
   while (currentDate <= end) {
-    const dateStr = format(currentDate, 'yyyy-MM-dd')
+    // Crear fecha local específica para evitar problemas de zona horaria
+    const year = currentDate.getFullYear()
+    const month = currentDate.getMonth()
+    const day = currentDate.getDate()
+    const localDate = new Date(year, month, day)
+    
+    // Usar localDate para todo el procesamiento
+    const dateStr = format(localDate, 'yyyy-MM-dd')
     const markedInfo = markedDatesMap.value.get(dateStr)
+    
+    // Debug para verificar la correspondencia
+    if (day >= 20 && day <= 25) {
+      console.log(`Día ${day} -> fecha: ${dateStr}`)
+    }
     
     days.push({
       date: dateStr,
-      dayOfMonth: currentDate.getDate(),
-      isCurrentMonth: isSameMonth(currentDate, currentMonth.value),
-      isToday: isToday(currentDate),
+      dayOfMonth: day, // Usar el día directamente de currentDate
+      isCurrentMonth: month === currentMonthLocal.getMonth(),
+      isToday: isToday(localDate),
       isSelected: selectedDate.value === dateStr,
       isMarked: markedInfo !== undefined,
       markedInfo
     })
     
-    currentDate = addDays(currentDate, 1)
+    // Avanzar un día
+    currentDate.setDate(currentDate.getDate() + 1)
   }
+  
+  console.log("Días generados:", days.slice(20, 30).map(d => ({ day: d.dayOfMonth, date: d.date })))
   
   return days
 })
@@ -162,8 +189,10 @@ const nextMonth = () => {
 }
 
 const goToToday = () => {
-  currentMonth.value = new Date()
-  selectedDate.value = format(new Date(), 'yyyy-MM-dd')
+  const today = new Date()
+  const localToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  currentMonth.value = localToday
+  selectedDate.value = format(localToday, 'yyyy-MM-dd')
   emit('update:modelValue', selectedDate.value)
   emit('month-change', currentMonth.value)
 }
@@ -171,7 +200,12 @@ const goToToday = () => {
 // Manejar clic en un día
 const handleDayClick = (day: typeof calendarDays.value[0], event: Event) => {
   selectedDate.value = day.date
-  console.log("Calendar: Click en fecha", day.date)
+  console.log("=== CALENDAR CLICK DEBUG ===")
+  console.log("Calendar: Click en día visual:", day.dayOfMonth)
+  console.log("Calendar: Fecha generada:", day.date)
+  console.log("Calendar: Objeto day completo:", day)
+  console.log("Calendar: Event:", event)
+  console.log("============================")
   
   // Emitir todos los eventos necesarios incluido select que es el que está escuchando AttendanceView
   emit('update:modelValue', selectedDate.value)

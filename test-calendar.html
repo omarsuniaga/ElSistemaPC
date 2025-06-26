@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Calendar Dates</title>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+</head>
+<body>
+    <h1>Test Calendar Date Issues</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Simular el problema del calendario
+        const { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth } = dateFns;
+        
+        console.log("=== TEST CALENDAR DATES ===");
+        
+        // Fecha de prueba: enero 2025
+        const testMonth = new Date(2025, 0, 1); // 1 de enero 2025
+        console.log("Test month:", testMonth);
+        console.log("Test month formatted:", format(testMonth, 'yyyy-MM-dd'));
+        
+        // Generar días del calendario como en el componente
+        const start = startOfWeek(startOfMonth(testMonth), { weekStartsOn: 1 });
+        const end = endOfWeek(endOfMonth(testMonth), { weekStartsOn: 1 });
+        
+        console.log("Start of calendar:", start);
+        console.log("End of calendar:", end);
+        console.log("Start formatted:", format(start, 'yyyy-MM-dd'));
+        console.log("End formatted:", format(end, 'yyyy-MM-dd'));
+        
+        const days = [];
+        let currentDate = start;
+        let count = 0;
+        
+        while (currentDate <= end && count < 10) { // Solo primeros 10 días para debug
+            const dateStr = format(currentDate, 'yyyy-MM-dd');
+            const dayOfMonth = currentDate.getDate();
+            const isCurrentMonth = isSameMonth(currentDate, testMonth);
+            
+            days.push({
+                date: dateStr,
+                dayOfMonth: dayOfMonth,
+                isCurrentMonth: isCurrentMonth,
+                originalDate: new Date(currentDate)
+            });
+            
+            console.log(`Day ${count + 1}: ${dateStr} (day ${dayOfMonth}) - Current month: ${isCurrentMonth}`);
+            
+            currentDate = addDays(currentDate, 1);
+            count++;
+        }
+        
+        // Mostrar resultados en la página
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = `
+            <h2>Resultados:</h2>
+            <p><strong>Mes de prueba:</strong> ${format(testMonth, 'MMMM yyyy')}</p>
+            <p><strong>Inicio del calendario:</strong> ${format(start, 'yyyy-MM-dd (EEEE)')}</p>
+            <p><strong>Fin del calendario:</strong> ${format(end, 'yyyy-MM-dd (EEEE)')}</p>
+            <h3>Primeros 10 días:</h3>
+            <ul>
+                ${days.map(day => `
+                    <li>
+                        <strong>${day.date}</strong> - Día ${day.dayOfMonth} 
+                        (${day.isCurrentMonth ? 'Mes actual' : 'Otro mes'})
+                    </li>
+                `).join('')}
+            </ul>
+        `;
+        
+        // Test específico para el 1 de enero
+        const jan1 = new Date(2025, 0, 1);
+        const jan1Str = format(jan1, 'yyyy-MM-dd');
+        console.log("=== TEST 1 DE ENERO ===");
+        console.log("1 de enero 2025:", jan1);
+        console.log("1 de enero formatted:", jan1Str);
+        console.log("getDate():", jan1.getDate());
+        
+        // Simular clic en el 1 de enero
+        console.log("=== SIMULACIÓN DE CLIC ===");
+        const clickedDay = days.find(day => day.dayOfMonth === 1 && day.isCurrentMonth);
+        if (clickedDay) {
+            console.log("Día clickeado encontrado:", clickedDay);
+            console.log("Fecha que se emitiría:", clickedDay.date);
+        } else {
+            console.log("No se encontró el día 1 en el mes actual");
+        }
+    </script>
+</body>
+</html>

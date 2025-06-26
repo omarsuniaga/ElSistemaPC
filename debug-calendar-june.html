@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Calendar Issue - Junio 2025</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div id="app">
+        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6">
+            <h1 class="text-2xl font-bold mb-4 text-center">Debug Calendar - Junio 2025</h1>
+            
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                <h3 class="font-bold">Problema Reportado:</h3>
+                <p>Al hacer clic en el día <strong>23</strong>, se abre el modal del día <strong>22</strong></p>
+            </div>
+
+            <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+                <h3 class="font-bold">Estado Actual:</h3>
+                <p><strong>Día clickeado:</strong> {{ clickedDay || 'Ninguno' }}</p>
+                <p><strong>Fecha generada:</strong> {{ generatedDate || 'Ninguna' }}</p>
+                <p><strong>Esperado:</strong> Si clickeas el 23, debería generar 2025-06-23</p>
+            </div>
+
+            <!-- Calendario de prueba -->
+            <div class="calendar bg-white rounded-lg shadow-md p-4">
+                <!-- Encabezado con navegación -->
+                <div class="flex justify-between items-center mb-4">
+                    <button @click="previousMonth" class="p-2 rounded-full hover:bg-gray-100 text-gray-600">
+                        ←
+                    </button>
+                    
+                    <h2 class="text-lg font-semibold text-gray-900">
+                        {{ formattedMonthYear }}
+                    </h2>
+                    
+                    <button @click="nextMonth" class="p-2 rounded-full hover:bg-gray-100 text-gray-600">
+                        →
+                    </button>
+                </div>
+
+                <!-- Días de la semana -->
+                <div class="grid grid-cols-7 gap-1 mb-2">
+                    <div v-for="day in weekdays" :key="day" class="text-center text-sm font-medium text-gray-500">
+                        {{ day }}
+                    </div>
+                </div>
+
+                <!-- Días del mes -->
+                <div class="grid grid-cols-7 gap-1">
+                    <button
+                        v-for="day in calendarDays"
+                        :key="day.date"
+                        type="button"
+                        :class="dayClasses(day)"
+                        @click="handleDayClick(day, $event)"
+                    >
+                        {{ day.dayOfMonth }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Debug info -->
+            <div class="mt-6 bg-gray-100 p-4 rounded">
+                <h3 class="font-bold mb-2">Debug Info:</h3>
+                <div class="text-sm space-y-1">
+                    <p><strong>Mes actual:</strong> {{ currentMonth.toISOString() }}</p>
+                    <p><strong>Primer día de la semana:</strong> {{ firstDayOfWeek }} (1 = Lunes)</p>
+                </div>
+            </div>
+
+            <!-- Test específico días 22-25 -->
+            <div class="mt-6 bg-yellow-100 p-4 rounded">
+                <h3 class="font-bold mb-2">Test Días 22-25 de Junio:</h3>
+                <div class="grid grid-cols-4 gap-2">
+                    <div v-for="testDay in testDays" :key="testDay.visual" class="text-center">
+                        <div class="border border-gray-300 p-2 rounded">
+                            <div class="font-bold">{{ testDay.visual }}</div>
+                            <div class="text-xs">{{ testDay.generated }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed } = Vue;
+        const { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isToday, addMonths, subMonths } = dateFns;
+
+        createApp({
+            setup() {
+                const currentMonth = ref(new Date(2025, 5, 1)); // Junio 2025
+                const firstDayOfWeek = 1; // Lunes
+                const clickedDay = ref(null);
+                const generatedDate = ref(null);
+
+                const formattedMonthYear = computed(() => {
+                    return format(currentMonth.value, 'MMMM yyyy', { locale: { code: 'es' } });
+                });
+
+                const weekdays = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+
+                // Implementación corregida del calendario
+                const calendarDays = computed(() => {
+                    console.log("Generando calendario para mes:", currentMonth.value);
+                    
+                    // Trabajar directamente con fechas en zona horaria local
+                    const currentMonthLocal = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth(), 1);
+                    
+                    // Inicio y fin del mes en zona local
+                    const monthStart = new Date(currentMonthLocal.getFullYear(), currentMonthLocal.getMonth(), 1);
+                    const monthEnd = new Date(currentMonthLocal.getFullYear(), currentMonthLocal.getMonth() + 1, 0);
+                    
+                    // Inicio y fin de la semana
+                    const start = startOfWeek(monthStart, { weekStartsOn: firstDayOfWeek });
+                    const end = endOfWeek(monthEnd, { weekStartsOn: firstDayOfWeek });
+                    
+                    console.log("Rango del calendario:", format(start, 'yyyy-MM-dd'), "a", format(end, 'yyyy-MM-dd'));
+                    
+                    const days = [];
+                    let currentDate = new Date(start);
+                    
+                    while (currentDate <= end) {
+                        // Crear fecha local específica para evitar problemas de zona horaria
+                        const year = currentDate.getFullYear();
+                        const month = currentDate.getMonth();
+                        const day = currentDate.getDate();
+                        const localDate = new Date(year, month, day);
+                        
+                        // Usar localDate para todo el procesamiento
+                        const dateStr = format(localDate, 'yyyy-MM-dd');
+                        
+                        // Debug para verificar la correspondencia
+                        if (day >= 20 && day <= 25) {
+                            console.log(`Día ${day} -> fecha: ${dateStr}`);
+                        }
+                        
+                        days.push({
+                            date: dateStr,
+                            dayOfMonth: day,
+                            isCurrentMonth: month === currentMonthLocal.getMonth(),
+                            isToday: isToday(localDate)
+                        });
+                        
+                        // Avanzar un día
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+                    
+                    return days;
+                });
+
+                // Test específico para días 22-25
+                const testDays = computed(() => {
+                    return calendarDays.value
+                        .filter(day => day.dayOfMonth >= 22 && day.dayOfMonth <= 25 && day.isCurrentMonth)
+                        .map(day => ({
+                            visual: day.dayOfMonth,
+                            generated: day.date
+                        }));
+                });
+
+                const dayClasses = (day) => {
+                    return [
+                        'text-center p-2 rounded-full transition-colors cursor-pointer select-none',
+                        'hover:bg-gray-100',
+                        {
+                            'text-gray-400': !day.isCurrentMonth,
+                            'font-semibold text-blue-600': day.isToday,
+                            'bg-red-100 text-red-600': day.dayOfMonth === 23 && day.isCurrentMonth, // Destacar el día 23
+                        }
+                    ];
+                };
+
+                const handleDayClick = (day, event) => {
+                    clickedDay.value = day.dayOfMonth;
+                    generatedDate.value = day.date;
+                    
+                    console.log("=== CALENDAR CLICK DEBUG ===");
+                    console.log("Calendar: Click en día visual:", day.dayOfMonth);
+                    console.log("Calendar: Fecha generada:", day.date);
+                    console.log("Calendar: Objeto day completo:", day);
+                    console.log("============================");
+                };
+
+                const previousMonth = () => {
+                    currentMonth.value = subMonths(currentMonth.value, 1);
+                };
+
+                const nextMonth = () => {
+                    currentMonth.value = addMonths(currentMonth.value, 1);
+                };
+
+                return {
+                    currentMonth,
+                    firstDayOfWeek,
+                    clickedDay,
+                    generatedDate,
+                    formattedMonthYear,
+                    weekdays,
+                    calendarDays,
+                    testDays,
+                    dayClasses,
+                    handleDayClick,
+                    previousMonth,
+                    nextMonth
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

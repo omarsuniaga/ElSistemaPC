@@ -560,7 +560,7 @@ const setActiveTab = (tab: string) => {
 </script>
 
 <template>
-  <div class="teacher-dashboard">
+  <div class="teacher-dashboard p-4 md:p-6 lg:p-8">
     <!-- Header and Tabs Component -->
     <TeacherDashboardHeader
       :active-tab="activeTab"
@@ -693,9 +693,10 @@ const setActiveTab = (tab: string) => {
 
 <style scoped>
 .teacher-dashboard {
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
   padding: 1rem;
+  margin-bottom: 4rem;
 }
 
 .dashboard-content {
