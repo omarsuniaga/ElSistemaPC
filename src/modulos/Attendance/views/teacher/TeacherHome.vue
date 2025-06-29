@@ -318,6 +318,18 @@ function handleSaved() {
   updateClassesWithRecords();
 }
 
+// Handle emergency class creation
+function handleCreateEmergencyClass(date: string) {
+  console.log(`[TeacherHome] Crear clase emergente para la fecha: ${date}`);
+  
+  // Cerrar el modal de clases y abrir el modal de clase emergente
+  showClassesModal.value = false;
+  
+  // TODO FASE 3: Implementar showEmergencyClassModal para TeacherHome
+  // Por ahora, mostrar toast indicando que la funcionalidad está en desarrollo
+  toast.info('Funcionalidad de clases emergentes disponible desde AttendanceView');
+}
+
 onMounted(async () => {
   await init();
   await updateClassesWithRecords();
@@ -401,6 +413,7 @@ e  @report="modal.open('report')"
       :classes="classesForDate"
       @close="showClassesModal = false"
       @select-class="handleClassSelect"
+      @create-emergency-class="handleCreateEmergencyClass"
     />
     
     <Transition name="fade" mode="out-in">

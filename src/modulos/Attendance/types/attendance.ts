@@ -39,9 +39,15 @@ export interface AttendanceDocument {
     justificacion: JustificationData[];
     observación: string[] | string; // Para compatibilidad con versión anterior
     observations?: ClassObservationData[]; // Nuevo array de observaciones estructuradas
+    fechaRegistro?: Date; // Para clases emergentes
+    maestro?: string; // Para clases emergentes
   };
   // Mapa de studentId a su estado de asistencia
   students?: Record<string, StudentAttendanceStatus>;
+  // Campos para clases emergentes
+  isEmergencyClass?: boolean;
+  emergencyClassId?: string;
+  className?: string;
 }
 
 export interface AttendanceAnalytics {
@@ -104,6 +110,30 @@ export interface AttendanceFiltersType {
   status?: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
   startDate?: string;
   endDate?: string;
+}
+
+export interface EmergencyClass {
+  id: string;
+  classId: string;
+  className: string;
+  teacherId: string;
+  teacherName: string;
+  date: string;
+  createdAt: string;
+  reason?: string;
+  status: 'Pendiente' | 'Aceptada' | 'Rechazada' | 'Ignorada';
+  responder?: {
+    id: string;
+    name: string;
+    timestamp: string;
+  };
+  attendanceDocumentId?: string;
+  selectedStudents: string[];
+  startTime?: string;
+  endTime?: string;
+  instrument?: string;
+  classType?: string;
+  updatedAt?: string;
 }
 
 export interface EmergencyClassStatus {

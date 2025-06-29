@@ -18,7 +18,7 @@ import {
   AcademicCapIcon,
   ClipboardDocumentCheckIcon,
 } from '@heroicons/vue/24/outline';
-import { Dialog, DialogPanel, DialogOverlay, TransitionRoot, TransitionChild } from '@headlessui/vue';
+import { Dialog, DialogPanel, DialogOverlay, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue';
 
 // Import components used in the template
 import TeacherDashboardHeader from '../components/TeacherDashboardHeader.vue';
@@ -27,6 +27,7 @@ import TodaysClassesSection from '../components/TodaysClassesSection.vue'; // Se
 import AusentesSection from '../components/AusentesSection.vue'; // Component for "Ausentes" tab
 import ObservacionesSection from '../components/ObservacionesSection.vue'; // Component for "Observaciones" tab
 import TeacherClassesSection from '../components/TeacherClassesSection.vue'; // Component for "Mis Clases"
+import EmergencyClassesSection from '../components/EmergencyClassesSection.vue'; // Component for "Clases Emergentes"
 import NotificationsSection from '../components/NotificationsSection.vue'; // Self-contained component for "Notificaciones" tab
 
 // Import existing components used in modals
@@ -600,7 +601,15 @@ const setActiveTab = (tab: string) => {
         @delete-class="handleDeleteClass"
         @manage-students="handleManageStudents"
         @collaboration-updated="handleCollaborationUpdated"
-      />      <!-- Observaciones Tab (NEW Section Component) -->
+      />
+
+      <!-- Clases Emergentes Tab (NEW Section Component) -->
+      <EmergencyClassesSection
+        v-if="activeTab === 'emergency'"
+        :teacher-id="currentTeacherId"
+      />
+
+      <!-- Observaciones Tab (NEW Section Component) -->
        <ObservacionesSection
          v-if="activeTab === 'upcoming'"
          :classes="teacherClasses"
@@ -609,7 +618,7 @@ const setActiveTab = (tab: string) => {
     </section>
 
     <!-- Modal for Class Form -->
-    <TransitionRoot appear :show="showForm">
+    <TransitionRoot appear :show="showForm" as="template">
       <Dialog as="div" class="fixed inset-0 z-50 overflow-y-auto" @close="showForm = false">
         <div class="min-h-screen px-4 text-center">
           <TransitionChild
@@ -624,7 +633,8 @@ const setActiveTab = (tab: string) => {
             <DialogOverlay class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
           </TransitionChild>
 
-          <span class="inline-block h-screen align-middle" aria-hidden="true">​</span>
+          <!-- This element is to trick the browser into centering the modal contents. -->
+          <span class="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
 
           <TransitionChild
             as="template"
@@ -635,21 +645,25 @@ const setActiveTab = (tab: string) => {
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95"
           >
-            <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
-              <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">{{ isEditing ? 'Editar Clase' : 'Nueva Clase' }}</h2>
-              <ClassForm
-                :class-data="isEditing ? selectedClass : null"
-                @save="handleSaveClass"
-                @cancel="showForm = false"
-              />
-            </DialogPanel>
+            <div class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
+              <DialogPanel>
+                <DialogTitle as="h2" class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  {{ isEditing ? 'Editar Clase' : 'Nueva Clase' }}
+                </DialogTitle>
+                <ClassForm
+                  :class-data="isEditing ? selectedClass : null"
+                  @save="handleSaveClass"
+                  @cancel="showForm = false"
+                />
+              </DialogPanel>
+            </div>
           </TransitionChild>
         </div>
       </Dialog>
     </TransitionRoot>
 
     <!-- Modal for Student Manager -->
-    <TransitionRoot appear :show="showStudentManager && selectedClass !== null">
+    <TransitionRoot appear :show="showStudentManager && selectedClass !== null" as="template">
       <Dialog as="div" class="fixed inset-0 z-50 overflow-y-auto" @close="showStudentManager = false">
         <div class="min-h-screen px-4 text-center">
           <TransitionChild
@@ -664,7 +678,8 @@ const setActiveTab = (tab: string) => {
             <DialogOverlay class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
           </TransitionChild>
 
-          <span class="inline-block h-screen align-middle" aria-hidden="true">​</span>
+          <!-- This element is to trick the browser into centering the modal contents. -->
+          <span class="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
 
           <TransitionChild
             as="template"
@@ -675,15 +690,19 @@ const setActiveTab = (tab: string) => {
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95"
           >
-            <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
-              <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Gestionar Estudiantes - {{ selectedClass?.name }}</h2>
-              <ClassStudentManager
-                :class-id="selectedClass?.id || ''"
-                :student-ids="Array.isArray(selectedClass?.studentIds) ? selectedClass?.studentIds : []"
-                @update="handleStudentChange"
-                @close="showStudentManager = false"
-              />
-            </DialogPanel>
+            <div class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
+              <DialogPanel>
+                <DialogTitle as="h2" class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Gestionar Estudiantes - {{ selectedClass?.name }}
+                </DialogTitle>
+                <ClassStudentManager
+                  :class-id="selectedClass?.id || ''"
+                  :student-ids="Array.isArray(selectedClass?.studentIds) ? selectedClass?.studentIds : []"
+                  @update="handleStudentChange"
+                  @close="showStudentManager = false"
+                />
+              </DialogPanel>
+            </div>
           </TransitionChild>
         </div>
       </Dialog>

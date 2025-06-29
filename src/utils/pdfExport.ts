@@ -27,7 +27,7 @@ export const generateAttendancePDF = async (
   justifications: Record<string, string> = {}
 ): Promise<void> => {
   try {
-    // Obtener y formatear nombre del profesor y fecha (lógica existente)
+    // Obtener y formatear nombre del profesor y fecha
     if (!teacherName || teacherName.match(/^\d{4}-\d{2}-\d{2}/)) {
       try {
         const teachersStore = useTeachersStore();
@@ -64,7 +64,7 @@ export const generateAttendancePDF = async (
     const displayClassName = className || "Clase sin nombre";
     const displayTeacherName = teacherName || "Profesor no especificado";
 
-    // Preparar datos para la tabla
+    // Preparar datos para la tabla con columna de observaciones
     const getFullName = (student: Student): string => `${student.nombre || ''} ${student.apellido || ''}`.trim();
     const getStatusPriority = (status: string): number => {
       const lowerStatus = status.toLowerCase();
@@ -76,21 +76,25 @@ export const generateAttendancePDF = async (
     };
 
     const studentsWithStatus = students
-      .map(student => ({ student, status: records[student.id] || 'No registrado' }))
-      .sort((a, b) => {
+      .map((student: Student) => ({ student, status: records[student.id] || 'No registrado' }))
+      .sort((a: any, b: any) => {
         const statusCompare = getStatusPriority(a.status) - getStatusPriority(b.status);
         return statusCompare === 0 ? getFullName(a.student).localeCompare(getFullName(b.student)) : statusCompare;
-      });    // Convertir datos de objeto a array para jsPDF autoTable
-    const tableData = studentsWithStatus.map((item, index) => [
-      index + 1,
-      getFullName(item.student),
-      item.status
-    ]);
+      });
+
+    // Convertir datos para la tabla según el formato del Google Sheet
+    const tableData = studentsWithStatus.map((item: any, index: number) => {
+      return [
+        index + 1,
+        getFullName(item.student),
+        item.status,
+      ];
+    });
 
     const columns = [
-      { header: 'N°', dataKey: 'numero' },
-      { header: 'Lista de Asistencia', dataKey: 'nombreCompleto' },
-      { header: 'Estado', dataKey: 'estado' },
+      { header: 'No.', dataKey: 'numero' },
+      { header: 'Nombre completo del alumno', dataKey: 'nombreCompleto' },
+      { header: 'Asis', dataKey: 'estado' },
     ];
 
     // Calcular estadísticas de asistencia
@@ -100,84 +104,107 @@ export const generateAttendancePDF = async (
       tardanzas: 0,
       justificados: 0,
     };
-    Object.values(records).forEach(status => {
+    
+    Object.values(records).forEach((status: string) => {
       if (status.toLowerCase().includes('presente')) stats.presentes++;
       else if (status.toLowerCase().includes('ausente')) stats.ausentes++;
       else if (status.toLowerCase().includes('tarde')) stats.tardanzas++;
       else if (status.toLowerCase().includes('justificad')) stats.justificados++;
-    });    let headerText = `${displayClassName} - ${formattedDate}\n`;
-    headerText += `Profesor: ${displayTeacherName}\n`;
-    headerText += `Total de Estudiantes: ${students.length} | Presentes: ${stats.presentes} | Ausentes: ${stats.ausentes} | Tardanzas: ${stats.tardanzas} | Justificados: ${stats.justificados}`;
+    });
 
-    let footerContent = '';
+    // Construir información en el formato del Google Sheet
+    let headerInfo = `SALÓN: ${displayClassName}\n\n`;
+    headerInfo += `Total de tardanza: ${stats.tardanzas}     T- Tardanza\n`;
+    headerInfo += `Total no justificado: ${stats.ausentes}     N- No justificada\n`;
+    headerInfo += `Total justificado: ${stats.justificados}     J-Justificada\n`;
+    headerInfo += `Total presentes: ${stats.presentes}     P- Presente\n\n`;
+    headerInfo += `MAESTRO: ${displayTeacherName}\n`;
+    headerInfo += `SECCIÓN: ${displayClassName}\n`;
+    headerInfo += `HORA DE CLASE: _______________`;
+
+    // Contenido de observaciones para el pie de página
+    let observationsContent = '\n\nContenido/Observaciones:\n';
+    observationsContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    
+    if (observations && observations.trim() && observations !== 'Sin observaciones.') {
+      observationsContent += observations;
+    } else {
+      observationsContent += 'No se registraron observaciones especiales para esta clase.';
+    }
+    
+    // Agregar justificaciones detalladas si existen
     if (Object.keys(justifications).length > 0) {
-      footerContent += '\n\nJUSTIFICACIONES DE AUSENCIAS:\n';
-      footerContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+      observationsContent += '\n\nJustificaciones Detalladas:\n';
+      observationsContent += '────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n';
       for (const studentId in justifications) {
-        if (Object.prototype.hasOwnProperty.call(justifications, studentId)) {          const student = students.find(s => s.id === studentId);
+        if (Object.prototype.hasOwnProperty.call(justifications, studentId)) {
+          const student = students.find((s: Student) => s.id === studentId);
           const studentName = student ? getFullName(student) : 'Estudiante no encontrado';
-          footerContent += `• ${studentName}: ${justifications[studentId]}\n`;
+          observationsContent += `• ${studentName}: ${justifications[studentId]}\n`;
         }
       }
     }
     
-    if (observations && observations.trim() && observations !== 'Sin observaciones.') {
-      footerContent += `\n\n${observations}`;
-    }
-    
-    footerContent += `\n\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-    footerContent += `Firma del Profesor: _____________________________    Fecha: ${format(new Date(), "dd/MM/yyyy", { locale: es })}`;
-    footerContent += `\n\nDocumento generado automáticamente el ${format(new Date(), "dd/MM/yyyy 'a las' HH:mm:ss", { locale: es })}`;
+    observationsContent += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    observationsContent += `Firma del Profesor: _____________________________                    Fecha: ${format(new Date(), "dd/MM/yyyy", { locale: es })}\n\n`;
+    observationsContent += `Documento generado automáticamente el ${format(new Date(), "dd/MM/yyyy 'a las' HH:mm:ss", { locale: es })}`;
 
-    // Opciones para generarPdfTabla
+    // Opciones para generarPdfTabla con el nuevo diseño del Google Sheet
     const pdfOptions = {
       title: 'REGISTRO DE ASISTENCIA',
       fileName: `Asistencia_${displayClassName.replace(/\s+/g, '_')}_${dateForFileName}.pdf`,
       columns: columns,
       data: tableData,
-      institutionName: 'El Sistema Punta Cana',
-      logoUrl: new URL('../assets/ElSistemaPCLogo.jpeg', import.meta.url).href, 
-      headerText: headerText,
-      footerText: footerContent, 
-      startY: 70, // Más espacio para el título más grande
+      institutionName: 'FUNDACIÓN PARA LA EXPANSIÓN CULTURAL Y ARTÍSTICA DE PUNTA CANA',
+      logoUrl: new URL('../assets/Logo.jpg', import.meta.url).href,
+      headerText: headerInfo,
+      footerText: observationsContent,
+      startY: 140, // Más espacio para el nuevo encabezado
       headStyles: { 
-        fillColor: [41, 128, 185], // Azul profesional
+        fillColor: [41, 98, 255], // Azul como en el Google Sheet
         textColor: 255, 
         fontStyle: 'bold', 
         halign: 'center',
         fontSize: 11
-      },      columnStyles: {
-        0: { cellWidth: 20, halign: 'center' }, // N°
-        1: { cellWidth: 'auto', halign: 'left' }, // Nombre
-        2: { cellWidth: 40, halign: 'center' }, // Estado
+      },
+      columnStyles: {
+        0: { cellWidth: 20, halign: 'center' }, // No.
+        1: { cellWidth: 130, halign: 'left' }, // Nombre completo del alumno
+        2: { cellWidth: 45, halign: 'center' }, // Asis
       },
       alternateRowStyles: { fillColor: [248, 249, 250] },
-      bodyStyles: { fontSize: 10, cellPadding: 3, lineColor: [230, 230, 230], lineWidth: 0.1 },      didDrawCell: (data: any, doc: any) => {
-        // La columna del estado es la columna índice 2 (0-based)
+      bodyStyles: { 
+        fontSize: 10, 
+        cellPadding: 4, 
+        lineColor: [220, 220, 220], 
+        lineWidth: 0.5,
+        valign: 'middle'
+      },
+      didDrawCell: (data: any, doc: any) => {
+        // Colorear la columna del estado (columna índice 2)
         if (data.column.index === 2 && data.section === 'body') {
           const status = String(data.cell.raw).toLowerCase();
           let fillColor = null;
-          let textColor = [255, 255, 255]; // Texto blanco por defecto
+          let textColor = [0, 0, 0]; // Texto negro por defecto
 
           if (status.includes('presente')) {
-            fillColor = [46, 125, 50]; // Verde oscuro profesional
+            fillColor = [144, 238, 144]; // Verde claro como en el Google Sheet
           } else if (status.includes('ausente')) {
-            fillColor = [198, 40, 40]; // Rojo oscuro profesional
+            fillColor = [255, 182, 193]; // Rosa claro para ausente
           } else if (status.includes('tarde')) {
-            fillColor = [255, 152, 0]; // Naranja profesional
-            textColor = [0, 0, 0]; // Texto negro para mejor contraste
+            fillColor = [255, 218, 185]; // Naranja claro para tardanza
           } else if (status.includes('justificad')) {
-            fillColor = [63, 81, 181]; // Azul índigo profesional
+            fillColor = [173, 216, 230]; // Azul claro para justificado
           } else {
-            fillColor = [117, 117, 117]; // Gris profesional
+            fillColor = [245, 245, 245]; // Gris muy claro
           }
 
-          if (fillColor) {
+          if (fillColor && doc) {
             doc.setFillColor(...fillColor);
             doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
             doc.setTextColor(...textColor);
             doc.setFontSize(10);
-            doc.setFont(undefined, 'bold');
+            doc.setFont('helvetica', 'normal');
             
             // Centrar el texto manualmente
             const text = String(data.cell.raw);
@@ -202,8 +229,6 @@ export const generateAttendancePDF = async (
   } catch (error) {
     console.error('Error al generar el PDF de asistencia:', error);
     alert('Hubo un error al generar el PDF. Por favor, inténtalo de nuevo.');
-    // Considerar propagar el error si es manejado más arriba
-    // return Promise.reject(error); 
   }
 };
 
@@ -243,7 +268,9 @@ export const generateClassDetailsPDF = async (
       { header: 'Email', dataKey: 'email' },
       { header: 'Teléfono', dataKey: 'telefono' },
       { header: 'Instrumento', dataKey: 'instrumento' },
-    ];    const tableData = students.map((student, index) => [
+    ];
+
+    const tableData = students.map((student: Student, index: number) => [
       index + 1,
       `${student.nombre} ${student.apellido}`,
       student.email || 'No registrado',
@@ -256,7 +283,7 @@ export const generateClassDetailsPDF = async (
     let footerText = '';
     if (students.length > 0) {
       const instrumentCounts: Record<string, number> = {};
-      students.forEach(student => {
+      students.forEach((student: Student) => {
         const instrument = student.instrumento || 'No especificado';
         instrumentCounts[instrument] = (instrumentCounts[instrument] || 0) + 1;
       });
@@ -277,7 +304,8 @@ export const generateClassDetailsPDF = async (
       headerText: headerInfo,
       footerText: footerText,
       startY: 65, // Ajustar según necesidad
-      headStyles: { fillColor: [50, 50, 50], textColor: 255, fontStyle: 'bold' },      columnStyles: {
+      headStyles: { fillColor: [50, 50, 50], textColor: 255, fontStyle: 'bold' },
+      columnStyles: {
         0: { cellWidth: 10, halign: 'center' }, // #
         1: { cellWidth: 50 }, // Nombre
         2: { cellWidth: 45 }, // Email
@@ -298,6 +326,5 @@ export const generateClassDetailsPDF = async (
   } catch (error) {
     console.error("Error generando PDF de detalles de clase:", error);
     alert('Hubo un error al generar el PDF. Por favor, inténtalo de nuevo.');
-    // return Promise.reject(error); // Considerar propagar el error
   }
 };

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { type FunctionalComponent, computed } from 'vue';
-import { BookOpenIcon, ChartBarSquareIcon, CalendarIcon, ClockIcon, BellIcon } from '@heroicons/vue/24/outline';
+import { BookOpenIcon, ChartBarSquareIcon, CalendarIcon, ClockIcon, BellIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
 import { useGeneralNotifications } from '../composables/useGeneralNotifications';
 import { useAuthStore } from '../../../stores/auth';
 import { useTeachersStore } from '../store/teachers';
@@ -32,6 +32,7 @@ const currentTeacher = computed(() => {
 
 const tabs: Array<{ name: string; value: string; icon: FunctionalComponent }> = [
   { name: 'Mis Clases', value: 'classes', icon: BookOpenIcon },
+  { name: 'Clases Emergentes', value: 'emergency', icon: ExclamationTriangleIcon },
   { name: 'Notificaciones', value: 'notifications', icon: BellIcon },
   { name: 'Métricas', value: 'overview', icon: ChartBarSquareIcon },
   { name: 'Ausentes', value: 'schedule', icon: CalendarIcon }, // Renamed

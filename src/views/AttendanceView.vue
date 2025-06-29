@@ -82,6 +82,7 @@
         :classes="classesForDate"
         @close="showClassesModal = false"
         @select-class="handleClassSelect"
+        @create-emergency-class="handleCreateEmergencyClass"
       />
       
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 sm:p-4 md:p-6 overflow-hidden">
@@ -341,6 +342,10 @@ const showEmergencyClassModal = ref(false)
 const currentObservationText = ref<string>('')
 const observationToEdit = ref<ClassObservation | null>(null);
 
+// Emergency class data
+const emergencyClassInfo = ref<any>(null)
+const isLoadingEmergencyClass = ref(false)
+
 // Messages
 const showMessage = ref(false)
 const message = ref('')
@@ -386,12 +391,49 @@ const markedDates = computed(() => {
   }))
 })
 
-// Selected class name
+// Load emergency class data if needed
+const loadEmergencyClassInfo = async () => {
+  if (!selectedClass.value) return
+  
+  try {
+    isLoadingEmergencyClass.value = true
+    const isEmergency = await attendanceStore.isEmergencyClass(selectedClass.value)
+    
+    if (isEmergency) {
+      emergencyClassInfo.value = await attendanceStore.getClassInfo(selectedClass.value, selectedDate.value)
+    } else {
+      emergencyClassInfo.value = null
+    }
+  } catch (error) {
+    console.error('Error loading emergency class info:', error)
+    emergencyClassInfo.value = null
+  } finally {
+    isLoadingEmergencyClass.value = false
+  }
+}
+
+// Selected class name - now handles both regular and emergency classes
 const selectedClassName = computed(() => {
-  const cls = classesStore.classes.find(c => c.id === selectedClass.value || c.name === selectedClass.value)
-  const name = cls ? cls.name : selectedClass.value
-  console.log('[AttendanceView] selectedClassName computed:', name)
-  return name
+  if (isLoadingEmergencyClass.value) return 'Cargando...'
+  
+  // If it's an emergency class and we have the data
+  if (emergencyClassInfo.value) {
+    return emergencyClassInfo.value.nombreMateria || 'Clase de Emergencia'
+  }
+  
+  if (!selectedClass.value) return ''
+  
+  // Look for regular classes
+  const regularClass = classesStore.classes.find(c => c.id === selectedClass.value || c.name === selectedClass.value)
+  if (regularClass) {
+    const name = regularClass.name
+    console.log('[AttendanceView] selectedClassName computed (regular):', name)
+    return name
+  }
+  
+  // If not found in regular classes, it might be an emergency class ID
+  console.log('[AttendanceView] selectedClassName computed (emergency ID):', selectedClass.value)
+  return `Clase ID: ${selectedClass.value}`
 })
 
 // Classes with records for selected date
@@ -700,6 +742,36 @@ const fetchClassesForDate = async (dateStr: string) => {
       }
     }
     
+    // 4.5. Obtener clases emergentes para esta fecha
+    const emergencyClasses = await attendanceStore.getEmergencyClassesForDate(dateStr, teacherId)
+    console.log(`[AttendanceView] Clases emergentes para ${dateStr}:`, emergencyClasses.length)
+    
+    // Procesar clases emergentes
+    for (const emergencyClass of emergencyClasses) {
+      console.log(`[AttendanceView] Procesando clase emergente:`, {
+        id: emergencyClass.id,
+        name: emergencyClass.name,
+        teacherId: emergencyClass.teacherId
+      })
+      
+      // Agregar clase emergente al mapa si no existe ya
+      if (!classMap.has(emergencyClass.id)) {
+        classMap.set(emergencyClass.id, {
+          id: emergencyClass.id,
+          name: emergencyClass.name,
+          isScheduled: false,
+          hasAttendance: true,
+          type: 'emergency', // Tipo: clase emergente
+          myRole: 'LEAD', // El creador es siempre encargado
+          registered: true,
+          status: 'Clase Emergente',
+          studentIds: emergencyClass.studentIds || [],
+          teacherId: emergencyClass.teacherId,
+          isEmergencyClass: true
+        })
+      }
+    }
+    
     // 5. Convertir el mapa a array y procesar información adicional
     const allClasses = Array.from(classMap.values())
     
@@ -779,7 +851,7 @@ const fetchClassesForDate = async (dateStr: string) => {
       }
     }))
     
-    // 6. Ordenar las clases: primero las programadas, luego las compartidas, luego las extra
+    // 6. Ordenar las clases: primero las programadas, luego las compartidas, luego las emergentes, luego las extra
     classesWithStatus.sort((a, b) => {
       // Primero las programadas propias
       if (a.type === 'scheduled' && b.type !== 'scheduled') return -1
@@ -789,6 +861,10 @@ const fetchClassesForDate = async (dateStr: string) => {
       if (a.type === 'shared' && b.type !== 'shared' && b.type !== 'scheduled') return -1
       if (a.type !== 'shared' && a.type !== 'scheduled' && b.type === 'shared') return 1
       
+      // Luego las emergentes
+      if (a.type === 'emergency' && b.type === 'recorded') return -1
+      if (a.type === 'recorded' && b.type === 'emergency') return 1
+      
       // Dentro del mismo tipo, ordenar por nombre
       return (a.name || '').localeCompare(b.name || '')
     })
@@ -796,6 +872,7 @@ const fetchClassesForDate = async (dateStr: string) => {
     console.log(`[AttendanceView] Total de clases encontradas: ${classesWithStatus.length}`)
     console.log(`[AttendanceView] - Programadas (encargado): ${classesWithStatus.filter(c => c.type === 'scheduled').length}`)
     console.log(`[AttendanceView] - Compartidas (asistente): ${classesWithStatus.filter(c => c.type === 'shared').length}`)
+    console.log(`[AttendanceView] - Emergentes: ${classesWithStatus.filter(c => c.type === 'emergency').length}`)
     console.log(`[AttendanceView] - Con asistencia extra: ${classesWithStatus.filter(c => c.type === 'recorded').length}`)
     
     classesForDate.value = classesWithStatus
@@ -805,7 +882,7 @@ const fetchClassesForDate = async (dateStr: string) => {
   }
 }
 
-// Función para manejar la selección de clase desde el modal
+// Handle class selection
 function handleClassSelect(classId: string) {
   showClassesModal.value = false
   // Actualizar la clase seleccionada en el store para mantener coherencia
@@ -832,6 +909,19 @@ function handleClassSelect(classId: string) {
   router.push(routePath)
   loadAttendanceData(classId)
   updateView('attendance-form')
+}
+
+// Handle emergency class creation
+function handleCreateEmergencyClass(date: string) {
+  console.log(`[AttendanceView] Crear clase emergente para la fecha: ${date}`);
+  
+  // Cerrar el modal de clases y abrir el modal de clase emergente
+  showClassesModal.value = false;
+  modalDate.value = date;
+  selectedDate.value = date;
+  
+  // Abrir el modal de clase emergente
+  showEmergencyClassModal.value = true;
 }
 
 // Update selected date information
@@ -1273,12 +1363,88 @@ const handleGenerateReport = (filters: AttendanceFiltersType) => {
 }
 
 // Emergency class handlers
-const handleEmergencyClassSubmitted = async () => {
-  showEmergencyClassModal.value = false
+const handleEmergencyClassSubmitted = async (emergencyClassData: any) => {
+  console.log('[AttendanceView] Datos de clase emergente recibidos:', emergencyClassData);
+  
+  try {
+    // La clase emergente ya fue creada en el modal usando useEmergencyClasses
+    // Ahora necesitamos crear el documento de asistencia y cargar la vista
+    
+    console.log('[AttendanceView] Clase emergente creada exitosamente:', {
+      id: emergencyClassData.emergencyClassId,
+      nombre: emergencyClassData.className,
+      tipo: emergencyClassData.classType,
+      fecha: emergencyClassData.date,
+      horario: `${emergencyClassData.startTime} - ${emergencyClassData.endTime}`,
+      instrumento: emergencyClassData.instrument,
+      motivo: emergencyClassData.reason,
+      estudiantes: emergencyClassData.selectedStudents,
+      maestro: emergencyClassData.teacherId
+    });
+    
+    // Mostrar mensaje de éxito
+    showToast('Clase emergente creada exitosamente', 'success');
+    
+    // Cerrar el modal
+    showEmergencyClassModal.value = false;
+    
+    // Ahora cargar la vista de asistencia para la clase emergente
+    selectedClass.value = emergencyClassData.emergencyClassId || emergencyClassData.className;
+    selectedDate.value = emergencyClassData.date;
+    
+    // Cargar datos de asistencia para la clase emergente
+    await loadEmergencyClassAttendanceData(emergencyClassData);
+    
+    // Cambiar a la vista de asistencia
+    updateView('attendance-form');
+    
+  } catch (error) {
+    console.error('[AttendanceView] Error al procesar clase emergente:', error);
+    showToast('Error al procesar la clase emergente', 'error');
+  }
+}
+
+// Load attendance data for emergency class
+const loadEmergencyClassAttendanceData = async (emergencyClassData: any) => {
+  try {
+    console.log('[AttendanceView] Cargando datos de asistencia para clase emergente:', emergencyClassData);
+    isLoading.value = true;
+    loadingMessage.value = 'Preparando clase emergente...';
+
+    // Usar el nuevo método del store para crear el documento de asistencia
+    const attendanceDocId = await attendanceStore.createEmergencyClassAttendanceDocument({
+      emergencyClassId: emergencyClassData.emergencyClassId,
+      className: emergencyClassData.className,
+      date: emergencyClassData.date,
+      selectedStudents: emergencyClassData.selectedStudents,
+      teacherId: emergencyClassData.teacherId
+    });
+
+    console.log('[AttendanceView] Documento de asistencia creado con ID:', attendanceDocId);
+    console.log('[AttendanceView] Estado de asistencia inicial:', attendanceStore.attendanceRecords);
+
+    // Actualizar el selectedClassName computed
+    selectedClass.value = emergencyClassData.emergencyClassId;
+
+    // Verify data integrity
+    verifyAttendanceDataIntegrity();
+
+    // Show success message
+    showToast('Clase emergente preparada para tomar asistencia', 'success');
+
+  } catch (err) {
+    console.error('Error loading emergency class attendance data:', err);
+    showToast('Error al preparar la clase emergente', 'error');
+    throw err; // Re-throw to handle in parent
+  } finally {
+    isLoading.value = false;
+    loadingMessage.value = '';
+  }
 }
 
 const handleEmergencyClassCancelled = () => {
-  showEmergencyClassModal.value = false
+  console.log('[AttendanceView] Creación de clase emergente cancelada');
+  showEmergencyClassModal.value = false;
 }
 
 // Calendar modal handlers
@@ -1652,6 +1818,8 @@ watch(() => [route.params.date, route.params.classId, route.path], async ([newDa
     selectedDate.value = formattedDate
     selectedClass.value = newClassId as string
     await selectClass(newClassId as string)
+    // Load emergency class info if needed
+    await loadEmergencyClassInfo()
   }
 })
 
@@ -1682,6 +1850,13 @@ watch(() => attendanceStore.currentAttendanceDoc, (newDoc, oldDoc) => {
     console.log('- Documento nuevo:', newDoc ? JSON.parse(JSON.stringify(newDoc)) : null)
   }
 }, { deep: true })
+
+// Watch for changes in selected class
+watch(() => selectedClass.value, async (newClassId) => {
+  if (newClassId) {
+    await loadEmergencyClassInfo()
+  }
+})
 </script>
 
 <style scoped>

@@ -54,7 +54,7 @@ const props = defineProps<{
   }[];
 }>();
 
-const emit = defineEmits(['close', 'select-class']);
+const emit = defineEmits(['close', 'select-class', 'create-emergency-class']);
 
 const router = useRouter();
 const attendanceStore = useAttendanceStore();
@@ -65,8 +65,23 @@ const { checkAttendanceExists } = useOptimizedAttendance();
 const attendanceStatus = ref<Record<string, boolean>>({});
 const attendanceStatusLoading = ref<Record<string, boolean>>({});
 
+// Estado de carga para el modal
+const isModalLoading = ref(false);
+
 // Computed property for development mode
 const isDevelopment = computed(() => import.meta.env?.DEV || false);
+
+// Función de logging optimizada
+const logDebug = (message: string, data?: any) => {
+  if (isDevelopment.value) {
+    console.log(`[ClassesModal] ${message}`, data);
+  }
+};
+
+// Función de logging para errores (siempre activa)
+const logError = (message: string, error?: any) => {
+  console.error(`[ClassesModal] ${message}`, error);
+};
 
 // Function to check if attendance exists for a class on a specific date (async version)
 const hasAttendanceRecord = async (classId: string, date: string): Promise<boolean> => {
@@ -95,7 +110,7 @@ const hasAttendanceRecord = async (classId: string, date: string): Promise<boole
 
     return exists;
   } catch (error) {
-    console.error('[ClassesModal] Error checking attendance record:', error);
+    logError('Error checking attendance record:', error);
     return false;
   }
 };
@@ -111,124 +126,12 @@ const checkAttendanceStatus = async (classId: string, date: string) => {
     // console.log('[ClassesModal] Attendance check result:', { classId, date, hasRecord });
     attendanceStatus.value[key] = hasRecord;
   } catch (error) {
-    console.error('[ClassesModal] Error checking attendance status:', error);
+    logError('Error checking attendance status:', error);
     attendanceStatus.value[key] = false;
   } finally {
     attendanceStatusLoading.value[key] = false;
     //   console.log('[ClassesModal] Attendance status set:', { key, status: attendanceStatus.value[key] });
   }
-};
-
-// Function for manual debug
-const debugAttendance = async () => {
-  console.log('=== MANUAL DEBUG ATTENDANCE (ClassesModal) ===');
-  console.log('Current date:', props.date);
-  console.log('Current user:', authStore.user?.uid);
-  console.log('Attendance store documents:', attendanceStore.attendanceDocuments);
-  console.log('Classes:', props.classes);
-  
-  // Manually test each class
-  for (const classItem of props.classes) {
-    console.log(`\n--- Testing class: ${classItem.name} (${classItem.id}) ---`);
-    console.log('Teachers array:', classItem.teachers);
-    console.log('Primary teacherId:', classItem.teacherId);
-    console.log('Class type:', classItem.classType);
-    
-    const hasRecord = await hasAttendanceRecord(classItem.id, props.date);
-    console.log(`Attendance result for ${classItem.name}: ${hasRecord}`);
-    
-    // Test shared class logic
-    const currentUserId = authStore.user?.uid;
-    const hasTeachersArray = classItem.teachers && Array.isArray(classItem.teachers) && classItem.teachers.length > 0;
-    const isPrimaryTeacher = classItem.teacherId === currentUserId;
-    const userTeacher = hasTeachersArray && classItem.teachers ? classItem.teachers.find(t => t.teacherId === currentUserId) : null;
-    
-    console.log('Shared class analysis:', {
-      hasTeachersArray,
-      isPrimaryTeacher,
-      userTeacher,
-      isUserInTeachersArray: !!userTeacher,
-      wouldBeSharedClass: hasTeachersArray && classItem.teachers && (classItem.teachers.length > 1 || !isPrimaryTeacher),
-      isSharedWithCurrentUser: hasTeachersArray && classItem.teachers && classItem.teachers.some(t => t.teacherId === currentUserId),
-      currentUserRole: userTeacher?.role || 'none',
-      studentCount: classItem.studentIds?.length || classItem.students || 0,
-      isLargeClass: (classItem.studentIds?.length || classItem.students || 0) >= 90,
-      classType: classItem.classType,
-      isSharedWithMe: classItem.isSharedWithMe
-    });
-    
-    // Verificar específicamente si es la clase con 95+ estudiantes como asistente
-    const studentCount = classItem.studentIds?.length || classItem.students || 0;
-    if (studentCount >= 90 && userTeacher && !isPrimaryTeacher) {
-      console.log(`🎯🎯🎯 CLASE OBJETIVO ENCONTRADA: ${classItem.name}`, {
-        studentCount,
-        myRole: userTeacher.role,
-        permissions: userTeacher.permissions,
-        shouldAppearInModal: true
-      });
-    }
-  }
-};
-
-// Function for debug específico para clases con 95+ estudiantes
-const debugLargeClasses = () => {
-  console.log('🎯 === DEBUG ESPECÍFICO: CLASES CON 95+ ESTUDIANTES ===');
-  console.log('Current date:', props.date);
-  console.log('Current user:', authStore.user?.uid);
-  console.log('Total classes received:', props.classes.length);
-  
-  const currentUserId = authStore.user?.uid;
-  let largeClassesFound = 0;
-  let assistantClassesFound = 0;
-  
-  props.classes.forEach((classItem, index) => {
-    const studentCount = classItem.studentIds?.length || classItem.students || 0;
-    const isLargeClass = studentCount >= 90;
-    
-    if (isLargeClass) {
-      largeClassesFound++;
-      console.log(`\n🎓 CLASE GRANDE #${largeClassesFound}: ${classItem.name}`);
-      console.log(`  📊 Estudiantes: ${studentCount}`);
-      console.log(`  👑 Profesor principal: ${classItem.teacherId}`);
-      console.log(`  👥 Teachers array:`, classItem.teachers);
-      console.log(`  🏷️  Class type: ${classItem.classType}`);
-      console.log(`  🤝 isSharedWithMe: ${classItem.isSharedWithMe}`);
-      
-      // Verificar si el usuario actual está en teachers
-      const userInTeachers = classItem.teachers?.find(t => t.teacherId === currentUserId);
-      if (userInTeachers) {
-        assistantClassesFound++;
-        console.log(`  ✅ USUARIO ENCONTRADO EN TEACHERS:`, {
-          role: userInTeachers.role,
-          permissions: userInTeachers.permissions,
-          isPrimaryTeacher: classItem.teacherId === currentUserId
-        });
-        
-        if (classItem.teacherId !== currentUserId) {
-          console.log(`  🎯 ESTA ES UNA CLASE COMPARTIDA DONDE SOY ASISTENTE`);
-          console.log(`  ⚡ DEBE APARECER EN EL MODAL PARA REGISTRAR ASISTENCIA`);
-        }
-      } else {
-        console.log(`  ❌ Usuario NO encontrado en teachers array`);
-      }
-    }
-  });
-  
-  console.log(`\n📈 RESUMEN:`);
-  console.log(`🎓 Clases con 90+ estudiantes encontradas: ${largeClassesFound}`);
-  console.log(`🤝 De esas, soy asistente en: ${assistantClassesFound}`);
-  
-  if (assistantClassesFound === 0) {
-    console.log(`❌ PROBLEMA: No se encontraron clases grandes donde seas asistente`);
-    console.log(`💡 Posibles causas:`);
-    console.log(`   - La clase no está siendo enviada desde TeacherHome.vue`);
-    console.log(`   - El filtrado por día no está funcionando`);
-    console.log(`   - El teachers array no está configurado correctamente`);
-  } else {
-    console.log(`✅ Clases objetivo encontradas. Verificar si aparecen en el modal.`);
-  }
-  
-  return { largeClassesFound, assistantClassesFound };
 };
 
 // Computed property for classes with attendance status
@@ -238,19 +141,21 @@ const classesWithAttendanceStatus = computed(() => {
   const currentUserId = authStore.user?.uid;
   
   // Las clases ya vienen filtradas por el componente padre (AttendanceView.vue o TeacherHome.vue)
-  console.log(`[ClassesModal] Procesando ${props.classes.length} clases para la fecha ${props.date}`);
-  console.log(`[ClassesModal] Usuario actual: ${currentUserId}`);
+  logDebug(`Procesando ${props.classes.length} clases para la fecha ${props.date}`);
+  logDebug(`Usuario actual: ${currentUserId}`);
   
   // Log detallado de cada clase recibida
-  props.classes.forEach((classItem, index) => {
-    console.log(`[ClassesModal] Clase ${index + 1}: ${classItem.name}`, {
-      id: classItem.id,
-      teacherId: classItem.teacherId,
-      teachers: classItem.teachers,
-      classType: classItem.classType,
-      hasTeachersArray: !!(classItem.teachers && Array.isArray(classItem.teachers) && classItem.teachers.length > 0)
+  if (isDevelopment.value) {
+    props.classes.forEach((classItem, index) => {
+      logDebug(`Clase ${index + 1}: ${classItem.name}`, {
+        id: classItem.id,
+        teacherId: classItem.teacherId,
+        teachers: classItem.teachers,
+        classType: classItem.classType,
+        hasTeachersArray: !!(classItem.teachers && Array.isArray(classItem.teachers) && classItem.teachers.length > 0)
+      });
     });
-  });
+  }
   
   return props.classes.map(classItem => {
     const key = `${classItem.id}|${props.date}`;
@@ -453,6 +358,37 @@ const classesWithAttendanceStatus = computed(() => {
   });
 });
 
+// Función de validación de datos de entrada
+const validateClassData = (classItem: any): boolean => {
+  const requiredFields = ['id', 'name'];
+  const missingFields = requiredFields.filter(field => !classItem[field]);
+  
+  if (missingFields.length > 0) {
+    logError(`Clase inválida - campos faltantes: ${missingFields.join(', ')}`, classItem);
+    return false;
+  }
+  
+  return true;
+};
+
+// Función para calcular estadísticas del modal
+const getModalStatistics = computed(() => {
+  const scheduled = scheduledClasses.value.length;
+  const extra = extraClasses.value.length;
+  const withAttendance = classesWithAttendanceStatus.value.filter(c => c.hasAttendance).length;
+  const withoutAttendance = classesWithAttendanceStatus.value.filter(c => !c.hasAttendance).length;
+  const sharedClasses = classesWithAttendanceStatus.value.filter(c => c.isSharedClass).length;
+  
+  return {
+    total: scheduled + extra,
+    scheduled,
+    extra,
+    withAttendance,
+    withoutAttendance,
+    sharedClasses
+  };
+});
+
 // Computed property for scheduled classes (programadas)
 const scheduledClasses = computed(() => {
   const filtered = classesWithAttendanceStatus.value.filter(classItem => {
@@ -554,6 +490,36 @@ const extraClasses = computed(() => {
   );
 });
 
+// Función para manejar la carga inicial del modal
+const initializeModal = async () => {
+  if (!props.isOpen || !props.date) return;
+  
+  isModalLoading.value = true;
+  try {
+    // Verificar estado de asistencia para todas las clases
+    const checkPromises = props.classes.map(classItem => 
+      checkAttendanceStatus(classItem.id, props.date)
+    );
+    await Promise.all(checkPromises);
+    
+    logDebug('Modal inicializado correctamente', {
+      date: props.date,
+      classesCount: props.classes.length
+    });
+  } catch (error) {
+    logError('Error inicializando modal:', error);
+  } finally {
+    isModalLoading.value = false;
+  }
+};
+
+// Watch para inicializar el modal cuando se abre
+watch(() => props.isOpen, (isOpen) => {
+  if (isOpen) {
+    initializeModal();
+  }
+});
+
 // Watch for changes in props and trigger attendance checks
 watch([() => props.classes, () => props.date, () => props.isOpen], async ([newClasses, newDate, isOpen]) => {
   if (!isOpen || !newClasses?.length || !newDate) return;
@@ -591,7 +557,7 @@ watch([() => props.classes, () => props.date, () => props.isOpen], async ([newCl
     console.log('[ClassesModal] ===== FINAL ATTENDANCE STATUS =====');
     console.log('[ClassesModal] Final attendance status:', attendanceStatus.value);
   } catch (error) {
-    console.error('[ClassesModal] Error during attendance check:', error);
+    logError('Error during attendance check:', error);
   }
 }, { immediate: true });
 
@@ -600,18 +566,18 @@ const formattedDate = ref('');
 
 watch(() => props.date, (newDate) => {
   if (newDate) {
-    console.log('[ClassesModal] Formateando fecha:', newDate)
+    logDebug('Formateando fecha:', newDate);
     
     // Usar parseISO para evitar problemas de zona horaria
     const dateObj = parseISO(newDate);
-    console.log('[ClassesModal] Fecha parseada:', dateObj)
+    logDebug('Fecha parseada:', dateObj);
     
     // Format: "Lunes, 24 de junio de 2024"
     formattedDate.value = format(dateObj, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
     // Capitalize first letter
     formattedDate.value = formattedDate.value.charAt(0).toUpperCase() + formattedDate.value.slice(1);
     
-    console.log('[ClassesModal] Fecha formateada final:', formattedDate.value)
+    logDebug('Fecha formateada final:', formattedDate.value);
   }
 }, { immediate: true });
 
@@ -638,6 +604,12 @@ const navigateToAttendance = (classId: string) => {
   emit('close');
 };
 
+// Handle emergency class creation
+const handleCreateEmergencyClass = () => {
+  logDebug('Usuario solicitó crear clase emergente para fecha:', props.date);
+  emit('create-emergency-class', props.date);
+};
+
 // Make sure the component is exported as default
 defineExpose({});
 if (import.meta.env?.PROD === false) {
@@ -652,21 +624,56 @@ if (import.meta.env?.PROD === false) {
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg transform transition-all">
       <!-- Modal header -->
       <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white">
-          Clases del día {{ formattedDate }}
-        </h3>
-        <button 
-          @click="emit('close')" 
-          class="text-gray-400 hover:text-gray-500 focus:outline-none"
-        >
-          <XMarkIcon class="h-5 w-5" />
-        </button>
+        <div>
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+            Clases del día {{ formattedDate }}
+          </h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            {{ getModalStatistics.total }} clases encontradas
+            <span v-if="getModalStatistics.sharedClasses > 0">
+              · {{ getModalStatistics.sharedClasses }} compartidas
+            </span>
+          </p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <!-- Botón discreto para crear clase emergente -->
+          <button 
+            @click="handleCreateEmergencyClass"
+            class="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            title="Crear clase emergente"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+          </button>
+          <button 
+            @click="emit('close')" 
+            class="text-gray-400 hover:text-gray-500 focus:outline-none"
+          >
+            <XMarkIcon class="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       <!-- Modal body -->
       <div class="px-6 py-4 max-h-[60vh] overflow-y-auto">
-        <div v-if="classesWithAttendanceStatus.length === 0" class="text-center py-8">
-          <p class="text-gray-500 dark:text-gray-400">No hay clases programadas para este día.</p>
+        <!-- Estado de carga -->
+        <div v-if="isModalLoading" class="text-center py-8">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p class="text-gray-500 dark:text-gray-400">Cargando información de clases...</p>
+        </div>
+
+        <!-- Mensaje cuando no hay clases -->
+        <div v-else-if="classesWithAttendanceStatus.length === 0" class="text-center py-8">
+          <div class="mb-4">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <p class="text-gray-500 dark:text-gray-400 text-lg">No hay clases programadas para este día.</p>
+          <p class="text-gray-400 dark:text-gray-500 text-sm mt-2">
+            Puedes crear una clase emergente usando el botón "+" en la parte superior.
+          </p>
         </div>
         <div v-else class="space-y-4">
           <!-- Sección de clases programadas -->
@@ -879,24 +886,7 @@ if (import.meta.env?.PROD === false) {
       </div>
 
       <!-- Modal footer -->
-      <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-3 flex justify-between">
-        <!-- Debug buttons (development only) -->
-        <div v-if="isDevelopment" class="flex space-x-2">
-          <button 
-            @click="debugAttendance"
-            class="px-3 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors focus:outline-none"
-          >
-            Debug General
-          </button>
-          <button 
-            @click="debugLargeClasses"
-            class="px-3 py-1 text-xs bg-purple-500 hover:bg-purple-600 text-white rounded transition-colors focus:outline-none"
-          >
-            Debug 95+ Estudiantes
-          </button>
-        </div>
-        <div v-else></div>
-        
+      <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-3 flex justify-end">
         <button 
           @click="emit('close')"
           class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-md transition-colors focus:outline-none"

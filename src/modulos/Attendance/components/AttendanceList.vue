@@ -3,6 +3,7 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import type { JustificationData } from '../types/attendance'
 import type { Student } from '../../Students/types/student'
+import type { ClassData } from '../../Classes/types/class'
 
 // Definimos el tipo AttendanceStatus explicitamente para evitar problemas de importacion
 type AttendanceStatus = 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
@@ -134,8 +135,7 @@ const verifyClassExists = async (classId: string) => {
       return false;
     }
     
-    // PASO 1: Intentar obtener la clase específica por ID desde Firestore
-    // Esto funciona tanto para clases propias como compartidas
+    // PASO 1: Intentar obtener la clase específica por ID desde Firestore (clases regulares)
     console.log(`[ClassDebug] Obteniendo clase específica por ID desde Firestore...`);
     let classData = await classesStore.fetchClassById(classId);
     
@@ -144,11 +144,32 @@ const verifyClassExists = async (classId: string) => {
       console.log(`[ClassDebug] Clase no encontrada individualmente, refrescando todas las clases...`);
       await classesStore.fetchClasses();
       const allClasses = classesStore.getAllClasses;
-      classData = allClasses.find(cls => cls.id === classId);
+      classData = allClasses.find(cls => cls.id === classId) || null;
+    }
+    
+    // PASO 3: Si tampoco se encuentra en clases regulares, buscar en clases emergentes
+    if (!classData) {
+      console.log(`[ClassDebug] Clase no encontrada en clases regulares, buscando en clases emergentes...`);
+      try {
+        classData = await classesStore.findClassById(classId);
+        if (classData) {
+          console.log(`[ClassDebug] Clase emergente encontrada: "${classData.name}"`);
+          // Para clases emergentes, verificar que el teacher coincida
+          if (classData.teacherId === currentTeacherId) {
+            console.log(`[ClassDebug] ✅ Maestro ${currentTeacherId} es titular de la clase emergente ${classId}`);
+            return true;
+          } else {
+            console.log(`[ClassDebug] ❌ Maestro ${currentTeacherId} no es titular de la clase emergente (titular: ${classData.teacherId})`);
+            return false;
+          }
+        }
+      } catch (emergencyError) {
+        console.error(`[ClassDebug] Error buscando clase emergente:`, emergencyError);
+      }
     }
     
     if (!classData) {
-      console.error(`[ClassDebug] Clase con ID=${classId} no encontrada en Firestore`);
+      console.error(`[ClassDebug] Clase con ID=${classId} no encontrada ni en clases regulares ni emergentes`);
       return false;
     }
     
@@ -165,8 +186,15 @@ const verifyClassExists = async (classId: string) => {
     }
     
     // Verificar si es asistente en una clase compartida
-    if (classData.assistantTeachers && Array.isArray(classData.assistantTeachers)) {
-      const isAssistant = classData.assistantTeachers.includes(currentTeacherId);
+    if (classData.teachers && Array.isArray(classData.teachers)) {
+      const isAssistant = classData.teachers.some(teacher => {
+        if (typeof teacher === 'string') {
+          return teacher === currentTeacherId;
+        } else {
+          return teacher.teacherId === currentTeacherId;
+        }
+      });
+      
       if (isAssistant) {
         console.log(`[ClassDebug] ✅ Maestro ${currentTeacherId} es ASISTENTE autorizado en clase ${classId}`);
         return true;
@@ -182,7 +210,7 @@ const verifyClassExists = async (classId: string) => {
     
     console.log(`[ClassDebug] ❌ Maestro ${currentTeacherId} NO tiene acceso a clase ${classId}`);
     console.log(`[ClassDebug] - No es titular (${classData.teacherId})`);
-    console.log(`[ClassDebug] - No es asistente (${classData.assistantTeachers || 'sin asistentes'})`);
+    console.log(`[ClassDebug] - No es asistente (${classData.teachers ? classData.teachers.length + ' maestros' : 'sin maestros adicionales'})`);
     return false;
     
   } catch (error) {
@@ -365,42 +393,47 @@ const fetchDataForComponent = async (dateParam: string, classIdParam: string) =>
     }
     
     // Intentar obtener la informacion de la clase
-    const classInfo = classesStore.getClassById(classIdParam);
+    let classInfo = classesStore.getClassById(classIdParam);
+    let isEmergencyClass = false;
+    
     if (!classInfo) {
-      console.error(`[AttendanceDebug] No se encontro la clase con ID=${classIdParam}`);
+      console.log(`[AttendanceDebug] fetchDataForComponent: Clase no encontrada en clases regulares, verificando clases emergentes...`);
       
-      // Intentar normalizar el ID y buscar de nuevo (por si hay problemas de formato)
-      const normalizedId = classIdParam.trim();
-      const alternativeClass = classesStore.classes.find(c => 
-        c.id.includes(normalizedId) || normalizedId.includes(c.id)
-      );
-      
-      if (alternativeClass) {
-        console.log(`[AttendanceDebug] Se encontro una clase similar con ID=${alternativeClass.id}`);
-        // Si encontramos una clase alternativa, usamos esa en su lugar
-        return fetchDataForComponent(dateParam, alternativeClass.id);
+      // Intentar obtener como clase emergente
+      const normalizedEmergencyData = await normalizeEmergencyClassData(classIdParam);
+      if (normalizedEmergencyData) {
+        classInfo = normalizedEmergencyData;
+        isEmergencyClass = true;
+        console.log(`[AttendanceDebug] fetchDataForComponent: Clase emergente encontrada: "${normalizedEmergencyData.name}"`);
+      } else {
+        // Intentar normalizar el ID y buscar de nuevo (por si hay problemas de formato)
+        const normalizedId = classIdParam.trim();
+        const alternativeClass = classesStore.classes.find(c => 
+          c.id.includes(normalizedId) || normalizedId.includes(c.id)
+        );
+        
+        if (alternativeClass) {
+          console.log(`[AttendanceDebug] fetchDataForComponent: Se encontro una clase similar con ID=${alternativeClass.id}`);
+          // Si encontramos una clase alternativa, usamos esa en su lugar
+          return fetchDataForComponent(dateParam, alternativeClass.id);
+        }
+        
+        // Si no encontramos ninguna clase, mostramos el error y continuamos
+        errorMessage.value = `No se encontro la clase. Por favor, verifica el ID o selecciona otra clase.`;
+        localStudents.value = [];
+        localAttendanceRecords.value = {};
+        isLoading.value = false;
+        return {};
       }
-      
-      // Si no encontramos ninguna clase, mostramos el error y continuamos
-      errorMessage.value = `No se encontro la clase. Por favor, verifica el ID o selecciona otra clase.`;
-      localStudents.value = [];
-      localAttendanceRecords.value = {};
-      isLoading.value = false;
-      return {};
     }
     
-    // Cargar estudiantes solo si es necesario
+    // Cargar estudiantes usando la función auxiliar
     let studentsInClass = [];
     
     if (!hasCachedStudents) {
-      // Verificar si los estudiantes ya estan en el store antes de hacer la solicitud
-      if (!studentsStore.students || studentsStore.students.length === 0) {
-        await studentsStore.fetchStudents();
-      }
+      studentsInClass = await getClassStudents(classIdParam, isEmergencyClass);
+      console.log(`[AttendanceDebug] fetchDataForComponent: 📋 Total estudiantes obtenidos: ${studentsInClass.length}`);
       
-      // Filtrar estudiantes por clase - usando el array studentIds de la clase seleccionada
-      const studentIdsInClass = classInfo.studentIds || [];
-      studentsInClass = studentsStore.students?.filter(student => studentIdsInClass.includes(student.id)) || [];
       // Actualizar datos locales
       localStudents.value = [...studentsInClass];
     } else {
@@ -417,24 +450,25 @@ const fetchDataForComponent = async (dateParam: string, classIdParam: string) =>
       // Actualizar registros locales
       if (attendanceDoc && Object.keys(attendanceStore.attendanceRecords).length > 0) {
         localAttendanceRecords.value = {...attendanceStore.attendanceRecords};
+        console.log(`[AttendanceDebug] fetchDataForComponent: ✅ Cargados ${Object.keys(localAttendanceRecords.value).length} registros desde Firebase`);
       } else {
         // Si no hay registros, inicializar con valores por defecto
         if (studentsInClass.length > 0) {
-          const defaultRecords = {};
+          const defaultRecords: Record<string, AttendanceStatus> = {};
           studentsInClass.forEach(student => {
             defaultRecords[student.id] = 'Ausente'; // Valor por defecto
           });
           localAttendanceRecords.value = defaultRecords;
-          console.log('[AttendanceDebug] fetchDataForComponent: Estados predeterminados aplicados:', JSON.parse(JSON.stringify(localAttendanceRecords.value)));
+          console.log(`[AttendanceDebug] fetchDataForComponent: ✅ Inicializados ${Object.keys(defaultRecords).length} registros con estado 'Ausente'`);
         } else {
           localAttendanceRecords.value = {}; // No hay estudiantes, no hay registros
+          console.log('[AttendanceDebug] fetchDataForComponent: No hay estudiantes, no se inicializan registros');
         }
       }
     } else {
       localAttendanceRecords.value = {...effectiveAttendanceRecords.value};
+      console.log('[AttendanceDebug] fetchDataForComponent: Usando datos de asistencia en cache');
     }
-    
-    console.log('[AttendanceDebug] fetchDataForComponent: Usando datos de asistencia en cache');
       
     await nextTick(); // Asegurar que el DOM se actualice con los nuevos datos
     
@@ -449,7 +483,7 @@ const fetchDataForComponent = async (dateParam: string, classIdParam: string) =>
 
   } catch (error) {
     console.error('[AttendanceDebug] fetchDataForComponent: Error al cargar datos:', error);
-    errorMessage.value = `Error al cargar datos de asistencia: ${error.message || 'Error desconocido'}`;
+    errorMessage.value = `Error al cargar datos de asistencia: ${error instanceof Error ? error.message : 'Error desconocido'}`;
     return {};
   } finally {
     isLoading.value = false;
@@ -530,23 +564,43 @@ onMounted(async () => {
     console.log(`[AttendanceDebug] Asistencia cargada: ${attendanceResult}`);
 
 
-    // Verificar si la clase existe
-    const classInfo = classesStore.getClassById(classIdToUse);
+    // Verificar si la clase existe (incluye clases emergentes)
+    let classInfo = classesStore.getClassById(classIdToUse);
+    let isEmergencyClass = false;
+    
+    // Si no se encuentra en clases regulares, buscar en clases emergentes
     if (!classInfo) {
-      console.error(`[AttendanceDebug] No se encontro la clase con ID=${classIdToUse}`);
+      try {
+        console.log(`[AttendanceDebug] Clase no encontrada en clases regulares, buscando en clases emergentes...`);
+        const normalizedEmergencyData = await normalizeEmergencyClassData(classIdToUse);
+        
+        if (normalizedEmergencyData) {
+          classInfo = normalizedEmergencyData;
+          isEmergencyClass = true;
+          console.log(`[AttendanceDebug] Clase emergente normalizada encontrada: "${normalizedEmergencyData.name}"`);
+        }
+      } catch (error) {
+        console.error(`[AttendanceDebug] Error buscando clase emergente:`, error);
+      }
+    }
+    
+    if (!classInfo) {
+      console.error(`[AttendanceDebug] No se encontro la clase con ID=${classIdToUse} ni en clases regulares ni emergentes`);
       errorMessage.value = `No se encontro la clase con ID ${classIdToUse}`;
       isLoading.value = false;
       return;
     }
     
-    // Filtrar estudiantes de esta clase
-    const allStudents = studentsStore.activeStudents;
-    const studentIdsInClass = classInfo.studentIds || [];
-    console.log(`[AttendanceDebug] Total estudiantes en la clase: ${studentIdsInClass.length}`);
+    console.log(`[AttendanceDebug] Clase encontrada:`, isEmergencyClass ? 'EMERGENTE' : 'REGULAR', classInfo.name);
     
-    const studentsInClass = allStudents.filter(student => 
-      studentIdsInClass.includes(student.id)
-    );
+    // Obtener estudiantes usando la función auxiliar
+    const studentsInClass = await getClassStudents(classIdToUse, isEmergencyClass);
+    console.log(`[AttendanceDebug] 📋 onMounted: Total estudiantes obtenidos: ${studentsInClass.length}`);
+    
+    if (studentsInClass.length === 0) {
+      console.warn(`[AttendanceDebug] ⚠️ No se obtuvieron estudiantes para la clase ${classIdToUse}`);
+      // No retornar error, continuar con lista vacía
+    }
     
     localStudents.value = [...studentsInClass];
     console.log(`[AttendanceDebug] ${studentsInClass.length} estudiantes cargados para la clase`);
@@ -588,12 +642,13 @@ onMounted(async () => {
         localAttendanceRecords.value = { ...attendanceStore.attendanceRecords as Record<string, AttendanceStatus> };
       } else if (Object.keys(localAttendanceRecords.value).length === 0) {
         console.log('[AttendanceDebug] ⚠️ NO HAY DOCUMENTO DE ASISTENCIA (onMounted) - INICIALIZANDO ESTADOS PREDETERMINADOS SI ES NECESARIO');
-        // Opcional: Inicializar con "Ausente" para todos los estudiantes si se desea un estado predeterminado
-        const defaultAttendance = {};
+        // Inicializar con "Ausente" para todos los estudiantes como estado predeterminado
+        const defaultAttendance: Record<string, AttendanceStatus> = {};
         studentsInClass.forEach(student => {
           defaultAttendance[student.id] = 'Ausente';
         });
         localAttendanceRecords.value = defaultAttendance;
+        console.log(`[AttendanceDebug] ✅ Inicializados ${Object.keys(defaultAttendance).length} registros con estado 'Ausente'`);
       }
     } else {
       console.log('[AttendanceDebug] Usando datos de Props o Store, no se carga de Firebase en onMounted a menos que se fuerce.');
@@ -613,11 +668,12 @@ onMounted(async () => {
       console.log('[AttendanceDebug] 📝 Cargando observaciones de la clase y fecha actual');
       await observationsStore.fetchObservations({ 
         classId: classIdToUse,
-        date: dateToUse 
+        dateFrom: dateToUse,
+        dateTo: dateToUse
       });
       console.log('[AttendanceDebug] ✓ Observaciones cargadas correctamente');
     } catch (error) {
-      console.warn('[AttendanceDebug] ⚠️ Error al cargar observaciones:', error.message);
+      console.warn('[AttendanceDebug] ⚠️ Error al cargar observaciones:', error instanceof Error ? error.message : String(error));
       // No bloquear la carga de asistencia por errores en observaciones
     }
     
@@ -1193,6 +1249,138 @@ const handleSaveJustification = async (data: { studentId: string, reason: string
   displayToast('Justificacion guardada correctamente', 'success');
 };
 
+// Función auxiliar para normalizar datos de clases emergentes
+const normalizeEmergencyClassData = async (emergencyClassId: string) => {
+  try {
+    console.log(`[AttendanceDebug] Normalizando datos de clase emergente: ${emergencyClassId}`);
+    
+    // Usar el método del attendanceStore que ya funciona
+    try {
+      console.log(`[AttendanceDebug] Intentando obtener estudiantes usando attendanceStore...`);
+      const studentIds = await attendanceStore.getEmergencyClassStudents(emergencyClassId);
+      
+      if (studentIds && studentIds.length > 0) {
+        console.log(`[AttendanceDebug] ✅ Estudiantes obtenidos: ${studentIds.length}`);
+        
+        // Crear datos normalizados usando la información disponible y compatible con ClassData
+        const normalizedClassData = {
+          id: emergencyClassId,
+          name: `Clase Emergente ${emergencyClassId.slice(-6)}`, // Nombre basado en ID
+          description: 'Clase emergente creada por el maestro',
+          teacherId: authStore.user?.uid || 'unknown',
+          studentIds: studentIds,
+          students: [], // Array vacío para estudiantes (se llenará después)
+          schedule: undefined, // El schedule es opcional en ClassData
+          isEmergencyClass: true,
+          // Campos adicionales opcionales para compatibilidad
+          level: undefined,
+          instrument: undefined,
+          teachers: undefined,
+          classroom: undefined,
+          capacity: undefined,
+          status: 'active',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        } as ClassData;
+        
+        console.log(`[AttendanceDebug] Datos normalizados exitosamente:`, normalizedClassData);
+        return normalizedClassData;
+      } else {
+        console.warn(`[AttendanceDebug] No se encontraron estudiantes para la clase emergente`);
+        return null;
+      }
+    } catch (attendanceError) {
+      console.error(`[AttendanceDebug] Error usando attendanceStore:`, attendanceError);
+      
+      // Sin acceso directo a Firebase disponible
+      console.warn(`[AttendanceDebug] No se pudo acceder a los datos de la clase emergente usando attendanceStore`);
+      return null;
+    }
+    
+  } catch (error) {
+    console.error(`[AttendanceDebug] Error normalizando clase emergente:`, error);
+    return null;
+  }
+};
+
+// Función auxiliar para obtener estudiantes de una clase (regular o emergente)
+const getClassStudents = async (classId: string, isEmergencyClass = false) => {
+  try {
+    console.log(`[AttendanceDebug] Obteniendo estudiantes para clase ${classId}, emergente: ${isEmergencyClass}`);
+    
+    // Asegurar que tenemos todos los estudiantes cargados
+    if (!studentsStore.students || studentsStore.students.length === 0) {
+      console.log('[AttendanceDebug] Cargando todos los estudiantes...');
+      await studentsStore.fetchStudents();
+    }
+    
+    const allStudents = studentsStore.students || [];
+    console.log(`[AttendanceDebug] Total estudiantes disponibles: ${allStudents.length}`);
+    
+    let studentIds: string[] = [];
+    
+    if (isEmergencyClass) {
+      // Para clases emergentes, obtener directamente de Firebase
+      const normalizedData = await normalizeEmergencyClassData(classId);
+      if (normalizedData && normalizedData.studentIds) {
+        studentIds = normalizedData.studentIds;
+        console.log(`[AttendanceDebug] IDs de estudiantes de clase emergente: ${studentIds.length}`);
+      }
+    } else {
+      // Para clases regulares, usar el store
+      const classInfo = classesStore.getClassById(classId);
+      if (classInfo) {
+        studentIds = classInfo.studentIds || [];
+        console.log(`[AttendanceDebug] IDs de estudiantes de clase regular: ${studentIds.length}`);
+      }
+    }
+    
+    if (studentIds.length === 0) {
+      console.warn(`[AttendanceDebug] No se encontraron estudiantes para la clase ${classId}`);
+      return [];
+    }
+    
+    // Filtrar estudiantes activos
+    const filteredStudents = allStudents.filter(student => 
+      studentIds.includes(student.id) && (student as any).estado !== 'Inactivo'
+    );
+    
+    console.log(`[AttendanceDebug] Estudiantes filtrados y activos: ${filteredStudents.length}`);
+    
+    // Debug: mostrar algunos estudiantes
+    if (filteredStudents.length > 0) {
+      console.log(`[AttendanceDebug] Primeros estudiantes:`, 
+        filteredStudents.slice(0, 3).map(s => `${s.nombre} ${s.apellido} (${s.id})`));
+    }
+    
+    // Si no encontramos estudiantes filtrados pero tenemos IDs, investigar por qué
+    if (filteredStudents.length === 0 && studentIds.length > 0) {
+      console.warn(`[AttendanceDebug] PROBLEMA: Se encontraron ${studentIds.length} IDs pero 0 estudiantes filtrados`);
+      
+      // Verificar si los primeros IDs existen en la base de datos
+      const sampleId = studentIds[0];
+      const studentExists = allStudents.some(s => s.id === sampleId);
+      console.warn(`[AttendanceDebug] ¿Existe el primer estudiante (${sampleId}) en el store?`, studentExists);
+      
+      if (!studentExists) {
+        console.warn(`[AttendanceDebug] El estudiante ${sampleId} no existe en el store de estudiantes`);
+        // Forzar recarga de estudiantes
+        await studentsStore.fetchStudents();
+        // Intentar filtrar de nuevo
+        const refreshedStudents = studentsStore.students || [];
+        return refreshedStudents.filter(student => 
+          studentIds.includes(student.id) && (student as any).estado !== 'Inactivo'
+        );
+      }
+    }
+    
+    return filteredStudents;
+    
+  } catch (error) {
+    console.error(`[AttendanceDebug] Error obteniendo estudiantes:`, error);
+    return [];
+  }
+};
 
 // Funciones para navegacion
 const navigateToWorkspace = () => {
@@ -1252,10 +1440,15 @@ const handleExportToPDF = async () => {
     let classSchedule = 'Horario no especificado';
     let classDescription = '';
     
-    if (classInfo?.schedule?.slots && classInfo.schedule.slots.length > 0) {
-      classSchedule = classInfo.schedule.slots
-        .map(slot => `${slot.day}: ${slot.startTime} - ${slot.endTime}`)
-        .join(', ');
+    if (classInfo?.schedule) {
+      if ('slots' in classInfo.schedule && Array.isArray(classInfo.schedule.slots) && classInfo.schedule.slots.length > 0) {
+        classSchedule = classInfo.schedule.slots
+          .map(slot => `${slot.day}: ${slot.startTime} - ${slot.endTime}`)
+          .join(', ');
+      } else if ('day' in classInfo.schedule && 'startTime' in classInfo.schedule && 'endTime' in classInfo.schedule) {
+        // Handle the case where schedule is a single object with day, startTime, and endTime
+        classSchedule = `${classInfo.schedule.day}: ${classInfo.schedule.startTime} - ${classInfo.schedule.endTime}`;
+      }
     }
     
     if (classInfo?.description) {
@@ -1310,8 +1503,26 @@ const handleExportToPDF = async () => {
     
     detailedObservations += `\nOBSERVACIONES DEL MAESTRO:\n${classObservations}\n`;
 
-    // Obtener justificaciones
-    const justifications = attendanceStore.getJustificationsByStudent || {};
+    // Obtener justificaciones y convertirlas al formato esperado (Record<string, string>)
+    const justificationsData: Record<string, string> = {};
+    
+    // Si getJustificationsByStudent es una función, procesar cada estudiante
+    if (typeof attendanceStore.getJustificationsByStudent === 'function') {
+      // Procesar solo estudiantes marcados como justificados
+      students.forEach(student => {
+        if (attendanceRecords[student.id] === 'Justificado') {
+          const studentJustifications = attendanceStore.getJustificationsByStudent(student.id);
+          if (studentJustifications && studentJustifications.length > 0) {
+            // Usar la primera justificación o combinarlas si hay múltiples
+            justificationsData[student.id] = studentJustifications
+              .map(j => j.reason || 'Sin motivo especificado')
+              .join('; ');
+          } else {
+            justificationsData[student.id] = 'Justificado sin detalles';
+          }
+        }
+      });
+    }
     
     // Generar mensaje de estado para el usuario
     displayToast('Generando PDF con informacion completa de la clase...', 'info');
@@ -1323,7 +1534,7 @@ const handleExportToPDF = async () => {
       currentClassName,
       teacherName,
       currentDate,
-      justifications
+      justificationsData
     );
 
     displayToast('PDF generado exitosamente con toda la informacion de la clase', 'success');
@@ -1462,9 +1673,9 @@ const sortedStudents = computed(() => {
     <!-- ClassObservationsManager Modal -->
     <ClassObservationsManager
       :is-open="showClassObservationsManager"
-      :class-id="currentSelectedClass || props.classId"
+      :class-id="currentSelectedClass || props.classId || ''"
       :class-name="props.selectedClassName || currentSelectedClass || 'Clase sin nombre'"
-      :selected-date="currentSelectedDate"
+      :selected-date="currentSelectedDate || ''"
       @close="showClassObservationsManager = false"
     />
 
@@ -1489,6 +1700,19 @@ const sortedStudents = computed(() => {
 </template>
 
 <style>
+.attendance-list-container {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin: auto;
+  padding: 1rem;
+}
+.attendance-list {
+  background-color: rgb(52, 24, 65);
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 10px  rgba(140, 84, 84, 0.1);
+  padding: 1rem;
+}
 /* Make buttons smaller on mobile */
 .btn-xs {
   padding: 0.15rem 0.3rem;

@@ -11,7 +11,9 @@ import {
   orderBy
 } from 'firebase/firestore';
 import { db } from '../../../firebase';
-import type { EmergencyClass, EmergencyClassStatus } from '../types/attendance';
+import type { EmergencyClass } from '../types/attendance';
+
+type EmergencyClassStatus = 'Pendiente' | 'Aceptada' | 'Rechazada' | 'Ignorada';
 
 const EMERGENCY_CLASSES_COLLECTION = 'EMERGENCY_CLASSES';
 
@@ -188,6 +190,38 @@ export const getEmergencyClassesByTeacherFirebase = async (teacherId: string): P
     }
   } catch (error) {
     console.error('Error al obtener clases emergentes del profesor:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obtiene una clase emergente específica por ID
+ */
+export const getEmergencyClassByIdFirebase = async (emergencyClassId: string): Promise<EmergencyClass | null> => {
+  try {
+    console.log('[EmergencyClassService] Buscando clase emergente con ID:', emergencyClassId);
+    
+    // Referencia al documento
+    const docRef = doc(db, EMERGENCY_CLASSES_COLLECTION, emergencyClassId);
+    
+    // Obtener el documento
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) {
+      console.log('[EmergencyClassService] No se encontró la clase emergente con ID:', emergencyClassId);
+      return null;
+    }
+    
+    const emergencyClass = {
+      id: docSnap.id,
+      ...docSnap.data()
+    } as EmergencyClass;
+    
+    console.log('[EmergencyClassService] Clase emergente encontrada:', emergencyClass);
+    return emergencyClass;
+    
+  } catch (error) {
+    console.error('[EmergencyClassService] Error al obtener clase emergente por ID:', error);
     throw error;
   }
 };

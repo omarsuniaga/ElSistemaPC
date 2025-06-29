@@ -33,6 +33,8 @@ import {
   deleteClassObservationFirebase
 } from '../services/attendance';
 
+import { getEmergencyClassByIdFirebase } from '../service/emergencyClass';
+
 interface AttendanceAnalytics {
   totalClasses: number;
   totalStudents: number;
@@ -821,7 +823,20 @@ export const useAttendanceStore = defineStore('attendance', () => {
     // Esta función debería obtener los días desde el store de clases
     const classesStore = useClassesStore();
     const classData = classesStore.getClassById?.(classId);
-    return classData?.schedule?.slots?.map(slot => slot.day) || [];
+    
+    // Manejar diferentes estructuras de schedule
+    if (classData?.schedule) {
+      // Si schedule tiene slots
+      if ('slots' in classData.schedule && Array.isArray(classData.schedule.slots)) {
+        return classData.schedule.slots.map((slot: any) => slot.day) || [];
+      }
+      // Si schedule es un slot individual
+      if ('day' in classData.schedule) {
+        return [(classData.schedule as any).day];
+      }
+    }
+    
+    return [];
   };
 
   // Función para agregar justificación con archivo
@@ -1590,6 +1605,152 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   };
 
+  // Método específico para obtener estudiantes de una clase emergente
+  const getEmergencyClassStudents = async (emergencyClassId: string): Promise<string[]> => {
+    try {
+      console.log('[AttendanceStore] Obteniendo estudiantes de clase emergente:', emergencyClassId);
+      
+      // Buscar primero en los documentos de asistencia cargados
+      const emergencyDoc = attendanceDocuments.value.find(doc => 
+        doc.emergencyClassId === emergencyClassId || 
+        (doc.isEmergencyClass && doc.classId === emergencyClassId)
+      );
+      
+      if (emergencyDoc) {
+        console.log('[AttendanceStore] Encontrado en documentos de asistencia:', emergencyDoc);
+        // Extraer todos los estudiantes de todos los estados
+        const allStudents = [
+          ...(emergencyDoc.data.presentes || []),
+          ...(emergencyDoc.data.ausentes || []),
+          ...(emergencyDoc.data.tarde || []),
+          // Solo extraer los IDs de las justificaciones
+          ...(emergencyDoc.data.justificacion?.map(j => j.studentId) || [])
+        ];
+        return [...new Set(allStudents)]; // Eliminar duplicados
+      }
+      
+      // Si no se encuentra en documentos de asistencia, buscar en EMERGENCY_CLASSES
+      try {
+        const emergencyClass = await getEmergencyClassByIdFirebase(emergencyClassId);
+        if (emergencyClass && emergencyClass.selectedStudents) {
+          console.log('[AttendanceStore] Estudiantes encontrados en EMERGENCY_CLASSES:', emergencyClass.selectedStudents);
+          return emergencyClass.selectedStudents;
+        }
+      } catch (err) {
+        console.warn('[AttendanceStore] No se pudo obtener clase emergente de EMERGENCY_CLASSES:', err);
+      }
+      
+      console.log('[AttendanceStore] No se encontraron estudiantes para la clase emergente:', emergencyClassId);
+      return [];
+      
+    } catch (err) {
+      console.error('[AttendanceStore] Error al obtener estudiantes de clase emergente:', err);
+      return [];
+    }
+  };
+
+  // Método mejorado para verificar si una clase es emergente
+  const isEmergencyClass = async (classId: string): Promise<boolean> => {
+    try {
+      // Verificar primero en EMERGENCY_CLASSES
+      try {
+        const emergencyClass = await getEmergencyClassByIdFirebase(classId);
+        if (emergencyClass) {
+          console.log('[AttendanceStore] Clase emergente confirmada desde EMERGENCY_CLASSES:', classId);
+          return true;
+        }
+      } catch (err) {
+        console.log('[AttendanceStore] No encontrado en EMERGENCY_CLASSES para verificación:', (err as Error).message || err);
+      }
+      
+      // Verificar en documentos de asistencia cargados como fallback
+      const hasEmergencyDoc = attendanceDocuments.value.some(doc => 
+        doc.isEmergencyClass === true && 
+        (doc.classId === classId || doc.emergencyClassId === classId)
+      );
+      
+      if (hasEmergencyDoc) {
+        console.log('[AttendanceStore] Clase emergente confirmada desde documentos de asistencia:', classId);
+        return true;
+      }
+      
+      return false;
+    } catch (err) {
+      console.error('[AttendanceStore] Error verificando si es clase emergente:', err);
+      return false;
+    }
+  };
+
+  // Método para obtener información de clase (regular o emergente)
+  const getClassInfo = async (classId: string, date?: string) => {
+    try {
+      console.log('[AttendanceStore] Obteniendo información para clase:', classId, 'fecha:', date);
+      
+      // Primero intentar buscar en EMERGENCY_CLASSES directamente
+      try {
+        const emergencyClass = await getEmergencyClassByIdFirebase(classId);
+        if (emergencyClass) {
+          console.log('[AttendanceStore] Clase emergente encontrada en EMERGENCY_CLASSES:', emergencyClass);
+          return {
+            id: classId,
+            name: emergencyClass.className,
+            type: 'emergency',
+            isEmergencyClass: true,
+            students: emergencyClass.selectedStudents || [],
+            teacherId: emergencyClass.teacherId,
+            studentIds: emergencyClass.selectedStudents || [] // Compatibilidad
+          };
+        }
+      } catch (err) {
+        console.log('[AttendanceStore] No encontrado en EMERGENCY_CLASSES, verificando otras fuentes:', (err as Error).message || err);
+      }
+      
+      // Verificar en documentos de asistencia cargados para clases emergentes
+      const emergencyDoc = attendanceDocuments.value.find(doc => 
+        doc.isEmergencyClass === true && 
+        (doc.classId === classId || doc.emergencyClassId === classId) &&
+        (!date || doc.fecha === date)
+      );
+      
+      if (emergencyDoc) {
+        console.log('[AttendanceStore] Clase emergente encontrada en documentos de asistencia:', emergencyDoc);
+        return {
+          id: classId,
+          name: emergencyDoc.className,
+          type: 'emergency',
+          isEmergencyClass: true,
+          students: await getEmergencyClassStudents(classId),
+          teacherId: emergencyDoc.teacherId,
+          studentIds: await getEmergencyClassStudents(classId) // Compatibilidad
+        };
+      }
+      
+      // Si no es emergente, buscar en clases regulares
+      const classesStore = useClassesStore();
+      const regularClass = classesStore.getClassById?.(classId);
+      
+      if (regularClass) {
+        console.log('[AttendanceStore] Clase regular encontrada:', regularClass);
+        return {
+          id: classId,
+          name: regularClass.name,
+          type: 'regular',
+          isEmergencyClass: false,
+          students: regularClass.studentIds || [],
+          teacherId: regularClass.teacherId,
+          studentIds: regularClass.studentIds || [] // Compatibilidad
+        };
+      }
+      
+      console.warn('[AttendanceStore] No se encontró información para la clase:', classId);
+      return null;
+      
+    } catch (err) {
+      console.error('[AttendanceStore] Error al obtener información de clase:', err);
+      return null;
+    }
+  };
+
   return {
     // Estado
     attendanceRecords,
@@ -1646,6 +1807,108 @@ export const useAttendanceStore = defineStore('attendance', () => {
     deleteObservation,
     fetchTopAbsentStudentsByTeacher,
     fetchAttendanceByDateRangeAndClasses,
+    getEmergencyClassStudents,
+    isEmergencyClass,
+    getClassInfo,
+    
+    // Método específico para clases emergentes
+    createEmergencyClassAttendanceDocument: async (emergencyClassData: {
+      emergencyClassId: string;
+      className: string;
+      date: string;
+      selectedStudents: string[];
+      teacherId: string;
+    }): Promise<string> => {
+      try {
+        loading.value = true;
+        error.value = null;
+        
+        console.log('[AttendanceStore] Creando documento de asistencia para clase emergente:', emergencyClassData);
+        
+        // Crear el documento de asistencia con estructura estándar
+        const attendanceDoc: AttendanceDocument = {
+          id: '', // Se asignará después
+          fecha: emergencyClassData.date,
+          classId: emergencyClassData.emergencyClassId,
+          className: emergencyClassData.className,
+          teacherId: emergencyClassData.teacherId,
+          uid: emergencyClassData.teacherId,
+          data: {
+            presentes: [],
+            ausentes: emergencyClassData.selectedStudents, // Todos empiezan como ausentes
+            tarde: [],
+            justificacion: [],
+            observación: '',
+            fechaRegistro: new Date(),
+            maestro: emergencyClassData.teacherId
+          },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          // Metadatos específicos para clases emergentes
+          isEmergencyClass: true,
+          emergencyClassId: emergencyClassData.emergencyClassId
+        };
+        
+        // Guardar usando el método existente
+        const docId = await saveAttendanceDocument(attendanceDoc);
+        
+        // Actualizar el ID del documento
+        attendanceDoc.id = docId;
+        
+        // Actualizar el estado local para la clase emergente
+        selectedClass.value = emergencyClassData.emergencyClassId;
+        selectedDate.value = emergencyClassData.date;
+        currentAttendanceDoc.value = attendanceDoc;
+        
+        // Inicializar registros locales de asistencia
+        attendanceRecords.value = {};
+        emergencyClassData.selectedStudents.forEach(studentId => {
+          attendanceRecords.value[studentId] = 'Ausente';
+        });
+        
+        console.log('[AttendanceStore] Documento de asistencia creado para clase emergente:', docId);
+        
+        return docId;
+        
+      } catch (err) {
+        error.value = 'Error al crear documento de asistencia para clase emergente';
+        console.error('Error en createEmergencyClassAttendanceDocument:', err);
+        throw err;
+      } finally {
+        loading.value = false;
+      }
+    },
+    
+    // Método para recuperar clases emergentes en el calendario
+    getEmergencyClassesForDate: async (date: string, teacherId?: string): Promise<any[]> => {
+      try {
+        // Buscar documentos de asistencia que sean de clases emergentes
+        const emergencyAttendanceDocs = attendanceDocuments.value.filter(doc => 
+          doc.fecha === date && 
+          doc.isEmergencyClass === true &&
+          (!teacherId || doc.teacherId === teacherId)
+        );
+        
+        return emergencyAttendanceDocs.map(doc => ({
+          id: doc.emergencyClassId || doc.classId,
+          name: doc.className,
+          date: doc.fecha,
+          type: 'emergency',
+          hasAttendance: true,
+          teacherId: doc.teacherId,
+          studentIds: [
+            ...(doc.data.presentes || []),
+            ...(doc.data.ausentes || []),
+            ...(doc.data.tarde || [])
+          ],
+          isEmergencyClass: true
+        }));
+        
+      } catch (err) {
+        console.error('Error getting emergency classes for date:', err);
+        return [];
+      }
+    },
     
     // Método para resetear el store (requerido para el logout)
     $reset() {

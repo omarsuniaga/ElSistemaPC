@@ -17,7 +17,7 @@ import {
 } from '@heroicons/vue/24/outline';
 import TopAbsenteesByRange from '@/components/TopAbsenteesByRange.vue';
 import { useToast } from '@/components/ui/toast/use-toast';
-import { Dialog, DialogPanel, DialogOverlay, TransitionRoot, TransitionChild } from '@headlessui/vue';
+import { Dialog, DialogPanel, DialogOverlay, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue';
 import TeacherWeeklySchedule from '../../components/TeacherWeeklySchedule.vue'; // Componente que acabamos de crear
 import TeacherClassesCard from '../../components/TeacherClassesCard.vue';
 import ClassForm from '../modulos/Classes/components/ClassForm.vue'; // Componente existente
@@ -917,14 +917,18 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95"
           >
-            <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
-              <h2 class="text-xl font-semibold mb-4">{{ isEditing ? 'Editar Clase' : 'Nueva Clase' }}</h2>
-              <ClassForm 
-                :class-data="isEditing ? selectedClass : null"
-                @save="handleSaveClass"
-                @cancel="showForm = false"
-              />
-            </DialogPanel>
+            <div class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
+              <DialogPanel>
+                <DialogTitle as="h2" class="text-xl font-semibold mb-4">
+                  {{ isEditing ? 'Editar Clase' : 'Nueva Clase' }}
+                </DialogTitle>
+                <ClassForm 
+                  :class-data="isEditing ? selectedClass : null"
+                  @save="handleSaveClass"
+                  @cancel="showForm = false"
+                />
+              </DialogPanel>
+            </div>
           </TransitionChild>
         </div>
       </Dialog>
@@ -958,15 +962,20 @@ watch([currentTeacherId, () => classesStore.classes.length], async ([newTeacherI
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95"
           >
-            <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
-              <h2 class="text-xl font-semibold mb-4">Gestionar Estudiantes - {{ selectedClass?.name }}</h2>              <ClassStudentManager 
-                :key="selectedClass?.id || 'no-class'"
-                :class-id="selectedClass?.id || ''"
-                :student-ids="Array.isArray(selectedClass?.studentIds) ? [...selectedClass.studentIds] : []"
-                @update="handleStudentChange"
-                @close="showStudentManager = false"
-              />
-            </DialogPanel>
+            <div class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
+              <DialogPanel>
+                <DialogTitle as="h2" class="text-xl font-semibold mb-4">
+                  Gestionar Estudiantes - {{ selectedClass?.name }}
+                </DialogTitle>
+                <ClassStudentManager 
+                  :key="selectedClass?.id || 'no-class'"
+                  :class-id="selectedClass?.id || ''"
+                  :student-ids="Array.isArray(selectedClass?.studentIds) ? [...selectedClass.studentIds] : []"
+                  @update="handleStudentChange"
+                  @close="showStudentManager = false"
+                />
+              </DialogPanel>
+            </div>
           </TransitionChild>
         </div>
       </Dialog>

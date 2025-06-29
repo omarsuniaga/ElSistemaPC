@@ -1018,6 +1018,179 @@ export const useClassesStore = defineStore('classes', {
       
       // Si no hay caché específico, usar los getters locales como fallback
       return this.getAllTeacherClasses(teacherId);
+    },
+
+    /**
+     * Busca una clase por ID en clases regulares y emergentes
+     * Extiende la funcionalidad para incluir clases emergentes
+     */
+    async findClassById(id: string) {
+      // Primero buscar en clases regulares
+      const regularClass = this.getClassById(id);
+      if (regularClass) {
+        return regularClass;
+      }
+      
+      // Si no se encuentra en clases regulares, buscar en clases emergentes
+      try {
+        const { getEmergencyClassByIdFirebase } = await import('../../Attendance/service/emergencyClass');
+        const emergencyClass = await getEmergencyClassByIdFirebase(id);
+        
+        if (emergencyClass) {
+          // Convertir la clase emergente al formato completo esperado por AttendanceList
+          const normalizedEmergencyClass = this.normalizeEmergencyClassData(emergencyClass);
+          return normalizedEmergencyClass;
+        }
+      } catch (error) {
+        console.error(`Error buscando clase emergente ${id}:`, error);
+      }
+      
+      return null;
+    },
+
+    /**
+     * Normaliza los datos de una clase emergente para que sea compatible con ClassData
+     * y el componente AttendanceList
+     */
+    normalizeEmergencyClassData(emergencyClass: any): ClassData & { isEmergencyClass: boolean } {
+      // Asegurar que tenemos todos los campos requeridos
+      const normalizedClass = {
+        // Campos básicos requeridos por ClassData
+        id: emergencyClass.id,
+        name: emergencyClass.className || `Clase Emergente ${emergencyClass.id?.substring(0, 8) || ''}`,
+        className: emergencyClass.className || `Clase Emergente ${emergencyClass.id?.substring(0, 8) || ''}`, // Para compatibilidad
+        teacherId: emergencyClass.teacherId || '',
+        studentIds: Array.isArray(emergencyClass.selectedStudents) ? emergencyClass.selectedStudents : [],
+        
+        // Campos descriptivos
+        description: this.buildEmergencyDescription(emergencyClass),
+        level: 'Emergencia',
+        instrument: emergencyClass.instrument || 'Múltiples instrumentos',
+        
+        // Horario simulado basado en la fecha de la clase emergente
+        schedule: this.buildEmergencySchedule(emergencyClass),
+        
+        // Estados y fechas
+        isActive: emergencyClass.status === 'active' || emergencyClass.isActive !== false,
+        createdAt: this.parseDate(emergencyClass.createdAt),
+        updatedAt: this.parseDate(emergencyClass.updatedAt),
+        
+        // Campos adicionales para compatibilidad completa
+        capacity: emergencyClass.selectedStudents?.length || 0,
+        maxCapacity: emergencyClass.selectedStudents?.length || 50,
+        location: emergencyClass.location || 'Aula a determinar',
+        notes: emergencyClass.notes || emergencyClass.reason || '',
+        
+        // Campos opcionales que podrían estar presentes
+        teachers: emergencyClass.assistantTeachers || [],
+        subject: emergencyClass.subject || 'Ensayo/Práctica',
+        academicYear: new Date().getFullYear().toString(),
+        semester: this.getCurrentSemester(),
+        
+        // Marcador especial para identificar clases emergentes
+        isEmergencyClass: true,
+        
+        // Datos específicos de la clase emergente (para debugging y referencia)
+        emergencyData: {
+          originalId: emergencyClass.id,
+          date: emergencyClass.date,
+          startTime: emergencyClass.startTime,
+          endTime: emergencyClass.endTime,
+          reason: emergencyClass.reason,
+          status: emergencyClass.status,
+          location: emergencyClass.location
+        }
+      } as ClassData & { 
+        isEmergencyClass: boolean;
+        className: string;
+        emergencyData: any;
+      };
+      
+      console.log(`[ClassStore] Clase emergente normalizada:`, {
+        id: normalizedClass.id,
+        name: normalizedClass.name,
+        studentCount: normalizedClass.studentIds.length,
+        teacherId: normalizedClass.teacherId
+      });
+      
+      return normalizedClass;
+    },
+
+    /**
+     * Construye una descripción informativa para la clase emergente
+     */
+    buildEmergencyDescription(emergencyClass: any): string {
+      const parts = ['Clase emergente'];
+      
+      if (emergencyClass.reason) {
+        parts.push(`- ${emergencyClass.reason}`);
+      }
+      
+      if (emergencyClass.date) {
+        const date = new Date(emergencyClass.date);
+        parts.push(`- Fecha: ${date.toLocaleDateString('es-ES')}`);
+      }
+      
+      if (emergencyClass.startTime && emergencyClass.endTime) {
+        parts.push(`- Horario: ${emergencyClass.startTime} - ${emergencyClass.endTime}`);
+      }
+      
+      if (emergencyClass.location) {
+        parts.push(`- Ubicación: ${emergencyClass.location}`);
+      }
+      
+      return parts.join(' ');
+    },
+
+    /**
+     * Construye un objeto de horario simulado para la clase emergente
+     */
+    buildEmergencySchedule(emergencyClass: any): any {
+      const emergencyDate = emergencyClass.date ? new Date(emergencyClass.date) : new Date();
+      const dayName = emergencyDate.toLocaleDateString('es-ES', { weekday: 'long' });
+      
+      return {
+        slots: [{
+          id: `emergency-${emergencyClass.id}`,
+          day: dayName,
+          dayOfWeek: emergencyDate.getDay(),
+          startTime: emergencyClass.startTime || '09:00',
+          endTime: emergencyClass.endTime || '12:00',
+          location: emergencyClass.location || 'Aula Principal',
+          isEmergency: true
+        }],
+        isEmergencySchedule: true,
+        emergencyDate: emergencyClass.date
+      };
+    },
+
+    /**
+     * Parsea una fecha de diferentes formatos
+     */
+    parseDate(dateValue: any): Date {
+      if (!dateValue) return new Date();
+      
+      if (dateValue instanceof Date) return dateValue;
+      
+      if (typeof dateValue === 'string' || typeof dateValue === 'number') {
+        const parsed = new Date(dateValue);
+        return isNaN(parsed.getTime()) ? new Date() : parsed;
+      }
+      
+      // Si es un timestamp de Firebase
+      if (dateValue && typeof dateValue.toDate === 'function') {
+        return dateValue.toDate();
+      }
+      
+      return new Date();
+    },
+
+    /**
+     * Obtiene el semestre actual
+     */
+    getCurrentSemester(): string {
+      const month = new Date().getMonth() + 1; // getMonth() returns 0-11
+      return month <= 6 ? 'Primer Semestre' : 'Segundo Semestre';
     }
   },
   persist: true

@@ -19,7 +19,7 @@ import {
   BellIcon,
 } from '@heroicons/vue/24/outline';
 import { useToast } from '@/components/ui/toast/use-toast';
-import { Dialog, DialogPanel, DialogOverlay, TransitionRoot, TransitionChild } from '@headlessui/vue';
+import { Dialog, DialogPanel, DialogOverlay, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue';
 import TeacherWeeklySchedule from './TeacherWeeklySchedule.vue';
 import TeacherClassesCard from './TeacherClassesCard.vue';
 import ClassForm from '@/modulos/Classes/components/ClassForm.vue'; // Componente existente
@@ -669,14 +669,18 @@ onMounted(async () => {
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95"
           >
-            <DialogPanel class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
-              <h2 class="text-xl font-semibold mb-4">{{ isEditing ? 'Editar Clase' : 'Nueva Clase' }}</h2>
-              <ClassForm 
-                :class-data="isEditing ? selectedClass : null"
-                @save="handleSaveClass"
-                @cancel="showForm = false"
-              />
-            </DialogPanel>
+            <div class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
+              <DialogPanel>
+                <DialogTitle as="h2" class="text-xl font-semibold mb-4">
+                  {{ isEditing ? 'Editar Clase' : 'Nueva Clase' }}
+                </DialogTitle>
+                <ClassForm 
+                  :class-data="isEditing ? selectedClass : null"
+                  @save="handleSaveClass"
+                  @cancel="showForm = false"
+                />
+              </DialogPanel>
+            </div>
           </TransitionChild>
         </div>
       </Dialog>

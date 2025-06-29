@@ -133,6 +133,26 @@ service cloud.firestore {
       );
     }
 
+    // Reglas para la colección EMERGENCY_CLASSES
+    match /EMERGENCY_CLASSES/{emergencyClassId} {
+      allow read: if request.auth != null && (
+        isAdmin() || 
+        (isTeacher() && resource.data.teacherId == request.auth.uid)
+      );
+      allow create: if request.auth != null && (
+        isAdmin() || 
+        (isTeacher() && request.resource.data.teacherId == request.auth.uid)
+      );
+      allow update: if request.auth != null && (
+        isAdmin() || 
+        (isTeacher() && resource.data.teacherId == request.auth.uid)
+      );
+      allow delete: if request.auth != null && (
+        isAdmin() || 
+        (isTeacher() && resource.data.teacherId == request.auth.uid)
+      );
+    }
+
     // Regla por defecto - denegar todo lo demás
     match /{document=**} {
       allow read, write: if false;

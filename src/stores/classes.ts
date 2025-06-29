@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { db } from '../firebase'
-import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore'
+import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, getDoc } from 'firebase/firestore'
+import { getEmergencyClassByIdFirebase } from '../modulos/Attendance/service/emergencyClass'
 
 // Constante para el nombre de la colección
 const COLLECTION_NAME = 'CLASES'
@@ -174,6 +175,40 @@ export const useClassesStore = defineStore('classes', {
       await this.updateClass(classId, {
         temas: temas.filter(t => t.id !== topicId)
       })
+    },
+
+    // Método para buscar una clase que incluye clases emergentes
+    async findClassById(id: string) {
+      // Primero buscar en clases regulares
+      const regularClass = this.getClassById(id)
+      if (regularClass) {
+        return regularClass
+      }
+      
+      // Si no se encuentra en clases regulares, buscar en clases emergentes
+      try {
+        const emergencyClass = await getEmergencyClassByIdFirebase(id)
+        if (emergencyClass) {
+          // Convertir la clase emergente al formato esperado por el store
+          return {
+            id: emergencyClass.id,
+            nombre: emergencyClass.className || 'Clase de Emergencia',
+            teacherId: emergencyClass.teacherId,
+            horario: {
+              dia: 'Emergencia',
+              horaInicio: emergencyClass.startTime || '00:00',
+              horaFin: emergencyClass.endTime || '23:59'
+            },
+            alumnos: emergencyClass.selectedStudents || [],
+            contenido: `Clase emergente: ${emergencyClass.reason || 'Sin razón especificada'}`,
+            isEmergencyClass: true
+          } as Clase & { isEmergencyClass: boolean }
+        }
+      } catch (error) {
+        console.error(`Error buscando clase emergente ${id}:`, error)
+      }
+      
+      return null
     }
   }
 })
