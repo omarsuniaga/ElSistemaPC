@@ -83,12 +83,17 @@ const sortedStudents = computed(() => {
   // Aplicar filtro de búsqueda si hay texto
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase().trim()
-    filtered = filtered.filter(student => 
-      student.nombre.toLowerCase().includes(query) ||
-      student.apellido.toLowerCase().includes(query) ||
-      (student.instrumento && student.instrumento.toLowerCase().includes(query)) ||
-      (student.grupo && student.grupo.some(g => g.toLowerCase().includes(query)))
-    )
+    filtered = filtered.filter(student => {
+      const instrumentoStr = student.instrumento ? String(student.instrumento).toLowerCase() : '';
+      const grupos = Array.isArray(student.grupo) ? student.grupo.map(g => String(g).toLowerCase()) : [];
+      
+      return (
+        student.nombre?.toLowerCase().includes(query) ||
+        student.apellido?.toLowerCase().includes(query) ||
+        instrumentoStr.includes(query) ||
+        grupos.some(g => g.includes(query))
+      );
+    })
   }
   
   // Apply sorting based on sortOrder

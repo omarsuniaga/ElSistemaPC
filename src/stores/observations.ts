@@ -436,6 +436,32 @@ export const useObservationsStore = defineStore('observations', () => {
     return JSON.stringify(data, null, 2);
   };
 
+  /**
+   * Devuelve las observaciones de un alumno filtradas por id y rango de fechas
+   * @param studentId string
+   * @param dateFrom string (YYYY-MM-DD)
+   * @param dateTo string (YYYY-MM-DD)
+   * @returns ObservationData[]
+   */
+  function getObservationsByStudentIdAndDateRange(studentId: string, dateFrom?: string, dateTo?: string): ObservationData[] {
+    return observations.value.filter(obs => {
+      // El alumno debe estar etiquetado
+      if (!Array.isArray(obs.taggedStudents) || !obs.taggedStudents.includes(studentId)) return false;
+      // Filtrar por rango de fechas si se especifica
+      if (dateFrom) {
+        const obsDate = new Date(obs.date);
+        const fromDate = new Date(dateFrom);
+        if (obsDate < fromDate) return false;
+      }
+      if (dateTo) {
+        const obsDate = new Date(obs.date);
+        const toDate = new Date(dateTo);
+        if (obsDate > toDate) return false;
+      }
+      return true;
+    });
+  }
+
   return {
     // Estado
     observations: readonly(observations),
@@ -457,6 +483,7 @@ export const useObservationsStore = defineStore('observations', () => {
     deleteObservation,
     clearFilters,
     clearCache,
-    exportObservationsForAnalysis
+    exportObservationsForAnalysis,
+    getObservationsByStudentIdAndDateRange
   };
 });

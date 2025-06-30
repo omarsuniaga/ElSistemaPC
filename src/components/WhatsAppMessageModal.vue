@@ -87,7 +87,7 @@
         <div v-if="selectedPreset" class="flex flex-wrap gap-3 justify-end">
           <button
             @click="copyPhone"
-            :disabled="copying"
+            :disabled="!!copying"
             class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
             <PhoneIcon class="w-4 h-4 mr-2" />
@@ -96,7 +96,7 @@
           
           <button
             @click="copyMessage"
-            :disabled="copying"
+            :disabled="!!copying"
             class="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
           >
             <DocumentDuplicateIcon class="w-4 h-4 mr-2" />
@@ -105,7 +105,7 @@
           
           <button
             @click="copyAll"
-            :disabled="copying"
+            :disabled="!!copying"
             class="flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 transition-colors"
           >
             <ClipboardDocumentIcon class="w-4 h-4 mr-2" />
@@ -155,6 +155,8 @@ import {
 import { useWhatsAppPresets, type MessageData, type WhatsAppPreset } from '../composables/useWhatsAppPresets';
 import { useAuthStore } from '../stores/auth';
 import WhatsAppTemplateManager from './WhatsAppTemplateManager.vue';
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '../firebase/config';
 
 interface Props {
   isOpen: boolean;
@@ -175,6 +177,9 @@ const { presets, loading, error, loadPresets, processTemplate, copyToClipboard }
 const selectedPreset = ref<WhatsAppPreset | null>(null);
 const copying = ref<'phone' | 'message' | 'all' | null>(null);
 const showTemplateManager = ref(false);
+
+// Asegurar que MessageData tenga studentId opcional
+type MessageDataWithId = MessageData & { studentId?: string, id?: string };
 
 // Mensaje procesado con los datos del estudiante
 const processedMessage = computed(() => {
@@ -243,11 +248,34 @@ const copyAll = async () => {
 };
 
 // Abrir WhatsApp
-const openWhatsApp = () => {
+enum WhatsAppLogType {
+  INDIVIDUAL = 'individual',
+  BULK = 'bulk'
+}
+
+const openWhatsApp = async () => {
   const phone = props.studentData.representantePhone.replace(/\D/g, '');
   const message = encodeURIComponent(processedMessage.value);
   const url = `https://wa.me/${phone}?text=${message}`;
   
+  // Registrar el intento de envío en Firestore
+  if (selectedPreset.value) {
+    try {
+      await addDoc(collection(db, 'whatsapp_logs'), {
+        studentId: (props.studentData as MessageDataWithId).studentId || (props.studentData as MessageDataWithId).id || null,
+        phone: props.studentData.representantePhone,
+        message: processedMessage.value,
+        presetId: selectedPreset.value.id,
+        presetName: selectedPreset.value.name,
+        sentAt: new Date(),
+        status: 'pending',
+        type: WhatsAppLogType.INDIVIDUAL
+      });
+    } catch (err) {
+      console.error('Error registrando log de WhatsApp:', err);
+    }
+  }
+
   window.open(url, '_blank');
   
   // Emitir evento de mensaje enviado

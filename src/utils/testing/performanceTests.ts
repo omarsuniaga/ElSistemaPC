@@ -148,16 +148,16 @@ class PerformanceTestSuite {
     try {
       // Simular carga de componentes críticos
       const preloadStart = performance.now()
-      await lazyLoader.preloadCritical([
-        () => Promise.resolve({ default: { name: 'MockComponent1' } }),
-        () => Promise.resolve({ default: { name: 'MockComponent2' } }),
-        () => Promise.resolve({ default: { name: 'MockComponent3' } })
+      await Promise.all([
+        ModulePreloader.preloadModule(() => Promise.resolve({ default: { name: 'MockComponent1' } }), 'MockComponent1'),
+        ModulePreloader.preloadModule(() => Promise.resolve({ default: { name: 'MockComponent2' } }), 'MockComponent2'),
+        ModulePreloader.preloadModule(() => Promise.resolve({ default: { name: 'MockComponent3' } }), 'MockComponent3')
       ])
       const preloadTime = performance.now() - preloadStart
       
       // Test de carga bajo demanda
       const lazyLoadStart = performance.now()
-      const mockComponent = await lazyLoader.loadComponent('MockComponent', 
+      const mockComponent = createLazyComponent(
         () => Promise.resolve({ default: { name: 'MockComponent' } })
       )
       const lazyLoadTime = performance.now() - lazyLoadStart

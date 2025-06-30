@@ -57,7 +57,7 @@ const handleSubmit = () => {
     }
     
     studentsStore.updateStudent(String(studentId), formData.value)
-    router.push(`/students/${studentId}`)
+    router.push('/students/')
   }
 }
 
@@ -113,7 +113,6 @@ const handleCancel = () => {
               v-model="formData.edad"
               type="text"
               class="input"
-              required
             />
           </div>
           <div>
@@ -126,7 +125,7 @@ const handleCancel = () => {
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Sexo</label>
-            <select v-model="formData.sexo" class="input" required>
+            <select v-model="formData.sexo" class="input" >
               <option value="Masculino">Masculino</option>
               <option value="Femenino">Femenino</option>
             </select>

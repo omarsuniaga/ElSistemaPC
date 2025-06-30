@@ -258,6 +258,16 @@ export const useStudentsStore = defineStore('students', {
     async deleteStudent(id: string) {
       this.loading = true
       try {
+        // 1. Eliminar al alumno de todas las clases donde esté inscrito
+        const { useClassesStore } = await import('../../Classes/store/classes')
+        const classesStore = useClassesStore()
+        // Buscar todas las clases donde el alumno esté inscrito
+        const clasesConAlumno = classesStore.classes.filter(c => Array.isArray(c.studentIds) && c.studentIds.includes(id))
+        for (const clase of clasesConAlumno) {
+          const nuevosIds = clase.studentIds.filter(sid => sid !== id)
+          await classesStore.updateClass(clase.id, { studentIds: nuevosIds })
+        }
+        // 2. Eliminar el alumno de Firestore
         await deleteStudentFirebase(id)
         this.students = this.students.filter(item => item.id !== id)
       } catch (error: any) {

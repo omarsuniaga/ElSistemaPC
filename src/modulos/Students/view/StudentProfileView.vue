@@ -38,6 +38,14 @@ import { useAttendanceStore } from '../../Attendance/store/attendance'
 import { useOptimizedAttendance } from '../../Attendance/composables/useOptimizedAttendance'
 import { useTeachersStore } from '../../Teachers/store/teachers'
 import PerformanceWidget from '../../Performance/components/PerformanceWidget.vue'
+import FileUpload from "../../../components/FileUpload.vue"
+import StudentAvatar from "../components/StudentAvatar.vue"
+import { useObservationsStore } from '@/stores/observations'
+import type { ObservationData } from '@/stores/observations'
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore'
+import { db } from '../../../firebase/config'
+import { useWhatsAppLogsStore } from '@/stores/whatsappLogs'
+import { generarPdfDesdeHtml } from '@/utils/pdfService'
 import { Line } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -49,9 +57,6 @@ import {
   Tooltip,
   Legend
 } from 'chart.js'
-import { uploadFile } from "../../../service/storage"
-import FileUpload from "../../../components/FileUpload.vue"
-import StudentAvatar from "../components/StudentAvatar.vue"
 
 ChartJS.register(
   CategoryScale,
@@ -69,6 +74,8 @@ const studentsStore = useStudentsStore()
 const classesStore = useClassesStore()
 const attendanceStore = useAttendanceStore()
 const teachersStore = useTeachersStore()
+const observationsStore = useObservationsStore()
+const whatsappLogsStore = useWhatsAppLogsStore()
 
 // Composable optimizado para asistencias
 const {
@@ -87,7 +94,7 @@ const calculatedAge = computed(() => {
     if (!student.value?.nac) return '?';
     
     let birthDate;
-    let dateStr = student.value.nac;
+    let dateStr: any = student.value.nac;
     
     // Si es un objeto Date, convertirlo a string ISO
     if (dateStr instanceof Date) {
@@ -686,6 +693,7 @@ const chartOptions = {
 
 const isUploading = ref(false)
 const showDeleteConfirm = ref(false)
+const isDeleting = ref(false)
 
 // Función para manejar errores de carga de imágenes
 const handleImageError = (event: Event) => {
@@ -856,12 +864,21 @@ watch(student, (newStudent) => {
 }, { immediate: true })
 
 const handleEdit = () => {
-  isEditing.value = true
+  if (student.value?.id) {
+    router.push(`/students/edit/${student.value.id}`)
+  } else {
+    console.error('No se pudo obtener el ID del estudiante')
+  }
 }
 
 const handleCancel = () => {
-  localStudent.value = { ...student.value }
   isEditing.value = false
+  localStudent.value = { ...student.value }
+   if (student.value?.id) {
+     router.push(`/students/`)
+  } else {
+    console.error('No se pudo obtener el ID del estudiante')
+  }
 }
 
 const handleSave = async () => {
@@ -882,7 +899,24 @@ const handleSave = async () => {
 }
 
 const handleDelete = () => {
-  router.push(`/students/${String(studentId)}/delete`)
+  showDeleteConfirm.value = true
+}
+
+const confirmDelete = async () => {
+  if (!student.value?.id) return
+  isDeleting.value = true
+  try {
+    await studentsStore.deleteStudent(student.value.id)
+    showDeleteConfirm.value = false
+    isDeleting.value = false
+    // Redirigir a la lista de alumnos tras eliminar
+    router.push('/students')
+  } catch (error) {
+    isDeleting.value = false
+    showDeleteConfirm.value = false
+    console.error('Error al eliminar alumno:', error)
+    // Aquí podrías mostrar un toast o alerta
+  }
 }
 
 // onMounted para cargar los datos necesarios del estudiante
@@ -1113,186 +1147,340 @@ const handleExpandPerformance = () => {
   // Por ahora simplemente navegamos a los detalles
   handleViewPerformanceDetails();
 };
+
+// Rango de fechas para filtrar observaciones (por defecto últimos 6 meses)
+const today = new Date()
+const sixMonthsAgo = new Date()
+sixMonthsAgo.setMonth(today.getMonth() - 6)
+const obsDateRange = ref({
+  start: sixMonthsAgo.toISOString().split('T')[0],
+  end: today.toISOString().split('T')[0]
+})
+
+const studentObservations = computed<ObservationData[]>(() => {
+  if (!student.value || !student.value.id) return []
+  return observationsStore.getObservationsByStudentIdAndDateRange(
+    student.value.id,
+    obsDateRange.value.start,
+    obsDateRange.value.end
+  )
+})
+
+// Historial de mensajes WhatsApp usando el store
+const whatsappDateRange = ref({
+  start: sixMonthsAgo.toISOString().split('T')[0],
+  end: today.toISOString().split('T')[0]
+})
+
+const loadWhatsAppLogs = async () => {
+  if (!student.value || !student.value.id) return
+  await whatsappLogsStore.fetchLogsByStudentIdAndDateRange(
+    student.value.id,
+    whatsappDateRange.value.start,
+    whatsappDateRange.value.end
+  )
+}
+
+watch([() => student.value?.id, whatsappDateRange], loadWhatsAppLogs, { immediate: true })
+
+onMounted(async () => {
+  if (student.value && student.value.id) {
+    await observationsStore.fetchObservations({ studentId: student.value.id })
+  }
+})
+
+const exportProfileToPDF = async () => {
+  const nombre = student.value ? `${student.value.nombre}_${student.value.apellido}` : 'Alumno'
+  await generarPdfDesdeHtml({
+    elementId: 'student-profile-pdf',
+    filename: `Perfil_${nombre}.pdf`,
+    logoUrl: new URL('@/assets/ElSistemaPCLogo.jpeg', import.meta.url).href,
+    institutionName: 'El Sistema Punta Cana',
+    footerText: 'Documento generado automáticamente por El Sistema PC',
+    margin: 10
+  })
+}
 </script>
 
 <template>
-  <div class="student-profile mb-16 px-2 sm:px-4 md:px-8">
-    <!-- Header con avatar y acciones -->
-    <div class="profile-header bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-8 rounded-b-3xl shadow-lg flex flex-col items-center relative">
-      <div class="absolute top-4 right-4 flex gap-2">
-        <button v-if="!isEditing" @click="handleEdit" class="btn bg-white/20 hover:bg-white/40 text-white font-bold px-4 py-2 rounded-lg shadow transition-all duration-200" title="Editar perfil">
-          <PencilIcon class="w-5 h-5 inline mr-1" /> Editar
-        </button>
-        <button v-if="!isEditing" @click="handleDelete" class="btn bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg shadow transition-all duration-200" title="Eliminar alumno">
-          <TrashIcon class="w-5 h-5 inline mr-1" /> Eliminar
-        </button>
-      </div>
-      <StudentAvatar
-        :first-name="student.nombre || ''"
-        :last-name="student.apellido || ''"
-        size="xl"
-        class="shadow-lg border-4 border-white mb-4"
-      />
-      <h1 class="text-3xl font-extrabold tracking-tight mb-2 drop-shadow-lg">{{ student.nombre }} {{ student.apellido }}</h1>
-      <div class="flex gap-2 mb-2">
-        <span class="inline-flex items-center px-3 py-1 rounded-full bg-white/20 text-white font-semibold text-sm shadow">
-          <MusicalNoteIcon class="w-4 h-4 mr-1" />
-          {{ student.instrumento?.nombre || student.instrumento || 'Sin instrumento' }}
-        </span>
-        <span v-if="student.clase" class="inline-flex items-center px-3 py-1 rounded-full bg-indigo-400/60 text-white font-semibold text-sm shadow">
-          <AcademicCapIcon class="w-4 h-4 mr-1" />
-          {{ student.clase }}
-        </span>
-      </div>
-      <div class="flex gap-3 mt-2" v-if="isEditing">
-        <button @click="handleSave" class="btn bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-lg shadow transition-all duration-200" title="Guardar cambios">
-          <CheckIcon class="w-5 h-5 inline mr-1" /> Guardar
-        </button>
-        <button @click="handleCancel" class="btn bg-gray-600 hover:bg-gray-700 text-white font-bold px-4 py-2 rounded-lg shadow transition-all duration-200" title="Cancelar edición">
-          <XMarkIcon class="w-5 h-5 inline mr-1" /> Cancelar
-        </button>
-      </div>
+  <div>
+    <div class="flex justify-end mb-4">
+      <button @click="exportProfileToPDF" class="btn btn-primary flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+        Exportar a PDF
+      </button>
+      <button v-if="!isEditing" @click="handleDelete" class="btn bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg shadow transition-all duration-200 ml-2" title="Eliminar alumno">
+        <TrashIcon class="w-5 h-5 inline mr-1" /> Eliminar
+      </button>
     </div>
-
-    <!-- Tarjetas de información -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 mt-8">
-      <!-- Información Personal -->
-      <div class="card bg-white dark:bg-gray-800 shadow rounded-xl p-6">
-        <h2 class="flex items-center gap-2 text-lg font-semibold mb-4 text-blue-700 dark:text-blue-300">
-          <UserIcon class="w-5 h-5" /> Información Personal
-        </h2>
-        <div class="space-y-2">
-          <div><span class="font-medium">Edad:</span> {{ calculatedAge }} años</div>
-          <div><span class="font-medium">Fecha de Nacimiento:</span> {{ student.nac }}</div>
-          <div><span class="font-medium">Sexo:</span> {{ student.sexo }}</div>
-          <div><span class="font-medium">Madre:</span> {{ student.madre }}</div>
-          <div><span class="font-medium">Padre:</span> {{ student.padre }}</div>
-        </div>
-      </div>
-      <!-- Información Académica -->
-      <div class="card bg-white dark:bg-gray-800 shadow rounded-xl p-6">
-        <h2 class="flex items-center gap-2 text-lg font-semibold mb-4 text-indigo-700 dark:text-indigo-300">
-          <AcademicCapIcon class="w-5 h-5" /> Información Académica
-        </h2>
-        <div class="space-y-2">
-          <div><span class="font-medium">Instrumento:</span> {{ student.instrumento?.nombre || student.instrumento }}</div>
-          <div><span class="font-medium">Clase:</span> {{ student.clase }}</div>
-          <div><span class="font-medium">Grupos:</span> <span v-if="student.grupo && student.grupo.length > 0">{{ student.grupo.join(', ') }}</span><span v-else>Sin grupos</span></div>
-          <div><span class="font-medium">Nivel:</span> {{ student.nivel || 'No especificado' }}</div>
-        </div>
-      </div>
-      <!-- Contacto -->
-      <div class="card bg-white dark:bg-gray-800 shadow rounded-xl p-6">
-        <h2 class="flex items-center gap-2 text-lg font-semibold mb-4 text-green-700 dark:text-green-300">
-          <PhoneIcon class="w-5 h-5" /> Contacto
-        </h2>
-        <div class="space-y-2">
-          <div><span class="font-medium">Teléfono:</span> {{ student.tlf }}</div>
-          <div><span class="font-medium">Email:</span> {{ student.email }}</div>
-          <div><span class="font-medium">Dirección:</span> {{ student.direccion }}</div>
-        </div>
-      </div>
-      <!-- Documentos -->
-      <div class="card bg-white dark:bg-gray-800 shadow rounded-xl p-6">
-        <h2 class="flex items-center gap-2 text-lg font-semibold mb-4 text-amber-700 dark:text-amber-300">
-          <DocumentTextIcon class="w-5 h-5" /> Documentos
-        </h2>
-        <div class="space-y-2">
-          <div v-if="student.documentos?.contrato_instrumento">
-            <span class="font-medium">Contrato de Instrumento:</span>
-            <a :href="student.documentos.contrato_instrumento.url" target="_blank" class="text-blue-600 hover:underline ml-2">Ver documento</a>
+    <div id="student-profile-pdf">
+      <div class="student-profile mb-16 px-2 sm:px-4 md:px-8">
+        <!-- Header con avatar y acciones -->
+        <div class="profile-header bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-8 rounded-b-3xl shadow-lg flex flex-col items-center relative">
+          <div class="absolute top-4 right-4 flex gap-2">
+            <button v-if="!isEditing" @click="handleEdit" class="btn bg-white/20 hover:bg-white/40 text-white font-bold px-4 py-2 rounded-lg shadow transition-all duration-200" title="Editar perfil">
+              <PencilIcon class="w-5 h-5 inline mr-1" /> Editar
+            </button>
           </div>
-          <div v-else class="text-gray-500 italic">Contrato de instrumento no subido</div>
-          <div v-if="student.documentos?.terminos_condiciones">
-            <span class="font-medium">Términos y Condiciones:</span>
-            <a :href="student.documentos.terminos_condiciones.url" target="_blank" class="text-blue-600 hover:underline ml-2">Ver documento</a>
-          </div>
-          <div v-else class="text-gray-500 italic">Términos y condiciones no subidos</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Estadísticas y asistencia -->
-    <div class="mt-8 flex flex-col gap-6 md:flex-row md:items-start">
-      <!-- Gráfico circular y estadísticas -->
-      <div class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 shadow rounded-xl p-6 w-full md:w-1/3 mb-6 md:mb-0">
-        <svg class="w-24 h-24 mb-2" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="40" fill="none" stroke="#e5e7eb" stroke-width="10" />
-          <circle
-            cx="50" cy="50" r="40" fill="none"
-            :stroke="studentAttendance.summary?.attendanceRate >= 80 ? '#22c55e' : studentAttendance.summary?.attendanceRate >= 60 ? '#f59e0b' : '#ef4444'"
-            stroke-width="10"
-            :stroke-dasharray="`${studentAttendance.summary?.attendanceRate || 0}, 100`"
-            stroke-dashoffset="25"
-            transform="rotate(-90 50 50)"
+          <StudentAvatar
+            :first-name="student.nombre || ''"
+            :last-name="student.apellido || ''"
+            size="xl"
+            class="shadow-lg border-4 border-white mb-4"
           />
-          <text x="50" y="50" text-anchor="middle" dominant-baseline="middle" font-size="18" font-weight="bold"
-            :fill="studentAttendance.summary?.attendanceRate >= 80 ? '#22c55e' : studentAttendance.summary?.attendanceRate >= 60 ? '#f59e0b' : '#ef4444'">
-            {{ studentAttendance.summary?.attendanceRate || 0 }}%
-          </text>
-        </svg>
-        <div class="text-center text-sm text-gray-600 dark:text-gray-400 mt-2">Asistencia</div>
-      </div>
-      <div class="grid grid-cols-2 gap-4 flex-1 w-full md:w-2/3">
-        <!-- Estadísticas clave -->
-        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg shadow-sm text-center">
-          <div class="text-xs text-gray-500">Clases Totales</div>
-          <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ studentAttendance.summary?.total || 0 }}</div>
+          <h1 class="text-3xl font-extrabold tracking-tight mb-2 drop-shadow-lg">{{ student.nombre }} {{ student.apellido }}</h1>
+          <div class="flex gap-2 mb-2">
+            <span class="inline-flex items-center px-3 py-1 rounded-full bg-white/20 text-white font-semibold text-sm shadow">
+              <MusicalNoteIcon class="w-4 h-4 mr-1" />
+              {{ student.instrumento?.nombre || student.instrumento || 'Sin instrumento' }}
+            </span>
+            <span v-if="student.clase" class="inline-flex items-center px-3 py-1 rounded-full bg-indigo-400/60 text-white font-semibold text-sm shadow">
+              <AcademicCapIcon class="w-4 h-4 mr-1" />
+              {{ student.clase }}
+            </span>
+          </div>
+          <div class="flex gap-3 mt-2" v-if="isEditing">
+            <button @click="handleSave" class="btn bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-lg shadow transition-all duration-200" title="Guardar cambios">
+              <CheckIcon class="w-5 h-5 inline mr-1" /> Guardar
+            </button>
+            <button @click="handleCancel" class="btn bg-gray-600 hover:bg-gray-700 text-white font-bold px-4 py-2 rounded-lg shadow transition-all duration-200" title="Cancelar edición">
+              <XMarkIcon class="w-5 h-5 inline mr-1" /> Cancelar
+            </button>
+          </div>
         </div>
-        <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg shadow-sm text-center">
-          <div class="text-xs text-gray-500">Asistencias</div>
-          <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ studentAttendance.summary?.present || 0 }}</div>
+
+        <!-- Tarjetas de información -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 mt-8">
+          <!-- Información Personal -->
+          <div class="card bg-white dark:bg-gray-800 shadow rounded-xl p-6">
+            <h2 class="flex items-center gap-2 text-lg font-semibold mb-4 text-blue-700 dark:text-blue-300">
+              <UserIcon class="w-5 h-5" /> Información Personal
+            </h2>
+            <div class="space-y-2">
+              <div><span class="font-medium">Edad:</span> {{ calculatedAge }} años</div>
+              <div><span class="font-medium">Fecha de Nacimiento:</span> {{ student.nac }}</div>
+              <div><span class="font-medium">Sexo:</span> {{ student.sexo }}</div>
+              <div><span class="font-medium">Madre:</span> {{ student.madre }}</div>
+              <div><span class="font-medium">Padre:</span> {{ student.padre }}</div>
+            </div>
+          </div>
+          <!-- Información Académica -->
+          <div class="card bg-white dark:bg-gray-800 shadow rounded-xl p-6">
+            <h2 class="flex items-center gap-2 text-lg font-semibold mb-4 text-indigo-700 dark:text-indigo-300">
+              <AcademicCapIcon class="w-5 h-5" /> Información Académica
+            </h2>
+            <div class="space-y-2">
+              <div><span class="font-medium">Instrumento:</span> {{ student.instrumento?.nombre || student.instrumento }}</div>
+              <div><span class="font-medium">Clase:</span> {{ student.clase }}</div>
+              <div><span class="font-medium">Grupos:</span> <span v-if="student.grupo && student.grupo.length > 0">{{ student.grupo.join(', ') }}</span><span v-else>Sin grupos</span></div>
+              <div><span class="font-medium">Nivel:</span> {{ student.nivel || 'No especificado' }}</div>
+            </div>
+          </div>
+          <!-- Contacto -->
+          <div class="card bg-white dark:bg-gray-800 shadow rounded-xl p-6">
+            <h2 class="flex items-center gap-2 text-lg font-semibold mb-4 text-green-700 dark:text-green-300">
+              <PhoneIcon class="w-5 h-5" /> Contacto
+            </h2>
+            <div class="space-y-2">
+              <div><span class="font-medium">Teléfono:</span> {{ student.tlf }}</div>
+              <div><span class="font-medium">Email:</span> {{ student.email }}</div>
+              <div><span class="font-medium">Dirección:</span> {{ student.direccion }}</div>
+            </div>
+          </div>
+          <!-- Documentos -->
+          <div class="card bg-white dark:bg-gray-800 shadow rounded-xl p-6">
+            <h2 class="flex items-center gap-2 text-lg font-semibold mb-4 text-amber-700 dark:text-amber-300">
+              <DocumentTextIcon class="w-5 h-5" /> Documentos
+            </h2>
+            <div class="space-y-2">
+              <div v-if="student.documentos?.contrato_instrumento">
+                <span class="font-medium">Contrato de Instrumento:</span>
+                <a :href="student.documentos.contrato_instrumento.url" target="_blank" class="text-blue-600 hover:underline ml-2">Ver documento</a>
+              </div>
+              <div v-else class="text-gray-500 italic">Contrato de instrumento no subido</div>
+              <div v-if="student.documentos?.terminos_condiciones">
+                <span class="font-medium">Términos y Condiciones:</span>
+                <a :href="student.documentos.terminos_condiciones.url" target="_blank" class="text-blue-600 hover:underline ml-2">Ver documento</a>
+              </div>
+              <div v-else class="text-gray-500 italic">Términos y condiciones no subidos</div>
+            </div>
+          </div>
         </div>
-        <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg shadow-sm text-center">
-          <div class="text-xs text-gray-500">Ausencias</div>
-          <div class="text-2xl font-bold text-red-600 dark:text-red-400">{{ studentAttendance.summary?.absent || 0 }}</div>
+
+        <!-- Estadísticas y asistencia -->
+        <div class="mt-8 flex flex-col gap-6 md:flex-row md:items-start">
+          <!-- Gráfico circular y estadísticas -->
+          <div class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 shadow rounded-xl p-6 w-full md:w-1/3 mb-6 md:mb-0">
+            <svg class="w-24 h-24 mb-2" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#e5e7eb" stroke-width="10" />
+              <circle
+                cx="50" cy="50" r="40" fill="none"
+                :stroke="studentAttendance.summary?.attendanceRate >= 80 ? '#22c55e' : studentAttendance.summary?.attendanceRate >= 60 ? '#f59e0b' : '#ef4444'"
+                stroke-width="10"
+                :stroke-dasharray="`${studentAttendance.summary?.attendanceRate || 0}, 100`"
+                stroke-dashoffset="25"
+                transform="rotate(-90 50 50)"
+              />
+              <text x="50" y="50" text-anchor="middle" dominant-baseline="middle" font-size="18" font-weight="bold"
+                :fill="studentAttendance.summary?.attendanceRate >= 80 ? '#22c55e' : studentAttendance.summary?.attendanceRate >= 60 ? '#f59e0b' : '#ef4444'">
+                {{ studentAttendance.summary?.attendanceRate || 0 }}%
+              </text>
+            </svg>
+            <div class="text-center text-sm text-gray-600 dark:text-gray-400 mt-2">Asistencia</div>
+          </div>
+          <div class="grid grid-cols-2 gap-4 flex-1 w-full md:w-2/3">
+            <!-- Estadísticas clave -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg shadow-sm text-center">
+              <div class="text-xs text-gray-500">Clases Totales</div>
+              <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ studentAttendance.summary?.total || 0 }}</div>
+            </div>
+            <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg shadow-sm text-center">
+              <div class="text-xs text-gray-500">Asistencias</div>
+              <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ studentAttendance.summary?.present || 0 }}</div>
+            </div>
+            <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg shadow-sm text-center">
+              <div class="text-xs text-gray-500">Ausencias</div>
+              <div class="text-2xl font-bold text-red-600 dark:text-red-400">{{ studentAttendance.summary?.absent || 0 }}</div>
+            </div>
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg shadow-sm text-center">
+              <div class="text-xs text-gray-500">Tardanzas</div>
+              <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ studentAttendance.summary?.late || 0 }}</div>
+            </div>
+          </div>
         </div>
-        <div class="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg shadow-sm text-center">
-          <div class="text-xs text-gray-500">Tardanzas</div>
-          <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ studentAttendance.summary?.late || 0 }}</div>
+        <!-- Gráfica de tendencia de asistencia -->
+        <div class="mt-8 bg-white dark:bg-gray-800 shadow rounded-xl p-6">
+          <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-blue-700 dark:text-blue-300">
+            <ChartBarIcon class="w-5 h-5" /> Tendencia de Asistencia
+          </h3>
+          <div class="w-full overflow-x-auto">
+            <Line :data="attendanceData" :options="chartOptions" style="min-width: 320px; max-width: 100%; height: 320px;" />
+          </div>
+        </div>
+        <!-- Historial de asistencias -->
+        <div class="mt-8 bg-white dark:bg-gray-800 shadow rounded-xl p-6 overflow-x-auto">
+          <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-blue-700 dark:text-blue-300">
+            <CalendarIcon class="w-5 h-5" /> Asistencias Recientes
+          </h3>
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-blue-50 dark:bg-blue-900/20">
+              <tr>
+                <th class="px-3 py-3 text-left text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Fecha</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Clase</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Estado</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+              <tr v-for="(record, index) in filteredAttendanceRecords" :key="index">
+                <td class="px-3 py-2 text-sm">{{ record.formattedDateCapitalized }}</td>
+                <td class="px-3 py-2 text-sm">{{ record.className }}</td>
+                <td class="px-3 py-2 text-sm">
+                  <span v-if="record.status && record.status.toLowerCase() === 'ausente'" class="badge bg-red-100 text-red-700">Ausente</span>
+                  <span v-else-if="record.status && record.status.toLowerCase() === 'presente'" class="badge bg-green-100 text-green-700">Presente</span>
+                  <span v-else-if="record.status && record.status.toLowerCase() === 'tardanza'" class="badge bg-yellow-100 text-yellow-700">Tardanza</span>
+                  <span v-else-if="record.status && record.status.toLowerCase() === 'justificado'" class="badge bg-blue-100 text-blue-700">Justificado</span>
+                  <span v-else class="badge bg-gray-100 text-gray-700">{{ record.status || 'No registrado' }}</span>
+                  <span v-if="record.justification" class="ml-2 text-xs italic text-gray-500">({{ record.justification }})</span>
+                </td>
+              </tr>
+              <tr v-if="filteredAttendanceRecords.length === 0">
+                <td colspan="3" class="px-3 py-8 text-center text-gray-500">No hay registros de asistencia en el rango seleccionado</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Historial de Observaciones -->
+        <div class="mt-8 bg-white dark:bg-gray-800 shadow rounded-xl p-6">
+          <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+            <DocumentTextIcon class="w-5 h-5" /> Historial de Observaciones
+          </h3>
+          <div class="flex flex-col sm:flex-row gap-2 mb-4 items-center">
+            <label class="text-sm">Desde:
+              <input type="date" v-model="obsDateRange.start" class="input ml-2" />
+            </label>
+            <label class="text-sm">Hasta:
+              <input type="date" v-model="obsDateRange.end" class="input ml-2" />
+            </label>
+          </div>
+          <div v-if="studentObservations.length > 0" class="space-y-4">
+            <div v-for="obs in studentObservations" :key="obs.id" class="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-b-0">
+              <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <span class="font-semibold text-indigo-600 dark:text-indigo-300">{{ obs.authorName || obs.author }}</span>
+                  <span>•</span>
+                  <span>{{ obs.date }}</span>
+                  <span v-if="obs.type" class="ml-2 px-2 py-0.5 rounded-full text-xs font-medium"
+                    :class="{
+                      'bg-blue-100 text-blue-700': obs.type === 'academico',
+                      'bg-green-100 text-green-700': obs.type === 'comportamiento',
+                      'bg-yellow-100 text-yellow-700': obs.type === 'asistencia',
+                      'bg-purple-100 text-purple-700': obs.type === 'evaluacion',
+                      'bg-gray-100 text-gray-700': obs.type === 'general'
+                    }"
+                  >
+                    {{ obs.type }}
+                  </span>
+                </div>
+                <div v-if="obs.priority" class="text-xs font-semibold uppercase tracking-wide"
+                  :class="{
+                    'text-red-600': obs.priority === 'critica',
+                    'text-yellow-600': obs.priority === 'alta',
+                    'text-blue-600': obs.priority === 'media',
+                    'text-gray-500': obs.priority === 'baja'
+                  }"
+                >
+                  {{ obs.priority }}
+                </div>
+              </div>
+              <div class="mt-2 text-gray-800 dark:text-gray-100 whitespace-pre-line">{{ obs.content?.text || obs.text }}</div>
+            </div>
+          </div>
+          <div v-else class="text-gray-500 italic">No hay observaciones donde el alumno haya sido etiquetado en este rango de fechas.</div>
+        </div>
+
+        <!-- Historial de Mensajes WhatsApp -->
+        <div class="mt-8 bg-white dark:bg-gray-800 shadow rounded-xl p-6">
+          <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-green-700 dark:text-green-300">
+            <PhoneIcon class="w-5 h-5" /> Historial de Mensajes WhatsApp
+          </h3>
+          <div class="flex flex-col sm:flex-row gap-2 mb-4 items-center">
+            <label class="text-sm">Desde:
+              <input type="date" v-model="whatsappDateRange.start" class="input ml-2" />
+            </label>
+            <label class="text-sm">Hasta:
+              <input type="date" v-model="whatsappDateRange.end" class="input ml-2" />
+            </label>
+            <button @click="loadWhatsAppLogs" class="btn btn-secondary ml-2">Filtrar</button>
+          </div>
+          <div v-if="whatsappLogsStore.loading" class="text-center py-4 text-gray-500">Cargando historial...</div>
+          <div v-else-if="whatsappLogsStore.error" class="text-center py-4 text-red-500">{{ whatsappLogsStore.error }}</div>
+          <div v-else-if="whatsappLogsStore.logs.length > 0" class="space-y-4">
+            <div v-for="log in whatsappLogsStore.logs" :key="log.id" class="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-b-0">
+              <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
+                <span>{{ new Date(log.sentAt?.seconds ? log.sentAt.seconds * 1000 : log.sentAt).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' }) }}</span>
+                <span v-if="log.presetName" class="ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">{{ log.presetName }}</span>
+              </div>
+              <div class="mt-1 text-gray-800 dark:text-gray-100 whitespace-pre-line">{{ log.message }}</div>
+            </div>
+          </div>
+          <div v-else class="text-gray-500 italic">No hay mensajes enviados por WhatsApp al representante en el historial.</div>
         </div>
       </div>
     </div>
-    <!-- Gráfica de tendencia de asistencia -->
-    <div class="mt-8 bg-white dark:bg-gray-800 shadow rounded-xl p-6">
-      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-blue-700 dark:text-blue-300">
-        <ChartBarIcon class="w-5 h-5" /> Tendencia de Asistencia
-      </h3>
-      <div class="w-full overflow-x-auto">
-        <Line :data="attendanceData" :options="chartOptions" style="min-width: 320px; max-width: 100%; height: 320px;" />
+    <!-- Modal de confirmación de eliminación -->
+    <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-md w-full">
+        <h2 class="text-xl font-bold mb-4 text-red-700">¿Eliminar alumno?</h2>
+        <p class="mb-6">¿Estás seguro que deseas eliminar este alumno? Esta acción no se puede deshacer.</p>
+        <div class="flex justify-end gap-3">
+          <button @click="showDeleteConfirm = false" class="btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">Cancelar</button>
+          <button @click="confirmDelete" :disabled="isDeleting" class="btn bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg shadow transition-all duration-200">
+            <span v-if="isDeleting" class="animate-spin mr-2">⏳</span>
+            Eliminar
+          </button>
+        </div>
       </div>
-    </div>
-    <!-- Historial de asistencias -->
-    <div class="mt-8 bg-white dark:bg-gray-800 shadow rounded-xl p-6 overflow-x-auto">
-      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-blue-700 dark:text-blue-300">
-        <CalendarIcon class="w-5 h-5" /> Asistencias Recientes
-      </h3>
-      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead class="bg-blue-50 dark:bg-blue-900/20">
-          <tr>
-            <th class="px-3 py-3 text-left text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Fecha</th>
-            <th class="px-3 py-3 text-left text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Clase</th>
-            <th class="px-3 py-3 text-left text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Estado</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-          <tr v-for="(record, index) in filteredAttendanceRecords" :key="index">
-            <td class="px-3 py-2 text-sm">{{ record.formattedDateCapitalized }}</td>
-            <td class="px-3 py-2 text-sm">{{ record.className }}</td>
-            <td class="px-3 py-2 text-sm">
-              <span v-if="record.status && record.status.toLowerCase() === 'ausente'" class="badge bg-red-100 text-red-700">Ausente</span>
-              <span v-else-if="record.status && record.status.toLowerCase() === 'presente'" class="badge bg-green-100 text-green-700">Presente</span>
-              <span v-else-if="record.status && record.status.toLowerCase() === 'tardanza'" class="badge bg-yellow-100 text-yellow-700">Tardanza</span>
-              <span v-else-if="record.status && record.status.toLowerCase() === 'justificado'" class="badge bg-blue-100 text-blue-700">Justificado</span>
-              <span v-else class="badge bg-gray-100 text-gray-700">{{ record.status || 'No registrado' }}</span>
-              <span v-if="record.justification" class="ml-2 text-xs italic text-gray-500">({{ record.justification }})</span>
-            </td>
-          </tr>
-          <tr v-if="filteredAttendanceRecords.length === 0">
-            <td colspan="3" class="px-3 py-8 text-center text-gray-500">No hay registros de asistencia en el rango seleccionado</td>
-          </tr>
-        </tbody>
-      </table>
     </div>
   </div>
 </template>
