@@ -297,7 +297,7 @@ const route = useRoute()
 
 // Utils
 import { getCurrentDate } from '../utils/dateUtils'
-import { generateAttendancePDF } from '../utils/pdfExport'
+import { generateAttendancePDF } from '../utils/pdf/pdf-export'
 import { sendToMake } from '../utils/webhook'
 
 // Types

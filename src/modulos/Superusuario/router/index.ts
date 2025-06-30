@@ -108,6 +108,16 @@ export const superusuarioRoutes: RouteRecordRaw[] = [
       allowedRoles: ['Superusuario'],
       title: 'Respaldo y Restauración'
     }
+  },
+  {
+    path: '/superusuario/branding',
+    name: 'SuperusuarioBranding',
+    component: () => import('../../../components/admin/BrandingManager.vue'),
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['Superusuario'],
+      title: 'Configuración de Marca'
+    }
   }
 ];
 

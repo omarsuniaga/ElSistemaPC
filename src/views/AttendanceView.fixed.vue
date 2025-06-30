@@ -29,7 +29,7 @@ import JustifiedAbsenceModal from '../components/JustifiedAbsenceModal.vue'
 import { CalendarDaysIcon } from '@heroicons/vue/24/outline'
 import EmergencyClassModal from '../modulos/Attendance/components/EmergencyClassModal.vue'
 import type { Student } from '../modulos/Students/types/student'
-import { generateAttendancePDF } from '../utils/pdfExport' 
+import { generateAttendancePDF } from '../utils/pdf/pdf-export' 
 import { sendWebhook, sendToMake } from '../utils/webhook'
 import { useConfigStore } from '../stores/config'
 

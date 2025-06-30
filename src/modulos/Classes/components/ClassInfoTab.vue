@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { PencilIcon, XCircleIcon, CheckIcon, UserGroupIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 import { useTeachersStore } from '../../Teachers/store/teachers';
 import { useStudentsStore } from '../../Students/store/students';
-import { generateClassDetailsPDF } from '../../../utils/pdfExport';
+import { generateClassDetailsPDF } from '../../../utils/pdf/pdf-export';
 import StudentProgress from '../../../components/StudentProgress.vue';
 
 const props = defineProps({

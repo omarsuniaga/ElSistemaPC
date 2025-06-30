@@ -17,7 +17,7 @@ const classesStore = useClassesStore()
 const instrumentoStore = useInstrumentoStore()
 // Opcional: cargar instrumentos si aún no se han cargado
 if (!instrumentoStore.instruments.length) {
-  instrumentoStore.fetchInstrumentos()
+  instrumentoStore.fetchInstruments()
 }
 
 const instruments = computed(() => instrumentoStore.instruments)
@@ -79,6 +79,12 @@ const handleCancel = () => {
     </div>
 
     <form @submit.prevent="handleSubmit" class="space-y-6">
+      <button
+          type="submit"
+          class="btn btn-primary"
+        >
+          Guardar 
+        </button>
       <!-- Información Personal -->
       <div class="card">
         <h2 class="text-lg font-semibold mb-4">Información Personal</h2>
@@ -116,7 +122,6 @@ const handleCancel = () => {
               v-model="formData.nac"
               type="text"
               class="input"
-              required
             />
           </div>
           <div>
@@ -128,9 +133,9 @@ const handleCancel = () => {
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Instrumento</label>
-            <select v-model="formData.instrumento" class="input" required>
-              <option v-for="instrument in instruments" :key="instrument" :value="instrument">
-                {{ instrument }}
+            <select v-model="formData.instrumento" class="input" >
+              <option v-for="instrument in instruments" :key="instrument.id" :value="instrument.nombre">
+                {{ instrument.nombre }}
               </option>
             </select>
           </div>
@@ -236,19 +241,19 @@ const handleCancel = () => {
         </div>
       </div>
 
-      <div class="flex justify-end gap-3">
+      <div class="flex justify-end gap-3 mb-24">
+        <button
+          type="submit"
+          class="btn btn-primary"
+        >
+          Guardar Cambios
+        </button>
         <button
           type="button"
           @click="handleCancel"
           class="btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
         >
           Cancelar
-        </button>
-        <button
-          type="submit"
-          class="btn btn-primary"
-        >
-          Guardar Cambios
         </button>
       </div>
     </form>

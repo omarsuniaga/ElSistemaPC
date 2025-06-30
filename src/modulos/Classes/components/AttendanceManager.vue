@@ -118,7 +118,7 @@ import {
   SaveIcon, 
   UserGroupIcon 
 } from '@heroicons/vue/24/outline';
-import { generateAttendanceReportPDF, generateMonthlyAttendanceReportPDF } from '@/utils/pdfExport';
+import { generateAttendancePDF } from '@/utils/pdf/pdf-export';
 
 interface Student {
   id: string;

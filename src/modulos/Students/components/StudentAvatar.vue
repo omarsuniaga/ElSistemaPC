@@ -79,3 +79,7 @@ const backgroundColor = computed(() => {
     </button>
   </div>
 </template>
+
+export default {
+  name: 'StudentAvatar'
+}

@@ -24,7 +24,7 @@
         <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
           <span class="mr-2">⚡</span>
           Acciones Rápidas
-        </h3>        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        </h3>        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <button @click="navigateToModule('usuarios')" class="action-button">
             <div class="text-2xl mb-2">👥</div>
             <div class="text-sm font-medium">Gestionar Usuarios</div>
@@ -44,6 +44,14 @@
           <button @click="navigateToModule('modulos')" class="action-button">
             <div class="text-2xl mb-2">📦</div>
             <div class="text-sm font-medium">Gestionar Módulos</div>
+          </button>
+          <button @click="navigateToModule('branding')" class="action-button">
+            <div class="text-2xl mb-2">🎨</div>
+            <div class="text-sm font-medium">Configurar Marca</div>
+          </button>
+          <button @click="navigateToModule('branding-test')" class="action-button">
+            <div class="text-2xl mb-2">🧪</div>
+            <div class="text-sm font-medium">Probar Branding</div>
           </button>
           <button @click="navigateToModule('auditoria')" class="action-button">
             <div class="text-2xl mb-2">📋</div>
@@ -638,6 +646,12 @@ function navigateToModule(moduleName: string) {
       break;
     case 'modulos':
       router.push('/superusuario/system');
+      break;
+    case 'branding':
+      router.push('/superusuario/branding');
+      break;
+    case 'branding-test':
+      router.push('/testing/branding');
       break;
     case 'auditoria':
       router.push('/superusuario/audit');

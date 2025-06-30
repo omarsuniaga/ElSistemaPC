@@ -304,7 +304,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/students',
     name: 'Students',
-    component: () => import('../views/StudentsView.vue'),
+    component: () => import('../modulos/Students/view/StudentsView.vue'),
     meta: { 
       requiresAuth: true,
       requiresRBAC: true,
@@ -344,6 +344,18 @@ const routes: Array<RouteRecordRaw> = [
       requiresRBAC: true,
       moduleKey: 'students',
       permission: 'view_instrument'
+    }
+  },
+  {
+    path: '/students/edit/:id',
+    name: 'StudentEditById',
+    component: () => import('../modulos/Students/view/StudentEditView.vue'),
+    props: route => ({ id: route.params.id }),
+    meta: {
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: 'students',
+      permission: 'edit'
     }
   },
   
@@ -469,7 +481,19 @@ const routes: Array<RouteRecordRaw> = [
   ...montajeRoutes,
   ...superusuarioRoutes,
   ...performanceRoutes,
-  ...adminRoutes,  // Ruta inicial: redirige según el rol
+  ...adminRoutes,
+
+  // Rutas de testing y desarrollo
+  {
+    path: '/testing/branding',
+    name: 'BrandingTest',
+    component: () => import('../views/testing/BrandingTestView.vue'),
+    meta: { 
+      requiresAuth: true,
+      allowedRoles: ['Superusuario', 'Admin'],
+      title: 'Pruebas de Branding'
+    }
+  },  // Ruta inicial: redirige según el rol
   {
     path: '/',
     name: 'home',

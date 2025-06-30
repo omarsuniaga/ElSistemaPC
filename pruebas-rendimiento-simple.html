@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Music Academy - Pruebas de Rendimiento</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .step {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .step h3 {
+            color: #1e3c72;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: black;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .code-block {
+            background: #f1f3f4;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .status.loading {
+            background: #cce5ff;
+            color: #0066cc;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .results {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .metric:last-child {
+            border-bottom: none;
+        }
+        
+        .metric-value {
+            font-weight: 600;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Music Academy Performance Lab</h1>
+            <p>Sistema de Pruebas de Rendimiento y Optimización</p>
+        </div>
+        
+        <div class="content">
+            <div class="step">
+                <h3>📋 Paso 1: Verificación de Sistemas</h3>
+                <p>Primero verificamos que todos los sistemas de optimización estén disponibles:</p>
+                <button class="btn" onclick="verificarSistemas()">🔍 Verificar Sistemas</button>
+                <div id="verificacion-status"></div>
+            </div>
+            
+            <div class="step">
+                <h3>⚡ Paso 2: Chequeo Rápido</h3>
+                <p>Ejecuta un chequeo rápido de rendimiento (30 segundos):</p>
+                <button class="btn btn-success" onclick="chequeoRapido()">⚡ Chequeo Rápido</button>
+                <div id="chequeo-status"></div>
+            </div>
+            
+            <div class="step">
+                <h3>💾 Paso 3: Pruebas de Cache</h3>
+                <p>Prueba el sistema de cache inteligente:</p>
+                <button class="btn" onclick="probarCache()">💾 Probar Cache</button>
+                <div id="cache-status"></div>
+            </div>
+            
+            <div class="step">
+                <h3>🔄 Paso 4: Pruebas de Lazy Loading</h3>
+                <p>Prueba el sistema de carga bajo demanda:</p>
+                <button class="btn" onclick="probarLazyLoading()">🔄 Probar Lazy Loading</button>
+                <div id="lazy-status"></div>
+            </div>
+            
+            <div class="step">
+                <h3>🧠 Paso 5: Pruebas de Memoria</h3>
+                <p>Analiza el uso y gestión de memoria:</p>
+                <button class="btn" onclick="probarMemoria()">🧠 Probar Memoria</button>
+                <div id="memoria-status"></div>
+            </div>
+            
+            <div class="step">
+                <h3>🎯 Paso 6: Suite Completa (Avanzado)</h3>
+                <p>Ejecuta todas las pruebas de rendimiento (2-3 minutos):</p>
+                <button class="btn btn-warning" onclick="suiteCompleta()">🎯 Suite Completa</button>
+                <div id="suite-status"></div>
+            </div>
+            
+            <div class="step">
+                <h3>🛠️ Herramientas Adicionales</h3>
+                <p>Funciones útiles para desarrollo:</p>
+                <button class="btn" onclick="iniciarMonitoreo()">📊 Monitoreo Continuo</button>
+                <button class="btn" onclick="limpiarSistemas()">🧹 Limpiar Caches</button>
+                <button class="btn" onclick="abrirConsola()">🔧 Abrir DevTools</button>
+            </div>
+            
+            <div class="step">
+                <h3>📱 Acceso Directo a la App</h3>
+                <p>Abre la aplicación principal en una nueva pestaña:</p>
+                <button class="btn btn-success" onclick="abrirApp()">🏠 Abrir Music Academy App</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Estado global
+        let sistemasDisponibles = {
+            performanceMonitor: false,
+            smartCache: false,
+            lazyLoader: false,
+            imageOptimizer: false,
+            quickPerformanceCheck: false,
+            runPerformanceTests: false
+        };
+
+        function mostrarStatus(elementId, mensaje, tipo = 'loading') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${tipo}">${mensaje}</div>`;
+        }
+
+        function mostrarResultados(elementId, datos) {
+            const element = document.getElementById(elementId);
+            let html = '<div class="results" style="display: block;">';
+            
+            for (const [key, value] of Object.entries(datos)) {
+                html += `
+                    <div class="metric">
+                        <span>${key}:</span>
+                        <span class="metric-value">${value}</span>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            element.innerHTML += html;
+        }
+
+        function verificarSistemas() {
+            mostrarStatus('verificacion-status', '🔍 Verificando sistemas disponibles...', 'loading');
+            
+            setTimeout(() => {
+                // Verificar cada sistema
+                sistemasDisponibles.performanceMonitor = typeof window.performanceMonitor !== 'undefined';
+                sistemasDisponibles.smartCache = typeof window.smartCache !== 'undefined';
+                sistemasDisponibles.lazyLoader = typeof window.lazyLoader !== 'undefined';
+                sistemasDisponibles.imageOptimizer = typeof window.imageOptimizer !== 'undefined';
+                sistemasDisponibles.quickPerformanceCheck = typeof window.quickPerformanceCheck === 'function';
+                sistemasDisponibles.runPerformanceTests = typeof window.runPerformanceTests === 'function';
+                
+                const disponibles = Object.values(sistemasDisponibles).filter(Boolean).length;
+                const total = Object.keys(sistemasDisponibles).length;
+                
+                if (disponibles === total) {
+                    mostrarStatus('verificacion-status', `✅ Todos los sistemas están disponibles (${disponibles}/${total})`, 'success');
+                } else if (disponibles > total / 2) {
+                    mostrarStatus('verificacion-status', `⚠️ Algunos sistemas disponibles (${disponibles}/${total}) - La app puede no estar completamente cargada`, 'loading');
+                } else {
+                    mostrarStatus('verificacion-status', `❌ Pocos sistemas disponibles (${disponibles}/${total}) - Asegúrate de que la app esté corriendo en modo desarrollo`, 'error');
+                }
+                
+                // Mostrar detalles
+                mostrarResultados('verificacion-status', {
+                    'Performance Monitor': sistemasDisponibles.performanceMonitor ? '✅ Disponible' : '❌ No disponible',
+                    'Smart Cache': sistemasDisponibles.smartCache ? '✅ Disponible' : '❌ No disponible',
+                    'Lazy Loader': sistemasDisponibles.lazyLoader ? '✅ Disponible' : '❌ No disponible',
+                    'Image Optimizer': sistemasDisponibles.imageOptimizer ? '✅ Disponible' : '❌ No disponible',
+                    'Chequeo Rápido': sistemasDisponibles.quickPerformanceCheck ? '✅ Disponible' : '❌ No disponible',
+                    'Suite de Pruebas': sistemasDisponibles.runPerformanceTests ? '✅ Disponible' : '❌ No disponible'
+                });
+            }, 1000);
+        }
+
+        function chequeoRapido() {
+            mostrarStatus('chequeo-status', '⚡ Ejecutando chequeo rápido...', 'loading');
+            
+            try {
+                if (typeof window.quickPerformanceCheck === 'function') {
+                    window.quickPerformanceCheck();
+                    
+                    setTimeout(() => {
+                        // Obtener métricas después del chequeo
+                        const report = window.performanceMonitor?.generateReport();
+                        const cacheStats = window.smartCache?.getStats();
+                        
+                        mostrarStatus('chequeo-status', '✅ Chequeo rápido completado', 'success');
+                        
+                        if (report && cacheStats) {
+                            mostrarResultados('chequeo-status', {
+                                'Tiempo de Carga Promedio': `${report.summary.avgLoadTime.toFixed(0)}ms`,
+                                'Tiempo de Interacción': `${report.summary.avgInteractionTime.toFixed(0)}ms`,
+                                'Uso de Memoria': `${(report.summary.memoryUsage / 1024 / 1024).toFixed(1)}MB`,
+                                'Entradas en Cache': cacheStats.totalKeys,
+                                'Hit Rate': `${(cacheStats.hitRate * 100).toFixed(1)}%`,
+                                'Componentes Monitoreados': report.summary.componentsTracked
+                            });
+                        }
+                    }, 2000);
+                    
+                } else {
+                    mostrarStatus('chequeo-status', '❌ Función de chequeo rápido no disponible', 'error');
+                }
+            } catch (error) {
+                mostrarStatus('chequeo-status', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function probarCache() {
+            mostrarStatus('cache-status', '💾 Probando sistema de cache...', 'loading');
+            
+            try {
+                if (!window.smartCache) {
+                    mostrarStatus('cache-status', '❌ Sistema de cache no disponible', 'error');
+                    return;
+                }
+                
+                const startTime = performance.now();
+                
+                // Test de escritura
+                for (let i = 0; i < 10; i++) {
+                    window.smartCache.set(`test-${i}`, {
+                        id: i,
+                        data: `Test data ${i}`,
+                        timestamp: new Date()
+                    }, { ttl: 60000 });
+                }
+                const writeTime = performance.now() - startTime;
+                
+                // Test de lectura
+                const readStart = performance.now();
+                let hits = 0;
+                for (let i = 0; i < 10; i++) {
+                    if (window.smartCache.get(`test-${i}`)) hits++;
+                }
+                const readTime = performance.now() - readStart;
+                
+                // Limpiar
+                for (let i = 0; i < 10; i++) {
+                    window.smartCache.delete(`test-${i}`);
+                }
+                
+                mostrarStatus('cache-status', '✅ Pruebas de cache completadas', 'success');
+                mostrarResultados('cache-status', {
+                    'Tiempo de Escritura': `${writeTime.toFixed(2)}ms`,
+                    'Tiempo de Lectura': `${readTime.toFixed(2)}ms`,
+                    'Hit Rate': `${(hits/10*100).toFixed(1)}%`,
+                    'Rendimiento': writeTime < 10 && readTime < 5 ? '🚀 Excelente' : '⚠️ Aceptable'
+                });
+                
+            } catch (error) {
+                mostrarStatus('cache-status', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function probarLazyLoading() {
+            mostrarStatus('lazy-status', '🔄 Probando lazy loading...', 'loading');
+            
+            try {
+                if (!window.lazyLoader) {
+                    mostrarStatus('lazy-status', '❌ Sistema de lazy loading no disponible', 'error');
+                    return;
+                }
+                
+                const startTime = performance.now();
+                
+                const mockComponent = await window.lazyLoader.loadComponent('TestComponent', 
+                    () => Promise.resolve({ 
+                        default: { 
+                            name: 'TestComponent',
+                            template: '<div>Test</div>'
+                        } 
+                    })
+                );
+                
+                const loadTime = performance.now() - startTime;
+                
+                mostrarStatus('lazy-status', '✅ Pruebas de lazy loading completadas', 'success');
+                mostrarResultados('lazy-status', {
+                    'Tiempo de Carga': `${loadTime.toFixed(2)}ms`,
+                    'Componente Cargado': mockComponent ? '✅ Sí' : '❌ No',
+                    'Rendimiento': loadTime < 50 ? '🚀 Excelente' : loadTime < 100 ? '✅ Bueno' : '⚠️ Lento'
+                });
+                
+            } catch (error) {
+                mostrarStatus('lazy-status', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function probarMemoria() {
+            mostrarStatus('memoria-status', '🧠 Analizando memoria...', 'loading');
+            
+            try {
+                const initialMemory = performance.memory ? performance.memory.usedJSHeapSize : 0;
+                
+                // Crear datos de prueba
+                const testData = [];
+                for (let i = 0; i < 100; i++) {
+                    testData.push({
+                        id: i,
+                        data: new Array(1000).fill(`test-${i}`)
+                    });
+                }
+                
+                const peakMemory = performance.memory ? performance.memory.usedJSHeapSize : 0;
+                
+                // Limpiar
+                testData.length = 0;
+                
+                setTimeout(() => {
+                    const finalMemory = performance.memory ? performance.memory.usedJSHeapSize : 0;
+                    
+                    const increment = (peakMemory - initialMemory) / 1024 / 1024;
+                    const recovered = (peakMemory - finalMemory) / 1024 / 1024;
+                    const recoveryRate = peakMemory > initialMemory ? 
+                        (recovered / ((peakMemory - initialMemory) / 1024 / 1024)) * 100 : 100;
+                    
+                    mostrarStatus('memoria-status', '✅ Análisis de memoria completado', 'success');
+                    mostrarResultados('memoria-status', {
+                        'Memoria Inicial': `${(initialMemory / 1024 / 1024).toFixed(2)} MB`,
+                        'Memoria Pico': `${(peakMemory / 1024 / 1024).toFixed(2)} MB`,
+                        'Memoria Final': `${(finalMemory / 1024 / 1024).toFixed(2)} MB`,
+                        'Incremento': `${increment.toFixed(2)} MB`,
+                        'Recuperada': `${recovered.toFixed(2)} MB`,
+                        'Tasa Recuperación': `${recoveryRate.toFixed(1)}%`,
+                        'Gestión': recoveryRate > 80 ? '🚀 Excelente' : recoveryRate > 60 ? '✅ Buena' : '⚠️ Regular'
+                    });
+                }, 1000);
+                
+            } catch (error) {
+                mostrarStatus('memoria-status', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function suiteCompleta() {
+            mostrarStatus('suite-status', '🎯 Ejecutando suite completa... (esto puede tomar 2-3 minutos)', 'loading');
+            
+            try {
+                if (typeof window.runPerformanceTests !== 'function') {
+                    mostrarStatus('suite-status', '❌ Suite de pruebas no disponible', 'error');
+                    return;
+                }
+                
+                const startTime = performance.now();
+                const results = await window.runPerformanceTests();
+                const totalTime = (performance.now() - startTime) / 1000;
+                
+                const { summary } = results;
+                const passRate = (summary.passedTests / summary.totalTests * 100).toFixed(1);
+                
+                mostrarStatus('suite-status', `✅ Suite completada en ${totalTime.toFixed(1)} segundos`, 'success');
+                mostrarResultados('suite-status', {
+                    'Pruebas Totales': summary.totalTests,
+                    'Pruebas Exitosas': summary.passedTests,
+                    'Pruebas Fallidas': summary.failedTests,
+                    'Tasa de Éxito': `${passRate}%`,
+                    'Duración Promedio': `${summary.averageDuration.toFixed(2)}ms`,
+                    'Issues Críticos': summary.criticalIssues.length,
+                    'Recomendaciones': summary.recommendations.length,
+                    'Estado General': passRate > 90 ? '🚀 Excelente' : passRate > 75 ? '✅ Bueno' : '⚠️ Requiere atención'
+                });
+                
+                if (summary.criticalIssues.length > 0) {
+                    console.warn('⚠️ Issues críticos:', summary.criticalIssues);
+                }
+                
+            } catch (error) {
+                mostrarStatus('suite-status', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function iniciarMonitoreo() {
+            alert('📊 Monitoreo iniciado - Revisa la consola (F12) para ver métricas cada 30 segundos');
+            
+            if (window.performanceMonitor) {
+                const interval = setInterval(() => {
+                    const report = window.performanceMonitor.generateReport();
+                    console.log(`📈 [${new Date().toLocaleTimeString()}] Métricas en tiempo real:`, {
+                        loadTime: `${report.summary.avgLoadTime.toFixed(0)}ms`,
+                        interactionTime: `${report.summary.avgInteractionTime.toFixed(0)}ms`,
+                        memoryUsage: `${(report.summary.memoryUsage / 1024 / 1024).toFixed(1)}MB`,
+                        componentsTracked: report.summary.componentsTracked
+                    });
+                }, 30000);
+                
+                window.monitoreoInterval = interval;
+                console.log('📊 Monitoreo iniciado. Para detener: clearInterval(window.monitoreoInterval)');
+            }
+        }
+
+        function limpiarSistemas() {
+            try {
+                if (window.smartCache) {
+                    window.smartCache.clear();
+                }
+                if (window.imageOptimizer) {
+                    window.imageOptimizer.clearCache();
+                }
+                alert('🧹 Sistemas limpiados exitosamente');
+            } catch (error) {
+                alert(`❌ Error limpiando: ${error.message}`);
+            }
+        }
+
+        function abrirConsola() {
+            alert('🔧 Presiona F12 para abrir las DevTools y ver logs detallados');
+        }
+
+        function abrirApp() {
+            window.open('http://localhost:5173', '_blank');
+        }
+
+        // Auto-verificar al cargar
+        window.addEventListener('load', () => {
+            setTimeout(verificarSistemas, 1000);
+        });
+    </script>
+</body>
+</html>

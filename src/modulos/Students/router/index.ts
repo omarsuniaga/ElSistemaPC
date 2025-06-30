@@ -21,26 +21,26 @@ export const studentRoutes: RouteRecordRaw[] = [
     props: true
   },
   {
-    path: '/students/:id/edit',
+    path: '/students/edit/:id',
     name: 'StudentEdit',
     component: () => import('../view/StudentEditView.vue'),
     meta: { title: 'Editar Estudiante' },
     props: true
   },
   {
-    path: '/students/:id/delete',
+    path: '/students/delete/:id',
     name: 'StudentDelete',
     component: () => import('../view/StudentDeleteView.vue'),
     meta: { title: 'Eliminar Estudiante' },
     props: true
   },
   {
-    path: '/at-risk-students',
+    path: '/students/riesgo/:id',
     name: 'atRiskStudents',
     component: () => import('../view/AtRiskStudentsView.vue'),
     meta: { requiresAuth: true }
   },  {
-    path: '/student-schedule/:id',
+    path: '/student/schedule/:id',
     name: 'studentSchedule',
     component: () => import('../view/StudentScheduleView.vue'),
     meta: { requiresAuth: true }

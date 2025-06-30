@@ -48,12 +48,12 @@ export const teacherMenuItems = [
     to: '/teacher/schedule', 
     ariaLabel: 'Ver horarios'
   },
-  { 
-    name: 'Alumnos', 
-    icon: UserGroupIcon, 
-    to: '/students', 
-    ariaLabel: 'Gestionar alumnos'
-  },
+  // { 
+  //   name: 'Alumnos', 
+  //   icon: UserGroupIcon, 
+  //   to: '/students', 
+  //   ariaLabel: 'Gestionar alumnos'
+  // },
 ]
 
 // Menú para directores/administradores: rutas que coinciden con las definidas en el router

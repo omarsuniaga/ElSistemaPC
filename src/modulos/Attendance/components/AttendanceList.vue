@@ -17,7 +17,7 @@ import { useTeachersStore } from '../../Teachers/store/teachers'
 import { useRoute } from 'vue-router'
 
 // Utilidades para exportar PDF
-import { generateAttendancePDF } from '../../../utils/pdfExport'
+import { generateAttendancePDF } from '../../../utils/pdf/pdf-export'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 

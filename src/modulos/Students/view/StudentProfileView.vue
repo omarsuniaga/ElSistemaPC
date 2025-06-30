@@ -1115,6 +1115,188 @@ const handleExpandPerformance = () => {
 };
 </script>
 
+<template>
+  <div class="student-profile mb-16 px-2 sm:px-4 md:px-8">
+    <!-- Header con avatar y acciones -->
+    <div class="profile-header bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-8 rounded-b-3xl shadow-lg flex flex-col items-center relative">
+      <div class="absolute top-4 right-4 flex gap-2">
+        <button v-if="!isEditing" @click="handleEdit" class="btn bg-white/20 hover:bg-white/40 text-white font-bold px-4 py-2 rounded-lg shadow transition-all duration-200" title="Editar perfil">
+          <PencilIcon class="w-5 h-5 inline mr-1" /> Editar
+        </button>
+        <button v-if="!isEditing" @click="handleDelete" class="btn bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg shadow transition-all duration-200" title="Eliminar alumno">
+          <TrashIcon class="w-5 h-5 inline mr-1" /> Eliminar
+        </button>
+      </div>
+      <StudentAvatar
+        :first-name="student.nombre || ''"
+        :last-name="student.apellido || ''"
+        size="xl"
+        class="shadow-lg border-4 border-white mb-4"
+      />
+      <h1 class="text-3xl font-extrabold tracking-tight mb-2 drop-shadow-lg">{{ student.nombre }} {{ student.apellido }}</h1>
+      <div class="flex gap-2 mb-2">
+        <span class="inline-flex items-center px-3 py-1 rounded-full bg-white/20 text-white font-semibold text-sm shadow">
+          <MusicalNoteIcon class="w-4 h-4 mr-1" />
+          {{ student.instrumento?.nombre || student.instrumento || 'Sin instrumento' }}
+        </span>
+        <span v-if="student.clase" class="inline-flex items-center px-3 py-1 rounded-full bg-indigo-400/60 text-white font-semibold text-sm shadow">
+          <AcademicCapIcon class="w-4 h-4 mr-1" />
+          {{ student.clase }}
+        </span>
+      </div>
+      <div class="flex gap-3 mt-2" v-if="isEditing">
+        <button @click="handleSave" class="btn bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-lg shadow transition-all duration-200" title="Guardar cambios">
+          <CheckIcon class="w-5 h-5 inline mr-1" /> Guardar
+        </button>
+        <button @click="handleCancel" class="btn bg-gray-600 hover:bg-gray-700 text-white font-bold px-4 py-2 rounded-lg shadow transition-all duration-200" title="Cancelar edición">
+          <XMarkIcon class="w-5 h-5 inline mr-1" /> Cancelar
+        </button>
+      </div>
+    </div>
+
+    <!-- Tarjetas de información -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 mt-8">
+      <!-- Información Personal -->
+      <div class="card bg-white dark:bg-gray-800 shadow rounded-xl p-6">
+        <h2 class="flex items-center gap-2 text-lg font-semibold mb-4 text-blue-700 dark:text-blue-300">
+          <UserIcon class="w-5 h-5" /> Información Personal
+        </h2>
+        <div class="space-y-2">
+          <div><span class="font-medium">Edad:</span> {{ calculatedAge }} años</div>
+          <div><span class="font-medium">Fecha de Nacimiento:</span> {{ student.nac }}</div>
+          <div><span class="font-medium">Sexo:</span> {{ student.sexo }}</div>
+          <div><span class="font-medium">Madre:</span> {{ student.madre }}</div>
+          <div><span class="font-medium">Padre:</span> {{ student.padre }}</div>
+        </div>
+      </div>
+      <!-- Información Académica -->
+      <div class="card bg-white dark:bg-gray-800 shadow rounded-xl p-6">
+        <h2 class="flex items-center gap-2 text-lg font-semibold mb-4 text-indigo-700 dark:text-indigo-300">
+          <AcademicCapIcon class="w-5 h-5" /> Información Académica
+        </h2>
+        <div class="space-y-2">
+          <div><span class="font-medium">Instrumento:</span> {{ student.instrumento?.nombre || student.instrumento }}</div>
+          <div><span class="font-medium">Clase:</span> {{ student.clase }}</div>
+          <div><span class="font-medium">Grupos:</span> <span v-if="student.grupo && student.grupo.length > 0">{{ student.grupo.join(', ') }}</span><span v-else>Sin grupos</span></div>
+          <div><span class="font-medium">Nivel:</span> {{ student.nivel || 'No especificado' }}</div>
+        </div>
+      </div>
+      <!-- Contacto -->
+      <div class="card bg-white dark:bg-gray-800 shadow rounded-xl p-6">
+        <h2 class="flex items-center gap-2 text-lg font-semibold mb-4 text-green-700 dark:text-green-300">
+          <PhoneIcon class="w-5 h-5" /> Contacto
+        </h2>
+        <div class="space-y-2">
+          <div><span class="font-medium">Teléfono:</span> {{ student.tlf }}</div>
+          <div><span class="font-medium">Email:</span> {{ student.email }}</div>
+          <div><span class="font-medium">Dirección:</span> {{ student.direccion }}</div>
+        </div>
+      </div>
+      <!-- Documentos -->
+      <div class="card bg-white dark:bg-gray-800 shadow rounded-xl p-6">
+        <h2 class="flex items-center gap-2 text-lg font-semibold mb-4 text-amber-700 dark:text-amber-300">
+          <DocumentTextIcon class="w-5 h-5" /> Documentos
+        </h2>
+        <div class="space-y-2">
+          <div v-if="student.documentos?.contrato_instrumento">
+            <span class="font-medium">Contrato de Instrumento:</span>
+            <a :href="student.documentos.contrato_instrumento.url" target="_blank" class="text-blue-600 hover:underline ml-2">Ver documento</a>
+          </div>
+          <div v-else class="text-gray-500 italic">Contrato de instrumento no subido</div>
+          <div v-if="student.documentos?.terminos_condiciones">
+            <span class="font-medium">Términos y Condiciones:</span>
+            <a :href="student.documentos.terminos_condiciones.url" target="_blank" class="text-blue-600 hover:underline ml-2">Ver documento</a>
+          </div>
+          <div v-else class="text-gray-500 italic">Términos y condiciones no subidos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estadísticas y asistencia -->
+    <div class="mt-8 flex flex-col gap-6 md:flex-row md:items-start">
+      <!-- Gráfico circular y estadísticas -->
+      <div class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 shadow rounded-xl p-6 w-full md:w-1/3 mb-6 md:mb-0">
+        <svg class="w-24 h-24 mb-2" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="40" fill="none" stroke="#e5e7eb" stroke-width="10" />
+          <circle
+            cx="50" cy="50" r="40" fill="none"
+            :stroke="studentAttendance.summary?.attendanceRate >= 80 ? '#22c55e' : studentAttendance.summary?.attendanceRate >= 60 ? '#f59e0b' : '#ef4444'"
+            stroke-width="10"
+            :stroke-dasharray="`${studentAttendance.summary?.attendanceRate || 0}, 100`"
+            stroke-dashoffset="25"
+            transform="rotate(-90 50 50)"
+          />
+          <text x="50" y="50" text-anchor="middle" dominant-baseline="middle" font-size="18" font-weight="bold"
+            :fill="studentAttendance.summary?.attendanceRate >= 80 ? '#22c55e' : studentAttendance.summary?.attendanceRate >= 60 ? '#f59e0b' : '#ef4444'">
+            {{ studentAttendance.summary?.attendanceRate || 0 }}%
+          </text>
+        </svg>
+        <div class="text-center text-sm text-gray-600 dark:text-gray-400 mt-2">Asistencia</div>
+      </div>
+      <div class="grid grid-cols-2 gap-4 flex-1 w-full md:w-2/3">
+        <!-- Estadísticas clave -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg shadow-sm text-center">
+          <div class="text-xs text-gray-500">Clases Totales</div>
+          <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ studentAttendance.summary?.total || 0 }}</div>
+        </div>
+        <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg shadow-sm text-center">
+          <div class="text-xs text-gray-500">Asistencias</div>
+          <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ studentAttendance.summary?.present || 0 }}</div>
+        </div>
+        <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg shadow-sm text-center">
+          <div class="text-xs text-gray-500">Ausencias</div>
+          <div class="text-2xl font-bold text-red-600 dark:text-red-400">{{ studentAttendance.summary?.absent || 0 }}</div>
+        </div>
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg shadow-sm text-center">
+          <div class="text-xs text-gray-500">Tardanzas</div>
+          <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ studentAttendance.summary?.late || 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <!-- Gráfica de tendencia de asistencia -->
+    <div class="mt-8 bg-white dark:bg-gray-800 shadow rounded-xl p-6">
+      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-blue-700 dark:text-blue-300">
+        <ChartBarIcon class="w-5 h-5" /> Tendencia de Asistencia
+      </h3>
+      <div class="w-full overflow-x-auto">
+        <Line :data="attendanceData" :options="chartOptions" style="min-width: 320px; max-width: 100%; height: 320px;" />
+      </div>
+    </div>
+    <!-- Historial de asistencias -->
+    <div class="mt-8 bg-white dark:bg-gray-800 shadow rounded-xl p-6 overflow-x-auto">
+      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-blue-700 dark:text-blue-300">
+        <CalendarIcon class="w-5 h-5" /> Asistencias Recientes
+      </h3>
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-blue-50 dark:bg-blue-900/20">
+          <tr>
+            <th class="px-3 py-3 text-left text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Fecha</th>
+            <th class="px-3 py-3 text-left text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Clase</th>
+            <th class="px-3 py-3 text-left text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Estado</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+          <tr v-for="(record, index) in filteredAttendanceRecords" :key="index">
+            <td class="px-3 py-2 text-sm">{{ record.formattedDateCapitalized }}</td>
+            <td class="px-3 py-2 text-sm">{{ record.className }}</td>
+            <td class="px-3 py-2 text-sm">
+              <span v-if="record.status && record.status.toLowerCase() === 'ausente'" class="badge bg-red-100 text-red-700">Ausente</span>
+              <span v-else-if="record.status && record.status.toLowerCase() === 'presente'" class="badge bg-green-100 text-green-700">Presente</span>
+              <span v-else-if="record.status && record.status.toLowerCase() === 'tardanza'" class="badge bg-yellow-100 text-yellow-700">Tardanza</span>
+              <span v-else-if="record.status && record.status.toLowerCase() === 'justificado'" class="badge bg-blue-100 text-blue-700">Justificado</span>
+              <span v-else class="badge bg-gray-100 text-gray-700">{{ record.status || 'No registrado' }}</span>
+              <span v-if="record.justification" class="ml-2 text-xs italic text-gray-500">({{ record.justification }})</span>
+            </td>
+          </tr>
+          <tr v-if="filteredAttendanceRecords.length === 0">
+            <td colspan="3" class="px-3 py-8 text-center text-gray-500">No hay registros de asistencia en el rango seleccionado</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
 <style scoped>
 /* Animaciones y transiciones */
 .fade-enter-active,
@@ -1386,792 +1568,3 @@ const handleExpandPerformance = () => {
   }
 }
 </style>
-
-<template>
-  <div v-if="student" class="py-6 animate-fade-in">
-    <!-- Header with Profile Photo -->
-    <div class="flex justify-between items-start mb-6">
-      <div class="flex items-center gap-4">        <div class="relative">
-          <StudentAvatar
-            :first-name="student.nombre || ''"
-            :last-name="student.apellido || ''"
-            size="xl"
-          />
-        </div>
-        <div>
-          <h1 class="text-2xl font-bold">
-            {{ student.nombre }} {{ student.apellido }}
-          </h1>
-          <p class="text-gray-600 dark:text-gray-400">
-            {{ student.instrumento }} - {{ student.clase }}
-          </p>
-        </div>
-      </div>
-      <div class="flex gap-3">
-        <button
-          v-if="!isEditing"
-          @click="handleEdit"
-          class="btn bg-blue-600 text-white hover:bg-blue-700"
-        >
-          Editar Perfil
-        </button>
-        <template v-else>
-          <button
-            @click="handleSave"
-            class="btn bg-green-600 text-white hover:bg-green-700"
-          >
-            Guardar
-          </button>
-          <button
-            @click="handleCancel"
-            class="btn bg-gray-600 text-white hover:bg-gray-700"
-          >
-            Cancelar
-          </button>
-        </template>
-        <button
-          v-if="!isEditing"
-          @click="handleDelete"
-          class="btn bg-red-600 text-white hover:bg-red-700"
-        >
-          Eliminar
-        </button>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Información Personal -->
-    <div class="card">      <h2 class="profile-section-title">
-        <UserIcon class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-        Información Personal
-      </h2>      <div class="space-y-3" v-if="!isEditing">
-        <div class="animate-slide-up" style="animation-delay: 0.1s;">
-          <p class="data-label">Edad</p>
-          <p class="data-value flex items-center gap-2">
-            <span class="info-tag info-tag-primary">{{ calculatedAge }} años</span>
-          </p>
-        </div>
-        <div class="animate-slide-up" style="animation-delay: 0.15s;">
-          <p class="data-label flex items-center gap-1">
-            <CalendarIcon class="w-4 h-4" />
-            Fecha de Nacimiento
-          </p>
-          <p class="data-value">{{ student.nac }}</p>
-        </div>
-        <div class="animate-slide-up" style="animation-delay: 0.2s;">
-          <p class="data-label flex items-center gap-1">
-            <IdentificationIcon class="w-4 h-4" />
-            Sexo
-          </p>
-          <p class="data-value">
-            <span v-if="student.sexo === 'Masculino'" class="info-tag info-tag-primary">
-              {{ student.sexo }}
-            </span>
-            <span v-else class="info-tag info-tag-warning">
-              {{ student.sexo }}
-            </span>
-          </p>
-        </div>
-        <div class="pt-3 border-t dark:border-gray-700 animate-slide-up" style="animation-delay: 0.25s;">
-          <p class="data-label flex items-center gap-1">
-            <UserGroupIcon class="w-4 h-4" />
-            Padres
-          </p>
-          <p class="data-value flex items-center gap-2 mt-1">
-            <span class="text-purple-600 dark:text-purple-400">•</span>
-            {{ student.madre }} (Madre)
-          </p>
-          <p class="data-value flex items-center gap-2">
-            <span class="text-blue-600 dark:text-blue-400">•</span>
-            {{ student.padre }} (Padre)
-          </p>
-        </div>
-        <div class="animate-slide-up" style="animation-delay: 0.3s;">          <p class="data-label">Contacto</p>
-          <div v-if="contactInfo && contactInfo.length > 0" class="space-y-2">
-            <p v-for="contact in contactInfo" :key="contact.number" 
-               class="data-value flex items-center gap-2 mt-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300">
-              <PhoneIcon class="w-4 h-4 text-green-600 dark:text-green-400" />
-              <span>{{ contact.number }}</span>
-              <span class="text-sm text-gray-500">({{ contact.type }})</span>
-            </p>
-          </div>
-          <p v-else class="data-value text-gray-500 italic">No hay números de contacto registrados</p>
-          <p class="data-value flex items-center gap-2 mt-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300">
-            <EnvelopeIcon class="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            {{ student.email !== 'Vacio' ? student.email : 'No disponible' }}
-          </p>
-        </div>
-      </div>
-      <div class="space-y-3" v-else>
-        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Nombre</label>
-          <input
-            v-model="localStudent.nombre"
-            class="input w-full"
-            required
-          />
-        </div>
-        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Apellido</label>
-          <input
-            v-model="localStudent.apellido"
-            class="input w-full"
-            required
-          />
-        </div>        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Edad (calculada automáticamente)</label>
-          <input
-            :value="calculatedAge + ' años'"
-            class="input w-full bg-gray-100 dark:bg-gray-700"
-            type="text"
-            readonly
-          />
-        </div>
-        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Fecha de Nacimiento</label>
-          <input
-            v-model="localStudent.nac"
-            class="input w-full"
-            type="date"
-            required
-          />
-        </div>
-        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Sexo</label>
-          <select v-model="localStudent.sexo" class="input w-full">
-            <option value="Masculino">Masculino</option>
-            <option value="Femenino">Femenino</option>
-          </select>
-        </div>
-        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Teléfono</label>
-          <input
-            v-model="localStudent.tlf"
-            class="input w-full"
-            type="tel"
-          />
-        </div>
-        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Email</label>
-          <input
-            v-model="localStudent.email"
-            class="input w-full"
-            type="email"
-          />
-        </div>      </div>
-    </div>    <!-- Widget de Rendimiento Académico -->
-    <div class="card lg:col-span-3">
-      <PerformanceWidget
-        :student-id="student.id"
-        :show-trend="true"
-        :show-recent-comments="true"
-        :show-actions="true"
-        :allow-expand="true"
-        @view-details="handleViewPerformanceDetails"
-        @view-recommendations="handleViewRecommendations"
-        @expand="handleExpandPerformance"
-      />
-    </div>
-
-    <!-- Información Académica -->
-    <div class="card lg:col-span-2">
-      <h2 class="profile-section-title">
-        <ChartBarIcon class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-        Información Académica
-      </h2>
-      <div class="space-y-3" v-if="!isEditing">
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Instrumento</p>
-          <p class="font-medium">{{ student.instrumento }}</p>
-        </div>        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Clases</p>
-          <div class="space-y-2 mt-1">
-            <div v-if="studentClasses.length === 0" class="text-gray-500 italic">
-              No está inscrito en ninguna clase
-            </div>            <div 
-              v-for="(classItem, index) in studentClasses" 
-              :key="classItem.id" 
-              class="class-card"
-              :style="{'animation-delay': `${index * 0.1}s`}"
-            >
-              <p class="font-medium flex items-center gap-2">
-                <MusicalNoteIcon class="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                {{ classItem.name }}
-              </p>
-              <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                <UserIcon class="w-4 h-4" /> 
-                {{ classItem.teacher }}
-              </p>
-              <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                <AcademicCapIcon class="w-4 h-4" /> 
-                {{ classItem.level }}
-              </p>
-              <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                <ClockIcon class="w-4 h-4" />
-                {{ classItem.schedule }}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Grupos (Histórico)</p>
-          <div class="flex flex-wrap gap-2 mt-1">
-            <span
-              v-if="student.grupo && student.grupo.length > 0"
-              v-for="grupo in student.grupo"
-              :key="grupo"
-              class="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 rounded-full"
-            >
-              {{ grupo }}
-            </span>
-            <span v-else class="text-gray-500 italic">Sin grupos asignados</span>
-          </div>
-        </div>
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Fecha de Inscripción</p>
-          <p class="font-medium">{{ student.fecInscripcion }}</p>
-        </div>
-      </div>
-      <div class="space-y-3" v-else>        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Instrumento</label>
-          <select v-model="localStudent.instrumento" class="input w-full">
-            <option v-for="instrument in uniqueInstruments" :key="instrument" :value="instrument">
-              {{ instrument }}
-            </option>
-          </select>
-        </div>                <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Clases</label>
-          <div class="mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg text-sm">
-            <p>Las clases se gestionan desde el módulo de Clases.</p>
-            <p class="mt-1">Para inscribir al estudiante en una nueva clase, por favor:</p>
-            <ol class="list-decimal ml-5 mt-1 space-y-1">
-              <li>Ve al menú de Clases</li>
-              <li>Selecciona o crea una clase</li>
-              <li>Agrega este estudiante a la lista de inscritos</li>
-            </ol>
-          </div>
-          <div class="mt-2 space-y-1">
-            <p class="font-medium">Clases actuales:</p>
-            <ul class="list-disc ml-5">
-              <li v-for="classItem in studentClasses" :key="classItem.id">
-                {{ classItem.name }} ({{ classItem.teacher }})
-              </li>
-              <li v-if="studentClasses.length === 0" class="text-gray-500 italic">
-                No está inscrito en ninguna clase
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Grupos Históricos</label>
-          <select v-model="localStudent.grupo" class="input w-full" multiple>
-            <option v-for="group in uniqueGroups" :key="group" :value="group">
-              {{ group }}
-            </option>
-          </select>
-          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Estos son grupos históricos para referencia y pueden ser diferentes de las clases actuales.</p>
-        </div>
-        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Fecha de Inscripción</label>
-          <input
-            v-model="localStudent.fecInscripcion"
-            class="input w-full"
-            type="date"
-          />
-        </div>
-      </div>
-    </div>
-    <!-- Horario y Disponibilidad -->
-    <div class="card lg:col-span-2">
-      <h2 class="profile-section-title">
-        <ChartBarIcon class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-        Horario y Disponibilidad
-      </h2>
-      <div class="space-y-3" v-if="!isEditing">
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Institución</p>
-          <p class="font-medium flex items-center gap-2">
-            <BuildingLibraryIcon class="w-4 h-4" />
-            {{ student.colegio_trabajo }}
-          </p>
-        </div>
-        <div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Horario</p>
-          <p class="font-medium">{{ student.horario_colegio_trabajo }}</p>
-        </div>
-      </div>
-      <div class="space-y-3" v-else>
-        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Institución</label>
-          <input
-            v-model="localStudent.colegio_trabajo"
-            class="input w-full"
-            placeholder="Colegio o lugar de trabajo"
-          />
-        </div>
-        <div>
-          <label class="text-sm text-gray-600 dark:text-gray-400">Horario</label>
-          <input
-            v-model="localStudent.horario_colegio_trabajo"
-            class="input w-full"
-            placeholder="Horario de colegio o trabajo"
-          />
-        </div>
-      </div>
-    </div>    <!-- Análisis de Asistencia -->
-    <div class="card lg:col-span-2">
-      <h2 class="profile-section-title">
-        <ChartBarIcon class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-        Análisis de Asistencia
-      </h2>      <!-- Clasificación del estudiante -->
-      <div class="mb-6 bg-gradient-to-r rounded-lg p-4 shadow-sm animate-slide-up"
-           :class="{
-             'from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/30': studentAttendance.classification === 'Responsable',
-             'from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/30': studentAttendance.classification === 'Irregular',
-             'from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/30': studentAttendance.classification === 'Crítico',
-             'from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/30': studentAttendance.classification === 'Sin datos'
-           }">
-        <div class="flex justify-between items-center">
-          <div>
-            <h3 class="text-lg font-medium mb-1">Estado: {{ studentAttendance.classification }}</h3>
-            <p class="text-sm" 
-               :class="{
-                 'text-green-700 dark:text-green-400': studentAttendance.classification === 'Responsable',
-                 'text-yellow-700 dark:text-yellow-400': studentAttendance.classification === 'Irregular',
-                 'text-red-700 dark:text-red-400': studentAttendance.classification === 'Crítico',
-                 'text-gray-700 dark:text-gray-400': studentAttendance.classification === 'Sin datos'
-               }">
-              <span v-if="studentAttendance.classification === 'Responsable'">Excelente asistencia. El estudiante asiste regularmente a clases.</span>
-              <span v-else-if="studentAttendance.classification === 'Irregular'">Asistencia inconsistente. Es necesario mejorar la regularidad.</span>
-              <span v-else-if="studentAttendance.classification === 'Crítico'">Atención requerida. Asistencia muy baja.</span>
-              <span v-else>No hay datos suficientes para evaluar al estudiante.</span>
-            </p>
-          </div>
-          <div class="text-4xl font-bold"
-              :class="{
-                'text-green-600 dark:text-green-400': studentAttendance.classification === 'Responsable',
-                'text-yellow-600 dark:text-yellow-400': studentAttendance.classification === 'Irregular',
-                'text-red-600 dark:text-red-400': studentAttendance.classification === 'Crítico',
-                'text-gray-600 dark:text-gray-400': studentAttendance.classification === 'Sin datos'
-              }">
-            {{ studentAttendance.summary?.attendanceRate || 0 }}%
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel de estadísticas -->
-      <div class="grid grid-cols-5 gap-4 mb-6">
-        <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/30 p-4 rounded-lg shadow-sm animate-slide-up" style="animation-delay: 0.1s;">
-          <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-            <ClockIcon class="w-4 h-4" />
-            Clases Totales
-          </p>
-          <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-            {{ studentAttendance.summary?.total || 0 }}
-          </p>
-        </div>
-
-        <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/30 p-4 rounded-lg shadow-sm animate-slide-up" style="animation-delay: 0.15s;">
-          <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-            <CheckCircleIcon class="w-4 h-4 text-green-500" />
-            Asistencias
-          </p>
-          <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-            {{ studentAttendance.summary?.present || 0 }}
-          </p>
-        </div>
-
-        <div class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/30 p-4 rounded-lg shadow-sm animate-slide-up" style="animation-delay: 0.2s;">
-          <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-            <XCircleIcon class="w-4 h-4 text-red-500" />
-            Ausencias
-          </p>
-          <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
-            {{ studentAttendance.summary?.absent || 0 }}
-          </p>
-        </div>
-
-        <div class="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/30 p-4 rounded-lg shadow-sm animate-slide-up" style="animation-delay: 0.25s;">
-          <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-            <DocumentTextIcon class="w-4 h-4 text-amber-500" />
-            Justificadas
-          </p>
-          <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
-            {{ studentAttendance.summary?.justified || 0 }}
-          </p>
-        </div>
-        
-        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/30 p-4 rounded-lg shadow-sm animate-slide-up" style="animation-delay: 0.3s;">
-          <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-            <ClockIcon class="w-4 h-4 text-yellow-500" />
-            Tardanzas
-          </p>
-          <p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
-            {{ studentAttendance.summary?.late || 0 }}
-          </p>
-        </div>
-      </div>
-
-      <!-- Porcentaje de asistencia en círculo -->
-      <div class="flex justify-between items-center mb-6">
-        <div class="animate-slide-up" style="animation-delay: 0.3s;">
-          <div class="relative w-24 h-24">
-            <svg class="w-24 h-24" viewBox="0 0 100 100">
-              <!-- Círculo de fondo -->
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                fill="none"
-                stroke="#e5e7eb"
-                stroke-width="10"
-              />
-              <!-- Círculo de progreso -->
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                fill="none"
-                :stroke="studentAttendance.summary?.attendanceRate >= 80 ? '#22c55e' : studentAttendance.summary?.attendanceRate >= 60 ? '#f59e0b' : '#ef4444'"
-                stroke-width="10"
-                :stroke-dasharray="`${studentAttendance.summary?.attendanceRate || 0}, 100`"
-                stroke-dashoffset="25"
-                transform="rotate(-90 50 50)"
-              />
-              <!-- Texto de porcentaje -->
-              <text
-                x="50"
-                y="50"
-                text-anchor="middle"
-                dominant-baseline="middle"
-                font-size="18"
-                font-weight="bold"
-                :fill="studentAttendance.summary?.attendanceRate >= 80 ? '#22c55e' : studentAttendance.summary?.attendanceRate >= 60 ? '#f59e0b' : '#ef4444'"
-              >
-                {{ studentAttendance.summary?.attendanceRate || 0 }}%
-              </text>
-            </svg>
-          </div>
-          <p class="text-center text-sm text-gray-600 dark:text-gray-400 mt-2">Asistencia</p>
-        </div>
-
-        <!-- Gráfico de asistencia -->
-        <div class="h-64 w-3/4 animate-slide-up" style="animation-delay: 0.35s;">
-          <Line
-            :data="attendanceData"
-            :options="chartOptions"
-          />
-        </div>
-      </div>
-
-      <!-- Historial de asistencias recientes -->
-      <div class="animate-slide-up" style="animation-delay: 0.4s;">        <h3 class="text-base font-medium mb-3 flex items-center gap-2">
-          <CalendarIcon class="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          Asistencias Recientes
-          <button 
-            @click="refreshAttendanceData" 
-            class="ml-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center"
-            :disabled="isRefreshing"
-          >
-            <ArrowPathIcon class="w-3 h-3 mr-1" :class="{ 'icon-spin': isRefreshing }" />
-            Actualizar
-          </button>
-        </h3>
-          <div v-if="studentAttendance.recentRecords && studentAttendance.recentRecords.length > 0">
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-            Mostrando registros de asistencia. Use los filtros de fecha para ver registros específicos.
-          </p>
-          <!-- Date Range Selector -->          <div class="mb-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-100 dark:border-blue-900/30 shadow-sm">
-            <h4 class="text-sm font-medium mb-3 flex items-center gap-2 text-blue-700 dark:text-blue-300">
-              <CalendarIcon class="w-4 h-4" />
-              Filtrar por rango de fechas
-            </h4>
-            <div class="flex flex-wrap items-center gap-4">
-              <div class="flex-1 min-w-[160px]">
-                <label class="text-xs text-gray-600 dark:text-gray-400 block mb-1">Desde:</label>
-                <div class="relative">
-                  <CalendarIcon class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
-                  <input 
-                    type="date" 
-                    v-model="dateRange.start" 
-                    class="w-full pl-9 px-3 py-2 rounded-md border border-blue-200 dark:border-blue-800 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-700 focus:border-transparent transition-all"
-                  />
-                </div>
-              </div>
-              <div class="flex-1 min-w-[160px]">
-                <label class="text-xs text-gray-600 dark:text-gray-400 block mb-1">Hasta:</label>
-                <div class="relative">
-                  <CalendarIcon class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
-                  <input 
-                    type="date" 
-                    v-model="dateRange.end" 
-                    class="w-full pl-9 px-3 py-2 rounded-md border border-blue-200 dark:border-blue-800 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-700 focus:border-transparent transition-all"
-                  />
-                </div>
-              </div>
-              <div class="flex-none mt-6">
-                <button 
-                  @click="resetDateRange"
-                  class="px-4 py-2 text-sm text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-800/60 rounded-md flex items-center gap-2 transition-colors shadow-sm"
-                >
-                  <ArrowPathIcon class="w-4 h-4" />
-                  <span>Restablecer</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="overflow-hidden overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead class="bg-blue-50 dark:bg-blue-900/20">
-                <tr>
-                  <th class="px-3 py-3 text-left text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Fechas</th>
-                  <th class="px-3 py-3 text-left text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Clases</th>
-                  <th class="px-3 py-3 text-left text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Estado/Justificación</th>
-                </tr>
-              </thead>              <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-                <tr 
-                  v-for="(record, index) in filteredAttendanceRecords" 
-                  :key="index" 
-                  class="transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800 hover:shadow-md"
-                  :class="{
-                    'bg-red-50 dark:bg-red-900/10 border-l-4 border-red-400 dark:border-red-500': record.status && record.status.toLowerCase() === 'ausente',
-                    'bg-green-50 dark:bg-green-900/10 border-l-4 border-green-400 dark:border-green-500': record.status && record.status.toLowerCase() === 'presente',
-                    'bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-400 dark:border-yellow-500': record.status && record.status.toLowerCase() === 'tardanza',
-                                       'bg-blue-50 dark:bg-blue-900/10 border-l-4 border-blue-400 dark:border-blue-500': record.status && record.status.toLowerCase() === 'justificado',
-                    'border-l-4 border-gray-300 dark:border-gray-600': !record.status
-                  }"
-                >                  <td class="px-3 py-2 text-sm">
-                    <div>
-                      <p class="text-gray-900 dark:text-gray-200 font-medium">{{ record.formattedDateCapitalized }}</p>
-                    </div>
-                  </td>
-                  <td class="px-3 py-2 text-sm">
-                    <div>
-                      <p class="text-gray-900 dark:text-gray-200 font-medium">{{ record.className }}</p>
-                      <p class="text-gray-600 dark:text-gray-400 text-xs">{{ record.teacherName }}</p>
-                    </div>
-                  </td>                  <td class="px-3 py-2 text-sm">
-                    <div class="flex flex-col gap-1">
-                      <span 
-                        v-if="record.status && record.status.toLowerCase() === 'ausente'" 
-                        class="info-tag info-tag-danger flex items-center gap-1 shadow-sm"
-                      >
-                        <XCircleIcon class="w-4 h-4" />
-                        Ausente
-                      </span>
-                      <span 
-                        v-else-if="record.status && record.status.toLowerCase() === 'presente'" 
-                        class="info-tag info-tag-success flex items-center gap-1 shadow-sm"
-                      >
-                        <CheckCircleIcon class="w-4 h-4" />
-                        Presente
-                      </span>
-                      <span 
-                        v-else-if="record.status && record.status.toLowerCase() === 'tardanza'" 
-                        class="info-tag info-tag-warning flex items-center gap-1 shadow-sm"
-                      >
-                        <ClockIcon class="w-4 h-4" />
-                        Tardanza
-                      </span>
-                      <span 
-                        v-else-if="record.status && record.status.toLowerCase() === 'justificado'" 
-                        class="info-tag info-tag-primary flex items-center gap-1 shadow-sm"
-                      >
-                        <DocumentTextIcon class="w-4 h-4" />
-                        Justificado
-                      </span>
-                      <span v-else class="info-tag flex items-center gap-1 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 shadow-sm">
-                        <span class="w-4 h-4 flex items-center justify-center">?</span>
-                        {{ record.status || 'No registrado' }}
-                      </span>
-                      <span 
-                        v-if="record.justification" 
-                        class="mt-1 text-sm italic text-gray-600 dark:text-gray-400 pl-2 border-l-2 border-amber-400"
-                      >
-                        <DocumentTextIcon class="w-3 h-3 inline mr-1 text-amber-500" />
-                        {{ record.justification }}
-                      </span>
-                    </div>
-                  </td>
-                </tr>                <tr v-if="filteredAttendanceRecords.length === 0">
-                  <td colspan="3" class="px-3 py-8 text-center">
-                    <div class="flex flex-col items-center justify-center space-y-2">
-                      <CalendarIcon class="w-10 h-10 text-gray-300 dark:text-gray-600" />
-                      <p class="text-sm text-gray-500 dark:text-gray-400">
-                        No hay registros de asistencia en el rango de fecha seleccionado
-                      </p>
-                      <button 
-                        @click="resetDateRange" 
-                        class="mt-2 px-3 py-1 text-xs text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-                      >
-                        Mostrar último mes
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-          <div v-else class="text-center py-10 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <div class="flex flex-col items-center justify-center space-y-3">
-            <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-full">
-              <CalendarIcon class="w-10 h-10 text-gray-400 dark:text-gray-500" />
-            </div>
-            <p class="text-gray-600 dark:text-gray-400 font-medium">No hay registros de asistencia disponibles</p>
-            <p class="text-sm text-gray-500 dark:text-gray-500 max-w-md">
-              Los registros de asistencia aparecerán aquí una vez que el estudiante comience a asistir a clases y se registre su asistencia.
-            </p>
-            <button 
-              @click="refreshAttendanceData" 
-              class="mt-2 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-2"
-              :disabled="isRefreshing"
-            >
-              <ArrowPathIcon class="w-4 h-4" :class="{ 'icon-spin': isRefreshing }" />
-              Actualizar datos
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>    <!-- Documentos -->
-    <div class="card">
-      <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-        <DocumentTextIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
-        Documentos
-      </h2>
-      <div class="space-y-4">
-        <!-- Contrato de Instrumento -->
-        <div class="p-4 rounded-lg border dark:border-gray-700">
-          <div class="flex justify-between items-start mb-2">
-            <div>
-              <p class="font-medium">Contrato de Instrumento</p>
-              <p class="text-sm text-gray-600 dark:text-gray-400">
-                {{ student.documentos?.contrato_instrumento
-                  ? `Subido el ${new Date(student.documentos.contrato_instrumento.fecha).toLocaleDateString()}`
-                  : 'Pendiente de firma'
-                }}
-              </p>
-            </div>
-            <div v-if="!student.documentos?.contrato_instrumento">
-              <FileUpload
-                accept=".pdf,.jpg,.jpeg,.png"
-                @select="files => handleDocumentUpload(files, 'contrato_instrumento')"
-                class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-              >
-                <template #default>
-                  <DocumentArrowUpIcon class="w-5 h-5" />
-                  <span>Subir contrato</span>
-                </template>
-              </FileUpload>
-            </div>
-          </div>
-
-          <!-- Visor del documento para Contrato -->
-          <div v-if="student.documentos?.contrato_instrumento" class="mt-4">
-            <!-- Vista previa de PDF -->
-            <div v-if="isDocumentPDF('contrato_instrumento')" class="h-96 w-full">
-              <iframe
-                :src="student.documentos.contrato_instrumento.url"
-                class="w-full h-full rounded-lg border dark:border-gray-700"
-                type="application/pdf"
-              ></iframe>
-            </div>
-            <!-- Vista previa de imagen -->
-            <div v-else-if="isDocumentImage('contrato_instrumento')" class="max-h-96 overflow-hidden rounded-lg">
-              <img
-                :src="student.documentos.contrato_instrumento.url"
-                alt="Contrato de Instrumento"
-                class="w-full object-contain"
-              />
-            </div>
-            <!-- Botones de acción -->
-            <div class="flex justify-end mt-2 space-x-2">
-              <a
-                :href="student.documentos.contrato_instrumento.url"
-                target="_blank"
-                class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-              >
-                <ArrowTopRightOnSquareIcon class="w-4 h-4" />
-                <span>Abrir en nueva pestaña</span>
-              </a>
-              <button
-                @click="handleDocumentDelete('contrato_instrumento')"
-                class="text-sm text-red-600 dark:text-red-400 hover:underline flex items-center gap-1"
-              >
-                <TrashIcon class="w-4 h-4" />
-                <span>Eliminar</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Términos y Condiciones -->
-        <div class="p-4 rounded-lg border dark:border-gray-700">
-          <div class="flex justify-between items-start mb-2">
-            <div>
-              <p class="font-medium">Términos y Condiciones</p>
-              <p class="text-sm text-gray-600 dark:text-gray-400">
-                {{ student.documentos?.terminos_condiciones
-                  ? `Subido el ${new Date(student.documentos.terminos_condiciones.fecha).toLocaleDateString()}`
-                  : 'Pendiente de firma'
-                }}
-              </p>
-            </div>
-            <div v-if="!student.documentos?.terminos_condiciones">
-              <FileUpload
-                accept=".pdf,.jpg,.jpeg,.png"
-                @select="files => handleDocumentUpload(files, 'terminos_condiciones')"
-                class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-              >
-                <template #default>
-                  <DocumentArrowUpIcon class="w-5 h-5" />
-                  <span>Subir documento</span>
-                </template>
-              </FileUpload>
-            </div>
-          </div>
-
-          <!-- Visor del documento para Términos -->
-          <div v-if="student.documentos?.terminos_condiciones" class="mt-4">
-            <!-- Vista previa de PDF -->
-            <div v-if="isDocumentPDF('terminos_condiciones')" class="h-96 w-full">
-              <iframe
-                :src="student.documentos.terminos_condiciones.url"
-                class="w-full h-full rounded-lg border dark:border-gray-700"
-                type="application/pdf"
-              ></iframe>
-            </div>
-            <!-- Vista previa de imagen -->
-            <div v-else-if="isDocumentImage('terminos_condiciones')" class="max-h-96 overflow-hidden rounded-lg">
-              <img
-                :src="student.documentos.terminos_condiciones.url"
-                alt="Términos y Condiciones"
-                class="w-full object-contain"
-              />
-            </div>
-            <!-- Botones de acción -->
-            <div class="flex justify-end mt-2 space-x-2">
-              <a
-                :href="student.documentos.terminos_condiciones.url"
-                target="_blank"
-                class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-              >
-                <ArrowTopRightOnSquareIcon class="w-4 h-4" />
-                <span>Abrir en nueva pestaña</span>
-              </a>
-              <button
-                @click="handleDocumentDelete('terminos_condiciones')"
-                class="text-sm text-red-600 dark:text-red-400 hover:underline flex items-center gap-1"
-              >
-                <TrashIcon class="w-4 h-4" />
-                <span>Eliminar</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    </div>
-  </div>
-</template>

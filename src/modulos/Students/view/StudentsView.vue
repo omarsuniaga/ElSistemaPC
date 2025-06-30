@@ -47,6 +47,7 @@ const studentsStore = useStudentsStore()
 const attendanceStore = useAttendanceStore()
 const analyticsStore = useAnalyticsStore()
 
+
 const isLoading = ref(true)
 const showDeleteModal = ref(false)
 const studentToDelete = ref<string | null>(null)
@@ -105,24 +106,24 @@ const sortedStudents = computed(() => {
   return filtered;
 })
 
-// Función para mostrar/ocultar el menú de opciones
-const toggleMenu = (event: Event, studentId: string): void => {
-  event.stopPropagation() // Evitar que se abra el drawer
-  activeMenu.value = activeMenu.value === studentId ? null : studentId
-}
+// // Función para mostrar/ocultar el menú de opciones
+// const toggleMenu = (event: Event, studentId: string): void => {
+//   event.stopPropagation() // Evitar que se abra el drawer
+//   activeMenu.value = activeMenu.value === studentId ? null : studentId
+// }
 
-// Function to handle edit action from dropdown menu
-const handleEditFromMenu = (event: Event, id: string): void => {
-  event.stopPropagation()
-  router.push({ name: 'StudentEdit', params: { id } })
-}
+// // Function to handle edit action from dropdown menu
+// const handleEditFromMenu = (event: Event, id: string): void => {
+//   event.stopPropagation()
+//   router.push({ name: 'StudentEdit', params: { id } })
+// }
 
-// Function to handle delete action from dropdown menu
-const handleDeleteFromMenu = (event: Event, id: string): void => {
-  event.stopPropagation()
-  studentToDelete.value = id
-  showDeleteModal.value = true
-}
+// // Function to handle delete action from dropdown menu
+// const handleDeleteFromMenu = (event: Event, id: string): void => {
+//   event.stopPropagation()
+//   studentToDelete.value = id
+//   showDeleteModal.value = true
+// }
 
 onMounted(async () => {
   try {
@@ -333,6 +334,8 @@ function getStudentAttendance(studentId: string): number {
         :attendance="0"
         @open="openStudentDrawer(student)"
         @profile="handleViewProfile(student.id)"
+        @edit="handleEdit(student.id)"
+        @delete="handleDelete(student.id)"
       />
     </div>
 

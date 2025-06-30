@@ -9,7 +9,7 @@
             v-model="searchQuery" 
             type="text" 
             placeholder="Buscar por nombre de clase o instrumento..." 
-            class="input pl-10 w-full"
+            class="input w-full pl-10"
           />
           <MagnifyingGlassIcon class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
         </div>
@@ -114,7 +114,7 @@
       </div>
       
       <!-- Mostrar clases compartidas con componente especializado -->
-      <template v-if="activeTab === 'shared-classes'">
+      <div v-if="activeTab === 'shared-classes'">
         <SharedClassCard
           v-for="class_ in filteredClasses"
           :key="class_.id"
@@ -123,129 +123,110 @@
           @take-attendance="takeAttendance"
           @view-history="viewHistory"
         />
-      </template>
+      </div>
       
       <!-- Mostrar clases propias con diseño regular -->
-      <template v-else>
+      <div v-else>
         <div 
           v-for="class_ in filteredClasses" 
           :key="class_.id" 
           class="class-card bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden transition-all hover:shadow-lg"
         >
           <!-- Contenido de clase propia existente -->
-        <div class="p-6">
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div class="flex items-center mb-2">
-                <h3 class="text-lg font-semibold mr-3">{{ class_.name }}</h3>
-                <span 
-                  class="px-2 py-1 text-xs rounded-full"
-                  :class="getClassTypeClass(class_.type)"
+          <div class="p-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div class="flex items-center mb-2">
+                  <h3 class="text-lg font-semibold mr-3">{{ class_.nombre || class_.name }}</h3>
+                  <span 
+                    class="px-2 py-1 text-xs rounded-full"
+                    :class="getClassTypeClass(class_.type || 'group')"
+                  >
+                    {{ getClassTypeLabel(class_.type || 'group') }}
+                  </span>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400 mb-2">{{ class_.description }}</p>
+                <div class="flex flex-wrap gap-2 mb-3">
+                  <span class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
+                    {{ class_.instrument || 'Múltiples instrumentos' }}
+                  </span>
+                  <span class="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-full">
+                    {{ class_.level || 'Todos los niveles' }}
+                  </span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div class="flex items-center">
+                    <UserGroupIcon class="h-5 w-5 mr-2 text-gray-500" />
+                    <span class="text-sm">{{ (class_.studentIds || class_.alumnos)?.length || 0 }} estudiantes</span>
+                  </div>
+                  <div class="flex items-center">
+                    <ClockIcon class="h-5 w-5 mr-2 text-gray-500" />
+                    <span class="text-sm">{{ formatScheduleCount(class_) }}</span>
+                  </div>
+                  <div class="flex items-center">
+                    <CalendarIcon class="h-5 w-5 mr-2 text-gray-500" />
+                    <span class="text-sm">{{ formatNextClass(class_) }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex justify-end items-start space-x-2 flex-shrink-0">
+                <button
+                  @click="showClassDetails(class_)"
+                  class="btn bg-blue-600 text-white hover:bg-blue-700"
                 >
-                  {{ getClassTypeLabel(class_.type) }}
-                </span>
-              </div>
-              
-              <p class="text-gray-600 dark:text-gray-400 mb-2">{{ class_.description }}</p>
-              
-              <div class="flex flex-wrap gap-2 mb-3">
-                <span class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
-                  {{ class_.instrument || 'Múltiples instrumentos' }}
-                </span>
-                <span class="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-full">
-                  {{ class_.level || 'Todos los niveles' }}
-                </span>
-              </div>
-              
-              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div class="flex items-center">
-                  <UserGroupIcon class="h-5 w-5 mr-2 text-gray-500" />
-                  <span class="text-sm">{{ class_.studentIds?.length || 0 }} estudiantes</span>
-                </div>
-                
-                <div class="flex items-center">
-                  <ClockIcon class="h-5 w-5 mr-2 text-gray-500" />
-                  <span class="text-sm">{{ formatScheduleCount(class_) }}</span>
-                </div>
-                
-                <div class="flex items-center">
-                  <CalendarIcon class="h-5 w-5 mr-2 text-gray-500" />
-                  <span class="text-sm">{{ formatNextClass(class_) }}</span>
-                </div>
+                  Ver Detalles
+                </button>
+                <button
+                  @click="showStudentList(class_)"
+                  class="btn bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                >
+                  Estudiantes
+                </button>
               </div>
             </div>
-            
-            <div class="flex justify-end items-start space-x-2 flex-shrink-0">
-              <button
-                @click="showClassDetails(class_)"
-                class="btn bg-blue-600 text-white hover:bg-blue-700"
+          </div>
+          <!-- Horarios de la clase -->
+          <div v-if="class_.schedule && class_.schedule.length > 0" class="bg-gray-50 dark:bg-gray-700/50 px-6 py-3 border-t dark:border-gray-700">
+            <h4 class="font-medium mb-2">Horarios</h4>
+            <div class="flex flex-wrap gap-2">
+              <div 
+                v-for="(schedule, index) in class_.schedule" 
+                :key="index"
+                class="px-3 py-1 bg-white dark:bg-gray-700 text-sm rounded-md shadow-sm"
               >
-                Ver Detalles
-              </button>
-              
-              <button
-                @click="showStudentList(class_)"
-                class="btn bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-              >
-                Estudiantes
-              </button>
+                {{ schedule.day }}, {{ schedule.startTime }} - {{ formatEndTime(schedule) }} · {{ schedule.location }}
+              </div>
             </div>
           </div>
         </div>
-        
-        <!-- Horarios de la clase -->
-        <div v-if="class_.schedule && class_.schedule.length > 0" class="bg-gray-50 dark:bg-gray-700/50 px-6 py-3 border-t dark:border-gray-700">
-          <h4 class="font-medium mb-2">Horarios</h4>
-          <div class="flex flex-wrap gap-2">
-            <div 
-              v-for="(schedule, index) in class_.schedule" 
-              :key="index"
-              class="px-3 py-1 bg-white dark:bg-gray-700 text-sm rounded-md shadow-sm"
-            >
-              {{ schedule.day }}, {{ schedule.startTime }} - {{ formatEndTime(schedule) }} · {{ schedule.location }}
-            </div>
-          </div>
+        <!-- End class card -->
+      </div>
+      <!-- Paginación -->
+      <div v-if="filteredClasses.length > 0" class="flex justify-between items-center">
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+          Mostrando {{ paginatedClasses.length }} de {{ filteredClasses.length }} clases
+        </div>
+        <div class="flex space-x-1">
+          <button
+            @click="currentPage = Math.max(1, currentPage - 1)"
+            :disabled="currentPage === 1"
+            class="px-3 py-1 rounded-md"
+            :class="currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-gray-700'"
+          >
+            Anterior
+          </button>
+          <button
+            v-for="page in totalPages"
+            :key="page"
+            @click="currentPage = page"
+            class="px-3 py-1 rounded-md"
+            :class="currentPage === page ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700'"
+          >
+            {{ page }}
+          </button>
         </div>
       </div>
     </div>
-    
-    <!-- Paginación -->
-    <div v-if="filteredClasses.length > 0" class="flex justify-between items-center">
-      <div class="text-sm text-gray-600 dark:text-gray-400">
-        Mostrando {{ paginatedClasses.length }} de {{ filteredClasses.length }} clases
-      </div>
-      
-      <div class="flex space-x-1">
-        <button
-          @click="currentPage = Math.max(1, currentPage - 1)"
-          :disabled="currentPage === 1"
-          class="px-3 py-1 rounded-md"
-          :class="currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-gray-700'"
-        >
-          Anterior
-        </button>
-        
-        <button
-          v-for="page in totalPages"
-          :key="page"
-          @click="currentPage = page"
-          class="px-3 py-1 rounded-md"
-          :class="currentPage === page ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700'"
-        >
-          {{ page }}
-        </button>
-        
-        <button
-          @click="currentPage = Math.min(totalPages, currentPage + 1)"
-          :disabled="currentPage === totalPages"
-          class="px-3 py-1 rounded-md"
-          :class="currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-gray-700'"
-        >
-          Siguiente
-        </button>
-      </div>
-    </div>
-    
     <!-- Modal de lista de estudiantes -->
     <div v-if="selectedClassStudents" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-2xl">
@@ -255,26 +236,24 @@
             <XMarkIcon class="h-5 w-5" />
           </button>
         </div>
-        
         <div class="p-6">
           <div v-if="classStudents.length > 0" class="space-y-4 max-h-[60vh] overflow-y-auto">
             <div 
               v-for="student in classStudents" 
               :key="student.id" 
               class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-            >              <div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center mr-4 overflow-hidden">
+            >
+              <div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center mr-4 overflow-hidden">
                 <StudentAvatar
                   :first-name="student.nombre || ''"
                   :last-name="student.apellido || ''"
                   size="lg"
                 />
               </div>
-              
               <div class="flex-grow">
                 <h4 class="font-medium">{{ student.nombre }} {{ student.apellido }}</h4>
                 <p class="text-sm text-gray-600 dark:text-gray-400">{{ student.instrumento }} · {{ student.edad }} años</p>
               </div>
-              
               <div>
                 <button 
                   @click="showStudentDetails(student.id)"
@@ -285,19 +264,30 @@
               </div>
             </div>
           </div>
-          
           <div v-else class="text-center py-12">
             <UserIcon class="h-12 w-12 mx-auto text-gray-400" />
             <h3 class="mt-2 text-lg font-medium text-gray-500">No hay estudiantes asignados</h3>
             <p class="mt-1 text-gray-500">Esta clase aún no tiene estudiantes asignados.</p>
           </div>
         </div>
-        
         <div class="px-6 py-4 border-t dark:border-gray-700 flex justify-end">
           <button
             @click="selectedClassStudents = null"
             class="btn bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
           >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div v-if="selectedStudentDetails" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-2xl">
+        <div class="flex justify-between items-center px-6 py-4 border-b dark:border-gray-700">
+          <h3 class="text-lg font-semibold">Detalles del Estudiante</h3>
+          <button @click="selectedStudentDetails = null" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+            <XMarkIcon class="h-5 w-5" />
             Cerrar
           </button>
         </div>
@@ -314,6 +304,7 @@ import { useRouter } from 'vue-router';
 import { useClassesStore } from '../../stores/classes';
 import { useStudentsStore } from '../../modulos/Students/store/students';
 import { useTeachersStore } from '../../modulos/Teachers/store/teachers';
+import type { Student } from '../../modulos/Students/types/student';
 import {
   MagnifyingGlassIcon,
   AcademicCapIcon,
@@ -325,8 +316,42 @@ import {
   DocumentTextIcon,
   XMarkIcon
 } from '@heroicons/vue/24/outline';
-import StudentAvatar from '../../modulos/Students/components/StudentAvatar.vue';
-import SharedClassCard from '../../modulos/Teachers/components/SharedClassCard.vue';
+import  StudentAvatar  from '../../modulos/Students/components/StudentAvatar.vue';
+import  SharedClassCard  from '../../modulos/Teachers/components/SharedClassCard.vue';
+
+// Interfaces
+interface Schedule {
+  day: string;
+  startTime: string;
+  endTime: string;
+  location?: string;
+}
+
+interface TeacherClass {
+  id: string;
+  nombre: string;
+  name?: string; // Para compatibilidad
+  description?: string;
+  instrument?: string;
+  level?: string;
+  type?: 'individual' | 'group';
+  teacherId: string;
+  studentIds?: string[];
+  alumnos?: string[]; // Nombre real de la propiedad
+  horario?: {
+    dia: string;
+    horaInicio: string;
+    horaFin: string;
+  };
+  schedule?: Schedule[];
+  nextDate?: string;
+  contenido?: string;
+  temas?: Array<{
+    id: string;
+    titulo: string;
+    descripcion?: string;
+  }>;
+}
 
 // Router
 const router = useRouter();
@@ -342,9 +367,10 @@ const filterInstrument = ref('');
 const filterLevel = ref('');
 const currentPage = ref(1);
 const pageSize = 5;
-const selectedClassStudents = ref(null);
-const classStudents = ref([]);
+const selectedClassStudents = ref<TeacherClass | null>(null);
+const classStudents = ref<Student[]>([]);
 const activeTab = ref('my-classes');
+const teacherClasses = ref<TeacherClass[]>([]);
 
 // ID del profesor (simulado)
 const teacherId = '1'; // En un caso real, se obtendría del usuario autenticado
@@ -363,8 +389,9 @@ const classesStats = computed(() => {
   const uniqueStudents = new Set();
   
   teacherClasses.value.forEach(cls => {
-    if (cls.studentIds) {
-      cls.studentIds.forEach(id => uniqueStudents.add(id));
+    const studentList = cls.studentIds || cls.alumnos;
+    if (studentList) {
+      studentList.forEach((id: string) => uniqueStudents.add(id));
     }
     
     if (cls.type === 'individual') {
@@ -383,8 +410,7 @@ const classesStats = computed(() => {
 });
 
 // Clases del profesor
-const teacherClasses = ref([]);
-const sharedClasses = ref([]);
+const sharedClasses = ref<TeacherClass[]>([]);
 
 // Clases mostradas según la pestaña activa
 const myClasses = computed(() => teacherClasses.value);
@@ -399,7 +425,7 @@ const filteredClasses = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
     result = result.filter(cls => 
-      cls.name.toLowerCase().includes(query) || 
+      (cls.name ?? '').toLowerCase().includes(query) || 
       (cls.instrument && cls.instrument.toLowerCase().includes(query))
     );
   }
@@ -433,13 +459,13 @@ const hasFilters = computed(() =>
 );
 
 // Formatear el número de horarios
-const formatScheduleCount = (class_) => {
+const formatScheduleCount = (class_: TeacherClass) => {
   const count = class_.schedule?.length || 0;
   return count === 1 ? '1 sesión semanal' : `${count} sesiones semanales`;
 };
 
 // Formatear la fecha de la próxima clase
-const formatNextClass = (class_) => {
+const formatNextClass = (class_: TeacherClass) => {
   if (!class_.nextDate) return 'Sin programación';
   
   const nextDate = parseISO(class_.nextDate);
@@ -447,19 +473,19 @@ const formatNextClass = (class_) => {
 };
 
 // Formatear la hora de finalización
-const formatEndTime = (schedule) => {
+const formatEndTime = (schedule: Schedule) => {
   const [hours, minutes] = schedule.startTime.split(':').map(Number);
   const startDate = new Date();
   startDate.setHours(hours, minutes, 0);
   
-  const durationMinutes = (schedule.duration || 1.5) * 60;
+  const durationMinutes = 90; // 1.5 horas por defecto
   const endDate = addMinutes(startDate, durationMinutes);
   
   return format(endDate, 'HH:mm');
 };
 
 // Obtener etiqueta del tipo de clase
-const getClassTypeLabel = (type) => {
+const getClassTypeLabel = (type: string) => {
   switch (type) {
     case 'individual': return 'Individual';
     case 'group': return 'Grupal';
@@ -470,7 +496,7 @@ const getClassTypeLabel = (type) => {
 };
 
 // Obtener clase CSS para el tipo de clase
-const getClassTypeClass = (type) => {
+const getClassTypeClass = (type: string) => {
   switch (type) {
     case 'individual': 
       return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200';
@@ -486,12 +512,12 @@ const getClassTypeClass = (type) => {
 };
 
 // Mostrar detalles de la clase
-const showClassDetails = (class_) => {
+const showClassDetails = (class_: TeacherClass) => {
   router.push(`/classes/${class_.id}`);
 };
 
 // Mostrar lista de estudiantes
-const showStudentList = async (class_) => {
+const showStudentList = async (class_: TeacherClass) => {
   selectedClassStudents.value = class_;
   
   try {
@@ -500,8 +526,9 @@ const showStudentList = async (class_) => {
     }
     
     // Filtrar estudiantes de esta clase
+    const studentList = class_.studentIds || class_.alumnos || [];
     classStudents.value = studentsStore.students.filter(student => 
-      class_.studentIds?.includes(student.id)
+      studentList.includes(student.id)
     );
     
   } catch (error) {
@@ -510,16 +537,16 @@ const showStudentList = async (class_) => {
 };
 
 // Mostrar detalles del estudiante
-const showStudentDetails = (studentId) => {
+const showStudentDetails = (studentId: string) => {
   router.push(`/students/${studentId}`);
 };
 
 // Funciones para clases compartidas
-const takeAttendance = (class_) => {
+const takeAttendance = (class_: TeacherClass) => {
   router.push(`/teacher/classes/${class_.id}/attendance`);
 };
 
-const viewHistory = (class_) => {
+const viewHistory = (class_: TeacherClass) => {
   router.push(`/teacher/classes/${class_.id}/history`);
 };
 
@@ -550,11 +577,29 @@ onMounted(async () => {
 
 <style scoped>
 .input {
-  @apply w-full rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+  width: 100%;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 1rem;
+  background-color: white;
+  outline: none;
+}
+
+.input:focus {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  border-color: #3b82f6;
+}
+
+.dark .input {
+  border-color: #4b5563;
+  background-color: #374151;
 }
 
 .btn {
-  @apply px-3 py-1.5 rounded-md text-sm font-medium;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .stat-card, .class-card {

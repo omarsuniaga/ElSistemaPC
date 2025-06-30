@@ -123,7 +123,7 @@ const toggleMenu = (event: Event, studentId: string): void => {
 // Function to handle edit action from dropdown menu
 const handleEditFromMenu = (event: Event, id: string): void => {
   event.stopPropagation()
-  router.push({ name: 'StudentEdit', params: { id } })
+  router.push(`/students/edit/id:${id}`)
 }
 
 // Function to handle delete action from dropdown menu
