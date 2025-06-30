@@ -95,21 +95,8 @@
               </select>
             </div>
 
-            <!-- Capacity -->
-            <div>
-              <label for="capacity" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Capacidad Máxima
-              </label>
-              <input
-                id="capacity"
-                v-model.number="form.capacity"
-                type="number"
-                min="1"
-                max="50"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                placeholder="8"
-              />
-            </div>
+            <!-- Capacidad ilimitada (campo oculto) -->
+            <input type="hidden" v-model="form.capacity" value="0" />
           </div>
 
           <!-- Description -->
