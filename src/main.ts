@@ -3,6 +3,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import router from './router'
 import App from './App.vue'
+import { useNotification, notificationKey } from '@/composables/useNotification'
 import { registerServiceWorker } from './registerServiceWorker'
 import { createBrowserDebugFunction } from './utils/testAttendanceSystem'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
@@ -50,6 +51,10 @@ async function verifyRBACSetup() {
 
 // Crear la aplicación
 const app = createApp(App)
+
+// Configurar notificaciones globales
+const { showNotification } = useNotification()
+app.config.globalProperties.$notify = showNotification
 
 // Configurar manejador global de errores avanzado
 app.config.errorHandler = (err, instance, info) => {

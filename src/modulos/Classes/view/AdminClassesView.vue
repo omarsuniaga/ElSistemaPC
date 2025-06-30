@@ -633,13 +633,21 @@ const clearAllFilters = () => {
 const loadInitialData = async () => {
   loading.value = true;
   try {
-    await Promise.all([
-      classesStore.fetchClasses(),
-      teachersStore.fetchTeachers(),
-      studentsStore.fetchStudents()
-    ]);
+    // Forzar recarga de datos desde Firestore
+    await classesStore.forceSync();
+    
+    // Si aún no hay clases, intentar cargarlas de nuevo
+    if (classesStore.getAllClasses.length === 0) {
+      await classesStore.fetchClasses();
+    }
+    
+    // Mostrar notificación si hay clases cargadas
+    if (classesStore.getAllClasses.length > 0) {
+      console.log(`Cargadas ${classesStore.getAllClasses.length} clases`);
+    }
   } catch (error) {
-    console.error('Error al cargar datos:', error);
+    console.error('Error cargando clases:', error);
+    showNotification('Error al cargar las clases. Por favor, inténtalo de nuevo.', 'error');
   } finally {
     loading.value = false;
   }
@@ -779,29 +787,80 @@ const closeDialog = () => {
 // Métodos CRUD mejorados
 const handleSave = async (classData: ClassData) => {
   try {
-    if (editingClass.value?.id) {
-      await classesStore.updateClass(editingClass.value.id, {
-        ...classData,
-        // Asegurar que los campos de compartir se mantengan
-        sharedWith: editingClass.value.sharedWith || [],
-        permissions: editingClass.value.permissions || {}
-      });
-    } else {
-      await classesStore.addClass({
-        ...classData,
-        // Configurar permisos por defecto
-        sharedWith: [],
-        permissions: classData.teacherId ? {
-          [classData.teacherId]: ['read', 'write', 'manage']
-        } : {},
-        createdAt: new Date(),
-        status: 'active'
-      });
+    loading.value = true;
+    
+    // Validar datos mínimos
+    if (!classData.name?.trim() || !classData.instrument || !classData.teacherId) {
+      showNotification('Por favor complete todos los campos requeridos', 'error');
+      return;
     }
+    
+    // Preparar datos para guardar
+    const classToSave = {
+      ...classData,
+      name: classData.name.trim(),
+      description: classData.description?.trim() || '',
+      status: classData.status || 'active',
+      studentIds: classData.studentIds || [],
+      sharedWith: classData.sharedWith || [],
+      schedule: classData.schedule || { slots: [] },
+      updatedAt: new Date().toISOString()
+    };
+    
+    if (editingClass.value?.id) {
+      // Actualizar clase existente
+      await classesStore.updateClass(editingClass.value.id, {
+        ...classToSave,
+        // Mantener el ID y la fecha de creación originales
+        id: editingClass.value.id,
+        createdAt: editingClass.value.createdAt || new Date().toISOString(),
+        // Mantener el historial de cambios si existe
+        changeHistory: [
+          ...(editingClass.value.changeHistory || []),
+          { timestamp: new Date().toISOString(), changes: 'Actualización de la clase' }
+        ]
+      });
+      
+      showNotification(`✅ Clase "${classToSave.name}" actualizada exitosamente`, 'success');
+    } else {
+      // Crear nueva clase
+      const now = new Date().toISOString();
+      const newClass = {
+        ...classToSave,
+        // Configurar valores por defecto para nueva clase
+        createdAt: now,
+        permissions: classToSave.teacherId ? {
+          [classToSave.teacherId]: ['read', 'write', 'manage']
+        } : {},
+        // Inicializar historial de cambios
+        changeHistory: [{ timestamp: now, changes: 'Creación de la clase' }]
+      };
+      
+      // Validar que tenga al menos un horario
+      if (!newClass.schedule?.slots?.length) {
+        showNotification('Debe agregar al menos un horario para la clase', 'error');
+        return;
+      }
+      
+      // Guardar la nueva clase
+      const savedClass = await classesStore.addClass(newClass);
+      console.log('Clase guardada en Firestore:', savedClass);
+      
+      showNotification(`✅ Clase "${newClass.name}" creada exitosamente`, 'success');
+    }
+    
+    // Cerrar diálogo y recargar datos
     closeDialog();
-    await loadInitialData(); // Recargar datos
+    
+    // Forzar recarga de datos desde Firestore
+    await loadInitialData();
+    
   } catch (error) {
     console.error('Error al guardar la clase:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    showNotification(`❌ Error al guardar la clase: ${errorMessage}`, 'error');
+  } finally {
+    loading.value = false;
   }
 };
 

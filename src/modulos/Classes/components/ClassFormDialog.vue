@@ -381,6 +381,7 @@ import { Dialog, DialogPanel, DialogTitle } from '@headlessui/vue';
 import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { useTeachersStore } from '../../Teachers/store/teachers';
 import { useStudentsStore } from '../../Students/store/students';
+import { useNotification } from '@/composables/useNotification';
 import type { ClassData } from '../types/class';
 
 const props = defineProps<{
@@ -395,6 +396,7 @@ const emit = defineEmits<{
 
 const teachersStore = useTeachersStore();
 const studentsStore = useStudentsStore();
+const { showNotification } = useNotification();
 
 const saving = ref(false);
 const studentSearchTerm = ref('');
@@ -423,16 +425,32 @@ const teachers = computed(() => teachersStore.teachers);
 const students = computed(() => studentsStore.students);
 
 const filteredStudents = computed(() => {
-  if (!studentSearchTerm.value.trim()) {
+  const searchTerm = studentSearchTerm.value
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ') // Reemplazar múltiples espacios por uno solo
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Eliminar tildes
+    
+  if (!searchTerm) {
     return students.value;
   }
   
-  const searchTerm = studentSearchTerm.value.toLowerCase().trim();
   return students.value.filter(student => {
-    const fullName = `${student.nombre} ${student.apellido}`.toLowerCase();
-    const instrument = (student.instrumento || '').toLowerCase();
+    // Asegurarse de que los valores sean cadenas antes de usar métodos de cadena
+    const nombre = String(student.nombre || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const apellido = String(student.apellido || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const instrumento = String(student.instrumento || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     
-    return fullName.includes(searchTerm) || instrument.includes(searchTerm);
+    // Búsqueda en diferentes combinaciones
+    return (
+      nombre.includes(searchTerm) ||
+      apellido.includes(searchTerm) ||
+      `${nombre} ${apellido}`.includes(searchTerm) ||
+      instrumento.includes(searchTerm) ||
+      // Búsqueda por partes del nombre o apellido
+      nombre.split(' ').some(part => part.startsWith(searchTerm)) ||
+      apellido.split(' ').some(part => part.startsWith(searchTerm))
+    );
   });
 });
 
@@ -496,25 +514,55 @@ const removeScheduleSlot = (index: number) => {
 
 // Helper functions for schedule display
 const getDayName = (day: string): string => {
-  const dayNames: Record<string, string> = {
-    monday: 'Lunes',
-    tuesday: 'Martes',
-    wednesday: 'Miércoles',
-    thursday: 'Jueves',
-    friday: 'Viernes',
-    saturday: 'Sábado'
-  };
-  return dayNames[day] || day;
-};
+  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const dayIndex = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    .findIndex(d => d.toLowerCase() === day.toLowerCase());
+  return days[dayIndex] || day;
+},
 
-const formatTime = (time: string): string => {
+/**
+ * Formatea un valor de tiempo a formato HH:mm
+ */
+formatTimeToHHMM = (time: string | Date | { hours: number; minutes: number }): string => {
   if (!time) return '';
-  const [hours, minutes] = time.split(':');
-  const hour = parseInt(hours);
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  const displayHour = hour % 12 || 12;
-  return `${displayHour}:${minutes} ${ampm}`;
-};
+  
+  // Si ya es un string en formato HH:mm, devolverlo
+  if (typeof time === 'string' && /^\d{2}:\d{2}$/.test(time)) {
+    return time;
+  }
+  
+  // Si es un objeto con horas y minutos (como de un time picker)
+  if (typeof time === 'object' && 'hours' in time && 'minutes' in time) {
+    const hours = String(time.hours).padStart(2, '0');
+    const minutes = String(time.minutes).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  }
+  
+  // Si es un objeto Date
+  if (time instanceof Date) {
+    return time.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+  
+  // Si es un string con formato de hora
+  try {
+    const date = new Date(`2000-01-01T${time}`);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+  } catch (e) {
+    console.warn('No se pudo formatear la hora:', time, e);
+  }
+  
+  // Si no se pudo formatear, devolver el valor original
+  return String(time);
+},
+
+/**
+ * Función de compatibilidad para formatear la hora (mantenida por compatibilidad)
+ */
+formatTime = (time: string | Date | { hours: number; minutes: number }): string => {
+  return formatTimeToHHMM(time);
+}
 
 // Watch for changes in shared teachers to clean up permissions
 watch(() => form.value.sharedWith, (newSharedWith, oldSharedWith) => {
@@ -604,35 +652,102 @@ function resetForm() {
 }
 
 async function handleSubmit() {
-  if (!isFormValid.value || saving.value) return;
+  // Validar formulario
+  if (!isFormValid.value || saving.value) {
+    showNotification('Por favor complete todos los campos requeridos', 'warning');
+    return;
+  }
   
   saving.value = true;
   
   try {
-    // Filter out empty schedules and prepare valid schedules
-    const validSchedules = form.value.schedules.filter(schedule => 
-      schedule.day && schedule.startTime && schedule.endTime
-    );
+    // Validar que haya al menos un horario válido
+    const validSchedules = form.value.schedules
+      .filter(schedule => schedule.day && schedule.startTime && schedule.endTime)
+      .map(schedule => ({
+        ...schedule,
+        // Asegurar que los horarios estén en formato HH:mm
+        startTime: formatTimeToHHMM(schedule.startTime),
+        endTime: formatTimeToHHMM(schedule.endTime)
+      }));
+
+    if (validSchedules.length === 0) {
+      showNotification('Debe agregar al menos un horario válido', 'error');
+      saving.value = false;
+      return;
+    }
+
+    // Validar que las horas de inicio sean menores a las de fin
+    for (const schedule of validSchedules) {
+      if (schedule.startTime >= schedule.endTime) {
+        showNotification(`El horario del ${getDayName(schedule.day)} tiene una hora de inicio posterior a la de finalización`, 'error');
+        saving.value = false;
+        return;
+      }
+    }
     
+    // Validar que se haya seleccionado un profesor
+    if (!form.value.teacherId) {
+      showNotification('Debe seleccionar un profesor para la clase', 'error');
+      saving.value = false;
+      return;
+    }
+    
+    // Preparar datos para guardar
     const classData: Partial<ClassData> = {
       name: form.value.name.trim(),
       instrument: form.value.instrument,
       level: form.value.level,
       status: form.value.status,
       description: form.value.description.trim(),
-      capacity: form.value.capacity,
+      capacity: form.value.capacity || 1, // Valor por defecto
       teacherId: form.value.teacherId,
-      studentIds: form.value.studentIds,
-      sharedWith: form.value.sharedWith,
-      permissions: form.value.permissions,
-      schedule: validSchedules.length > 0 ? { slots: validSchedules } : undefined
+      studentIds: form.value.studentIds || [],
+      sharedWith: form.value.sharedWith || [],
+      permissions: form.value.permissions || {},
+      schedule: { slots: validSchedules },
+      updatedAt: new Date().toISOString()
     };
     
-    if (isEditing.value && props.classData) {
+    // Si es edición, mantener el ID y fecha de creación
+    if (isEditing.value && props.classData?.id) {
       classData.id = props.classData.id;
+      classData.createdAt = props.classData.createdAt || new Date().toISOString();
+      
+      // Mantener el historial de cambios si existe
+      if (props.classData.changeHistory) {
+        classData.changeHistory = [
+          ...(props.classData.changeHistory || []),
+          { timestamp: new Date().toISOString(), changes: 'Actualización de la clase' }
+        ];
+      }
+    } else {
+      // Para clases nuevas, establecer fechas de creación
+      const now = new Date().toISOString();
+      classData.createdAt = now;
+      classData.changeHistory = [{ timestamp: now, changes: 'Creación de la clase' }];
     }
     
+    console.log('Guardando clase:', classData);
+    
+    // Emitir evento para guardar
     emit('save', classData);
+    
+    // Mostrar notificación de éxito
+    showNotification(
+      `✅ Clase "${classData.name}" ${isEditing.value ? 'actualizada' : 'creada'} correctamente`, 
+      'success'
+    );
+    
+    // Cerrar el diálogo después de guardar
+    emit('close');
+    
+  } catch (error) {
+    console.error('Error al guardar la clase:', error);
+    showNotification(
+      `❌ Error al ${isEditing.value ? 'actualizar' : 'crear'} la clase: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+      'error'
+    );
   } finally {
     saving.value = false;
   }

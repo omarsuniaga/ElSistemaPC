@@ -871,12 +871,6 @@ const handleEdit = () => {
   }
 }
 
-const handleCancel = () => {
-  isEditing.value = false
-  localStudent.value = { ...student.value }
-   if (student.value?.id) {
-     router.push(`/students/`)
-
 const handleSave = async () => {
   if (isSaving.value) return;
   
@@ -918,16 +912,6 @@ const handleSave = async () => {
     showNotification('Error al guardar los cambios. Por favor, inténtalo de nuevo.', 'error');
   } finally {
     isSaving.value = false;
-  }
-}
-
-const handleCancel = () => {
-  isEditing.value = false
-  localStudent.value = { ...student.value }
-   if (student.value?.id) {
-     router.push(`/students/`)
-  } else {
-    console.error('No se pudo obtener el ID del estudiante')
   }
 }
 
