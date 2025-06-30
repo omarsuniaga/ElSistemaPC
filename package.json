@@ -76,7 +76,7 @@
     "lodash-es": "^4.17.21",
     "node-fetch": "^3.3.2",
     "papaparse": "^5.4.1",
-    "pinia": "^2.1.7",
+    "pinia": "^3.0.0",
     "pinia-plugin-persistedstate": "^4.3.0",
     "sortablejs": "^1.15.2",
     "tone": "^14.7.77",

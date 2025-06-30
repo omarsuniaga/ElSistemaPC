@@ -190,22 +190,38 @@
               />
             </div>
             
-            <div class="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700">
-              <div v-for="student in filteredStudents" :key="student.id" class="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-600 border-b border-gray-100 dark:border-gray-600 last:border-b-0">
-                <input
-                  :id="`student-${student.id}`"
-                  v-model="form.studentIds"
-                  type="checkbox"
-                  :value="student.id"
-                  @change="onStudentSelected"
-                  class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-500 rounded"
-                />
-                <label :for="`student-${student.id}`" class="ml-3 text-sm text-gray-700 dark:text-gray-200 flex-1">
-                  {{ student.nombre }} {{ student.apellido }}
-                  <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                    {{ student.instrumento || 'Sin instrumento' }}
-                  </span>
-                </label>
+            <div class="relative h-60 overflow-hidden rounded-md border border-gray-200 dark:border-gray-700">
+              <VirtualizedList
+                v-if="filteredStudents.length > 0"
+                :items="filteredStudents"
+                :item-size="60"
+                class="h-full"
+              >
+                <template #item="{ item: student }">
+                  <div 
+                    class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700"
+                    @click="toggleStudent(student.id)"
+                    v-memo="[form.studentIds.includes(student.id), student]"
+                  >
+                    <input 
+                      type="checkbox" 
+                      :checked="form.studentIds.includes(student.id)"
+                      class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                      @click.stop
+                    >
+                    <div class="ml-3 flex-1 min-w-0">
+                      <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {{ student.nombre }} {{ student.apellido }}
+                      </p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {{ student.instrumento }}
+                      </p>
+                    </div>
+                  </div>
+                </template>
+              </VirtualizedList>
+              <div v-else class="h-full flex items-center justify-center text-gray-500">
+                No se encontraron estudiantes
               </div>
               <!-- Empty state -->
               <div v-if="filteredStudents.length === 0 && studentSearchTerm.trim() !== ''" class="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
@@ -363,7 +379,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, shallowRef, nextTick, defineAsyncComponent } from 'vue';
+import { debounce } from 'lodash-es';
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/vue';
 import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { useTeachersStore } from '../../Teachers/store/teachers';
@@ -408,37 +425,66 @@ const form = ref({
 
 const isEditing = computed(() => !!props.classData);
 
-const teachers = computed(() => teachersStore.teachers);
-const students = computed(() => studentsStore.students);
+// Importar el componente de lista virtualizada
+const VirtualizedList = defineAsyncComponent(() => 
+  import('@/components/VirtualizedList.vue')
+);
 
-const filteredStudents = computed(() => {
-  const searchTerm = studentSearchTerm.value
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, ' ') // Reemplazar múltiples espacios por uno solo
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Eliminar tildes
-    
-  if (!searchTerm) {
-    return students.value;
-  }
+// Datos con carga perezosa
+const teachers = shallowRef<any[]>([]);
+const students = shallowRef<any[]>([]);
+const loading = ref({
+  teachers: false,
+  students: false
+});
+
+// Función memoizada para normalizar texto
+const normalizeText = ((cache = new Map()) => (text: string): string => {
+  if (!text) return '';
+  if (cache.has(text)) return cache.get(text);
   
-  return students.value.filter(student => {
-    // Asegurarse de que los valores sean cadenas antes de usar métodos de cadena
-    const nombre = String(student.nombre || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    const apellido = String(student.apellido || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    const instrumento = String(student.instrumento || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const normalized = String(text)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .replace(/\s+/g, ' ');
+  
+  cache.set(text, normalized);
+  if (cache.size > 1000) cache.delete(cache.keys().next().value);
+  return normalized;
+})();
+
+// Búsqueda con debounce
+const updateStudentSearch = debounce((term: string) => {
+  studentSearchTerm.value = term;
+}, 300);
+
+// Función de filtrado optimizada
+const filterStudents = (items: any[], searchTerm: string) => {
+  if (!searchTerm) return items;
+  const normalizedSearch = normalizeText(searchTerm);
+  if (!normalizedSearch) return items;
+  
+  return items.filter(item => {
+    const nombre = normalizeText(item.nombre);
+    const apellido = normalizeText(item.apellido);
+    const instrumento = normalizeText(item.instrumento);
     
-    // Búsqueda en diferentes combinaciones
     return (
-      nombre.includes(searchTerm) ||
-      apellido.includes(searchTerm) ||
-      `${nombre} ${apellido}`.includes(searchTerm) ||
-      instrumento.includes(searchTerm) ||
-      // Búsqueda por partes del nombre o apellido
-      nombre.split(' ').some(part => part.startsWith(searchTerm)) ||
-      apellido.split(' ').some(part => part.startsWith(searchTerm))
+      nombre.includes(normalizedSearch) ||
+      apellido.includes(normalizedSearch) ||
+      `${nombre} ${apellido}`.includes(normalizedSearch) ||
+      instrumento.includes(normalizedSearch) ||
+      nombre.split(' ').some((part: string) => part.startsWith(normalizedSearch)) ||
+      apellido.split(' ').some((part: string) => part.startsWith(normalizedSearch))
     );
   });
+};
+
+// Lista de estudiantes filtrada con memoización
+const filteredStudents = computed(() => {
+  return filterStudents(students.value, studentSearchTerm.value);
 });
 
 const availableSharedTeachers = computed(() => 
@@ -499,50 +545,90 @@ const removeScheduleSlot = (index: number) => {
   }
 };
 
+// Cache para días de la semana
+const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const dayIndexMap = {
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+  thursday: 4, friday: 5, saturday: 6
+};
+
 // Helper functions for schedule display
 const getDayName = (day: string): string => {
-  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  const dayIndex = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-    .findIndex(d => d.toLowerCase() === day.toLowerCase());
-  return days[dayIndex] || day;
-},
+  if (!day) return '';
+  const dayLower = day.toLowerCase();
+  const index = dayIndexMap[dayLower as keyof typeof dayIndexMap];
+  return index !== undefined ? dayNames[index] : day;
+};
 
 /**
- * Formatea un valor de tiempo a formato HH:mm
+ * Formatea un valor de tiempo a formato HH:mm con caché
  */
-formatTimeToHHMM = (time: string | Date | { hours: number; minutes: number }): string => {
+const formatTimeToHHMM = (time: string | Date | { hours: number; minutes: number }): string => {
   if (!time) return '';
   
-  // Si ya es un string en formato HH:mm, devolverlo
-  if (typeof time === 'string' && /^\d{2}:\d{2}$/.test(time)) {
-    return time;
+  // Generar clave de caché
+  const cacheKey = typeof time === 'object' 
+    ? JSON.stringify(time)
+    : String(time);
+  
+  // Verificar caché
+  if (timeCache.has(cacheKey)) {
+    return timeCache.get(cacheKey);
   }
   
-  // Si es un objeto con horas y minutos (como de un time picker)
-  if (typeof time === 'object' && 'hours' in time && 'minutes' in time) {
-    const hours = String(time.hours).padStart(2, '0');
-    const minutes = String(time.minutes).padStart(2, '0');
-    return `${hours}:${minutes}`;
-  }
+  let result = '';
   
-  // Si es un objeto Date
-  if (time instanceof Date) {
-    return time.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
-  }
-  
-  // Si es un string con formato de hora
   try {
-    const date = new Date(`2000-01-01T${time}`);
-    if (!isNaN(date.getTime())) {
-      return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
+    // Si ya es un string en formato HH:mm, usarlo directamente
+    if (typeof time === 'string' && /^\d{2}:\d{2}$/.test(time)) {
+      result = time;
+    } 
+    // Si es un objeto con horas y minutos
+    else if (typeof time === 'object' && 'hours' in time && 'minutes' in time) {
+      const hours = String(time.hours).padStart(2, '0');
+      const minutes = String(time.minutes).padStart(2, '0');
+      result = `${hours}:${minutes}`;
     }
+    // Si es un objeto Date
+    else if (time instanceof Date) {
+      result = time.toLocaleTimeString('es-ES', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: false 
+      });
+    }
+    // Si es un string con formato de hora
+    else if (typeof time === 'string') {
+      const date = new Date(`2000-01-01T${time}`);
+      if (!isNaN(date.getTime())) {
+        result = date.toLocaleTimeString('es-ES', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          hour12: false 
+        });
+      }
+    }
+    
+    // Si no se pudo formatear, usar el valor original
+    if (!result) {
+      result = String(time);
+    }
+    
+    // Guardar en caché
+    timeCache.set(cacheKey, result);
+    
+    // Limpiar caché si es muy grande (prevenir memory leaks)
+    if (timeCache.size > 1000) {
+      const firstKey = timeCache.keys().next().value;
+      timeCache.delete(firstKey);
+    }
+    
+    return result;
   } catch (e) {
-    console.warn('No se pudo formatear la hora:', time, e);
+    console.warn('Error formateando hora:', time, e);
+    return String(time);
   }
-  
-  // Si no se pudo formatear, devolver el valor original
-  return String(time);
-},
+};
 
 /**
  * Función de compatibilidad para formatear la hora (mantenida por compatibilidad)
@@ -551,8 +637,8 @@ formatTime = (time: string | Date | { hours: number; minutes: number }): string 
   return formatTimeToHHMM(time);
 }
 
-// Watch for changes in shared teachers to clean up permissions
-watch(() => form.value.sharedWith, (newSharedWith, oldSharedWith) => {
+// Watch con debounce para cambios en sharedWith
+watch(() => form.value.sharedWith, debounce((newSharedWith, oldSharedWith) => {
   // Remove permissions for teachers that are no longer shared
   if (oldSharedWith) {
     oldSharedWith.forEach(teacherId => {
@@ -568,7 +654,7 @@ watch(() => form.value.sharedWith, (newSharedWith, oldSharedWith) => {
       form.value.permissions[teacherId] = ['read'];
     }
   });
-}, { deep: true });
+}, 300), { deep: true });
 
 // Watch for classData changes to populate form
 watch(() => props.classData, (classData) => {
@@ -638,39 +724,72 @@ function resetForm() {
   studentSearchTerm.value = '';
 }
 
+// Validación de horarios con memoización
+const validSchedules = computed(() => {
+  const cacheKey = JSON.stringify(form.value.schedules);
+  if (validSchedulesCache.has(cacheKey)) {
+    return validSchedulesCache.get(cacheKey);
+  }
+  
+  const result = form.value.schedules
+    .filter(schedule => schedule.day && schedule.startTime && schedule.endTime)
+    .map(schedule => ({
+      ...schedule,
+      startTime: formatTimeToHHMM(schedule.startTime),
+      endTime: formatTimeToHHMM(schedule.endTime)
+    }));
+  
+  validSchedulesCache.set(cacheKey, result);
+  if (validSchedulesCache.size > 50) {
+    // Limitar el tamaño de la caché
+    validSchedulesCache.delete(validSchedulesCache.keys().next().value);
+  }
+  
+  return result;
+});
+
+// Caché para horarios válidos
+const validSchedulesCache = new Map();
+
+const hasValidSchedules = computed(() => validSchedules.value.length > 0);
+
+const hasInvalidSchedules = computed(() => {
+  return validSchedules.value.some(schedule => 
+    schedule.startTime >= schedule.endTime
+  );
+});
+
+const invalidScheduleMessage = computed(() => {
+  const invalid = validSchedules.value.find(s => s.startTime >= s.endTime);
+  return invalid 
+    ? `El horario del ${getDayName(invalid.day)} tiene una hora de inicio posterior a la de finalización`
+    : '';
+});
+
 async function handleSubmit() {
-  // Validar formulario
+  // Validación inicial rápida
   if (!isFormValid.value || saving.value) {
     showNotification('Por favor complete todos los campos requeridos', 'warning');
     return;
   }
   
+  // Dar tiempo al navegador para actualizar el estado de carga
   saving.value = true;
+  await nextTick();
   
   try {
-    // Validar que haya al menos un horario válido
-    const validSchedules = form.value.schedules
-      .filter(schedule => schedule.day && schedule.startTime && schedule.endTime)
-      .map(schedule => ({
-        ...schedule,
-        // Asegurar que los horarios estén en formato HH:mm
-        startTime: formatTimeToHHMM(schedule.startTime),
-        endTime: formatTimeToHHMM(schedule.endTime)
-      }));
-
-    if (validSchedules.length === 0) {
+    // Validar horarios
+    if (!hasValidSchedules.value) {
       showNotification('Debe agregar al menos un horario válido', 'error');
       saving.value = false;
       return;
     }
 
     // Validar que las horas de inicio sean menores a las de fin
-    for (const schedule of validSchedules) {
-      if (schedule.startTime >= schedule.endTime) {
-        showNotification(`El horario del ${getDayName(schedule.day)} tiene una hora de inicio posterior a la de finalización`, 'error');
-        saving.value = false;
-        return;
-      }
+    if (hasInvalidSchedules.value) {
+      showNotification(invalidScheduleMessage.value, 'error');
+      saving.value = false;
+      return;
     }
     
     // Validar que se haya seleccionado un profesor
@@ -680,44 +799,42 @@ async function handleSubmit() {
       return;
     }
     
-    // Preparar datos para guardar
+    // Preparar datos para guardar (operación síncrona rápida)
+    const now = new Date().toISOString();
     const classData: Partial<ClassData> = {
       name: form.value.name.trim(),
       instrument: form.value.instrument,
       level: form.value.level,
       status: form.value.status,
       description: form.value.description.trim(),
-      capacity: form.value.capacity || 1, // Valor por defecto
+      capacity: 0, // Capacidad ilimitada
       teacherId: form.value.teacherId,
-      studentIds: form.value.studentIds || [],
-      sharedWith: form.value.sharedWith || [],
-      permissions: form.value.permissions || {},
-      schedule: { slots: validSchedules },
-      updatedAt: new Date().toISOString()
+      studentIds: Array.isArray(form.value.studentIds) ? [...form.value.studentIds] : [],
+      sharedWith: Array.isArray(form.value.sharedWith) ? [...form.value.sharedWith] : [],
+      permissions: { ...(form.value.permissions || {}) },
+      schedule: { slots: [...validSchedules.value] },
+      updatedAt: now
     };
     
     // Si es edición, mantener el ID y fecha de creación
     if (isEditing.value && props.classData?.id) {
       classData.id = props.classData.id;
-      classData.createdAt = props.classData.createdAt || new Date().toISOString();
+      classData.createdAt = props.classData.createdAt || now;
       
       // Mantener el historial de cambios si existe
       if (props.classData.changeHistory) {
         classData.changeHistory = [
           ...(props.classData.changeHistory || []),
-          { timestamp: new Date().toISOString(), changes: 'Actualización de la clase' }
+          { timestamp: now, changes: 'Actualización de la clase' }
         ];
       }
     } else {
       // Para clases nuevas, establecer fechas de creación
-      const now = new Date().toISOString();
       classData.createdAt = now;
       classData.changeHistory = [{ timestamp: now, changes: 'Creación de la clase' }];
     }
     
-    console.log('Guardando clase:', classData);
-    
-    // Emitir evento para guardar
+    // Emitir evento para guardar (operación asíncrona)
     emit('save', classData);
     
     // Mostrar notificación de éxito
