@@ -79,12 +79,28 @@ const sortedStudents = computed(() => {
   // Aplicar filtro de búsqueda si hay texto
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase().trim()
-    filtered = filtered.filter(student => 
-      student.nombre.toLowerCase().includes(query) ||
-      student.apellido.toLowerCase().includes(query) ||
-      (student.instrumento && student.instrumento.toLowerCase().includes(query)) ||
-      (student.grupo && student.grupo.some(g => g.toLowerCase().includes(query)))
-    )
+    filtered = filtered.filter(student => {
+      const nombre = (typeof student.nombre === 'string' ? student.nombre.toLowerCase() : '');
+      const apellido = (typeof student.apellido === 'string' ? student.apellido.toLowerCase() : '');
+      let instrumento = '';
+      if (typeof student.instrumento === 'string') {
+        instrumento = student.instrumento.toLowerCase();
+      } else if (student.instrumento && typeof student.instrumento === 'object' && typeof student.instrumento.nombre === 'string') {
+        instrumento = student.instrumento.nombre.toLowerCase();
+      }
+      let grupos = '';
+      if (Array.isArray(student.grupo)) {
+        grupos = student.grupo.map(g => typeof g === 'string' ? g.toLowerCase() : '').join(' ');
+      } else if (typeof student.grupo === 'string') {
+        grupos = student.grupo.toLowerCase();
+      }
+      return (
+        nombre.includes(query) ||
+        apellido.includes(query) ||
+        instrumento.includes(query) ||
+        grupos.includes(query)
+      );
+    })
   }
   
   // Apply sorting based on sortOrder

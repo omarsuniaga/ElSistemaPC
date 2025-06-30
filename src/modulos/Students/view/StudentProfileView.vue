@@ -876,25 +876,58 @@ const handleCancel = () => {
   localStudent.value = { ...student.value }
    if (student.value?.id) {
      router.push(`/students/`)
-  } else {
-    console.error('No se pudo obtener el ID del estudiante')
-  }
-}
 
 const handleSave = async () => {
+  if (isSaving.value) return;
+  
+  isSaving.value = true;
+  
   try {
+    // Crear un objeto solo con los campos que queremos actualizar
+    const updates: any = {
+      ...localStudent.value,
+      updatedAt: new Date()
+    };
+    
     // Actualizar la edad con el valor calculado antes de guardar
     if (localStudent.value.nac) {
       const calculatedAgeValue = calculatedAge.value;
       if (typeof calculatedAgeValue === 'number') {
-        localStudent.value.edad = calculatedAgeValue;
+        updates.edad = calculatedAgeValue;
       }
     }
     
-    await studentsStore.updateStudent(studentId, localStudent.value)
-    isEditing.value = false
+    // Eliminar campos que no deberían actualizarse
+    delete updates.id;
+    delete updates.createdAt;
+    
+    console.log('Actualizando estudiante con datos:', updates);
+    
+    await studentsStore.updateStudent(studentId, updates);
+    
+    // Actualizar los datos locales con los datos actualizados del store
+    const updatedStudent = studentsStore.getStudentById(studentId);
+    if (updatedStudent) {
+      localStudent.value = { ...updatedStudent };
+    }
+    
+    isEditing.value = false;
+    showNotification('Cambios guardados correctamente', 'success');
   } catch (error) {
-    console.error('Error al guardar cambios:', error)
+    console.error('Error al guardar cambios:', error);
+    showNotification('Error al guardar los cambios. Por favor, inténtalo de nuevo.', 'error');
+  } finally {
+    isSaving.value = false;
+  }
+}
+
+const handleCancel = () => {
+  isEditing.value = false
+  localStudent.value = { ...student.value }
+   if (student.value?.id) {
+     router.push(`/students/`)
+  } else {
+    console.error('No se pudo obtener el ID del estudiante')
   }
 }
 
