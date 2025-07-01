@@ -14,9 +14,9 @@
           <div class="flex items-center space-x-4">
             <!-- Toggle de tema oscuro/claro -->
             <button
-              @click="toggleDarkMode"
               class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               :title="isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+              @click="toggleDarkMode"
             >
               <SunIcon v-if="isDarkMode" class="w-5 h-5 text-yellow-500" />
               <MoonIcon v-else class="w-5 h-5 text-gray-600 dark:text-gray-300" />
@@ -24,22 +24,22 @@
             
             <!-- Quick Actions -->
             <button
-              @click="showWorkModal = true"
               class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-md transition-colors"
+              @click="showWorkModal = true"
             >
               Nueva Obra
             </button>
             
             <button
-              @click="showPlanModal = true"
               class="px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-md transition-colors"
+              @click="showPlanModal = true"
             >
               Nuevo Plan
             </button>
 
             <button
-              @click="showEvaluationModal = true"
               class="px-4 py-2 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white rounded-md transition-colors"
+              @click="showEvaluationModal = true"
             >
               Nueva Evaluación
             </button>
@@ -47,8 +47,8 @@
             <!-- Notifications -->
             <div class="relative">
               <button
-                @click="showNotifications = !showNotifications"
                 class="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-100 relative"
+                @click="showNotifications = !showNotifications"
               >
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM11 19H6a2 2 0 01-2-2V7a2 2 0 012-2h5m5 0V3a2 2 0 00-2-2H9a2 2 0 00-2 2v2m5 0a2 2 0 012 2v12a2 2 0 01-2 2h-5"/>
@@ -71,8 +71,8 @@
                     <h3 class="text-sm font-medium text-gray-900 dark:text-white">Notificaciones</h3>
                     <button
                       v-if="unreadNotifications.length > 0"
-                      @click="markAllNotificationsAsRead"
                       class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                      @click="markAllNotificationsAsRead"
                     >
                       Marcar todas como leídas
                     </button>
@@ -111,13 +111,13 @@
           <button
             v-for="tab in tabs"
             :key="tab.key"
-            @click="setActiveTab(tab.key)"
             :class="[
               'py-2 px-1 border-b-2 font-medium text-sm transition-colors',
               activeTab === tab.key
                 ? 'border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400'
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
             ]"
+            @click="setActiveTab(tab.key)"
           >
             {{ tab.label }}
             <span
@@ -187,8 +187,8 @@
               </div>
               <div>
                 <button
-                  @click="clearFilters"
                   class="w-full px-3 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                  @click="clearFilters"
                 >
                   Limpiar filtros
                 </button>
@@ -221,8 +221,8 @@
             <p class="mt-1 text-sm text-gray-500">Comienza creando tu primera obra musical.</p>
             <div class="mt-6">
               <button
-                @click="showWorkModal = true"
                 class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                @click="showWorkModal = true"
               >
                 Nueva Obra
               </button>

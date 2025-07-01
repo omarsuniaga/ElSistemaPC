@@ -1,101 +1,98 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
-import {
-  CheckCircleIcon,
-  XCircleIcon,
-  ClockIcon,
-  DocumentCheckIcon,
-} from '@heroicons/vue/24/outline';
-import type { AttendanceStatus } from '../types/attendance';
-import type { Student } from '../../Students/types/student';
-import StudentAvatar from './StudentAvatar.vue';
+import {computed, ref, onMounted, onBeforeUnmount} from "vue"
+import {CheckCircleIcon, XCircleIcon, ClockIcon, DocumentCheckIcon} from "@heroicons/vue/24/outline"
+import type {AttendanceStatus} from "../types/attendance"
+import type {Student} from "../../Students/types/student"
+import StudentAvatar from "./StudentAvatar.vue"
 
 const props = defineProps<{
-  student: Student;
-  attendanceStatus: AttendanceStatus | undefined;
-  isDisabled: boolean;
-  isPending: boolean;
-  pendingChanges?: Set<string>; // Añadimos prop de pendingChanges para mejor tracking
-}>();
+  student: Student
+  attendanceStatus: AttendanceStatus | undefined
+  isDisabled: boolean
+  isPending: boolean
+  pendingChanges?: Set<string> // Añadimos prop de pendingChanges para mejor tracking
+}>()
 
 const emit = defineEmits<{
-  (e: 'update-status', studentId: string, status: AttendanceStatus): void;
-  (e: 'open-justification', student: Student): void;
-}>();
-
+  (e: "update-status", studentId: string, status: AttendanceStatus): void
+  (e: "open-justification", student: Student): void
+}>()
 
 // Use the imported StudentAvatar component
-const studentName = computed(() => `${props.student.nombre} ${props.student.apellido}`);
+const studentName = computed(() => `${props.student.nombre} ${props.student.apellido}`)
 
 // Use a simple media query check with window.matchMedia instead of $q
-const isMobile = ref(false);
+const isMobile = ref(false)
 
 // Function to update isMobile based on screen width
 const checkMobileScreen = () => {
-  if (typeof window !== 'undefined') {
-    isMobile.value = window.matchMedia('(max-width: 640px)').matches;
+  if (typeof window !== "undefined") {
+    isMobile.value = window.matchMedia("(max-width: 640px)").matches
   }
-};
+}
 
 // Function to handle ripple effect
 const createRipple = (event: MouseEvent) => {
-  const button = event.currentTarget as HTMLElement;
-  const ripple = button.querySelector('.ripple') as HTMLElement;
-  
-  if (!ripple) return;
-  
+  const button = event.currentTarget as HTMLElement
+  const ripple = button.querySelector(".ripple") as HTMLElement
+
+  if (!ripple) return
+
   // Remove any existing animation
-  ripple.style.animation = 'none';
-  
+  ripple.style.animation = "none"
+
   // Force reflow to ensure animation restarts
-  void ripple.offsetWidth;
-  
+  void ripple.offsetWidth
+
   // Restart animation
-  ripple.style.animation = 'ripple-out 0.6s ease-out';
-};
+  ripple.style.animation = "ripple-out 0.6s ease-out"
+}
 
 // Método para manejar la justificación
 const handleJustification = () => {
-  console.log('[Justificación] Iniciando proceso de justificación para estudiante:', props.student.id);
-  
+  console.log(
+    "[Justificación] Iniciando proceso de justificación para estudiante:",
+    props.student.id
+  )
+
   // Primero marcamos como Justificado para un cambio inmediato
-  emit('update-status', props.student.id, 'Justificado' as AttendanceStatus);
-  console.log('[Justificación] Emitido evento update-status con estado Justificado');
-  
+  emit("update-status", props.student.id, "Justificado" as AttendanceStatus)
+  console.log("[Justificación] Emitido evento update-status con estado Justificado")
+
   // Luego abrimos el modal de justificación de inmediato
-  console.log('[Justificación] Emitiendo evento open-justification con estudiante:', props.student);
-  emit('open-justification', props.student);
-};
+  console.log("[Justificación] Emitiendo evento open-justification con estudiante:", props.student)
+  emit("open-justification", props.student)
+}
 
 // Initialize on component mount
 onMounted(() => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     // Set initial value
-    checkMobileScreen();
-    
+    checkMobileScreen()
+
     // Add event listener for resize
-    window.addEventListener('resize', checkMobileScreen);
+    window.addEventListener("resize", checkMobileScreen)
   }
-  
+
   // Add click event listeners to all buttons
-  const buttons = document.querySelectorAll('.attendance-btn');
-  buttons.forEach(button => {
-    button.addEventListener('mousedown', createRipple);
-  });
-});
+  const buttons = document.querySelectorAll(".attendance-btn")
+  buttons.forEach((button) => {
+    button.addEventListener("mousedown", createRipple)
+  })
+})
 
 // Clean up the event listener when component is unmounted
 onBeforeUnmount(() => {
-  if (typeof window !== 'undefined') {
-    window.removeEventListener('resize', checkMobileScreen);
+  if (typeof window !== "undefined") {
+    window.removeEventListener("resize", checkMobileScreen)
   }
-  
+
   // Clean up event listeners
-  const buttons = document.querySelectorAll('.attendance-btn');
-  buttons.forEach(button => {
-    button.removeEventListener('mousedown', createRipple);
-  });
-});
+  const buttons = document.querySelectorAll(".attendance-btn")
+  buttons.forEach((button) => {
+    button.removeEventListener("mousedown", createRipple)
+  })
+})
 </script>
 
 <template>
@@ -103,11 +100,11 @@ onBeforeUnmount(() => {
     <td class="px-1 sm:px-2 py-2 sm:py-3">
       <div class="flex items-center">
         <div class="flex-shrink-0 h-7 w-7 sm:h-10 sm:w-10">
-          <StudentAvatar 
-            :firstName="student.nombre"
-            :lastName="student.apellido"
+          <StudentAvatar
+            :first-name="student.nombre"
+            :last-name="student.apellido"
             :size="isMobile ? 'sm' : 'md'"
-            :imageUrl="student.fotoUrl || student.photoUrl || ''"
+            :image-url="student.fotoUrl || student.photoUrl || ''"
           />
         </div>
         <div class="ml-2 sm:ml-4">
@@ -117,76 +114,78 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </td>
-    
+
     <td class="px-1 sm:px-4 py-2 sm:py-3">
       <div class="flex gap-2 sm:mx-2 sm:gap-3 justify-end items-center">
         <div v-if="isPending" class="flex items-center" title="Cambio pendiente">
-          <span class="w-2 h-2 bg-amber-500 rounded-full animate-ping-slow"></span>
+          <span class="w-2 h-2 bg-amber-500 rounded-full animate-ping-slow" />
         </div>
-        
+
         <!-- Present Button -->
-        <button 
-          @click="emit('update-status', student.id, 'Presente')"
+        <button
           :class="[
             'attendance-btn',
-            attendanceStatus === 'Presente' ? 'active-present' : 'btn-present'
+            attendanceStatus === 'Presente' ? 'active-present' : 'btn-present',
           ]"
           :disabled="isDisabled"
+          @click="emit('update-status', student.id, 'Presente')"
         >
           <span class="tooltip">Presente</span>
           <div class="btn-content">
             <CheckCircleIcon class="w-3 h-3 sm:w-4 sm:h-4" />
-            <span class="ripple"></span>
+            <span class="ripple" />
           </div>
         </button>
-        
+
         <!-- Absent Button -->
-        <button 
-          @click="emit('update-status', student.id, 'Ausente')"
+        <button
           :class="[
             'attendance-btn',
-            attendanceStatus === 'Ausente' ? 'active-absent' : 'btn-absent'
+            attendanceStatus === 'Ausente' ? 'active-absent' : 'btn-absent',
           ]"
           :disabled="isDisabled"
+          @click="emit('update-status', student.id, 'Ausente')"
         >
           <span class="tooltip">Ausente</span>
           <div class="btn-content">
             <XCircleIcon class="w-3 h-3 sm:w-4 sm:h-4" />
-            <span class="ripple"></span>
+            <span class="ripple" />
           </div>
         </button>
-        
+
         <!-- Late Button -->
-        <button 
-          @click="emit('update-status', student.id, 'Tardanza')"
-          :class="[
-            'attendance-btn',
-            attendanceStatus === 'Tardanza' ? 'active-late' : 'btn-late'
-          ]"
+        <button
+          :class="['attendance-btn', attendanceStatus === 'Tardanza' ? 'active-late' : 'btn-late']"
           :disabled="isDisabled"
+          @click="emit('update-status', student.id, 'Tardanza')"
         >
           <span class="tooltip">Tardanza</span>
           <div class="btn-content">
             <ClockIcon class="w-3 h-3 sm:w-4 sm:h-4" />
-            <span class="ripple"></span>
+            <span class="ripple" />
           </div>
         </button>
-        
+
         <!-- Justification Button -->
-        <button 
-          @click="handleJustification()"
+        <button
           :class="[
             'attendance-btn',
-            attendanceStatus === 'Justificado' ? 'active-justified' : 'btn-justified'
+            attendanceStatus === 'Justificado' ? 'active-justified' : 'btn-justified',
           ]"
           :disabled="isDisabled"
           title="Registrar ausencia justificada"
+          @click="handleJustification()"
         >
-          <span class="tooltip">{{ attendanceStatus === 'Justificado' ? 'Justificado' : 'Justificar' }}</span>
+          <span class="tooltip">{{
+            attendanceStatus === "Justificado" ? "Justificado" : "Justificar"
+          }}</span>
           <div class="btn-content">
             <DocumentCheckIcon class="w-3 h-3 sm:w-4 sm:h-4" />
-            <span v-if="attendanceStatus === 'Justificado'" class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
-            <span class="ripple"></span>
+            <span
+              v-if="attendanceStatus === 'Justificado'"
+              class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"
+            />
+            <span class="ripple" />
           </div>
         </button>
       </div>
@@ -221,9 +220,10 @@ onBeforeUnmount(() => {
 }
 .active-present {
   @apply bg-green-600 text-white border-0;
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.5), 
-              0 0 20px rgba(34, 197, 94, 0.3), 
-              inset 0 0 8px rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 0 10px rgba(34, 197, 94, 0.5),
+    0 0 20px rgba(34, 197, 94, 0.3),
+    inset 0 0 8px rgba(255, 255, 255, 0.4);
   opacity: 1;
   transform: scale(1.1);
   animation: pulsate-green 2s infinite;
@@ -241,9 +241,10 @@ onBeforeUnmount(() => {
 }
 .active-absent {
   @apply bg-red-600 text-white border-0;
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5), 
-              0 0 20px rgba(239, 68, 68, 0.3), 
-              inset 0 0 8px rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 0 10px rgba(239, 68, 68, 0.5),
+    0 0 20px rgba(239, 68, 68, 0.3),
+    inset 0 0 8px rgba(255, 255, 255, 0.4);
   opacity: 1;
   transform: scale(1.1);
   animation: pulsate-red 2s infinite;
@@ -261,9 +262,10 @@ onBeforeUnmount(() => {
 }
 .active-late {
   @apply bg-yellow-600 text-white border-0;
-  box-shadow: 0 0 10px rgba(253, 186, 116, 0.6), 
-              0 0 20px rgba(253, 186, 116, 0.4), 
-              inset 0 0 8px rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 0 10px rgba(253, 186, 116, 0.6),
+    0 0 20px rgba(253, 186, 116, 0.4),
+    inset 0 0 8px rgba(255, 255, 255, 0.4);
   opacity: 1;
   transform: scale(1.1);
   animation: pulsate-yellow 2s infinite;
@@ -281,9 +283,10 @@ onBeforeUnmount(() => {
 }
 .active-justified {
   @apply bg-blue-600 text-white border-0;
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 
-              0 0 20px rgba(59, 130, 246, 0.3), 
-              inset 0 0 8px rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 0 10px rgba(59, 130, 246, 0.5),
+    0 0 20px rgba(59, 130, 246, 0.3),
+    inset 0 0 8px rgba(255, 255, 255, 0.4);
   opacity: 1;
   transform: scale(1.1);
   animation: pulsate-blue 2s infinite;
@@ -331,49 +334,73 @@ onBeforeUnmount(() => {
 /* Color-specific pulsating glow animations */
 @keyframes pulsate-green {
   0% {
-    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5), 0 0 20px rgba(34, 197, 94, 0.3);
+    box-shadow:
+      0 0 10px rgba(34, 197, 94, 0.5),
+      0 0 20px rgba(34, 197, 94, 0.3);
   }
   50% {
-    box-shadow: 0 0 15px rgba(34, 197, 94, 0.6), 0 0 30px rgba(34, 197, 94, 0.4);
+    box-shadow:
+      0 0 15px rgba(34, 197, 94, 0.6),
+      0 0 30px rgba(34, 197, 94, 0.4);
   }
   100% {
-    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5), 0 0 20px rgba(34, 197, 94, 0.3);
+    box-shadow:
+      0 0 10px rgba(34, 197, 94, 0.5),
+      0 0 20px rgba(34, 197, 94, 0.3);
   }
 }
 
 @keyframes pulsate-red {
   0% {
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5), 0 0 20px rgba(239, 68, 68, 0.3);
+    box-shadow:
+      0 0 10px rgba(239, 68, 68, 0.5),
+      0 0 20px rgba(239, 68, 68, 0.3);
   }
   50% {
-    box-shadow: 0 0 15px rgba(239, 68, 68, 0.6), 0 0 30px rgba(239, 68, 68, 0.4);
+    box-shadow:
+      0 0 15px rgba(239, 68, 68, 0.6),
+      0 0 30px rgba(239, 68, 68, 0.4);
   }
   100% {
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5), 0 0 20px rgba(239, 68, 68, 0.3);
+    box-shadow:
+      0 0 10px rgba(239, 68, 68, 0.5),
+      0 0 20px rgba(239, 68, 68, 0.3);
   }
 }
 
 @keyframes pulsate-yellow {
   0% {
-    box-shadow: 0 0 10px rgba(253, 186, 116, 0.5), 0 0 20px rgba(253, 186, 116, 0.3);
+    box-shadow:
+      0 0 10px rgba(253, 186, 116, 0.5),
+      0 0 20px rgba(253, 186, 116, 0.3);
   }
   50% {
-    box-shadow: 0 0 15px rgba(253, 186, 116, 0.6), 0 0 30px rgba(253, 186, 116, 0.4);
+    box-shadow:
+      0 0 15px rgba(253, 186, 116, 0.6),
+      0 0 30px rgba(253, 186, 116, 0.4);
   }
   100% {
-    box-shadow: 0 0 10px rgba(253, 186, 116, 0.5), 0 0 20px rgba(253, 186, 116, 0.3);
+    box-shadow:
+      0 0 10px rgba(253, 186, 116, 0.5),
+      0 0 20px rgba(253, 186, 116, 0.3);
   }
 }
 
 @keyframes pulsate-blue {
   0% {
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+    box-shadow:
+      0 0 10px rgba(59, 130, 246, 0.5),
+      0 0 20px rgba(59, 130, 246, 0.3);
   }
   50% {
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.6), 0 0 30px rgba(59, 130, 246, 0.4);
+    box-shadow:
+      0 0 15px rgba(59, 130, 246, 0.6),
+      0 0 30px rgba(59, 130, 246, 0.4);
   }
   100% {
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+    box-shadow:
+      0 0 10px rgba(59, 130, 246, 0.5),
+      0 0 20px rgba(59, 130, 246, 0.3);
   }
 }
 

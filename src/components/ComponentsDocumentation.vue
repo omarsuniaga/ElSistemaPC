@@ -3,16 +3,16 @@
     <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
       Documentación de Componentes - El Sistema PC
     </h2>
-    
+
     <div class="prose dark:prose-invert max-w-none">
       <h3 class="text-primary-600 dark:text-primary-400">1. TodayClassesPanel.vue</h3>
       <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg mb-6">
         <h4>Descripción Funcional</h4>
         <p>
-          El componente TodayClassesPanel muestra un resumen de las clases programadas para el día actual, 
-          proporcionando una vista rápida para maestros y administradores.
+          El componente TodayClassesPanel muestra un resumen de las clases programadas para el día
+          actual, proporcionando una vista rápida para maestros y administradores.
         </p>
-        
+
         <h4>Estructura Recomendada</h4>
         <pre class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto">
 /**
@@ -164,12 +164,19 @@ export default {
   }
 }
         </pre>
-        
+
         <h4>Integración con Firestore</h4>
         <ul class="list-disc pl-5 space-y-2 mt-2">
-          <li><strong>Colección:</strong> 'classes' - Almacena información de todas las clases programadas</li>
-          <li><strong>Consulta en tiempo real:</strong> Utilizando onSnapshot para mantener la UI actualizada</li>
-          <li><strong>Filtros recomendados:</strong> 
+          <li>
+            <strong>Colección:</strong> 'classes' - Almacena información de todas las clases
+            programadas
+          </li>
+          <li>
+            <strong>Consulta en tiempo real:</strong> Utilizando onSnapshot para mantener la UI
+            actualizada
+          </li>
+          <li>
+            <strong>Filtros recomendados:</strong>
             <ul class="list-disc pl-5 mt-1">
               <li>Fecha: Entre inicio y fin del día actual</li>
               <li>Estado: Activo ('status' == 'active')</li>
@@ -177,7 +184,7 @@ export default {
             </ul>
           </li>
         </ul>
-        
+
         <h4>Recomendaciones para extensiones futuras</h4>
         <ol class="list-decimal pl-5 space-y-1 mt-2">
           <li>Implementar paginación para permitir ver más clases con un botón "Ver más"</li>
@@ -186,7 +193,7 @@ export default {
           <li>Añadir detección de conflictos de horarios para alertar al usuario</li>
           <li>Implementar caché local con Firestore persistente para funcionamiento offline</li>
         </ol>
-        
+
         <h4>Estructura de datos relacionada</h4>
         <pre class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto">
 // Estructura recomendada para documento en colección 'classes'
@@ -209,16 +216,16 @@ export default {
 }
         </pre>
       </div>
-      
+
       <h3 class="text-primary-600 dark:text-primary-400">2. AdminHomeView.vue</h3>
       <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg mb-6">
         <h4>Descripción Funcional</h4>
         <p>
-          AdminHomeView es la vista principal para administradores y directores. Proporciona un dashboard
-          con métricas clave, acceso rápido a las funciones principales y una visión general del estado
-          actual de la academia de música.
+          AdminHomeView es la vista principal para administradores y directores. Proporciona un
+          dashboard con métricas clave, acceso rápido a las funciones principales y una visión
+          general del estado actual de la academia de música.
         </p>
-        
+
         <h4>Estructura Recomendada</h4>
         <pre class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto">
 /**
@@ -453,10 +460,11 @@ export default {
   }
 }
         </pre>
-        
+
         <h4>Integración con Firestore</h4>
         <ul class="list-disc pl-5 space-y-2 mt-2">
-          <li><strong>Colecciones utilizadas:</strong>
+          <li>
+            <strong>Colecciones utilizadas:</strong>
             <ul class="list-disc pl-5 mt-1">
               <li>'students' - Para estadísticas de estudiantes</li>
               <li>'teachers' - Para estadísticas de personal docente</li>
@@ -464,20 +472,28 @@ export default {
               <li>'classes' - Para programación de clases</li>
             </ul>
           </li>
-          <li><strong>Queries en tiempo real:</strong> Utilizando múltiples onSnapshot para diferentes métricas</li>
-          <li><strong>Gestión de suscripciones:</strong> Array central para almacenar y limpiar todas las suscripciones</li>
+          <li>
+            <strong>Queries en tiempo real:</strong> Utilizando múltiples onSnapshot para diferentes
+            métricas
+          </li>
+          <li>
+            <strong>Gestión de suscripciones:</strong> Array central para almacenar y limpiar todas
+            las suscripciones
+          </li>
         </ul>
-        
+
         <h4>Recomendaciones para extensiones futuras</h4>
         <ol class="list-decimal pl-5 space-y-1 mt-2">
           <li>Implementar sistema de notificaciones para alertas importantes</li>
           <li>Añadir gráficos interactivos para visualizar tendencias de asistencia</li>
-          <li>Crear vistas personalizables donde el administrador pueda elegir qué métricas mostrar</li>
+          <li>
+            Crear vistas personalizables donde el administrador pueda elegir qué métricas mostrar
+          </li>
           <li>Incorporar sistema de detección temprana de estudiantes en riesgo de abandono</li>
           <li>Añadir informes programados que se generen automáticamente</li>
           <li>Implementar permisos granulares para diferentes tipos de administradores</li>
         </ol>
-        
+
         <h4>Estructura de datos relacionada</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <div>
@@ -580,40 +596,41 @@ export default {
           </div>
         </div>
       </div>
-      
+
       <h3 class="text-primary-600 dark:text-primary-400">Recomendaciones Generales</h3>
       <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
         <ol class="list-decimal pl-5 space-y-2">
           <li>
-            <strong>Organización del código:</strong> Mantener una estructura consistente separando hooks de 
-            Firestore en composables reutilizables.
+            <strong>Organización del código:</strong> Mantener una estructura consistente separando
+            hooks de Firestore en composables reutilizables.
           </li>
           <li>
-            <strong>Gestión de suscripciones:</strong> Siempre crear un sistema centralizado para manejar 
-            todas las suscripciones y limpiarlas en onUnmounted.
+            <strong>Gestión de suscripciones:</strong> Siempre crear un sistema centralizado para
+            manejar todas las suscripciones y limpiarlas en onUnmounted.
           </li>
           <li>
-            <strong>Manejo de errores:</strong> Implementar try/catch en todas las operaciones de Firestore
-            y mostrar mensajes de error apropiados al usuario.
+            <strong>Manejo de errores:</strong> Implementar try/catch en todas las operaciones de
+            Firestore y mostrar mensajes de error apropiados al usuario.
           </li>
           <li>
-            <strong>Estado de carga:</strong> Utilizar variables de estado isLoading granulares para cada 
-            tipo de datos que se está cargando.
+            <strong>Estado de carga:</strong> Utilizar variables de estado isLoading granulares para
+            cada tipo de datos que se está cargando.
           </li>
           <li>
-            <strong>Cálculos derivados:</strong> Preferir computed properties para valores derivados de 
-            los datos principales.
+            <strong>Cálculos derivados:</strong> Preferir computed properties para valores derivados
+            de los datos principales.
           </li>
           <li>
-            <strong>Optimización de consultas:</strong> Crear índices adecuados en Firestore para consultas complejas 
-            y limitar resultados cuando sea posible.
+            <strong>Optimización de consultas:</strong> Crear índices adecuados en Firestore para
+            consultas complejas y limitar resultados cuando sea posible.
           </li>
           <li>
-            <strong>Caché local:</strong> Configurar persistencia de Firestore para mejorar la experiencia offline.
+            <strong>Caché local:</strong> Configurar persistencia de Firestore para mejorar la
+            experiencia offline.
           </li>
           <li>
-            <strong>Documentación:</strong> Incluir comentarios JSDoc en todas las funciones principales para 
-            facilitar el mantenimiento.
+            <strong>Documentación:</strong> Incluir comentarios JSDoc en todas las funciones
+            principales para facilitar el mantenimiento.
           </li>
         </ol>
       </div>

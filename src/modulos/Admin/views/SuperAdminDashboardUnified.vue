@@ -1,17 +1,23 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+  <div
+    class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800"
+  >
     <!-- Header Optimizado -->
     <div class="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
       <div class="px-4 sm:px-6 py-6 sm:py-8">
         <div class="max-w-7xl mx-auto">
-          <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-4 lg:space-y-0">
+          <div
+            class="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-4 lg:space-y-0"
+          >
             <!-- Título y Descripción -->
             <div class="flex items-center space-x-3 sm:space-x-4">
               <div class="bg-gradient-to-r from-blue-500 to-purple-600 p-2 sm:p-3 rounded-xl">
                 <CogIcon class="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
               <div>
-                <h1 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1
+                  class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
+                >
                   Super Administrador
                 </h1>
                 <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
@@ -19,7 +25,7 @@
                 </p>
               </div>
             </div>
-            
+
             <!-- KPIs en Header -->
             <div class="w-full lg:w-auto">
               <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
@@ -43,23 +49,23 @@
                 </div>
                 <div class="relative">
                   <!-- Notificaciones -->
-                  <button 
-                    @click="toggleNotifications"
+                  <button
                     class="relative p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                    :class="{ 'text-red-500 hover:text-red-600': unreadCount > 0 }"
+                    :class="{'text-red-500 hover:text-red-600': unreadCount > 0}"
+                    @click="toggleNotifications"
                   >
                     <BellIcon class="w-6 h-6" />
-                    <span 
-                      v-if="unreadCount > 0" 
+                    <span
+                      v-if="unreadCount > 0"
                       class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse"
                     >
-                      {{ unreadCount > 9 ? '9+' : unreadCount }}
+                      {{ unreadCount > 9 ? "9+" : unreadCount }}
                     </span>
                   </button>
-                  
+
                   <!-- Dropdown de Notificaciones -->
-                  <NotificationsDropdown 
-                    v-if="showNotifications" 
+                  <NotificationsDropdown
+                    v-if="showNotifications"
                     :notifications="recentNotifications"
                     @close="showNotifications = false"
                     @mark-read="markAsRead"
@@ -74,15 +80,14 @@
     </div>
 
     <!-- Alertas Críticas Banner -->
-    <CriticalAlertsBar 
-      v-if="criticalAlerts.length > 0" 
+    <CriticalAlertsBar
+      v-if="criticalAlerts.length > 0"
       :alerts="criticalAlerts"
       @dismiss="handleDismissAlert"
     />
 
     <!-- Contenido Principal -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-      
       <!-- Acciones Rápidas de Superpoderes -->
       <section class="mb-8">
         <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-6">
@@ -109,18 +114,18 @@
             <button
               v-for="tab in tabs"
               :key="tab.id"
-              @click="activeTab = tab.id"
               :class="[
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
-                'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2'
+                'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2',
               ]"
+              @click="activeTab = tab.id"
             >
               <component :is="tab.icon" class="w-4 h-4" />
               <span>{{ tab.label }}</span>
-              <span 
-                v-if="tab.count" 
+              <span
+                v-if="tab.count"
                 class="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-0.5 px-2 rounded-full text-xs"
               >
                 {{ tab.count }}
@@ -136,7 +141,9 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <!-- Management Cards -->
               <div class="lg:col-span-2 space-y-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Gestión Principal</h3>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                  Gestión Principal
+                </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <ManagementCard
                     v-for="card in managementCards"
@@ -149,10 +156,14 @@
 
               <!-- Quick Stats -->
               <div class="space-y-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Estado del Sistema</h3>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                  Estado del Sistema
+                </h3>
                 <SystemStatusCard :status="systemStatus" />
-                
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Actividad Reciente</h3>
+
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                  Actividad Reciente
+                </h3>
                 <RecentActivityCard :activities="recentActivities" />
               </div>
             </div>
@@ -160,7 +171,7 @@
 
           <!-- Students Tab -->
           <div v-if="activeTab === 'students'" class="space-y-6">
-            <StudentsManagementPanel 
+            <StudentsManagementPanel
               :students="students"
               @bulk-action="handleBulkAction"
               @export="handleExport"
@@ -170,7 +181,7 @@
 
           <!-- Teachers Tab -->
           <div v-if="activeTab === 'teachers'" class="space-y-6">
-            <TeachersManagementPanel 
+            <TeachersManagementPanel
               :teachers="teachers"
               @bulk-action="handleBulkAction"
               @schedule="handleSchedule"
@@ -179,7 +190,7 @@
 
           <!-- Classes Tab -->
           <div v-if="activeTab === 'classes'" class="space-y-6">
-            <ClassesManagementPanel 
+            <ClassesManagementPanel
               :classes="classes"
               @create="handleCreateClass"
               @schedule="handleScheduleClass"
@@ -188,15 +199,12 @@
 
           <!-- Analytics Tab -->
           <div v-if="activeTab === 'analytics'" class="space-y-6">
-            <AnalyticsPanel 
-              :data="analyticsData"
-              @generate-report="handleGenerateReport"
-            />
+            <AnalyticsPanel :data="analyticsData" @generate-report="handleGenerateReport" />
           </div>
 
           <!-- System Tab -->
           <div v-if="activeTab === 'system'" class="space-y-6">
-            <SystemConfigPanel 
+            <SystemConfigPanel
               :config="systemConfig"
               @update="handleSystemUpdate"
               @backup="handleBackup"
@@ -225,7 +233,6 @@
           @action="handleDataAction"
         />
       </div>
-
     </div>
 
     <!-- Modales -->
@@ -236,13 +243,10 @@
         @close="showCreateUserModal = false"
         @created="handleUserCreated"
       />
-      
+
       <!-- Modal de Vista Global -->
-      <GlobalViewModal
-        v-if="showGlobalViewModal"
-        @close="showGlobalViewModal = false"
-      />
-      
+      <GlobalViewModal v-if="showGlobalViewModal" @close="showGlobalViewModal = false" />
+
       <!-- Modal de Configuración del Sistema -->
       <SystemConfigModal
         v-if="showSystemConfigModal"
@@ -250,7 +254,7 @@
         @close="showSystemConfigModal = false"
         @updated="handleSystemConfigUpdated"
       />
-      
+
       <!-- Modal de Generador de PDFs -->
       <PDFGeneratorModal
         v-if="showPDFGeneratorModal"
@@ -271,8 +275,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import {ref, computed, onMounted, onUnmounted} from "vue"
+import {useRouter} from "vue-router"
 import {
   CogIcon,
   BellIcon,
@@ -304,35 +308,36 @@ import {
   TrashIcon,
   CloudArrowDownIcon,
   DocumentArrowUpIcon,
-  ChatBubbleLeftIcon
-} from '@heroicons/vue/24/outline'
+  ChatBubbleLeftRightIcon,
+  ChatBubbleLeftIcon,
+} from "@heroicons/vue/24/outline"
 
 // Composables
-import { useSuperAdminData } from '../composables/useSuperAdminData'
-import { useSuperAdminFilters } from '../composables/useSuperAdminFilters'
-import { useSuperAdminActions } from '../composables/useSuperAdminActions'
-import { useSuperAdminCharts } from '../composables/useSuperAdminCharts'
+import {useSuperAdminData} from "../composables/useSuperAdminData"
+import {useSuperAdminFilters} from "../composables/useSuperAdminFilters"
+import {useSuperAdminActions} from "../composables/useSuperAdminActions"
+import {useSuperAdminCharts} from "../composables/useSuperAdminCharts"
 
 // Components
-import SuperPowerCard from '../components/SuperPowerCard.vue'
-import ManagementCard from '../components/ManagementCard.vue'
-import SystemStatusCard from '../components/SystemStatusCard.vue'
-import RecentActivityCard from '../components/RecentActivityCard.vue'
-import NotificationsDropdown from '../components/NotificationsDropdown.vue'
-import CriticalAlertsBar from '../components/CriticalAlertsBar.vue'
-import StudentsManagementPanel from '../components/StudentsManagementPanel.vue'
-import TeachersManagementPanel from '../components/TeachersManagementPanel.vue'
-import ClassesManagementPanel from '../components/ClassesManagementPanel.vue'
-import AnalyticsPanel from '../components/AnalyticsPanel.vue'
-import SystemConfigPanel from '../components/SystemConfigPanel.vue'
-import AdvancedToolCard from '../components/AdvancedToolCard.vue'
+import SuperPowerCard from "../components/SuperPowerCard.vue"
+import ManagementCard from "../components/ManagementCard.vue"
+import SystemStatusCard from "../components/SystemStatusCard.vue"
+import RecentActivityCard from "../components/RecentActivityCard.vue"
+import NotificationsDropdown from "../components/NotificationsDropdown.vue"
+import CriticalAlertsBar from "../components/CriticalAlertsBar.vue"
+import StudentsManagementPanel from "../components/StudentsManagementPanel.vue"
+import TeachersManagementPanel from "../components/TeachersManagementPanel.vue"
+import ClassesManagementPanel from "../components/ClassesManagementPanel.vue"
+import AnalyticsPanel from "../components/AnalyticsPanel.vue"
+import SystemConfigPanel from "../components/SystemConfigPanel.vue"
+import AdvancedToolCard from "../components/AdvancedToolCard.vue"
 
 // Modales
-import CreateUserModal from '../components/CreateUserModal.vue'
-import GlobalViewModal from '../components/GlobalViewModal.vue'
-import SystemConfigModal from '../components/SystemConfigModal.vue'
-import PDFGeneratorModal from '../components/PDFGeneratorModal.vue'
-import BulkActionModal from '../components/BulkActionModal.vue'
+import CreateUserModal from "../components/CreateUserModal.vue"
+import GlobalViewModal from "../components/GlobalViewModal.vue"
+import SystemConfigModal from "../components/SystemConfigModal.vue"
+import PDFGeneratorModal from "../components/PDFGeneratorModal.vue"
+import BulkActionModal from "../components/BulkActionModal.vue"
 
 // Setup
 const router = useRouter()
@@ -350,7 +355,7 @@ const {
   analyticsData,
   loadAllData,
   refreshData,
-  startAutoRefresh
+  startAutoRefresh,
 } = useSuperAdminData()
 
 const {
@@ -368,7 +373,7 @@ const {
   quickFilters,
   clearAllFilters,
   toggleSortOrder,
-  applyQuickFilter
+  applyQuickFilter,
 } = useSuperAdminFilters()
 
 const {
@@ -385,6 +390,7 @@ const {
   navigateToAddTeacher,
   navigateToCreateClass,
   navigateToSettings,
+  navigateToWhatsApp,
   performBackup,
   exportSelectedData,
   confirmBulkAction,
@@ -393,7 +399,7 @@ const {
   toggleItemSelection,
   selectAllItems,
   clearSelection,
-  toggleBulkActions
+  toggleBulkActions,
 } = useSuperAdminActions()
 
 const {
@@ -405,153 +411,171 @@ const {
   teacherPerformanceChart,
   advancedAnalytics,
   chartTheme,
-  exportChartData
+  exportChartData,
 } = useSuperAdminCharts()
 
 // State local
-const activeTab = ref('overview')
+const activeTab = ref("overview")
 const showNotifications = ref(false)
 const showCreateUserModal = ref(false)
 const showGlobalViewModal = ref(false)
 const showSystemConfigModal = ref(false)
 const showPDFGeneratorModal = ref(false)
 const showBulkActionModal = ref(false)
-const bulkActionType = ref('')
+const bulkActionType = ref("")
 const bulkSelection = ref([])
 const autoRefreshInterval = ref(null)
 
 // Computed
 const currentDate = computed(() => {
-  return new Date().toLocaleDateString('es-ES', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  return new Date().toLocaleDateString("es-ES", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   })
 })
 
 const unreadCount = computed(() => {
-  return recentActivities.value.filter(activity => !activity.read).length
+  return recentActivities.value.filter((activity) => !activity.read).length
 })
 
 const criticalAlerts = computed(() => {
-  return recentActivities.value.filter(activity => 
-    activity.type === 'error' || activity.type === 'critical'
+  return recentActivities.value.filter(
+    (activity) => activity.type === "error" || activity.type === "critical"
   )
 })
 
 // Data
 const tabs = ref([
-  { id: 'overview', label: 'Panel General', icon: CogIcon },
-  { id: 'students', label: 'Estudiantes', icon: UsersIcon, count: computed(() => students.value.length) },
-  { id: 'teachers', label: 'Maestros', icon: UserIcon, count: computed(() => teachers.value.length) },
-  { id: 'classes', label: 'Clases', icon: AcademicCapIcon, count: computed(() => classes.value.length) },
-  { id: 'analytics', label: 'Análisis', icon: ChartBarIcon },
-  { id: 'system', label: 'Sistema', icon: Cog6ToothIcon }
+  {id: "overview", label: "Panel General", icon: CogIcon},
+  {
+    id: "students",
+    label: "Estudiantes",
+    icon: UsersIcon,
+    count: computed(() => students.value.length),
+  },
+  {id: "teachers", label: "Maestros", icon: UserIcon, count: computed(() => teachers.value.length)},
+  {
+    id: "classes",
+    label: "Clases",
+    icon: AcademicCapIcon,
+    count: computed(() => classes.value.length),
+  },
+  {id: "analytics", label: "Análisis", icon: ChartBarIcon},
+  {id: "system", label: "Sistema", icon: Cog6ToothIcon},
 ])
 
 const superActions = ref([
   {
-    id: 'create-user',
-    title: 'Nuevo Usuario',
-    description: 'Crear cualquier tipo de usuario',
-    icon: 'UserPlusIcon',
-    gradient: 'from-blue-500 to-blue-600',
-    action: () => showCreateUserModal.value = true
+    id: "create-user",
+    title: "Nuevo Usuario",
+    description: "Crear cualquier tipo de usuario",
+    icon: "UserPlusIcon",
+    gradient: "from-blue-500 to-blue-600",
+    action: () => (showCreateUserModal.value = true),
   },
   {
-    id: 'global-view',
-    title: 'Vista Global',
-    description: 'Monitoreo integral del sistema',
-    icon: 'GlobeAltIcon',
-    gradient: 'from-purple-500 to-purple-600',
-    action: () => showGlobalViewModal.value = true
+    id: "global-view",
+    title: "Vista Global",
+    description: "Monitoreo integral del sistema",
+    icon: "GlobeAltIcon",
+    gradient: "from-purple-500 to-purple-600",
+    action: () => (showGlobalViewModal.value = true),
   },
   {
-    id: 'advanced-reports',
-    title: 'Reportes Pro',
-    description: 'Análisis y reportes avanzados',
-    icon: 'ChartBarIcon',
-    gradient: 'from-green-500 to-green-600',
-    action: () => activeTab.value = 'analytics'
+    id: "advanced-reports",
+    title: "Reportes Pro",
+    description: "Análisis y reportes avanzados",
+    icon: "ChartBarIcon",
+    gradient: "from-green-500 to-green-600",
+    action: () => (activeTab.value = "analytics"),
   },
   {
-    id: 'system-config',
-    title: 'Config Sistema',
-    description: 'Configuración avanzada',
-    icon: 'CogIcon',
-    gradient: 'from-orange-500 to-orange-600',
-    action: () => showSystemConfigModal.value = true
+    id: "system-config",
+    title: "Config Sistema",
+    description: "Configuración avanzada",
+    icon: "CogIcon",
+    gradient: "from-orange-500 to-orange-600",
+    action: () => (showSystemConfigModal.value = true),
   },
   {
-    id: 'bulk-operations',
-    title: 'Operaciones Masivas',
-    description: 'Acciones en lote',
-    icon: 'CommandLineIcon',
-    gradient: 'from-red-500 to-red-600',
-    action: () => toggleBulkActions()
+    id: "bulk-operations",
+    title: "Operaciones Masivas",
+    description: "Acciones en lote",
+    icon: "CommandLineIcon",
+    gradient: "from-red-500 to-red-600",
+    action: () => toggleBulkActions(),
   },
   {
-    id: 'pdf-generator',
-    title: 'PDFs Avanzados',
-    description: 'Generación de documentos',
-    icon: 'DocumentTextIcon',
-    gradient: 'from-emerald-500 to-emerald-600',
-    action: () => showPDFGeneratorModal.value = true
-  }
+    id: "pdf-generator",
+    title: "PDFs Avanzados",
+    description: "Generación de documentos",
+    icon: "DocumentTextIcon",
+    gradient: "from-emerald-500 to-emerald-600",
+    action: () => (showPDFGeneratorModal.value = true),
+  },
+  {
+    id: "whatsapp-management",
+    title: "WhatsApp",
+    description: "Gestión de comunicaciones",
+    icon: "ChatBubbleLeftRightIcon",
+    gradient: "from-green-500 to-green-600",
+    action: () => navigateToWhatsApp(),
+  },
 ])
 
 const managementCards = ref([
   {
-    id: 'students',
-    title: 'Estudiantes',
-    description: 'Gestión integral de estudiantes',
-    icon: 'UsersIcon',
+    id: "students",
+    title: "Estudiantes",
+    description: "Gestión integral de estudiantes",
+    icon: "UsersIcon",
     count: computed(() => students.value.length),
-    color: 'blue',
-    actions: ['view', 'create', 'export', 'bulk']
+    color: "blue",
+    actions: ["view", "create", "export", "bulk"],
   },
   {
-    id: 'teachers',
-    title: 'Maestros',
-    description: 'Gestión de maestros y permisos',
-    icon: 'UserIcon',
+    id: "teachers",
+    title: "Maestros",
+    description: "Gestión de maestros y permisos",
+    icon: "UserIcon",
     count: computed(() => teachers.value.length),
-    color: 'green',
-    actions: ['view', 'create', 'schedule', 'permissions']
+    color: "green",
+    actions: ["view", "create", "schedule", "permissions"],
   },
   {
-    id: 'classes',
-    title: 'Clases',
-    description: 'Administración de clases',
-    icon: 'AcademicCapIcon',
+    id: "classes",
+    title: "Clases",
+    description: "Administración de clases",
+    icon: "AcademicCapIcon",
     count: computed(() => classes.value.length),
-    color: 'purple',
-    actions: ['view', 'create', 'schedule', 'monitor']
+    color: "purple",
+    actions: ["view", "create", "schedule", "monitor"],
   },
   {
-    id: 'finances',
-    title: 'Finanzas',
-    description: 'Control financiero',
-    icon: 'CurrencyDollarIcon',
+    id: "finances",
+    title: "Finanzas",
+    description: "Control financiero",
+    icon: "CurrencyDollarIcon",
     count: computed(() => kpis.value.monthlyRevenue),
-    color: 'yellow',
-    actions: ['view', 'reports', 'invoices']
-  }
+    color: "yellow",
+    actions: ["view", "reports", "invoices"],
+  },
 ])
 
 const communicationTools = ref([
-  { id: 'mass-email', label: 'Email Masivo', icon: 'EnvelopeIcon' },
-  { id: 'mass-whatsapp', label: 'WhatsApp Masivo', icon: 'ChatBubbleLeftIcon' },
-  { id: 'notifications', label: 'Notificaciones Push', icon: 'BellIcon' },
-  { id: 'announcements', label: 'Anuncios Generales', icon: 'SpeakerWaveIcon' }
+  {id: "mass-email", label: "Email Masivo", icon: "EnvelopeIcon"},
+  {id: "mass-whatsapp", label: "WhatsApp Masivo", icon: "ChatBubbleLeftIcon"},
+  {id: "notifications", label: "Notificaciones Push", icon: "BellIcon"},
+  {id: "announcements", label: "Anuncios Generales", icon: "SpeakerWaveIcon"},
 ])
 
 const dataTools = ref([
-  { id: 'import-students', label: 'Importar Estudiantes', icon: 'ArrowUpTrayIcon' },
-  { id: 'export-all', label: 'Exportar Todo', icon: 'ArrowDownTrayIcon' },
-  { id: 'backup-system', label: 'Respaldo Completo', icon: 'CloudArrowUpIcon' },
-  { id: 'migrate-data', label: 'Migrar Datos', icon: 'ArrowsRightLeftIcon' }
+  {id: "import-students", label: "Importar Estudiantes", icon: "ArrowUpTrayIcon"},
+  {id: "export-all", label: "Exportar Todo", icon: "ArrowDownTrayIcon"},
+  {id: "backup-system", label: "Respaldo Completo", icon: "CloudArrowUpIcon"},
+  {id: "migrate-data", label: "Migrar Datos", icon: "ArrowsRightLeftIcon"},
 ])
 
 // Methods
@@ -560,7 +584,7 @@ const toggleNotifications = () => {
 }
 
 const handleSuperAction = (actionId: string) => {
-  const action = superActions.value.find(a => a.id === actionId)
+  const action = superActions.value.find((a) => a.id === actionId)
   if (action && action.action) {
     action.action()
   }
@@ -568,22 +592,22 @@ const handleSuperAction = (actionId: string) => {
 
 const handleManagementAction = (action: string, type: string) => {
   switch (type) {
-    case 'students':
-      if (action === 'view') activeTab.value = 'students'
-      else if (action === 'create') navigateToAddStudent()
-      else if (action === 'export') exportSelectedData()
-      else if (action === 'bulk') toggleBulkActions()
+    case "students":
+      if (action === "view") activeTab.value = "students"
+      else if (action === "create") navigateToAddStudent()
+      else if (action === "export") exportSelectedData()
+      else if (action === "bulk") toggleBulkActions()
       break
-    case 'teachers':
-      if (action === 'view') activeTab.value = 'teachers'
-      else if (action === 'create') navigateToAddTeacher()
+    case "teachers":
+      if (action === "view") activeTab.value = "teachers"
+      else if (action === "create") navigateToAddTeacher()
       break
-    case 'classes':
-      if (action === 'view') activeTab.value = 'classes'
-      else if (action === 'create') navigateToCreateClass()
+    case "classes":
+      if (action === "view") activeTab.value = "classes"
+      else if (action === "create") navigateToCreateClass()
       break
-    case 'finances':
-      if (action === 'view') activeTab.value = 'analytics'
+    case "finances":
+      if (action === "view") activeTab.value = "analytics"
       break
   }
 }
@@ -605,12 +629,12 @@ const handleExport = (format: string, data: any) => {
 
 const handleImport = (file: File) => {
   // Implementar importación de datos
-  console.log('Importing file:', file.name)
+  console.log("Importing file:", file.name)
 }
 
 const handleSchedule = (data: any) => {
   // Implementar programación
-  console.log('Scheduling:', data)
+  console.log("Scheduling:", data)
 }
 
 const handleCreateClass = (data: any) => {
@@ -618,47 +642,47 @@ const handleCreateClass = (data: any) => {
 }
 
 const handleScheduleClass = (data: any) => {
-  console.log('Scheduling class:', data)
+  console.log("Scheduling class:", data)
 }
 
 const handleGenerateReport = (type: string, params: any) => {
-  console.log('Generating report:', type, params)
+  console.log("Generating report:", type, params)
 }
 
 const handleSystemUpdate = (config: any) => {
-  console.log('Updating system config:', config)
+  console.log("Updating system config:", config)
 }
 
 const handleUserCreated = (user: any) => {
-  console.log('User created:', user)
+  console.log("User created:", user)
   showCreateUserModal.value = false
   refreshData()
 }
 
 const handleSystemConfigUpdated = (config: any) => {
-  console.log('System config updated:', config)
+  console.log("System config updated:", config)
   showSystemConfigModal.value = false
 }
 
 const handlePDFGeneration = (params: any) => {
-  console.log('Generating PDF:', params)
+  console.log("Generating PDF:", params)
   showPDFGeneratorModal.value = false
 }
 
 const handleCommunicationAction = (toolId: string) => {
-  console.log('Communication action:', toolId)
+  console.log("Communication action:", toolId)
 }
 
 const handleDataAction = (toolId: string) => {
   switch (toolId) {
-    case 'backup-system':
+    case "backup-system":
       performBackup()
       break
-    case 'export-all':
+    case "export-all":
       exportSelectedData()
       break
     default:
-      console.log('Data action:', toolId)
+      console.log("Data action:", toolId)
   }
 }
 
@@ -668,7 +692,7 @@ onMounted(async () => {
     await loadAllData()
     autoRefreshInterval.value = startAutoRefresh()
   } catch (error) {
-    console.error('Error loading dashboard data:', error)
+    console.error("Error loading dashboard data:", error)
   }
 })
 

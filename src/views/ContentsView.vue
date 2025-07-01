@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useContentsStore } from '../modulos/Contents/store/contents'
-import { 
-  PlusCircleIcon, 
-  FunnelIcon, 
+import {ref, computed, onMounted} from "vue"
+import {useRouter} from "vue-router"
+import {useContentsStore} from "../modulos/Contents/store/contents"
+import {
+  PlusCircleIcon,
+  FunnelIcon,
   ArrowDownTrayIcon,
   ChevronDownIcon,
   ChevronRightIcon,
@@ -13,14 +13,14 @@ import {
   ClipboardDocumentListIcon,
   MusicalNoteIcon,
   PencilSquareIcon,
-  TrashIcon
-} from '@heroicons/vue/24/outline'
+  TrashIcon,
+} from "@heroicons/vue/24/outline"
 // import BaseCard from '../components/BaseCard.vue'
-import ContentForm from '../components/ContentForm.vue'
-import ConfirmModal from '../components/ConfirmModal.vue'
-import type { Content } from '../types'
-import { jsPDF } from 'jspdf'
-import ExcelJS from 'exceljs'
+import ContentForm from "../components/ContentForm.vue"
+import ConfirmModal from "../components/ConfirmModal.vue"
+import type {Content} from "../types"
+import {jsPDF} from "jspdf"
+import ExcelJS from "exceljs"
 
 const router = useRouter()
 const contentsStore = useContentsStore()
@@ -31,35 +31,34 @@ const expandedContent = ref<number | null>(null)
 // const expandedTheme = ref<number | null>(null)
 const isEditing = ref(false)
 const isLoading = ref(true)
-const error = ref('')
+const error = ref("")
 
 // Filters
-const searchQuery = ref('')
-const filterLevel = ref('')
-const filterClass = ref('')
-const sortBy = ref('title')
-const sortOrder = ref<'asc' | 'desc'>('asc')
+const searchQuery = ref("")
+const filterLevel = ref("")
+const filterClass = ref("")
+const sortBy = ref("title")
+const sortOrder = ref<"asc" | "desc">("asc")
 
-const levels = ['Principiante', 'Intermedio', 'Avanzado']
-const classes = ['Piano - Nivel 1', 'Violín - Nivel 1', 'Guitarra - Nivel 1']
+const levels = ["Principiante", "Intermedio", "Avanzado"]
+const classes = ["Piano - Nivel 1", "Violín - Nivel 1", "Guitarra - Nivel 1"]
 
 const filteredContents = computed(() => {
   let result = [...contentsStore.contents]
 
   // Apply filters
   if (filterLevel.value) {
-    result = result.filter(c => c.level === filterLevel.value)
+    result = result.filter((c) => c.level === filterLevel.value)
   }
 
   if (filterClass.value) {
-    result = result.filter(c => c.class === filterClass.value)
+    result = result.filter((c) => c.class === filterClass.value)
   }
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    result = result.filter(c => 
-      c.title.toLowerCase().includes(query) ||
-      c.description.toLowerCase().includes(query)
+    result = result.filter(
+      (c) => c.title.toLowerCase().includes(query) || c.description.toLowerCase().includes(query)
     )
   }
 
@@ -67,20 +66,20 @@ const filteredContents = computed(() => {
   result.sort((a, b) => {
     let comparison = 0
     switch (sortBy.value) {
-      case 'title':
+      case "title":
         comparison = a.title.localeCompare(b.title)
         break
-      case 'level':
+      case "level":
         comparison = a.level.localeCompare(b.level)
         break
-      case 'class':
+      case "class":
         comparison = a.class.localeCompare(b.class)
         break
-      case 'date':
+      case "date":
         comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         break
     }
-    return sortOrder.value === 'desc' ? -comparison : comparison
+    return sortOrder.value === "desc" ? -comparison : comparison
   })
 
   return result
@@ -111,9 +110,9 @@ const handleFormSubmit = async (data: Partial<Content>) => {
       await contentsStore.addContent(data as Omit<Content, "id" | "createdAt" | "updatedAt">)
     }
     showForm.value = false
-    error.value = ''
+    error.value = ""
   } catch (err) {
-    error.value = 'Error al guardar el contenido'
+    error.value = "Error al guardar el contenido"
   }
 }
 
@@ -129,9 +128,9 @@ const confirmDelete = async () => {
       await contentsStore.deleteContent(selectedContent.value.id)
       showDeleteModal.value = false
       selectedContent.value = null
-      error.value = ''
+      error.value = ""
     } catch (err) {
-      error.value = 'Error al eliminar el contenido'
+      error.value = "Error al eliminar el contenido"
     }
   }
 }
@@ -142,7 +141,7 @@ const exportToPDF = () => {
 
   // Title
   doc.setFontSize(16)
-  doc.text('Contenidos', 20, y)
+  doc.text("Contenidos", 20, y)
   y += 10
 
   // Contents
@@ -153,11 +152,11 @@ const exportToPDF = () => {
       y = 20
     }
 
-    doc.setFont('helvetica', 'bold')
+    doc.setFont("helvetica", "bold")
     doc.text(`${index + 1}. ${content.title}`, 20, y)
     y += 7
 
-    doc.setFont('helvetica', 'normal')
+    doc.setFont("helvetica", "normal")
     doc.text(`Nivel: ${content.level}`, 25, y)
     y += 7
     doc.text(`Clase: ${content.class}`, 25, y)
@@ -166,85 +165,87 @@ const exportToPDF = () => {
     y += 10
   })
 
-  doc.save('contenidos.pdf')
+  doc.save("contenidos.pdf")
 }
 
 const exportToExcel = async () => {
   // Usar ExcelJS en lugar de xlsx para mayor seguridad
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Music Academy App';
-  workbook.lastModifiedBy = 'Music Academy App';
-  workbook.created = new Date();
-  workbook.modified = new Date();
-  
+  const workbook = new ExcelJS.Workbook()
+  workbook.creator = "Music Academy App"
+  workbook.lastModifiedBy = "Music Academy App"
+  workbook.created = new Date()
+  workbook.modified = new Date()
+
   // Crear hoja de trabajo
-  const worksheet = workbook.addWorksheet('Contenidos');
-  
+  const worksheet = workbook.addWorksheet("Contenidos")
+
   // Preparar datos para exportar
-  const data = filteredContents.value.map(content => ({
-    'Título': content.title,
-    'Descripción': content.description,
-    'Nivel': content.level,
-    'Clase': content.class,
-    'Duración': content.duration,
-    'Objetivos': content.objectives.join(', '),
-    'Prerequisitos': content.prerequisites.join(', ')
-  }));
-  
+  const data = filteredContents.value.map((content) => ({
+    Título: content.title,
+    Descripción: content.description,
+    Nivel: content.level,
+    Clase: content.class,
+    Duración: content.duration,
+    Objetivos: content.objectives.join(", "),
+    Prerequisitos: content.prerequisites.join(", "),
+  }))
+
   // Añadir encabezados
-  const headers = Object.keys(data[0] || {});
-  worksheet.addRow(headers);
-  
+  const headers = Object.keys(data[0] || {})
+  worksheet.addRow(headers)
+
   // Dar formato a los encabezados
-  const headerRow = worksheet.getRow(1);
-  headerRow.font = { bold: true };
+  const headerRow = worksheet.getRow(1)
+  headerRow.font = {bold: true}
   headerRow.fill = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FF2980B9' }
-  };
-  
+    type: "pattern",
+    pattern: "solid",
+    fgColor: {argb: "FF2980B9"},
+  }
+
   // Añadir datos
-  data.forEach(row => {
-    worksheet.addRow(Object.values(row));
-  });
-  
+  data.forEach((row) => {
+    worksheet.addRow(Object.values(row))
+  })
+
   // Autoajustar anchos de columna
-  worksheet.columns.forEach(column => {
-    let maxLength = 10;
-    column.eachCell({ includeEmpty: false }, cell => {
-      const cellLength = cell.value ? cell.value.toString().length : 10;
-      maxLength = Math.max(maxLength, cellLength);
-    });
-    column.width = Math.min(maxLength + 2, 30); // Limitar ancho máximo
-  });
-  
+  worksheet.columns.forEach((column) => {
+    let maxLength = 10
+    column.eachCell({includeEmpty: false}, (cell) => {
+      const cellLength = cell.value ? cell.value.toString().length : 10
+      maxLength = Math.max(maxLength, cellLength)
+    })
+    column.width = Math.min(maxLength + 2, 30) // Limitar ancho máximo
+  })
+
   // Generar archivo y descargar
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'contenidos.xlsx';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const buffer = await workbook.xlsx.writeBuffer()
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = "contenidos.xlsx"
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 const clearFilters = () => {
-  searchQuery.value = ''
-  filterLevel.value = ''
-  filterClass.value = ''
-  sortBy.value = 'title'
-  sortOrder.value = 'asc'
+  searchQuery.value = ""
+  filterLevel.value = ""
+  filterClass.value = ""
+  sortBy.value = "title"
+  sortOrder.value = "asc"
 }
 
 onMounted(async () => {
   try {
     await contentsStore.fetchContents()
   } catch (err) {
-    error.value = 'Error al cargar los contenidos'
+    error.value = "Error al cargar los contenidos"
   } finally {
     isLoading.value = false
   }
@@ -256,34 +257,34 @@ onMounted(async () => {
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold">Contenidos</h1>
       <div class="flex flex-wrap gap-2">
-        <button 
-          @click="exportToPDF"
+        <button
           class="btn bg-red-600 text-white hover:bg-red-700 flex items-center gap-2"
           title="Exportar a PDF"
+          @click="exportToPDF"
         >
           <ArrowDownTrayIcon class="w-5 h-5" />
           <span class="hidden sm:inline">PDF</span>
         </button>
-        <button 
-          @click="exportToExcel"
+        <button
           class="btn bg-green-600 text-white hover:bg-green-700 flex items-center gap-2"
           title="Exportar a Excel"
+          @click="exportToExcel"
         >
           <ArrowDownTrayIcon class="w-5 h-5" />
           <span class="hidden sm:inline">Excel</span>
         </button>
-        <button 
-          @click="router.push('/repertoire')"
+        <button
           class="btn bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-2"
           title="Repertorio"
+          @click="router.push('/repertoire')"
         >
           <MusicalNoteIcon class="w-5 h-5" />
           <span class="hidden sm:inline">Repertorio</span>
         </button>
-        <button 
-          @click="handleNew"
+        <button
           class="btn btn-primary flex items-center gap-2"
           title="Nuevo Contenido"
+          @click="handleNew"
         >
           <PlusCircleIcon class="w-5 h-5" />
           <span class="hidden sm:inline">Nuevo Contenido</span>
@@ -305,11 +306,7 @@ onMounted(async () => {
         <div>
           <select v-model="filterLevel" class="input">
             <option value="">Todos los niveles</option>
-            <option
-              v-for="level in levels"
-              :key="level"
-              :value="level"
-            >
+            <option v-for="level in levels" :key="level" :value="level">
               {{ level }}
             </option>
           </select>
@@ -317,11 +314,7 @@ onMounted(async () => {
         <div>
           <select v-model="filterClass" class="input">
             <option value="">Todas las clases</option>
-            <option
-              v-for="class_ in classes"
-              :key="class_"
-              :value="class_"
-            >
+            <option v-for="class_ in classes" :key="class_" :value="class_">
               {{ class_ }}
             </option>
           </select>
@@ -331,12 +324,12 @@ onMounted(async () => {
 
     <!-- Loading State -->
     <div v-if="isLoading" class="flex justify-center items-center py-12">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
     </div>
 
     <!-- Error State -->
-    <div 
-      v-else-if="error" 
+    <div
+      v-else-if="error"
       class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-4 rounded-lg mb-4"
     >
       {{ error }}
@@ -344,13 +337,9 @@ onMounted(async () => {
 
     <!-- Content List -->
     <div v-else class="space-y-4">
-      <div
-        v-for="content in filteredContents"
-        :key="content.id"
-        class="card"
-      >
+      <div v-for="content in filteredContents" :key="content.id" class="card">
         <!-- Content Header -->
-        <div 
+        <div
           class="flex items-start justify-between cursor-pointer p-4"
           @click="expandedContent = expandedContent === content.id ? null : content.id"
         >
@@ -365,10 +354,14 @@ onMounted(async () => {
           </div>
           <div class="flex items-center gap-4">
             <div class="flex gap-2">
-              <span class="px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
+              <span
+                class="px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full"
+              >
                 {{ content.level }}
               </span>
-              <span class="px-2 py-1 text-sm bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-full">
+              <span
+                class="px-2 py-1 text-sm bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-full"
+              >
                 {{ content.class }}
               </span>
             </div>
@@ -409,17 +402,17 @@ onMounted(async () => {
             <!-- Actions -->
             <div class="flex justify-end gap-3">
               <button
-                @click="handleEdit(content)"
                 class="btn bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
                 title="Editar"
+                @click="handleEdit(content)"
               >
                 <PencilSquareIcon class="w-5 h-5" />
                 <span class="hidden sm:inline">Editar</span>
               </button>
               <button
-                @click="handleDelete(content)"
                 class="btn bg-red-600 text-white hover:bg-red-700 flex items-center gap-2"
                 title="Eliminar"
+                @click="handleDelete(content)"
               >
                 <TrashIcon class="w-5 h-5" />
                 <span class="hidden sm:inline">Eliminar</span>
@@ -430,13 +423,15 @@ onMounted(async () => {
       </div>
 
       <!-- Empty State -->
-      <div 
-        v-if="filteredContents.length === 0" 
+      <div
+        v-if="filteredContents.length === 0"
         class="text-center py-12 text-gray-500 dark:text-gray-400"
       >
-        {{ searchQuery || filterLevel || filterClass ? 
-          'No se encontraron contenidos con los filtros seleccionados' : 
-          'No hay contenidos registrados' }}
+        {{
+          searchQuery || filterLevel || filterClass
+            ? "No se encontraron contenidos con los filtros seleccionados"
+            : "No hay contenidos registrados"
+        }}
       </div>
     </div>
 

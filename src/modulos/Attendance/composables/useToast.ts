@@ -9,12 +9,12 @@
  * En tu componente raíz (o layout) mapea toast.list y muestra los mensajes.
  */
 
-import { reactive, readonly } from 'vue'
+import {reactive, readonly} from "vue"
 
 export interface ToastMessage {
   id: number
   text: string
-  type: 'success' | 'error' | 'info' | 'warning'
+  type: "success" | "error" | "info" | "warning"
   timeout?: number
 }
 
@@ -23,9 +23,9 @@ let _id = 0
 function createStore() {
   const list = reactive<ToastMessage[]>([])
 
-  function push(text: string, type: ToastMessage['type'] = 'info', timeout = 3000) {
+  function push(text: string, type: ToastMessage["type"] = "info", timeout = 3000) {
     const id = ++_id
-    list.push({ id, text, type, timeout })
+    list.push({id, text, type, timeout})
 
     if (timeout) {
       setTimeout(() => remove(id), timeout)
@@ -33,16 +33,16 @@ function createStore() {
   }
 
   function success(text: string, timeout?: number) {
-    push(text, 'success', timeout)
+    push(text, "success", timeout)
   }
   function error(text: string, timeout?: number) {
-    push(text, 'error', timeout)
+    push(text, "error", timeout)
   }
   function info(text: string, timeout?: number) {
-    push(text, 'info', timeout)
+    push(text, "info", timeout)
   }
   function warning(text: string, timeout?: number) {
-    push(text, 'warning', timeout)
+    push(text, "warning", timeout)
   }
 
   function remove(id: number) {

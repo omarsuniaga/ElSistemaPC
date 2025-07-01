@@ -2,7 +2,7 @@
   <div class="attendance-overview">
     <div class="overview-header">
       <h3 class="section-title">
-        <i class="fas fa-chart-pie"></i>
+        <i class="fas fa-chart-pie" />
         Resumen de Asistencia
       </h3>
       <div class="period-badge">
@@ -14,7 +14,7 @@
       <!-- Estudiantes totales -->
       <div class="stat-card students-card">
         <div class="stat-icon">
-          <i class="fas fa-users"></i>
+          <i class="fas fa-users" />
         </div>
         <div class="stat-content">
           <div class="stat-number">{{ totalStudents }}</div>
@@ -25,7 +25,7 @@
       <!-- Sesiones totales -->
       <div class="stat-card sessions-card">
         <div class="stat-icon">
-          <i class="fas fa-calendar-check"></i>
+          <i class="fas fa-calendar-check" />
         </div>
         <div class="stat-content">
           <div class="stat-number">{{ stats.totalSessions }}</div>
@@ -36,16 +36,13 @@
       <!-- Tasa de asistencia -->
       <div class="stat-card attendance-card">
         <div class="stat-icon">
-          <i class="fas fa-percentage"></i>
+          <i class="fas fa-percentage" />
         </div>
         <div class="stat-content">
           <div class="stat-number">{{ stats.attendanceRate }}%</div>
           <div class="stat-label">Asistencia</div>
           <div class="stat-progress">
-            <div 
-              class="progress-bar attendance-bar" 
-              :style="{ width: stats.attendanceRate + '%' }"
-            ></div>
+            <div class="progress-bar attendance-bar" :style="{width: stats.attendanceRate + '%'}" />
           </div>
         </div>
       </div>
@@ -53,72 +50,61 @@
       <!-- Presentes -->
       <div class="stat-card present-card">
         <div class="stat-icon">
-          <i class="fas fa-check-circle"></i>
+          <i class="fas fa-check-circle" />
         </div>
         <div class="stat-content">
           <div class="stat-number">{{ stats.totalPresent }}</div>
           <div class="stat-label">Presentes</div>
-          <div class="stat-percentage">
-            {{ getPercentage(stats.totalPresent) }}%
-          </div>
+          <div class="stat-percentage">{{ getPercentage(stats.totalPresent) }}%</div>
         </div>
       </div>
 
       <!-- Tardías -->
       <div class="stat-card late-card">
         <div class="stat-icon">
-          <i class="fas fa-clock"></i>
+          <i class="fas fa-clock" />
         </div>
         <div class="stat-content">
           <div class="stat-number">{{ stats.totalLate }}</div>
           <div class="stat-label">Tardías</div>
-          <div class="stat-percentage">
-            {{ getPercentage(stats.totalLate) }}%
-          </div>
+          <div class="stat-percentage">{{ getPercentage(stats.totalLate) }}%</div>
         </div>
       </div>
 
       <!-- Ausentes -->
       <div class="stat-card absent-card">
         <div class="stat-icon">
-          <i class="fas fa-times-circle"></i>
+          <i class="fas fa-times-circle" />
         </div>
         <div class="stat-content">
           <div class="stat-number">{{ stats.totalAbsent }}</div>
           <div class="stat-label">Ausentes</div>
-          <div class="stat-percentage">
-            {{ getPercentage(stats.totalAbsent) }}%
-          </div>
+          <div class="stat-percentage">{{ getPercentage(stats.totalAbsent) }}%</div>
         </div>
       </div>
 
       <!-- Justificadas -->
       <div class="stat-card justified-card">
         <div class="stat-icon">
-          <i class="fas fa-clipboard-check"></i>
+          <i class="fas fa-clipboard-check" />
         </div>
         <div class="stat-content">
           <div class="stat-number">{{ stats.totalJustified }}</div>
           <div class="stat-label">Justificadas</div>
-          <div class="stat-percentage">
-            {{ getPercentage(stats.totalJustified) }}%
-          </div>
+          <div class="stat-percentage">{{ getPercentage(stats.totalJustified) }}%</div>
         </div>
       </div>
 
       <!-- Tasa de ausencias -->
       <div class="stat-card absence-card">
         <div class="stat-icon">
-          <i class="fas fa-exclamation-triangle"></i>
+          <i class="fas fa-exclamation-triangle" />
         </div>
         <div class="stat-content">
           <div class="stat-number">{{ stats.absenceRate }}%</div>
           <div class="stat-label">Ausencias</div>
           <div class="stat-progress">
-            <div 
-              class="progress-bar absence-bar" 
-              :style="{ width: stats.absenceRate + '%' }"
-            ></div>
+            <div class="progress-bar absence-bar" :style="{width: stats.absenceRate + '%'}" />
           </div>
         </div>
       </div>
@@ -128,7 +114,7 @@
     <div class="performance-indicators">
       <div class="indicator-card">
         <div class="indicator-header">
-          <i class="fas fa-trophy"></i>
+          <i class="fas fa-trophy" />
           <span>Indicadores de Rendimiento</span>
         </div>
         <div class="indicators-list">
@@ -157,23 +143,23 @@
 </template>
 
 <script>
-import { computed } from 'vue'
+import {computed} from "vue"
 
 export default {
-  name: 'AttendanceOverview',
+  name: "AttendanceOverview",
   props: {
     stats: {
       type: Object,
-      required: true
+      required: true,
     },
     totalStudents: {
       type: Number,
-      required: true
+      required: true,
     },
     periodText: {
       type: String,
-      required: true
-    }
+      required: true,
+    },
   },
   setup(props) {
     const getPercentage = (value) => {
@@ -182,49 +168,49 @@ export default {
     }
 
     const getPerformanceClass = (rate) => {
-      if (rate >= 90) return 'excellent'
-      if (rate >= 80) return 'good'
-      if (rate >= 70) return 'average'
-      return 'poor'
+      if (rate >= 90) return "excellent"
+      if (rate >= 80) return "good"
+      if (rate >= 70) return "average"
+      return "poor"
     }
 
     const getPerformanceText = (rate) => {
-      if (rate >= 90) return 'Excelente'
-      if (rate >= 80) return 'Buena'
-      if (rate >= 70) return 'Regular'
-      return 'Deficiente'
+      if (rate >= 90) return "Excelente"
+      if (rate >= 80) return "Buena"
+      if (rate >= 70) return "Regular"
+      return "Deficiente"
     }
 
     const getPunctualityClass = () => {
       const lateRate = getPercentage(props.stats.totalLate)
-      if (lateRate <= 5) return 'excellent'
-      if (lateRate <= 10) return 'good'
-      if (lateRate <= 20) return 'average'
-      return 'poor'
+      if (lateRate <= 5) return "excellent"
+      if (lateRate <= 10) return "good"
+      if (lateRate <= 20) return "average"
+      return "poor"
     }
 
     const getPunctualityText = () => {
       const lateRate = getPercentage(props.stats.totalLate)
-      if (lateRate <= 5) return 'Excelente'
-      if (lateRate <= 10) return 'Buena'
-      if (lateRate <= 20) return 'Regular'
-      return 'Deficiente'
+      if (lateRate <= 5) return "Excelente"
+      if (lateRate <= 10) return "Buena"
+      if (lateRate <= 20) return "Regular"
+      return "Deficiente"
     }
 
     const getParticipationClass = () => {
       const participationRate = props.stats.attendanceRate
-      if (participationRate >= 85) return 'excellent'
-      if (participationRate >= 75) return 'good'
-      if (participationRate >= 65) return 'average'
-      return 'poor'
+      if (participationRate >= 85) return "excellent"
+      if (participationRate >= 75) return "good"
+      if (participationRate >= 65) return "average"
+      return "poor"
     }
 
     const getParticipationText = () => {
       const participationRate = props.stats.attendanceRate
-      if (participationRate >= 85) return 'Alta'
-      if (participationRate >= 75) return 'Media'
-      if (participationRate >= 65) return 'Regular'
-      return 'Baja'
+      if (participationRate >= 85) return "Alta"
+      if (participationRate >= 75) return "Media"
+      if (participationRate >= 65) return "Regular"
+      return "Baja"
     }
 
     return {
@@ -234,9 +220,9 @@ export default {
       getPunctualityClass,
       getPunctualityText,
       getParticipationClass,
-      getParticipationText
+      getParticipationText,
     }
-  }
+  },
 }
 </script>
 
@@ -290,7 +276,9 @@ export default {
   padding: 20px;
   border-radius: 10px;
   border: 1px solid #e9ecef;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .stat-card:hover {
@@ -298,14 +286,38 @@ export default {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.students-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-.sessions-card { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
-.attendance-card { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
-.present-card { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
-.late-card { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; }
-.absent-card { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color: #333; }
-.justified-card { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; }
-.absence-card { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #333; }
+.students-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+.sessions-card {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+.attendance-card {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+.present-card {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  color: white;
+}
+.late-card {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  color: white;
+}
+.absent-card {
+  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+  color: #333;
+}
+.justified-card {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  color: #333;
+}
+.absence-card {
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  color: #333;
+}
 
 .stat-card {
   display: flex;
@@ -434,18 +446,18 @@ export default {
   .stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .overview-header {
     flex-direction: column;
     gap: 10px;
     align-items: stretch;
     text-align: center;
   }
-  
+
   .indicators-list {
     gap: 6px;
   }
-  
+
   .indicator-item {
     flex-direction: column;
     gap: 4px;

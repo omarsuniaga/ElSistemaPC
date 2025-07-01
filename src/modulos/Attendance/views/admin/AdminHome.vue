@@ -5,18 +5,18 @@
  * 1. Orquesta header, calendario, list y modales usando composables limpios.
  * 2. Solo importa componentes UI puros; la lógica está en composables.
  * ------------------------------------------------------------------ */
-import { onMounted } from 'vue'
+import {onMounted} from "vue"
 
-import AttendanceHeader from '../../components/AttendanceHeader.vue'
-import AttendanceList from '../../components/AttendanceList.vue'
-import Calendar from '@/components/Calendar.vue'
+import AttendanceHeader from "../../components/AttendanceHeader.vue"
+import AttendanceList from "../../components/AttendanceList.vue"
+import Calendar from "@/components/Calendar.vue"
 
-import { useAttendanceState } from '../../composables/useAttendanceState'
-import { useModal } from '../../composables/useModal'
-import { useToast } from '../../composables/useToast'
+import {useAttendanceState} from "../../composables/useAttendanceState"
+import {useModal} from "../../composables/useModal"
+import {useToast} from "../../composables/useToast"
 
 /* ---------- state global para admin ---------- */
-const state = useAttendanceState('admin')
+const state = useAttendanceState("admin")
 const modal = useModal()
 const toast = useToast()
 
@@ -24,7 +24,7 @@ onMounted(() => state.init())
 
 /* ---------- handlers ---------- */
 function handleSaved() {
-  toast.success('Asistencia guardada')
+  toast.success("Asistencia guardada")
 }
 </script>
 
@@ -41,14 +41,17 @@ function handleSaved() {
       @report="modal.open('report')"
       @export="modal.open('export')"
       @emergency="modal.open('emergency')"
-      @changeView="state.view = $event"
+      @change-view="state.view = $event"
     />
 
     <!-- Body depending on view -->
     <Calendar
       v-if="state.view === 'calendar'"
       :selected-date="state.selectedDate"
-      @select="state.setDate($event); state.view = 'class-select'"
+      @select="
+        state.setDate($event)
+        state.view = 'class-select'
+      "
       @change="state.setDate($event)"
       @close="state.view = 'calendar'"
       @create="modal.open('create')"
@@ -63,16 +66,18 @@ function handleSaved() {
 
     <div v-else-if="state.view === 'class-select'">
       <select
-        class="border rounded p-2"
         v-model="state.selectedClass"
-        @change="state.view = 'attendance-form'; state.loadCurrent()"
+        class="border rounded p-2"
+        @change="
+          state.view = 'attendance-form'
+          state.loadCurrent()
+        "
         @close="state.view = 'calendar'"
         @create="modal.open('create')"
         @edit="modal.open('edit')"
         @delete="modal.open('delete')"
         @saved="handleSaved"
-        @analytics="modal.open('analytics')
-        "
+        @analytics="modal.open('analytics')"
       >
         <option disabled value="">Seleccione clase…</option>
         <option v-for="c in state.classOptions" :key="c.id" :value="c.id">

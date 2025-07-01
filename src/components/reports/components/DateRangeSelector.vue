@@ -5,10 +5,10 @@
         <button
           v-for="option in periodOptions"
           :key="option.value"
-          :class="['tab-button', { active: selectedPeriod === option.value }]"
+          :class="['tab-button', {active: selectedPeriod === option.value}]"
           @click="$emit('period-changed', option.value)"
         >
-          <i :class="option.icon"></i>
+          <i :class="option.icon" />
           <span>{{ option.label }}</span>
         </button>
       </div>
@@ -22,28 +22,24 @@
           id="start-date"
           type="date"
           :value="customDateRange.start"
-          @input="updateStartDate($event.target.value)"
           class="date-input"
-        >
+          @input="updateStartDate($event.target.value)"
+        />
       </div>
-      
+
       <div class="date-input-group">
         <label for="end-date">Fecha fin:</label>
         <input
           id="end-date"
           type="date"
           :value="customDateRange.end"
-          @input="updateEndDate($event.target.value)"
           class="date-input"
-        >
+          @input="updateEndDate($event.target.value)"
+        />
       </div>
-      
-      <button 
-        @click="applyCustomRange"
-        :disabled="!isCustomRangeValid"
-        class="apply-range-btn"
-      >
-        <i class="fas fa-check"></i>
+
+      <button :disabled="!isCustomRangeValid" class="apply-range-btn" @click="applyCustomRange">
+        <i class="fas fa-check" />
         Aplicar
       </button>
     </div>
@@ -51,7 +47,7 @@
     <!-- Current range display -->
     <div class="current-range-display">
       <div class="range-info">
-        <i class="fas fa-calendar-alt"></i>
+        <i class="fas fa-calendar-alt" />
         <span class="period-text">{{ selectedPeriodText }}</span>
         <span v-if="dateRangeText" class="date-text">{{ dateRangeText }}</span>
       </div>
@@ -60,83 +56,85 @@
 </template>
 
 <script>
-import { computed } from 'vue'
-import { format, parseISO } from 'date-fns'
-import { es } from 'date-fns/locale'
+import {computed} from "vue"
+import {format, parseISO} from "date-fns"
+import {es} from "date-fns/locale"
 
 export default {
-  name: 'DateRangeSelector',
+  name: "DateRangeSelector",
   props: {
     selectedPeriod: {
       type: String,
-      required: true
+      required: true,
     },
     customDateRange: {
       type: Object,
-      required: true
+      required: true,
     },
     selectedPeriodText: {
       type: String,
-      required: true
+      required: true,
     },
     actualDateRange: {
       type: Object,
-      required: true
-    }
+      required: true,
+    },
   },
-  emits: ['period-changed', 'custom-range-updated'],
-  setup(props, { emit }) {
+  emits: ["period-changed", "custom-range-updated"],
+  setup(props, {emit}) {
     const periodOptions = [
-      { value: 'today', label: 'Hoy', icon: 'fas fa-clock' },
-      { value: 'this_week', label: 'Esta semana', icon: 'fas fa-calendar-week' },
-      { value: 'this_month', label: 'Este mes', icon: 'fas fa-calendar' },
-      { value: 'last_week', label: 'Semana pasada', icon: 'fas fa-step-backward' },
-      { value: 'last_month', label: 'Mes pasado', icon: 'fas fa-history' },
-      { value: 'custom', label: 'Personalizado', icon: 'fas fa-cog' }
+      {value: "today", label: "Hoy", icon: "fas fa-clock"},
+      {value: "this_week", label: "Esta semana", icon: "fas fa-calendar-week"},
+      {value: "this_month", label: "Este mes", icon: "fas fa-calendar"},
+      {value: "last_week", label: "Semana pasada", icon: "fas fa-step-backward"},
+      {value: "last_month", label: "Mes pasado", icon: "fas fa-history"},
+      {value: "custom", label: "Personalizado", icon: "fas fa-cog"},
     ]
 
     const isCustomRangeValid = computed(() => {
-      return props.customDateRange.start && 
-             props.customDateRange.end && 
-             new Date(props.customDateRange.start) <= new Date(props.customDateRange.end)
+      return (
+        props.customDateRange.start &&
+        props.customDateRange.end &&
+        new Date(props.customDateRange.start) <= new Date(props.customDateRange.end)
+      )
     })
 
     const dateRangeText = computed(() => {
-      const { start, end } = props.actualDateRange
-      if (!start || !end) return ''
+      const {start, end} = props.actualDateRange
+      if (!start || !end) return ""
 
       try {
         const startDate = parseISO(start)
         const endDate = parseISO(end)
-        
+
         if (start === end) {
-          return format(startDate, 'dd \'de\' MMMM, yyyy', { locale: es })
+          return format(startDate, "dd 'de' MMMM, yyyy", {locale: es})
         } else {
-          return `${format(startDate, 'dd MMM', { locale: es })} - ${format(endDate, 'dd MMM yyyy', { locale: es })}`
+          return `${format(startDate, "dd MMM", {locale: es})} - ${format(endDate, "dd MMM yyyy", {locale: es})}`
         }
       } catch (error) {
-        console.error('Error formatting dates:', error)
+        console.error("Error formatting dates:", error)
         return `${start} - ${end}`
       }
     })
 
     const updateStartDate = (value) => {
-      emit('custom-range-updated', {
+      emit("custom-range-updated", {
         ...props.customDateRange,
-        start: value
+        start: value,
       })
     }
 
     const updateEndDate = (value) => {
-      emit('custom-range-updated', {
+      emit("custom-range-updated", {
         ...props.customDateRange,
-        end: value
+        end: value,
       })
     }
 
     const applyCustomRange = () => {
       if (isCustomRangeValid.value) {
-        emit('period-changed', 'custom')
+        emit("period-changed", "custom")
       }
     }
 
@@ -146,9 +144,9 @@ export default {
       dateRangeText,
       updateStartDate,
       updateEndDate,
-      applyCustomRange
+      applyCustomRange,
     }
-  }
+  },
 }
 </script>
 
@@ -290,18 +288,18 @@ export default {
   .tab-group {
     justify-content: center;
   }
-  
+
   .tab-button {
     flex: 1;
     min-width: 120px;
     justify-content: center;
   }
-  
+
   .custom-range-inputs {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .date-input {
     min-width: 100%;
   }

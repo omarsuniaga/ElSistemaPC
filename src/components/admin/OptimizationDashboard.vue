@@ -5,7 +5,7 @@
       <ion-toolbar>
         <ion-title>Centro de Control de Optimización</ion-title>
         <ion-buttons slot="end">
-          <ion-button @click="refreshMetrics" :disabled="loading">
+          <ion-button :disabled="loading" @click="refreshMetrics">
             <ion-icon :icon="refresh" />
           </ion-button>
         </ion-buttons>
@@ -14,7 +14,6 @@
 
     <ion-content>
       <div class="dashboard-container">
-        
         <!-- Métricas de Rendimiento -->
         <ion-card class="metrics-card">
           <ion-card-header>
@@ -26,29 +25,44 @@
           <ion-card-content>
             <div class="metrics-grid">
               <div class="metric-item">
-                <div class="metric-value">{{ performanceReport?.summary.avgLoadTime.toFixed(0) }}ms</div>
+                <div class="metric-value">
+                  {{ performanceReport?.summary.avgLoadTime.toFixed(0) }}ms
+                </div>
                 <div class="metric-label">Tiempo de Carga Promedio</div>
-                <div class="metric-status" :class="getLoadTimeStatus(performanceReport?.summary.avgLoadTime)">
+                <div
+                  class="metric-status"
+                  :class="getLoadTimeStatus(performanceReport?.summary.avgLoadTime)"
+                >
                   {{ getLoadTimeStatusText(performanceReport?.summary.avgLoadTime) }}
                 </div>
               </div>
-              
+
               <div class="metric-item">
-                <div class="metric-value">{{ performanceReport?.summary.avgInteractionTime.toFixed(0) }}ms</div>
+                <div class="metric-value">
+                  {{ performanceReport?.summary.avgInteractionTime.toFixed(0) }}ms
+                </div>
                 <div class="metric-label">Tiempo de Interacción</div>
-                <div class="metric-status" :class="getInteractionStatus(performanceReport?.summary.avgInteractionTime)">
+                <div
+                  class="metric-status"
+                  :class="getInteractionStatus(performanceReport?.summary.avgInteractionTime)"
+                >
                   {{ getInteractionStatusText(performanceReport?.summary.avgInteractionTime) }}
                 </div>
               </div>
-              
+
               <div class="metric-item">
-                <div class="metric-value">{{ formatBytes(performanceReport?.summary.memoryUsage || 0) }}</div>
+                <div class="metric-value">
+                  {{ formatBytes(performanceReport?.summary.memoryUsage || 0) }}
+                </div>
                 <div class="metric-label">Uso de Memoria</div>
-                <div class="metric-status" :class="getMemoryStatus(performanceReport?.summary.memoryUsage)">
+                <div
+                  class="metric-status"
+                  :class="getMemoryStatus(performanceReport?.summary.memoryUsage)"
+                >
                   {{ getMemoryStatusText(performanceReport?.summary.memoryUsage) }}
                 </div>
               </div>
-              
+
               <div class="metric-item">
                 <div class="metric-value">{{ performanceReport?.summary.componentsTracked }}</div>
                 <div class="metric-label">Componentes Monitoreados</div>
@@ -76,10 +90,10 @@
                 <span class="cache-label">Tasa de Aciertos:</span>
                 <span class="cache-value">{{ (cacheStats?.hitRate * 100).toFixed(1) }}%</span>
                 <div class="cache-progress">
-                  <div 
-                    class="cache-progress-bar" 
-                    :style="{ width: `${cacheStats?.hitRate * 100}%` }"
-                  ></div>
+                  <div
+                    class="cache-progress-bar"
+                    :style="{width: `${cacheStats?.hitRate * 100}%`}"
+                  />
                 </div>
               </div>
               <div class="cache-metric">
@@ -87,8 +101,8 @@
                 <span class="cache-value">{{ formatBytes(cacheStats?.memoryUsage || 0) }}</span>
               </div>
               <div class="cache-actions">
-                <ion-button size="small" @click="clearCache" color="warning">
-                  <ion-icon :icon="trashOutline" slot="start" />
+                <ion-button size="small" color="warning" @click="clearCache">
+                  <ion-icon slot="start" :icon="trashOutline" />
                   Limpiar Cache
                 </ion-button>
               </div>
@@ -107,7 +121,7 @@
           <ion-card-content>
             <ion-list>
               <ion-item v-for="issue in criticalIssues" :key="issue">
-                <ion-icon :icon="alertCircleOutline" slot="start" color="danger" />
+                <ion-icon slot="start" :icon="alertCircleOutline" color="danger" />
                 <ion-label>{{ issue }}</ion-label>
               </ion-item>
             </ion-list>
@@ -125,7 +139,7 @@
           <ion-card-content>
             <ion-list>
               <ion-item v-for="recommendation in recommendations" :key="recommendation">
-                <ion-icon :icon="checkmarkCircleOutline" slot="start" color="success" />
+                <ion-icon slot="start" :icon="checkmarkCircleOutline" color="success" />
                 <ion-label>{{ recommendation }}</ion-label>
               </ion-item>
             </ion-list>
@@ -151,8 +165,8 @@
           </ion-card-header>
           <ion-card-content>
             <div class="logs-container">
-              <div 
-                v-for="log in filteredLogs" 
+              <div
+                v-for="log in filteredLogs"
                 :key="`${log.timestamp}-${log.module}-${log.message}`"
                 :class="['log-entry', `log-${log.level}`]"
               >
@@ -180,79 +194,96 @@
           </ion-card-header>
           <ion-card-content>
             <div class="controls-grid">
-              <ion-button 
-                @click="preloadComponents" 
+              <ion-button
                 :disabled="loading"
                 color="primary"
                 size="default"
+                @click="preloadComponents"
               >
-                <ion-icon :icon="cloudDownloadOutline" slot="start" />
+                <ion-icon slot="start" :icon="cloudDownloadOutline" />
                 Precargar Componentes
               </ion-button>
-              
-              <ion-button 
-                @click="optimizeImages" 
+
+              <ion-button
                 :disabled="loading"
                 color="secondary"
                 size="default"
+                @click="optimizeImages"
               >
-                <ion-icon :icon="imageOutline" slot="start" />
+                <ion-icon slot="start" :icon="imageOutline" />
                 Optimizar Imágenes
               </ion-button>
-              
-              <ion-button 
-                @click="analyzeBundle" 
+
+              <ion-button
                 :disabled="loading"
                 color="tertiary"
                 size="default"
+                @click="analyzeBundle"
               >
-                <ion-icon :icon="analyticsOutline" slot="start" />
+                <ion-icon slot="start" :icon="analyticsOutline" />
                 Analizar Bundle
               </ion-button>
-              
-              <ion-button 
-                @click="exportReport" 
-                :disabled="loading"
-                color="success"
-                size="default"
-              >
-                <ion-icon :icon="downloadOutline" slot="start" />
+
+              <ion-button :disabled="loading" color="success" size="default" @click="exportReport">
+                <ion-icon slot="start" :icon="downloadOutline" />
                 Exportar Reporte
               </ion-button>
             </div>
           </ion-card-content>
         </ion-card>
-
       </div>
     </ion-content>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import {ref, computed, onMounted, onUnmounted} from "vue"
 import {
-  IonHeader, IonToolbar, IonTitle, IonContent, IonCard, IonCardHeader,
-  IonCardTitle, IonCardContent, IonButton, IonButtons, IonIcon,
-  IonList, IonItem, IonLabel, IonSelect, IonSelectOption
-} from '@ionic/vue'
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent,
+  IonButton,
+  IonButtons,
+  IonIcon,
+  IonList,
+  IonItem,
+  IonLabel,
+  IonSelect,
+  IonSelectOption,
+} from "@ionic/vue"
 import {
-  speedometer, refresh, layersOutline, warningOutline, alertCircleOutline,
-  bulbOutline, checkmarkCircleOutline, documentTextOutline, settingsOutline,
-  cloudDownloadOutline, imageOutline, analyticsOutline, downloadOutline,
-  trashOutline
-} from 'ionicons/icons'
+  speedometer,
+  refresh,
+  layersOutline,
+  warningOutline,
+  alertCircleOutline,
+  bulbOutline,
+  checkmarkCircleOutline,
+  documentTextOutline,
+  settingsOutline,
+  cloudDownloadOutline,
+  imageOutline,
+  analyticsOutline,
+  downloadOutline,
+  trashOutline,
+} from "ionicons/icons"
 
-import { performanceMonitor, type PerformanceReport } from '@/utils/performance/monitor'
-import { smartCache, type CacheStats } from '@/utils/cache/smartCache'
-import { logger } from '@/utils/logging/logger'
-import { lazyLoader } from '@/utils/performance/lazyLoader'
-import { imageOptimizer } from '@/utils/optimization/imageOptimizer'
+import {performanceMonitor, type PerformanceReport} from "@/utils/performance/monitor"
+import {smartCache, type CacheStats} from "@/utils/cache/smartCache"
+import {logger} from "@/utils/logging/logger"
+import {lazyLoader} from "@/utils/performance/lazyLoader"
+import {imageOptimizer} from "@/utils/optimization/imageOptimizer"
 
 // Estados reactivos
 const loading = ref(false)
 const performanceReport = ref<PerformanceReport | null>(null)
 const cacheStats = ref<CacheStats | null>(null)
-const selectedLogLevel = ref('')
+const selectedLogLevel = ref("")
 const updateInterval = ref<number | null>(null)
 
 // Datos computados
@@ -266,70 +297,70 @@ const filteredLogs = computed(() => {
 
 // Funciones de utilidad
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B'
+  if (bytes === 0) return "0 B"
   const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
+  const sizes = ["B", "KB", "MB", "GB"]
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
 }
 
 function formatTime(date: Date): string {
-  return new Intl.DateTimeFormat('es-ES', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
+  return new Intl.DateTimeFormat("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
   }).format(date)
 }
 
 // Funciones de estado
 function getLoadTimeStatus(time?: number): string {
-  if (!time) return 'unknown'
-  if (time < 1000) return 'excellent'
-  if (time < 3000) return 'good'
-  if (time < 5000) return 'warning'
-  return 'critical'
+  if (!time) return "unknown"
+  if (time < 1000) return "excellent"
+  if (time < 3000) return "good"
+  if (time < 5000) return "warning"
+  return "critical"
 }
 
 function getLoadTimeStatusText(time?: number): string {
-  if (!time) return 'Desconocido'
-  if (time < 1000) return 'Excelente'
-  if (time < 3000) return 'Bueno'
-  if (time < 5000) return 'Regular'
-  return 'Crítico'
+  if (!time) return "Desconocido"
+  if (time < 1000) return "Excelente"
+  if (time < 3000) return "Bueno"
+  if (time < 5000) return "Regular"
+  return "Crítico"
 }
 
 function getInteractionStatus(time?: number): string {
-  if (!time) return 'unknown'
-  if (time < 100) return 'excellent'
-  if (time < 300) return 'good'
-  if (time < 500) return 'warning'
-  return 'critical'
+  if (!time) return "unknown"
+  if (time < 100) return "excellent"
+  if (time < 300) return "good"
+  if (time < 500) return "warning"
+  return "critical"
 }
 
 function getInteractionStatusText(time?: number): string {
-  if (!time) return 'Desconocido'
-  if (time < 100) return 'Excelente'
-  if (time < 300) return 'Bueno'
-  if (time < 500) return 'Regular'
-  return 'Crítico'
+  if (!time) return "Desconocido"
+  if (time < 100) return "Excelente"
+  if (time < 300) return "Bueno"
+  if (time < 500) return "Regular"
+  return "Crítico"
 }
 
 function getMemoryStatus(memory?: number): string {
-  if (!memory) return 'unknown'
+  if (!memory) return "unknown"
   const mb = memory / (1024 * 1024)
-  if (mb < 50) return 'excellent'
-  if (mb < 100) return 'good'
-  if (mb < 200) return 'warning'
-  return 'critical'
+  if (mb < 50) return "excellent"
+  if (mb < 100) return "good"
+  if (mb < 200) return "warning"
+  return "critical"
 }
 
 function getMemoryStatusText(memory?: number): string {
-  if (!memory) return 'Desconocido'
+  if (!memory) return "Desconocido"
   const mb = memory / (1024 * 1024)
-  if (mb < 50) return 'Óptimo'
-  if (mb < 100) return 'Bueno'
-  if (mb < 200) return 'Alto'
-  return 'Crítico'
+  if (mb < 50) return "Óptimo"
+  if (mb < 100) return "Bueno"
+  if (mb < 200) return "Alto"
+  return "Crítico"
 }
 
 // Funciones principales
@@ -338,9 +369,9 @@ async function refreshMetrics() {
   try {
     performanceReport.value = performanceMonitor.generateReport()
     cacheStats.value = smartCache.getStats()
-    logger.info('OPTIMIZATION_DASHBOARD', 'Métricas actualizadas')
+    logger.info("OPTIMIZATION_DASHBOARD", "Métricas actualizadas")
   } catch (error) {
-    logger.error('OPTIMIZATION_DASHBOARD', 'Error actualizando métricas', error)
+    logger.error("OPTIMIZATION_DASHBOARD", "Error actualizando métricas", error)
   } finally {
     loading.value = false
   }
@@ -351,9 +382,9 @@ async function clearCache() {
     smartCache.clear()
     imageOptimizer.clearCache()
     await refreshMetrics()
-    logger.info('OPTIMIZATION_DASHBOARD', 'Cache limpiado')
+    logger.info("OPTIMIZATION_DASHBOARD", "Cache limpiado")
   } catch (error) {
-    logger.error('OPTIMIZATION_DASHBOARD', 'Error limpiando cache', error)
+    logger.error("OPTIMIZATION_DASHBOARD", "Error limpiando cache", error)
   }
 }
 
@@ -361,14 +392,14 @@ async function preloadComponents() {
   loading.value = true
   try {
     await lazyLoader.preloadCritical([
-      () => import('@/views/StudentsView.vue'),
-      () => import('@/views/TeachersView.vue'),
-      () => import('@/views/HomeView.vue'),
-      () => import('@/views/AttendanceView.vue')
+      () => import("@/views/StudentsView.vue"),
+      () => import("@/views/TeachersView.vue"),
+      () => import("@/views/HomeView.vue"),
+      () => import("@/views/AttendanceView.vue"),
     ])
-    logger.info('OPTIMIZATION_DASHBOARD', 'Componentes precargados')
+    logger.info("OPTIMIZATION_DASHBOARD", "Componentes precargados")
   } catch (error) {
-    logger.error('OPTIMIZATION_DASHBOARD', 'Error precargando componentes', error)
+    logger.error("OPTIMIZATION_DASHBOARD", "Error precargando componentes", error)
   } finally {
     loading.value = false
   }
@@ -378,16 +409,16 @@ async function optimizeImages() {
   loading.value = true
   try {
     // Simular optimización de imágenes existentes
-    const images = document.querySelectorAll('img')
+    const images = document.querySelectorAll("img")
     let optimizedCount = 0
-    
+
     for (const img of Array.from(images)) {
-      if (img.src && !img.src.startsWith('data:')) {
+      if (img.src && !img.src.startsWith("data:")) {
         try {
           await imageOptimizer.optimizeImage(img.src, {
             quality: 0.8,
             maxWidth: 1200,
-            format: 'auto'
+            format: "auto",
           })
           optimizedCount++
         } catch (error) {
@@ -395,10 +426,10 @@ async function optimizeImages() {
         }
       }
     }
-    
-    logger.info('OPTIMIZATION_DASHBOARD', `${optimizedCount} imágenes optimizadas`)
+
+    logger.info("OPTIMIZATION_DASHBOARD", `${optimizedCount} imágenes optimizadas`)
   } catch (error) {
-    logger.error('OPTIMIZATION_DASHBOARD', 'Error optimizando imágenes', error)
+    logger.error("OPTIMIZATION_DASHBOARD", "Error optimizando imágenes", error)
   } finally {
     loading.value = false
   }
@@ -408,21 +439,21 @@ async function analyzeBundle() {
   loading.value = true
   try {
     // Simular análisis de bundle
-    const modules = performance.getEntriesByType('navigation')
-    const resources = performance.getEntriesByType('resource')
-    
+    const modules = performance.getEntriesByType("navigation")
+    const resources = performance.getEntriesByType("resource")
+
     const analysis = {
       totalModules: resources.length,
       largestModules: resources
-        .filter(r => r.transferSize && r.transferSize > 50000)
-        .map(r => ({ name: r.name, size: r.transferSize }))
+        .filter((r) => r.transferSize && r.transferSize > 50000)
+        .map((r) => ({name: r.name, size: r.transferSize}))
         .sort((a, b) => b.size - a.size)
-        .slice(0, 10)
+        .slice(0, 10),
     }
-    
-    logger.info('OPTIMIZATION_DASHBOARD', 'Análisis de bundle completado', analysis)
+
+    logger.info("OPTIMIZATION_DASHBOARD", "Análisis de bundle completado", analysis)
   } catch (error) {
-    logger.error('OPTIMIZATION_DASHBOARD', 'Error analizando bundle', error)
+    logger.error("OPTIMIZATION_DASHBOARD", "Error analizando bundle", error)
   } finally {
     loading.value = false
   }
@@ -434,32 +465,32 @@ async function exportReport() {
       timestamp: new Date().toISOString(),
       performance: performanceReport.value,
       cache: cacheStats.value,
-      logs: logger.getLogs().slice(-100) // Últimos 100 logs
+      logs: logger.getLogs().slice(-100), // Últimos 100 logs
     }
-    
-    const blob = new Blob([JSON.stringify(report, null, 2)], { 
-      type: 'application/json' 
+
+    const blob = new Blob([JSON.stringify(report, null, 2)], {
+      type: "application/json",
     })
-    
+
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
+    const a = document.createElement("a")
     a.href = url
     a.download = `optimization-report-${Date.now()}.json`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    
-    logger.info('OPTIMIZATION_DASHBOARD', 'Reporte exportado')
+
+    logger.info("OPTIMIZATION_DASHBOARD", "Reporte exportado")
   } catch (error) {
-    logger.error('OPTIMIZATION_DASHBOARD', 'Error exportando reporte', error)
+    logger.error("OPTIMIZATION_DASHBOARD", "Error exportando reporte", error)
   }
 }
 
 // Lifecycle
 onMounted(() => {
   refreshMetrics()
-  
+
   // Actualizar métricas cada 30 segundos
   updateInterval.value = window.setInterval(refreshMetrics, 30000)
 })

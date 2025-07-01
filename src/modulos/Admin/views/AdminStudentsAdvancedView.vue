@@ -5,8 +5,8 @@
     <nav class="breadcrumb-nav mb-6">
       <ol class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
         <li>
-          <router-link 
-            to="/admin" 
+          <router-link
+            to="/admin"
             class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           >
             Panel Admin
@@ -27,13 +27,13 @@
     </div>
 
     <!-- Loading Overlay -->
-    <div 
-      v-if="isInitializing" 
+    <div
+      v-if="isInitializing"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
     >
       <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full mx-4">
         <div class="flex items-center space-x-3">
-          <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
           <span class="text-gray-900 dark:text-white">Inicializando sistema...</span>
         </div>
       </div>
@@ -42,10 +42,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { ChevronRightIcon } from '@heroicons/vue/24/outline'
-import AdvancedStudentsManagement from '../components/AdvancedStudentsManagement.vue'
-import { useAdminStudentsStore } from '../store/adminStudents'
+import {ref, onMounted, onUnmounted} from "vue"
+import {ChevronRightIcon} from "@heroicons/vue/24/outline"
+import AdvancedStudentsManagement from "../components/AdvancedStudentsManagement.vue"
+import {useAdminStudentsStore} from "../store/adminStudents"
 
 // Stores
 const adminStudentsStore = useAdminStudentsStore()
@@ -54,7 +54,7 @@ const adminStudentsStore = useAdminStudentsStore()
 const isInitializing = ref(true)
 
 // Head metadata - simulado
-document.title = 'Gestión Avanzada de Estudiantes - Academia Musical'
+document.title = "Gestión Avanzada de Estudiantes - Academia Musical"
 
 // Lifecycle hooks
 onMounted(async () => {
@@ -70,9 +70,9 @@ onMounted(async () => {
       // adminStudentsStore.fetchStudentStats() // Usar método existente
     ])
 
-    console.log('✅ Sistema de gestión avanzada de estudiantes inicializado correctamente')
+    console.log("✅ Sistema de gestión avanzada de estudiantes inicializado correctamente")
   } catch (error) {
-    console.error('❌ Error al inicializar gestión avanzada:', error)
+    console.error("❌ Error al inicializar gestión avanzada:", error)
     // Aquí podrías mostrar un toast de error o redirigir
   } finally {
     isInitializing.value = false
@@ -81,7 +81,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   // Limpiar cualquier recurso si es necesario
-  console.log('🧹 Limpiando recursos de gestión avanzada de estudiantes')
+  console.log("🧹 Limpiando recursos de gestión avanzada de estudiantes")
 })
 </script>
 
@@ -136,7 +136,7 @@ onUnmounted(() => {
   .admin-students-advanced-view {
     background: #111827;
   }
-  
+
   .breadcrumb-nav,
   .advanced-view-container {
     background: #1f2937;

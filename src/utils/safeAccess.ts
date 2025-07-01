@@ -1,5 +1,5 @@
 // src/utils/safeAccess.ts
-import { debug, warn, error } from './debug'
+import {debug, warn, error} from "./debug"
 
 /**
  * Utilidades para acceso seguro a propiedades de objetos
@@ -13,11 +13,13 @@ import { debug, warn, error } from './debug'
  */
 export function safeGet<T = any>(obj: any, path: string, defaultValue: T = undefined as T): T {
   try {
-    return path.split('.').reduce((current, key) => {
-      return current?.[key]
-    }, obj) ?? defaultValue
+    return (
+      path.split(".").reduce((current, key) => {
+        return current?.[key]
+      }, obj) ?? defaultValue
+    )
   } catch (error) {
-    warn('SafeAccess: Error accessing path', { path, error })
+    warn("SafeAccess: Error accessing path", {path, error})
     return defaultValue
   }
 }
@@ -35,7 +37,7 @@ export function isValidArray(arr: any): arr is any[] {
  * @param obj - Objeto a verificar
  */
 export function isValidObject(obj: any): boolean {
-  return obj !== null && obj !== undefined && typeof obj === 'object' && !Array.isArray(obj)
+  return obj !== null && obj !== undefined && typeof obj === "object" && !Array.isArray(obj)
 }
 
 /**
@@ -53,15 +55,11 @@ export function safeArrayLength(arr: any, defaultLength: number = 0): number {
  * @param defaultValue - Valor por defecto en caso de error
  * @param errorMessage - Mensaje de error personalizado
  */
-export function safeExecute<T>(
-  fn: () => T, 
-  defaultValue: T, 
-  errorMessage?: string
-): T {
+export function safeExecute<T>(fn: () => T, defaultValue: T, errorMessage?: string): T {
   try {
     return fn()
   } catch (error) {
-    error(errorMessage || 'SafeAccess: Error executing function', error)
+    error(errorMessage || "SafeAccess: Error executing function", error)
     return defaultValue
   }
 }
@@ -73,19 +71,19 @@ export function safeExecute<T>(
  * @param defaultArray - Array por defecto
  */
 export function safeFilter<T>(
-  arr: any, 
-  filterFn: (item: T) => boolean, 
+  arr: any,
+  filterFn: (item: T) => boolean,
   defaultArray: T[] = []
 ): T[] {
   if (!Array.isArray(arr)) {
-    warn('SafeAccess: Attempted to filter non-array', { arr })
+    warn("SafeAccess: Attempted to filter non-array", {arr})
     return defaultArray
   }
-  
+
   try {
     return arr.filter(filterFn)
   } catch (error) {
-    error('SafeAccess: Error filtering array', error)
+    error("SafeAccess: Error filtering array", error)
     return defaultArray
   }
 }
@@ -97,19 +95,19 @@ export function safeFilter<T>(
  * @param defaultArray - Array por defecto
  */
 export function safeMap<T, R>(
-  arr: any, 
-  mapFn: (item: T, index: number) => R, 
+  arr: any,
+  mapFn: (item: T, index: number) => R,
   defaultArray: R[] = []
 ): R[] {
   if (!Array.isArray(arr)) {
-    warn('SafeAccess: Attempted to map non-array', { arr })
+    warn("SafeAccess: Attempted to map non-array", {arr})
     return defaultArray
   }
-  
+
   try {
     return arr.map(mapFn)
   } catch (error) {
-    error('SafeAccess: Error mapping array', error)
+    error("SafeAccess: Error mapping array", error)
     return defaultArray
   }
 }
@@ -121,19 +119,19 @@ export function safeMap<T, R>(
  * @param defaultValue - Valor por defecto
  */
 export function safeFind<T>(
-  arr: any, 
-  findFn: (item: T) => boolean, 
+  arr: any,
+  findFn: (item: T) => boolean,
   defaultValue: T | null = null
 ): T | null {
   if (!Array.isArray(arr)) {
-    warn('SafeAccess: Attempted to find in non-array', { arr })
+    warn("SafeAccess: Attempted to find in non-array", {arr})
     return defaultValue
   }
-  
+
   try {
     return arr.find(findFn) ?? defaultValue
   } catch (error) {
-    error('SafeAccess: Error finding in array', error)
+    error("SafeAccess: Error finding in array", error)
     return defaultValue
   }
 }
@@ -146,10 +144,10 @@ export function safeFind<T>(
  */
 export function safeStoreAccess<T>(store: any, property: string, defaultValue: T): T {
   if (!store || !isValidObject(store)) {
-    warn('SafeAccess: Invalid store provided', { store })
+    warn("SafeAccess: Invalid store provided", {store})
     return defaultValue
   }
-  
+
   return safeGet(store, property, defaultValue)
 }
 
@@ -163,7 +161,7 @@ export function safeMath(operation: () => number, defaultValue: number = 0): num
     const result = operation()
     return isNaN(result) || !isFinite(result) ? defaultValue : result
   } catch (error) {
-    error('SafeAccess: Error in mathematical operation', error)
+    error("SafeAccess: Error in mathematical operation", error)
     return defaultValue
   }
 }

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 // src/modulos/Teachers/view/TeacherEditEnrollmentView.vue
-import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useTeachersStore } from '../store/teachers' // Corrected path
-import TeacherForm from '../components/TeacherForm.vue'
-import type { Teacher } from '../types/teachers' // Corrected path
+import {ref, computed} from "vue"
+import {useRoute, useRouter} from "vue-router"
+import {useTeachersStore} from "../store/teachers" // Corrected path
+import TeacherForm from "../components/TeacherForm.vue"
+import type {Teacher} from "../types/teachers" // Corrected path
 
 const route = useRoute()
 const router = useRouter()
@@ -15,21 +15,23 @@ const isLoading = ref(false)
 const error = ref<string | null>(null)
 const teacher = computed(() => {
   // Buscar por id (Firestore) o por uid (auth)
-  return teachersStore.getTeacherById(teacherId) ||
-         teachersStore.teachers.find(t => t.uid === teacherId)
+  return (
+    teachersStore.getTeacherById(teacherId) ||
+    teachersStore.teachers.find((t) => t.uid === teacherId)
+  )
 })
 
 const handleSubmit = async (data: Partial<Teacher>) => {
   if (!teacherId) return
-  
+
   isLoading.value = true
   error.value = null
-  
+
   try {
     await teachersStore.updateTeacherEnrollment(teacherId, {
       instruments: data.instruments,
       specialties: data.specialties,
-      schedule: data.schedule
+      schedule: data.schedule,
     })
     router.push(`/teachers/${teacherId}`)
   } catch (err: any) {
@@ -54,7 +56,7 @@ const handleCancel = () => {
     </div>
 
     <!-- Error Alert -->
-    <div 
+    <div
       v-if="error"
       class="mb-6 p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg"
     >

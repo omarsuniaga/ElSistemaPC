@@ -2,7 +2,8 @@
   <div class="director-dashboard">
     <!-- Header del Dashboard -->
     <div class="dashboard-header">
-      <div class="header-content">        <h1 class="dashboard-title">
+      <div class="header-content">
+        <h1 class="dashboard-title">
           <span class="icon">📊</span>
           Dashboard Directorial de Rendimiento
         </h1>
@@ -10,17 +11,12 @@
           Vista ejecutiva del rendimiento estudiantil basada en métricas integrales
         </p>
       </div>
-      <div class="header-actions">        <button 
-          class="action-btn action-primary"
-          @click="refreshData"
-          :disabled="loading"
-        >
+      <div class="header-actions">
+        <button class="action-btn action-primary" :disabled="loading" @click="refreshData">
           <span class="icon">🔄</span>
-          {{ loading ? 'Actualizando...' : 'Actualizar' }}
-        </button>        <button 
-          class="action-btn action-secondary"
-          @click="exportReport"
-        >
+          {{ loading ? "Actualizando..." : "Actualizar" }}
+        </button>
+        <button class="action-btn action-secondary" @click="exportReport">
           <span class="icon">📄</span>
           Exportar Informe
         </button>
@@ -60,7 +56,9 @@
             <span class="icon">??</span>
             <span class="kpi-label">Asistencia Promedio</span>
           </div>
-          <div class="kpi-value">{{ summary.averageAttendance }}<span class="kpi-unit">%</span></div>
+          <div class="kpi-value">
+            {{ summary.averageAttendance }}<span class="kpi-unit">%</span>
+          </div>
           <div class="kpi-trend trend-positive">
             <span class="icon">??</span>
             <span>+2% vs mes anterior</span>
@@ -73,9 +71,7 @@
             <span class="kpi-label">Necesitan Atención</span>
           </div>
           <div class="kpi-value">{{ studentsNeedingAttention.length }}</div>
-          <div class="kpi-description">
-            Estudiantes con rendimiento por debajo del umbral
-          </div>
+          <div class="kpi-description">Estudiantes con rendimiento por debajo del umbral</div>
         </div>
       </div>
     </div>
@@ -84,20 +80,17 @@
     <div class="performers-section">
       <div class="section-header">
         <h2 class="section-title">Estudiantes Destacados</h2>
-        <button 
-          class="view-all-btn"
-          @click="$emit('view-all-top-performers')"
-        >
+        <button class="view-all-btn" @click="$emit('view-all-top-performers')">
           Ver todos
           <span class="icon">??</span>
         </button>
       </div>
       <div class="performers-grid">
-        <div 
-          v-for="(student, index) in topPerformers.slice(0, 6)" 
+        <div
+          v-for="(student, index) in topPerformers.slice(0, 6)"
           :key="student.studentId"
           class="performer-card"
-          :class="{ 'performer-podium': index < 3 }"
+          :class="{'performer-podium': index < 3}"
         >
           <div class="performer-rank">
             <div class="rank-badge" :class="getRankClass(index)">
@@ -119,7 +112,7 @@
               <span>{{ Math.round(student.repertoireMetrics.averageScore) }}</span>
             </div>
           </div>
-          <button 
+          <button
             class="performer-action"
             @click="$emit('view-student-details', student.studentId)"
           >
@@ -137,17 +130,14 @@
           <span class="icon">??</span>
           Estudiantes que Requieren Atención
         </h2>
-        <button 
-          class="view-all-btn"
-          @click="$emit('view-all-attention-needed')"
-        >
+        <button class="view-all-btn" @click="$emit('view-all-attention-needed')">
           Ver todos ({{ studentsNeedingAttention.length }})
           <span class="icon">??</span>
         </button>
       </div>
       <div class="alerts-grid">
-        <div 
-          v-for="student in studentsNeedingAttention.slice(0, 4)" 
+        <div
+          v-for="student in studentsNeedingAttention.slice(0, 4)"
           :key="student.studentId"
           class="alert-card"
         >
@@ -172,14 +162,11 @@
             </div>
           </div>
           <div class="alert-actions">
-            <button 
-              class="alert-action-btn"
-              @click="$emit('contact-student', student.studentId)"
-            >
+            <button class="alert-action-btn" @click="$emit('contact-student', student.studentId)">
               <span class="icon">??</span>
               Contactar
             </button>
-            <button 
+            <button
               class="alert-action-btn"
               @click="$emit('view-student-details', student.studentId)"
             >
@@ -200,18 +187,18 @@
         <div class="summary-card">
           <h3 class="summary-title">Distribución por Clasificación</h3>
           <div class="classification-bars">
-            <div 
-              v-for="(count, classification) in summary.classifications" 
+            <div
+              v-for="(count, classification) in summary.classifications"
               :key="classification"
               class="classification-bar"
             >
               <div class="classification-label">{{ classification }}</div>
               <div class="classification-progress">
-                <div 
+                <div
                   class="classification-fill"
                   :class="getClassificationColor(classification)"
-                  :style="{ width: `${(count / summary.totalStudents) * 100}%` }"
-                ></div>
+                  :style="{width: `${(count / summary.totalStudents) * 100}%`}"
+                />
               </div>
               <div class="classification-count">{{ count }}</div>
             </div>
@@ -258,17 +245,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import {ref, computed, onMounted} from "vue"
 // import { Icon } from '@iconify/vue'; // Commented temporarily for build
-import { usePerformanceDashboard } from '../composables/usePerformanceDashboard';
+import {usePerformanceDashboard} from "../composables/usePerformanceDashboard"
 
 // Emit events
 const emit = defineEmits<{
-  'view-all-top-performers': [];
-  'view-all-attention-needed': [];
-  'view-student-details': [studentId: string];
-  'contact-student': [studentId: string];
-}>();
+  "view-all-top-performers": []
+  "view-all-attention-needed": []
+  "view-student-details": [studentId: string]
+  "contact-student": [studentId: string]
+}>()
 
 // Composable
 const {
@@ -278,62 +265,62 @@ const {
   topPerformers,
   studentsNeedingAttention,
   summary,
-  fetchStudentsPerformance
-} = usePerformanceDashboard();
+  fetchStudentsPerformance,
+} = usePerformanceDashboard()
 
 // Métodos
 const refreshData = async () => {
-  await fetchStudentsPerformance();
-};
+  await fetchStudentsPerformance()
+}
 
 const exportReport = () => {
   // Implementar exportación de reporte
-  console.log('Exportando reporte directorial...');
-};
+  console.log("Exportando reporte directorial...")
+}
 
 const getClassificationColor = (classification: string) => {
   const colors: Record<string, string> = {
-    'Excelente': 'bg-green-500',
-    'Muy bueno': 'bg-blue-500',
-    'Bueno': 'bg-blue-400',
-    'Regular': 'bg-yellow-500',
-    'Necesita mejora': 'bg-orange-500',
-    'Preocupante': 'bg-red-500'
-  };
-  return colors[classification] || 'bg-gray-500';
-};
+    Excelente: "bg-green-500",
+    "Muy bueno": "bg-blue-500",
+    Bueno: "bg-blue-400",
+    Regular: "bg-yellow-500",
+    "Necesita mejora": "bg-orange-500",
+    Preocupante: "bg-red-500",
+  }
+  return colors[classification] || "bg-gray-500"
+}
 
 const getRankClass = (index: number) => {
-  if (index === 0) return 'rank-gold';
-  if (index === 1) return 'rank-silver';
-  if (index === 2) return 'rank-bronze';
-  return 'rank-default';
-};
+  if (index === 0) return "rank-gold"
+  if (index === 1) return "rank-silver"
+  if (index === 2) return "rank-bronze"
+  return "rank-default"
+}
 
 const getAlertLevel = (student: any) => {
   if (student.overallScore < 50 || student.attendance.attendanceRate < 60) {
-    return 'alert-critical';
+    return "alert-critical"
   }
   if (student.overallScore < 60 || student.attendance.attendanceRate < 75) {
-    return 'alert-high';
+    return "alert-high"
   }
-  return 'alert-medium';
-};
+  return "alert-medium"
+}
 
 const getAlertText = (student: any) => {
   if (student.overallScore < 50 || student.attendanceMetrics.attendanceRate < 60) {
-    return 'Crítico';
+    return "Crítico"
   }
   if (student.overallScore < 60 || student.attendanceMetrics.attendanceRate < 75) {
-    return 'Alto';
+    return "Alto"
   }
-  return 'Medio';
-};
+  return "Medio"
+}
 
 // Lifecycle
 onMounted(() => {
-  refreshData();
-});
+  refreshData()
+})
 </script>
 
 <style scoped>
@@ -447,7 +434,7 @@ onMounted(() => {
 }
 
 .kpi-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -913,16 +900,16 @@ onMounted(() => {
   .director-dashboard {
     padding: 1rem;
   }
-  
+
   .dashboard-header {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .summary-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .kpis-grid {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
@@ -932,10 +919,9 @@ onMounted(() => {
   .performers-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .alerts-grid {
     grid-template-columns: 1fr;
   }
 }
 </style>
-

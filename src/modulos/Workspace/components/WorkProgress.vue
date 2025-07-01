@@ -5,9 +5,11 @@
       <button
         v-for="(label, mode) in viewModes"
         :key="mode"
-        @click="currentView.value = mode"
         class="px-4 py-2 rounded-lg"
-        :class="currentView.value === mode ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-700'"
+        :class="
+          currentView.value === mode ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
+        "
+        @click="currentView.value = mode"
       >
         {{ label }}
       </button>
@@ -22,8 +24,8 @@
             <div class="flex-grow h-4 bg-gray-200 dark:bg-gray-700 rounded">
               <div
                 class="h-full bg-primary-600 rounded"
-                :style="{ width: `${getSectionProgress(work.id, section.name)}%` }"
-              ></div>
+                :style="{width: `${getSectionProgress(work.id, section.name)}%`}"
+              />
             </div>
             <span class="text-sm font-medium">
               {{ getSectionProgress(work.id, section.name) }}%
@@ -52,7 +54,9 @@
               :class="getStatusColor(measure.progress)"
               @click="updateProgress(measure, instrument)"
             >
-              <span class="absolute inset-0 flex items-center justify-center text-white text-xs font-medium opacity-0 group-hover:opacity-100">
+              <span
+                class="absolute inset-0 flex items-center justify-center text-white text-xs font-medium opacity-0 group-hover:opacity-100"
+              >
                 {{ measure.number }}
               </span>
             </div>
@@ -66,11 +70,7 @@
       <div class="mb-4">
         <select v-model="selectedStudent.value" class="input">
           <option value="">Seleccionar estudiante</option>
-          <option
-            v-for="student in students"
-            :key="student.id"
-            :value="student.id"
-          >
+          <option v-for="student in students" :key="student.id" :value="student.id">
             {{ student.nombre }} {{ student.apellido }}
           </option>
         </select>
@@ -82,7 +82,8 @@
             <div>
               <h3 class="font-semibold">{{ instrument.name }}</h3>
               <p class="text-sm text-gray-600 dark:text-gray-400">
-                {{ getInstrumentProgress(work.id, instrument.id, selectedStudent.value) }}% completado
+                {{ getInstrumentProgress(work.id, instrument.id, selectedStudent.value) }}%
+                completado
               </p>
             </div>
           </div>
@@ -95,7 +96,9 @@
               :class="getStatusColor(measure.studentProgress?.[selectedStudent.value] || 0)"
               @click="updateStudentProgress(measure, instrument)"
             >
-              <span class="absolute inset-0 flex items-center justify-center text-white text-xs font-medium opacity-0 group-hover:opacity-100">
+              <span
+                class="absolute inset-0 flex items-center justify-center text-white text-xs font-medium opacity-0 group-hover:opacity-100"
+              >
                 {{ measure.number }}
               </span>
             </div>
@@ -109,22 +112,14 @@
       <div class="mb-4">
         <select v-model="selectedSection.value" class="input">
           <option value="">Seleccionar sección</option>
-          <option
-            v-for="section in sections"
-            :key="section.name"
-            :value="section.name"
-          >
+          <option v-for="section in sections" :key="section.name" :value="section.name">
             {{ section.displayName }}
           </option>
         </select>
       </div>
 
       <div v-if="selectedSection.value" class="space-y-4">
-        <div
-          v-for="instrument in sectionInstruments"
-          :key="instrument.id"
-          class="card"
-        >
+        <div v-for="instrument in sectionInstruments" :key="instrument.id" class="card">
           <div class="flex justify-between items-start mb-4">
             <div>
               <h3 class="font-semibold">{{ instrument.name }}</h3>
@@ -145,10 +140,7 @@
               >
                 <span class="text-sm">{{ getStudentName(studentId) }}</span>
                 <div class="flex-grow h-2 bg-gray-200 dark:bg-gray-700 rounded">
-                  <div
-                    class="h-full bg-primary-600 rounded"
-                    :style="{ width: `${progress}%` }"
-                  ></div>
+                  <div class="h-full bg-primary-600 rounded" :style="{width: `${progress}%`}" />
                 </div>
                 <span class="text-sm font-medium">{{ progress }}%</span>
               </div>
@@ -163,7 +155,9 @@
               :class="getStatusColor(measure.progress)"
               @click="updateProgress(measure, instrument)"
             >
-              <span class="absolute inset-0 flex items-center justify-center text-white text-xs font-medium opacity-0 group-hover:opacity-100">
+              <span
+                class="absolute inset-0 flex items-center justify-center text-white text-xs font-medium opacity-0 group-hover:opacity-100"
+              >
                 {{ measure.number }}
               </span>
             </div>
@@ -175,11 +169,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import type { MusicalWork, Measure, Instrument } from '../types/repertoire'
-import { INSTRUMENT_SECTIONS } from '../types/repertoire'
-import { useRepertoireStore } from '../stores/repertoire'
-import { useStudentsStore } from '../stores/students'
+import {ref, computed} from "vue"
+import type {MusicalWork, Measure, Instrument} from "../types/repertoire"
+import {INSTRUMENT_SECTIONS} from "../types/repertoire"
+import {useRepertoireStore} from "../stores/repertoire"
+import {useStudentsStore} from "../stores/students"
 
 const props = defineProps<{
   work: MusicalWork
@@ -189,14 +183,14 @@ const props = defineProps<{
 const repertoireStore = useRepertoireStore()
 const studentsStore = useStudentsStore()
 
-const currentView = ref<'general' | 'student' | 'section'>('general')
-const selectedStudent = ref('')
-const selectedSection = ref('')
+const currentView = ref<"general" | "student" | "section">("general")
+const selectedStudent = ref("")
+const selectedSection = ref("")
 
 const viewModes = {
-  general: 'Vista General',
-  student: 'Por Estudiante',
-  section: 'Por Sección'
+  general: "Vista General",
+  student: "Por Estudiante",
+  section: "Por Sección",
 }
 
 const sections = INSTRUMENT_SECTIONS
@@ -204,31 +198,31 @@ const students = computed(() => studentsStore.students)
 
 const sectionInstruments = computed(() => {
   if (!selectedSection.value) return []
-  return props.work.instruments.filter(i => i.section === selectedSection.value)
+  return props.work.instruments.filter((i) => i.section === selectedSection.value)
 })
 
 const studentInstruments = computed(() => {
   if (!selectedStudent.value) return []
-  return props.work.instruments.filter(i => 
-    i.studentProgress?.[selectedStudent.value] !== undefined
+  return props.work.instruments.filter(
+    (i) => i.studentProgress?.[selectedStudent.value] !== undefined
   )
 })
 
 const getStudentName = (studentId: string) => {
-  const student = studentsStore.students.find(s => s.id.toString() === studentId)
-  return student ? `${student.nombre} ${student.apellido}` : 'Estudiante'
+  const student = studentsStore.students.find((s) => s.id.toString() === studentId)
+  return student ? `${student.nombre} ${student.apellido}` : "Estudiante"
 }
 
 const getStatusColor = (progress: number) => {
-  if (progress <= 20) return 'bg-red-500'
-  if (progress <= 40) return 'bg-orange-500'
-  if (progress <= 60) return 'bg-yellow-500'
-  if (progress <= 80) return 'bg-blue-500'
-  return 'bg-green-500'
+  if (progress <= 20) return "bg-red-500"
+  if (progress <= 40) return "bg-orange-500"
+  if (progress <= 60) return "bg-yellow-500"
+  if (progress <= 80) return "bg-blue-500"
+  return "bg-green-500"
 }
 
 const updateProgress = async (measure: Measure, instrument: Instrument) => {
-  let newProgress = Math.min(100, Math.floor(measure.progress / 20) * 20 + 20)
+  const newProgress = Math.min(100, Math.floor(measure.progress / 20) * 20 + 20)
 
   try {
     await repertoireStore.updateMeasureProgress(
@@ -239,7 +233,7 @@ const updateProgress = async (measure: Measure, instrument: Instrument) => {
       newProgress
     )
   } catch (err) {
-    console.error('Error updating progress:', err)
+    console.error("Error updating progress:", err)
   }
 }
 
@@ -259,7 +253,7 @@ const updateStudentProgress = async (measure: Measure, instrument: Instrument) =
       selectedStudent.value
     )
   } catch (err) {
-    console.error('Error updating student progress:', err)
+    console.error("Error updating student progress:", err)
   }
 }
 

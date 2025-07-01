@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp QR - Music Academy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .logo {
+            margin-bottom: 30px;
+        }
+        
+        .logo h1 {
+            color: #25D366;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .logo p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .qr-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            min-height: 320px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #dee2e6;
+        }
+        
+        .qr-image {
+            max-width: 256px;
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            background: white;
+            padding: 10px;
+        }
+        
+        .status {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .status.waiting {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.loading {
+            background: #cce7ff;
+            color: #004085;
+            border: 1px solid #99d6ff;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #25D366;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #128C7E;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #25D366;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .instructions {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: left;
+        }
+        
+        .instructions h3 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+            line-height: 1.6;
+        }
+        
+        .icon {
+            font-size: 2rem;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>
+                <span class="icon">📱</span>
+                WhatsApp QR
+            </h1>
+            <p>Academia Musical - Sincronización WhatsApp</p>
+        </div>
+        
+        <div id="statusContainer" class="status waiting">
+            <div class="loader"></div>
+            Inicializando conexión...
+        </div>
+        
+        <div class="qr-container" id="qrContainer">
+            <div class="loader"></div>
+            <p style="margin-top: 20px; color: #666;">Generando código QR...</p>
+        </div>
+        
+        <div class="instructions">
+            <h3>📋 Instrucciones:</h3>
+            <ol>
+                <li>Abre WhatsApp en tu teléfono</li>
+                <li>Toca <strong>Configuración</strong> > <strong>Dispositivos vinculados</strong></li>
+                <li>Toca <strong>Vincular un dispositivo</strong></li>
+                <li>Escanea el código QR de arriba</li>
+                <li>¡Listo! WhatsApp estará sincronizado</li>
+            </ol>
+        </div>
+        
+        <div class="buttons">
+            <button class="btn btn-primary" onclick="refreshQR()">
+                🔄 Actualizar QR
+            </button>
+            <button class="btn btn-secondary" onclick="checkStatus()">
+                📊 Ver Estado
+            </button>
+        </div>
+        
+        <div id="errorContainer" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Configuración de la API - URL de Cloud Functions
+        const API_BASE_URL = 'https://us-central1-orquestapuntacana.cloudfunctions.net/whatsappApi';
+        
+        // URL alternativa si usas hosting con rewrites:
+        // const API_BASE_URL = 'https://orquestapuntacana.web.app/whatsapp';
+        
+        let statusCheckInterval;
+        
+        // Inicializar la aplicación
+        async function init() {
+            console.log('🚀 Inicializando WhatsApp QR...');
+            await checkStatus();
+            await loadQR();
+            
+            // Verificar estado cada 3 segundos
+            statusCheckInterval = setInterval(checkStatus, 3000);
+        }
+        
+        // Cargar código QR
+        async function loadQR() {
+            const qrContainer = document.getElementById('qrContainer');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/qr`);
+                
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    
+                    if (contentType && contentType.includes('image/png')) {
+                        // Es una imagen QR
+                        const blob = await response.blob();
+                        const imageUrl = URL.createObjectURL(blob);
+                        
+                        qrContainer.innerHTML = `
+                            <img src="${imageUrl}" alt="WhatsApp QR Code" class="qr-image">
+                            <p style="margin-top: 15px; color: #666; font-weight: 500;">
+                                Escanea este código QR con WhatsApp
+                            </p>
+                        `;
+                    } else {
+                        // Es un mensaje JSON
+                        const data = await response.json();
+                        showQRStatus(data.status, data.message);
+                    }
+                } else {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('❌ Error cargando QR:', error);
+                showError('Error al cargar el código QR. Verifica que la función esté desplegada correctamente.');
+                qrContainer.innerHTML = `
+                    <p style="color: #dc3545; font-weight: 600;">❌ Error al cargar QR</p>
+                    <p style="color: #666; margin-top: 10px;">Revisa la consola para más detalles</p>
+                `;
+            }
+        }
+        
+        // Verificar estado de la conexión
+        async function checkStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/status`);
+                const data = await response.json();
+                
+                updateStatus(data.status);
+                
+                // Si está conectado, limpiar el intervalo
+                if (data.status === 'connected') {
+                    if (statusCheckInterval) {
+                        clearInterval(statusCheckInterval);
+                    }
+                    showConnectedState();
+                }
+            } catch (error) {
+                console.error('❌ Error verificando estado:', error);
+                updateStatus('error');
+            }
+        }
+        
+        // Actualizar estado visual
+        function updateStatus(status) {
+            const statusContainer = document.getElementById('statusContainer');
+            statusContainer.className = 'status';
+            
+            switch (status) {
+                case 'connected':
+                    statusContainer.className += ' connected';
+                    statusContainer.innerHTML = '✅ WhatsApp conectado correctamente';
+                    break;
+                case 'waiting_for_qr':
+                    statusContainer.className += ' loading';
+                    statusContainer.innerHTML = '🔄 Generando código QR...';
+                    break;
+                case 'logged_out':
+                    statusContainer.className += ' error';
+                    statusContainer.innerHTML = '🚪 Sesión cerrada. Solicita un nuevo QR';
+                    break;
+                case 'reconnecting':
+                    statusContainer.className += ' loading';
+                    statusContainer.innerHTML = '🔄 Reconectando...';
+                    break;
+                default:
+                    statusContainer.className += ' waiting';
+                    statusContainer.innerHTML = '⏳ Esperando conexión...';
+            }
+        }
+        
+        // Mostrar estado del QR
+        function showQRStatus(status, message) {
+            const qrContainer = document.getElementById('qrContainer');
+            let icon = '📱';
+            let color = '#666';
+            
+            switch (status) {
+                case 'connected':
+                    icon = '✅';
+                    color = '#28a745';
+                    break;
+                case 'logged_out':
+                    icon = '🚪';
+                    color = '#dc3545';
+                    break;
+                case 'waiting_for_qr':
+                    icon = '⏳';
+                    color = '#ffc107';
+                    break;
+            }
+            
+            qrContainer.innerHTML = `
+                <div style="font-size: 4rem; margin-bottom: 20px;">${icon}</div>
+                <p style="color: ${color}; font-weight: 600; font-size: 1.1rem; margin-bottom: 10px;">
+                    ${status.replace('_', ' ').toUpperCase()}
+                </p>
+                <p style="color: #666; line-height: 1.5;">${message}</p>
+            `;
+        }
+        
+        // Mostrar estado conectado
+        function showConnectedState() {
+            const qrContainer = document.getElementById('qrContainer');
+            qrContainer.innerHTML = `
+                <div style="font-size: 5rem; margin-bottom: 20px;">✅</div>
+                <h2 style="color: #28a745; margin-bottom: 15px;">¡Conectado!</h2>
+                <p style="color: #666; line-height: 1.6;">
+                    WhatsApp está sincronizado correctamente.<br>
+                    Ya puedes enviar y recibir mensajes.
+                </p>
+            `;
+        }
+        
+        // Refrescar código QR
+        async function refreshQR() {
+            console.log('🔄 Refrescando QR...');
+            const qrContainer = document.getElementById('qrContainer');
+            qrContainer.innerHTML = `
+                <div class="loader"></div>
+                <p style="margin-top: 20px; color: #666;">Generando nuevo código QR...</p>
+            `;
+            
+            // Reiniciar verificación de estado
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+            }
+            statusCheckInterval = setInterval(checkStatus, 3000);
+            
+            await loadQR();
+            await checkStatus();
+        }
+        
+        // Mostrar error
+        function showError(message) {
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.style.display = 'block';
+            errorContainer.innerHTML = `
+                <div class="error-message">
+                    <strong>❌ Error:</strong> ${message}
+                </div>
+            `;
+        }
+        
+        // Inicializar cuando la página cargue
+        window.addEventListener('DOMContentLoaded', init);
+        
+        // Limpiar intervalos al cerrar
+        window.addEventListener('beforeunload', () => {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+            }
+        });
+    </script>
+</body>
+</html>

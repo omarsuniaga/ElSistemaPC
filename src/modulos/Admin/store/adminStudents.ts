@@ -1,20 +1,20 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { 
-  collection, 
-  query, 
-  getDocs, 
-  doc, 
-  getDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  where, 
-  orderBy
-} from 'firebase/firestore'
-import { db } from '@/firebase'
-import type { Student } from '@/types'
-import { getStudentsFirebase } from '@/modulos/Students/service/students'
+import {defineStore} from "pinia"
+import {ref, computed} from "vue"
+import {
+  collection,
+  query,
+  getDocs,
+  doc,
+  getDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  where,
+  orderBy,
+} from "firebase/firestore"
+import {db} from "@/firebase"
+import type {Student} from "@/types"
+import {getStudentsFirebase} from "@/modulos/Students/service/students"
 
 interface StudentFilters {
   search: string
@@ -34,17 +34,17 @@ interface StudentStats {
   byInstrument: Record<string, number>
 }
 
-export const useAdminStudentsStore = defineStore('adminStudents', () => {
+export const useAdminStudentsStore = defineStore("adminStudents", () => {
   // State
   const students = ref<Student[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const filters = ref<StudentFilters>({
-    search: '',
-    status: '',
-    grade: '',
-    instrument: '',
-    class: ''
+    search: "",
+    status: "",
+    grade: "",
+    instrument: "",
+    class: "",
   })
   // Getters
   const studentStats = computed((): StudentStats => {
@@ -55,22 +55,22 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       pending: 0,
       newThisMonth: 0,
       byGrade: {},
-      byInstrument: {}
+      byInstrument: {},
     }
 
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-    students.value.forEach(student => {
+    students.value.forEach((student) => {
       // Status counts - usando el campo 'activo' de la estructura real
       if (student.activo) {
         stats.active++
       } else {
         stats.inactive++
       }
-      
+
       // Si hay un campo status específico, usarlo
-      if (student.status === 'pending') {
+      if (student.status === "pending") {
         stats.pending++
       }
 
@@ -96,37 +96,36 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     // Search filter - usando campos reales de la estructura Student
     if (filters.value.search) {
       const searchTerm = filters.value.search.toLowerCase()
-      filtered = filtered.filter(student =>
-        student.nombre?.toLowerCase().includes(searchTerm) ||
-        student.apellido?.toLowerCase().includes(searchTerm) ||
-        student.email?.toLowerCase().includes(searchTerm) ||
-        student.tlf?.includes(searchTerm) ||
-        student.madre?.toLowerCase().includes(searchTerm) ||
-        student.padre?.toLowerCase().includes(searchTerm)
+      filtered = filtered.filter(
+        (student) =>
+          student.nombre?.toLowerCase().includes(searchTerm) ||
+          student.apellido?.toLowerCase().includes(searchTerm) ||
+          student.email?.toLowerCase().includes(searchTerm) ||
+          student.tlf?.includes(searchTerm) ||
+          student.madre?.toLowerCase().includes(searchTerm) ||
+          student.padre?.toLowerCase().includes(searchTerm)
       )
     }
 
     // Status filter - usando campo 'activo'
     if (filters.value.status) {
-      if (filters.value.status === 'active') {
-        filtered = filtered.filter(student => student.activo === true)
-      } else if (filters.value.status === 'inactive') {
-        filtered = filtered.filter(student => student.activo === false)
-      } else if (filters.value.status === 'pending') {
-        filtered = filtered.filter(student => student.status === 'pending')
+      if (filters.value.status === "active") {
+        filtered = filtered.filter((student) => student.activo === true)
+      } else if (filters.value.status === "inactive") {
+        filtered = filtered.filter((student) => student.activo === false)
+      } else if (filters.value.status === "pending") {
+        filtered = filtered.filter((student) => student.status === "pending")
       }
     }
 
     // Instrument filter - usando campo 'instrumento'
     if (filters.value.instrument) {
-      filtered = filtered.filter(student => 
-        student.instrumento === filters.value.instrument
-      )
+      filtered = filtered.filter((student) => student.instrumento === filters.value.instrument)
     }
 
     // Class filter - usando campo 'grupo' o 'clase'
     if (filters.value.class) {
-      filtered = filtered.filter(student => {
+      filtered = filtered.filter((student) => {
         if (student.grupo && Array.isArray(student.grupo)) {
           return student.grupo.includes(filters.value.class)
         }
@@ -136,13 +135,11 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
 
     return filtered
   })
-  const activeStudents = computed(() => 
-    students.value.filter(student => student.activo === true)
-  )
+  const activeStudents = computed(() => students.value.filter((student) => student.activo === true))
 
   const recentStudents = computed(() =>
     students.value
-      .filter(student => student.fecInscripcion)
+      .filter((student) => student.fecInscripcion)
       .sort((a, b) => new Date(b.fecInscripcion!).getTime() - new Date(a.fecInscripcion!).getTime())
       .slice(0, 10)
   )
@@ -156,10 +153,9 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       const studentsData = await getStudentsFirebase()
       students.value = studentsData
 
-      console.log('✅ Students loaded from admin store:', students.value.length)
-
+      console.log("✅ Students loaded from admin store:", students.value.length)
     } catch (err: any) {
-      console.error('❌ Error loading students in admin store:', err)
+      console.error("❌ Error loading students in admin store:", err)
       error.value = err.message
     } finally {
       isLoading.value = false
@@ -167,7 +163,7 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
   }
   const getStudent = async (studentId: string): Promise<Student | null> => {
     try {
-      const docRef = doc(db, 'ALUMNOS', studentId)
+      const docRef = doc(db, "ALUMNOS", studentId)
       const docSnap = await getDoc(docRef)
 
       if (docSnap.exists()) {
@@ -177,41 +173,40 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
           ...data,
           fechaNacimiento: data.fechaNacimiento?.toDate() || data.fechaNacimiento,
           createdAt: data.createdAt?.toDate() || data.createdAt,
-          updatedAt: data.updatedAt?.toDate() || data.updatedAt
+          updatedAt: data.updatedAt?.toDate() || data.updatedAt,
         } as Student
       }
 
       return null
     } catch (err: any) {
-      console.error('❌ Error getting student:', err)
+      console.error("❌ Error getting student:", err)
       throw err
     }
   }
-  const createStudent = async (studentData: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const createStudent = async (studentData: Omit<Student, "id" | "createdAt" | "updatedAt">) => {
     try {
       isLoading.value = true
       error.value = null
 
-      const docRef = await addDoc(collection(db, 'ALUMNOS'), {
+      const docRef = await addDoc(collection(db, "ALUMNOS"), {
         ...studentData,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
 
       const newStudent: Student = {
         id: docRef.id,
         ...studentData,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
 
       students.value.push(newStudent)
-      console.log('✅ Student created:', newStudent.nombre)
-      
-      return newStudent
+      console.log("✅ Student created:", newStudent.nombre)
 
+      return newStudent
     } catch (err: any) {
-      console.error('❌ Error creating student:', err)
+      console.error("❌ Error creating student:", err)
       error.value = err.message
       throw err
     } finally {
@@ -224,26 +219,25 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       isLoading.value = true
       error.value = null
 
-      const docRef = doc(db, 'ALUMNOS', studentId)
+      const docRef = doc(db, "ALUMNOS", studentId)
       await updateDoc(docRef, {
         ...updates,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
 
       // Update local state
-      const index = students.value.findIndex(s => s.id === studentId)
+      const index = students.value.findIndex((s) => s.id === studentId)
       if (index !== -1) {
         students.value[index] = {
           ...students.value[index],
           ...updates,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         }
       }
 
-      console.log('✅ Student updated:', studentId)
-
+      console.log("✅ Student updated:", studentId)
     } catch (err: any) {
-      console.error('❌ Error updating student:', err)
+      console.error("❌ Error updating student:", err)
       error.value = err.message
       throw err
     } finally {
@@ -251,8 +245,8 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     }
   }
 
-  const updateStudentStatus = async (studentId: string, status: Student['status']) => {
-    await updateStudent(studentId, { status })
+  const updateStudentStatus = async (studentId: string, status: Student["status"]) => {
+    await updateStudent(studentId, {status})
   }
 
   const deleteStudent = async (studentId: string) => {
@@ -260,15 +254,14 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       isLoading.value = true
       error.value = null
 
-      await deleteDoc(doc(db, 'ALUMNOS', studentId))
+      await deleteDoc(doc(db, "ALUMNOS", studentId))
 
       // Remove from local state
-      students.value = students.value.filter(s => s.id !== studentId)
-      
-      console.log('✅ Student deleted:', studentId)
+      students.value = students.value.filter((s) => s.id !== studentId)
 
+      console.log("✅ Student deleted:", studentId)
     } catch (err: any) {
-      console.error('❌ Error deleting student:', err)
+      console.error("❌ Error deleting student:", err)
       error.value = err.message
       throw err
     } finally {
@@ -282,58 +275,54 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       }
 
       const searchQuery = searchTerm.toLowerCase()
-      return students.value.filter(student =>
-        student.nombre?.toLowerCase().includes(searchQuery) ||
-        student.apellido?.toLowerCase().includes(searchQuery) ||
-        student.email?.toLowerCase().includes(searchQuery) ||
-        student.tlf?.includes(searchQuery) ||
-        student.madre?.toLowerCase().includes(searchQuery) ||
-        student.padre?.toLowerCase().includes(searchQuery)
+      return students.value.filter(
+        (student) =>
+          student.nombre?.toLowerCase().includes(searchQuery) ||
+          student.apellido?.toLowerCase().includes(searchQuery) ||
+          student.email?.toLowerCase().includes(searchQuery) ||
+          student.tlf?.includes(searchQuery) ||
+          student.madre?.toLowerCase().includes(searchQuery) ||
+          student.padre?.toLowerCase().includes(searchQuery)
       )
     } catch (err: any) {
-      console.error('❌ Error searching students:', err)
+      console.error("❌ Error searching students:", err)
       throw err
     }
   }
   const getStudentsByClass = async (classId: string) => {
     try {
       const studentsQuery = query(
-        collection(db, 'ALUMNOS'),
-        where('grupo', 'array-contains', classId)
+        collection(db, "ALUMNOS"),
+        where("grupo", "array-contains", classId)
       )
 
       const snapshot = await getDocs(studentsQuery)
-      return snapshot.docs.map(doc => ({
+      return snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         fechaNacimiento: doc.data().fechaNacimiento?.toDate() || doc.data().fechaNacimiento,
         createdAt: doc.data().createdAt?.toDate() || doc.data().createdAt,
-        updatedAt: doc.data().updatedAt?.toDate() || doc.data().updatedAt
+        updatedAt: doc.data().updatedAt?.toDate() || doc.data().updatedAt,
       })) as Student[]
-
     } catch (err: any) {
-      console.error('❌ Error getting students by class:', err)
+      console.error("❌ Error getting students by class:", err)
       throw err
     }
   }
   const getStudentsByInstrument = async (instrument: string) => {
     try {
-      const studentsQuery = query(
-        collection(db, 'ALUMNOS'),
-        where('instrumento', '==', instrument)
-      )
+      const studentsQuery = query(collection(db, "ALUMNOS"), where("instrumento", "==", instrument))
 
       const snapshot = await getDocs(studentsQuery)
-      return snapshot.docs.map(doc => ({
+      return snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         fechaNacimiento: doc.data().fechaNacimiento?.toDate() || doc.data().fechaNacimiento,
         createdAt: doc.data().createdAt?.toDate() || doc.data().createdAt,
-        updatedAt: doc.data().updatedAt?.toDate() || doc.data().updatedAt
+        updatedAt: doc.data().updatedAt?.toDate() || doc.data().updatedAt,
       })) as Student[]
-
     } catch (err: any) {
-      console.error('❌ Error getting students by instrument:', err)
+      console.error("❌ Error getting students by instrument:", err)
       throw err
     }
   }
@@ -341,48 +330,51 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     try {
       const csvContent = [
         // Headers
-        'Nombre,Apellido,Email,Teléfono,Fecha Nacimiento,Madre,Padre,Teléfono Madre,Teléfono Padre,Instrumento,Estado,Fecha Inscripción,Grupo',
+        "Nombre,Apellido,Email,Teléfono,Fecha Nacimiento,Madre,Padre,Teléfono Madre,Teléfono Padre,Instrumento,Estado,Fecha Inscripción,Grupo",
         // Data
-        ...studentsToExport.map(student => [
-          student.nombre || '',
-          student.apellido || '',
-          student.email || '',
-          student.tlf || '',
-          student.fechaNacimiento ? new Date(student.fechaNacimiento).toLocaleDateString() : '',
-          student.madre || '',
-          student.padre || '',
-          student.tlf_madre || '',
-          student.tlf_padre || '',
-          student.instrumento || '',
-          student.activo ? 'Activo' : 'Inactivo',
-          student.fecInscripcion || '',
-          Array.isArray(student.grupo) ? student.grupo.join('; ') : (student.grupo || student.clase || '')
-        ].join(','))
-      ].join('\n')
+        ...studentsToExport.map((student) =>
+          [
+            student.nombre || "",
+            student.apellido || "",
+            student.email || "",
+            student.tlf || "",
+            student.fechaNacimiento ? new Date(student.fechaNacimiento).toLocaleDateString() : "",
+            student.madre || "",
+            student.padre || "",
+            student.tlf_madre || "",
+            student.tlf_padre || "",
+            student.instrumento || "",
+            student.activo ? "Activo" : "Inactivo",
+            student.fecInscripcion || "",
+            Array.isArray(student.grupo)
+              ? student.grupo.join("; ")
+              : student.grupo || student.clase || "",
+          ].join(",")
+        ),
+      ].join("\n")
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-      const link = document.createElement('a')
+      const blob = new Blob([csvContent], {type: "text/csv;charset=utf-8;"})
+      const link = document.createElement("a")
       const url = URL.createObjectURL(blob)
-      
-      link.setAttribute('href', url)
-      link.setAttribute('download', `estudiantes_${new Date().toISOString().split('T')[0]}.csv`)
-      link.style.visibility = 'hidden'
-      
+
+      link.setAttribute("href", url)
+      link.setAttribute("download", `estudiantes_${new Date().toISOString().split("T")[0]}.csv`)
+      link.style.visibility = "hidden"
+
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
 
-      console.log('✅ Students exported:', studentsToExport.length)
-
+      console.log("✅ Students exported:", studentsToExport.length)
     } catch (err: any) {
-      console.error('❌ Error exporting students:', err)
+      console.error("❌ Error exporting students:", err)
       throw err
     }
   }
   const assignStudentToClass = async (studentId: string, classId: string) => {
     try {
-      const student = students.value.find(s => s.id === studentId)
-      if (!student) throw new Error('Student not found')
+      const student = students.value.find((s) => s.id === studentId)
+      if (!student) throw new Error("Student not found")
 
       // Usar el campo 'grupo' como array
       let updatedGroups: string[] = []
@@ -394,35 +386,33 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
         updatedGroups = [classId]
       }
 
-      await updateStudent(studentId, { grupo: updatedGroups })
+      await updateStudent(studentId, {grupo: updatedGroups})
 
-      console.log('✅ Student assigned to class:', { studentId, classId })
-
+      console.log("✅ Student assigned to class:", {studentId, classId})
     } catch (err: any) {
-      console.error('❌ Error assigning student to class:', err)
+      console.error("❌ Error assigning student to class:", err)
       throw err
     }
   }
 
   const removeStudentFromClass = async (studentId: string, classId: string) => {
     try {
-      const student = students.value.find(s => s.id === studentId)
-      if (!student) throw new Error('Student not found')
+      const student = students.value.find((s) => s.id === studentId)
+      if (!student) throw new Error("Student not found")
 
       // Usar el campo 'grupo' como array
       let updatedGroups: string[] = []
       if (Array.isArray(student.grupo)) {
-        updatedGroups = student.grupo.filter(id => id !== classId)
+        updatedGroups = student.grupo.filter((id) => id !== classId)
       } else if (student.grupo && student.grupo !== classId) {
         updatedGroups = [student.grupo]
       }
 
-      await updateStudent(studentId, { grupo: updatedGroups })
+      await updateStudent(studentId, {grupo: updatedGroups})
 
-      console.log('✅ Student removed from class:', { studentId, classId })
-
+      console.log("✅ Student removed from class:", {studentId, classId})
     } catch (err: any) {
-      console.error('❌ Error removing student from class:', err)
+      console.error("❌ Error removing student from class:", err)
       throw err
     }
   }
@@ -433,13 +423,12 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       isLoading.value = true
       error.value = null
 
-      const promises = studentIds.map(id => updateStudent(id, updates))
+      const promises = studentIds.map((id) => updateStudent(id, updates))
       await Promise.all(promises)
 
-      console.log('✅ Bulk update completed:', studentIds.length)
-
+      console.log("✅ Bulk update completed:", studentIds.length)
     } catch (err: any) {
-      console.error('❌ Error in bulk update:', err)
+      console.error("❌ Error in bulk update:", err)
       error.value = err.message
       throw err
     } finally {
@@ -452,13 +441,12 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       isLoading.value = true
       error.value = null
 
-      const promises = studentIds.map(id => deleteStudent(id))
+      const promises = studentIds.map((id) => deleteStudent(id))
       await Promise.all(promises)
 
-      console.log('✅ Bulk delete completed:', studentIds.length)
-
+      console.log("✅ Bulk delete completed:", studentIds.length)
     } catch (err: any) {
-      console.error('❌ Error in bulk delete:', err)
+      console.error("❌ Error in bulk delete:", err)
       error.value = err.message
       throw err
     } finally {
@@ -468,16 +456,16 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
 
   // Filters
   const setFilters = (newFilters: Partial<StudentFilters>) => {
-    filters.value = { ...filters.value, ...newFilters }
+    filters.value = {...filters.value, ...newFilters}
   }
 
   const clearFilters = () => {
     filters.value = {
-      search: '',
-      status: '',
-      grade: '',
-      instrument: '',
-      class: ''
+      search: "",
+      status: "",
+      grade: "",
+      instrument: "",
+      class: "",
     }
   }
 
@@ -498,14 +486,14 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     try {
       isLoading.value = true
       error.value = null
-      
+
       const result = await advancedStudentsService.importStudentsFromCSV(file)
-      
+
       // Recargar estudiantes si hubo importaciones exitosas
       if (result.imported > 0) {
         await loadStudents()
       }
-      
+
       return result
     } catch (err: any) {
       error.value = err.message
@@ -519,13 +507,13 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     try {
       isLoading.value = true
       error.value = null
-      
+
       const result = await advancedStudentsService.importStudentsFromExcel(file)
-      
+
       if (result.imported > 0) {
         await loadStudents()
       }
-      
+
       return result
     } catch (err: any) {
       error.value = err.message
@@ -536,14 +524,17 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
   }
 
   // COMUNICACIÓN MASIVA
-  const sendBulkEmailToStudents = async (studentIds: string[], message: EmailMessage): Promise<void> => {
+  const sendBulkEmailToStudents = async (
+    studentIds: string[],
+    message: EmailMessage
+  ): Promise<void> => {
     try {
       isLoading.value = true
       error.value = null
-      
+
       await advancedStudentsService.sendBulkEmailToStudents(studentIds, message)
-      
-      console.log('✅ Emails enviados exitosamente:', studentIds.length)
+
+      console.log("✅ Emails enviados exitosamente:", studentIds.length)
     } catch (err: any) {
       error.value = err.message
       throw err
@@ -556,10 +547,10 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     try {
       isLoading.value = true
       error.value = null
-      
+
       await advancedStudentsService.sendWhatsAppToParents(studentIds, message)
-      
-      console.log('✅ WhatsApp enviados exitosamente:', studentIds.length)
+
+      console.log("✅ WhatsApp enviados exitosamente:", studentIds.length)
     } catch (err: any) {
       error.value = err.message
       throw err
@@ -573,10 +564,10 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     try {
       isLoading.value = true
       error.value = null
-      
+
       const report = await advancedStudentsService.generateStudentProgressReport(studentId)
-      
-      console.log('✅ Reporte de progreso generado:', report.studentName)
+
+      console.log("✅ Reporte de progreso generado:", report.studentName)
       return report
     } catch (err: any) {
       error.value = err.message
@@ -590,10 +581,10 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     try {
       isLoading.value = true
       error.value = null
-      
+
       const pdfBlob = await advancedStudentsService.generateClassRosterPDF(classId)
-      
-      console.log('✅ PDF de lista de clase generado')
+
+      console.log("✅ PDF de lista de clase generado")
       return pdfBlob
     } catch (err: any) {
       error.value = err.message
@@ -607,10 +598,10 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     try {
       isLoading.value = true
       error.value = null
-      
+
       const certificateBlob = await advancedStudentsService.generateAttendanceCertificate(studentId)
-      
-      console.log('✅ Certificado de asistencia generado')
+
+      console.log("✅ Certificado de asistencia generado")
       return certificateBlob
     } catch (err: any) {
       error.value = err.message
@@ -621,14 +612,14 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
   }
 
   // ANÁLISIS Y MÉTRICAS
-  const getStudentRetentionRate = async (period: { start: Date; end: Date }): Promise<number> => {
+  const getStudentRetentionRate = async (period: {start: Date; end: Date}): Promise<number> => {
     try {
       isLoading.value = true
       error.value = null
-      
+
       const retentionRate = await advancedStudentsService.getStudentRetentionRate(period)
-      
-      console.log('✅ Tasa de retención calculada:', retentionRate + '%')
+
+      console.log("✅ Tasa de retención calculada:", retentionRate + "%")
       return retentionRate
     } catch (err: any) {
       error.value = err.message
@@ -642,10 +633,10 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     try {
       isLoading.value = true
       error.value = null
-      
+
       const metrics = await advancedStudentsService.getStudentSatisfactionMetrics()
-      
-      console.log('✅ Métricas de satisfacción obtenidas:', metrics.averageRating)
+
+      console.log("✅ Métricas de satisfacción obtenidas:", metrics.averageRating)
       return metrics
     } catch (err: any) {
       error.value = err.message
@@ -659,10 +650,10 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     try {
       isLoading.value = true
       error.value = null
-      
+
       const prediction = await advancedStudentsService.predictStudentChurn(studentId)
-      
-      console.log('✅ Predicción de deserción generada:', prediction.riskLevel)
+
+      console.log("✅ Predicción de deserción generada:", prediction.riskLevel)
       return prediction
     } catch (err: any) {
       error.value = err.message
@@ -673,14 +664,17 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
   }
 
   // GESTIÓN DE DOCUMENTOS
-  const uploadStudentDocument = async (studentId: string, document: File): Promise<StudentDocument> => {
+  const uploadStudentDocument = async (
+    studentId: string,
+    document: File
+  ): Promise<StudentDocument> => {
     try {
       isLoading.value = true
       error.value = null
-      
+
       const uploadedDoc = await advancedStudentsService.uploadStudentDocument(studentId, document)
-      
-      console.log('✅ Documento subido:', uploadedDoc.name)
+
+      console.log("✅ Documento subido:", uploadedDoc.name)
       return uploadedDoc
     } catch (err: any) {
       error.value = err.message
@@ -694,10 +688,10 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     try {
       isLoading.value = true
       error.value = null
-      
+
       const documents = await advancedStudentsService.getStudentDocuments(studentId)
-      
-      console.log('✅ Documentos obtenidos:', documents.length)
+
+      console.log("✅ Documentos obtenidos:", documents.length)
       return documents
     } catch (err: any) {
       error.value = err.message
@@ -736,8 +730,8 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     bulkDeleteStudents,
     setFilters,
     clearFilters,
-    $reset
+    $reset,
   }
 })
 
-export type { Student, StudentFilters, StudentStats }
+export type {Student, StudentFilters, StudentStats}

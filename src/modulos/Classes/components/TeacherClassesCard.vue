@@ -3,14 +3,17 @@
 
   <!-- Replace the RouterLink that's causing the error with a regular button -->
   <!-- Look for something like this in the file: -->
-  <RouterLink :to="{ name: 'AddStudentToClass', params: { classId: class.id } }" class="w-full flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+  <RouterLink
+    :to="{ name: 'AddStudentToClass', params: { classId: class.id } }"
+    class="w-full flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+  >
     <!-- ...content... -->
   </RouterLink>
 
   <!-- Replace it with this button: -->
-  <button 
-    @click="handleAddStudent(class.id)"
+  <button
     class="w-full flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+    @click="handleAddStudent(class.id)"
   >
     <!-- Keep the same content that was inside the RouterLink -->
     <!-- Example: -->
@@ -29,12 +32,14 @@ export default {
     // Your existing methods
 
     handleAddStudent(classId) {
-      alert('Esta función será implementada próximamente. Por ahora, utilice la interfaz de administración de estudiantes para añadir nuevos estudiantes a la clase.');
+      alert(
+        "Esta función será implementada próximamente. Por ahora, utilice la interfaz de administración de estudiantes para añadir nuevos estudiantes a la clase."
+      )
     },
   },
-};
+}
 </script>
 
 <style>
-  /* Your existing styles */
+/* Your existing styles */
 </style>

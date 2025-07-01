@@ -1,12 +1,12 @@
 <template>
   <div class="attendance-chart">
-    <canvas ref="chartCanvas"></canvas>
+    <canvas ref="chartCanvas" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import Chart from 'chart.js/auto'
+import {ref, onMounted, watch} from "vue"
+import Chart from "chart.js/auto"
 
 const props = defineProps<{
   data: {
@@ -32,29 +32,29 @@ const createChart = () => {
   }
 
   chart = new Chart(chartCanvas.value, {
-    type: 'bar',
+    type: "bar",
     data: props.data,
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          position: 'top'
+          position: "top",
         },
         title: {
           display: true,
-          text: 'Tendencia de Asistencia'
-        }
+          text: "Tendencia de Asistencia",
+        },
       },
       scales: {
         y: {
           beginAtZero: true,
           ticks: {
-            stepSize: 1
-          }
-        }
-      }
-    }
+            stepSize: 1,
+          },
+        },
+      },
+    },
   })
 }
 
@@ -62,9 +62,19 @@ onMounted(() => {
   createChart()
 })
 
-watch(() => props.data, () => {
-  createChart()
-}, { deep: true })
+watch(
+  () => props.data,
+  () => {
+    createChart()
+  },
+  {deep: true}
+)
+</script>
+
+<script lang="ts">
+export default {
+  name: "AttendanceChart",
+}
 </script>
 
 <style scoped>
@@ -74,9 +84,3 @@ watch(() => props.data, () => {
   margin: 20px 0;
 }
 </style>
-
-<script lang="ts">
-export default {
-  name: 'AttendanceChart'
-}
-</script>

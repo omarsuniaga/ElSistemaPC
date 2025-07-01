@@ -1,13 +1,12 @@
 <script setup lang="ts">
 defineProps<{
-  message?: string;
-}>();
+  message?: string
+}>()
 </script>
-
 
 <template>
   <div class="loading-overlay">
-    <div class="loader"></div>
+    <div class="loader" />
     <p>{{ message || "Cargando datos..." }}</p>
   </div>
 </template>
@@ -38,7 +37,11 @@ defineProps<{
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>

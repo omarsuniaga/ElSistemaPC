@@ -2,27 +2,25 @@
   <div v-if="showDebug" class="debug-panel">
     <div class="debug-header">
       <h3>🔧 Debug: Invitaciones</h3>
-      <button @click="showDebug = false" class="close-btn">&times;</button>
+      <button class="close-btn" @click="showDebug = false">&times;</button>
     </div>
     <div class="debug-content">
       <div class="debug-section">
         <h4>Usuario Autenticado:</h4>
-        <p>{{ authStore.user?.uid || 'No autenticado' }}</p>
-        <p>Rol: {{ authStore.user?.role || 'Sin rol' }}</p>
+        <p>{{ authStore.user?.uid || "No autenticado" }}</p>
+        <p>Rol: {{ authStore.user?.role || "Sin rol" }}</p>
       </div>
-      
+
       <div class="debug-section">
         <h4>Notificaciones ({{ notifications.length }}):</h4>
-        <div v-if="notifications.length === 0" class="empty">
-          No hay notificaciones
-        </div>
+        <div v-if="notifications.length === 0" class="empty">No hay notificaciones</div>
         <div v-for="notification in notifications" :key="notification.id" class="notification-item">
           <strong>{{ notification.title }}</strong> - {{ notification.status }}
-          <br>
+          <br />
           <small>{{ notification.createdAt?.toLocaleString() }}</small>
         </div>
       </div>
-      
+
       <div class="debug-section">
         <h4>Invitaciones Pendientes ({{ pendingInvitations.length }}):</h4>
         <div v-if="pendingInvitations.length === 0" class="empty">
@@ -30,91 +28,87 @@
         </div>
         <div v-for="invitation in pendingInvitations" :key="invitation.id" class="invitation-item">
           <strong>{{ invitation.className }}</strong>
-          <br>
+          <br />
           De: {{ invitation.fromUserName }}
-          <br>
+          <br />
           <small>{{ invitation.createdAt?.toLocaleString() }}</small>
         </div>
       </div>
-      
+
       <div class="debug-section">
         <h4>Acciones:</h4>
-        <button @click="loadNotifications" class="debug-btn">Recargar</button>
-        <button @click="createTestInvitation" class="debug-btn">Crear Prueba</button>
+        <button class="debug-btn" @click="loadNotifications">Recargar</button>
+        <button class="debug-btn" @click="createTestInvitation">Crear Prueba</button>
       </div>
-      
+
       <div class="debug-section">
         <h4>Estados:</h4>
-        <p>Cargando: {{ isLoading ? 'Sí' : 'No' }}</p>
-        <p>Error: {{ error || 'Ninguno' }}</p>
-        <p>Debe mostrar manager: {{ shouldShowInvitationManager ? 'Sí' : 'No' }}</p>
+        <p>Cargando: {{ isLoading ? "Sí" : "No" }}</p>
+        <p>Error: {{ error || "Ninguno" }}</p>
+        <p>Debe mostrar manager: {{ shouldShowInvitationManager ? "Sí" : "No" }}</p>
       </div>
     </div>
   </div>
-  
+
   <!-- Botón flotante para mostrar debug -->
-  <button 
-    v-if="!showDebug && isDev" 
-    @click="showDebug = true" 
+  <button
+    v-if="!showDebug && isDev"
     class="debug-toggle"
     title="Mostrar panel de depuración"
+    @click="showDebug = true"
   >
     🔧
   </button>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useAuthStore } from '../stores/auth';
-import { useTeacherNotifications } from '../modulos/Teachers/composables/useTeacherNotifications';
-import { createClassInvitationNotification } from '../modulos/Teachers/services/teacherNotifications';
+import {ref, computed} from "vue"
+import {useAuthStore} from "../stores/auth"
+import {useTeacherNotifications} from "../modulos/Teachers/composables/useTeacherNotifications"
+import {createClassInvitationNotification} from "../modulos/Teachers/services/teacherNotifications"
 
-const showDebug = ref(false);
-const isDev = ref(import.meta.env.DEV);
+const showDebug = ref(false)
+const isDev = ref(import.meta.env.DEV)
 
-const authStore = useAuthStore();
-const {
-  notifications,
-  pendingInvitations,
-  isLoading,
-  error,
-  loadNotifications
-} = useTeacherNotifications();
+const authStore = useAuthStore()
+const {notifications, pendingInvitations, isLoading, error, loadNotifications} =
+  useTeacherNotifications()
 
 const shouldShowInvitationManager = computed(() => {
   return (
-    authStore.isLoggedIn && 
-    authStore.user && 
-    (authStore.user.role?.toLowerCase() === 'maestro' || authStore.user.role?.toLowerCase() === 'profesor')
-  );
-});
+    authStore.isLoggedIn &&
+    authStore.user &&
+    (authStore.user.role?.toLowerCase() === "maestro" ||
+      authStore.user.role?.toLowerCase() === "profesor")
+  )
+})
 
 const createTestInvitation = async () => {
   if (!authStore.user?.uid) {
-    alert('No hay usuario autenticado');
-    return;
+    alert("No hay usuario autenticado")
+    return
   }
-  
+
   try {
     await createClassInvitationNotification({
       teacherId: authStore.user.uid,
-      teacherName: authStore.user.displayName || 'Usuario de Prueba',
-      classId: 'test-class-' + Date.now(),
-      className: 'Clase de Prueba',
-      fromUserId: 'system',
-      fromUserName: 'Sistema de Prueba',
+      teacherName: authStore.user.displayName || "Usuario de Prueba",
+      classId: "test-class-" + Date.now(),
+      className: "Clase de Prueba",
+      fromUserId: "system",
+      fromUserName: "Sistema de Prueba",
       permissions: {
         canTakeAttendance: true,
         canAddObservations: true,
-        canViewAttendanceHistory: true
-      }
-    });
-    
-    alert('Invitación de prueba creada');
+        canViewAttendanceHistory: true,
+      },
+    })
+
+    alert("Invitación de prueba creada")
   } catch (err: any) {
-    alert('Error creando invitación: ' + err.message);
+    alert("Error creando invitación: " + err.message)
   }
-};
+}
 </script>
 
 <style scoped>
@@ -127,7 +121,7 @@ const createTestInvitation = async () => {
   background: white;
   border: 2px solid #007bff;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 9999;
   overflow: hidden;
 }
@@ -162,7 +156,7 @@ const createTestInvitation = async () => {
 }
 
 .close-btn:hover {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .debug-content {
@@ -239,7 +233,7 @@ const createTestInvitation = async () => {
   border: none;
   font-size: 20px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   z-index: 9998;
 }
 

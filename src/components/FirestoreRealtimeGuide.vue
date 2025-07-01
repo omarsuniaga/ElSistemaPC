@@ -3,7 +3,7 @@
     <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
       Guía de Consultas en Tiempo Real con Firestore
     </h2>
-    
+
     <div class="prose dark:prose-invert">
       <h3>Implementación básica de onSnapshot</h3>
       <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto">

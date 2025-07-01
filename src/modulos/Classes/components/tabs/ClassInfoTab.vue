@@ -1,6 +1,8 @@
 <template>
   <div class="class-info-tab p-4">
-    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Detalles de la Clase</h3>
+    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
+      Detalles de la Clase
+    </h3>
 
     <div v-if="classData" class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
@@ -17,25 +19,35 @@
       </div>
       <div>
         <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Profesor:</p>
-        <p class="text-gray-800 dark:text-gray-200">{{ teacher ? teacher.name : 'No asignado' }}</p>
+        <p class="text-gray-800 dark:text-gray-200">{{ teacher ? teacher.name : "No asignado" }}</p>
       </div>
       <div>
         <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Día de la Semana:</p>
-        <p class="text-gray-800 dark:text-gray-200">{{ classData.dayOfWeek || 'No especificado' }}</p>
+        <p class="text-gray-800 dark:text-gray-200">
+          {{ classData.dayOfWeek || "No especificado" }}
+        </p>
       </div>
       <div>
         <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Hora de Inicio:</p>
-        <p class="text-gray-800 dark:text-gray-200">{{ classData.startTime || 'No especificada' }}</p>
+        <p class="text-gray-800 dark:text-gray-200">
+          {{ classData.startTime || "No especificada" }}
+        </p>
       </div>
       <div>
         <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Duración:</p>
-        <p class="text-gray-800 dark:text-gray-200">{{ classData.durationMinutes ? classData.durationMinutes + ' minutos' : 'No especificada' }}</p>
+        <p class="text-gray-800 dark:text-gray-200">
+          {{
+            classData.durationMinutes ? classData.durationMinutes + " minutos" : "No especificada"
+          }}
+        </p>
       </div>
       <div>
         <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Cupo Máximo:</p>
-        <p class="text-gray-800 dark:text-gray-200">{{ classData.maxStudents !== undefined ? classData.maxStudents : 'No especificado' }}</p>
+        <p class="text-gray-800 dark:text-gray-200">
+          {{ classData.maxStudents !== undefined ? classData.maxStudents : "No especificado" }}
+        </p>
       </div>
-       <div>
+      <div>
         <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Estudiantes Inscritos:</p>
         <p class="text-gray-800 dark:text-gray-200">{{ students ? students.length : 0 }}</p>
       </div>
@@ -45,46 +57,47 @@
     </div>
 
     <div v-if="classData && classData.description" class="mt-6">
-        <h4 class="text-md font-semibold mb-2 text-gray-700 dark:text-gray-300">Descripción:</h4>
-        <p class="text-gray-800 dark:text-gray-200 whitespace-pre-line">{{ classData.description }}</p>
+      <h4 class="text-md font-semibold mb-2 text-gray-700 dark:text-gray-300">Descripción:</h4>
+      <p class="text-gray-800 dark:text-gray-200 whitespace-pre-line">
+        {{ classData.description }}
+      </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { PropType } from 'vue';
-import type { ClassData } from '../../types/class'; // Adjust path as necessary
+import {PropType} from "vue"
+import type {ClassData} from "../../types/class" // Adjust path as necessary
 
 // Define a basic Teacher type, replace with actual type from your store/types
 interface Teacher {
-  id: string;
-  name: string;
+  id: string
+  name: string
   // Add other teacher properties as needed
 }
 
 // Define a basic Student type, replace with actual type from your store/types
 interface Student {
-  id: string;
-  nombre: string;
-  apellido: string;
+  id: string
+  nombre: string
+  apellido: string
   // Add other student properties as needed
 }
 
 const props = defineProps({
   classData: {
     type: Object as PropType<ClassData | null>,
-    default: null
+    default: null,
   },
   teacher: {
     type: Object as PropType<Teacher | null>,
-    default: null
+    default: null,
   },
   students: {
     type: Array as PropType<Student[]>,
-    default: () => []
-  }
-});
-
+    default: () => [],
+  },
+})
 </script>
 
 <style scoped>

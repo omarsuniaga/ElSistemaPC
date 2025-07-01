@@ -1,19 +1,22 @@
-import { ref } from 'vue'
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  query, 
+import {ref} from "vue"
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  query,
   QueryConstraint,
   DocumentData,
   CollectionReference,
-  DocumentReference
-} from 'firebase/firestore'
-import { db } from '../firebase'
+  DocumentReference,
+} from "firebase/firestore"
+import {db} from "../firebase"
 
 export interface FirestoreComposable {
-  getCollection: (collectionName: string, constraints?: QueryConstraint[]) => Promise<DocumentData[]>
+  getCollection: (
+    collectionName: string,
+    constraints?: QueryConstraint[]
+  ) => Promise<DocumentData[]>
   getDocument: (collectionName: string, documentId: string) => Promise<DocumentData | null>
   loading: ReturnType<typeof ref<boolean>>
   error: ReturnType<typeof ref<string | null>>
@@ -34,7 +37,7 @@ export function useFirestore(): FirestoreComposable {
    * @returns Array de documentos
    */
   const getCollection = async (
-    collectionName: string, 
+    collectionName: string,
     constraints: QueryConstraint[] = []
   ): Promise<DocumentData[]> => {
     try {
@@ -42,15 +45,13 @@ export function useFirestore(): FirestoreComposable {
       error.value = null
 
       const collectionRef: CollectionReference = collection(db, collectionName)
-      const queryRef = constraints.length > 0 
-        ? query(collectionRef, ...constraints)
-        : collectionRef
+      const queryRef = constraints.length > 0 ? query(collectionRef, ...constraints) : collectionRef
 
       const querySnapshot = await getDocs(queryRef)
-      
-      const documents = querySnapshot.docs.map(doc => ({
+
+      const documents = querySnapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       }))
 
       return documents
@@ -71,7 +72,7 @@ export function useFirestore(): FirestoreComposable {
    * @returns Datos del documento o null si no existe
    */
   const getDocument = async (
-    collectionName: string, 
+    collectionName: string,
     documentId: string
   ): Promise<DocumentData | null> => {
     try {
@@ -84,7 +85,7 @@ export function useFirestore(): FirestoreComposable {
       if (docSnap.exists()) {
         return {
           id: docSnap.id,
-          ...docSnap.data()
+          ...docSnap.data(),
         }
       } else {
         console.warn(`Document ${documentId} not found in collection ${collectionName}`)
@@ -104,6 +105,6 @@ export function useFirestore(): FirestoreComposable {
     getCollection,
     getDocument,
     loading,
-    error
+    error,
   }
 }

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 // src/modulos/Teachers/view/TeacherEditView.vue
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useTeachersStore } from '../store/teachers'
-import TeacherForm from '../components/TeacherForm.vue'
-import type { Teacher } from '../types/teachers'
+import {ref, computed, onMounted, watch} from "vue"
+import {useRoute, useRouter} from "vue-router"
+import {useTeachersStore} from "../store/teachers"
+import TeacherForm from "../components/TeacherForm.vue"
+import type {Teacher} from "../types/teachers"
 
 const route = useRoute()
 const router = useRouter()
@@ -13,8 +13,10 @@ const teachersStore = useTeachersStore()
 const teacherId = route.params.id as string
 const teacher = computed(() => {
   // Buscar por id (Firestore) o por uid (auth)
-  return teachersStore.getTeacherById(teacherId) ||
-         teachersStore.teachers.find(t => t.uid === teacherId)
+  return (
+    teachersStore.getTeacherById(teacherId) ||
+    teachersStore.teachers.find((t) => t.uid === teacherId)
+  )
 })
 
 const isLoading = ref(false)
@@ -27,7 +29,7 @@ onMounted(async () => {
     try {
       await teachersStore.fetchTeachers()
     } catch (err: any) {
-      error.value = err.message || 'Error al cargar maestros'
+      error.value = err.message || "Error al cargar maestros"
     } finally {
       isLoading.value = false
     }
@@ -39,20 +41,20 @@ watch(
   () => teacher.value,
   (val) => {
     if (!val && !isLoading.value && teachersStore.teachers.length) {
-      error.value = 'Maestro no encontrado'
+      error.value = "Maestro no encontrado"
     } else {
       error.value = null
     }
   },
-  { immediate: true }
+  {immediate: true}
 )
 
 const handleSubmit = async (data: Partial<Teacher>) => {
   if (!teacher.value) return
-  
+
   isLoading.value = true
   error.value = null
-  
+
   try {
     await teachersStore.updateTeacher(teacherId, data)
     router.push(`/teachers/${teacherId}`)
@@ -75,7 +77,7 @@ const handleCancel = () => {
     </div>
 
     <!-- Error Alert -->
-    <div 
+    <div
       v-if="error"
       class="mb-6 p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg"
     >

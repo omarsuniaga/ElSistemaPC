@@ -1,12 +1,10 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-        Filtros de Datos
-      </h3>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Filtros de Datos</h3>
       <button
-        @click="resetFilters"
         class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+        @click="resetFilters"
       >
         Limpiar filtros
       </button>
@@ -15,20 +13,14 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <!-- Filtro por Clase -->
       <div v-if="showClassFilter" class="space-y-2">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Clase
-        </label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"> Clase </label>
         <select
           :value="filters.classId"
-          @change="$emit('update:classId', $event.target.value)"
           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+          @change="$emit('update:classId', $event.target.value)"
         >
           <option value="">Todas las clases</option>
-          <option
-            v-for="classItem in availableClasses"
-            :key="classItem.id"
-            :value="classItem.id"
-          >
+          <option v-for="classItem in availableClasses" :key="classItem.id" :value="classItem.id">
             {{ classItem.name }}
           </option>
         </select>
@@ -36,20 +28,14 @@
 
       <!-- Filtro por Maestro -->
       <div v-if="showTeacherFilter" class="space-y-2">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Maestro
-        </label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"> Maestro </label>
         <select
           :value="filters.teacherId"
-          @change="$emit('update:teacherId', $event.target.value)"
           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+          @change="$emit('update:teacherId', $event.target.value)"
         >
           <option value="">Todos los maestros</option>
-          <option
-            v-for="teacher in availableTeachers"
-            :key="teacher.id"
-            :value="teacher.id"
-          >
+          <option v-for="teacher in availableTeachers" :key="teacher.id" :value="teacher.id">
             {{ teacher.name }}
           </option>
         </select>
@@ -62,8 +48,8 @@
         </label>
         <select
           :value="filters.instrumentId"
-          @change="$emit('update:instrumentId', $event.target.value)"
           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+          @change="$emit('update:instrumentId', $event.target.value)"
         >
           <option value="">Todos los instrumentos</option>
           <option
@@ -84,22 +70,32 @@
         <div class="flex space-x-2">
           <input
             :value="filters.ageRange.min"
-            @change="$emit('update:ageRange', { ...filters.ageRange, min: parseInt($event.target.value) || 0 })"
             type="number"
             min="0"
             max="100"
             placeholder="Mín"
             class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            @change="
+              $emit('update:ageRange', {
+                ...filters.ageRange,
+                min: parseInt($event.target.value) || 0,
+              })
+            "
           />
           <span class="flex items-center text-gray-500">-</span>
           <input
             :value="filters.ageRange.max"
-            @change="$emit('update:ageRange', { ...filters.ageRange, max: parseInt($event.target.value) || 100 })"
             type="number"
             min="0"
             max="100"
             placeholder="Máx"
             class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            @change="
+              $emit('update:ageRange', {
+                ...filters.ageRange,
+                max: parseInt($event.target.value) || 100,
+              })
+            "
           />
         </div>
       </div>
@@ -112,30 +108,35 @@
         <div class="space-y-2">
           <input
             :value="filters.enrollmentDate.start"
-            @change="$emit('update:enrollmentDate', { ...filters.enrollmentDate, start: $event.target.value })"
             type="date"
             placeholder="Desde"
             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            @change="
+              $emit('update:enrollmentDate', {
+                ...filters.enrollmentDate,
+                start: $event.target.value,
+              })
+            "
           />
           <input
             :value="filters.enrollmentDate.end"
-            @change="$emit('update:enrollmentDate', { ...filters.enrollmentDate, end: $event.target.value })"
             type="date"
             placeholder="Hasta"
             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            @change="
+              $emit('update:enrollmentDate', {...filters.enrollmentDate, end: $event.target.value})
+            "
           />
         </div>
       </div>
 
       <!-- Filtro por Estado -->
       <div v-if="showStatusFilter" class="space-y-2">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Estado
-        </label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"> Estado </label>
         <select
           :value="filters.status"
-          @change="$emit('update:status', $event.target.value)"
           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+          @change="$emit('update:status', $event.target.value)"
         >
           <option value="all">Todos los estados</option>
           <option value="active">Activos</option>
@@ -201,8 +202,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { FunnelIcon } from '@heroicons/vue/24/outline'
+import {computed} from "vue"
+import {FunnelIcon} from "@heroicons/vue/24/outline"
 
 // Props
 interface Props {
@@ -211,8 +212,8 @@ interface Props {
     classId: string
     teacherId: string
     instrumentId: string
-    ageRange: { min: number; max: number }
-    enrollmentDate: { start: string; end: string }
+    ageRange: {min: number; max: number}
+    enrollmentDate: {start: string; end: string}
     status: string
   }
   availableClasses: any[]
@@ -226,46 +227,46 @@ const props = defineProps<Props>()
 
 // Emits
 const emit = defineEmits<{
-  'update:classId': [value: string]
-  'update:teacherId': [value: string]
-  'update:instrumentId': [value: string]
-  'update:ageRange': [value: { min: number; max: number }]
-  'update:enrollmentDate': [value: { start: string; end: string }]
-  'update:status': [value: string]
+  "update:classId": [value: string]
+  "update:teacherId": [value: string]
+  "update:instrumentId": [value: string]
+  "update:ageRange": [value: {min: number; max: number}]
+  "update:enrollmentDate": [value: {start: string; end: string}]
+  "update:status": [value: string]
 }>()
 
 // Computed
 const showClassFilter = computed(() => {
-  return ['students', 'classes', 'attendance'].includes(props.selectedReportType)
+  return ["students", "classes", "attendance"].includes(props.selectedReportType)
 })
 
 const showTeacherFilter = computed(() => {
-  return ['students', 'classes', 'attendance'].includes(props.selectedReportType)
+  return ["students", "classes", "attendance"].includes(props.selectedReportType)
 })
 
 const showInstrumentFilter = computed(() => {
-  return ['students', 'classes', 'teachers'].includes(props.selectedReportType)
+  return ["students", "classes", "teachers"].includes(props.selectedReportType)
 })
 
 const showAgeFilter = computed(() => {
-  return ['students'].includes(props.selectedReportType)
+  return ["students"].includes(props.selectedReportType)
 })
 
 const showEnrollmentFilter = computed(() => {
-  return ['students'].includes(props.selectedReportType)
+  return ["students"].includes(props.selectedReportType)
 })
 
 const showStatusFilter = computed(() => {
-  return ['students', 'teachers', 'classes'].includes(props.selectedReportType)
+  return ["students", "teachers", "classes"].includes(props.selectedReportType)
 })
 
 // Funciones
 const resetFilters = () => {
-  emit('update:classId', '')
-  emit('update:teacherId', '')
-  emit('update:instrumentId', '')
-  emit('update:ageRange', { min: 0, max: 100 })
-  emit('update:enrollmentDate', { start: '', end: '' })
-  emit('update:status', 'all')
+  emit("update:classId", "")
+  emit("update:teacherId", "")
+  emit("update:instrumentId", "")
+  emit("update:ageRange", {min: 0, max: 100})
+  emit("update:enrollmentDate", {start: "", end: ""})
+  emit("update:status", "all")
 }
-</script> 
+</script>

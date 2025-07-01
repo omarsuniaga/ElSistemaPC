@@ -14,21 +14,21 @@
  *   – useClassesStore  (info clase)
  *   – useToast / useModal (feedback UI)
  * ------------------------------------------------------------------ */
-import { ref, computed, watch, type Ref } from 'vue'
-import { useAttendanceStore } from '../store/attendance'
-import { useStudentsStore } from '../../Students/store/students'
-import { useClassesStore } from '../../Classes/store/classes'
-import { useToast } from '../composables/useToast'
-import { useModal } from '../composables/useModal'
-import { format, parseISO } from 'date-fns'
-import { es } from 'date-fns/locale'
+import {ref, computed, watch, type Ref} from "vue"
+import {useAttendanceStore} from "../store/attendance"
+import {useStudentsStore} from "../../Students/store/students"
+import {useClassesStore} from "../../Classes/store/classes"
+import {useToast} from "../composables/useToast"
+import {useModal} from "../composables/useModal"
+import {format, parseISO} from "date-fns"
+import {es} from "date-fns/locale"
 
 interface Options {
   selectedDate: Ref<string>
   selectedClass: Ref<string>
 }
 
-export function useAttendanceList({ selectedDate, selectedClass }: Options) {
+export function useAttendanceList({selectedDate, selectedClass}: Options) {
   const attendance = useAttendanceStore()
   const studentsStore = useStudentsStore()
   const classesStore = useClassesStore()
@@ -49,7 +49,7 @@ export function useAttendanceList({ selectedDate, selectedClass }: Options) {
   const records = computed(() => attendance.attendanceRecords)
 
   const formattedDate = computed(() =>
-    format(parseISO(selectedDate.value), "d 'de' MMMM yyyy", { locale: es }),
+    format(parseISO(selectedDate.value), "d 'de' MMMM yyyy", {locale: es})
   )
 
   /* ------------- loaders principales ---------- */
@@ -60,15 +60,13 @@ export function useAttendanceList({ selectedDate, selectedClass }: Options) {
 
       // fallback si el método anterior no encontró nada
       if (!students.value.length) {
-        students.value = studentsStore.students.filter((s) =>
-          s.clase === selectedClass.value,
-        )
+        students.value = studentsStore.students.filter((s) => s.clase === selectedClass.value)
       }
 
       // pre‑inicializa mapa de estados
       students.value.forEach((s) => {
         if (!attendance.attendanceRecords[s.id]) {
-          attendance.attendanceRecords[s.id] = 'Ausente'
+          attendance.attendanceRecords[s.id] = "Ausente"
         }
       })
     } catch (e: any) {
@@ -97,13 +95,13 @@ export function useAttendanceList({ selectedDate, selectedClass }: Options) {
     attendance.attendanceRecords[studentId] = status as any
   }
 
-  function openJustification(student: { id: string; nombre: string; apellido: string }) {
-    modal.open('justification')
-modal.state.justificationStudent = student as unknown as boolean // Type cast to match expected boolean type
+  function openJustification(student: {id: string; nombre: string; apellido: string}) {
+    modal.open("justification")
+    modal.state.justificationStudent = student as unknown as boolean // Type cast to match expected boolean type
   }
 
-  function openObservation(student?: { id: string; nombre: string; apellido: string }) {
-    modal.open('observation')
+  function openObservation(student?: {id: string; nombre: string; apellido: string}) {
+    modal.open("observation")
     modal.state.observationStudent = student as unknown as boolean
   }
 
@@ -114,24 +112,24 @@ modal.state.justificationStudent = student as unknown as boolean // Type cast to
       await attendance.saveAttendanceDocument({
         fecha: selectedDate.value,
         classId: selectedClass.value,
-        teacherId: '', // opcional
+        teacherId: "", // opcional
         data: {
           presentes: Object.entries(records.value)
-            .filter(([, st]) => st === 'Presente')
+            .filter(([, st]) => st === "Presente")
             .map(([id]) => id),
           ausentes: Object.entries(records.value)
-            .filter(([, st]) => st === 'Ausente')
+            .filter(([, st]) => st === "Ausente")
             .map(([id]) => id),
           tarde: Object.entries(records.value)
-            .filter(([, st]) => st === 'Tardanza' || st === 'Justificado')
+            .filter(([, st]) => st === "Tardanza" || st === "Justificado")
             .map(([id]) => id),
           justificacion: attendance.currentAttendanceDoc?.data.justificacion || [],
-          observations: attendance.currentAttendanceDoc?.data.observations || '',
+          observations: attendance.currentAttendanceDoc?.data.observations || "",
         },
       } as any)
-      toast.success('Asistencia guardada')
+      toast.success("Asistencia guardada")
     } catch (e: any) {
-      toast.error('Error al guardar: ' + e.message)
+      toast.error("Error al guardar: " + e.message)
     } finally {
       loading.value = false
     }

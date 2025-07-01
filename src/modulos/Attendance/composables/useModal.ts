@@ -5,7 +5,7 @@
  * state es un objeto reactivo <modalName, boolean> que puedes pasar directo
  * a tus componentes.
  */
-import { reactive } from 'vue'
+import {reactive} from "vue"
 
 export function useModal() {
   // state: { [modalName: string]: boolean }

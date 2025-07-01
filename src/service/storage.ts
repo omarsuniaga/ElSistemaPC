@@ -13,28 +13,28 @@
 export async function uploadFile(file: File, path: string): Promise<string> {
   // In a real implementation, this would upload to Firebase Storage, AWS S3, etc.
   // For now, we'll simulate an upload with a delay
-  
+
   return new Promise((resolve, reject) => {
     // Validate file
     if (!file) {
-      reject(new Error('No file provided'));
-      return;
+      reject(new Error("No file provided"))
+      return
     }
-    
+
     // Simulate network delay
     setTimeout(() => {
       try {
         // Create a mock URL for the file
         // In a real implementation, this would be the URL returned by the storage provider
-        const mockUrl = `https://storage.example.com/${path}?name=${encodeURIComponent(file.name)}`;
-        console.log(`File uploaded successfully: ${path}`);
-        resolve(mockUrl);
+        const mockUrl = `https://storage.example.com/${path}?name=${encodeURIComponent(file.name)}`
+        console.log(`File uploaded successfully: ${path}`)
+        resolve(mockUrl)
       } catch (error) {
-        console.error('Error uploading file:', error);
-        reject(error);
+        console.error("Error uploading file:", error)
+        reject(error)
       }
-    }, 1000);
-  });
+    }, 1000)
+  })
 }
 
 /**
@@ -44,6 +44,6 @@ export async function uploadFile(file: File, path: string): Promise<string> {
  */
 export async function deleteFile(url: string): Promise<void> {
   // In a real implementation, this would delete the file from storage
-  console.log(`File deleted: ${url}`);
-  return Promise.resolve();
+  console.log(`File deleted: ${url}`)
+  return Promise.resolve()
 }

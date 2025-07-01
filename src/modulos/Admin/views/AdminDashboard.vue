@@ -1,7 +1,9 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- Header -->
-    <header class="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
+    <header
+      class="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700"
+    >
       <div class="px-6 py-4">
         <div class="flex items-center justify-between">
           <div>
@@ -12,29 +14,35 @@
               Sistema de gestión académica - El Sistema PC
             </p>
           </div>
-            <!-- Actions and Stats -->
+          <!-- Actions and Stats -->
           <div class="flex items-center space-x-6">
             <!-- Super Admin Button -->
-            <RouterLink 
+            <RouterLink
               to="/admin/super"
               class="bg-gradient-to-r from-purple-500 to-blue-600 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-2"
             >
               <BoltIcon class="w-5 h-5" />
               <span>Superpoderes</span>
             </RouterLink>
-            
+
             <!-- Stats rápidas -->
             <div class="flex items-center space-x-4">
               <div class="text-center">
-                <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ stats.totalStudents }}</div>
+                <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {{ stats.totalStudents }}
+                </div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">Estudiantes</div>
               </div>
               <div class="text-center">
-                <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ stats.totalTeachers }}</div>
+                <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {{ stats.totalTeachers }}
+                </div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">Maestros</div>
               </div>
               <div class="text-center">
-                <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ stats.totalClasses }}</div>
+                <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  {{ stats.totalClasses }}
+                </div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">Clases</div>
               </div>
             </div>
@@ -55,38 +63,38 @@
             description="Registrar nuevo estudiante"
             icon="UserPlusIcon"
             color="blue"
+            :permission="{module: 'students', action: 'create'}"
             @click="navigateTo('/students/new')"
-            :permission="{ module: 'students', action: 'create' }"
           />
-          
+
           <!-- Crear Clase -->
           <QuickActionCard
             title="Nueva Clase"
             description="Crear nueva clase"
             icon="AcademicCapIcon"
             color="green"
+            :permission="{module: 'classes', action: 'create'}"
             @click="openCreateClassModal"
-            :permission="{ module: 'classes', action: 'create' }"
           />
-          
+
           <!-- Asignar Maestro -->
           <QuickActionCard
             title="Asignar Maestro"
             description="Asignar maestro a clase"
             icon="UserGroupIcon"
             color="purple"
+            :permission="{module: 'teachers', action: 'assign'}"
             @click="openAssignTeacherModal"
-            :permission="{ module: 'teachers', action: 'assign' }"
           />
-          
+
           <!-- Gestionar Horarios -->
           <QuickActionCard
             title="Gestionar Horarios"
             description="Crear y editar horarios"
             icon="CalendarIcon"
             color="orange"
+            :permission="{module: 'schedules', action: 'manage'}"
             @click="navigateTo('/admin/schedules')"
-            :permission="{ module: 'schedules', action: 'manage' }"
           />
         </div>
       </section>
@@ -96,21 +104,19 @@
         <!-- Left Column - Management Modules -->
         <div class="lg:col-span-2 space-y-6">
           <!-- Gestión de Recursos -->
-          <DashboardSection
-            title="Gestión de Recursos"
-            icon="CogIcon"
-          >
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">              <ManagementCard
+          <DashboardSection title="Gestión de Recursos" icon="CogIcon">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <ManagementCard
                 title="Estudiantes"
                 description="Gestionar estudiantes registrados"
                 icon="UsersIcon"
                 route="/admin/students"
                 :count="stats.totalStudents"
                 color="blue"
-                :permission="{ module: 'students', action: 'view_all' }"
+                :permission="{module: 'students', action: 'view_all'}"
                 @quick-action="handleManagementCardAction"
               />
-              
+
               <ManagementCard
                 title="Maestros"
                 description="Gestionar maestros y permisos"
@@ -118,10 +124,10 @@
                 route="/admin/teachers"
                 :count="stats.totalTeachers"
                 color="green"
-                :permission="{ module: 'teachers', action: 'view_all' }"
+                :permission="{module: 'teachers', action: 'view_all'}"
                 @quick-action="handleManagementCardAction"
               />
-              
+
               <ManagementCard
                 title="Clases"
                 description="Gestionar clases y asignaciones"
@@ -129,10 +135,10 @@
                 route="/admin/classes"
                 :count="stats.totalClasses"
                 color="purple"
-                :permission="{ module: 'classes', action: 'view_all' }"
+                :permission="{module: 'classes', action: 'view_all'}"
                 @quick-action="handleManagementCardAction"
               />
-              
+
               <ManagementCard
                 title="Horarios"
                 description="Configurar horarios académicos"
@@ -140,18 +146,16 @@
                 route="/admin/schedules"
                 :count="stats.totalSchedules"
                 color="orange"
-                :permission="{ module: 'schedules', action: 'view_all' }"
+                :permission="{module: 'schedules', action: 'view_all'}"
                 @quick-action="handleManagementCardAction"
               />
             </div>
           </DashboardSection>
 
           <!-- Análisis y Reportes -->
-          <DashboardSection
-            title="Análisis y Reportes"
-            icon="ChartBarIcon"
-          >
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">              <ReportCard
+          <DashboardSection title="Análisis y Reportes" icon="ChartBarIcon">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <ReportCard
                 title="Asistencias"
                 description="Reporte de asistencias"
                 icon="ClipboardDocumentCheckIcon"
@@ -159,10 +163,10 @@
                 value="92%"
                 trend="+5%"
                 color="green"
-                :permission="{ module: 'reports', action: 'view_attendance' }"
+                :permission="{module: 'reports', action: 'view_attendance'}"
                 @quick-action="handleReportCardAction"
               />
-              
+
               <ReportCard
                 title="Rendimiento"
                 description="Análisis de rendimiento"
@@ -171,10 +175,10 @@
                 value="87%"
                 trend="+3%"
                 color="blue"
-                :permission="{ module: 'reports', action: 'view_performance' }"
+                :permission="{module: 'reports', action: 'view_performance'}"
                 @quick-action="handleReportCardAction"
               />
-              
+
               <ReportCard
                 title="Inventario"
                 description="Estado del inventario"
@@ -183,7 +187,7 @@
                 value="234"
                 trend="-2"
                 color="orange"
-                :permission="{ module: 'inventory', action: 'view' }"
+                :permission="{module: 'inventory', action: 'view'}"
                 @quick-action="handleReportCardAction"
               />
             </div>
@@ -192,36 +196,28 @@
 
         <!-- Right Column - Activity & Notifications -->
         <div class="space-y-6">
-          <!-- Recent Activity -->          <DashboardSection
-            title="Actividad Reciente"
-            icon="BellIcon"
-          >
-            <RecentActivityList 
-              :activities="recentActivities" 
+          <!-- Recent Activity -->
+          <DashboardSection title="Actividad Reciente" icon="BellIcon">
+            <RecentActivityList
+              :activities="recentActivities"
               @activity-click="handleActivityClick"
               @load-more="handleActivityLoadMore"
             />
           </DashboardSection>
 
           <!-- System Status -->
-          <DashboardSection
-            title="Estado del Sistema"
-            icon="ServerIcon"
-          >
-            <SystemStatusWidget 
-              :status="systemStatus" 
+          <DashboardSection title="Estado del Sistema" icon="ServerIcon">
+            <SystemStatusWidget
+              :status="systemStatus"
               @refresh="handleSystemStatusRefresh"
               @view-details="handleSystemStatusViewDetails"
             />
           </DashboardSection>
 
           <!-- Pending Approvals -->
-          <DashboardSection
-            title="Aprobaciones Pendientes"
-            icon="ExclamationTriangleIcon"
-          >
-            <PendingApprovalsList 
-              :approvals="pendingApprovals" 
+          <DashboardSection title="Aprobaciones Pendientes" icon="ExclamationTriangleIcon">
+            <PendingApprovalsList
+              :approvals="pendingApprovals"
               @approve="(approval) => handleApprovalAction(approval, 'approve')"
               @reject="(approval, reason) => handleApprovalAction(approval, 'reject', reason)"
               @load-more="handleApprovalsLoadMore"
@@ -237,7 +233,7 @@
       @close="showCreateClassModal = false"
       @created="handleClassCreated"
     />
-    
+
     <AssignTeacherModal
       v-if="showAssignTeacherModal"
       @close="showAssignTeacherModal = false"
@@ -247,39 +243,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { BoltIcon } from '@heroicons/vue/24/outline'
-import { useAdminDashboard } from '../composables/useAdminDashboard'
-import QuickActionCard from '../components/QuickActionCard.vue'
-import DashboardSection from '../components/DashboardSection.vue'
-import ManagementCard from '../components/ManagementCard.vue'
-import ReportCard from '../components/ReportCard.vue'
-import RecentActivityList from '../components/RecentActivityList.vue'
-import SystemStatusWidget from '../components/SystemStatusWidget.vue'
-import PendingApprovalsList from '../components/PendingApprovalsList.vue'
-import CreateClassModal from '../components/CreateClassModal.vue'
-import AssignTeacherModal from '../components/AssignTeacherModal.vue'
+import {ref, onMounted, onUnmounted} from "vue"
+import {useRouter} from "vue-router"
+import {BoltIcon} from "@heroicons/vue/24/outline"
+import {useAdminDashboard} from "../composables/useAdminDashboard"
+import QuickActionCard from "../components/QuickActionCard.vue"
+import DashboardSection from "../components/DashboardSection.vue"
+import ManagementCard from "../components/ManagementCard.vue"
+import ReportCard from "../components/ReportCard.vue"
+import RecentActivityList from "../components/RecentActivityList.vue"
+import SystemStatusWidget from "../components/SystemStatusWidget.vue"
+import PendingApprovalsList from "../components/PendingApprovalsList.vue"
+import CreateClassModal from "../components/CreateClassModal.vue"
+import AssignTeacherModal from "../components/AssignTeacherModal.vue"
 
 const router = useRouter()
 const {
   // State
   isLoading,
-  
+
   // Computed
   dashboardStats: stats,
   recentActivities,
   systemStatus,
   pendingApprovals,
   systemHealthScore,
-  
+
   // Permissions
   canCreateClass,
   canAssignTeacher,
   canViewReports,
   canManageUsers,
   canApproveRequests,
-  
+
   // Methods
   loadDashboardData,
   refreshDashboardStats,
@@ -288,7 +284,7 @@ const {
   startAutoRefresh,
   stopAutoRefresh,
   getQuickActions,
-  getManagementCards
+  getManagementCards,
 } = useAdminDashboard()
 
 // Modal states
@@ -300,7 +296,7 @@ const navigateTo = async (route: string) => {
   try {
     await router.push(route)
   } catch (error) {
-    console.error('Navigation error:', error)
+    console.error("Navigation error:", error)
   }
 }
 
@@ -318,17 +314,21 @@ const openAssignTeacherModal = () => {
 
 const handleClassCreated = async (classData: any) => {
   showCreateClassModal.value = false
-  console.log('Clase creada:', classData)
+  console.log("Clase creada:", classData)
   await refreshDashboardStats()
 }
 
 const handleTeacherAssigned = async (assignmentData: any) => {
   showAssignTeacherModal.value = false
-  console.log('Maestro asignado:', assignmentData)
+  console.log("Maestro asignado:", assignmentData)
   await refreshDashboardStats()
 }
 
-const handleApprovalAction = async (approval: any, action: 'approve' | 'reject', reason?: string) => {
+const handleApprovalAction = async (
+  approval: any,
+  action: "approve" | "reject",
+  reason?: string
+) => {
   await handleApproval(approval, action, reason)
 }
 
@@ -337,27 +337,27 @@ const handleSystemStatusRefresh = async () => {
 }
 
 const handleManagementCardAction = (action: any) => {
-  console.log('Management card action:', action)
+  console.log("Management card action:", action)
 }
 
 const handleReportCardAction = (action: string) => {
-  console.log('Report card action:', action)
+  console.log("Report card action:", action)
 }
 
 const handleActivityClick = (activity: any) => {
-  console.log('Activity clicked:', activity)
+  console.log("Activity clicked:", activity)
 }
 
 const handleActivityLoadMore = () => {
-  console.log('Load more activities')
+  console.log("Load more activities")
 }
 
 const handleApprovalsLoadMore = () => {
-  console.log('Load more approvals')
+  console.log("Load more approvals")
 }
 
 const handleSystemStatusViewDetails = () => {
-  console.log('View system status details')
+  console.log("View system status details")
 }
 
 // Lifecycle

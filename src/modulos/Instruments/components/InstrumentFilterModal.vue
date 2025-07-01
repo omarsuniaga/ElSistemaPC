@@ -1,5 +1,8 @@
 <template>
-  <div v-if="props.show" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+  <div
+    v-if="props.show"
+    class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+  >
     <div class="bg-white rounded shadow-lg p-6 w-full max-w-md">
       <h2 class="text-lg font-bold mb-4">Filtrar Instrumentos</h2>
       <form @submit.prevent="apply">
@@ -21,7 +24,13 @@
           </select>
         </div>
         <div class="flex justify-end gap-2">
-          <button type="button" class="px-3 py-1 bg-gray-300 rounded" @click="emit('update:show', false)">Cancelar</button>
+          <button
+            type="button"
+            class="px-3 py-1 bg-gray-300 rounded"
+            @click="emit('update:show', false)"
+          >
+            Cancelar
+          </button>
           <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded">Aplicar</button>
         </div>
       </form>
@@ -30,31 +39,27 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
-const props = defineProps<{ show: boolean }>();
-const emit = defineEmits(['update:show', 'apply-filters']);
+import {ref, watch} from "vue"
+const props = defineProps<{show: boolean}>()
+const emit = defineEmits(["update:show", "apply-filters"])
 
-const familias = [
-  'cuerdas',
-  'maderas',
-  'metales',
-  'percusion',
-  'coro',
-  'accesorios',
-];
+const familias = ["cuerdas", "maderas", "metales", "percusion", "coro", "accesorios"]
 
 const filters = ref({
-  familia: '',
-  state: '',
-});
+  familia: "",
+  state: "",
+})
 
 function apply() {
-  emit('apply-filters', { ...filters.value });
+  emit("apply-filters", {...filters.value})
 }
 
-watch(() => props.show, (val) => {
-  if (!val) {
-    filters.value = { familia: '', state: '' };
+watch(
+  () => props.show,
+  (val) => {
+    if (!val) {
+      filters.value = {familia: "", state: ""}
+    }
   }
-});
+)
 </script>

@@ -1,7 +1,7 @@
 <!-- src/modulos/Admin/components/modals/BulkEmailModal.vue -->
 <template>
   <TransitionRoot appear :show="isOpen" as="template">
-    <Dialog as="div" @close="closeModal" class="relative z-50">
+    <Dialog as="div" class="relative z-50" @close="closeModal">
       <TransitionChild
         as="template"
         enter="duration-300 ease-out"
@@ -25,8 +25,13 @@
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95"
           >
-            <DialogPanel class="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-              <DialogTitle as="h3" class="text-lg font-bold leading-6 text-gray-900 dark:text-white mb-4">
+            <DialogPanel
+              class="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all"
+            >
+              <DialogTitle
+                as="h3"
+                class="text-lg font-bold leading-6 text-gray-900 dark:text-white mb-4"
+              >
                 📧 Envío Masivo de Emails
               </DialogTitle>
 
@@ -38,14 +43,17 @@
                       Destinatarios Seleccionados ({{ selectedStudents.length }})
                     </h4>
                     <button
-                      @click="showRecipientsList = !showRecipientsList"
                       class="text-blue-600 hover:text-blue-700 text-sm"
+                      @click="showRecipientsList = !showRecipientsList"
                     >
-                      {{ showRecipientsList ? 'Ocultar' : 'Ver Lista' }}
+                      {{ showRecipientsList ? "Ocultar" : "Ver Lista" }}
                     </button>
                   </div>
-                  
-                  <div v-if="showRecipientsList" class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 max-h-32 overflow-y-auto">
+
+                  <div
+                    v-if="showRecipientsList"
+                    class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 max-h-32 overflow-y-auto"
+                  >
                     <div class="flex flex-wrap gap-2">
                       <span
                         v-for="student in selectedStudents"
@@ -54,8 +62,8 @@
                       >
                         {{ student.firstName }} {{ student.lastName }}
                         <button
-                          @click="removeRecipient(student.id)"
                           class="ml-1 text-blue-600 hover:text-blue-800"
+                          @click="removeRecipient(student.id)"
                         >
                           <XMarkIcon class="w-3 h-3" />
                         </button>
@@ -71,8 +79,8 @@
                   </label>
                   <select
                     v-model="selectedTemplate"
-                    @change="loadTemplate"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    @change="loadTemplate"
                   >
                     <option value="">Seleccionar plantilla...</option>
                     <option value="welcome">Bienvenida</option>
@@ -88,7 +96,9 @@
                   <div class="grid grid-cols-1 gap-4">
                     <!-- Subject -->
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      >
                         Asunto *
                       </label>
                       <input
@@ -102,7 +112,9 @@
 
                     <!-- Message -->
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      >
                         Mensaje *
                       </label>
                       <textarea
@@ -117,7 +129,7 @@ Puede usar las siguientes variables:
 - {date}: Fecha actual"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none"
                         required
-                      ></textarea>
+                      />
                     </div>
 
                     <!-- Options -->
@@ -132,7 +144,7 @@ Puede usar las siguientes variables:
                           Enviarme una copia
                         </span>
                       </label>
-                      
+
                       <label class="flex items-center">
                         <input
                           v-model="emailData.highPriority"
@@ -171,7 +183,7 @@ Puede usar las siguientes variables:
                 <div v-if="isSending" class="progress-section mb-6">
                   <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                     <div class="flex items-center space-x-3">
-                      <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                      <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
                       <div>
                         <div class="text-sm font-medium text-blue-900 dark:text-blue-100">
                           Enviando emails...
@@ -184,29 +196,33 @@ Puede usar las siguientes variables:
                     <div class="mt-2 bg-blue-200 dark:bg-blue-700 rounded-full h-2">
                       <div
                         class="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
-                        :style="{ width: `${(sendProgress.sent / sendProgress.total) * 100}%` }"
-                      ></div>
+                        :style="{width: `${(sendProgress.sent / sendProgress.total) * 100}%`}"
+                      />
                     </div>
                   </div>
                 </div>
               </div>
 
               <!-- Actions -->
-              <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-600">
+              <div
+                class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-600"
+              >
                 <button
-                  @click="closeModal"
                   :disabled="isSending"
                   class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  @click="closeModal"
                 >
                   Cancelar
                 </button>
                 <button
-                  @click="sendEmails"
                   :disabled="!canSend || isSending"
                   class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  @click="sendEmails"
                 >
                   <PaperAirplaneIcon class="w-4 h-4" />
-                  <span>{{ isSending ? 'Enviando...' : `Enviar a ${selectedStudents.length} estudiantes` }}</span>
+                  <span>{{
+                    isSending ? "Enviando..." : `Enviar a ${selectedStudents.length} estudiantes`
+                  }}</span>
                 </button>
               </div>
             </DialogPanel>
@@ -218,15 +234,9 @@ Puede usar las siguientes variables:
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import {
-  Dialog,
-  DialogPanel,
-  DialogTitle,
-  TransitionChild,
-  TransitionRoot,
-} from '@headlessui/vue'
-import { XMarkIcon, PaperAirplaneIcon } from '@heroicons/vue/24/outline'
+import {ref, computed, watch} from "vue"
+import {Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot} from "@headlessui/vue"
+import {XMarkIcon, PaperAirplaneIcon} from "@heroicons/vue/24/outline"
 
 interface Student {
   id: string
@@ -260,21 +270,21 @@ const emit = defineEmits<{
 
 // Estado local
 const showRecipientsList = ref(false)
-const selectedTemplate = ref('')
+const selectedTemplate = ref("")
 const isSending = ref(false)
-const sendProgress = ref<SendProgress>({ sent: 0, total: 0 })
+const sendProgress = ref<SendProgress>({sent: 0, total: 0})
 
 const emailData = ref<EmailData>({
-  subject: '',
-  message: '',
+  subject: "",
+  message: "",
   sendCopy: false,
-  highPriority: false
+  highPriority: false,
 })
 
 // Templates predefinidas
 const templates = {
   welcome: {
-    subject: 'Bienvenido/a a la Academia Musical',
+    subject: "Bienvenido/a a la Academia Musical",
     message: `Estimado/a {firstName},
 
 ¡Bienvenido/a a nuestra Academia Musical! Estamos emocionados de tenerte como parte de nuestra comunidad musical.
@@ -284,10 +294,10 @@ En los próximos días recibirás más información sobre tus clases y horarios.
 ¡Que disfrutes tu viaje musical!
 
 Saludos cordiales,
-{academyName}`
+{academyName}`,
   },
   reminder: {
-    subject: 'Recordatorio: Tu clase de música',
+    subject: "Recordatorio: Tu clase de música",
     message: `Hola {firstName},
 
 Este es un recordatorio amigable sobre tu próxima clase de música.
@@ -296,10 +306,10 @@ No olvides traer tu instrumento y materiales de estudio.
 
 ¡Te esperamos!
 
-{academyName}`
+{academyName}`,
   },
   payment: {
-    subject: 'Recordatorio de Pago - Academia Musical',
+    subject: "Recordatorio de Pago - Academia Musical",
     message: `Estimado/a {firstName},
 
 Te recordamos que tienes un pago pendiente por tus clases de música.
@@ -308,10 +318,10 @@ Por favor, ponte en contacto con nosotros para regularizar tu situación.
 
 Gracias por tu comprensión.
 
-{academyName}`
+{academyName}`,
   },
   announcement: {
-    subject: 'Anuncio Important - Academia Musical',
+    subject: "Anuncio Important - Academia Musical",
     message: `Estimado/a {firstName},
 
 Queremos informarte sobre una novedad importante en nuestra academia.
@@ -320,21 +330,23 @@ Queremos informarte sobre una novedad importante en nuestra academia.
 
 ¡Gracias por ser parte de nuestra comunidad!
 
-{academyName}`
-  }
+{academyName}`,
+  },
 }
 
 // Computed
 const canSend = computed(() => {
-  return emailData.value.subject.trim() && 
-         emailData.value.message.trim() && 
-         props.selectedStudents.length > 0 &&
-         !isSending.value
+  return (
+    emailData.value.subject.trim() &&
+    emailData.value.message.trim() &&
+    props.selectedStudents.length > 0 &&
+    !isSending.value
+  )
 })
 
 const previewMessage = computed(() => {
-  if (!emailData.value.message) return ''
-  
+  if (!emailData.value.message) return ""
+
   // Simular reemplazo de variables con el primer estudiante
   let preview = emailData.value.message
   if (props.selectedStudents.length > 0) {
@@ -342,23 +354,23 @@ const previewMessage = computed(() => {
     preview = preview
       .replace(/{firstName}/g, firstStudent.firstName)
       .replace(/{lastName}/g, firstStudent.lastName)
-      .replace(/{academyName}/g, 'Academia Musical')
+      .replace(/{academyName}/g, "Academia Musical")
       .replace(/{date}/g, new Date().toLocaleDateString())
   }
-  
+
   return preview
 })
 
 // Methods
 const closeModal = () => {
   if (!isSending.value) {
-    emit('close')
+    emit("close")
   }
 }
 
 const removeRecipient = (studentId: string) => {
-  const updatedStudents = props.selectedStudents.filter(s => s.id !== studentId)
-  emit('close') // Temporal - idealmente se actualizaría la lista sin cerrar
+  const updatedStudents = props.selectedStudents.filter((s) => s.id !== studentId)
+  emit("close") // Temporal - idealmente se actualizaría la lista sin cerrar
 }
 
 const loadTemplate = () => {
@@ -374,41 +386,40 @@ const sendEmails = async () => {
 
   try {
     isSending.value = true
-    sendProgress.value = { sent: 0, total: props.selectedStudents.length }
+    sendProgress.value = {sent: 0, total: props.selectedStudents.length}
 
     // Simular envío progresivo
     for (let i = 0; i < props.selectedStudents.length; i++) {
       const student = props.selectedStudents[i]
-      
+
       // Simular procesamiento
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
       // TODO: Implementar envío real del email
       await sendEmailToStudent(student)
-      
+
       sendProgress.value.sent++
     }
 
     // Éxito
-    emit('sent', props.selectedStudents.length)
-    
+    emit("sent", props.selectedStudents.length)
+
     // Limpiar formulario
     emailData.value = {
-      subject: '',
-      message: '',
+      subject: "",
+      message: "",
       sendCopy: false,
-      highPriority: false
+      highPriority: false,
     }
-    selectedTemplate.value = ''
-    
-    closeModal()
+    selectedTemplate.value = ""
 
+    closeModal()
   } catch (error) {
-    console.error('Error enviando emails:', error)
+    console.error("Error enviando emails:", error)
     // TODO: Mostrar error al usuario
   } finally {
     isSending.value = false
-    sendProgress.value = { sent: 0, total: 0 }
+    sendProgress.value = {sent: 0, total: 0}
   }
 }
 
@@ -419,31 +430,37 @@ const sendEmailToStudent = async (student: Student) => {
     message: emailData.value.message
       .replace(/{firstName}/g, student.firstName)
       .replace(/{lastName}/g, student.lastName)
-      .replace(/{academyName}/g, 'Academia Musical')
-      .replace(/{date}/g, new Date().toLocaleDateString())
+      .replace(/{academyName}/g, "Academia Musical")
+      .replace(/{date}/g, new Date().toLocaleDateString()),
   })
 }
 
 // Watchers
-watch(() => props.isOpen, (newValue) => {
-  if (!newValue) {
-    // Reset al cerrar
-    showRecipientsList.value = false
-    selectedTemplate.value = ''
-    if (!isSending.value) {
-      emailData.value = {
-        subject: '',
-        message: '',
-        sendCopy: false,
-        highPriority: false
+watch(
+  () => props.isOpen,
+  (newValue) => {
+    if (!newValue) {
+      // Reset al cerrar
+      showRecipientsList.value = false
+      selectedTemplate.value = ""
+      if (!isSending.value) {
+        emailData.value = {
+          subject: "",
+          message: "",
+          sendCopy: false,
+          highPriority: false,
+        }
       }
     }
   }
-})
+)
 </script>
 
 <style scoped>
 .email-preview {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 </style>

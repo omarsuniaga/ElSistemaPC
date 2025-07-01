@@ -1,82 +1,86 @@
-import { defineStore } from 'pinia'
-import { getAuth } from 'firebase/auth'
-import { 
-  getCollection, 
-  getDocument, 
-  createDocument, 
-  updateDocument, 
+import {defineStore} from "pinia"
+import {getAuth} from "firebase/auth"
+import {
+  getCollection,
+  getDocument,
+  createDocument,
+  updateDocument,
   deleteDocument,
-} from '../services/firestore'
-import { getStudentsByClass } from '../services/firestore/studentsByClass'
-import { 
-  getObservations, 
-  addObservation, 
-  deleteObservation 
-} from '../services/firestore/observations'
+} from "../services/firestore"
+import {getStudentsByClass} from "../services/firestore/studentsByClass"
+import {
+  getObservations,
+  addObservation,
+  deleteObservation,
+} from "../services/firestore/observations"
 
-export const useFirestoreStore = defineStore('firestore', {
+export const useFirestoreStore = defineStore("firestore", {
   state: () => ({
     lastResponse: null as any,
     error: null as string | null,
-    isLoading: false
+    isLoading: false,
   }),
 
   actions: {
-    async executeQuery(collectionName: string, operation: 'get' | 'getAll' | 'add' | 'update' | 'delete', data?: any, id?: string) {
+    async executeQuery(
+      collectionName: string,
+      operation: "get" | "getAll" | "add" | "update" | "delete",
+      data?: any,
+      id?: string
+    ) {
       const auth = getAuth()
       if (!auth.currentUser) {
-        throw new Error('Usuario no autenticado')
+        throw new Error("Usuario no autenticado")
       }
 
       this.isLoading = true
       this.error = null
 
       try {
-        let response;
+        let response
 
         switch (operation) {
-          case 'getAll':
+          case "getAll":
             response = await getCollection(collectionName)
             break
 
-          case 'get':
-            if (!id) throw new Error('ID es requerido para obtener un documento')
+          case "get":
+            if (!id) throw new Error("ID es requerido para obtener un documento")
             response = await getDocument(collectionName, id)
             break
 
-          case 'add':
+          case "add":
             await createDocument(collectionName, {
               ...data,
               createdBy: auth.currentUser.uid,
-              createdAt: new Date().toISOString()
+              createdAt: new Date().toISOString(),
             })
-            response = { id: data.id, ...data }
+            response = {id: data.id, ...data}
             break
 
-          case 'update':
-            if (!id) throw new Error('ID es requerido para actualizar')
+          case "update":
+            if (!id) throw new Error("ID es requerido para actualizar")
             await updateDocument(collectionName, id, {
               ...data,
               updatedBy: auth.currentUser.uid,
-              updatedAt: new Date().toISOString()
+              updatedAt: new Date().toISOString(),
             })
-            response = { id, ...data }
+            response = {id, ...data}
             break
 
-          case 'delete':
-            if (!id) throw new Error('ID es requerido para eliminar')
+          case "delete":
+            if (!id) throw new Error("ID es requerido para eliminar")
             await deleteDocument(collectionName, id)
-            response = { id }
+            response = {id}
             break
         }
 
         this.lastResponse = response
         console.log(`Firestore ${operation} response:`, response)
         return response
-
       } catch (error) {
         console.error(`Firestore ${operation} error:`, error)
-        this.error = error instanceof Error ? error.message : 'Error en operación de Firestore'
+        this.error = error instanceof Error ? error.message : "Error en operación de Firestore"
         throw error
       } finally {
         this.isLoading = false
@@ -92,8 +96,8 @@ export const useFirestoreStore = defineStore('firestore', {
         const students = await getStudentsByClass(className)
         return students
       } catch (error) {
-        console.error('Error getting students by class:', error)
-        this.error = error instanceof Error ? error.message : 'Error getting students by class'
+        console.error("Error getting students by class:", error)
+        this.error = error instanceof Error ? error.message : "Error getting students by class"
         throw error
       } finally {
         this.isLoading = false
@@ -109,8 +113,8 @@ export const useFirestoreStore = defineStore('firestore', {
         const observations = await getObservations(attendanceId)
         return observations
       } catch (error) {
-        console.error('Error al obtener observaciones:', error)
-        this.error = error instanceof Error ? error.message : 'Error al obtener observaciones'
+        console.error("Error al obtener observaciones:", error)
+        this.error = error instanceof Error ? error.message : "Error al obtener observaciones"
         throw error
       } finally {
         this.isLoading = false
@@ -125,8 +129,8 @@ export const useFirestoreStore = defineStore('firestore', {
         const result = await addObservation(observation)
         return result
       } catch (error) {
-        console.error('Error al agregar observación:', error)
-        this.error = error instanceof Error ? error.message : 'Error al agregar observación'
+        console.error("Error al agregar observación:", error)
+        this.error = error instanceof Error ? error.message : "Error al agregar observación"
         throw error
       } finally {
         this.isLoading = false
@@ -139,14 +143,14 @@ export const useFirestoreStore = defineStore('firestore', {
 
       try {
         await deleteObservation(observationId)
-        return { success: true }
+        return {success: true}
       } catch (error) {
-        console.error('Error al eliminar observación:', error)
-        this.error = error instanceof Error ? error.message : 'Error al eliminar observación'
+        console.error("Error al eliminar observación:", error)
+        this.error = error instanceof Error ? error.message : "Error al eliminar observación"
         throw error
       } finally {
         this.isLoading = false
       }
-    }
-  }
+    },
+  },
 })

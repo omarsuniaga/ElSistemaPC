@@ -1,38 +1,38 @@
 <script setup lang="ts">
 interface Props {
-  title?: string;
-  subtitle?: string;
-  hoverable?: boolean;
-  clickable?: boolean;
-  variant?: 'default' | 'outlined' | 'elevated';
+  title?: string
+  subtitle?: string
+  hoverable?: boolean
+  clickable?: boolean
+  variant?: "default" | "outlined" | "elevated"
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: '',
-  subtitle: '',
+  title: "",
+  subtitle: "",
   hoverable: false,
   clickable: false,
-  variant: 'default'
+  variant: "default",
 })
 
 const emit = defineEmits<{
-  (e: 'click'): void;
+  (e: "click"): void
 }>()
 
 const handleClick = () => {
   if (props.clickable) {
-    emit('click')
+    emit("click")
   }
 }
 </script>
 
 <template>
-  <div 
+  <div
     :class="[
       'card',
       `card-${variant}`,
       hoverable && 'card-hoverable',
-      clickable && 'card-clickable'
+      clickable && 'card-clickable',
     ]"
     @click="handleClick"
   >
@@ -42,13 +42,13 @@ const handleClick = () => {
         <p v-if="subtitle" class="card-subtitle">{{ subtitle }}</p>
       </slot>
     </div>
-    
+
     <div class="card-body">
-      <slot></slot>
+      <slot />
     </div>
-    
+
     <div v-if="$slots.footer" class="card-footer">
-      <slot name="footer"></slot>
+      <slot name="footer" />
     </div>
   </div>
 </template>
@@ -70,7 +70,9 @@ const handleClick = () => {
 }
 
 .card-elevated {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .card-hoverable:hover {

@@ -14,36 +14,36 @@
     <div class="p-6">
       <!-- Controles principales -->
       <div class="test-controls flex space-x-4 mb-6">
-        <button 
-          @click="runQuickTest" 
+        <button
           :disabled="isRunning"
           class="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+          @click="runQuickTest"
         >
           <BoltIcon class="h-4 w-4 mr-2" />
           Prueba Rápida
         </button>
-        
-        <button 
-          @click="runFullTest" 
+
+        <button
           :disabled="isRunning"
           class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+          @click="runFullTest"
         >
           <CheckCircleIcon class="h-4 w-4 mr-2" />
           Suite Completa
         </button>
-        
-        <button 
-          @click="testBrandingComponents" 
+
+        <button
           :disabled="isRunning"
           class="inline-flex items-center px-4 py-2 border border-purple-300 rounded-md shadow-sm text-sm font-medium text-purple-700 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+          @click="testBrandingComponents"
         >
           <WrenchScrewdriverIcon class="h-4 w-4 mr-2" />
           Test Componentes
         </button>
-        
-        <button 
-          @click="clearResults" 
+
+        <button
           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          @click="clearResults"
         >
           <TrashIcon class="h-4 w-4 mr-2" />
           Limpiar
@@ -53,7 +53,10 @@
       <!-- Indicador de progreso -->
       <div v-if="isRunning" class="test-progress mb-6">
         <div class="w-full bg-gray-200 rounded-full h-2">
-          <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" :style="{ width: `${progress * 100}%` }"></div>
+          <div
+            class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            :style="{width: `${progress * 100}%`}"
+          />
         </div>
         <p class="text-sm text-gray-600 mt-2">{{ currentTestMessage }}</p>
       </div>
@@ -67,37 +70,52 @@
         <div class="status-grid">
           <div class="status-item">
             <span class="status-label">Store Inicializado:</span>
-            <span :class="storeStatus.store ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs' : 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs'">
-              {{ storeStatus.store ? 'SÍ' : 'NO' }}
+            <span
+              :class="
+                storeStatus.store
+                  ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs'
+                  : 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs'
+              "
+            >
+              {{ storeStatus.store ? "SÍ" : "NO" }}
             </span>
           </div>
           <div class="status-item">
             <span class="status-label">Configuración Cargada:</span>
-            <span :class="storeStatus.config ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs' : 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs'">
-              {{ storeStatus.config ? 'SÍ' : 'NO' }}
+            <span
+              :class="
+                storeStatus.config
+                  ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs'
+                  : 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs'
+              "
+            >
+              {{ storeStatus.config ? "SÍ" : "NO" }}
             </span>
           </div>
           <div class="status-item">
             <span class="status-label">App Name:</span>
-            <span class="status-value">{{ brandingStore.appTitle || 'N/A' }}</span>
+            <span class="status-value">{{ brandingStore.appTitle || "N/A" }}</span>
           </div>
           <div class="status-item">
             <span class="status-label">Color Primario:</span>
             <div class="color-preview">
-              <div 
-                class="color-swatch" 
-                :style="{ backgroundColor: brandingStore.primaryColor }"
-              ></div>
-              <span>{{ brandingStore.primaryColor || 'N/A' }}</span>
+              <div class="color-swatch" :style="{backgroundColor: brandingStore.primaryColor}" />
+              <span>{{ brandingStore.primaryColor || "N/A" }}</span>
             </div>
           </div>
           <div class="status-item">
             <span class="status-label">Logo URL:</span>
-            <span class="status-value">{{ brandingStore.logoUrl || 'N/A' }}</span>
+            <span class="status-value">{{ brandingStore.logoUrl || "N/A" }}</span>
           </div>
           <div class="status-item">
             <span class="status-label">CSS Variables:</span>
-            <span :class="cssVariablesCount > 0 ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs' : 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs'">
+            <span
+              :class="
+                cssVariablesCount > 0
+                  ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs'
+                  : 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs'
+              "
+            >
               {{ cssVariablesCount }} variables
             </span>
           </div>
@@ -107,11 +125,19 @@
       <!-- Resultados de las pruebas -->
       <div v-if="testResults.length > 0" class="test-results">
         <h3>📊 Resultados de Pruebas</h3>
-        
+
         <!-- Resumen -->
         <div class="results-summary flex items-center gap-2 mb-4">
           <ChartBarIcon class="h-5 w-5 text-blue-500" />
-          <span :class="summaryColor === 'success' ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs' : summaryColor === 'warning' ? 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs' : 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs'">
+          <span
+            :class="
+              summaryColor === 'success'
+                ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs'
+                : summaryColor === 'warning'
+                  ? 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs'
+                  : 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs'
+            "
+          >
             {{ passedTests }}/{{ testResults.length }} Exitosas ({{ successRate }}%)
           </span>
         </div>
@@ -126,7 +152,13 @@
               <div class="font-semibold">{{ result.test }}</div>
               <div v-if="result.details" class="text-xs text-gray-500">{{ result.details }}</div>
             </div>
-            <span :class="result.status === 'PASS' ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs ml-2' : 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs ml-2'">
+            <span
+              :class="
+                result.status === 'PASS'
+                  ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs ml-2'
+                  : 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs ml-2'
+              "
+            >
               {{ result.status }}
             </span>
           </li>
@@ -136,14 +168,14 @@
       <!-- Vista previa de componentes dinámicos -->
       <div class="component-preview">
         <h3>🎨 Vista Previa de Componentes</h3>
-        
+
         <!-- Header dinámico -->
         <div class="preview-section">
           <h4>Header Dinámico</h4>
           <div class="mock-header" :style="headerStyles">
-            <img 
-              v-if="brandingStore.logoUrl" 
-              :src="brandingStore.logoUrl" 
+            <img
+              v-if="brandingStore.logoUrl"
+              :src="brandingStore.logoUrl"
               alt="Logo"
               class="mock-logo"
             />
@@ -153,20 +185,17 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Colores de marca -->
         <div class="preview-section">
           <h4>Paleta de Colores</h4>
           <div class="color-palette">
-            <div 
-              v-for="(color, name) in brandingStore.config.colors" 
+            <div
+              v-for="(color, name) in brandingStore.config.colors"
               :key="name"
               class="color-item"
             >
-              <div 
-                class="color-swatch" 
-                :style="{ backgroundColor: color }"
-              ></div>
+              <div class="color-swatch" :style="{backgroundColor: color}" />
               <span class="color-name">{{ name }}</span>
               <span class="color-value">{{ color }}</span>
             </div>
@@ -178,23 +207,23 @@
       <div class="debug-tools">
         <h3>🔧 Herramientas de Debug</h3>
         <div class="debug-actions flex gap-2 flex-wrap">
-          <button 
-            @click="openConsoleTools" 
+          <button
             class="inline-flex items-center px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            @click="openConsoleTools"
           >
             <CommandLineIcon class="h-4 w-4 mr-1" />
             Consola Dev
           </button>
-          <button 
-            @click="exportTestResults" 
+          <button
             class="inline-flex items-center px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            @click="exportTestResults"
           >
             <ArrowDownTrayIcon class="h-4 w-4 mr-1" />
             Exportar Resultados
           </button>
-          <button 
-            @click="viewBrandingStore" 
+          <button
             class="inline-flex items-center px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            @click="viewBrandingStore"
           >
             <EyeIcon class="h-4 w-4 mr-1" />
             Ver Store
@@ -206,16 +235,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import {ref, computed, onMounted} from "vue"
 import {
-  BeakerIcon, BoltIcon, CheckCircleIcon, WrenchScrewdriverIcon,
-  TrashIcon, InformationCircleIcon, ChartBarIcon,
-  XCircleIcon, CommandLineIcon, ArrowDownTrayIcon, EyeIcon
-} from '@heroicons/vue/24/outline'
+  BeakerIcon,
+  BoltIcon,
+  CheckCircleIcon,
+  WrenchScrewdriverIcon,
+  TrashIcon,
+  InformationCircleIcon,
+  ChartBarIcon,
+  XCircleIcon,
+  CommandLineIcon,
+  ArrowDownTrayIcon,
+  EyeIcon,
+} from "@heroicons/vue/24/outline"
 
-import { useBrandingStore } from '@/stores/brandingStore'
-import { brandingTests } from '@/utils/testing/brandingTests'
-import { logger } from '@/utils/logging/logger'
+import {useBrandingStore} from "@/stores/brandingStore"
+import {brandingTests} from "@/utils/testing/brandingTests"
+import {logger} from "@/utils/logging/logger"
 
 // Store
 const brandingStore = useBrandingStore()
@@ -223,76 +260,77 @@ const brandingStore = useBrandingStore()
 // Estado local
 const isRunning = ref(false)
 const progress = ref(0)
-const currentTestMessage = ref('')
-const testResults = ref<Array<{ test: string; status: 'PASS' | 'FAIL'; details?: string }>>([])
+const currentTestMessage = ref("")
+const testResults = ref<Array<{test: string; status: "PASS" | "FAIL"; details?: string}>>([])
 
 // Estado del sistema
 const storeStatus = computed(() => ({
   store: !!brandingStore,
-  config: !!brandingStore.config.appName
+  config: !!brandingStore.config.appName,
 }))
 
-const cssVariablesCount = computed(() => 
-  Object.keys(brandingStore.cssVariables).length
-)
+const cssVariablesCount = computed(() => Object.keys(brandingStore.cssVariables).length)
 
 // Estadísticas de pruebas
-const passedTests = computed(() => 
-  testResults.value.filter(r => r.status === 'PASS').length
-)
+const passedTests = computed(() => testResults.value.filter((r) => r.status === "PASS").length)
 
-const successRate = computed(() => 
-  testResults.value.length > 0 
+const successRate = computed(() =>
+  testResults.value.length > 0
     ? Math.round((passedTests.value / testResults.value.length) * 100)
     : 0
 )
 
 const summaryColor = computed(() => {
-  if (successRate.value >= 90) return 'success'
-  if (successRate.value >= 70) return 'warning'
-  return 'danger'
+  if (successRate.value >= 90) return "success"
+  if (successRate.value >= 70) return "warning"
+  return "danger"
 })
 
 // Estilos para preview
 const headerStyles = computed(() => ({
   backgroundColor: brandingStore.primaryColor,
-  color: 'white',
-  padding: '16px',
-  borderRadius: '8px',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '12px'
+  color: "white",
+  padding: "16px",
+  borderRadius: "8px",
+  display: "flex",
+  alignItems: "center",
+  gap: "12px",
 }))
 
 // Métodos
 async function runQuickTest() {
   isRunning.value = true
-  currentTestMessage.value = 'Ejecutando prueba rápida...'
+  currentTestMessage.value = "Ejecutando prueba rápida..."
   progress.value = 0.3
-  
+
   try {
     const result = await brandingTests.quickTest()
-    
-    testResults.value = [{
-      test: 'Prueba Rápida del Sistema',
-      status: result ? 'PASS' : 'FAIL',
-      details: result ? 'Todos los componentes básicos funcionan' : 'Fallos detectados en componentes básicos'
-    }]
-    
+
+    testResults.value = [
+      {
+        test: "Prueba Rápida del Sistema",
+        status: result ? "PASS" : "FAIL",
+        details: result
+          ? "Todos los componentes básicos funcionan"
+          : "Fallos detectados en componentes básicos",
+      },
+    ]
+
     progress.value = 1
-    currentTestMessage.value = 'Prueba rápida completada'
-    
+    currentTestMessage.value = "Prueba rápida completada"
   } catch (error) {
-    logger.error('BRANDING_TEST_DASHBOARD', 'Error en prueba rápida', error)
-    testResults.value = [{
-      test: 'Prueba Rápida del Sistema',
-      status: 'FAIL',
-      details: `Error: ${error}`
-    }]
+    logger.error("BRANDING_TEST_DASHBOARD", "Error en prueba rápida", error)
+    testResults.value = [
+      {
+        test: "Prueba Rápida del Sistema",
+        status: "FAIL",
+        details: `Error: ${error}`,
+      },
+    ]
   } finally {
     setTimeout(() => {
       isRunning.value = false
-      currentTestMessage.value = ''
+      currentTestMessage.value = ""
       progress.value = 0
     }, 1000)
   }
@@ -300,31 +338,32 @@ async function runQuickTest() {
 
 async function runFullTest() {
   isRunning.value = true
-  currentTestMessage.value = 'Ejecutando suite completa de pruebas...'
+  currentTestMessage.value = "Ejecutando suite completa de pruebas..."
   progress.value = 0.1
-  
+
   try {
     // Capturar resultados de la suite completa
     await brandingTests.runAllTests()
-    
+
     // Obtener resultados del window object
     const results = (window as any).brandingTestResults || []
     testResults.value = results
-    
+
     progress.value = 1
-    currentTestMessage.value = 'Suite completa finalizada'
-    
+    currentTestMessage.value = "Suite completa finalizada"
   } catch (error) {
-    logger.error('BRANDING_TEST_DASHBOARD', 'Error en suite completa', error)
-    testResults.value = [{
-      test: 'Suite Completa',
-      status: 'FAIL',
-      details: `Error ejecutando suite: ${error}`
-    }]
+    logger.error("BRANDING_TEST_DASHBOARD", "Error en suite completa", error)
+    testResults.value = [
+      {
+        test: "Suite Completa",
+        status: "FAIL",
+        details: `Error ejecutando suite: ${error}`,
+      },
+    ]
   } finally {
     setTimeout(() => {
       isRunning.value = false
-      currentTestMessage.value = ''
+      currentTestMessage.value = ""
       progress.value = 0
     }, 1000)
   }
@@ -332,66 +371,66 @@ async function runFullTest() {
 
 function testBrandingComponents() {
   isRunning.value = true
-  currentTestMessage.value = 'Probando componentes de branding...'
+  currentTestMessage.value = "Probando componentes de branding..."
   progress.value = 0.5
-  
+
   const componentTests = []
-  
+
   // Test DynamicHeader
-  if (document.querySelector('.dynamic-header') || document.querySelector('[class*="header"]')) {
+  if (document.querySelector(".dynamic-header") || document.querySelector('[class*="header"]')) {
     componentTests.push({
-      test: 'DynamicHeader Component',
-      status: 'PASS' as const,
-      details: 'Componente encontrado en DOM'
+      test: "DynamicHeader Component",
+      status: "PASS" as const,
+      details: "Componente encontrado en DOM",
     })
   } else {
     componentTests.push({
-      test: 'DynamicHeader Component',
-      status: 'FAIL' as const,
-      details: 'Componente no encontrado en DOM'
+      test: "DynamicHeader Component",
+      status: "FAIL" as const,
+      details: "Componente no encontrado en DOM",
     })
   }
-  
+
   // Test variables CSS aplicadas
   const root = document.documentElement
-  const primaryVar = getComputedStyle(root).getPropertyValue('--ion-color-primary')
-  
+  const primaryVar = getComputedStyle(root).getPropertyValue("--ion-color-primary")
+
   if (primaryVar) {
     componentTests.push({
-      test: 'CSS Variables Applied',
-      status: 'PASS' as const,
-      details: `Primary color: ${primaryVar.trim()}`
+      test: "CSS Variables Applied",
+      status: "PASS" as const,
+      details: `Primary color: ${primaryVar.trim()}`,
     })
   } else {
     componentTests.push({
-      test: 'CSS Variables Applied',
-      status: 'FAIL' as const,
-      details: 'Variables CSS no encontradas'
+      test: "CSS Variables Applied",
+      status: "FAIL" as const,
+      details: "Variables CSS no encontradas",
     })
   }
-  
+
   // Test composable availability
   try {
-    const { appTitle } = useBranding()
+    const {appTitle} = useBranding()
     componentTests.push({
-      test: 'Branding Composable',
-      status: 'PASS' as const,
-      details: `Composable funcional, title: ${appTitle.value}`
+      test: "Branding Composable",
+      status: "PASS" as const,
+      details: `Composable funcional, title: ${appTitle.value}`,
     })
   } catch (error) {
     componentTests.push({
-      test: 'Branding Composable',
-      status: 'FAIL' as const,
-      details: 'Error accediendo al composable'
+      test: "Branding Composable",
+      status: "FAIL" as const,
+      details: "Error accediendo al composable",
     })
   }
-  
+
   testResults.value = componentTests
   progress.value = 1
-  
+
   setTimeout(() => {
     isRunning.value = false
-    currentTestMessage.value = ''
+    currentTestMessage.value = ""
     progress.value = 0
   }, 800)
 }
@@ -401,26 +440,26 @@ function clearResults() {
 }
 
 function openConsoleTools() {
-  console.group('🎨 Branding Debug Tools - Activadas')
-  console.log('Usa estas funciones en la consola:')
-  console.log('• testBranding() - Suite completa')
-  console.log('• quickTestBranding() - Prueba rápida')
-  console.log('• window.brandingTestResults - Últimos resultados')
-  console.log('• debugBranding() - Ver todas las herramientas')
+  console.group("🎨 Branding Debug Tools - Activadas")
+  console.log("Usa estas funciones en la consola:")
+  console.log("• testBranding() - Suite completa")
+  console.log("• quickTestBranding() - Prueba rápida")
+  console.log("• window.brandingTestResults - Últimos resultados")
+  console.log("• debugBranding() - Ver todas las herramientas")
   console.groupEnd()
-  
+
   // Ejecutar debug automáticamente
   if ((window as any).debugBranding) {
-    (window as any).debugBranding()
+    ;(window as any).debugBranding()
   }
 }
 
 function exportTestResults() {
   if (testResults.value.length === 0) {
-    alert('No hay resultados para exportar')
+    alert("No hay resultados para exportar")
     return
   }
-  
+
   const data = {
     timestamp: new Date().toISOString(),
     systemStatus: storeStatus.value,
@@ -430,15 +469,15 @@ function exportTestResults() {
       total: testResults.value.length,
       passed: passedTests.value,
       failed: testResults.value.length - passedTests.value,
-      successRate: successRate.value
-    }
+      successRate: successRate.value,
+    },
   }
-  
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"})
   const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
+  const a = document.createElement("a")
   a.href = url
-  a.download = `branding-test-results-${new Date().toISOString().split('T')[0]}.json`
+  a.download = `branding-test-results-${new Date().toISOString().split("T")[0]}.json`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -446,22 +485,22 @@ function exportTestResults() {
 }
 
 function viewBrandingStore() {
-  console.group('🎨 Branding Store State')
-  console.log('Config:', brandingStore.config)
-  console.log('CSS Variables:', brandingStore.cssVariables)
-  console.log('App Title:', brandingStore.appTitle)
-  console.log('Primary Color:', brandingStore.primaryColor)
-  console.log('Is Loading:', brandingStore.isLoading)
-  console.log('Has Changes:', brandingStore.hasChanges)
+  console.group("🎨 Branding Store State")
+  console.log("Config:", brandingStore.config)
+  console.log("CSS Variables:", brandingStore.cssVariables)
+  console.log("App Title:", brandingStore.appTitle)
+  console.log("Primary Color:", brandingStore.primaryColor)
+  console.log("Is Loading:", brandingStore.isLoading)
+  console.log("Has Changes:", brandingStore.hasChanges)
   console.groupEnd()
 }
 
 // Composable para uso en template
-import { useBranding } from '@/composables/useBranding'
+import {useBranding} from "@/composables/useBranding"
 
 // Lifecycle
 onMounted(() => {
-  logger.info('BRANDING_TEST_DASHBOARD', 'Dashboard de pruebas montado')
+  logger.info("BRANDING_TEST_DASHBOARD", "Dashboard de pruebas montado")
 })
 </script>
 
@@ -639,11 +678,11 @@ onMounted(() => {
   .test-controls {
     flex-direction: column;
   }
-  
+
   .status-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .color-palette {
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   }

@@ -7,7 +7,8 @@
           v-model="selectedInstruments"
           @selection-change="handleInstrumentSelection"
         />
-      </div>      <!-- Sección de Selección de Alumnos -->
+      </div>
+      <!-- Sección de Selección de Alumnos -->
       <div class="md:col-span-1">
         <AlumnosSelector
           v-model="selectedAlumnos"
@@ -25,21 +26,21 @@
         <h4 class="text-sm font-medium text-gray-700 mb-2">Acciones</h4>
         <div class="space-y-2">
           <button
-            @click="emit('bulk-select', 'all')"
             class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
+            @click="emit('bulk-select', 'all')"
           >
             Seleccionar Todos los Compases
           </button>
           <button
-            @click="emit('bulk-select', 'none')"
             class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
+            @click="emit('bulk-select', 'none')"
           >
             Limpiar Selección
           </button>
           <button
-            @click="openEstadoModal"
             :disabled="!hasSelection"
             class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 disabled:opacity-50"
+            @click="openEstadoModal"
           >
             Asignar Estado a Selección
           </button>
@@ -64,17 +65,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, PropType } from 'vue';
-import InstrumentGroupSelector from './InstrumentGroupSelector.vue';
-import AlumnosSelector from './AlumnosSelector.vue';
-import EstadoSelectorModal from './EstadoSelectorModal.vue';
-import { TipoInstrumento, EstadoCompass } from '../types';
+import {ref, computed, PropType} from "vue"
+import InstrumentGroupSelector from "./InstrumentGroupSelector.vue"
+import AlumnosSelector from "./AlumnosSelector.vue"
+import EstadoSelectorModal from "./EstadoSelectorModal.vue"
+import {TipoInstrumento, EstadoCompass} from "../types"
 
 // Props
 const props = defineProps({
   claseId: {
     type: String,
-    default: '',
+    default: "",
   },
   selectionCount: {
     type: Number,
@@ -83,61 +84,55 @@ const props = defineProps({
   selectedCompases: {
     type: Array as PropType<number[]>,
     default: () => [],
-  }
-});
+  },
+})
 
 // Emits
-const emit = defineEmits([
-  'filter-change',
-  'bulk-select',
-  'apply-state'
-]);
+const emit = defineEmits(["filter-change", "bulk-select", "apply-state"])
 
 // State
-const selectedInstruments = ref<TipoInstrumento[]>([]);
-const selectedAlumnos = ref<string[]>([]);
-const isEstadoModalOpen = ref(false);
+const selectedInstruments = ref<TipoInstrumento[]>([])
+const selectedAlumnos = ref<string[]>([])
+const isEstadoModalOpen = ref(false)
 
 // Computed
-const hasSelection = computed(() => props.selectionCount > 0);
+const hasSelection = computed(() => props.selectionCount > 0)
 
 const compasesParaModal = computed(() => {
-  return props.selectedCompases.map(num => ({ numero: num }));
-});
+  return props.selectedCompases.map((num) => ({numero: num}))
+})
 
 const alumnosParaModal = computed(() => {
   // This should ideally be populated from the student store based on the class
   // For now, we'll pass an empty array and let the modal handle it if needed.
-  return []; 
-});
-
+  return []
+})
 
 // Methods
-const handleInstrumentSelection = (selection: { instrumentos: TipoInstrumento[] }) => {
-  emit('filter-change', { instruments: selection.instrumentos, students: selectedAlumnos.value });
-};
+const handleInstrumentSelection = (selection: {instrumentos: TipoInstrumento[]}) => {
+  emit("filter-change", {instruments: selection.instrumentos, students: selectedAlumnos.value})
+}
 
-const handleAlumnoSelection = (selection: { alumnos: string[] }) => {
-  emit('filter-change', { instruments: selectedInstruments.value, students: selection.alumnos });
-};
+const handleAlumnoSelection = (selection: {alumnos: string[]}) => {
+  emit("filter-change", {instruments: selectedInstruments.value, students: selection.alumnos})
+}
 
 const openEstadoModal = () => {
   if (hasSelection.value) {
-    isEstadoModalOpen.value = true;
+    isEstadoModalOpen.value = true
   }
-};
+}
 
 const handleEstadoUpdate = (update: {
-  estado: EstadoCompass;
-  observacion: string;
-  alumnosIds: string[];
-  compases: { numero: number }[];
+  estado: EstadoCompass
+  observacion: string
+  alumnosIds: string[]
+  compases: {numero: number}[]
 }) => {
-  emit('apply-state', {
+  emit("apply-state", {
     ...update,
     instrumentosIds: selectedInstruments.value, // Pass selected instruments
-  });
-  isEstadoModalOpen.value = false;
-};
-
+  })
+  isEstadoModalOpen.value = false
+}
 </script>

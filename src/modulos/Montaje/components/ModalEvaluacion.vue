@@ -2,7 +2,7 @@
   <div class="modal-placeholder">
     <h3>{{ title }}</h3>
     <p>Componente en desarrollo...</p>
-    <button @click="$emit('close')" class="mt-4 px-4 py-2 bg-gray-500 text-white rounded">
+    <button class="mt-4 px-4 py-2 bg-gray-500 text-white rounded" @click="$emit('close')">
       Cerrar
     </button>
   </div>
@@ -14,12 +14,12 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  title: 'Modal'
+  title: "Modal",
 })
 
 defineEmits<{
-  (e: 'close'): void
-  (e: 'guardar', data: any): void
+  (e: "close"): void
+  (e: "guardar", data: any): void
 }>()
 </script>
 

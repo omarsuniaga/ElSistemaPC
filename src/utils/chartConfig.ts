@@ -1,4 +1,4 @@
-import Chart from 'chart.js/auto';
+import Chart from "chart.js/auto"
 import {
   ArcElement,
   LineElement,
@@ -23,8 +23,8 @@ import {
   Legend,
   Title,
   Tooltip,
-  SubTitle
-} from 'chart.js';
+  SubTitle,
+} from "chart.js"
 
 // Register all the Chart.js components we need
 Chart.register(
@@ -56,6 +56,6 @@ Chart.register(
   Title,
   Tooltip,
   SubTitle
-);
+)
 
-export default Chart;
+export default Chart

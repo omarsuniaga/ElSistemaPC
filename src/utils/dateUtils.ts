@@ -1,10 +1,10 @@
-import { format } from 'date-fns';
+import {format} from "date-fns"
 
 /**
  * Returns the current date in YYYY-MM-DD format
  */
 export function getCurrentDate(): string {
-  return format(new Date(), 'yyyy-MM-dd');
+  return format(new Date(), "yyyy-MM-dd")
 }
 
 /**
@@ -12,8 +12,8 @@ export function getCurrentDate(): string {
  * @param date The date to format
  */
 export function formatDateToYYYYMMDD(date: Date | string): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return format(dateObj, 'yyyy-MM-dd');
+  const dateObj = typeof date === "string" ? new Date(date) : date
+  return format(dateObj, "yyyy-MM-dd")
 }
 
 /**
@@ -21,8 +21,8 @@ export function formatDateToYYYYMMDD(date: Date | string): string {
  * @param dateStr The date string in YYYYMMDD format
  */
 export function formatYYYYMMDDToDateString(dateStr: string): string {
-  if (dateStr.length !== 8) return dateStr;
-  return `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+  if (dateStr.length !== 8) return dateStr
+  return `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`
 }
 
 /**
@@ -30,11 +30,11 @@ export function formatYYYYMMDDToDateString(dateStr: string): string {
  * @param date The date to check
  */
 export function isFutureDate(date: Date | string): boolean {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  dateObj.setHours(0, 0, 0, 0);
-  return dateObj > today;
+  const dateObj = typeof date === "string" ? new Date(date) : date
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  dateObj.setHours(0, 0, 0, 0)
+  return dateObj > today
 }
 
 /**
@@ -42,11 +42,11 @@ export function isFutureDate(date: Date | string): boolean {
  * @param date The date to check
  */
 export function isValidDate(date: Date | string): boolean {
-  if (typeof date === 'string') {
-    const d = new Date(date);
-    return !isNaN(d.getTime());
+  if (typeof date === "string") {
+    const d = new Date(date)
+    return !isNaN(d.getTime())
   }
-  return !isNaN(date.getTime());
+  return !isNaN(date.getTime())
 }
 
 /**
@@ -55,12 +55,12 @@ export function isValidDate(date: Date | string): boolean {
  * @param dateStr Date string in YYYY-MM-DD format
  */
 export function normalizeDateForStorage(dateStr: string): string {
-  if (!dateStr) return dateStr;
-  
+  if (!dateStr) return dateStr
+
   // Parse the date in local timezone
-  const [year, month, day] = dateStr.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  
+  const [year, month, day] = dateStr.split("-").map(Number)
+  const date = new Date(year, month - 1, day)
+
   // Format back to YYYY-MM-DD to ensure consistent format
-  return format(date, 'yyyy-MM-dd');
+  return format(date, "yyyy-MM-dd")
 }

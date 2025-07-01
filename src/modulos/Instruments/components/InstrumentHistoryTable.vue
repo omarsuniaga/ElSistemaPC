@@ -6,6 +6,6 @@
 
 <script lang="ts">
 export default {
-  name: 'InstrumentHistoryTable',
-};
+  name: "InstrumentHistoryTable",
+}
 </script>

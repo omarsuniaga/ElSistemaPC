@@ -1,13 +1,13 @@
-import { computed } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { 
-  UserRole, 
-  PermissionAction, 
+import {computed} from "vue"
+import {useAuthStore} from "@/stores/auth"
+import {
+  UserRole,
+  PermissionAction,
   ResourceType,
   ROLE_PERMISSIONS,
   hasPermission as staticHasPermission,
-  type Permission
-} from '../types/permissions'
+  type Permission,
+} from "../types/permissions"
 
 export function usePermissions() {
   const authStore = useAuthStore()
@@ -18,13 +18,13 @@ export function usePermissions() {
     if (!authStore.user?.role) return null
     // Mapear los roles del sistema existente a los nuevos enums
     const roleMapping: Record<string, UserRole> = {
-      'Maestro': UserRole.MAESTRO,
-      'Director': UserRole.DIRECTOR,
-      'Admin': UserRole.ADMINISTRADOR,
-      'Administrador': UserRole.ADMINISTRADOR,
-      'Superusuario': UserRole.SUPERUSUARIO,
-      'Colaborador': UserRole.COLABORADOR,
-      'Monitor': UserRole.MONITOR
+      Maestro: UserRole.MAESTRO,
+      Director: UserRole.DIRECTOR,
+      Admin: UserRole.ADMINISTRADOR,
+      Administrador: UserRole.ADMINISTRADOR,
+      Superusuario: UserRole.SUPERUSUARIO,
+      Colaborador: UserRole.COLABORADOR,
+      Monitor: UserRole.MONITOR,
     }
     return roleMapping[authStore.user.role] || null
   })
@@ -42,7 +42,7 @@ export function usePermissions() {
   const hasPermission = (
     action: PermissionAction,
     resource: ResourceType,
-    scope?: 'own' | 'class' | 'all'
+    scope?: "own" | "class" | "all"
   ): boolean => {
     // Verificar autenticación
     if (!isAuthenticated.value || !currentRole.value) {
@@ -54,12 +54,16 @@ export function usePermissions() {
   }
 
   // Verificar múltiples permisos
-  const hasAnyPermission = (permissions: Array<{action: PermissionAction, resource: ResourceType, scope?: string}>): boolean => {
-    return permissions.some(p => hasPermission(p.action, p.resource, p.scope as any))
+  const hasAnyPermission = (
+    permissions: Array<{action: PermissionAction; resource: ResourceType; scope?: string}>
+  ): boolean => {
+    return permissions.some((p) => hasPermission(p.action, p.resource, p.scope as any))
   }
 
-  const hasAllPermissions = (permissions: Array<{action: PermissionAction, resource: ResourceType, scope?: string}>): boolean => {
-    return permissions.every(p => hasPermission(p.action, p.resource, p.scope as any))
+  const hasAllPermissions = (
+    permissions: Array<{action: PermissionAction; resource: ResourceType; scope?: string}>
+  ): boolean => {
+    return permissions.every((p) => hasPermission(p.action, p.resource, p.scope as any))
   }
 
   // Obtener todos los permisos de un rol
@@ -72,9 +76,7 @@ export function usePermissions() {
     if (!currentRole.value) return []
 
     const rolePermissions = ROLE_PERMISSIONS[currentRole.value] || []
-    return rolePermissions
-      .filter(p => p.action === action)
-      .map(p => p.resource)
+    return rolePermissions.filter((p) => p.action === action).map((p) => p.resource)
   }
   // Verificar acceso a módulos específicos usando el sistema existente
   const canAccessModule = (module: string): boolean => {
@@ -89,38 +91,42 @@ export function usePermissions() {
   }
 
   // Helpers para acciones comunes
-  const canRead = (resource: ResourceType, scope?: 'own' | 'class' | 'all') => 
+  const canRead = (resource: ResourceType, scope?: "own" | "class" | "all") =>
     hasPermission(PermissionAction.READ, resource, scope)
-  
-  const canCreate = (resource: ResourceType, scope?: 'own' | 'class' | 'all') => 
+
+  const canCreate = (resource: ResourceType, scope?: "own" | "class" | "all") =>
     hasPermission(PermissionAction.CREATE, resource, scope)
-  
-  const canUpdate = (resource: ResourceType, scope?: 'own' | 'class' | 'all') => 
+
+  const canUpdate = (resource: ResourceType, scope?: "own" | "class" | "all") =>
     hasPermission(PermissionAction.UPDATE, resource, scope)
-  
-  const canDelete = (resource: ResourceType, scope?: 'own' | 'class' | 'all') => 
+
+  const canDelete = (resource: ResourceType, scope?: "own" | "class" | "all") =>
     hasPermission(PermissionAction.DELETE, resource, scope)
 
-  const canAssign = (resource: ResourceType, scope?: 'own' | 'class' | 'all') => 
+  const canAssign = (resource: ResourceType, scope?: "own" | "class" | "all") =>
     hasPermission(PermissionAction.ASSIGN, resource, scope)
 
-  const canApprove = (resource: ResourceType, scope?: 'own' | 'class' | 'all') => 
+  const canApprove = (resource: ResourceType, scope?: "own" | "class" | "all") =>
     hasPermission(PermissionAction.APPROVE, resource, scope)
 
-  const canSupervise = (resource: ResourceType, scope?: 'own' | 'class' | 'all') => 
+  const canSupervise = (resource: ResourceType, scope?: "own" | "class" | "all") =>
     hasPermission(PermissionAction.SUPERVISE, resource, scope)
 
-  const canExport = (resource: ResourceType, scope?: 'own' | 'class' | 'all') => 
+  const canExport = (resource: ResourceType, scope?: "own" | "class" | "all") =>
     hasPermission(PermissionAction.EXPORT, resource, scope)
 
-  const canGenerateReports = (resource: ResourceType, scope?: 'own' | 'class' | 'all') => 
+  const canGenerateReports = (resource: ResourceType, scope?: "own" | "class" | "all") =>
     hasPermission(PermissionAction.GENERATE_REPORTS, resource, scope)
 
   // Funciones específicas para verificar permisos comunes
-  const canManageAttendance = () => canCreate(ResourceType.DAILY_ATTENDANCE) || canUpdate(ResourceType.DAILY_ATTENDANCE)
-  const canViewReports = () => canRead(ResourceType.ATTENDANCE_REPORTS) || canRead(ResourceType.GENERAL_REPORTS)
-  const canManageStudents = () => canCreate(ResourceType.CLASS_STUDENTS) || canUpdate(ResourceType.CLASS_STUDENTS)
-  const canManageClasses = () => canCreate(ResourceType.MANAGE_CLASSES) || canUpdate(ResourceType.MANAGE_CLASSES)
+  const canManageAttendance = () =>
+    canCreate(ResourceType.DAILY_ATTENDANCE) || canUpdate(ResourceType.DAILY_ATTENDANCE)
+  const canViewReports = () =>
+    canRead(ResourceType.ATTENDANCE_REPORTS) || canRead(ResourceType.GENERAL_REPORTS)
+  const canManageStudents = () =>
+    canCreate(ResourceType.CLASS_STUDENTS) || canUpdate(ResourceType.CLASS_STUDENTS)
+  const canManageClasses = () =>
+    canCreate(ResourceType.MANAGE_CLASSES) || canUpdate(ResourceType.MANAGE_CLASSES)
   const canAccessConfidentialInfo = () => canRead(ResourceType.CONFIDENTIAL_INFO)
   const canManageSystem = () => canRead(ResourceType.SYSTEM_CONFIGURATION)
 
@@ -166,6 +172,6 @@ export function usePermissions() {
     canManageStudents,
     canManageClasses,
     canAccessConfidentialInfo,
-    canManageSystem
+    canManageSystem,
   }
 }

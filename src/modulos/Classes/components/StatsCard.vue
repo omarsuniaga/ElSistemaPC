@@ -9,11 +9,11 @@
       <!-- Add more stats as needed -->
       <div>
         <p class="text-sm text-gray-500">Nivel Promedio (Ejemplo)</p>
-        <p class="text-2xl font-bold text-gray-800">{{ stats.averageLevel || 'N/A' }}</p>
+        <p class="text-2xl font-bold text-gray-800">{{ stats.averageLevel || "N/A" }}</p>
       </div>
       <div>
         <p class="text-sm text-gray-500">Asistencia Promedio (Ejemplo)</p>
-        <p class="text-2xl font-bold text-gray-800">{{ stats.averageAttendance || 'N/A' }}%</p>
+        <p class="text-2xl font-bold text-gray-800">{{ stats.averageAttendance || "N/A" }}%</p>
       </div>
     </div>
   </div>
@@ -22,8 +22,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
-</script>
+<script setup lang="ts"></script>
 
 <style scoped>
 /* Add any specific styles for the stats card if needed */

@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import {computed, onMounted, ref} from "vue"
+import {useRouter} from "vue-router"
 import {
   CalendarIcon,
   MapPinIcon,
@@ -20,92 +20,112 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   UserIcon,
-  PrinterIcon
-} from '@heroicons/vue/24/outline';
-import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
-import { useStudentsStore } from '../../../modulos/Students/store/students';
-import { useTeachersStore } from '../store/teachers';
-import { useTeacherCollaboration } from '../../../modulos/Classes/composables/useTeacherCollaboration';
-import { useAuthStore } from '../../../stores/auth';
-import { format } from 'date-fns';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import ShareClassModal from './ShareClassModal.vue';
+  PrinterIcon,
+} from "@heroicons/vue/24/outline"
+import {
+  Dialog,
+  DialogPanel,
+  DialogTitle,
+  TransitionChild,
+  TransitionRoot,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItems,
+} from "@headlessui/vue"
+import {useStudentsStore} from "../../../modulos/Students/store/students"
+import {useTeachersStore} from "../store/teachers"
+import {useTeacherCollaboration} from "../../../modulos/Classes/composables/useTeacherCollaboration"
+import {useAuthStore} from "../../../stores/auth"
+import {format} from "date-fns"
+import jsPDF from "jspdf"
+import "jspdf-autotable"
+import ShareClassModal from "./ShareClassModal.vue"
 
 const props = defineProps({
   classData: {
     type: Object,
-    required: true
+    required: true,
   },
   viewMode: {
     type: String,
-    default: 'card', // 'card' | 'list'
-    validator: (value: string) => ['card', 'list'].includes(value)
-  }
-});
+    default: "card", // 'card' | 'list'
+    validator: (value: string) => ["card", "list"].includes(value),
+  },
+})
 
-const emit = defineEmits(['view', 'edit', 'delete', 'manage-students', 'take-attendance', 'view-history', 'collaboration-updated']);
+const emit = defineEmits([
+  "view",
+  "edit",
+  "delete",
+  "manage-students",
+  "take-attendance",
+  "view-history",
+  "collaboration-updated",
+])
 
 // Stores
-const studentsStore = useStudentsStore();
-const teachersStore = useTeachersStore();
-const authStore = useAuthStore();
-const { inviteAssistant } = useTeacherCollaboration();
+const studentsStore = useStudentsStore()
+const teachersStore = useTeachersStore()
+const authStore = useAuthStore()
+const {inviteAssistant} = useTeacherCollaboration()
 
 // Router para la navegación
-const router = useRouter();
+const router = useRouter()
 
 // Estados para modales
-const showStudentsModal = ref(false);
-const showShareModal = ref(false);
-const showPermissionsModal = ref(false);
-const showManageCollaboratorsModal = ref(false);
-const selectedTeacherId = ref('');
-const isExpanded = ref(false);
+const showStudentsModal = ref(false)
+const showShareModal = ref(false)
+const showPermissionsModal = ref(false)
+const showManageCollaboratorsModal = ref(false)
+const selectedTeacherId = ref("")
+const isExpanded = ref(false)
 
 // Permisos para maestros asistentes
 const assistantPermissions = ref({
   canTakeAttendance: true,
   canAddObservations: true,
-  canViewAttendanceHistory: false
-});
+  canViewAttendanceHistory: false,
+})
 
 // Estado de carga
-const isLoading = ref(false);
+const isLoading = ref(false)
 
 // Verificación segura para validar studentIds
 const hasStudentIds = computed(() => {
-  return Array.isArray(props.classData.studentIds) && props.classData.studentIds.length > 0;
-});
+  return Array.isArray(props.classData.studentIds) && props.classData.studentIds.length > 0
+})
 
 // Determinar si es clase compartida (el usuario actual es asistente)
 const isSharedClass = computed(() => {
-  return props.classData.myRole === 'assistant';
-});
+  return props.classData.myRole === "assistant"
+})
 
 // Obtener el nombre del maestro principal para clases compartidas
 const leadTeacherName = computed(() => {
   if (isSharedClass.value && props.classData.leadTeacher) {
-    return props.classData.leadTeacher.name || 'Maestro Principal';
+    return props.classData.leadTeacher.name || "Maestro Principal"
   }
-  return '';
-});
+  return ""
+})
 
 // Verificar si el usuario actual puede compartir la clase (solo maestros principales)
 const canShareClass = computed(() => {
-  return props.classData.myRole === 'lead' || 
-         (!props.classData.myRole && props.classData.teacherId === authStore.user?.uid);
-});
+  return (
+    props.classData.myRole === "lead" ||
+    (!props.classData.myRole && props.classData.teacherId === authStore.user?.uid)
+  )
+})
 
 // Verificar si la clase tiene colaboradores (maestros asistentes)
 const hasAssistants = computed(() => {
-  return props.classData.assistantTeachers && props.classData.assistantTeachers.length > 0;
-});
+  return props.classData.assistantTeachers && props.classData.assistantTeachers.length > 0
+})
 
 // Obtener los permisos específicos del usuario actual en la clase
 const myPermissions = computed(() => {
   if (isSharedClass.value && props.classData.myPermissions) {
-    return props.classData.myPermissions;
+    return props.classData.myPermissions
   }
   // Si es maestro principal, tiene todos los permisos
   if (canShareClass.value) {
@@ -114,470 +134,688 @@ const myPermissions = computed(() => {
       canAddObservations: true,
       canViewAttendanceHistory: true,
       canManageStudents: true,
-      canEditClass: true
-    };
+      canEditClass: true,
+    }
   }
-  return {};
-});
+  return {}
+})
 
 // Obtener el indicador de rol
 const roleIndicator = computed(() => {
   if (isSharedClass.value) {
     return {
-      text: 'Asistente',
-      icon: '👥',
-      class: 'bg-blue-100 text-blue-800 border border-blue-200'
-    };
+      text: "Asistente",
+      icon: "👥",
+      class: "bg-blue-100 text-blue-800 border border-blue-200",
+    }
   } else if (hasAssistants.value) {
     return {
-      text: 'Principal',
-      icon: '👑',
-      class: 'bg-yellow-100 text-yellow-800 border border-yellow-200'
-    };
+      text: "Principal",
+      icon: "👑",
+      class: "bg-yellow-100 text-yellow-800 border border-yellow-200",
+    }
   } else {
     return {
-      text: 'Titular',
-      icon: '🎓',
-      class: 'bg-green-100 text-green-800 border border-green-200'
-    };
+      text: "Titular",
+      icon: "🎓",
+      class: "bg-green-100 text-green-800 border border-green-200",
+    }
   }
-});
+})
 
 // Formatear horarios para mostrar
 const formatSchedule = computed(() => {
   if (props.classData.horarios && props.classData.horarios.length > 0) {
-    return props.classData.horarios.map((h: { day: string; startTime: string; endTime: string }) =>
-      `${h.day}: ${h.startTime} - ${h.endTime}`
-    ).join(', ');
+    return props.classData.horarios
+      .map(
+        (h: {day: string; startTime: string; endTime: string}) =>
+          `${h.day}: ${h.startTime} - ${h.endTime}`
+      )
+      .join(", ")
   }
   if (props.classData.startTime && props.classData.endTime) {
-    return `${props.classData.startTime} - ${props.classData.endTime}`;
+    return `${props.classData.startTime} - ${props.classData.endTime}`
   }
-  return 'Sin horario definido';
-});
+  return "Sin horario definido"
+})
 const hasCollaborators = computed(() => {
-  return canShareClass.value && 
-         props.classData.assistantTeachers && 
-         props.classData.assistantTeachers.length > 0;
-});
+  return (
+    canShareClass.value &&
+    props.classData.assistantTeachers &&
+    props.classData.assistantTeachers.length > 0
+  )
+})
 
 // Obtener lista de colaboradores para mostrar
 const collaboratorsList = computed(() => {
-  if (!hasCollaborators.value) return [];
-  return (props.classData.assistantTeachers?.map((teacher: { name?: string }) => teacher.name || 'Maestro')) || [];
-});
+  if (!hasCollaborators.value) return []
+  return (
+    props.classData.assistantTeachers?.map(
+      (teacher: {name?: string}) => teacher.name || "Maestro"
+    ) || []
+  )
+})
 
 // Función para obtener el color del día
 const getDayColor = computed(() => {
-  const day = props.classData.schedule?.slots?.[0]?.day as string;
+  const day = props.classData.schedule?.slots?.[0]?.day as string
   if (!day) {
     return {
-      border: 'border-t-gray-400',
-      bg: 'bg-gray-50 dark:bg-gray-700',
-      text: 'text-gray-600 dark:text-gray-300',
-      accent: 'accent-gray-500',
-      shadow: 'shadow-gray-200'
-    };
+      border: "border-t-gray-400",
+      bg: "bg-gray-50 dark:bg-gray-700",
+      text: "text-gray-600 dark:text-gray-300",
+      accent: "accent-gray-500",
+      shadow: "shadow-gray-200",
+    }
   }
-  const normalizedDay = typeof day === 'string' ? day.toLowerCase().trim() : String(day);
+  const normalizedDay = typeof day === "string" ? day.toLowerCase().trim() : String(day)
   const dayColors = {
     // Lunes - Azul
-    'lunes': { border: 'border-t-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-300', accent: 'accent-blue-500', shadow: 'shadow-blue-200' },
-    'lun': { border: 'border-t-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-300', accent: 'accent-blue-500', shadow: 'shadow-blue-200' },
-    'monday': { border: 'border-t-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-300', accent: 'accent-blue-500', shadow: 'shadow-blue-200' },
-    '1': { border: 'border-t-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-300', accent: 'accent-blue-500', shadow: 'shadow-blue-200' },
-    
+    lunes: {
+      border: "border-t-blue-500",
+      bg: "bg-blue-50 dark:bg-blue-900/20",
+      text: "text-blue-700 dark:text-blue-300",
+      accent: "accent-blue-500",
+      shadow: "shadow-blue-200",
+    },
+    lun: {
+      border: "border-t-blue-500",
+      bg: "bg-blue-50 dark:bg-blue-900/20",
+      text: "text-blue-700 dark:text-blue-300",
+      accent: "accent-blue-500",
+      shadow: "shadow-blue-200",
+    },
+    monday: {
+      border: "border-t-blue-500",
+      bg: "bg-blue-50 dark:bg-blue-900/20",
+      text: "text-blue-700 dark:text-blue-300",
+      accent: "accent-blue-500",
+      shadow: "shadow-blue-200",
+    },
+    "1": {
+      border: "border-t-blue-500",
+      bg: "bg-blue-50 dark:bg-blue-900/20",
+      text: "text-blue-700 dark:text-blue-300",
+      accent: "accent-blue-500",
+      shadow: "shadow-blue-200",
+    },
+
     // Martes - Verde
-    'martes': { border: 'border-t-green-500', bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-300', accent: 'accent-green-500', shadow: 'shadow-green-200' },
-    'mar': { border: 'border-t-green-500', bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-300', accent: 'accent-green-500', shadow: 'shadow-green-200' },
-    'tuesday': { border: 'border-t-green-500', bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-300', accent: 'accent-green-500', shadow: 'shadow-green-200' },
-    '2': { border: 'border-t-green-500', bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-300', accent: 'accent-green-500', shadow: 'shadow-green-200' },
-    
+    martes: {
+      border: "border-t-green-500",
+      bg: "bg-green-50 dark:bg-green-900/20",
+      text: "text-green-700 dark:text-green-300",
+      accent: "accent-green-500",
+      shadow: "shadow-green-200",
+    },
+    mar: {
+      border: "border-t-green-500",
+      bg: "bg-green-50 dark:bg-green-900/20",
+      text: "text-green-700 dark:text-green-300",
+      accent: "accent-green-500",
+      shadow: "shadow-green-200",
+    },
+    tuesday: {
+      border: "border-t-green-500",
+      bg: "bg-green-50 dark:bg-green-900/20",
+      text: "text-green-700 dark:text-green-300",
+      accent: "accent-green-500",
+      shadow: "shadow-green-200",
+    },
+    "2": {
+      border: "border-t-green-500",
+      bg: "bg-green-50 dark:bg-green-900/20",
+      text: "text-green-700 dark:text-green-300",
+      accent: "accent-green-500",
+      shadow: "shadow-green-200",
+    },
+
     // Miércoles - Amarillo/Ámbar
-    'miércoles': { border: 'border-t-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-700 dark:text-amber-300', accent: 'accent-amber-500', shadow: 'shadow-amber-200' },
-    'miercoles': { border: 'border-t-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-700 dark:text-amber-300', accent: 'accent-amber-500', shadow: 'shadow-amber-200' },
-    'mié': { border: 'border-t-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-700 dark:text-amber-300', accent: 'accent-amber-500', shadow: 'shadow-amber-200' },
-    'wednesday': { border: 'border-t-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-700 dark:text-amber-300', accent: 'accent-amber-500', shadow: 'shadow-amber-200' },
-    '3': { border: 'border-t-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-700 dark:text-amber-300', accent: 'accent-amber-500', shadow: 'shadow-amber-200' },
-    
+    miércoles: {
+      border: "border-t-amber-500",
+      bg: "bg-amber-50 dark:bg-amber-900/20",
+      text: "text-amber-700 dark:text-amber-300",
+      accent: "accent-amber-500",
+      shadow: "shadow-amber-200",
+    },
+    miercoles: {
+      border: "border-t-amber-500",
+      bg: "bg-amber-50 dark:bg-amber-900/20",
+      text: "text-amber-700 dark:text-amber-300",
+      accent: "accent-amber-500",
+      shadow: "shadow-amber-200",
+    },
+    mié: {
+      border: "border-t-amber-500",
+      bg: "bg-amber-50 dark:bg-amber-900/20",
+      text: "text-amber-700 dark:text-amber-300",
+      accent: "accent-amber-500",
+      shadow: "shadow-amber-200",
+    },
+    wednesday: {
+      border: "border-t-amber-500",
+      bg: "bg-amber-50 dark:bg-amber-900/20",
+      text: "text-amber-700 dark:text-amber-300",
+      accent: "accent-amber-500",
+      shadow: "shadow-amber-200",
+    },
+    "3": {
+      border: "border-t-amber-500",
+      bg: "bg-amber-50 dark:bg-amber-900/20",
+      text: "text-amber-700 dark:text-amber-300",
+      accent: "accent-amber-500",
+      shadow: "shadow-amber-200",
+    },
+
     // Jueves - Púrpura
-    'jueves': { border: 'border-t-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-700 dark:text-purple-300', accent: 'accent-purple-500', shadow: 'shadow-purple-200' },
-    'jue': { border: 'border-t-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-700 dark:text-purple-300', accent: 'accent-purple-500', shadow: 'shadow-purple-200' },
-    'thursday': { border: 'border-t-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-700 dark:text-purple-300', accent: 'accent-purple-500', shadow: 'shadow-purple-200' },
-    '4': { border: 'border-t-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-700 dark:text-purple-300', accent: 'accent-purple-500', shadow: 'shadow-purple-200' },
-    
+    jueves: {
+      border: "border-t-purple-500",
+      bg: "bg-purple-50 dark:bg-purple-900/20",
+      text: "text-purple-700 dark:text-purple-300",
+      accent: "accent-purple-500",
+      shadow: "shadow-purple-200",
+    },
+    jue: {
+      border: "border-t-purple-500",
+      bg: "bg-purple-50 dark:bg-purple-900/20",
+      text: "text-purple-700 dark:text-purple-300",
+      accent: "accent-purple-500",
+      shadow: "shadow-purple-200",
+    },
+    thursday: {
+      border: "border-t-purple-500",
+      bg: "bg-purple-50 dark:bg-purple-900/20",
+      text: "text-purple-700 dark:text-purple-300",
+      accent: "accent-purple-500",
+      shadow: "shadow-purple-200",
+    },
+    "4": {
+      border: "border-t-purple-500",
+      bg: "bg-purple-50 dark:bg-purple-900/20",
+      text: "text-purple-700 dark:text-purple-300",
+      accent: "accent-purple-500",
+      shadow: "shadow-purple-200",
+    },
+
     // Viernes - Rosa
-    'viernes': { border: 'border-t-pink-500', bg: 'bg-pink-50 dark:bg-pink-900/20', text: 'text-pink-700 dark:text-pink-300', accent: 'accent-pink-500', shadow: 'shadow-pink-200' },
-    'vie': { border: 'border-t-pink-500', bg: 'bg-pink-50 dark:bg-pink-900/20', text: 'text-pink-700 dark:text-pink-300', accent: 'accent-pink-500', shadow: 'shadow-pink-200' },
-    'friday': { border: 'border-t-pink-500', bg: 'bg-pink-50 dark:bg-pink-900/20', text: 'text-pink-700 dark:text-pink-300', accent: 'accent-pink-500', shadow: 'shadow-pink-200' },
-    '5': { border: 'border-t-pink-500', bg: 'bg-pink-50 dark:bg-pink-900/20', text: 'text-pink-700 dark:text-pink-300', accent: 'accent-pink-500', shadow: 'shadow-pink-200' },
-    
+    viernes: {
+      border: "border-t-pink-500",
+      bg: "bg-pink-50 dark:bg-pink-900/20",
+      text: "text-pink-700 dark:text-pink-300",
+      accent: "accent-pink-500",
+      shadow: "shadow-pink-200",
+    },
+    vie: {
+      border: "border-t-pink-500",
+      bg: "bg-pink-50 dark:bg-pink-900/20",
+      text: "text-pink-700 dark:text-pink-300",
+      accent: "accent-pink-500",
+      shadow: "shadow-pink-200",
+    },
+    friday: {
+      border: "border-t-pink-500",
+      bg: "bg-pink-50 dark:bg-pink-900/20",
+      text: "text-pink-700 dark:text-pink-300",
+      accent: "accent-pink-500",
+      shadow: "shadow-pink-200",
+    },
+    "5": {
+      border: "border-t-pink-500",
+      bg: "bg-pink-50 dark:bg-pink-900/20",
+      text: "text-pink-700 dark:text-pink-300",
+      accent: "accent-pink-500",
+      shadow: "shadow-pink-200",
+    },
+
     // Sábado - Índigo
-    'sábado': { border: 'border-t-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', text: 'text-indigo-700 dark:text-indigo-300', accent: 'accent-indigo-500', shadow: 'shadow-indigo-200' },
-    'sabado': { border: 'border-t-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', text: 'text-indigo-700 dark:text-indigo-300', accent: 'accent-indigo-500', shadow: 'shadow-indigo-200' },
-    'sáb': { border: 'border-t-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', text: 'text-indigo-700 dark:text-indigo-300', accent: 'accent-indigo-500', shadow: 'shadow-indigo-200' },
-    'saturday': { border: 'border-t-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', text: 'text-indigo-700 dark:text-indigo-300', accent: 'accent-indigo-500', shadow: 'shadow-indigo-200' },
-    '6': { border: 'border-t-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', text: 'text-indigo-700 dark:text-indigo-300', accent: 'accent-indigo-500', shadow: 'shadow-indigo-200' },
-    
+    sábado: {
+      border: "border-t-indigo-500",
+      bg: "bg-indigo-50 dark:bg-indigo-900/20",
+      text: "text-indigo-700 dark:text-indigo-300",
+      accent: "accent-indigo-500",
+      shadow: "shadow-indigo-200",
+    },
+    sabado: {
+      border: "border-t-indigo-500",
+      bg: "bg-indigo-50 dark:bg-indigo-900/20",
+      text: "text-indigo-700 dark:text-indigo-300",
+      accent: "accent-indigo-500",
+      shadow: "shadow-indigo-200",
+    },
+    sáb: {
+      border: "border-t-indigo-500",
+      bg: "bg-indigo-50 dark:bg-indigo-900/20",
+      text: "text-indigo-700 dark:text-indigo-300",
+      accent: "accent-indigo-500",
+      shadow: "shadow-indigo-200",
+    },
+    saturday: {
+      border: "border-t-indigo-500",
+      bg: "bg-indigo-50 dark:bg-indigo-900/20",
+      text: "text-indigo-700 dark:text-indigo-300",
+      accent: "accent-indigo-500",
+      shadow: "shadow-indigo-200",
+    },
+    "6": {
+      border: "border-t-indigo-500",
+      bg: "bg-indigo-50 dark:bg-indigo-900/20",
+      text: "text-indigo-700 dark:text-indigo-300",
+      accent: "accent-indigo-500",
+      shadow: "shadow-indigo-200",
+    },
+
     // Domingo - Rojo
-    'domingo': { border: 'border-t-red-500', bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-300', accent: 'accent-red-500', shadow: 'shadow-red-200' },
-    'dom': { border: 'border-t-red-500', bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-300', accent: 'accent-red-500', shadow: 'shadow-red-200' },
-    'sunday': { border: 'border-t-red-500', bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-300', accent: 'accent-red-500', shadow: 'shadow-red-200' },
-    '0': { border: 'border-t-red-500', bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-300', accent: 'accent-red-500', shadow: 'shadow-red-200' }
-  };
-  
-  return (dayColors as Record<string, any>)[normalizedDay] || { border: 'border-t-gray-400', bg: 'bg-gray-50 dark:bg-gray-700', text: 'text-gray-600 dark:text-gray-300', accent: 'accent-gray-500', shadow: 'shadow-gray-200' };
-});
+    domingo: {
+      border: "border-t-red-500",
+      bg: "bg-red-50 dark:bg-red-900/20",
+      text: "text-red-700 dark:text-red-300",
+      accent: "accent-red-500",
+      shadow: "shadow-red-200",
+    },
+    dom: {
+      border: "border-t-red-500",
+      bg: "bg-red-50 dark:bg-red-900/20",
+      text: "text-red-700 dark:text-red-300",
+      accent: "accent-red-500",
+      shadow: "shadow-red-200",
+    },
+    sunday: {
+      border: "border-t-red-500",
+      bg: "bg-red-50 dark:bg-red-900/20",
+      text: "text-red-700 dark:text-red-300",
+      accent: "accent-red-500",
+      shadow: "shadow-red-200",
+    },
+    "0": {
+      border: "border-t-red-500",
+      bg: "bg-red-50 dark:bg-red-900/20",
+      text: "text-red-700 dark:text-red-300",
+      accent: "accent-red-500",
+      shadow: "shadow-red-200",
+    },
+  }
+
+  return (
+    (dayColors as Record<string, any>)[normalizedDay] || {
+      border: "border-t-gray-400",
+      bg: "bg-gray-50 dark:bg-gray-700",
+      text: "text-gray-600 dark:text-gray-300",
+      accent: "accent-gray-500",
+      shadow: "shadow-gray-200",
+    }
+  )
+})
 
 // Formatear nombre del día
 const formatDayName = (day: string) => {
   const dayNames: Record<string, string> = {
-    'monday': 'Lunes', 'tuesday': 'Martes', 'wednesday': 'Miércoles',
-    'thursday': 'Jueves', 'friday': 'Viernes', 'saturday': 'Sábado', 'sunday': 'Domingo'
-  };
-  return dayNames[day.toLowerCase()] || day;
-};
+    monday: "Lunes",
+    tuesday: "Martes",
+    wednesday: "Miércoles",
+    thursday: "Jueves",
+    friday: "Viernes",
+    saturday: "Sábado",
+    sunday: "Domingo",
+  }
+  return dayNames[day.toLowerCase()] || day
+}
 
 // Formatear el horario de la clase
 const formattedSchedule = computed(() => {
   if (!props.classData.schedule?.slots?.length) {
-    return 'Sin horario definido';
+    return "Sin horario definido"
   }
-  
-  const slot = props.classData.schedule.slots[0];
-  const dayName = formatDayName(slot.day);
-  return `${dayName} de ${slot.startTime} a ${slot.endTime}`;
-});
+
+  const slot = props.classData.schedule.slots[0]
+  const dayName = formatDayName(slot.day)
+  return `${dayName} de ${slot.startTime} a ${slot.endTime}`
+})
 
 // Obtener maestros disponibles para compartir
 const availableTeachers = computed(() => {
-  return teachersStore.teachers.filter(teacher => 
-    teacher.id !== props.classData.teacherId // Excluir al maestro principal
-  );
-});
+  return teachersStore.teachers.filter(
+    (teacher) => teacher.id !== props.classData.teacherId // Excluir al maestro principal
+  )
+})
 
 // Obtiene los tres primeros estudiantes para mostrar en la tarjeta
 const topStudents = computed(() => {
-  if (!hasStudentIds.value) return [];
+  if (!hasStudentIds.value) return []
 
-  const result = [];
-  const sliceLength = Math.min(3, props.classData.studentIds.length);
-  
+  const result = []
+  const sliceLength = Math.min(3, props.classData.studentIds.length)
+
   for (let i = 0; i < sliceLength; i++) {
-    const id = props.classData.studentIds[i];
-    const student = studentsStore.getStudentById(id);
-    
+    const id = props.classData.studentIds[i]
+    const student = studentsStore.getStudentById(id)
+
     if (student) {
-      result.push(`${student.nombre || ''} ${student.apellido || ''}`.trim() || 'Sin nombre');
+      result.push(`${student.nombre || ""} ${student.apellido || ""}`.trim() || "Sin nombre")
     } else {
-      result.push(`Estudiante ${id}`);
+      result.push(`Estudiante ${id}`)
     }
   }
-  
-  return result;
-});
+
+  return result
+})
 
 // Calcula el número de estudiantes adicionales
 const additionalStudents = computed(() => {
-  if (!hasStudentIds.value) return 0;
-  return Math.max(0, props.classData.studentIds.length - 3);
-});
+  if (!hasStudentIds.value) return 0
+  return Math.max(0, props.classData.studentIds.length - 3)
+})
 
 // Obtiene todos los estudiantes para el modal
 const allStudents = computed(() => {
-  if (!hasStudentIds.value) return [];
+  if (!hasStudentIds.value) return []
   return props.classData.studentIds.map((id: string) => {
-    const student = studentsStore.getStudentById(id);
+    const student = studentsStore.getStudentById(id)
     return {
       id: student?.id || id,
-      name: student ? `${student.nombre || ''} ${student.apellido || ''}`.trim() : `Estudiante ${id}`,
-      instrument: student?.instrumento || 'No especificado',
-      age: student?.edad || 'N/A'
-    };
-  });
-});
+      name: student
+        ? `${student.nombre || ""} ${student.apellido || ""}`.trim()
+        : `Estudiante ${id}`,
+      instrument: student?.instrumento || "No especificado",
+      age: student?.edad || "N/A",
+    }
+  })
+})
 
 // Manejadores de eventos
 const handleView = () => {
   try {
     // Obtener información de rol de usuario desde localStorage o del store de autenticación
-    let userRole;
+    let userRole
     try {
-      const userDataStr = localStorage.getItem('user');
+      const userDataStr = localStorage.getItem("user")
       if (userDataStr) {
-        const userData = JSON.parse(userDataStr);
-        userRole = userData.role;
+        const userData = JSON.parse(userDataStr)
+        userRole = userData.role
       }
     } catch (e) {
-      console.warn('No se pudo obtener el rol de usuario desde localStorage');
+      console.warn("No se pudo obtener el rol de usuario desde localStorage")
     }
-    
+
     // Si es maestro, utilizar la ruta específica para evitar problemas
-    if (userRole === 'Maestro') {
-      router.push({
-        name: 'TeacherClassDetail',
-        params: { id: props.classData.id }
-      }).catch(error => {
-        console.error('Error al navegar a vista de maestro:', error);
-        // Como fallback, emitir el evento original
-        emit('view', props.classData.id);
-      });
+    if (userRole === "Maestro") {
+      router
+        .push({
+          name: "TeacherClassDetail",
+          params: {id: props.classData.id},
+        })
+        .catch((error) => {
+          console.error("Error al navegar a vista de maestro:", error)
+          // Como fallback, emitir el evento original
+          emit("view", props.classData.id)
+        })
     } else {
       // Para directores y admin, usar la vista regular de clase
-      router.push({
-        name: 'ClassDetail',
-        params: { id: props.classData.id }
-      }).catch(error => {
-        console.error('Error al navegar a vista general:', error);
-        // Como fallback, emitir el evento original
-        emit('view', props.classData.id);
-      });
+      router
+        .push({
+          name: "ClassDetail",
+          params: {id: props.classData.id},
+        })
+        .catch((error) => {
+          console.error("Error al navegar a vista general:", error)
+          // Como fallback, emitir el evento original
+          emit("view", props.classData.id)
+        })
     }
   } catch (error) {
-    console.error('Error al manejar navegación:', error);
+    console.error("Error al manejar navegación:", error)
     // En caso de cualquier error, usar el método de emisión de evento
-    emit('view', props.classData.id);
+    emit("view", props.classData.id)
   }
-};
+}
 
-const handleEdit = () => emit('edit', props.classData.id);
-const handleDelete = () => emit('delete', props.classData.id);
-const handleManageStudents = () => emit('manage-students', props.classData.id);
+const handleEdit = () => emit("edit", props.classData.id)
+const handleDelete = () => emit("delete", props.classData.id)
+const handleManageStudents = () => emit("manage-students", props.classData.id)
 
 const handleTakeAttendance = () => {
   // Verificar permisos antes de proceder
   if (isSharedClass.value && !myPermissions.value.canTakeAttendance) {
-    console.warn('No tienes permisos para tomar asistencia en esta clase');
-    return;
+    console.warn("No tienes permisos para tomar asistencia en esta clase")
+    return
   }
-    const today = new Date();
-  const dateString = format(today, 'yyyyMMdd');
-  
+  const today = new Date()
+  const dateString = format(today, "yyyyMMdd")
+
   router.push({
-    name: 'attendance',
+    name: "attendance",
     params: {
       classId: props.classData.id,
-      date: dateString
-    }
-  });
-};
+      date: dateString,
+    },
+  })
+}
 
 const handleViewHistory = () => {
-  emit('view-history', props.classData.id);
-};
+  emit("view-history", props.classData.id)
+}
 
 // Mostrar modal de estudiantes
 const handleShowStudents = () => {
-  showStudentsModal.value = true;
-};
+  showStudentsModal.value = true
+}
 
 // Función para generar PDF de la clase
 const handlePrintClass = async () => {
   try {
-    const doc = new jsPDF();
-    
+    const doc = new jsPDF()
+
     // Título principal
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.text('Reporte de Clase', 20, 30);
-    
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(20)
+    doc.text("Reporte de Clase", 20, 30)
+
     // Información básica de la clase
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(16);
-    doc.text(`Clase: ${props.classData.name}`, 20, 50);
-    
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Descripción: ${props.classData.description || 'Sin descripción'}`, 20, 65);
-    
+    doc.setFont("helvetica", "normal")
+    doc.setFontSize(16)
+    doc.text(`Clase: ${props.classData.name}`, 20, 50)
+
+    doc.setFontSize(12)
+    doc.setFont("helvetica", "normal")
+    doc.text(`Descripción: ${props.classData.description || "Sin descripción"}`, 20, 65)
+
     // Obtener información del maestro
-    const teacher = teachersStore.getTeacherById(props.classData.teacherId);
-    doc.text(`Maestro: ${teacher?.name || 'No asignado'}`, 20, 80);
-    
-    doc.text(`Horario: ${formattedSchedule.value}`, 20, 95);
-    doc.text(`Salón: ${props.classData.classroom || 'Sin asignar'}`, 20, 110);
-    doc.text(`Total de estudiantes: ${hasStudentIds.value ? props.classData.studentIds.length : 0}`, 20, 125);
-    
+    const teacher = teachersStore.getTeacherById(props.classData.teacherId)
+    doc.text(`Maestro: ${teacher?.name || "No asignado"}`, 20, 80)
+
+    doc.text(`Horario: ${formattedSchedule.value}`, 20, 95)
+    doc.text(`Salón: ${props.classData.classroom || "Sin asignar"}`, 20, 110)
+    doc.text(
+      `Total de estudiantes: ${hasStudentIds.value ? props.classData.studentIds.length : 0}`,
+      20,
+      125
+    )
+
     // Lista de estudiantes en tabla
     if (hasStudentIds.value && props.classData.studentIds.length > 0) {
-      const studentRows = [];
-      
+      const studentRows = []
+
       for (const studentId of props.classData.studentIds) {
-        const student = studentsStore.getStudentById(studentId);
+        const student = studentsStore.getStudentById(studentId)
         if (student) {
           studentRows.push([
             student.id || studentId,
-            `${student.nombre || ''} ${student.apellido || ''}`.trim() || 'Sin nombre',
-            student.edad || 'N/A',
-            student.phone || 'Sin teléfono'
-          ]);
+            `${student.nombre || ""} ${student.apellido || ""}`.trim() || "Sin nombre",
+            student.edad || "N/A",
+            student.phone || "Sin teléfono",
+          ])
         }
       }
-      
+
       // Añadir tabla con autoTable
-      (doc as any).autoTable({
-        head: [['ID', 'Nombre Completo', 'Edad', 'Teléfono']],
+      ;(doc as any).autoTable({
+        head: [["ID", "Nombre Completo", "Edad", "Teléfono"]],
         body: studentRows,
         startY: 140,
-        theme: 'grid',
-        headStyles: { fillColor: [66, 139, 202] },
-        styles: { fontSize: 10 },
-        margin: { left: 20, right: 20 }
-      });
+        theme: "grid",
+        headStyles: {fillColor: [66, 139, 202]},
+        styles: {fontSize: 10},
+        margin: {left: 20, right: 20},
+      })
     }
-    
+
     // Añadir fecha de generación
-    const currentDate = format(new Date(), 'dd/MM/yyyy HH:mm');
-    doc.setFontSize(8);
-    doc.text(`Generado el: ${currentDate}`, 20, doc.internal.pageSize.height - 20);
-    
+    const currentDate = format(new Date(), "dd/MM/yyyy HH:mm")
+    doc.setFontSize(8)
+    doc.text(`Generado el: ${currentDate}`, 20, doc.internal.pageSize.height - 20)
+
     // Guardar el PDF
-    const fileName = `Clase_${props.classData.name.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
-    doc.save(fileName);
-    
+    const fileName = `Clase_${props.classData.name.replace(/\s+/g, "_")}_${format(new Date(), "yyyyMMdd")}.pdf`
+    doc.save(fileName)
   } catch (error) {
-    console.error('Error generating PDF:', error);
-    alert('Error al generar el PDF. Por favor, inténtalo de nuevo.');
+    console.error("Error generating PDF:", error)
+    alert("Error al generar el PDF. Por favor, inténtalo de nuevo.")
   }
-};
+}
 
 // Manejar compartir clase
 const handleShare = () => {
-  showShareModal.value = true;
-};
+  showShareModal.value = true
+}
 
 const selectTeacher = (teacherId: string) => {
-  selectedTeacherId.value = teacherId;
-  showShareModal.value = false;
-  showPermissionsModal.value = true;
-};
+  selectedTeacherId.value = teacherId
+  showShareModal.value = false
+  showPermissionsModal.value = true
+}
 
 const confirmShare = async () => {
-  if (!selectedTeacherId.value) return;
-  
-  isLoading.value = true;
+  if (!selectedTeacherId.value) return
+
+  isLoading.value = true
   try {
     await inviteAssistant({
       classId: props.classData.id,
       teacherId: selectedTeacherId.value,
-      permissions: assistantPermissions.value
-    });
-    
-    showPermissionsModal.value = false;
-    selectedTeacherId.value = '';
-    
-    alert('Maestro asistente invitado exitosamente');
+      permissions: assistantPermissions.value,
+    })
+
+    showPermissionsModal.value = false
+    selectedTeacherId.value = ""
+
+    alert("Maestro asistente invitado exitosamente")
   } catch (error) {
-    console.error('Error inviting teacher:', error);
-    alert('Error al invitar maestro asistente');
+    console.error("Error inviting teacher:", error)
+    alert("Error al invitar maestro asistente")
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-};
+}
 
 const cancelShare = () => {
-  showPermissionsModal.value = false;
-  showShareModal.value = false;
-  selectedTeacherId.value = '';
-};
+  showPermissionsModal.value = false
+  showShareModal.value = false
+  selectedTeacherId.value = ""
+}
 
 // Manejar invitación enviada
 const handleInvitationSent = () => {
   // Opcional: Actualizar el estado local o mostrar confirmación
-  console.log('Invitación enviada correctamente');
-};
+  console.log("Invitación enviada correctamente")
+}
 
 // Manejar abandono de colaboración (maestro asistente)
 const handleLeaveCollaboration = async () => {
-  if (!confirm('¿Estás seguro de que quieres abandonar esta colaboración?')) {
-    return;
+  if (!confirm("¿Estás seguro de que quieres abandonar esta colaboración?")) {
+    return
   }
 
-  isLoading.value = true;
+  isLoading.value = true
   try {
-    const { removeAssistant } = useTeacherCollaboration();
-    await removeAssistant(props.classData.id, authStore.user?.uid || '');
-    
-    alert('Has abandonado la colaboración exitosamente');
-    
+    const {removeAssistant} = useTeacherCollaboration()
+    await removeAssistant(props.classData.id, authStore.user?.uid || "")
+
+    alert("Has abandonado la colaboración exitosamente")
+
     // Emitir evento para que el padre actualice la lista
-    emit('collaboration-updated');
+    emit("collaboration-updated")
   } catch (error) {
-    console.error('Error abandoning colaboration:', error);
-    alert('Error al abandonar la colaboración');
+    console.error("Error abandoning colaboration:", error)
+    alert("Error al abandonar la colaboración")
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-};
+}
 
 // Remover colaborador (maestro principal)
 const removeCollaborator = async (teacherId: string) => {
-  if (!confirm('¿Estás seguro de que quieres remover este colaborador?')) {
-    return;
+  if (!confirm("¿Estás seguro de que quieres remover este colaborador?")) {
+    return
   }
 
-  isLoading.value = true;
+  isLoading.value = true
   try {
-    const { removeAssistant } = useTeacherCollaboration();
-    await removeAssistant(props.classData.id, teacherId);
-    
-    alert('Colaborador removido exitosamente');
-    showManageCollaboratorsModal.value = false;
-    
+    const {removeAssistant} = useTeacherCollaboration()
+    await removeAssistant(props.classData.id, teacherId)
+
+    alert("Colaborador removido exitosamente")
+    showManageCollaboratorsModal.value = false
+
     // Emitir evento para que el padre actualice la lista
-    emit('collaboration-updated');
+    emit("collaboration-updated")
   } catch (error) {
-    console.error('Error removing collaborator:', error);
-    alert('Error al remover colaborador');
+    console.error("Error removing collaborator:", error)
+    alert("Error al remover colaborador")
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-};
+}
 
 // Cargar datos al montar
 onMounted(async () => {
   if (!studentsStore.students.length) {
-    await studentsStore.fetchStudents();
+    await studentsStore.fetchStudents()
   }
   if (!teachersStore.teachers.length) {
-    await teachersStore.fetchTeachers();
+    await teachersStore.fetchTeachers()
   }
-});
+})
 
 const studentCount = computed(() => {
-  return studentsStore.getStudentsByClass(props.classData.id).length;
-});
+  return studentsStore.getStudentsByClass(props.classData.id).length
+})
 </script>
 
-<template>  <div 
+<template>
+  <div
     :class="[
       'relative bg-white dark:bg-gray-800 rounded-xl shadow-md transition-all duration-500 overflow-visible border-t-4 teacher-class-card',
       getDayColor.border,
       getDayColor.shadow,
-      viewMode === 'list' ? 'flex items-center p-4 space-x-4 mb-2 list-view-card' : ''
+      viewMode === 'list' ? 'flex items-center p-4 space-x-4 mb-2 list-view-card' : '',
     ]"
     class="flex flex-col h-full min-h-[340px]"
   >
     <!-- Vista de Lista -->
     <template v-if="viewMode === 'list'">
       <!-- Indicador de día (banda lateral izquierda) -->
-      <div :class="['w-1 h-full rounded-full', getDayColor.bg]"></div>
-        <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-center min-w-0">
+      <div :class="['w-1 h-full rounded-full', getDayColor.bg]" />
+      <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-center min-w-0">
         <!-- Información básica -->
         <div class="sm:col-span-1 lg:col-span-2 min-w-0">
           <div class="flex items-center gap-2 mb-1">
             <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
               {{ classData.name }}
             </h3>
-            <span :class="['px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0', getDayColor.bg, getDayColor.text]">
-              {{ formatDayName(props.classData.schedule?.slots?.[0]?.day || '') }}
+            <span
+              :class="[
+                'px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0',
+                getDayColor.bg,
+                getDayColor.text,
+              ]"
+            >
+              {{ formatDayName(props.classData.schedule?.slots?.[0]?.day || "") }}
             </span>
           </div>
           <p class="text-sm text-gray-600 dark:text-gray-400 truncate">
-            {{ classData.description || 'Sin descripción' }}
+            {{ classData.description || "Sin descripción" }}
           </p>
         </div>
-        
+
         <!-- Horario -->
         <div class="sm:col-span-1 lg:col-span-1">
           <div class="flex items-center text-gray-600 dark:text-gray-400">
@@ -585,37 +823,39 @@ const studentCount = computed(() => {
             <span class="text-sm font-medium truncate">{{ formattedSchedule }}</span>
           </div>
         </div>
-        
+
         <!-- Salón -->
         <div class="sm:col-span-1 lg:col-span-1">
           <div class="flex items-center text-gray-600 dark:text-gray-400">
             <BuildingOfficeIcon class="h-4 w-4 mr-2 flex-shrink-0" />
-            <span class="text-sm truncate">{{ classData.classroom || 'Sin salón' }}</span>
+            <span class="text-sm truncate">{{ classData.classroom || "Sin salón" }}</span>
           </div>
         </div>
-        
+
         <!-- Estudiantes -->
         <div class="sm:col-span-1 lg:col-span-1">
           <div class="flex items-center text-gray-600 dark:text-gray-400">
             <UserGroupIcon class="h-4 w-4 mr-2 flex-shrink-0" />
-            <span class="text-sm font-medium whitespace-nowrap">{{ studentCount }} estudiantes</span>
+            <span class="text-sm font-medium whitespace-nowrap"
+              >{{ studentCount }} estudiantes</span
+            >
           </div>
         </div>
-        
+
         <!-- Badges adicionales para clases compartidas -->
         <div class="sm:col-span-2 lg:col-span-1 flex gap-1">
           <!-- Badge para clase compartida (maestro asistente) -->
-          <span 
-            v-if="isSharedClass" 
+          <span
+            v-if="isSharedClass"
             class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
             title="Eres maestro asistente en esta clase"
           >
             Asistente
           </span>
-          
+
           <!-- Badge para clase con colaboradores (maestro principal) -->
-          <span 
-            v-else-if="hasCollaborators" 
+          <span
+            v-else-if="hasCollaborators"
             class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
             title="Esta clase tiene maestros colaboradores"
           >
@@ -623,13 +863,16 @@ const studentCount = computed(() => {
           </span>
         </div>
       </div>
-        <!-- Acciones (vista lista) -->
-      <div class="flex items-center space-x-2">        <!-- Menú hamburguesa -->
+      <!-- Acciones (vista lista) -->
+      <div class="flex items-center space-x-2">
+        <!-- Menú hamburguesa -->
         <Menu as="div" class="relative menu-container">
-          <MenuButton class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <MenuButton
+            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
             <EllipsisVerticalIcon class="h-5 w-5 text-gray-500 dark:text-gray-400" />
           </MenuButton>
-          
+
           <transition
             enter-active-class="transition duration-100 ease-out"
             enter-from-class="transform scale-95 opacity-0"
@@ -637,85 +880,90 @@ const studentCount = computed(() => {
             leave-active-class="transition duration-75 ease-in"
             leave-from-class="transform scale-100 opacity-100"
             leave-to-class="transform scale-95 opacity-0"
-          >            <MenuItems class="menu-dropdown absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none border border-gray-200 dark:border-gray-600">
+          >
+            <MenuItems
+              class="menu-dropdown absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none border border-gray-200 dark:border-gray-600"
+            >
               <div class="py-1">
-                <MenuItem v-if="canShareClass" v-slot="{ active }">
+                <MenuItem v-if="canShareClass" v-slot="{active}">
                   <button
-                    @click="handleShare"
                     :class="[
                       active ? 'bg-gray-50 dark:bg-gray-700' : '',
-                      'group flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 w-full text-left'
+                      'group flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 w-full text-left',
                     ]"
+                    @click="handleShare"
                   >
                     <ShareIcon class="mr-3 h-4 w-4" />
                     Compartir
                   </button>
                 </MenuItem>
-                
-                <MenuItem v-slot="{ active }">
+
+                <MenuItem v-slot="{active}">
                   <button
-                    @click="handleView"
                     :class="[
                       active ? 'bg-gray-50 dark:bg-gray-700' : '',
-                      'group flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 w-full text-left'
+                      'group flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 w-full text-left',
                     ]"
+                    @click="handleView"
                   >
                     <EyeIcon class="mr-3 h-4 w-4" />
                     Ver clase
                   </button>
                 </MenuItem>
-                
-                <MenuItem v-if="!isSharedClass || myPermissions.canEditClass" v-slot="{ active }">
+
+                <MenuItem v-if="!isSharedClass || myPermissions.canEditClass" v-slot="{active}">
                   <button
-                    @click="handleEdit"
                     :class="[
                       active ? 'bg-gray-50 dark:bg-gray-700' : '',
-                      'group flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 w-full text-left'
+                      'group flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 w-full text-left',
                     ]"
+                    @click="handleEdit"
                   >
                     <PencilIcon class="mr-3 h-4 w-4" />
                     Editar clase
                   </button>
                 </MenuItem>
-                
-                <MenuItem v-if="canShareClass" v-slot="{ active }">
+
+                <MenuItem v-if="canShareClass" v-slot="{active}">
                   <button
-                    @click="handleDelete"
                     :class="[
                       active ? 'bg-red-50 dark:bg-red-900/20' : '',
-                      'group flex items-center px-4 py-2 text-sm text-red-700 dark:text-red-400 w-full text-left'
+                      'group flex items-center px-4 py-2 text-sm text-red-700 dark:text-red-400 w-full text-left',
                     ]"
+                    @click="handleDelete"
                   >
                     <TrashIcon class="mr-3 h-4 w-4" />
                     Eliminar clase
-                  </button>                </MenuItem>
+                  </button>
+                </MenuItem>
               </div>
             </MenuItems>
           </transition>
-        </Menu>        <!-- Botones de acción rápida -->
+        </Menu>
+        <!-- Botones de acción rápida -->
         <button
           v-if="!isSharedClass || myPermissions.canManageStudents"
-          @click="handleManageStudents"
           class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
           title="Gestionar Alumnos"
+          @click="handleManageStudents"
         >
           <UserPlusIcon class="h-4 w-4" />
         </button>
-        
+
         <button
           v-if="!isSharedClass || myPermissions.canTakeAttendance"
-          @click="handleTakeAttendance"
           class="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
           title="Tomar Asistencia"
+          @click="handleTakeAttendance"
         >
           <ClipboardDocumentCheckIcon class="h-4 w-4" />
         </button>
-        
+
         <button
           v-if="!isSharedClass || myPermissions.canViewAttendanceHistory"
-          @click="handleViewHistory"
           class="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
           title="Historial"
+          @click="handleViewHistory"
         >
           <DocumentTextIcon class="h-4 w-4" />
         </button>
@@ -725,51 +973,80 @@ const studentCount = computed(() => {
     <!-- Vista de Tarjeta -->
     <template v-else>
       <!-- Capa decorativa con gradiente sutil -->
-      <div class="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/[0.02] dark:to-white/[0.02] pointer-events-none"></div>
-        <!-- Header con menú hamburguesa -->
-      <div class="relative flex justify-between items-start p-6 pb-3">        <div class="flex-1 pr-4">
+      <div
+        class="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/[0.02] dark:to-white/[0.02] pointer-events-none"
+      />
+      <!-- Header con menú hamburguesa -->
+      <div class="relative flex justify-between items-start p-6 pb-3">
+        <div class="flex-1 pr-4">
           <!-- Badge del día con animación y badge de clase compartida -->
           <div class="flex items-center gap-3 mb-3">
-            <span :class="[
-              'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-all duration-300',
-              'ring-1 ring-inset',
-              getDayColor.bg,
-              getDayColor.text,
-              'hover:scale-105 cursor-default'
-            ]">
+            <span
+              :class="[
+                'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-all duration-300',
+                'ring-1 ring-inset',
+                getDayColor.bg,
+                getDayColor.text,
+                'hover:scale-105 cursor-default',
+              ]"
+            >
               <MusicalNoteIcon class="w-3 h-3 mr-1.5 animate-pulse" />
-              {{ formatDayName(props.classData.schedule?.slots?.[0]?.day || '') }}
+              {{ formatDayName(props.classData.schedule?.slots?.[0]?.day || "") }}
             </span>
-              <!-- Badge para clase compartida (maestro asistente) -->
-            <span 
+            <!-- Badge para clase compartida (maestro asistente) -->
+            <span
               v-if="isSharedClass"
               class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200 ring-1 ring-orange-500/20"
               title="Eres maestro asistente en esta clase"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-3 h-3 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                />
               </svg>
               Asistente
             </span>
 
             <!-- Badge para clase con colaboradores (maestro principal) -->
-            <span 
+            <span
               v-if="hasCollaborators"
               class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 ring-1 ring-blue-500/20"
               title="Esta clase tiene maestros colaboradores"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m3 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-3 h-3 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m3 7a4 4 0 11-8 0 4 4 0 018 0z"
+                />
               </svg>
               Colaborativa
             </span>
           </div>
-          
+
           <!-- Título mejorado -->
-          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
+          <h3
+            class="text-xl font-bold text-gray-900 dark:text-white mb-2 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300"
+          >
             {{ classData.name }}
           </h3>
-            <!-- Información del maestro principal para clases compartidas -->
+          <!-- Información del maestro principal para clases compartidas -->
           <div v-if="isSharedClass" class="mb-2">
             <p class="text-xs text-gray-500 dark:text-gray-400">
               <span class="font-medium">Maestro Principal:</span> {{ leadTeacherName }}
@@ -779,27 +1056,32 @@ const studentCount = computed(() => {
           <!-- Información de colaboradores para clases principales -->
           <div v-if="hasCollaborators" class="mb-2">
             <p class="text-xs text-gray-500 dark:text-gray-400">
-              <span class="font-medium">Colaboradores:</span> 
+              <span class="font-medium">Colaboradores:</span>
               <span class="text-blue-600 dark:text-blue-400">
-                {{ collaboratorsList.slice(0, 2).join(', ') }}
+                {{ collaboratorsList.slice(0, 2).join(", ") }}
                 <span v-if="collaboratorsList.length > 2">
                   y {{ collaboratorsList.length - 2 }} más
                 </span>
               </span>
             </p>
           </div>
-          
-          <!-- Subtítulo/Descripción mejorado --><p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2">
-            {{ classData.description || 'Sin descripción disponible' }}
+
+          <!-- Subtítulo/Descripción mejorado -->
+          <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2">
+            {{ classData.description || "Sin descripción disponible" }}
           </p>
         </div>
-        
+
         <!-- Menú hamburguesa mejorado -->
         <Menu as="div" class="relative z-10">
-          <MenuButton class="group p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-all duration-300 hover:scale-105 hover:rotate-90">
-            <EllipsisVerticalIcon class="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors" />
+          <MenuButton
+            class="group p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-all duration-300 hover:scale-105 hover:rotate-90"
+          >
+            <EllipsisVerticalIcon
+              class="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors"
+            />
           </MenuButton>
-          
+
           <transition
             enter-active-class="transition duration-150 ease-out"
             enter-from-class="transform scale-95 opacity-0"
@@ -808,15 +1090,20 @@ const studentCount = computed(() => {
             leave-from-class="transform scale-100 opacity-100"
             leave-to-class="transform scale-95 opacity-0"
           >
-            <MenuItems class="absolute right-0 z-30 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 focus:outline-none backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">              <div class="p-1">                
+            <MenuItems
+              class="absolute right-0 z-30 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 focus:outline-none backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50"
+            >
+              <div class="p-1">
                 <!-- Compartir clase - solo para maestros principales -->
-                <MenuItem v-if="canShareClass" v-slot="{ active }">
+                <MenuItem v-if="canShareClass" v-slot="{active}">
                   <button
-                    @click="handleShare"
                     :class="[
-                      active ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300',
-                      'group flex items-center px-4 py-3 text-sm font-medium w-full text-left rounded-lg transition-all duration-200 hover:scale-[1.02]'
+                      active
+                        ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 text-blue-700 dark:text-blue-300'
+                        : 'text-gray-700 dark:text-gray-300',
+                      'group flex items-center px-4 py-3 text-sm font-medium w-full text-left rounded-lg transition-all duration-200 hover:scale-[1.02]',
                     ]"
+                    @click="handleShare"
                   >
                     <ShareIcon class="mr-3 h-4 w-4 transition-transform group-hover:rotate-12" />
                     Compartir clase
@@ -824,57 +1111,70 @@ const studentCount = computed(() => {
                 </MenuItem>
 
                 <!-- Gestionar colaboradores - solo para maestros principales con colaboradores -->
-                <MenuItem v-if="hasCollaborators" v-slot="{ active }">
+                <MenuItem v-if="hasCollaborators" v-slot="{active}">
                   <button
-                    @click="showManageCollaboratorsModal = true"
                     :class="[
-                      active ? 'bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 text-purple-700 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300',
-                      'group flex items-center px-4 py-3 text-sm font-medium w-full text-left rounded-lg transition-all duration-200 hover:scale-[1.02]'
+                      active
+                        ? 'bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 text-purple-700 dark:text-purple-300'
+                        : 'text-gray-700 dark:text-gray-300',
+                      'group flex items-center px-4 py-3 text-sm font-medium w-full text-left rounded-lg transition-all duration-200 hover:scale-[1.02]',
                     ]"
+                    @click="showManageCollaboratorsModal = true"
                   >
-                    <UserGroupIcon class="mr-3 h-4 w-4 transition-transform group-hover:rotate-12" />
+                    <UserGroupIcon
+                      class="mr-3 h-4 w-4 transition-transform group-hover:rotate-12"
+                    />
                     Gestionar colaboradores
                   </button>
                 </MenuItem>
 
                 <!-- Abandonar colaboración - solo para maestros asistentes -->
-                <MenuItem v-if="isSharedClass" v-slot="{ active }">
+                <MenuItem v-if="isSharedClass" v-slot="{active}">
                   <button
-                    @click="handleLeaveCollaboration"
                     :class="[
-                      active ? 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 text-red-700 dark:text-red-300' : 'text-gray-700 dark:text-gray-300',
-                      'group flex items-center px-4 py-3 text-sm font-medium w-full text-left rounded-lg transition-all duration-200 hover:scale-[1.02]'
+                      active
+                        ? 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 text-red-700 dark:text-red-300'
+                        : 'text-gray-700 dark:text-gray-300',
+                      'group flex items-center px-4 py-3 text-sm font-medium w-full text-left rounded-lg transition-all duration-200 hover:scale-[1.02]',
                     ]"
+                    @click="handleLeaveCollaboration"
                   >
                     <XMarkIcon class="mr-3 h-4 w-4 transition-transform group-hover:rotate-12" />
                     Abandonar colaboración
                   </button>
                 </MenuItem>
 
-                <div v-if="canShareClass || isSharedClass" class="my-1 h-px bg-gray-200 dark:bg-gray-700"></div>
-                
-                <MenuItem v-slot="{ active }">
+                <div
+                  v-if="canShareClass || isSharedClass"
+                  class="my-1 h-px bg-gray-200 dark:bg-gray-700"
+                />
+
+                <MenuItem v-slot="{active}">
                   <button
-                    @click="handleEdit"
                     :class="[
-                      active ? 'bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 text-amber-700 dark:text-amber-300' : 'text-gray-700 dark:text-gray-300',
-                      'group flex items-center px-4 py-3 text-sm font-medium w-full text-left rounded-lg transition-all duration-200 hover:scale-[1.02]'
+                      active
+                        ? 'bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 text-amber-700 dark:text-amber-300'
+                        : 'text-gray-700 dark:text-gray-300',
+                      'group flex items-center px-4 py-3 text-sm font-medium w-full text-left rounded-lg transition-all duration-200 hover:scale-[1.02]',
                     ]"
+                    @click="handleEdit"
                   >
                     <PencilIcon class="mr-3 h-4 w-4 transition-transform group-hover:rotate-12" />
                     Editar clase
                   </button>
                 </MenuItem>
-                
-                <div class="my-1 h-px bg-gray-200 dark:bg-gray-700"></div>
-                
-                <MenuItem v-slot="{ active }">
+
+                <div class="my-1 h-px bg-gray-200 dark:bg-gray-700" />
+
+                <MenuItem v-slot="{active}">
                   <button
-                    @click="handleDelete"
                     :class="[
-                      active ? 'bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 text-red-700 dark:text-red-400' : 'text-red-600 dark:text-red-400',
-                      'group flex items-center px-4 py-3 text-sm font-medium w-full text-left rounded-lg transition-all duration-200 hover:scale-[1.02]'
+                      active
+                        ? 'bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 text-red-700 dark:text-red-400'
+                        : 'text-red-600 dark:text-red-400',
+                      'group flex items-center px-4 py-3 text-sm font-medium w-full text-left rounded-lg transition-all duration-200 hover:scale-[1.02]',
                     ]"
+                    @click="handleDelete"
                   >
                     <TrashIcon class="mr-3 h-4 w-4 transition-transform group-hover:rotate-12" />
                     Eliminar clase
@@ -884,117 +1184,183 @@ const studentCount = computed(() => {
             </MenuItems>
           </transition>
         </Menu>
-      </div>      <!-- Cuerpo de la card mejorado -->
+      </div>
+      <!-- Cuerpo de la card mejorado -->
       <div class="px-6 pb-4 space-y-4">
         <!-- Grid de información principal -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <!-- Horarios -->
-          <div class="flex items-center text-gray-600 dark:text-gray-400 group/item hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-            <div :class="['flex items-center justify-center w-8 h-8 rounded-lg mr-3 transition-all group-hover/item:scale-110', getDayColor.bg]">
+          <div
+            class="flex items-center text-gray-600 dark:text-gray-400 group/item hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          >
+            <div
+              :class="[
+                'flex items-center justify-center w-8 h-8 rounded-lg mr-3 transition-all group-hover/item:scale-110',
+                getDayColor.bg,
+              ]"
+            >
               <ClockIcon class="h-4 w-4" />
             </div>
             <div>
-              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide"> </div>
+              <div
+                class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+              />
               <span class="text-sm font-medium">{{ formattedSchedule }}</span>
             </div>
           </div>
 
           <!-- Salón -->
-          <div class="flex items-center text-gray-600 dark:text-gray-400 group/item hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
-            <div :class="['flex items-center justify-center w-8 h-8 rounded-lg mr-3 transition-all group-hover/item:scale-110', getDayColor.bg]">
+          <div
+            class="flex items-center text-gray-600 dark:text-gray-400 group/item hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+          >
+            <div
+              :class="[
+                'flex items-center justify-center w-8 h-8 rounded-lg mr-3 transition-all group-hover/item:scale-110',
+                getDayColor.bg,
+              ]"
+            >
               <BuildingOfficeIcon class="h-4 w-4" />
             </div>
             <div>
-              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide"></div>
-              <span class="text-sm font-medium">{{ classData.classroom || 'Sin asignar' }}</span>
+              <div
+                class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+              />
+              <span class="text-sm font-medium">{{ classData.classroom || "Sin asignar" }}</span>
             </div>
           </div>
         </div>
 
         <!-- Separador decorativo -->
         <div class="flex items-center my-4">
-          <div class="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent"></div>
+          <div
+            class="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent"
+          />
           <MusicalNoteIcon class="w-4 h-4 mx-4 text-gray-400 dark:text-gray-500" />
-          <div class="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent"></div>
-        </div>        <!-- Total de estudiantes con indicador visual (clickeable) -->        <button
-          @click="handleShowStudents"
-          class="w-full flex items-center justify-between p-3 rounded-xl
-           bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700/50 
-           dark:to-gray-600/50 border border-gray-200/50 dark:border-gray-600/50 
-           hover:from-blue-50 hover:to-blue-100 dark:hover:from-blue-900/20 
-           dark:hover:to-blue-800/20 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-300 group/students cursor-pointer"
+          <div
+            class="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent"
+          />
+        </div>
+        <!-- Total de estudiantes con indicador visual (clickeable) -->
+        <button
+          class="w-full flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-600/50 border border-gray-200/50 dark:border-gray-600/50 hover:from-blue-50 hover:to-blue-100 dark:hover:from-blue-900/20 dark:hover:to-blue-800/20 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-300 group/students cursor-pointer"
           title="Ver lista de estudiantes"
-          style="pointer-events: auto; position: relative; z-index: 5;"
+          style="pointer-events: auto; position: relative; z-index: 5"
+          @click="handleShowStudents"
         >
           <div class="flex items-center">
-            <div :class="['flex items-center justify-center w-10 h-10 rounded-full mr-3 ring-2 ring-white dark:ring-gray-800 shadow-sm group-hover/students:scale-110 transition-transform', getDayColor.bg]">
+            <div
+              :class="[
+                'flex items-center justify-center w-10 h-10 rounded-full mr-3 ring-2 ring-white dark:ring-gray-800 shadow-sm group-hover/students:scale-110 transition-transform',
+                getDayColor.bg,
+              ]"
+            >
               <UserGroupIcon class="h-5 w-5" />
             </div>
             <div class="text-left">
-              <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Estudiantes</div>
-              <span class="text-lg font-bold text-gray-900 dark:text-white">{{ studentCount }}</span>
+              <div
+                class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+              >
+                Estudiantes
+              </div>
+              <span class="text-lg font-bold text-gray-900 dark:text-white">{{
+                studentCount
+              }}</span>
             </div>
           </div>
           <div class="text-right">
             <div class="flex items-center text-xs text-green-600 dark:text-green-400 font-medium">
-              <div class="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
+              <div class="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse" />
               Lista completaes
             </div>
-          </div>
-        </button><!-- Lista de estudiantes mejorada -->
-       
-      </div>      <!-- Footer con botones de acción mejorados (solo iconos) -->
-      <div class="mt-auto px-6 pt-4 pb-0 bg-gradient-to-r from-gray-50 via-white to-gray-50 dark:from-gray-700/30 dark:via-gray-800/50 dark:to-gray-700/30 border-t border-gray-100 dark:border-gray-700/50">
+          </div></button
+        ><!-- Lista de estudiantes mejorada -->
+      </div>
+      <!-- Footer con botones de acción mejorados (solo iconos) -->
+      <div
+        class="mt-auto px-6 pt-4 pb-0 bg-gradient-to-r from-gray-50 via-white to-gray-50 dark:from-gray-700/30 dark:via-gray-800/50 dark:to-gray-700/30 border-t border-gray-100 dark:border-gray-700/50"
+      >
         <div class="flex justify-center space-x-4">
           <button
-            @click="handleView"
             class="action-button group flex items-center justify-center w-12 h-12 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
             title="Ver Detalles"
-            style="pointer-events: auto; position: relative; z-index: 10;"
+            style="pointer-events: auto; position: relative; z-index: 10"
+            @click="handleView"
           >
             <EyeIcon class="h-5 w-5 group-hover:scale-110 transition-transform" />
           </button>
           <button
-            @click="handleManageStudents"
             :disabled="isSharedClass && !myPermissions.canManageStudents"
-            :class="['action-button group flex items-center justify-center w-12 h-12 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md', (isSharedClass && !myPermissions.canManageStudents) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer']"
-            :title="(isSharedClass && !myPermissions.canManageStudents) ? 'No tienes permiso para gestionar estudiantes' : 'Gestionar Estudiantes'"
-            style="pointer-events: auto; position: relative; z-index: 10;"
+            :class="[
+              'action-button group flex items-center justify-center w-12 h-12 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md',
+              isSharedClass && !myPermissions.canManageStudents
+                ? 'opacity-50 cursor-not-allowed'
+                : 'cursor-pointer',
+            ]"
+            :title="
+              isSharedClass && !myPermissions.canManageStudents
+                ? 'No tienes permiso para gestionar estudiantes'
+                : 'Gestionar Estudiantes'
+            "
+            style="pointer-events: auto; position: relative; z-index: 10"
+            @click="handleManageStudents"
           >
             <UserPlusIcon class="h-5 w-5 group-hover:rotate-12 transition-transform" />
           </button>
           <button
-            @click="handleTakeAttendance"
             :disabled="isSharedClass && !myPermissions.canTakeAttendance"
-            :class="['action-button group flex items-center justify-center w-12 h-12 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md', (isSharedClass && !myPermissions.canTakeAttendance) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer']"
-            :title="(isSharedClass && !myPermissions.canTakeAttendance) ? 'No tienes permiso para tomar asistencia' : 'Tomar Asistencia'"
-            style="pointer-events: auto; position: relative; z-index: 10;"
+            :class="[
+              'action-button group flex items-center justify-center w-12 h-12 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md',
+              isSharedClass && !myPermissions.canTakeAttendance
+                ? 'opacity-50 cursor-not-allowed'
+                : 'cursor-pointer',
+            ]"
+            :title="
+              isSharedClass && !myPermissions.canTakeAttendance
+                ? 'No tienes permiso para tomar asistencia'
+                : 'Tomar Asistencia'
+            "
+            style="pointer-events: auto; position: relative; z-index: 10"
+            @click="handleTakeAttendance"
           >
-            <ClipboardDocumentCheckIcon class="h-5 w-5 group-hover:rotate-12 transition-transform" />
+            <ClipboardDocumentCheckIcon
+              class="h-5 w-5 group-hover:rotate-12 transition-transform"
+            />
           </button>
           <button
-            @click="handleViewHistory"
             :disabled="isSharedClass && !myPermissions.canViewAttendanceHistory"
-            :class="['action-button group flex items-center justify-center w-12 h-12 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md', (isSharedClass && !myPermissions.canViewAttendanceHistory) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer']"
-            :title="(isSharedClass && !myPermissions.canViewAttendanceHistory) ? 'No tienes permiso para ver historial' : 'Ver Historial'"
-            style="pointer-events: auto; position: relative; z-index: 10;"
+            :class="[
+              'action-button group flex items-center justify-center w-12 h-12 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md',
+              isSharedClass && !myPermissions.canViewAttendanceHistory
+                ? 'opacity-50 cursor-not-allowed'
+                : 'cursor-pointer',
+            ]"
+            :title="
+              isSharedClass && !myPermissions.canViewAttendanceHistory
+                ? 'No tienes permiso para ver historial'
+                : 'Ver Historial'
+            "
+            style="pointer-events: auto; position: relative; z-index: 10"
+            @click="handleViewHistory"
           >
             <DocumentTextIcon class="h-5 w-5 group-hover:rotate-12 transition-transform" />
           </button>
           <button
             :disabled="!canShareClass"
-            @click="showShareModal = true"
-            :class="['action-button group flex items-center justify-center w-12 h-12 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md', !canShareClass ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer']"
+            :class="[
+              'action-button group flex items-center justify-center w-12 h-12 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md',
+              !canShareClass ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
+            ]"
             :title="!canShareClass ? 'No tienes permiso para compartir clase' : 'Compartir Clase'"
-            style="pointer-events: auto; position: relative; z-index: 10;"
+            style="pointer-events: auto; position: relative; z-index: 10"
+            @click="showShareModal = true"
           >
             <ShareIcon class="h-5 w-5 group-hover:rotate-12 transition-transform" />
           </button>
           <button
-            @click="handlePrintClass"
             class="action-button group flex items-center justify-center w-12 h-12 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/50 hover:scale-110 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
             title="Imprimir Reporte"
-            style="pointer-events: auto; position: relative; z-index: 10;"
+            style="pointer-events: auto; position: relative; z-index: 10"
+            @click="handlePrintClass"
           >
             <PrinterIcon class="h-5 w-5 group-hover:rotate-12 transition-transform" />
           </button>
@@ -1004,7 +1370,7 @@ const studentCount = computed(() => {
 
     <!-- Modal de estudiantes -->
     <TransitionRoot appear :show="showStudentsModal" as="template">
-      <Dialog as="div" @close="showStudentsModal = false" class="relative z-50">
+      <Dialog as="div" class="relative z-50" @close="showStudentsModal = false">
         <TransitionChild
           as="template"
           enter="duration-300 ease-out"
@@ -1028,11 +1394,16 @@ const studentCount = computed(() => {
               leave-from="opacity-100 scale-100"
               leave-to="opacity-0 scale-95"
             >
-              <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-                <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">
+              <DialogPanel
+                class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all"
+              >
+                <DialogTitle
+                  as="h3"
+                  class="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4"
+                >
                   Lista de Estudiantes - {{ classData.name }}
                 </DialogTitle>
-                
+
                 <div class="space-y-3 max-h-64 overflow-y-auto">
                   <div
                     v-for="(student, idx) in allStudents"
@@ -1040,17 +1411,23 @@ const studentCount = computed(() => {
                     class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                   >
                     <div>
-                      <div class="font-medium text-gray-900 dark:text-white">{{ student.name }}</div>
-                      <div class="text-sm text-gray-500 dark:text-gray-400">{{ student.instrument }}</div>
+                      <div class="font-medium text-gray-900 dark:text-white">
+                        {{ student.name }}
+                      </div>
+                      <div class="text-sm text-gray-500 dark:text-gray-400">
+                        {{ student.instrument }}
+                      </div>
                     </div>
-                    <span class="text-sm text-gray-500 dark:text-gray-400">{{ student.age }} años</span>
+                    <span class="text-sm text-gray-500 dark:text-gray-400"
+                      >{{ student.age }} años</span
+                    >
                   </div>
                 </div>
 
                 <div class="mt-4 flex justify-end">
                   <button
-                    @click="showStudentsModal = false"
                     class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    @click="showStudentsModal = false"
                   >
                     Cerrar
                   </button>
@@ -1064,7 +1441,7 @@ const studentCount = computed(() => {
 
     <!-- Modal para compartir clase -->
     <TransitionRoot appear :show="showShareModal" as="template">
-      <Dialog as="div" @close="showShareModal = false" class="relative z-50">
+      <Dialog as="div" class="relative z-50" @close="showShareModal = false">
         <TransitionChild
           as="template"
           enter="duration-300 ease-out"
@@ -1088,27 +1465,34 @@ const studentCount = computed(() => {
               leave-from="opacity-100 scale-100"
               leave-to="opacity-0 scale-95"
             >
-              <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-                <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">
+              <DialogPanel
+                class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all"
+              >
+                <DialogTitle
+                  as="h3"
+                  class="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4"
+                >
                   Seleccionar Maestro Asistente
                 </DialogTitle>
-                
+
                 <div class="space-y-2 max-h-64 overflow-y-auto">
                   <button
                     v-for="teacher in availableTeachers"
                     :key="teacher.id"
-                    @click="selectTeacher(teacher.id)"
                     class="w-full p-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                    @click="selectTeacher(teacher.id)"
                   >
                     <div class="font-medium text-gray-900 dark:text-white">{{ teacher.name }}</div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ teacher.email || 'Sin email' }}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                      {{ teacher.email || "Sin email" }}
+                    </div>
                   </button>
                 </div>
 
                 <div class="mt-4 flex justify-end space-x-3">
                   <button
-                    @click="showShareModal = false"
                     class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    @click="showShareModal = false"
                   >
                     Cancelar
                   </button>
@@ -1122,7 +1506,7 @@ const studentCount = computed(() => {
 
     <!-- Modal para configurar permisos -->
     <TransitionRoot appear :show="showPermissionsModal" as="template">
-      <Dialog as="div" @close="cancelShare" class="relative z-50">
+      <Dialog as="div" class="relative z-50" @close="cancelShare">
         <TransitionChild
           as="template"
           enter="duration-300 ease-out"
@@ -1146,11 +1530,16 @@ const studentCount = computed(() => {
               leave-from="opacity-100 scale-100"
               leave-to="opacity-0 scale-95"
             >
-              <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-                <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">
+              <DialogPanel
+                class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all"
+              >
+                <DialogTitle
+                  as="h3"
+                  class="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4"
+                >
                   Configurar Permisos
                 </DialogTitle>
-                
+
                 <div class="space-y-4">
                   <div class="flex items-center justify-between">
                     <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -1162,7 +1551,7 @@ const studentCount = computed(() => {
                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </div>
-                  
+
                   <div class="flex items-center justify-between">
                     <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Agregar observaciones
@@ -1173,7 +1562,7 @@ const studentCount = computed(() => {
                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </div>
-                  
+
                   <div class="flex items-center justify-between">
                     <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Ver historial de asistencia
@@ -1188,30 +1577,32 @@ const studentCount = computed(() => {
 
                 <div class="mt-6 flex justify-end space-x-3">
                   <button
-                    @click="cancelShare"
                     class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    @click="cancelShare"
                   >
                     Cancelar
                   </button>
                   <button
-                    @click="confirmShare"
                     :disabled="isLoading"
                     class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg"
+                    @click="confirmShare"
                   >
-                    {{ isLoading ? 'Invitando...' : 'Invitar' }}
+                    {{ isLoading ? "Invitando..." : "Invitar" }}
                   </button>
                 </div>
               </DialogPanel>
             </TransitionChild>
-          </div>        </div>
+          </div>
+        </div>
       </Dialog>
-    </TransitionRoot>    <!-- Modal de compartir clase -->
+    </TransitionRoot>
+    <!-- Modal de compartir clase -->
     <ShareClassModal
       :show="showShareModal"
       :class-data="{
         id: classData.id,
         name: classData.name,
-        teacherId: classData.teacherId
+        teacherId: classData.teacherId,
       }"
       @close="showShareModal = false"
       @invitation-sent="handleInvitationSent"
@@ -1219,7 +1610,7 @@ const studentCount = computed(() => {
 
     <!-- Modal de gestionar colaboradores -->
     <TransitionRoot appear :show="showManageCollaboratorsModal" as="template">
-      <Dialog as="div" @close="showManageCollaboratorsModal = false" class="relative z-50">
+      <Dialog as="div" class="relative z-50" @close="showManageCollaboratorsModal = false">
         <TransitionChild
           as="template"
           enter="duration-300 ease-out"
@@ -1243,8 +1634,13 @@ const studentCount = computed(() => {
               leave-from="opacity-100 scale-100"
               leave-to="opacity-0 scale-95"
             >
-              <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-                <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">
+              <DialogPanel
+                class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all"
+              >
+                <DialogTitle
+                  as="h3"
+                  class="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4"
+                >
                   Gestionar Colaboradores: {{ classData.name }}
                 </DialogTitle>
 
@@ -1256,18 +1652,18 @@ const studentCount = computed(() => {
                   >
                     <div>
                       <p class="font-medium text-gray-900 dark:text-white">
-                        {{ teacher.name || 'Maestro' }}
+                        {{ teacher.name || "Maestro" }}
                       </p>
                       <p class="text-sm text-gray-500 dark:text-gray-400">
-                        Permisos: 
-                        {{ teacher.permissions?.canTakeAttendance ? 'Asistencia' : '' }}
-                        {{ teacher.permissions?.canAddObservations ? ', Observaciones' : '' }}
+                        Permisos:
+                        {{ teacher.permissions?.canTakeAttendance ? "Asistencia" : "" }}
+                        {{ teacher.permissions?.canAddObservations ? ", Observaciones" : "" }}
                       </p>
                     </div>
                     <button
-                      @click="removeCollaborator(teacher.teacherId)"
                       class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                       title="Remover colaborador"
+                      @click="removeCollaborator(teacher.teacherId)"
                     >
                       <XMarkIcon class="h-5 w-5" />
                     </button>
@@ -1275,7 +1671,9 @@ const studentCount = computed(() => {
                 </div>
 
                 <div v-else class="text-center py-4">
-                  <p class="text-gray-500 dark:text-gray-400">No hay colaboradores en esta clase.</p>
+                  <p class="text-gray-500 dark:text-gray-400">
+                    No hay colaboradores en esta clase.
+                  </p>
                 </div>
 
                 <div class="mt-6 flex justify-end">
@@ -1372,7 +1770,8 @@ const studentCount = computed(() => {
 
 /* Animación para los badges del día */
 @keyframes pulse-glow {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -1413,7 +1812,7 @@ const studentCount = computed(() => {
   .grid-cols-1.sm\:grid-cols-2 {
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
-  
+
   .grid-cols-1.sm\:grid-cols-3 {
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
@@ -1423,7 +1822,7 @@ const studentCount = computed(() => {
   .sm\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  
+
   .sm\:grid-cols-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -1514,11 +1913,15 @@ const studentCount = computed(() => {
 
 /* Mejorar la visibilidad de los menús en vista lista */
 .list-view-card [role="menu"] {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(0, 0, 0, 0.05) !important;
   backdrop-filter: blur(10px);
 }
 
 .dark .list-view-card [role="menu"] {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.1) !important;
 }
 </style>

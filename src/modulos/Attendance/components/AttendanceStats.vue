@@ -24,8 +24,8 @@ export default {
   props: {
     stats: {
       type: Object,
-      required: true
-    }
-  }
-};
+      required: true,
+    },
+  },
+}
 </script>

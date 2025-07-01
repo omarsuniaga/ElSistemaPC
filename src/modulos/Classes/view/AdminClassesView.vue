@@ -451,6 +451,7 @@ import { useClassesStore } from '../store/classes';
 import { useTeachersStore } from '../../Teachers/store/teachers';
 import { useStudentsStore } from '../../Students/store/students';
 import { defineAsyncComponent, type Component } from 'vue';
+import { useNotification } from '../../../composables/useNotification';
 
 // Heroicons
 import {
@@ -506,6 +507,21 @@ const router = useRouter();
 const classesStore = useClassesStore();
 const teachersStore = useTeachersStore();
 const studentsStore = useStudentsStore();
+
+// Sistema de notificaciones simple
+const showNotification = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+  // Crear una notificación temporal usando alert como fallback
+  if (type === 'error') {
+    console.error('❌', message);
+    alert(`Error: ${message}`);
+  } else if (type === 'success') {
+    console.log('✅', message);
+    alert(`Éxito: ${message}`);
+  } else {
+    console.log(message);
+    alert(message);
+  }
+};
 
 // Estado reactivo
 const tab = ref<'classes' | 'schedule' | 'shared'>('classes');
@@ -792,6 +808,7 @@ const handleSave = async (classData: ClassData) => {
     // Validar datos mínimos
     if (!classData.name?.trim() || !classData.instrument || !classData.teacherId) {
       showNotification('Por favor complete todos los campos requeridos', 'error');
+      loading.value = false;
       return;
     }
     
@@ -806,9 +823,16 @@ const handleSave = async (classData: ClassData) => {
       schedule: classData.schedule || { slots: [] },
       updatedAt: new Date().toISOString()
     };
+
+    // Debug: Verificar el horario recibido
+    console.log('📅 Datos de horario recibidos:', {
+      schedule: classToSave.schedule,
+      slots: classToSave.schedule?.slots,
+      slotsLength: classToSave.schedule?.slots?.length
+    });
     
     if (editingClass.value?.id) {
-      // Actualizar clase existente
+      // Actualizar clase existente - No validar horario para actualizaciones
       await classesStore.updateClass(editingClass.value.id, {
         ...classToSave,
         // Mantener el ID y la fecha de creación originales
@@ -823,10 +847,14 @@ const handleSave = async (classData: ClassData) => {
       
       showNotification(`✅ Clase "${classToSave.name}" actualizada exitosamente`, 'success');
     } else {
-      // Crear nueva clase
+      // Crear nueva clase - Validar horario solo para clases nuevas
       const now = new Date().toISOString();
+      
+      // Excluir el campo 'id' para nuevas clases ya que Firestore lo genera automáticamente
+      const { id, createdAt, updatedAt, ...classDataWithoutId } = classToSave;
+      
       const newClass = {
-        ...classToSave,
+        ...classDataWithoutId,
         // Configurar valores por defecto para nueva clase
         createdAt: now,
         permissions: classToSave.teacherId ? {
@@ -836,29 +864,50 @@ const handleSave = async (classData: ClassData) => {
         changeHistory: [{ timestamp: now, changes: 'Creación de la clase' }]
       };
       
-      // Validar que tenga al menos un horario
-      if (!newClass.schedule?.slots?.length) {
+      // Validar que tenga al menos un horario SOLO para clases nuevas
+      if (!newClass.schedule?.slots?.length || newClass.schedule.slots.length === 0) {
+        console.warn('⚠️ Validación de horario falló:', {
+          schedule: newClass.schedule,
+          slots: newClass.schedule?.slots,
+          hasSlots: Boolean(newClass.schedule?.slots?.length)
+        });
         showNotification('Debe agregar al menos un horario para la clase', 'error');
-        return;
+        loading.value = false;
+        return; // No cerrar el modal, solo salir de la función
       }
+      
+      // Debug: Verificar que no se incluya el campo 'id' para nuevas clases
+      console.log('🆕 Datos de nueva clase (sin id):', newClass);
+      console.log('🔍 ¿Incluye campo id?', 'id' in newClass ? 'SÍ - ERROR' : 'NO - CORRECTO');
       
       // Guardar la nueva clase
       const savedClass = await classesStore.addClass(newClass);
-      console.log('Clase guardada en Firestore:', savedClass);
+      console.log('✅ Clase guardada en Firestore:', savedClass);
+      
+      // Verificar que la clase aparezca en el listado inmediatamente
+      console.log('📋 Total de clases después de crear:', classes.value.length);
+      const justCreated = classes.value.find(c => c.id === savedClass.id);
+      console.log('🔍 Clase recién creada encontrada en el listado:', justCreated ? 'SÍ' : 'NO');
       
       showNotification(`✅ Clase "${newClass.name}" creada exitosamente`, 'success');
     }
     
-    // Cerrar diálogo y recargar datos
+    // Solo cerrar diálogo si no hubo errores (no necesitamos recargar datos ya que el store se actualiza automáticamente)
     closeDialog();
     
-    // Forzar recarga de datos desde Firestore
-    await loadInitialData();
-    
   } catch (error) {
-    console.error('Error al guardar la clase:', error);
+    console.error('❌ Error al guardar la clase:', error);
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
     showNotification(`❌ Error al guardar la clase: ${errorMessage}`, 'error');
+    
+    // Debug: Verificar estado después del error
+    console.log('📊 Estado después del error:', {
+      totalClasses: classes.value.length,
+      editingClassId: editingClass.value?.id,
+      isCreatingNew: !editingClass.value?.id
+    });
+    
+    // No cerrar el modal en caso de error
   } finally {
     loading.value = false;
   }
@@ -867,14 +916,32 @@ const handleSave = async (classData: ClassData) => {
 const deleteClass = async () => {
   if (!editingClass.value?.id) return;
   
+  const classToDelete = editingClass.value;
+  const classId = classToDelete.id;
   deleting.value = true;
+  
   try {
-    await classesStore.removeClass(editingClass.value.id);
+    // Eliminar de Firestore y actualizar el store local automáticamente
+    await classesStore.removeClass(classId);
+    
+    // Verificar que la clase se eliminó correctamente del store
+    const stillExists = classes.value.find(c => c.id === classId);
+    if (stillExists) {
+      console.warn('La clase aún existe en el store local, forzando actualización...');
+      await classesStore.fetchClasses();
+    }
+    
+    // Mostrar notificación de éxito
+    showNotification(`✅ Clase "${classToDelete.name}" eliminada exitosamente`, 'success');
+    
+    // Cerrar diálogo inmediatamente
     showDeleteDialog.value = false;
     editingClass.value = null;
-    await loadInitialData();
+    
   } catch (error) {
     console.error('Error al eliminar la clase:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    showNotification(`❌ Error al eliminar la clase: ${errorMessage}`, 'error');
   } finally {
     deleting.value = false;
   }

@@ -17,7 +17,9 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <span class="text-sm text-gray-500 dark:text-gray-400">Rol:</span>
-            <span class="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-sm">
+            <span
+              class="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-sm"
+            >
               {{ userRole }}
             </span>
           </div>
@@ -28,7 +30,7 @@
           <div>
             <span class="text-sm text-gray-500 dark:text-gray-400">Es Superusuario:</span>
             <span class="ml-2" :class="isSuperuser ? 'text-green-600' : 'text-gray-600'">
-              {{ isSuperuser ? '✅ Sí' : '❌ No' }}
+              {{ isSuperuser ? "✅ Sí" : "❌ No" }}
             </span>
           </div>
         </div>
@@ -42,9 +44,12 @@
             <span class="mr-2">👥</span>
             Módulo de Estudiantes
           </h3>
-          
+
           <div class="space-y-3">
-            <PermissionGuard :required-resource="PermissionResource.STUDENTS" required-action="read">
+            <PermissionGuard
+              :required-resource="PermissionResource.STUDENTS"
+              required-action="read"
+            >
               <div class="flex items-center text-green-600 dark:text-green-400">
                 <CheckIcon class="w-5 h-5 mr-2" />
                 Puede ver estudiantes
@@ -57,7 +62,10 @@
               </template>
             </PermissionGuard>
 
-            <PermissionGuard :required-resource="PermissionResource.STUDENTS" required-action="create">
+            <PermissionGuard
+              :required-resource="PermissionResource.STUDENTS"
+              required-action="create"
+            >
               <div class="flex items-center text-green-600 dark:text-green-400">
                 <CheckIcon class="w-5 h-5 mr-2" />
                 Puede crear estudiantes
@@ -70,7 +78,10 @@
               </template>
             </PermissionGuard>
 
-            <PermissionGuard :required-resource="PermissionResource.STUDENTS" required-action="update">
+            <PermissionGuard
+              :required-resource="PermissionResource.STUDENTS"
+              required-action="update"
+            >
               <div class="flex items-center text-green-600 dark:text-green-400">
                 <CheckIcon class="w-5 h-5 mr-2" />
                 Puede editar estudiantes
@@ -83,7 +94,10 @@
               </template>
             </PermissionGuard>
 
-            <PermissionGuard :required-resource="PermissionResource.STUDENTS" required-action="delete">
+            <PermissionGuard
+              :required-resource="PermissionResource.STUDENTS"
+              required-action="delete"
+            >
               <div class="flex items-center text-green-600 dark:text-green-400">
                 <CheckIcon class="w-5 h-5 mr-2" />
                 Puede eliminar estudiantes
@@ -104,9 +118,12 @@
             <span class="mr-2">📋</span>
             Módulo de Asistencia
           </h3>
-          
+
           <div class="space-y-3">
-            <PermissionGuard :required-resource="PermissionResource.ATTENDANCE" required-action="read">
+            <PermissionGuard
+              :required-resource="PermissionResource.ATTENDANCE"
+              required-action="read"
+            >
               <div class="flex items-center text-green-600 dark:text-green-400">
                 <CheckIcon class="w-5 h-5 mr-2" />
                 Puede ver asistencia
@@ -119,7 +136,10 @@
               </template>
             </PermissionGuard>
 
-            <PermissionGuard :required-resource="PermissionResource.ATTENDANCE" required-action="create">
+            <PermissionGuard
+              :required-resource="PermissionResource.ATTENDANCE"
+              required-action="create"
+            >
               <div class="flex items-center text-green-600 dark:text-green-400">
                 <CheckIcon class="w-5 h-5 mr-2" />
                 Puede tomar asistencia
@@ -132,7 +152,10 @@
               </template>
             </PermissionGuard>
 
-            <PermissionGuard :required-resource="PermissionResource.ATTENDANCE" required-action="update">
+            <PermissionGuard
+              :required-resource="PermissionResource.ATTENDANCE"
+              required-action="update"
+            >
               <div class="flex items-center text-green-600 dark:text-green-400">
                 <CheckIcon class="w-5 h-5 mr-2" />
                 Puede modificar asistencia
@@ -153,7 +176,7 @@
             <span class="mr-2">🏫</span>
             Módulo de Clases
           </h3>
-          
+
           <div class="space-y-3">
             <PermissionGuard :required-resource="PermissionResource.CLASSES" required-action="read">
               <div class="flex items-center text-green-600 dark:text-green-400">
@@ -168,7 +191,10 @@
               </template>
             </PermissionGuard>
 
-            <PermissionGuard :required-resource="PermissionResource.CLASSES" required-action="create">
+            <PermissionGuard
+              :required-resource="PermissionResource.CLASSES"
+              required-action="create"
+            >
               <div class="flex items-center text-green-600 dark:text-green-400">
                 <CheckIcon class="w-5 h-5 mr-2" />
                 Puede crear clases
@@ -181,7 +207,10 @@
               </template>
             </PermissionGuard>
 
-            <PermissionGuard :required-resource="PermissionResource.CLASSES" required-action="update">
+            <PermissionGuard
+              :required-resource="PermissionResource.CLASSES"
+              required-action="update"
+            >
               <div class="flex items-center text-green-600 dark:text-green-400">
                 <CheckIcon class="w-5 h-5 mr-2" />
                 Puede editar clases
@@ -202,7 +231,7 @@
             <span class="mr-2">📊</span>
             Módulo de Reportes
           </h3>
-          
+
           <div class="space-y-3">
             <PermissionGuard :required-resource="PermissionResource.REPORTS" required-action="read">
               <div class="flex items-center text-green-600 dark:text-green-400">
@@ -217,7 +246,10 @@
               </template>
             </PermissionGuard>
 
-            <PermissionGuard :required-resource="PermissionResource.REPORTS" required-action="create">
+            <PermissionGuard
+              :required-resource="PermissionResource.REPORTS"
+              required-action="create"
+            >
               <div class="flex items-center text-green-600 dark:text-green-400">
                 <CheckIcon class="w-5 h-5 mr-2" />
                 Puede generar reportes
@@ -230,7 +262,10 @@
               </template>
             </PermissionGuard>
 
-            <PermissionGuard :required-resource="PermissionResource.CONFIDENTIAL_INFO" required-action="read">
+            <PermissionGuard
+              :required-resource="PermissionResource.CONFIDENTIAL_INFO"
+              required-action="read"
+            >
               <div class="flex items-center text-green-600 dark:text-green-400">
                 <CheckIcon class="w-5 h-5 mr-2" />
                 Puede ver información confidencial
@@ -250,46 +285,71 @@
       <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow mb-8">
         <h3 class="text-xl font-semibold mb-4">Acciones con Control de Permisos</h3>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          
-          <PermissionGuard :required-resource="PermissionResource.STUDENTS" required-action="create">
-            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <PermissionGuard
+            :required-resource="PermissionResource.STUDENTS"
+            required-action="create"
+          >
+            <button
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
               Crear Estudiante
             </button>
             <template #fallback>
-              <button disabled class="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed">
+              <button
+                disabled
+                class="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed"
+              >
                 Crear Estudiante
               </button>
             </template>
           </PermissionGuard>
 
-          <PermissionGuard :required-resource="PermissionResource.ATTENDANCE" required-action="create">
-            <button class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+          <PermissionGuard
+            :required-resource="PermissionResource.ATTENDANCE"
+            required-action="create"
+          >
+            <button
+              class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
               Tomar Asistencia
             </button>
             <template #fallback>
-              <button disabled class="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed">
+              <button
+                disabled
+                class="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed"
+              >
                 Tomar Asistencia
               </button>
             </template>
           </PermissionGuard>
 
           <PermissionGuard :required-resource="PermissionResource.CLASSES" required-action="create">
-            <button class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+            <button
+              class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
               Crear Clase
             </button>
             <template #fallback>
-              <button disabled class="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed">
+              <button
+                disabled
+                class="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed"
+              >
                 Crear Clase
               </button>
             </template>
           </PermissionGuard>
 
           <PermissionGuard :required-resource="PermissionResource.REPORTS" required-action="create">
-            <button class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+            <button
+              class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            >
               Generar Reporte
             </button>
             <template #fallback>
-              <button disabled class="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed">
+              <button
+                disabled
+                class="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed"
+              >
                 Generar Reporte
               </button>
             </template>
@@ -298,8 +358,13 @@
       </div>
 
       <!-- Superuser Section -->
-      <PermissionGuard :required-resource="PermissionResource.SYSTEM_MONITORING" required-action="read">
-        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg p-6 shadow">
+      <PermissionGuard
+        :required-resource="PermissionResource.SYSTEM_MONITORING"
+        required-action="read"
+      >
+        <div
+          class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg p-6 shadow"
+        >
           <h3 class="text-xl font-semibold mb-4 flex items-center">
             <span class="mr-2">👑</span>
             Panel de Superusuario
@@ -343,25 +408,25 @@
               <div class="flex justify-between">
                 <span>Puede leer estudiantes:</span>
                 <span :class="canReadStudents ? 'text-green-600' : 'text-red-600'">
-                  {{ canReadStudents ? '✅' : '❌' }}
+                  {{ canReadStudents ? "✅" : "❌" }}
                 </span>
               </div>
               <div class="flex justify-between">
                 <span>Puede leer asistencia:</span>
                 <span :class="canReadAttendance ? 'text-green-600' : 'text-red-600'">
-                  {{ canReadAttendance ? '✅' : '❌' }}
+                  {{ canReadAttendance ? "✅" : "❌" }}
                 </span>
               </div>
               <div class="flex justify-between">
                 <span>Puede leer clases:</span>
                 <span :class="canReadClasses ? 'text-green-600' : 'text-red-600'">
-                  {{ canReadClasses ? '✅' : '❌' }}
+                  {{ canReadClasses ? "✅" : "❌" }}
                 </span>
               </div>
               <div class="flex justify-between">
                 <span>Puede leer reportes:</span>
                 <span :class="canReadReports ? 'text-green-600' : 'text-red-600'">
-                  {{ canReadReports ? '✅' : '❌' }}
+                  {{ canReadReports ? "✅" : "❌" }}
                 </span>
               </div>
             </div>
@@ -372,25 +437,25 @@
               <div class="flex justify-between">
                 <span>Puede crear estudiantes:</span>
                 <span :class="canCreateStudents ? 'text-green-600' : 'text-red-600'">
-                  {{ canCreateStudents ? '✅' : '❌' }}
+                  {{ canCreateStudents ? "✅" : "❌" }}
                 </span>
               </div>
               <div class="flex justify-between">
                 <span>Puede crear asistencia:</span>
                 <span :class="canCreateAttendance ? 'text-green-600' : 'text-red-600'">
-                  {{ canCreateAttendance ? '✅' : '❌' }}
+                  {{ canCreateAttendance ? "✅" : "❌" }}
                 </span>
               </div>
               <div class="flex justify-between">
                 <span>Puede crear clases:</span>
                 <span :class="canCreateClasses ? 'text-green-600' : 'text-red-600'">
-                  {{ canCreateClasses ? '✅' : '❌' }}
+                  {{ canCreateClasses ? "✅" : "❌" }}
                 </span>
               </div>
               <div class="flex justify-between">
                 <span>Puede eliminar datos:</span>
                 <span :class="canDeleteData ? 'text-green-600' : 'text-red-600'">
-                  {{ canDeleteData ? '✅' : '❌' }}
+                  {{ canDeleteData ? "✅" : "❌" }}
                 </span>
               </div>
             </div>
@@ -403,7 +468,9 @@
         <h3 class="text-xl font-semibold mb-4">Cómo Usar el Sistema de Permisos</h3>
         <div class="prose dark:prose-invert max-w-none">
           <h4>1. En Componentes (con PermissionGuard)</h4>
-          <pre class="bg-gray-100 dark:bg-gray-700 p-4 rounded text-sm"><code>&lt;PermissionGuard :required-resource="PermissionResource.STUDENTS" required-action="create"&gt;
+          <pre
+            class="bg-gray-100 dark:bg-gray-700 p-4 rounded text-sm"
+          ><code>&lt;PermissionGuard :required-resource="PermissionResource.STUDENTS" required-action="create"&gt;
   &lt;button&gt;Crear Estudiante&lt;/button&gt;
   &lt;template #fallback&gt;
     &lt;p&gt;Sin permisos&lt;/p&gt;
@@ -411,7 +478,9 @@
 &lt;/PermissionGuard&gt;</code></pre>
 
           <h4>2. En Lógica de Componentes (con composable)</h4>
-          <pre class="bg-gray-100 dark:bg-gray-700 p-4 rounded text-sm"><code>const { hasPermission, canCreate, canUpdate } = usePermissions()
+          <pre
+            class="bg-gray-100 dark:bg-gray-700 p-4 rounded text-sm"
+          ><code>const { hasPermission, canCreate, canUpdate } = usePermissions()
 
 // Verificación específica
 if (hasPermission(PermissionResource.STUDENTS, PermissionAction.CREATE)) {
@@ -426,7 +495,10 @@ if (canCreate(PermissionResource.ATTENDANCE)) {
           <h4>3. Roles y Recursos Disponibles</h4>
           <ul>
             <li><strong>Roles:</strong> Maestro, Director, Administrador, Superusuario</li>
-            <li><strong>Recursos:</strong> Estudiantes, Asistencia, Clases, Reportes, Info Confidencial, etc.</li>
+            <li>
+              <strong>Recursos:</strong> Estudiantes, Asistencia, Clases, Reportes, Info
+              Confidencial, etc.
+            </li>
             <li><strong>Acciones:</strong> create, read, update, delete</li>
           </ul>
         </div>
@@ -436,33 +508,48 @@ if (canCreate(PermissionResource.ATTENDANCE)) {
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
-import { useAuthStore } from '@/stores/auth';
-import { usePermissions } from '@/modulos/Auth/composables/usePermissions';
-import PermissionGuard from '@/modulos/Auth/components/PermissionGuard.vue';
-import { PermissionResource, PermissionAction } from '@/modulos/Auth/types/permissions';
+import {computed} from "vue"
+import {CheckIcon, XMarkIcon} from "@heroicons/vue/24/outline"
+import {useAuthStore} from "@/stores/auth"
+import {usePermissions} from "@/modulos/Auth/composables/usePermissions"
+import PermissionGuard from "@/modulos/Auth/components/PermissionGuard.vue"
+import {PermissionResource, PermissionAction} from "@/modulos/Auth/types/permissions"
 
-const authStore = useAuthStore();
-const { hasPermission } = usePermissions();
+const authStore = useAuthStore()
+const {hasPermission} = usePermissions()
 
 // User info
-const userRole = computed(() => authStore.user?.role || 'No autenticado');
-const userEmail = computed(() => authStore.user?.email || 'No disponible');
-const isSuperuser = computed(() => authStore.isSuperusuario);
+const userRole = computed(() => authStore.user?.role || "No autenticado")
+const userEmail = computed(() => authStore.user?.email || "No disponible")
+const isSuperuser = computed(() => authStore.isSuperusuario)
 
 // Permission checks
-const canReadStudents = computed(() => hasPermission(PermissionResource.STUDENTS, PermissionAction.READ));
-const canReadAttendance = computed(() => hasPermission(PermissionResource.ATTENDANCE, PermissionAction.READ));
-const canReadClasses = computed(() => hasPermission(PermissionResource.CLASSES, PermissionAction.READ));
-const canReadReports = computed(() => hasPermission(PermissionResource.REPORTS, PermissionAction.READ));
+const canReadStudents = computed(() =>
+  hasPermission(PermissionResource.STUDENTS, PermissionAction.READ)
+)
+const canReadAttendance = computed(() =>
+  hasPermission(PermissionResource.ATTENDANCE, PermissionAction.READ)
+)
+const canReadClasses = computed(() =>
+  hasPermission(PermissionResource.CLASSES, PermissionAction.READ)
+)
+const canReadReports = computed(() =>
+  hasPermission(PermissionResource.REPORTS, PermissionAction.READ)
+)
 
-const canCreateStudents = computed(() => hasPermission(PermissionResource.STUDENTS, PermissionAction.CREATE));
-const canCreateAttendance = computed(() => hasPermission(PermissionResource.ATTENDANCE, PermissionAction.CREATE));
-const canCreateClasses = computed(() => hasPermission(PermissionResource.CLASSES, PermissionAction.CREATE));
-const canDeleteData = computed(() => 
-  hasPermission(PermissionResource.STUDENTS, PermissionAction.DELETE) ||
-  hasPermission(PermissionResource.ATTENDANCE, PermissionAction.DELETE) ||
-  hasPermission(PermissionResource.CLASSES, PermissionAction.DELETE)
-);
+const canCreateStudents = computed(() =>
+  hasPermission(PermissionResource.STUDENTS, PermissionAction.CREATE)
+)
+const canCreateAttendance = computed(() =>
+  hasPermission(PermissionResource.ATTENDANCE, PermissionAction.CREATE)
+)
+const canCreateClasses = computed(() =>
+  hasPermission(PermissionResource.CLASSES, PermissionAction.CREATE)
+)
+const canDeleteData = computed(
+  () =>
+    hasPermission(PermissionResource.STUDENTS, PermissionAction.DELETE) ||
+    hasPermission(PermissionResource.ATTENDANCE, PermissionAction.DELETE) ||
+    hasPermission(PermissionResource.CLASSES, PermissionAction.DELETE)
+)
 </script>

@@ -6,9 +6,9 @@
       <div class="footer-main">
         <!-- Logo y nombre -->
         <div class="footer-brand">
-          <img 
+          <img
             v-if="appLogo.url && showLogo"
-            :src="appLogo.url" 
+            :src="appLogo.url"
             :alt="appLogo.alt"
             class="footer-logo"
           />
@@ -46,9 +46,7 @@
             </div>
             <div v-if="contactInfo.website" class="contact-item">
               <ion-icon :icon="globeOutline" />
-              <a :href="contactInfo.website" target="_blank" rel="noopener">
-                Sitio Web
-              </a>
+              <a :href="contactInfo.website" target="_blank" rel="noopener"> Sitio Web </a>
             </div>
           </div>
         </div>
@@ -58,14 +56,10 @@
           <h4 class="footer-section-title">Enlaces Rápidos</h4>
           <ul class="footer-links">
             <li v-for="link in quickLinks" :key="link.label">
-              <router-link 
-                v-if="link.to" 
-                :to="link.to"
-                class="footer-link"
-              >
+              <router-link v-if="link.to" :to="link.to" class="footer-link">
                 {{ link.label }}
               </router-link>
-              <a 
+              <a
                 v-else-if="link.href"
                 :href="link.href"
                 :target="link.external ? '_blank' : '_self'"
@@ -82,7 +76,7 @@
         <div v-if="hasSocialMedia && showSocial" class="footer-section">
           <h4 class="footer-section-title">Síguenos</h4>
           <div class="footer-social">
-            <a 
+            <a
               v-if="contactInfo.socialMedia?.facebook"
               :href="contactInfo.socialMedia.facebook"
               target="_blank"
@@ -92,7 +86,7 @@
             >
               <ion-icon :icon="logoFacebook" />
             </a>
-            <a 
+            <a
               v-if="contactInfo.socialMedia?.instagram"
               :href="contactInfo.socialMedia.instagram"
               target="_blank"
@@ -102,7 +96,7 @@
             >
               <ion-icon :icon="logoInstagram" />
             </a>
-            <a 
+            <a
               v-if="contactInfo.socialMedia?.twitter"
               :href="contactInfo.socialMedia.twitter"
               target="_blank"
@@ -112,7 +106,7 @@
             >
               <ion-icon :icon="logoTwitter" />
             </a>
-            <a 
+            <a
               v-if="contactInfo.socialMedia?.youtube"
               :href="contactInfo.socialMedia.youtube"
               target="_blank"
@@ -127,7 +121,7 @@
 
         <!-- Slot para contenido personalizado -->
         <div v-if="$slots.custom" class="footer-section">
-          <slot name="custom"></slot>
+          <slot name="custom" />
         </div>
       </div>
 
@@ -142,15 +136,15 @@
           <!-- Powered by (opcional) -->
           <div v-if="shouldShowPoweredBy" class="footer-powered">
             <p>
-              Powered by 
+              Powered by
               <a href="#" class="powered-link">Music Academy Manager</a>
             </p>
           </div>
 
           <!-- Enlaces legales -->
           <div v-if="legalLinks.length > 0" class="footer-legal">
-            <router-link 
-              v-for="link in legalLinks" 
+            <router-link
+              v-for="link in legalLinks"
               :key="link.label"
               :to="link.to"
               class="legal-link"
@@ -165,13 +159,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { IonIcon } from '@ionic/vue'
-import { 
-  callOutline, mailOutline, locationOutline, globeOutline,
-  logoFacebook, logoInstagram, logoTwitter, logoYoutube
-} from 'ionicons/icons'
-import { useBranding } from '@/composables/useBranding'
+import {computed} from "vue"
+import {IonIcon} from "@ionic/vue"
+import {
+  callOutline,
+  mailOutline,
+  locationOutline,
+  globeOutline,
+  logoFacebook,
+  logoInstagram,
+  logoTwitter,
+  logoYoutube,
+} from "ionicons/icons"
+import {useBranding} from "@/composables/useBranding"
 
 interface QuickLink {
   label: string
@@ -204,7 +204,7 @@ const props = withDefaults(defineProps<Props>(), {
   showSocial: true,
   quickLinks: () => [],
   legalLinks: () => [],
-  customStyles: () => ({})
+  customStyles: () => ({}),
 })
 
 // Branding composable
@@ -217,7 +217,7 @@ const {
   brandColors,
   shouldShowPoweredBy,
   footerText,
-  getCSSVariables
+  getCSSVariables,
 } = useBranding()
 
 // Verificar si hay redes sociales configuradas
@@ -229,28 +229,28 @@ const hasSocialMedia = computed(() => {
 // Estilos dinámicos del footer
 const footerStyles = computed(() => {
   const baseStyles = {
-    '--footer-bg': brandColors.value.secondary || '#2c3e50',
-    '--footer-text': getContrastColor(brandColors.value.secondary || '#2c3e50'),
-    '--footer-accent': brandColors.value.accent || brandColors.value.primary,
-    '--footer-border': `${brandColors.value.primary}33`, // 20% opacity
-    ...getCSSVariables()
+    "--footer-bg": brandColors.value.secondary || "#2c3e50",
+    "--footer-text": getContrastColor(brandColors.value.secondary || "#2c3e50"),
+    "--footer-accent": brandColors.value.accent || brandColors.value.primary,
+    "--footer-border": `${brandColors.value.primary}33`, // 20% opacity
+    ...getCSSVariables(),
   }
 
   return {
     ...baseStyles,
-    ...props.customStyles
+    ...props.customStyles,
   }
 })
 
 // Calcular color de contraste
 function getContrastColor(hexColor: string): string {
-  const hex = hexColor.replace('#', '')
+  const hex = hexColor.replace("#", "")
   const r = parseInt(hex.substr(0, 2), 16)
   const g = parseInt(hex.substr(2, 2), 16)
   const b = parseInt(hex.substr(4, 2), 16)
-  
+
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-  return luminance > 0.5 ? '#2c3e50' : '#ecf0f1'
+  return luminance > 0.5 ? "#2c3e50" : "#ecf0f1"
 }
 </script>
 
@@ -383,7 +383,7 @@ function getContrastColor(hexColor: string): string {
 }
 
 .footer-link::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 50%;
@@ -483,24 +483,24 @@ function getContrastColor(hexColor: string): string {
   .footer-content {
     padding: 30px 16px 16px;
   }
-  
+
   .footer-grid {
     grid-template-columns: 1fr;
     gap: 24px;
   }
-  
+
   .footer-brand {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
-  
+
   .footer-bottom-content {
     flex-direction: column;
     text-align: center;
     gap: 12px;
   }
-  
+
   .footer-legal {
     justify-content: center;
   }
@@ -510,12 +510,12 @@ function getContrastColor(hexColor: string): string {
   .footer-social {
     justify-content: center;
   }
-  
+
   .social-link {
     width: 36px;
     height: 36px;
   }
-  
+
   .social-link ion-icon {
     font-size: 1.1rem;
   }

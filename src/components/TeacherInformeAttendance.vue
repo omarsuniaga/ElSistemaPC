@@ -1,11 +1,13 @@
 <template>
-  <div class="p-4 space-y-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg shadow">
+  <div
+    class="p-4 space-y-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg shadow"
+  >
     <!-- Header con botón de regreso -->
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center">
-        <button 
-          @click="goBack"
+        <button
           class="mr-4 p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          @click="goBack"
         >
           <ArrowLeftIcon class="h-5 w-5" />
         </button>
@@ -18,21 +20,29 @@
           </p>
         </div>
       </div>
-      
+
       <!-- Controles de vista -->
       <div class="flex gap-2">
-        <button 
-          @click="viewMode = 'cards'"
-          :class="viewMode === 'cards' ? 'bg-primary-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'"
+        <button
+          :class="
+            viewMode === 'cards'
+              ? 'bg-primary-500 text-white'
+              : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+          "
           class="px-3 py-1 text-sm rounded transition-colors"
+          @click="viewMode = 'cards'"
         >
           <Squares2X2Icon class="h-4 w-4 inline mr-1" />
           Cards
         </button>
-        <button 
-          @click="viewMode = 'list'"
-          :class="viewMode === 'list' ? 'bg-primary-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'"
+        <button
+          :class="
+            viewMode === 'list'
+              ? 'bg-primary-500 text-white'
+              : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+          "
           class="px-3 py-1 text-sm rounded transition-colors"
+          @click="viewMode = 'list'"
         >
           <ListBulletIcon class="h-4 w-4 inline mr-1" />
           Lista
@@ -61,27 +71,27 @@
             />
           </div>
         </div>
-        
+
         <div class="flex gap-2">
-          <button 
-            @click="setDefaultDateRange"
+          <button
             class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm"
+            @click="setDefaultDateRange"
           >
             Último mes
           </button>
-          <button 
-            @click="loadAttendanceData"
+          <button
             :disabled="loading"
             class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm disabled:opacity-50"
+            @click="loadAttendanceData"
           >
             <ArrowPathIcon v-if="loading" class="h-4 w-4 animate-spin inline mr-1" />
             Cargar datos
           </button>
-          <button 
-            @click="generateSampleData"
+          <button
             :disabled="generating"
             class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm disabled:opacity-50"
             title="Generar datos de muestra para llenar el tablero"
+            @click="generateSampleData"
           >
             <SparklesIcon v-if="generating" class="h-4 w-4 animate-spin inline mr-1" />
             <SparklesIcon v-else class="h-4 w-4 inline mr-1" />
@@ -93,31 +103,41 @@
 
     <!-- Estadísticas generales -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+      <div
+        class="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
+      >
         <div class="flex items-center">
           <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
             <CheckCircleIcon class="h-6 w-6 text-green-600 dark:text-green-400" />
           </div>
           <div class="ml-3">
             <p class="text-sm text-gray-600 dark:text-gray-400">Presentes</p>
-            <p class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ totalPresentes }}</p>
+            <p class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              {{ totalPresentes }}
+            </p>
           </div>
         </div>
       </div>
-      
-      <div class="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+
+      <div
+        class="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
+      >
         <div class="flex items-center">
           <div class="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
             <XCircleIcon class="h-6 w-6 text-red-600 dark:text-red-400" />
           </div>
           <div class="ml-3">
             <p class="text-sm text-gray-600 dark:text-gray-400">Ausentes</p>
-            <p class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ totalAusentes }}</p>
+            <p class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              {{ totalAusentes }}
+            </p>
           </div>
         </div>
       </div>
-      
-      <div class="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+
+      <div
+        class="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
+      >
         <div class="flex items-center">
           <div class="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
             <ClockIcon class="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
@@ -128,15 +148,19 @@
           </div>
         </div>
       </div>
-      
-      <div class="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+
+      <div
+        class="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
+      >
         <div class="flex items-center">
           <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
             <DocumentTextIcon class="h-6 w-6 text-blue-600 dark:text-blue-400" />
           </div>
           <div class="ml-3">
             <p class="text-sm text-gray-600 dark:text-gray-400">Justificados</p>
-            <p class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ totalJustificados }}</p>
+            <p class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              {{ totalJustificados }}
+            </p>
           </div>
         </div>
       </div>
@@ -149,7 +173,10 @@
     </div>
 
     <!-- Error -->
-    <div v-else-if="error" class="p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg">
+    <div
+      v-else-if="error"
+      class="p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg"
+    >
       {{ error }}
     </div>
 
@@ -163,15 +190,15 @@
           class="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
         >
           <!-- Header de la clase -->
-          <div 
-            @click="toggleClassExpansion(classData.id)"
+          <div
             class="p-4 bg-gray-50 dark:bg-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors"
+            @click="toggleClassExpansion(classData.id)"
           >
             <div class="flex items-center justify-between">
               <div class="flex items-center">
-                <component 
-                  :is="expandedClasses.has(classData.id) ? ChevronDownIcon : ChevronRightIcon" 
-                  class="h-5 w-5 text-gray-500 mr-2" 
+                <component
+                  :is="expandedClasses.has(classData.id) ? ChevronDownIcon : ChevronRightIcon"
+                  class="h-5 w-5 text-gray-500 mr-2"
                 />
                 <div>
                   <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
@@ -196,27 +223,36 @@
           <!-- Contenido expandible -->
           <div v-if="expandedClasses.has(classData.id)" class="p-4 space-y-4">
             <!-- Lista de estudiantes -->
-            <div v-for="student in getClassStudents(classData)" :key="student.id" 
-                 class="border border-gray-200 dark:border-gray-600 rounded-lg p-3">
-              <div 
-                @click="toggleStudentExpansion(classData.id, student.id)"
+            <div
+              v-for="student in getClassStudents(classData)"
+              :key="student.id"
+              class="border border-gray-200 dark:border-gray-600 rounded-lg p-3"
+            >
+              <div
                 class="flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 rounded p-2 transition-colors"
+                @click="toggleStudentExpansion(classData.id, student.id)"
               >
                 <div class="flex items-center">
-                  <component 
-                    :is="expandedStudents.has(`${classData.id}-${student.id}`) ? ChevronDownIcon : ChevronRightIcon" 
-                    class="h-4 w-4 text-gray-400 mr-2" 
+                  <component
+                    :is="
+                      expandedStudents.has(`${classData.id}-${student.id}`)
+                        ? ChevronDownIcon
+                        : ChevronRightIcon
+                    "
+                    class="h-4 w-4 text-gray-400 mr-2"
                   />
-                  <span class="font-medium text-gray-800 dark:text-gray-200">{{ student.nombre }} {{ student.apellido }}</span>
+                  <span class="font-medium text-gray-800 dark:text-gray-200"
+                    >{{ student.nombre }} {{ student.apellido }}</span
+                  >
                 </div>
                 <div class="flex items-center gap-2">
                   <span class="text-sm text-gray-600 dark:text-gray-400">
                     {{ getStudentAttendancePercentageSync(classData.id, student.id) }}% asistencia
                   </span>
                   <button
-                    @click.stop="showObservationsModal(classData.id, student.id)"
                     class="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
                     title="Ver observaciones"
+                    @click.stop="showObservationsModal(classData.id, student.id)"
                   >
                     <EyeIcon class="h-4 w-4" />
                   </button>
@@ -226,19 +262,24 @@
               <!-- Detalle de asistencias del estudiante -->
               <div v-if="expandedStudents.has(`${classData.id}-${student.id}`)" class="mt-3 pl-6">
                 <div class="space-y-2">
-                  <div v-for="attendance in getStudentAttendancesSync(classData.id, student.id)" :key="attendance.date"
-                       class="flex items-center justify-between text-sm">
+                  <div
+                    v-for="attendance in getStudentAttendancesSync(classData.id, student.id)"
+                    :key="attendance.date"
+                    class="flex items-center justify-between text-sm"
+                  >
                     <span class="text-gray-600 dark:text-gray-400">
                       {{ formatDate(attendance.date) }}
                     </span>
                     <div class="flex items-center gap-2">
-                      <span 
+                      <span
                         :class="getStatusClass(attendance.status)"
                         class="px-2 py-1 rounded text-xs font-medium"
                       >
-                        {{ attendance.status === 'justificado' && attendance.justification 
-                            ? `Justificado - ${attendance.justification}` 
-                            : getStatusText(attendance.status) }}
+                        {{
+                          attendance.status === "justificado" && attendance.justification
+                            ? `Justificado - ${attendance.justification}`
+                            : getStatusText(attendance.status)
+                        }}
                       </span>
                     </div>
                   </div>
@@ -257,22 +298,23 @@
           class="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden"
         >
           <!-- Header de la clase -->
-          <div 
-            @click="toggleClassExpansion(classData.id)"
+          <div
             class="p-4 bg-gray-50 dark:bg-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors"
+            @click="toggleClassExpansion(classData.id)"
           >
             <div class="flex items-center justify-between">
               <div class="flex items-center">
-                <component 
-                  :is="expandedClasses.has(classData.id) ? ChevronDownIcon : ChevronRightIcon" 
-                  class="h-5 w-5 text-gray-500 mr-3" 
+                <component
+                  :is="expandedClasses.has(classData.id) ? ChevronDownIcon : ChevronRightIcon"
+                  class="h-5 w-5 text-gray-500 mr-3"
                 />
                 <div>
                   <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
                     {{ classData.name }}
                   </h3>
                   <p class="text-sm text-gray-600 dark:text-gray-400">
-                    {{ getClassSchedule(classData) }} • {{ getClassStudentsCount(classData) }} estudiantes
+                    {{ getClassSchedule(classData) }} •
+                    {{ getClassStudentsCount(classData) }} estudiantes
                   </p>
                 </div>
               </div>
@@ -290,46 +332,67 @@
             <table class="w-full">
               <thead>
                 <tr class="border-b border-gray-200 dark:border-gray-600">
-                  <th class="text-left py-2 text-sm font-medium text-gray-700 dark:text-gray-300">Estudiante</th>
-                  <th class="text-center py-2 text-sm font-medium text-gray-700 dark:text-gray-300">% Asistencia</th>
-                  <th class="text-center py-2 text-sm font-medium text-gray-700 dark:text-gray-300">Presentes</th>
-                  <th class="text-center py-2 text-sm font-medium text-gray-700 dark:text-gray-300">Ausentes</th>
-                  <th class="text-center py-2 text-sm font-medium text-gray-700 dark:text-gray-300">Tardes</th>
-                  <th class="text-center py-2 text-sm font-medium text-gray-700 dark:text-gray-300">Acciones</th>
+                  <th class="text-left py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Estudiante
+                  </th>
+                  <th class="text-center py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    % Asistencia
+                  </th>
+                  <th class="text-center py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Presentes
+                  </th>
+                  <th class="text-center py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Ausentes
+                  </th>
+                  <th class="text-center py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Tardes
+                  </th>
+                  <th class="text-center py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Acciones
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="student in getClassStudents(classData)" :key="student.id" 
-                    class="border-b border-gray-100 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600">
+                <tr
+                  v-for="student in getClassStudents(classData)"
+                  :key="student.id"
+                  class="border-b border-gray-100 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
+                >
                   <td class="py-3">
-                    <div 
-                      @click="toggleStudentExpansion(classData.id, student.id)"
+                    <div
                       class="flex items-center cursor-pointer"
+                      @click="toggleStudentExpansion(classData.id, student.id)"
                     >
-                      <component 
-                        :is="expandedStudents.has(`${classData.id}-${student.id}`) ? ChevronDownIcon : ChevronRightIcon" 
-                        class="h-4 w-4 text-gray-400 mr-2" 
+                      <component
+                        :is="
+                          expandedStudents.has(`${classData.id}-${student.id}`)
+                            ? ChevronDownIcon
+                            : ChevronRightIcon
+                        "
+                        class="h-4 w-4 text-gray-400 mr-2"
                       />
-                      <span class="font-medium text-gray-800 dark:text-gray-200">{{ student.nombre }} {{ student.apellido }}</span>
+                      <span class="font-medium text-gray-800 dark:text-gray-200"
+                        >{{ student.nombre }} {{ student.apellido }}</span
+                      >
                     </div>
                   </td>
                   <td class="text-center py-3 text-sm text-gray-600 dark:text-gray-400">
                     {{ getStudentAttendancePercentageSync(classData.id, student.id) }}%
                   </td>
                   <td class="text-center py-3 text-sm text-green-600 dark:text-green-400">
-                    {{ getStudentAttendanceCountSync(classData.id, student.id, 'presente') }}
+                    {{ getStudentAttendanceCountSync(classData.id, student.id, "presente") }}
                   </td>
                   <td class="text-center py-3 text-sm text-red-600 dark:text-red-400">
-                    {{ getStudentAttendanceCountSync(classData.id, student.id, 'ausente') }}
+                    {{ getStudentAttendanceCountSync(classData.id, student.id, "ausente") }}
                   </td>
                   <td class="text-center py-3 text-sm text-yellow-600 dark:text-yellow-400">
-                    {{ getStudentAttendanceCountSync(classData.id, student.id, 'tarde') }}
+                    {{ getStudentAttendanceCountSync(classData.id, student.id, "tarde") }}
                   </td>
                   <td class="text-center py-3">
                     <button
-                      @click="showObservationsModal(classData.id, student.id)"
                       class="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
                       title="Ver observaciones"
+                      @click="showObservationsModal(classData.id, student.id)"
                     >
                       <EyeIcon class="h-4 w-4" />
                     </button>
@@ -340,22 +403,32 @@
 
             <!-- Detalle de asistencias expandido -->
             <div v-for="student in getClassStudents(classData)" :key="`detail-${student.id}`">
-              <div v-if="expandedStudents.has(`${classData.id}-${student.id}`)" class="mt-4 p-4 bg-gray-50 dark:bg-gray-600 rounded-lg">
-                <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-3">Detalle de asistencias - {{ student.nombre }} {{ student.apellido }}</h4>
+              <div
+                v-if="expandedStudents.has(`${classData.id}-${student.id}`)"
+                class="mt-4 p-4 bg-gray-50 dark:bg-gray-600 rounded-lg"
+              >
+                <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-3">
+                  Detalle de asistencias - {{ student.nombre }} {{ student.apellido }}
+                </h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <div v-for="attendance in getStudentAttendancesSync(classData.id, student.id)" :key="attendance.date"
-                       class="flex items-center justify-between p-2 bg-white dark:bg-gray-700 rounded border">
+                  <div
+                    v-for="attendance in getStudentAttendancesSync(classData.id, student.id)"
+                    :key="attendance.date"
+                    class="flex items-center justify-between p-2 bg-white dark:bg-gray-700 rounded border"
+                  >
                     <span class="text-sm text-gray-600 dark:text-gray-400">
                       {{ formatDate(attendance.date) }}
                     </span>
                     <div class="flex items-center gap-2">
-                      <span 
+                      <span
                         :class="getStatusClass(attendance.status)"
                         class="px-2 py-1 rounded text-xs font-medium"
                       >
-                        {{ attendance.status === 'justificado' && attendance.justification 
-                            ? `Justificado - ${attendance.justification}` 
-                            : getStatusText(attendance.status) }}
+                        {{
+                          attendance.status === "justificado" && attendance.justification
+                            ? `Justificado - ${attendance.justification}`
+                            : getStatusText(attendance.status)
+                        }}
                       </span>
                     </div>
                   </div>
@@ -369,7 +442,9 @@
       <!-- Mensaje cuando no hay datos -->
       <div v-if="teacherClasses.length === 0" class="text-center py-12">
         <AcademicCapIcon class="h-16 w-16 mx-auto text-gray-400 mb-4" />
-        <p class="text-lg text-gray-500 dark:text-gray-400 mb-2">No hay clases asignadas a este maestro</p>
+        <p class="text-lg text-gray-500 dark:text-gray-400 mb-2">
+          No hay clases asignadas a este maestro
+        </p>
         <p class="text-sm text-gray-400 dark:text-gray-500">
           O no hay datos de asistencia en el rango de fechas seleccionado.
         </p>
@@ -377,43 +452,53 @@
     </div>
 
     <!-- Modal de observaciones -->
-    <div v-if="showObservations" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div
+      v-if="showObservations"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <div
+        class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+      >
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Observaciones - {{ selectedClassName }}
           </h3>
-          <button 
-            @click="closeObservationsModal"
+          <button
             class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            @click="closeObservationsModal"
           >
             <XMarkIcon class="h-6 w-6" />
           </button>
         </div>
-        
+
         <div v-if="loadingObservations" class="text-center py-8">
           <ArrowPathIcon class="h-8 w-8 animate-spin text-primary-500 mx-auto" />
           <p class="mt-2 text-gray-600 dark:text-gray-400">Cargando observaciones...</p>
         </div>
-        
+
         <div v-else-if="classObservations.length === 0" class="text-center py-8">
           <DocumentTextIcon class="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p class="text-gray-500 dark:text-gray-400">No hay observaciones registradas para esta clase</p>
+          <p class="text-gray-500 dark:text-gray-400">
+            No hay observaciones registradas para esta clase
+          </p>
         </div>
-        
+
         <div v-else class="space-y-4">
-          <div v-for="observation in classObservations" :key="observation.id"
-               class="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+          <div
+            v-for="observation in classObservations"
+            :key="observation.id"
+            class="border border-gray-200 dark:border-gray-600 rounded-lg p-4"
+          >
             <div class="flex items-start justify-between mb-2">
               <div class="flex items-center gap-2">
                 <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {{ observation.authorName || 'Profesor' }}
+                  {{ observation.authorName || "Profesor" }}
                 </span>
                 <span class="text-xs text-gray-500 dark:text-gray-400">
                   {{ formatDate(observation.date) }}
                 </span>
               </div>
-              <span 
+              <span
                 v-if="observation.type"
                 :class="getObservationTypeClass(observation.type)"
                 class="px-2 py-1 text-xs rounded-full"
@@ -432,9 +517,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { 
+import {ref, computed, onMounted} from "vue"
+import {useRouter, useRoute} from "vue-router"
+import {
   ArrowLeftIcon,
   ArrowPathIcon,
   CheckCircleIcon,
@@ -448,19 +533,19 @@ import {
   Squares2X2Icon,
   ListBulletIcon,
   AcademicCapIcon,
-  SparklesIcon
-} from '@heroicons/vue/24/outline'
+  SparklesIcon,
+} from "@heroicons/vue/24/outline"
 
 // Stores
-import { useTeachersStore } from '@/modulos/Teachers/store/teachers'
-import { useClassesStore } from '@/modulos/Classes/store/classes'
-import { useStudentsStore } from '@/modulos/Students/store/students'
-import { useAttendanceStore } from '@/modulos/Attendance/store/attendance'
+import {useTeachersStore} from "@/modulos/Teachers/store/teachers"
+import {useClassesStore} from "@/modulos/Classes/store/classes"
+import {useStudentsStore} from "@/modulos/Students/store/students"
+import {useAttendanceStore} from "@/modulos/Attendance/store/attendance"
 
 // Types
 interface AttendanceRecord {
   date: string
-  status: 'presente' | 'ausente' | 'tarde' | 'justificado'
+  status: "presente" | "ausente" | "tarde" | "justificado"
   justification?: string
 }
 
@@ -487,50 +572,50 @@ const attendanceStore = useAttendanceStore()
 const props = defineProps({
   teacherId: {
     type: String,
-    default: ''
-  }
+    default: "",
+  },
 })
 
 // Estado
 const loading = ref(false)
 const generating = ref(false)
-const error = ref('')
-const viewMode = ref<'cards' | 'list'>('cards')
+const error = ref("")
+const viewMode = ref<"cards" | "list">("cards")
 const expandedClasses = ref(new Set<string>())
 const expandedStudents = ref(new Set<string>())
 const showObservations = ref(false)
 const loadingObservations = ref(false)
 const classObservations = ref<ClassObservation[]>([])
-const selectedClassId = ref('')
-const selectedClassName = ref('')
+const selectedClassId = ref("")
+const selectedClassName = ref("")
 
 // Cache de asistencias por estudiante
 const studentAttendances = ref<Record<string, AttendanceRecord[]>>({})
 const attendancePercentages = ref<Record<string, number>>({})
 
 // Fechas
-const dateFrom = ref('')
-const dateTo = ref('')
+const dateFrom = ref("")
+const dateTo = ref("")
 
 // Computed
-const teacherId = computed(() => props.teacherId || route.query.teacherId as string)
+const teacherId = computed(() => props.teacherId || (route.query.teacherId as string))
 
 const teacherName = computed(() => {
-  if (!teacherId.value) return 'Maestro'
+  if (!teacherId.value) return "Maestro"
   const teacher = teachersStore.getTeacherById(teacherId.value)
-  return teacher?.name || 'Maestro'
+  return teacher?.name || "Maestro"
 })
 
 const teacherClasses = computed(() => {
   if (!teacherId.value) return []
-  return classesStore.classes.filter(c => c.teacherId === teacherId.value)
+  return classesStore.classes.filter((c) => c.teacherId === teacherId.value)
 })
 
 const totalStudents = computed(() => {
   const studentIds = new Set<string>()
-  teacherClasses.value.forEach(cls => {
+  teacherClasses.value.forEach((cls) => {
     if (cls.studentIds) {
-      cls.studentIds.forEach(id => studentIds.add(id))
+      cls.studentIds.forEach((id) => studentIds.add(id))
     }
   })
   return studentIds.size
@@ -545,27 +630,30 @@ const totalJustificados = ref(0)
 async function updateStatistics() {
   try {
     // Solo calcular estadísticas de clases expandidas que ya tienen datos cargados
-    let presentes = 0, ausentes = 0, tardes = 0, justificados = 0
-    
+    let presentes = 0,
+      ausentes = 0,
+      tardes = 0,
+      justificados = 0
+
     for (const classId of expandedClasses.value) {
       const classData = classesStore.getClassById(classId)
       if (!classData?.studentIds) continue
-      
+
       for (const studentId of classData.studentIds) {
         const attendances = getStudentAttendancesSync(classId, studentId)
-        presentes += attendances.filter(a => a.status === 'presente').length
-        ausentes += attendances.filter(a => a.status === 'ausente').length
-        tardes += attendances.filter(a => a.status === 'tarde').length
-        justificados += attendances.filter(a => a.status === 'justificado').length
+        presentes += attendances.filter((a) => a.status === "presente").length
+        ausentes += attendances.filter((a) => a.status === "ausente").length
+        tardes += attendances.filter((a) => a.status === "tarde").length
+        justificados += attendances.filter((a) => a.status === "justificado").length
       }
     }
-    
+
     totalPresentes.value = presentes
     totalAusentes.value = ausentes
     totalTardes.value = tardes
     totalJustificados.value = justificados
   } catch (error) {
-    console.error('Error actualizando estadísticas:', error)
+    console.error("Error actualizando estadísticas:", error)
   }
 }
 
@@ -578,103 +666,102 @@ function setDefaultDateRange() {
   const today = new Date()
   const lastMonth = new Date()
   lastMonth.setMonth(lastMonth.getMonth() - 1)
-  
-  dateFrom.value = lastMonth.toISOString().split('T')[0]
-  dateTo.value = today.toISOString().split('T')[0]
+
+  dateFrom.value = lastMonth.toISOString().split("T")[0]
+  dateTo.value = today.toISOString().split("T")[0]
 }
 
 // Función para generar datos de muestra
 async function generateSampleData() {
   if (generating.value) return
-  
+
   generating.value = true
-  console.log('🎭 Generando datos de asistencia de muestra...')
-  
+  console.log("🎭 Generando datos de asistencia de muestra...")
+
   try {
     // Importar Firebase
-    const { db } = await import('@/firebase')
-    const { collection, doc, setDoc } = await import('firebase/firestore')
-    
+    const {db} = await import("@/firebase")
+    const {collection, doc, setDoc} = await import("firebase/firestore")
+
     // Obtener las clases del maestro actual
-    const teacherClassIds = teacherClasses.value.map(c => c.id)
-    
+    const teacherClassIds = teacherClasses.value.map((c) => c.id)
+
     if (teacherClassIds.length === 0) {
-      throw new Error('No hay clases asignadas a este maestro')
+      throw new Error("No hay clases asignadas a este maestro")
     }
-    
+
     console.log(`📚 Generando datos para ${teacherClassIds.length} clases:`, teacherClassIds)
-    
+
     // Estudiantes de muestra (algunos reales + algunos ficticios)
     const sampleStudents = [
-      'XCMzMoaZAKQpMfUyFgz',
-      '1663248027973',
-      'Edelyn_Abreu_001',
-      'Helen_Sofia_002',
-      'Estudiante_003',
-      'Estudiante_004',
-      'Estudiante_005',
-      'Estudiante_006',
-      'Estudiante_007',
-      'Estudiante_008',
-      'Estudiante_009',
-      'Estudiante_010'
+      "XCMzMoaZAKQpMfUyFgz",
+      "1663248027973",
+      "Edelyn_Abreu_001",
+      "Helen_Sofia_002",
+      "Estudiante_003",
+      "Estudiante_004",
+      "Estudiante_005",
+      "Estudiante_006",
+      "Estudiante_007",
+      "Estudiante_008",
+      "Estudiante_009",
+      "Estudiante_010",
     ]
-    
+
     // Generar fechas de los últimos 25 días
     const dates = []
     const today = new Date()
     for (let i = 0; i < 25; i++) {
       const date = new Date(today)
       date.setDate(date.getDate() - i)
-      dates.push(date.toISOString().split('T')[0])
+      dates.push(date.toISOString().split("T")[0])
     }
-    
+
     let documentsCreated = 0
-    
+
     for (const fecha of dates) {
       for (const classId of teacherClassIds) {
         // 70% de probabilidad de que haya clase ese día
         if (Math.random() < 0.7) {
-          
           // Seleccionar entre 4-9 estudiantes para esta clase
           const numStudents = Math.floor(Math.random() * 6) + 4
           const classStudents = sampleStudents.slice(0, numStudents)
-          
+
           const presentes: string[] = []
           const ausentes: string[] = []
           const tarde: string[] = []
           const justificacion: any[] = []
-          
-          classStudents.forEach(studentId => {
+
+          classStudents.forEach((studentId) => {
             const rand = Math.random()
-            
+
             if (rand < 0.75) {
               // 75% presente
               presentes.push(studentId)
             } else if (rand < 0.92) {
               // 17% ausente
               ausentes.push(studentId)
-              
+
               // 40% de los ausentes tienen justificación
               if (Math.random() < 0.4) {
                 const reasons = [
-                  'Cita médica programada',
-                  'Emergencia familiar',
-                  'Enfermedad leve',
-                  'Compromiso académico',
-                  'Viaje familiar'
+                  "Cita médica programada",
+                  "Emergencia familiar",
+                  "Enfermedad leve",
+                  "Compromiso académico",
+                  "Viaje familiar",
                 ]
-                
+
                 justificacion.push({
                   id: studentId,
-                  studentId: studentId,
-                  classId: classId,
-                  fecha: fecha,
+                  studentId,
+                  classId,
+                  fecha,
                   reason: reasons[Math.floor(Math.random() * reasons.length)],
                   documentUrl: null,
-                  approvalStatus: 'pending',
+                  approvalStatus: "pending",
                   createdAt: new Date(),
-                  timeLimit: new Date(Date.now() + 48 * 60 * 60 * 1000)
+                  timeLimit: new Date(Date.now() + 48 * 60 * 60 * 1000),
                 })
               }
             } else {
@@ -682,12 +769,12 @@ async function generateSampleData() {
               tarde.push(studentId)
             }
           })
-          
+
           const docId = `${fecha}_${classId}`
           const attendanceDocument = {
-            fecha: fecha,
+            fecha,
             date: fecha, // Para compatibilidad
-            classId: classId,
+            classId,
             teacherId: teacherId.value,
             uid: teacherId.value,
             createdAt: new Date(),
@@ -697,38 +784,40 @@ async function generateSampleData() {
               ausentes,
               tarde,
               justificacion,
-              observación: Math.random() < 0.25 ? 
-                `Observación del ${fecha}: Clase desarrollada satisfactoriamente` : '',
-              observations: []
-            }
+              observación:
+                Math.random() < 0.25
+                  ? `Observación del ${fecha}: Clase desarrollada satisfactoriamente`
+                  : "",
+              observations: [],
+            },
           }
-          
+
           try {
-            await setDoc(doc(db, 'ASISTENCIAS', docId), attendanceDocument)
+            await setDoc(doc(db, "ASISTENCIAS", docId), attendanceDocument)
             documentsCreated++
-            
-            console.log(`✅ ${docId}: ${presentes.length}P, ${ausentes.length}A, ${tarde.length}T, ${justificacion.length}J`)
-            
+
+            console.log(
+              `✅ ${docId}: ${presentes.length}P, ${ausentes.length}A, ${tarde.length}T, ${justificacion.length}J`
+            )
           } catch (error) {
             console.error(`❌ Error creando ${docId}:`, error)
           }
-          
+
           // Pausa pequeña
-          await new Promise(resolve => setTimeout(resolve, 100))
+          await new Promise((resolve) => setTimeout(resolve, 100))
         }
       }
     }
-    
+
     console.log(`🎉 ¡Completado! Se crearon ${documentsCreated} documentos de asistencia.`)
-    
+
     // Recargar los datos
     if (dateFrom.value && dateTo.value) {
       await loadAttendanceData()
     }
-    
   } catch (err: any) {
-    console.error('❌ Error generando datos de muestra:', err)
-    error.value = 'Error al generar datos de muestra: ' + (err?.message || 'Error desconocido')
+    console.error("❌ Error generando datos de muestra:", err)
+    error.value = "Error al generar datos de muestra: " + (err?.message || "Error desconocido")
   } finally {
     generating.value = false
   }
@@ -754,15 +843,15 @@ function toggleStudentExpansion(classId: string, studentId: string) {
 }
 
 function getClassSchedule(classData: any): string {
-  if (!classData.schedule?.slots) return 'Horario no definido'
-  
+  if (!classData.schedule?.slots) return "Horario no definido"
+
   const slots = classData.schedule.slots
-  if (slots.length === 0) return 'Sin horario'
-  
+  if (slots.length === 0) return "Sin horario"
+
   const firstSlot = slots[0]
-  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+  const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
   const dayName = days[firstSlot.day] || `Día ${firstSlot.day}`
-  
+
   return `${dayName} ${firstSlot.startTime} - ${firstSlot.endTime}`
 }
 
@@ -775,16 +864,18 @@ function getClassStudents(classData: any) {
     console.log(`⚠️ Clase ${classData.name} no tiene studentIds`)
     return []
   }
-  
-  const students = studentsStore.students.filter(s => classData.studentIds.includes(s.id))
-  console.log(`👥 Clase ${classData.name}: ${students.length}/${classData.studentIds.length} estudiantes encontrados`)
-  
+
+  const students = studentsStore.students.filter((s) => classData.studentIds.includes(s.id))
+  console.log(
+    `👥 Clase ${classData.name}: ${students.length}/${classData.studentIds.length} estudiantes encontrados`
+  )
+
   if (students.length !== classData.studentIds.length) {
-    const foundIds = students.map(s => s.id)
+    const foundIds = students.map((s) => s.id)
     const missingIds = classData.studentIds.filter((id: string) => !foundIds.includes(id))
     console.log(`❓ IDs faltantes:`, missingIds)
   }
-  
+
   return students
 }
 
@@ -801,40 +892,44 @@ function getStudentAttendancePercentageSync(classId: string, studentId: string):
 
 function getStudentAttendanceCountSync(classId: string, studentId: string, status: string): number {
   const attendances = getStudentAttendancesSync(classId, studentId)
-  return attendances.filter(a => a.status === status).length
+  return attendances.filter((a) => a.status === status).length
 }
 
 function getAttendancePercentageSync(classData: any): number {
   const students = getClassStudents(classData)
   if (students.length === 0) return 0
-  
+
   let totalPresentes = 0
   let totalSessions = 0
-  
-  students.forEach(student => {
+
+  students.forEach((student) => {
     const attendances = getStudentAttendancesSync(classData.id, student.id)
     totalSessions += attendances.length
-    totalPresentes += attendances.filter(a => a.status === 'presente' || a.status === 'justificado').length
+    totalPresentes += attendances.filter(
+      (a) => a.status === "presente" || a.status === "justificado"
+    ).length
   })
-  
+
   return totalSessions > 0 ? Math.round((totalPresentes / totalSessions) * 100) : 0
 }
 // Función para procesar todos los datos de asistencia de una vez
 async function processAllAttendanceData(attendanceRecords: any[], teacherClassesData: any[]) {
-  console.log('🔄 === PROCESANDO TODOS LOS DATOS DE ASISTENCIA ===')
-  console.log(`📊 Procesando ${attendanceRecords.length} registros para ${teacherClassesData.length} clases`)
-  
+  console.log("🔄 === PROCESANDO TODOS LOS DATOS DE ASISTENCIA ===")
+  console.log(
+    `📊 Procesando ${attendanceRecords.length} registros para ${teacherClassesData.length} clases`
+  )
+
   // Limpiar cache existente
   studentAttendances.value = {}
   attendancePercentages.value = {}
-  
+
   // Agrupar registros por clase y estudiante
   const attendanceByClass: Record<string, Record<string, any[]>> = {}
-  
+
   // Inicializar estructura para todas las clases
-  teacherClassesData.forEach(classData => {
+  teacherClassesData.forEach((classData) => {
     attendanceByClass[classData.id] = {}
-    
+
     // Inicializar para todos los estudiantes de cada clase
     if (classData.studentIds && classData.studentIds.length > 0) {
       classData.studentIds.forEach((studentId: string) => {
@@ -842,48 +937,53 @@ async function processAllAttendanceData(attendanceRecords: any[], teacherClasses
       })
     }
   })
-  
+
   // Procesar todos los registros
-  attendanceRecords.forEach(record => {
-    const { classId, studentId } = record
-    
+  attendanceRecords.forEach((record) => {
+    const {classId, studentId} = record
+
     if (attendanceByClass[classId] && attendanceByClass[classId][studentId] !== undefined) {
       // Mapear al formato local del componente
       const mappedRecord = {
         date: record.fecha, // usar 'fecha' del store
         status: mapFirebaseStatusToLocal(record.status),
-        justification: typeof record.justification === 'object' && record.justification?.reason 
-          ? record.justification.reason 
-          : (typeof record.justification === 'string' ? record.justification : undefined)
+        justification:
+          typeof record.justification === "object" && record.justification?.reason
+            ? record.justification.reason
+            : typeof record.justification === "string"
+              ? record.justification
+              : undefined,
       }
-      
+
       attendanceByClass[classId][studentId].push(mappedRecord)
     }
   })
-  
+
   // Calcular porcentajes y asignar al cache del componente
   let totalStudentsProcessed = 0
   let totalRecordsProcessed = 0
-  
-  Object.keys(attendanceByClass).forEach(classId => {
-    Object.keys(attendanceByClass[classId]).forEach(studentId => {
+
+  Object.keys(attendanceByClass).forEach((classId) => {
+    Object.keys(attendanceByClass[classId]).forEach((studentId) => {
       const key = `${classId}-${studentId}`
       const studentRecords = attendanceByClass[classId][studentId]
-      
+
       studentAttendances.value[key] = studentRecords
-      
+
       if (studentRecords.length > 0) {
-        const presentes = studentRecords.filter(r => r.status === 'presente' || r.status === 'justificado').length
+        const presentes = studentRecords.filter(
+          (r) => r.status === "presente" || r.status === "justificado"
+        ).length
         attendancePercentages.value[key] = Math.round((presentes / studentRecords.length) * 100)
         totalRecordsProcessed += studentRecords.length
       } else {
         attendancePercentages.value[key] = 0
       }
-      
+
       totalStudentsProcessed++
     })
   })
-  
+
   console.log(`✅ Procesamiento completado:`)
   console.log(`   👥 ${totalStudentsProcessed} estudiantes procesados`)
   console.log(`   📝 ${totalRecordsProcessed} registros de asistencia organizados`)
@@ -894,61 +994,68 @@ async function processAllAttendanceData(attendanceRecords: any[], teacherClasses
 async function loadStudentAttendancesForClass(classId: string) {
   console.log(`ℹ️ loadStudentAttendancesForClass(${classId}) - FUNCIÓN OBSOLETA`)
   console.log(`� Los datos ya están cargados en memoria. No es necesario cargar individualmente.`)
-  
+
   // Esta función ya no es necesaria porque todos los datos se cargan al inicio
   // Los datos ya están disponibles en studentAttendances.value y attendancePercentages.value
   return
 }
 
 // Funciones auxiliares para mapear estados
-function mapFirebaseStatusToLocal(status: string): 'presente' | 'ausente' | 'tarde' | 'justificado' {
+function mapFirebaseStatusToLocal(
+  status: string
+): "presente" | "ausente" | "tarde" | "justificado" {
   switch (status.toLowerCase()) {
-    case 'presente':
-      return 'presente';
-    case 'ausente':
-      return 'ausente';
-    case 'tarde':
-    case 'tardanza':
-      return 'tarde';
-    case 'justificado':
-      return 'justificado';
+    case "presente":
+      return "presente"
+    case "ausente":
+      return "ausente"
+    case "tarde":
+    case "tardanza":
+      return "tarde"
+    case "justificado":
+      return "justificado"
     default:
-      return 'ausente';
+      return "ausente"
   }
 }
 
 function getStatusClass(status: string): string {
   switch (status) {
-    case 'presente':
-      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-    case 'ausente':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-    case 'tarde':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-    case 'justificado':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+    case "presente":
+      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+    case "ausente":
+      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+    case "tarde":
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+    case "justificado":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
   }
 }
 
 function getStatusText(status: string): string {
   switch (status) {
-    case 'presente': return 'Presente'
-    case 'ausente': return 'Ausente'
-    case 'tarde': return 'Tarde'
-    case 'justificado': return 'Justificado'
-    default: return status
+    case "presente":
+      return "Presente"
+    case "ausente":
+      return "Ausente"
+    case "tarde":
+      return "Tarde"
+    case "justificado":
+      return "Justificado"
+    default:
+      return status
   }
 }
 
 function formatDate(dateString: string): string {
   try {
     const date = new Date(dateString)
-    return date.toLocaleDateString('es-ES', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
+    return date.toLocaleDateString("es-ES", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
     })
   } catch {
     return dateString
@@ -958,27 +1065,27 @@ function formatDate(dateString: string): string {
 async function showObservationsModal(classId: string, studentId?: string) {
   selectedClassId.value = classId
   const classData = classesStore.getClassById(classId)
-  selectedClassName.value = classData?.name || 'Clase'
-  
+  selectedClassName.value = classData?.name || "Clase"
+
   showObservations.value = true
   loadingObservations.value = true
-  
+
   try {
     // Obtener observaciones de la clase
     const observations = await attendanceStore.fetchObservationsForClass(classId)
-    
+
     // Filtrar por rango de fechas si est� definido
     let filteredObservations = observations
     if (dateFrom.value && dateTo.value) {
-      filteredObservations = observations.filter(obs => {
+      filteredObservations = observations.filter((obs) => {
         const obsDate = obs.date || obs.fecha
         return obsDate && obsDate >= dateFrom.value && obsDate <= dateTo.value
       })
     }
-    
+
     classObservations.value = filteredObservations
   } catch (err) {
-    console.error('Error cargando observaciones:', err)
+    console.error("Error cargando observaciones:", err)
     classObservations.value = []
   } finally {
     loadingObservations.value = false
@@ -993,91 +1100,104 @@ function closeObservationsModal() {
 function getObservationText(observation: ClassObservation): string {
   if (observation.text) return observation.text
   if (observation.content?.text) return observation.content.text
-  if (typeof observation.content === 'string') return observation.content
-  return 'Sin contenido'
+  if (typeof observation.content === "string") return observation.content
+  return "Sin contenido"
 }
 
 function getObservationTypeClass(type: string): string {
   switch (type) {
-    case 'general': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-    case 'comportamiento': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-    case 'academico': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-    case 'asistencia': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-    default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+    case "general":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+    case "comportamiento":
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+    case "academico":
+      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+    case "asistencia":
+      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+    default:
+      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
   }
 }
 
 function getObservationTypeText(type: string): string {
   switch (type) {
-    case 'general': return 'General'
-    case 'comportamiento': return 'Comportamiento'
-    case 'academico': return 'Académico'
-    case 'asistencia': return 'Asistencia'
-    default: return type
+    case "general":
+      return "General"
+    case "comportamiento":
+      return "Comportamiento"
+    case "academico":
+      return "Académico"
+    case "asistencia":
+      return "Asistencia"
+    default:
+      return type
   }
 }
 
 async function loadAttendanceData() {
   if (!teacherId.value) {
-    error.value = 'No se ha especificado un maestro'
+    error.value = "No se ha especificado un maestro"
     return
   }
-  
+
   loading.value = true
-  error.value = ''
-  
+  error.value = ""
+
   try {
     // Cargar datos necesarios
-    console.log('🔄 Cargando datos básicos...')
+    console.log("🔄 Cargando datos básicos...")
     await Promise.all([
       teachersStore.fetchTeachers(),
       classesStore.fetchClasses(),
-      studentsStore.fetchStudents()
+      studentsStore.fetchStudents(),
     ])
-    
+
     // Debug: Verificar datos cargados
-    console.log('📊 Datos cargados:')
-    console.log('- Teachers:', teachersStore.teachers.length)
-    console.log('- Classes:', classesStore.classes.length)
-    console.log('- Students:', studentsStore.students.length)
-    console.log('- Teacher ID:', teacherId.value)
-    
+    console.log("📊 Datos cargados:")
+    console.log("- Teachers:", teachersStore.teachers.length)
+    console.log("- Classes:", classesStore.classes.length)
+    console.log("- Students:", studentsStore.students.length)
+    console.log("- Teacher ID:", teacherId.value)
+
     // Verificar clases del maestro
-    const teacherClassesData = classesStore.classes.filter(c => c.teacherId === teacherId.value)
-    console.log('- Teacher Classes:', teacherClassesData.length)
-    teacherClassesData.forEach(cls => {
+    const teacherClassesData = classesStore.classes.filter((c) => c.teacherId === teacherId.value)
+    console.log("- Teacher Classes:", teacherClassesData.length)
+    teacherClassesData.forEach((cls) => {
       console.log(`  📚 Clase: ${cls.name}, Estudiantes: ${cls.studentIds?.length || 0}`)
       if (cls.studentIds) {
         console.log(`    👥 Student IDs:`, cls.studentIds)
       }
     })
-    
+
     // Verificar estudiantes disponibles
     if (teacherClassesData.length > 0) {
       const allStudentIds = new Set<string>()
-      teacherClassesData.forEach(cls => {
+      teacherClassesData.forEach((cls) => {
         if (cls.studentIds) {
-          cls.studentIds.forEach(id => allStudentIds.add(id))
+          cls.studentIds.forEach((id) => allStudentIds.add(id))
         }
       })
-      console.log('📝 Estudiantes únicos encontrados:', allStudentIds.size)
-      
+      console.log("📝 Estudiantes únicos encontrados:", allStudentIds.size)
+
       // Verificar si los estudiantes existen en el store
-      const studentsFound = Array.from(allStudentIds).map(id => {
-        const student = studentsStore.students.find(s => s.id === id)
+      const studentsFound = Array.from(allStudentIds).map((id) => {
+        const student = studentsStore.students.find((s) => s.id === id)
         return student ? `${student.nombre} ${student.apellido}` : `ID: ${id} (NO ENCONTRADO)`
       })
-      console.log('👤 Estudiantes:', studentsFound)
+      console.log("👤 Estudiantes:", studentsFound)
     }
-    
+
     // Cargar datos de asistencia si hay rango de fechas
     if (dateFrom.value && dateTo.value) {
-      console.log('📅 Cargando TODAS las asistencias para el período...', { dateFrom: dateFrom.value, dateTo: dateTo.value })
-      
+      console.log("📅 Cargando TODAS las asistencias para el período...", {
+        dateFrom: dateFrom.value,
+        dateTo: dateTo.value,
+      })
+
       // Obtener todas las clases del maestro
-      const teacherClassIds = teacherClassesData.map(cls => cls.id)
-      console.log('🏫 Cargando asistencias para clases:', teacherClassIds)
-      
+      const teacherClassIds = teacherClassesData.map((cls) => cls.id)
+      console.log("🏫 Cargando asistencias para clases:", teacherClassIds)
+
       if (teacherClassIds.length > 0) {
         // Cargar todas las asistencias de una vez usando la función optimizada
         const allAttendanceRecords = await attendanceStore.fetchAttendanceByDateRangeAndClasses(
@@ -1085,21 +1205,21 @@ async function loadAttendanceData() {
           dateTo.value,
           teacherClassIds
         )
-        
+
         console.log(`📊 Total de registros de asistencia obtenidos: ${allAttendanceRecords.length}`)
-        
+
         // Procesar y organizar todos los datos por clase y estudiante
         await processAllAttendanceData(allAttendanceRecords, teacherClassesData)
-        
+
         // Actualizar estadísticas globales
         await updateStatistics()
       }
     }
-    
-    console.log('✅ Datos cargados correctamente')
+
+    console.log("✅ Datos cargados correctamente")
   } catch (err) {
-    console.error('❌ Error cargando datos:', err)
-    error.value = 'Error al cargar los datos. Por favor, intenta de nuevo.'
+    console.error("❌ Error cargando datos:", err)
+    error.value = "Error al cargar los datos. Por favor, intenta de nuevo."
   } finally {
     loading.value = false
   }
@@ -1109,7 +1229,7 @@ async function loadAttendanceData() {
 onMounted(async () => {
   // Establecer rango de fechas por defecto
   setDefaultDateRange()
-  
+
   // Cargar datos iniciales
   await loadAttendanceData()
 })
@@ -1123,7 +1243,9 @@ onMounted(async () => {
 
 /* Hover effects */
 .hover\:shadow-md:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 /* Responsive improvements */

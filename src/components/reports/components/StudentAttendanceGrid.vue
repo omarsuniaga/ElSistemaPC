@@ -12,7 +12,7 @@
                 {{ cls.name }}
               </option>
             </select>
-            
+
             <select v-model="statusFilter" class="text-sm border rounded px-2 py-1">
               <option value="">Todos los estados</option>
               <option value="present">Presentes</option>
@@ -29,34 +29,54 @@
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               Estudiante
             </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               Clase
             </th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               Asistencias
             </th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               Ausencias
             </th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               Tardanzas
             </th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               % Asistencia
             </th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               Última Fecha
             </th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               Acciones
             </th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          <tr v-for="student in filteredStudents" :key="`${student.classId}-${student.id}`" class="hover:bg-gray-50">
+          <tr
+            v-for="student in filteredStudents"
+            :key="`${student.classId}-${student.id}`"
+            class="hover:bg-gray-50"
+          >
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center">
                 <div class="flex-shrink-0 h-10 w-10">
@@ -71,7 +91,7 @@
                     {{ student.firstName }} {{ student.lastName }}
                   </div>
                   <div class="text-sm text-gray-500">
-                    {{ student.email || 'Sin email' }}
+                    {{ student.email || "Sin email" }}
                   </div>
                 </div>
               </div>
@@ -80,28 +100,34 @@
               {{ student.className }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-center">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+              >
                 {{ student.stats.present }}
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-center">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+              >
                 {{ student.stats.absent }}
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-center">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
+              >
                 {{ student.stats.late }}
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-center">
               <div class="flex items-center justify-center">
                 <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                  <div 
+                  <div
                     class="h-2 rounded-full"
                     :class="getAttendanceColor(student.stats.attendanceRate)"
-                    :style="{ width: `${student.stats.attendanceRate}%` }"
-                  ></div>
+                    :style="{width: `${student.stats.attendanceRate}%`}"
+                  />
                 </div>
                 <span class="text-sm font-medium">{{ student.stats.attendanceRate }}%</span>
               </div>
@@ -110,15 +136,15 @@
               {{ formatDate(student.stats.lastAttendanceDate) }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-              <button 
-                @click="viewStudentDetail(student)"
+              <button
                 class="text-blue-600 hover:text-blue-900 mr-2"
+                @click="viewStudentDetail(student)"
               >
                 Ver detalle
               </button>
-              <button 
-                @click="exportStudentData(student)"
+              <button
                 class="text-green-600 hover:text-green-900"
+                @click="exportStudentData(student)"
               >
                 Exportar
               </button>
@@ -129,19 +155,22 @@
     </div>
 
     <!-- Paginación -->
-    <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6" v-if="totalPages > 1">
+    <div
+      v-if="totalPages > 1"
+      class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6"
+    >
       <div class="flex-1 flex justify-between sm:hidden">
-        <button 
-          @click="previousPage"
+        <button
           :disabled="currentPage === 1"
           class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+          @click="previousPage"
         >
           Anterior
         </button>
-        <button 
-          @click="nextPage"
+        <button
           :disabled="currentPage === totalPages"
           class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+          @click="nextPage"
         >
           Siguiente
         </button>
@@ -159,31 +188,34 @@
           </p>
         </div>
         <div>
-          <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-            <button 
-              @click="previousPage"
+          <nav
+            class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+            aria-label="Pagination"
+          >
+            <button
               :disabled="currentPage === 1"
               class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+              @click="previousPage"
             >
               <ChevronLeftIcon class="h-5 w-5" />
             </button>
-            <button 
-              v-for="page in visiblePages" 
+            <button
+              v-for="page in visiblePages"
               :key="page"
-              @click="goToPage(page)"
               :class="[
                 'relative inline-flex items-center px-4 py-2 border text-sm font-medium',
-                page === currentPage 
-                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' 
-                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                page === currentPage
+                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50',
               ]"
+              @click="goToPage(page)"
             >
               {{ page }}
             </button>
-            <button 
-              @click="nextPage"
+            <button
               :disabled="currentPage === totalPages"
               class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+              @click="nextPage"
             >
               <ChevronRightIcon class="h-5 w-5" />
             </button>
@@ -195,51 +227,65 @@
 
   <!-- Modal de detalle del estudiante -->
   <div v-if="selectedStudent" class="fixed inset-0 z-50 overflow-y-auto">
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div
+      class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+    >
       <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-        <div class="absolute inset-0 bg-gray-500 opacity-75" @click="closeStudentDetail"></div>
+        <div class="absolute inset-0 bg-gray-500 opacity-75" @click="closeStudentDetail" />
       </div>
 
-      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+      <div
+        class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+      >
         <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
           <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
             Detalle de {{ selectedStudent.firstName }} {{ selectedStudent.lastName }}
           </h3>
-          
+
           <div class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700">Asistencias</label>
-                <div class="text-2xl font-bold text-green-600">{{ selectedStudent.stats.present }}</div>
+                <div class="text-2xl font-bold text-green-600">
+                  {{ selectedStudent.stats.present }}
+                </div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700">Ausencias</label>
-                <div class="text-2xl font-bold text-red-600">{{ selectedStudent.stats.absent }}</div>
+                <div class="text-2xl font-bold text-red-600">
+                  {{ selectedStudent.stats.absent }}
+                </div>
               </div>
             </div>
-            
+
             <div class="border-t pt-4">
               <h4 class="font-medium text-gray-900 mb-2">Historial reciente</h4>
               <div class="space-y-2 max-h-40 overflow-y-auto">
-                <div v-for="record in selectedStudent.recentAttendance" :key="record.date" class="flex justify-between text-sm">
+                <div
+                  v-for="record in selectedStudent.recentAttendance"
+                  :key="record.date"
+                  class="flex justify-between text-sm"
+                >
                   <span>{{ formatDate(record.date) }}</span>
-                  <span :class="getStatusColor(record.status)">{{ getStatusText(record.status) }}</span>
+                  <span :class="getStatusColor(record.status)">{{
+                    getStatusText(record.status)
+                  }}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        
+
         <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-          <button 
-            @click="exportStudentData(selectedStudent)"
+          <button
             class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm"
+            @click="exportStudentData(selectedStudent)"
           >
             Exportar datos
           </button>
-          <button 
-            @click="closeStudentDetail"
+          <button
             class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+            @click="closeStudentDetail"
           >
             Cerrar
           </button>
@@ -250,57 +296,60 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import {ref, computed} from "vue"
+import {ChevronLeftIcon, ChevronRightIcon} from "@heroicons/vue/24/outline"
+import {format} from "date-fns"
+import {es} from "date-fns/locale"
 
 const props = defineProps({
   attendanceData: {
     type: Array,
-    required: true
-  }
+    required: true,
+  },
 })
 
-const emit = defineEmits(['export-student'])
+const emit = defineEmits(["export-student"])
 
 // Estado reactivo
-const selectedClass = ref('')
-const statusFilter = ref('')
+const selectedClass = ref("")
+const statusFilter = ref("")
 const currentPage = ref(1)
 const pageSize = ref(10)
 const selectedStudent = ref(null)
 
 // Clases disponibles
 const availableClasses = computed(() => {
-  return props.attendanceData.map(cls => ({
+  return props.attendanceData.map((cls) => ({
     id: cls.classId,
-    name: cls.className || 'Clase sin nombre'
+    name: cls.className || "Clase sin nombre",
   }))
 })
 
 // Procesar datos de estudiantes
 const processedStudents = computed(() => {
   const students = []
-  
-  props.attendanceData.forEach(classData => {
-    classData.students?.forEach(student => {
+
+  props.attendanceData.forEach((classData) => {
+    classData.students?.forEach((student) => {
       const stats = {
         present: 0,
         absent: 0,
         late: 0,
         justified: 0,
         total: 0,
-        lastAttendanceDate: null
+        lastAttendanceDate: null,
       }
 
       const recentAttendance = []
 
-      student.attendance?.forEach(record => {
+      student.attendance?.forEach((record) => {
         stats.total++
         stats[record.status] = (stats[record.status] || 0) + 1
-        
-        if (!stats.lastAttendanceDate || new Date(record.date) > new Date(stats.lastAttendanceDate)) {
+
+        if (
+          !stats.lastAttendanceDate ||
+          new Date(record.date) > new Date(stats.lastAttendanceDate)
+        ) {
           stats.lastAttendanceDate = record.date
         }
 
@@ -308,16 +357,16 @@ const processedStudents = computed(() => {
       })
 
       stats.attendanceRate = stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0
-      
+
       // Ordenar por fecha más reciente
       recentAttendance.sort((a, b) => new Date(b.date) - new Date(a.date))
 
       students.push({
         ...student,
         classId: classData.classId,
-        className: classData.className || 'Clase sin nombre',
+        className: classData.className || "Clase sin nombre",
         stats,
-        recentAttendance: recentAttendance.slice(0, 10) // Últimos 10 registros
+        recentAttendance: recentAttendance.slice(0, 10), // Últimos 10 registros
       })
     })
   })
@@ -330,11 +379,11 @@ const filteredStudents = computed(() => {
   let filtered = processedStudents.value
 
   if (selectedClass.value) {
-    filtered = filtered.filter(s => s.classId === selectedClass.value)
+    filtered = filtered.filter((s) => s.classId === selectedClass.value)
   }
 
   if (statusFilter.value) {
-    filtered = filtered.filter(s => {
+    filtered = filtered.filter((s) => {
       const lastRecord = s.recentAttendance[0]
       return lastRecord?.status === statusFilter.value
     })
@@ -357,11 +406,11 @@ const visiblePages = computed(() => {
   const pages = []
   const start = Math.max(1, currentPage.value - 2)
   const end = Math.min(totalPages.value, currentPage.value + 2)
-  
+
   for (let i = start; i <= end; i++) {
     pages.push(i)
   }
-  
+
   return pages
 })
 
@@ -384,38 +433,38 @@ const goToPage = (page) => {
 
 // Métodos auxiliares
 const getInitials = (firstName, lastName) => {
-  return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase()
+  return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`.toUpperCase()
 }
 
 const getAttendanceColor = (rate) => {
-  if (rate >= 90) return 'bg-green-500'
-  if (rate >= 70) return 'bg-yellow-500'
-  return 'bg-red-500'
+  if (rate >= 90) return "bg-green-500"
+  if (rate >= 70) return "bg-yellow-500"
+  return "bg-red-500"
 }
 
 const getStatusColor = (status) => {
   const colors = {
-    present: 'text-green-600',
-    absent: 'text-red-600',
-    late: 'text-yellow-600',
-    justified: 'text-blue-600'
+    present: "text-green-600",
+    absent: "text-red-600",
+    late: "text-yellow-600",
+    justified: "text-blue-600",
   }
-  return colors[status] || 'text-gray-600'
+  return colors[status] || "text-gray-600"
 }
 
 const getStatusText = (status) => {
   const texts = {
-    present: 'Presente',
-    absent: 'Ausente',
-    late: 'Tardanza',
-    justified: 'Justificado'
+    present: "Presente",
+    absent: "Ausente",
+    late: "Tardanza",
+    justified: "Justificado",
   }
   return texts[status] || status
 }
 
 const formatDate = (date) => {
-  if (!date) return 'N/A'
-  return format(new Date(date), 'dd/MM/yyyy', { locale: es })
+  if (!date) return "N/A"
+  return format(new Date(date), "dd/MM/yyyy", {locale: es})
 }
 
 // Acciones
@@ -428,6 +477,6 @@ const closeStudentDetail = () => {
 }
 
 const exportStudentData = (student) => {
-  emit('export-student', student)
+  emit("export-student", student)
 }
 </script>

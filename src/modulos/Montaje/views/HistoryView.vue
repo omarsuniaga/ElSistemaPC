@@ -9,12 +9,12 @@
         </p>
       </div>
       <div class="header-actions">
-        <button @click="createSnapshot" class="btn-primary">
-          <i class="fas fa-camera"></i>
+        <button class="btn-primary" @click="createSnapshot">
+          <i class="fas fa-camera" />
           Crear Snapshot
         </button>
-        <button @click="exportHistory" class="btn-secondary">
-          <i class="fas fa-download"></i>
+        <button class="btn-secondary" @click="exportHistory">
+          <i class="fas fa-download" />
           Exportar Historial
         </button>
       </div>
@@ -27,11 +27,7 @@
           <label>Obra</label>
           <select v-model="filters.workId" class="form-select">
             <option value="">Todas las obras</option>
-            <option 
-              v-for="work in availableWorks"
-              :key="work.id"
-              :value="work.id"
-            >
+            <option v-for="work in availableWorks" :key="work.id" :value="work.id">
               {{ work.title }}
             </option>
           </select>
@@ -51,11 +47,7 @@
           <label>Usuario</label>
           <select v-model="filters.userId" class="form-select">
             <option value="">Todos los usuarios</option>
-            <option 
-              v-for="user in users"
-              :key="user.id"
-              :value="user.id"
-            >
+            <option v-for="user in users" :key="user.id" :value="user.id">
               {{ user.name }}
             </option>
           </select>
@@ -63,17 +55,9 @@
         <div class="filter-group">
           <label>Período</label>
           <div class="date-range">
-            <input 
-              v-model="filters.startDate"
-              type="date"
-              class="form-input"
-            >
+            <input v-model="filters.startDate" type="date" class="form-input" />
             <span>a</span>
-            <input 
-              v-model="filters.endDate"
-              type="date"
-              class="form-input"
-            >
+            <input v-model="filters.endDate" type="date" class="form-input" />
           </div>
         </div>
       </div>
@@ -82,38 +66,38 @@
     <!-- Timeline View Toggle -->
     <div class="view-controls">
       <div class="view-toggle">
-        <button 
-          @click="viewMode = 'timeline'"
-          :class="{ active: viewMode === 'timeline' }"
+        <button
+          :class="{active: viewMode === 'timeline'}"
           class="toggle-btn"
+          @click="viewMode = 'timeline'"
         >
-          <i class="fas fa-stream"></i>
+          <i class="fas fa-stream" />
           Timeline
         </button>
-        <button 
-          @click="viewMode = 'versions'"
-          :class="{ active: viewMode === 'versions' }"
+        <button
+          :class="{active: viewMode === 'versions'}"
           class="toggle-btn"
+          @click="viewMode = 'versions'"
         >
-          <i class="fas fa-code-branch"></i>
+          <i class="fas fa-code-branch" />
           Versiones
         </button>
-        <button 
-          @click="viewMode = 'snapshots'"
-          :class="{ active: viewMode === 'snapshots' }"
+        <button
+          :class="{active: viewMode === 'snapshots'}"
           class="toggle-btn"
+          @click="viewMode = 'snapshots'"
         >
-          <i class="fas fa-camera"></i>
+          <i class="fas fa-camera" />
           Snapshots
         </button>
       </div>
       <div class="view-options">
-        <button 
-          @click="showCompareTool = true"
+        <button
           :disabled="selectedItems.length !== 2"
           class="btn-secondary"
+          @click="showCompareTool = true"
         >
-          <i class="fas fa-exchange-alt"></i>
+          <i class="fas fa-exchange-alt" />
           Comparar
         </button>
       </div>
@@ -121,31 +105,31 @@
 
     <!-- Loading State -->
     <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
+      <div class="spinner" />
       <p>Cargando historial...</p>
     </div>
 
     <!-- Timeline View -->
     <div v-else-if="viewMode === 'timeline'" class="timeline-view">
       <div class="timeline">
-        <div 
+        <div
           v-for="(entry, index) in filteredHistory"
           :key="entry.id"
           class="timeline-entry"
-          :class="{ 'selected': selectedItems.includes(entry.id) }"
+          :class="{selected: selectedItems.includes(entry.id)}"
           @click="toggleSelection(entry.id)"
         >
           <!-- Date separator -->
-          <div 
+          <div
             v-if="index === 0 || !isSameDay(entry.timestamp, filteredHistory[index - 1].timestamp)"
             class="date-separator"
           >
             {{ formatDateHeader(entry.timestamp) }}
           </div>
-          
+
           <div class="timeline-item">
             <div class="timeline-marker" :class="`marker-${entry.type.toLowerCase()}`">
-              <i :class="getChangeIcon(entry.type)"></i>
+              <i :class="getChangeIcon(entry.type)" />
             </div>
             <div class="timeline-content">
               <div class="timeline-header">
@@ -157,29 +141,19 @@
               </div>
               <p class="timeline-description">{{ entry.description }}</p>
               <div v-if="entry.work" class="timeline-work">
-                <i class="fas fa-music"></i>
+                <i class="fas fa-music" />
                 {{ entry.work.title }}
               </div>
               <div class="timeline-actions">
-                <button 
-                  @click.stop="viewDetails(entry)"
-                  class="action-btn"
-                >
-                  Ver detalles
-                </button>
-                <button 
+                <button class="action-btn" @click.stop="viewDetails(entry)">Ver detalles</button>
+                <button
                   v-if="entry.type === 'UPDATE' || entry.type === 'VERSION'"
-                  @click.stop="restoreVersion(entry)"
                   class="action-btn"
+                  @click.stop="restoreVersion(entry)"
                 >
                   Restaurar
                 </button>
-                <button 
-                  @click.stop="downloadSnapshot(entry)"
-                  class="action-btn"
-                >
-                  Descargar
-                </button>
+                <button class="action-btn" @click.stop="downloadSnapshot(entry)">Descargar</button>
               </div>
             </div>
           </div>
@@ -190,11 +164,11 @@
     <!-- Versions View -->
     <div v-else-if="viewMode === 'versions'" class="versions-view">
       <div class="versions-grid">
-        <div 
+        <div
           v-for="version in filteredVersions"
           :key="version.id"
           class="version-card"
-          :class="{ 'selected': selectedItems.includes(version.id) }"
+          :class="{selected: selectedItems.includes(version.id)}"
           @click="toggleSelection(version.id)"
         >
           <div class="version-header">
@@ -203,61 +177,47 @@
               <span class="version-number">v{{ version.version }}</span>
             </div>
             <div class="version-status">
-              <span 
-                v-if="version.isCurrent"
-                class="status-badge current"
-              >
-                Actual
-              </span>
-              <span 
-                v-else-if="version.isStable"
-                class="status-badge stable"
-              >
-                Estable
-              </span>
+              <span v-if="version.isCurrent" class="status-badge current"> Actual </span>
+              <span v-else-if="version.isStable" class="status-badge stable"> Estable </span>
             </div>
           </div>
-          
+
           <p class="version-description">{{ version.description }}</p>
-          
+
           <div class="version-meta">
             <div class="version-user">
-              <img 
+              <img
                 v-if="version.user.avatar"
                 :src="version.user.avatar"
                 :alt="version.user.name"
                 class="user-avatar"
-              >
+              />
               <span class="user-name">{{ version.user.name }}</span>
             </div>
             <span class="version-date">{{ formatDate(version.createdAt) }}</span>
           </div>
-          
+
           <div class="version-stats">
             <div class="stat">
-              <i class="fas fa-edit"></i>
+              <i class="fas fa-edit" />
               <span>{{ version.changesCount }} cambios</span>
             </div>
             <div class="stat">
-              <i class="fas fa-file"></i>
+              <i class="fas fa-file" />
               <span>{{ version.filesCount }} archivos</span>
             </div>
           </div>
-          
+
           <div class="version-actions">
-            <button @click.stop="previewVersion(version)" class="btn-small">
-              Vista previa
-            </button>
-            <button 
+            <button class="btn-small" @click.stop="previewVersion(version)">Vista previa</button>
+            <button
               v-if="!version.isCurrent"
-              @click.stop="restoreVersion(version)"
               class="btn-small"
+              @click.stop="restoreVersion(version)"
             >
               Restaurar
             </button>
-            <button @click.stop="downloadVersion(version)" class="btn-small">
-              Descargar
-            </button>
+            <button class="btn-small" @click.stop="downloadVersion(version)">Descargar</button>
           </div>
         </div>
       </div>
@@ -266,52 +226,44 @@
     <!-- Snapshots View -->
     <div v-else-if="viewMode === 'snapshots'" class="snapshots-view">
       <div class="snapshots-grid">
-        <div 
+        <div
           v-for="snapshot in filteredSnapshots"
           :key="snapshot.id"
           class="snapshot-card"
-          :class="{ 'selected': selectedItems.includes(snapshot.id) }"
+          :class="{selected: selectedItems.includes(snapshot.id)}"
           @click="toggleSelection(snapshot.id)"
         >
           <div class="snapshot-preview">
-            <img 
+            <img
               v-if="snapshot.thumbnail"
               :src="snapshot.thumbnail"
               :alt="snapshot.title"
               class="snapshot-image"
-            >
+            />
             <div v-else class="snapshot-placeholder">
-              <i class="fas fa-camera"></i>
+              <i class="fas fa-camera" />
             </div>
           </div>
-          
+
           <div class="snapshot-content">
             <h4 class="snapshot-title">{{ snapshot.title }}</h4>
             <p class="snapshot-description">{{ snapshot.description }}</p>
-            
+
             <div class="snapshot-meta">
               <span class="snapshot-user">{{ snapshot.user.name }}</span>
               <span class="snapshot-date">{{ formatDate(snapshot.createdAt) }}</span>
             </div>
-            
+
             <div class="snapshot-tags">
-              <span 
-                v-for="tag in snapshot.tags"
-                :key="tag"
-                class="tag"
-              >
+              <span v-for="tag in snapshot.tags" :key="tag" class="tag">
                 {{ tag }}
               </span>
             </div>
-            
+
             <div class="snapshot-actions">
-              <button @click.stop="viewSnapshot(snapshot)" class="btn-small">
-                Ver
-              </button>
-              <button @click.stop="restoreSnapshot(snapshot)" class="btn-small">
-                Restaurar
-              </button>
-              <button @click.stop="deleteSnapshot(snapshot)" class="btn-small danger">
+              <button class="btn-small" @click.stop="viewSnapshot(snapshot)">Ver</button>
+              <button class="btn-small" @click.stop="restoreSnapshot(snapshot)">Restaurar</button>
+              <button class="btn-small danger" @click.stop="deleteSnapshot(snapshot)">
                 Eliminar
               </button>
             </div>
@@ -322,7 +274,7 @@
 
     <!-- Empty State -->
     <div v-if="!loading && filteredItems.length === 0" class="empty-state">
-      <i class="fas fa-history"></i>
+      <i class="fas fa-history" />
       <h3>No hay historial disponible</h3>
       <p>No se encontraron registros para los filtros seleccionados</p>
     </div>
@@ -332,11 +284,11 @@
       <div class="modal-content large" @click.stop>
         <div class="modal-header">
           <h3>Comparar Versiones</h3>
-          <button @click="closeCompareTool" class="btn-close">
-            <i class="fas fa-times"></i>
+          <button class="btn-close" @click="closeCompareTool">
+            <i class="fas fa-times" />
           </button>
         </div>
-        
+
         <div class="compare-content">
           <div class="compare-info">
             <div class="compare-item">
@@ -345,7 +297,7 @@
               <span>{{ formatDate(getSelectedItem(selectedItems[0])?.timestamp) }}</span>
             </div>
             <div class="compare-separator">
-              <i class="fas fa-exchange-alt"></i>
+              <i class="fas fa-exchange-alt" />
             </div>
             <div class="compare-item">
               <h4>Versión B</h4>
@@ -353,7 +305,7 @@
               <span>{{ formatDate(getSelectedItem(selectedItems[1])?.timestamp) }}</span>
             </div>
           </div>
-          
+
           <div class="compare-diff">
             <div class="diff-section">
               <h4>Cambios</h4>
@@ -364,14 +316,10 @@
             </div>
           </div>
         </div>
-        
+
         <div class="modal-actions">
-          <button @click="closeCompareTool" class="btn-secondary">
-            Cerrar
-          </button>
-          <button @click="exportComparison" class="btn-primary">
-            Exportar Comparación
-          </button>
+          <button class="btn-secondary" @click="closeCompareTool">Cerrar</button>
+          <button class="btn-primary" @click="exportComparison">Exportar Comparación</button>
         </div>
       </div>
     </div>
@@ -381,11 +329,11 @@
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h3>Detalles del Cambio</h3>
-          <button @click="closeDetailsModal" class="btn-close">
-            <i class="fas fa-times"></i>
+          <button class="btn-close" @click="closeDetailsModal">
+            <i class="fas fa-times" />
           </button>
         </div>
-        
+
         <div v-if="selectedEntry" class="details-content">
           <div class="detail-item">
             <label>Título:</label>
@@ -412,10 +360,7 @@
           <div v-if="selectedEntry.changes" class="detail-item">
             <label>Cambios específicos:</label>
             <ul class="changes-list">
-              <li 
-                v-for="change in selectedEntry.changes"
-                :key="change.field"
-              >
+              <li v-for="change in selectedEntry.changes" :key="change.field">
                 <strong>{{ change.field }}:</strong>
                 <span class="old-value">{{ change.oldValue }}</span>
                 →
@@ -424,15 +369,13 @@
             </ul>
           </div>
         </div>
-        
+
         <div class="modal-actions">
-          <button @click="closeDetailsModal" class="btn-secondary">
-            Cerrar
-          </button>
-          <button 
+          <button class="btn-secondary" @click="closeDetailsModal">Cerrar</button>
+          <button
             v-if="selectedEntry?.type === 'UPDATE' || selectedEntry?.type === 'VERSION'"
-            @click="restoreVersion(selectedEntry)"
             class="btn-primary"
+            @click="restoreVersion(selectedEntry)"
           >
             Restaurar esta versión
           </button>
@@ -443,15 +386,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useHistoryTracker } from '../composables/useHistoryTracker'
-import type { 
-  HistoryEntry, 
-  Version, 
-  Snapshot, 
-  Work, 
-  User 
-} from '../types'
+import {ref, computed, onMounted} from "vue"
+import {useHistoryTracker} from "../composables/useHistoryTracker"
+import type {HistoryEntry, Version, Snapshot, Work, User} from "../types"
 
 const {
   history,
@@ -462,11 +399,11 @@ const {
   loading,
   createHistorySnapshot,
   restoreToVersion,
-  exportHistoryData
+  exportHistoryData,
 } = useHistoryTracker()
 
 // State
-const viewMode = ref<'timeline' | 'versions' | 'snapshots'>('timeline')
+const viewMode = ref<"timeline" | "versions" | "snapshots">("timeline")
 const selectedItems = ref<string[]>([])
 const showCompareTool = ref(false)
 const showDetailsModal = ref(false)
@@ -474,11 +411,11 @@ const selectedEntry = ref<HistoryEntry | null>(null)
 
 // Filters
 const filters = ref({
-  workId: '',
-  changeType: '',
-  userId: '',
-  startDate: '',
-  endDate: ''
+  workId: "",
+  changeType: "",
+  userId: "",
+  startDate: "",
+  endDate: "",
 })
 
 // Computed
@@ -486,43 +423,39 @@ const filteredHistory = computed(() => {
   let result = history.value
 
   if (filters.value.workId) {
-    result = result.filter(entry => entry.workId === filters.value.workId)
+    result = result.filter((entry) => entry.workId === filters.value.workId)
   }
 
   if (filters.value.changeType) {
-    result = result.filter(entry => entry.type === filters.value.changeType)
+    result = result.filter((entry) => entry.type === filters.value.changeType)
   }
 
   if (filters.value.userId) {
-    result = result.filter(entry => entry.userId === filters.value.userId)
+    result = result.filter((entry) => entry.userId === filters.value.userId)
   }
 
   if (filters.value.startDate) {
-    result = result.filter(entry => 
-      new Date(entry.timestamp) >= new Date(filters.value.startDate)
+    result = result.filter(
+      (entry) => new Date(entry.timestamp) >= new Date(filters.value.startDate)
     )
   }
 
   if (filters.value.endDate) {
-    result = result.filter(entry => 
-      new Date(entry.timestamp) <= new Date(filters.value.endDate)
-    )
+    result = result.filter((entry) => new Date(entry.timestamp) <= new Date(filters.value.endDate))
   }
 
-  return result.sort((a, b) => 
-    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  )
+  return result.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 })
 
 const filteredVersions = computed(() => {
   let result = versions.value
 
   if (filters.value.workId) {
-    result = result.filter(version => version.workId === filters.value.workId)
+    result = result.filter((version) => version.workId === filters.value.workId)
   }
 
   if (filters.value.userId) {
-    result = result.filter(version => version.userId === filters.value.userId)
+    result = result.filter((version) => version.userId === filters.value.userId)
   }
 
   return result.sort((a, b) => b.version - a.version)
@@ -532,25 +465,23 @@ const filteredSnapshots = computed(() => {
   let result = snapshots.value
 
   if (filters.value.workId) {
-    result = result.filter(snapshot => snapshot.workId === filters.value.workId)
+    result = result.filter((snapshot) => snapshot.workId === filters.value.workId)
   }
 
   if (filters.value.userId) {
-    result = result.filter(snapshot => snapshot.userId === filters.value.userId)
+    result = result.filter((snapshot) => snapshot.userId === filters.value.userId)
   }
 
-  return result.sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  )
+  return result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 })
 
 const filteredItems = computed(() => {
   switch (viewMode.value) {
-    case 'timeline':
+    case "timeline":
       return filteredHistory.value
-    case 'versions':
+    case "versions":
       return filteredVersions.value
-    case 'snapshots':
+    case "snapshots":
       return filteredSnapshots.value
     default:
       return []
@@ -562,25 +493,25 @@ const createSnapshot = async () => {
   try {
     await createHistorySnapshot({
       title: `Snapshot ${new Date().toLocaleDateString()}`,
-      description: 'Snapshot manual del estado actual'
+      description: "Snapshot manual del estado actual",
     })
   } catch (error) {
-    console.error('Error creating snapshot:', error)
+    console.error("Error creating snapshot:", error)
   }
 }
 
 const exportHistory = async () => {
   try {
     await exportHistoryData({
-      format: 'JSON',
+      format: "JSON",
       includeSnapshots: true,
       dateRange: {
         start: filters.value.startDate,
-        end: filters.value.endDate
-      }
+        end: filters.value.endDate,
+      },
     })
   } catch (error) {
-    console.error('Error exporting history:', error)
+    console.error("Error exporting history:", error)
   }
 }
 
@@ -607,46 +538,47 @@ const restoreVersion = async (item: HistoryEntry | Version) => {
     await restoreToVersion(item.id)
     selectedItems.value = []
   } catch (error) {
-    console.error('Error restoring version:', error)
+    console.error("Error restoring version:", error)
   }
 }
 
 const previewVersion = (version: Version) => {
   // Implementation for version preview
-  console.log('Preview version:', version.id)
+  console.log("Preview version:", version.id)
 }
 
 const downloadVersion = (version: Version) => {
   // Implementation for version download
-  console.log('Download version:', version.id)
+  console.log("Download version:", version.id)
 }
 
 const downloadSnapshot = (entry: HistoryEntry) => {
   // Implementation for snapshot download
-  console.log('Download snapshot:', entry.id)
+  console.log("Download snapshot:", entry.id)
 }
 
 const viewSnapshot = (snapshot: Snapshot) => {
   // Implementation for snapshot view
-  console.log('View snapshot:', snapshot.id)
+  console.log("View snapshot:", snapshot.id)
 }
 
 const restoreSnapshot = async (snapshot: Snapshot) => {
   try {
     await restoreToVersion(snapshot.id)
   } catch (error) {
-    console.error('Error restoring snapshot:', error)
+    console.error("Error restoring snapshot:", error)
   }
 }
 
 const deleteSnapshot = async (snapshot: Snapshot) => {
   // Implementation for snapshot deletion
-  console.log('Delete snapshot:', snapshot.id)
+  console.log("Delete snapshot:", snapshot.id)
 }
 
 const getSelectedItem = (itemId: string) => {
-  return [...history.value, ...versions.value, ...snapshots.value]
-    .find(item => item.id === itemId)
+  return [...history.value, ...versions.value, ...snapshots.value].find(
+    (item) => item.id === itemId
+  )
 }
 
 const closeCompareTool = () => {
@@ -661,7 +593,7 @@ const closeDetailsModal = () => {
 
 const exportComparison = () => {
   // Implementation for comparison export
-  console.log('Export comparison')
+  console.log("Export comparison")
 }
 
 // Utility functions
@@ -676,61 +608,61 @@ const formatDateHeader = (date: string) => {
   const yesterday = new Date(Date.now() - 86400000).toDateString()
   const dateStr = new Date(date).toDateString()
 
-  if (dateStr === today) return 'Hoy'
-  if (dateStr === yesterday) return 'Ayer'
-  
-  return new Date(date).toLocaleDateString('es-ES', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  if (dateStr === today) return "Hoy"
+  if (dateStr === yesterday) return "Ayer"
+
+  return new Date(date).toLocaleDateString("es-ES", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   })
 }
 
 const formatTime = (date: string) => {
-  return new Date(date).toLocaleTimeString('es-ES', {
-    hour: '2-digit',
-    minute: '2-digit'
+  return new Date(date).toLocaleTimeString("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
   })
 }
 
 const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
+  return new Date(date).toLocaleDateString("es-ES", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   })
 }
 
 const formatFullDate = (date: string) => {
-  return new Date(date).toLocaleString('es-ES', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+  return new Date(date).toLocaleString("es-ES", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   })
 }
 
 const getChangeIcon = (type: string) => {
   const icons: Record<string, string> = {
-    CREATE: 'fas fa-plus',
-    UPDATE: 'fas fa-edit',
-    DELETE: 'fas fa-trash',
-    VERSION: 'fas fa-code-branch',
-    RESTORE: 'fas fa-undo'
+    CREATE: "fas fa-plus",
+    UPDATE: "fas fa-edit",
+    DELETE: "fas fa-trash",
+    VERSION: "fas fa-code-branch",
+    RESTORE: "fas fa-undo",
   }
-  return icons[type] || 'fas fa-info-circle'
+  return icons[type] || "fas fa-info-circle"
 }
 
 const getChangeTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
-    CREATE: 'Creación',
-    UPDATE: 'Actualización',
-    DELETE: 'Eliminación',
-    VERSION: 'Nueva versión',
-    RESTORE: 'Restauración'
+    CREATE: "Creación",
+    UPDATE: "Actualización",
+    DELETE: "Eliminación",
+    VERSION: "Nueva versión",
+    RESTORE: "Restauración",
   }
   return labels[type] || type
 }
@@ -879,8 +811,12 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .timeline-view {

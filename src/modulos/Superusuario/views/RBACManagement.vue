@@ -13,22 +13,25 @@
         <div class="flex justify-between items-center">
           <div class="text-sm text-gray-600">
             Roles: {{ roles.length }} | Permisos: {{ permissions.length }}
-            <span v-if="roles.length === 0 || permissions.length === 0" class="text-red-600 font-semibold">
+            <span
+              v-if="roles.length === 0 || permissions.length === 0"
+              class="text-red-600 font-semibold"
+            >
               - ⚠️ Sin datos cargados
             </span>
           </div>
           <div class="flex gap-2">
-            <button 
-              @click="forceLoadData"
+            <button
               :disabled="loading"
               class="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+              @click="forceLoadData"
             >
               📥 Cargar Datos
             </button>
-            <button 
-              @click="forceInitializeRBAC"
+            <button
               :disabled="loading"
               class="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+              @click="forceInitializeRBAC"
             >
               🔄 Inicializar por Defecto
             </button>
@@ -42,13 +45,13 @@
           <button
             v-for="tab in tabs"
             :key="tab.id"
-            @click="activeTab = tab.id"
             :class="[
               'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm',
               activeTab === tab.id
                 ? 'border-purple-500 text-purple-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
             ]"
+            @click="activeTab = tab.id"
           >
             {{ tab.icon }} {{ tab.name }}
           </button>
@@ -58,12 +61,15 @@
       <div class="p-6">
         <!-- Loading State -->
         <div v-if="loading" class="flex justify-center items-center py-8">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
           <span class="ml-2 text-gray-600">Cargando...</span>
         </div>
 
         <!-- Error State -->
-        <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+        <div
+          v-else-if="error"
+          class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4"
+        >
           {{ error }}
         </div>
 
@@ -71,9 +77,7 @@
         <div v-else-if="activeTab === 'roles'" class="space-y-6">
           <div class="flex justify-between items-center">
             <h2 class="text-lg font-semibold">Gestión de Roles</h2>
-            <button @click="openRoleModal()" class="btn-primary">
-              ➕ Crear Rol
-            </button>
+            <button class="btn-primary" @click="openRoleModal()">➕ Crear Rol</button>
           </div>
 
           <!-- Lista de Roles -->
@@ -84,50 +88,44 @@
               class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
             >
               <div class="flex justify-between items-start">
-                  <div class="flex-1">
-                    <div class="flex items-center space-x-3">
-                      <h3 class="font-medium text-gray-900">{{ role.name }}</h3>
+                <div class="flex-1">
+                  <div class="flex items-center space-x-3">
+                    <h3 class="font-medium text-gray-900">{{ role.name }}</h3>
+                    <span
+                      :class="[
+                        'px-2 py-1 text-xs rounded-full',
+                        role.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800',
+                      ]"
+                    >
+                      {{ role.isActive ? "Activo" : "Inactivo" }}
+                    </span>
+                  </div>
+                  <p class="text-sm text-gray-600 mt-1">{{ role.description }}</p>
+                  <div class="mt-2">
+                    <span class="text-xs text-gray-500"
+                      >{{ role.permissions.length }} permisos asignados</span
+                    >
+                    <div class="mt-1 flex flex-wrap gap-1">
                       <span
-                        :class="[
-                          'px-2 py-1 text-xs rounded-full',
-                          role.isActive
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        ]"
+                        v-for="permission in role.permissions.slice(0, 3)"
+                        :key="permission"
+                        class="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
                       >
-                        {{ role.isActive ? 'Activo' : 'Inactivo' }}
+                        {{ permission }}
+                      </span>
+                      <span
+                        v-if="role.permissions.length > 3"
+                        class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full"
+                      >
+                        +{{ role.permissions.length - 3 }} más
                       </span>
                     </div>
-                    <p class="text-sm text-gray-600 mt-1">{{ role.description }}</p>
-                    <div class="mt-2">
-                      <span class="text-xs text-gray-500">{{ role.permissions.length }} permisos asignados</span>
-                      <div class="mt-1 flex flex-wrap gap-1">
-                        <span 
-                          v-for="permission in role.permissions.slice(0, 3)" 
-                          :key="permission"
-                          class="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
-                        >
-                          {{ permission }}
-                        </span>
-                        <span 
-                          v-if="role.permissions.length > 3"
-                          class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full"
-                        >
-                          +{{ role.permissions.length - 3 }} más
-                        </span>
-                      </div>
-                    </div>
                   </div>
+                </div>
                 <div class="flex space-x-2">
-                  <button @click="openRoleModal(role)" class="btn-secondary-sm">
-                    ✏️
-                  </button>
-                  <button @click="toggleRoleStatus(role)" class="btn-warning-sm">
-                    🔌
-                  </button>
-                  <button @click="confirmDeleteRole(role)" class="btn-danger-sm">
-                    🗑️
-                  </button>
+                  <button class="btn-secondary-sm" @click="openRoleModal(role)">✏️</button>
+                  <button class="btn-warning-sm" @click="toggleRoleStatus(role)">🔌</button>
+                  <button class="btn-danger-sm" @click="confirmDeleteRole(role)">🗑️</button>
                 </div>
               </div>
             </div>
@@ -138,9 +136,7 @@
         <div v-else-if="activeTab === 'permissions'" class="space-y-6">
           <div class="flex justify-between items-center">
             <h2 class="text-lg font-semibold">Gestión de Permisos</h2>
-            <button @click="openPermissionModal()" class="btn-primary">
-              ➕ Crear Permiso
-            </button>
+            <button class="btn-primary" @click="openPermissionModal()">➕ Crear Permiso</button>
           </div>
 
           <!-- Filtros -->
@@ -154,11 +150,15 @@
           </div>
 
           <!-- Lista de Permisos agrupados por módulo -->
-          <div v-for="(modulePermissions, module) in filteredGroupedPermissions" :key="module" class="space-y-4">
+          <div
+            v-for="(modulePermissions, module) in filteredGroupedPermissions"
+            :key="module"
+            class="space-y-4"
+          >
             <div class="bg-gray-50 px-4 py-2 rounded-md">
               <h3 class="font-medium text-gray-800 capitalize">📁 {{ module }}</h3>
             </div>
-            
+
             <div class="grid gap-3">
               <div
                 v-for="permission in modulePermissions"
@@ -170,15 +170,19 @@
                     <h4 class="font-medium text-gray-900">{{ permission.name }}</h4>
                     <p class="text-sm text-gray-600 mt-1">{{ permission.description }}</p>
                     <div class="flex items-center space-x-4 mt-2">
-                      <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Acción: {{ permission.action }}</span>
-                      <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">Recurso: {{ permission.resource }}</span>
+                      <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded"
+                        >Acción: {{ permission.action }}</span
+                      >
+                      <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded"
+                        >Recurso: {{ permission.resource }}</span
+                      >
                     </div>
                   </div>
                   <div class="flex space-x-2">
-                    <button @click="openPermissionModal(permission)" class="btn-secondary-sm">
+                    <button class="btn-secondary-sm" @click="openPermissionModal(permission)">
                       ✏️
                     </button>
-                    <button @click="confirmDeletePermission(permission)" class="btn-danger-sm">
+                    <button class="btn-danger-sm" @click="confirmDeletePermission(permission)">
                       🗑️
                     </button>
                   </div>
@@ -208,10 +212,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRBACManagement, type Role, type Permission } from '../../../composables/useRBACManagement'
-import RoleModal from '../components/RoleModal.vue'
-import PermissionModal from '../components/PermissionModal.vue'
+import {ref, computed, onMounted} from "vue"
+import {useRBACManagement, type Role, type Permission} from "../../../composables/useRBACManagement"
+import RoleModal from "../components/RoleModal.vue"
+import PermissionModal from "../components/PermissionModal.vue"
 
 const {
   roles,
@@ -227,23 +231,23 @@ const {
   loadRoles,
   loadPermissions,
   loadNavigationConfig,
-  debugPermissions
+  debugPermissions,
 } = useRBACManagement()
 
-const activeTab = ref('roles')
-const selectedModule = ref('')
+const activeTab = ref("roles")
+const selectedModule = ref("")
 const roleModalOpen = ref(false)
 const permissionModalOpen = ref(false)
 const selectedRole = ref<Role | null>(null)
 const selectedPermission = ref<Permission | null>(null)
 
 const tabs = [
-  { id: 'roles', name: 'Roles', icon: '��' },
-  { id: 'permissions', name: 'Permisos', icon: '🔑' }
+  {id: "roles", name: "Roles", icon: "��"},
+  {id: "permissions", name: "Permisos", icon: "🔑"},
 ]
 
 const availableModules = computed(() => {
-  const modules = new Set(permissions.value.map(p => p.module))
+  const modules = new Set(permissions.value.map((p) => p.module))
   return Array.from(modules).sort()
 })
 
@@ -252,9 +256,9 @@ const filteredGroupedPermissions = computed(() => {
   if (!selectedModule.value) {
     return grouped
   }
-  
+
   return {
-    [selectedModule.value]: grouped[selectedModule.value] || []
+    [selectedModule.value]: grouped[selectedModule.value] || [],
   }
 })
 
@@ -271,15 +275,15 @@ const closeRoleModal = () => {
 
 const onRoleSaved = () => {
   // El composable se encarga de recargar los datos
-  console.log('Rol guardado exitosamente')
+  console.log("Rol guardado exitosamente")
 }
 
 const toggleRoleStatus = async (role: Role) => {
   try {
-    await updateRole(role.id, { isActive: !role.isActive })
+    await updateRole(role.id, {isActive: !role.isActive})
   } catch (error) {
-    console.error('Error al cambiar estado del rol:', error)
-    alert('Error al cambiar el estado del rol')
+    console.error("Error al cambiar estado del rol:", error)
+    alert("Error al cambiar el estado del rol")
   }
 }
 
@@ -288,8 +292,8 @@ const confirmDeleteRole = async (role: Role) => {
     try {
       await deleteRole(role.id)
     } catch (error) {
-      console.error('Error al eliminar rol:', error)
-      alert('Error al eliminar el rol')
+      console.error("Error al eliminar rol:", error)
+      alert("Error al eliminar el rol")
     }
   }
 }
@@ -307,7 +311,7 @@ const closePermissionModal = () => {
 
 const onPermissionSaved = () => {
   // El composable se encarga de recargar los datos
-  console.log('Permiso guardado exitosamente')
+  console.log("Permiso guardado exitosamente")
 }
 
 const confirmDeletePermission = async (permission: Permission) => {
@@ -315,55 +319,59 @@ const confirmDeletePermission = async (permission: Permission) => {
     try {
       await deletePermission(permission.id)
     } catch (error) {
-      console.error('Error al eliminar permiso:', error)
-      alert('Error al eliminar el permiso')
+      console.error("Error al eliminar permiso:", error)
+      alert("Error al eliminar el permiso")
     }
   }
 }
 
 // Inicialización
 onMounted(async () => {
-  console.log('🔄 RBACManagement - Iniciando carga de datos...')
+  console.log("🔄 RBACManagement - Iniciando carga de datos...")
   try {
     await initialize()
-    console.log('✅ RBACManagement - Datos cargados:', {
+    console.log("✅ RBACManagement - Datos cargados:", {
       roles: roles.value.length,
-      permissions: permissions.value.length
+      permissions: permissions.value.length,
     })
-    
+
     // Si no hay datos después de initialize, mostrar advertencia
     if (roles.value.length === 0 || permissions.value.length === 0) {
-      console.warn('⚠️ RBACManagement - No se cargaron datos. Es necesario inicializar.')
+      console.warn("⚠️ RBACManagement - No se cargaron datos. Es necesario inicializar.")
     }
   } catch (error) {
-    console.error('❌ RBACManagement - Error en inicialización:', error)
+    console.error("❌ RBACManagement - Error en inicialización:", error)
   }
 })
 
 // Función para forzar la carga de datos
 const forceLoadData = async () => {
   try {
-    console.log('🔄 Forzando carga de datos RBAC...')
+    console.log("🔄 Forzando carga de datos RBAC...")
     await loadRoles()
     await loadPermissions()
     await loadNavigationConfig()
-    
-    console.log('✅ Datos cargados:', {
+
+    console.log("✅ Datos cargados:", {
       roles: roles.value.length,
-      permissions: permissions.value.length
+      permissions: permissions.value.length,
     })
-    
+
     // Ejecutar diagnóstico para ver qué se cargó
     debugPermissions()
-    
+
     if (roles.value.length === 0 || permissions.value.length === 0) {
-      alert('⚠️ No se encontraron datos en Firestore. Usa "Inicializar por Defecto" para crear los datos iniciales.')
+      alert(
+        '⚠️ No se encontraron datos en Firestore. Usa "Inicializar por Defecto" para crear los datos iniciales.'
+      )
     } else {
-      alert(`✅ Datos cargados correctamente: ${roles.value.length} roles, ${permissions.value.length} permisos`)
+      alert(
+        `✅ Datos cargados correctamente: ${roles.value.length} roles, ${permissions.value.length} permisos`
+      )
     }
   } catch (error) {
-    console.error('Error cargando datos:', error)
-    alert('❌ Error al cargar datos. Revisa la consola para más detalles.')
+    console.error("Error cargando datos:", error)
+    alert("❌ Error al cargar datos. Revisa la consola para más detalles.")
   }
 }
 </script>

@@ -6,40 +6,40 @@
  * Teacher: solo analytics + report
  */
 
-import { computed } from 'vue'
-import { useModal } from './useModal'
-import { useAuthStore } from '../../../stores/auth'
+import {computed} from "vue"
+import {useModal} from "./useModal"
+import {useAuthStore} from "../../../stores/auth"
 
-export type HeaderAction = 'analytics' | 'report' | 'export' | 'emergency'
+export type HeaderAction = "analytics" | "report" | "export" | "emergency"
 
 interface Options {
   /** Rol del usuario actual */
-  role: 'admin' | 'teacher'
+  role: "admin" | "teacher"
 }
 
-export function useHeaderActions({ role }: Options) {
+export function useHeaderActions({role}: Options) {
   const modal = useModal()
   const auth = useAuthStore()
 
   /* ------------------------------------------------- */
   /* Helpers para exponer a los componentes de UI      */
   /* ------------------------------------------------- */
-  const canExport = computed(() => role === 'admin')
-  const canCreateEmergency = computed(() => role === 'admin')
+  const canExport = computed(() => role === "admin")
+  const canCreateEmergency = computed(() => role === "admin")
 
   function open(action: HeaderAction) {
     switch (action) {
-      case 'analytics':
-        modal.open('analytics')
+      case "analytics":
+        modal.open("analytics")
         break
-      case 'report':
-        modal.open('report')
+      case "report":
+        modal.open("report")
         break
-      case 'export':
-        if (canExport.value) modal.open('export')
+      case "export":
+        if (canExport.value) modal.open("export")
         break
-      case 'emergency':
-        if (canCreateEmergency.value) modal.open('emergency')
+      case "emergency":
+        if (canCreateEmergency.value) modal.open("emergency")
         break
     }
   }
@@ -56,6 +56,6 @@ export function useHeaderActions({ role }: Options) {
     open,
 
     /* info útil del usuario para el header */
-    userName: computed(() => auth.user?.email || 'Usuario'),
+    userName: computed(() => auth.user?.email || "Usuario"),
   }
 }

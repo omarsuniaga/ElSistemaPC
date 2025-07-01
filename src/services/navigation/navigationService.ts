@@ -1,9 +1,9 @@
 // src/services/navigation/navigationService.ts
 
-import { ref, computed } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { RBACPersistenceService } from '@/services/rbac/rbacPersistenceService'
-import type { NavigationItem } from '@/services/rbac/rbacPersistenceService'
+import {ref, computed} from "vue"
+import {useAuthStore} from "@/stores/auth"
+import {RBACPersistenceService} from "@/services/rbac/rbacPersistenceService"
+import type {NavigationItem} from "@/services/rbac/rbacPersistenceService"
 
 export interface NavigationMenuItem {
   id: string
@@ -18,7 +18,7 @@ export interface NavigationMenuItem {
 export class NavigationService {
   private static instance: NavigationService
   private navigationConfig = ref<NavigationItem[]>([])
-  
+
   static getInstance(): NavigationService {
     if (!NavigationService.instance) {
       NavigationService.instance = new NavigationService()
@@ -34,7 +34,7 @@ export class NavigationService {
       const config = await RBACPersistenceService.getNavigationConfig()
       this.navigationConfig.value = config
     } catch (error) {
-      console.error('Error cargando configuración de navegación:', error)
+      console.error("Error cargando configuración de navegación:", error)
     }
   }
 
@@ -42,9 +42,9 @@ export class NavigationService {
    * Obtener navegación para un rol específico
    */
   getNavigationForRole(userRole: string): NavigationItem[] {
-    return this.navigationConfig.value.filter(item => 
-      item.isActive && item.roles.includes(userRole)
-    ).sort((a, b) => a.order - b.order)
+    return this.navigationConfig.value
+      .filter((item) => item.isActive && item.roles.includes(userRole))
+      .sort((a, b) => a.order - b.order)
   }
   /**
    * Obtener menú de navegación para el usuario actual
@@ -52,9 +52,9 @@ export class NavigationService {
   async getNavigationForCurrentUser(): Promise<NavigationMenuItem[]> {
     const authStore = useAuthStore()
     const currentUser = authStore.user
-    
+
     if (!currentUser?.role) {
-      console.warn('No hay usuario autenticado o sin rol definido')
+      console.warn("No hay usuario autenticado o sin rol definido")
       return []
     }
 
@@ -66,22 +66,25 @@ export class NavigationService {
 
       // Obtener navegación permitida para el rol del usuario
       const allowedNavigation = this.getNavigationForRole(currentUser.role)
-      
+
       // Convertir a formato de menú
-      const menuItems: NavigationMenuItem[] = allowedNavigation.map(item => ({
+      const menuItems: NavigationMenuItem[] = allowedNavigation.map((item) => ({
         id: item.id,
         name: item.name,
         path: item.path,
         icon: item.icon,
         isActive: item.isActive,
-        order: item.order
+        order: item.order,
       }))
 
-      console.log(`🧭 Navegación cargada para rol ${currentUser.role}:`, menuItems.length, 'elementos')
+      console.log(
+        `🧭 Navegación cargada para rol ${currentUser.role}:`,
+        menuItems.length,
+        "elementos"
+      )
       return menuItems.sort((a, b) => a.order - b.order)
-      
     } catch (error) {
-      console.error('Error obteniendo navegación para usuario:', error)
+      console.error("Error obteniendo navegación para usuario:", error)
       return this.getFallbackNavigation(currentUser.role)
     }
   }
@@ -92,11 +95,11 @@ export class NavigationService {
   async canAccessRoute(routePath: string): Promise<boolean> {
     const authStore = useAuthStore()
     const currentUser = authStore.user
-    
+
     if (!currentUser?.role) {
       return false
-    }    // Roles administrativos siempre tienen acceso completo
-    if (['Superusuario', 'Admin'].includes(currentUser.role)) {
+    } // Roles administrativos siempre tienen acceso completo
+    if (["Superusuario", "Admin"].includes(currentUser.role)) {
       return true
     }
 
@@ -108,10 +111,9 @@ export class NavigationService {
 
       // Verificar si la ruta está permitida para el rol
       const allowedNavigation = this.getNavigationForRole(currentUser.role)
-      return allowedNavigation.some(item => item.path === routePath)
-      
+      return allowedNavigation.some((item) => item.path === routePath)
     } catch (error) {
-      console.error('Error verificando acceso a ruta:', error)
+      console.error("Error verificando acceso a ruta:", error)
       return false
     }
   }
@@ -120,34 +122,128 @@ export class NavigationService {
    * Obtener navegación de respaldo según el rol
    */
   private getFallbackNavigation(userRole: string): NavigationMenuItem[] {
-    const fallbackMenus: Record<string, NavigationMenuItem[]> = {      'Maestro': [
-        { id: 'dashboard', name: 'Dashboard', path: '/dashboard', icon: '🏠', isActive: true, order: 1 },
-        { id: 'clases', name: 'Mis Clases', path: '/clases', icon: '📚', isActive: true, order: 2 },
-        { id: 'estudiantes', name: 'Estudiantes', path: '/students', icon: '🎓', isActive: true, order: 3 },
-        { id: 'asistencia', name: 'Asistencia', path: '/asistencia', icon: '✅', isActive: true, order: 4 }
-      ],'Maestro Avanzado': [
-        { id: 'dashboard', name: 'Dashboard', path: '/dashboard', icon: '🏠', isActive: true, order: 1 },
-        { id: 'clases', name: 'Mis Clases', path: '/clases', icon: '📚', isActive: true, order: 2 },
-        { id: 'estudiantes', name: 'Estudiantes', path: '/students', icon: '🎓', isActive: true, order: 3 },
-        { id: 'asistencia', name: 'Asistencia', path: '/asistencia', icon: '✅', isActive: true, order: 4 }
-      ],      'Director': [
-        { id: 'dashboard', name: 'Dashboard', path: '/dashboard', icon: '🏠', isActive: true, order: 1 },
-        { id: 'estudiantes', name: 'Estudiantes', path: '/students', icon: '🎓', isActive: true, order: 2 },
-        { id: 'maestros', name: 'Maestros', path: '/maestros', icon: '👨‍🏫', isActive: true, order: 3 },
-        { id: 'clases', name: 'Clases', path: '/clases', icon: '📚', isActive: true, order: 4 },
-        { id: 'reportes', name: 'Reportes', path: '/reportes', icon: '📊', isActive: true, order: 5 }
+    const fallbackMenus: Record<string, NavigationMenuItem[]> = {
+      Maestro: [
+        {
+          id: "dashboard",
+          name: "Dashboard",
+          path: "/dashboard",
+          icon: "🏠",
+          isActive: true,
+          order: 1,
+        },
+        {id: "clases", name: "Mis Clases", path: "/clases", icon: "📚", isActive: true, order: 2},
+        {
+          id: "estudiantes",
+          name: "Estudiantes",
+          path: "/students",
+          icon: "🎓",
+          isActive: true,
+          order: 3,
+        },
+        {
+          id: "asistencia",
+          name: "Asistencia",
+          path: "/asistencia",
+          icon: "✅",
+          isActive: true,
+          order: 4,
+        },
       ],
-      'Admin': [
-        { id: 'dashboard', name: 'Dashboard', path: '/dashboard', icon: '🏠', isActive: true, order: 1 },
-        { id: 'usuarios', name: 'Usuarios', path: '/usuarios', icon: '👥', isActive: true, order: 2 },
-        { id: 'sistema', name: 'Sistema', path: '/sistema', icon: '⚙️', isActive: true, order: 3 },
-        { id: 'configuracion', name: 'Configuración', path: '/configuracion', icon: '🛠️', isActive: true, order: 4 }
+      "Maestro Avanzado": [
+        {
+          id: "dashboard",
+          name: "Dashboard",
+          path: "/dashboard",
+          icon: "🏠",
+          isActive: true,
+          order: 1,
+        },
+        {id: "clases", name: "Mis Clases", path: "/clases", icon: "📚", isActive: true, order: 2},
+        {
+          id: "estudiantes",
+          name: "Estudiantes",
+          path: "/students",
+          icon: "🎓",
+          isActive: true,
+          order: 3,
+        },
+        {
+          id: "asistencia",
+          name: "Asistencia",
+          path: "/asistencia",
+          icon: "✅",
+          isActive: true,
+          order: 4,
+        },
       ],
-      'Superusuario': [
-        { id: 'super-dashboard', name: 'Super Dashboard', path: '/superusuario/dashboard', icon: '🚀', isActive: true, order: 1 },
-        { id: 'rbac', name: 'Gestión RBAC', path: '/superusuario/rbac', icon: '🔐', isActive: true, order: 2 },
-        { id: 'navigation', name: 'Config. Navegación', path: '/superusuario/navigation', icon: '🧭', isActive: true, order: 3 }
-      ]
+      Director: [
+        {
+          id: "dashboard",
+          name: "Dashboard",
+          path: "/dashboard",
+          icon: "🏠",
+          isActive: true,
+          order: 1,
+        },
+        {
+          id: "estudiantes",
+          name: "Estudiantes",
+          path: "/students",
+          icon: "🎓",
+          isActive: true,
+          order: 2,
+        },
+        {id: "maestros", name: "Maestros", path: "/maestros", icon: "👨‍🏫", isActive: true, order: 3},
+        {id: "clases", name: "Clases", path: "/clases", icon: "📚", isActive: true, order: 4},
+        {id: "reportes", name: "Reportes", path: "/reportes", icon: "📊", isActive: true, order: 5},
+      ],
+      Admin: [
+        {
+          id: "dashboard",
+          name: "Dashboard",
+          path: "/dashboard",
+          icon: "🏠",
+          isActive: true,
+          order: 1,
+        },
+        {id: "usuarios", name: "Usuarios", path: "/usuarios", icon: "👥", isActive: true, order: 2},
+        {id: "sistema", name: "Sistema", path: "/sistema", icon: "⚙️", isActive: true, order: 3},
+        {
+          id: "configuracion",
+          name: "Configuración",
+          path: "/configuracion",
+          icon: "🛠️",
+          isActive: true,
+          order: 4,
+        },
+      ],
+      Superusuario: [
+        {
+          id: "super-dashboard",
+          name: "Super Dashboard",
+          path: "/superusuario/dashboard",
+          icon: "🚀",
+          isActive: true,
+          order: 1,
+        },
+        {
+          id: "rbac",
+          name: "Gestión RBAC",
+          path: "/superusuario/rbac",
+          icon: "🔐",
+          isActive: true,
+          order: 2,
+        },
+        {
+          id: "navigation",
+          name: "Config. Navegación",
+          path: "/superusuario/navigation",
+          icon: "🧭",
+          isActive: true,
+          order: 3,
+        },
+      ],
     }
 
     return fallbackMenus[userRole] || []
@@ -155,29 +251,34 @@ export class NavigationService {
   /**
    * Actualizar configuración de navegación (solo para superusuarios)
    */
-  async updateNavigationConfig(updates: Partial<NavigationItem>[], updatedBy: string): Promise<void> {
+  async updateNavigationConfig(
+    updates: Partial<NavigationItem>[],
+    updatedBy: string
+  ): Promise<void> {
     const authStore = useAuthStore()
     const currentUser = authStore.user
-    
-    if (currentUser?.role !== 'Superusuario') {
-      throw new Error('Solo los superusuarios pueden modificar la configuración de navegación')
+
+    if (currentUser?.role !== "Superusuario") {
+      throw new Error("Solo los superusuarios pueden modificar la configuración de navegación")
     }
 
     try {
       // Actualizar elementos de navegación
-      updates.forEach(update => {
-        const existingItem = this.navigationConfig.value.find((item: NavigationItem) => item.id === update.id)
+      updates.forEach((update) => {
+        const existingItem = this.navigationConfig.value.find(
+          (item: NavigationItem) => item.id === update.id
+        )
         if (existingItem && update.id) {
           Object.assign(existingItem, update)
         }
       })
-      
+
       // Guardar cambios usando el servicio de persistencia
       await RBACPersistenceService.saveNavigationConfig(this.navigationConfig.value, updatedBy)
-      
-      console.log('✅ Configuración de navegación actualizada')
+
+      console.log("✅ Configuración de navegación actualizada")
     } catch (error) {
-      console.error('Error actualizando configuración de navegación:', error)
+      console.error("Error actualizando configuración de navegación:", error)
       throw error
     }
   }
@@ -185,21 +286,38 @@ export class NavigationService {
   /**
    * Obtener todas las rutas disponibles para configuración
    */
-  getAllAvailableRoutes(): { path: string; name: string; description: string }[] {
-    return [      { path: '/dashboard', name: 'Dashboard', description: 'Panel principal del usuario' },
-      { path: '/teacher', name: 'Dashboard Maestro', description: 'Panel principal para maestros' },
-      { path: '/clases', name: 'Clases', description: 'Gestión de clases' },
-      { path: '/students', name: 'Estudiantes', description: 'Gestión de estudiantes' },
-      { path: '/maestros', name: 'Maestros', description: 'Gestión de maestros' },
-      { path: '/asistencia', name: 'Asistencia', description: 'Control de asistencia' },
-      { path: '/teacher/attendance', name: 'Asistencia Maestro', description: 'Control de asistencia para maestros' },
-      { path: '/reportes', name: 'Reportes', description: 'Reportes y estadísticas' },
-      { path: '/usuarios', name: 'Usuarios', description: 'Gestión de usuarios del sistema' },
-      { path: '/sistema', name: 'Sistema', description: 'Configuración del sistema' },
-      { path: '/configuracion', name: 'Configuración', description: 'Configuraciones generales' },
-      { path: '/superusuario/dashboard', name: 'Super Dashboard', description: 'Panel de superusuario' },
-      { path: '/superusuario/rbac', name: 'Gestión RBAC', description: 'Control de roles y permisos' },
-      { path: '/superusuario/navigation', name: 'Config. Navegación', description: 'Configuración de menús' }
+  getAllAvailableRoutes(): {path: string; name: string; description: string}[] {
+    return [
+      {path: "/dashboard", name: "Dashboard", description: "Panel principal del usuario"},
+      {path: "/teacher", name: "Dashboard Maestro", description: "Panel principal para maestros"},
+      {path: "/clases", name: "Clases", description: "Gestión de clases"},
+      {path: "/students", name: "Estudiantes", description: "Gestión de estudiantes"},
+      {path: "/maestros", name: "Maestros", description: "Gestión de maestros"},
+      {path: "/asistencia", name: "Asistencia", description: "Control de asistencia"},
+      {
+        path: "/teacher/attendance",
+        name: "Asistencia Maestro",
+        description: "Control de asistencia para maestros",
+      },
+      {path: "/reportes", name: "Reportes", description: "Reportes y estadísticas"},
+      {path: "/usuarios", name: "Usuarios", description: "Gestión de usuarios del sistema"},
+      {path: "/sistema", name: "Sistema", description: "Configuración del sistema"},
+      {path: "/configuracion", name: "Configuración", description: "Configuraciones generales"},
+      {
+        path: "/superusuario/dashboard",
+        name: "Super Dashboard",
+        description: "Panel de superusuario",
+      },
+      {
+        path: "/superusuario/rbac",
+        name: "Gestión RBAC",
+        description: "Control de roles y permisos",
+      },
+      {
+        path: "/superusuario/navigation",
+        name: "Config. Navegación",
+        description: "Configuración de menús",
+      },
     ]
   }
 }
@@ -217,8 +335,8 @@ export function useNavigation() {
       error.value = null
       navigationItems.value = await navigationService.getNavigationForCurrentUser()
     } catch (err) {
-      error.value = 'Error cargando navegación'
-      console.error('Error loading navigation:', err)
+      error.value = "Error cargando navegación"
+      console.error("Error loading navigation:", err)
     } finally {
       loading.value = false
     }
@@ -228,13 +346,13 @@ export function useNavigation() {
     try {
       return await navigationService.canAccessRoute(routePath)
     } catch (err) {
-      console.error('Error checking route access:', err)
+      console.error("Error checking route access:", err)
       return false
     }
   }
 
   const isActiveRoute = computed(() => (routePath: string) => {
-    return navigationItems.value.some(item => item.path === routePath && item.isActive)
+    return navigationItems.value.some((item) => item.path === routePath && item.isActive)
   })
 
   return {
@@ -243,6 +361,6 @@ export function useNavigation() {
     error,
     loadNavigation,
     canAccess,
-    isActiveRoute
+    isActiveRoute,
   }
 }

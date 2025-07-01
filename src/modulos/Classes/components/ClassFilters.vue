@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { useTeachersStore } from '../../Teachers/store/teachers'
-import { useInstrumentoStore } from '../../Instruments/store/instrumento'
-import { 
-  MusicalNoteIcon, 
-  AcademicCapIcon, 
+import {ref, watch, computed} from "vue"
+import {useTeachersStore} from "../../Teachers/store/teachers"
+import {useInstrumentoStore} from "../../Instruments/store/instrumento"
+import {
+  MusicalNoteIcon,
+  AcademicCapIcon,
   UserIcon,
   ClockIcon,
   PencilIcon,
   XMarkIcon,
   ChevronDownIcon,
-  AdjustmentsHorizontalIcon
-} from '@heroicons/vue/24/outline'
+  AdjustmentsHorizontalIcon,
+} from "@heroicons/vue/24/outline"
 
 interface Filters {
   instrument: string
@@ -21,14 +21,14 @@ interface Filters {
 }
 
 const props = defineProps<{
-  initialFilters: Filters,
-  levelOptions: string[],
+  initialFilters: Filters
+  levelOptions: string[]
   additionalFilterOptions?: string[]
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:filters', filters: Filters): void,
-  (e: 'reset'): void
+  (e: "update:filters", filters: Filters): void
+  (e: "reset"): void
 }>()
 
 const teachersStore = useTeachersStore()
@@ -37,21 +37,25 @@ const instrumentoStore = useInstrumentoStore()
 const filters = ref<Filters>({...props.initialFilters})
 const showFilters = ref(false) // Por defecto, los filtros están ocultos
 const activeFilterCount = computed(() => {
-  return Object.values(filters.value).filter(value => value !== '').length
+  return Object.values(filters.value).filter((value) => value !== "").length
 })
 
 // Cuando cambien los filtros, emitir el evento para actualizar
-watch(filters, (newFilters) => {
-  emit('update:filters', newFilters)
-}, { deep: true })
+watch(
+  filters,
+  (newFilters) => {
+    emit("update:filters", newFilters)
+  },
+  {deep: true}
+)
 
 const resetFilters = () => {
   filters.value = {
-    instrument: '',
-    level: '',
-    teacherId: ''
+    instrument: "",
+    level: "",
+    teacherId: "",
   }
-  emit('reset')
+  emit("reset")
 }
 
 const toggleFilters = () => {
@@ -59,71 +63,89 @@ const toggleFilters = () => {
 }
 
 const getTeacherName = (id: string) => {
-  return teachersStore.teachers.find(t => t.id === id)?.name || id
+  return teachersStore.teachers.find((t) => t.id === id)?.name || id
 }
 </script>
 
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300 mb-3"
-       :class="{'shadow-md': showFilters}">
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300 mb-3"
+    :class="{'shadow-md': showFilters}"
+  >
     <!-- Formato compacto (una sola línea) -->
     <div class="flex items-center justify-between px-3 py-2">
       <div class="flex items-center gap-2">
-        <button 
-          @click="toggleFilters" 
+        <button
           class="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
           :title="showFilters ? 'Ocultar filtros' : 'Mostrar filtros'"
+          @click="toggleFilters"
         >
           <AdjustmentsHorizontalIcon class="h-5 w-5" />
         </button>
-        
+
         <div class="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
           <span v-if="activeFilterCount === 0">Filtros</span>
           <span v-else class="font-medium text-blue-600 dark:text-blue-400">
-            {{ activeFilterCount }} {{ activeFilterCount === 1 ? 'filtro activo' : 'filtros activos' }}
+            {{ activeFilterCount }}
+            {{ activeFilterCount === 1 ? "filtro activo" : "filtros activos" }}
           </span>
         </div>
       </div>
 
       <div class="flex items-center gap-2">
         <!-- Indicadores de filtros activos (visible solo cuando está compacto) -->
-        <div v-if="!showFilters" class="flex items-center gap-1.5 ml-1 overflow-x-auto max-w-[70%] hide-scrollbar">
-          <span v-if="filters.instrument" class="badge bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+        <div
+          v-if="!showFilters"
+          class="flex items-center gap-1.5 ml-1 overflow-x-auto max-w-[70%] hide-scrollbar"
+        >
+          <span
+            v-if="filters.instrument"
+            class="badge bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
+          >
             {{ filters.instrument }}
           </span>
-          <span v-if="filters.level" class="badge bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+          <span
+            v-if="filters.level"
+            class="badge bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+          >
             {{ filters.level }}
           </span>
-          <span v-if="filters.teacherId" class="badge bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
+          <span
+            v-if="filters.teacherId"
+            class="badge bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300"
+          >
             {{ getTeacherName(filters.teacherId) }}
           </span>
         </div>
-        
+
         <!-- Botón de reset (visible solo si hay filtros activos) -->
-        <button 
+        <button
           v-if="activeFilterCount > 0"
-          @click="resetFilters" 
           class="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 ml-1"
           title="Limpiar todos los filtros"
+          @click="resetFilters"
         >
           <XMarkIcon class="h-5 w-5" />
         </button>
-        
+
         <!-- Botón para expandir/contraer los filtros -->
-        <button 
-          @click="toggleFilters" 
+        <button
           class="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+          @click="toggleFilters"
         >
-          <ChevronDownIcon 
-            class="h-5 w-5 transition-transform duration-300" 
-            :class="{ 'transform rotate-180': showFilters }"
+          <ChevronDownIcon
+            class="h-5 w-5 transition-transform duration-300"
+            :class="{'transform rotate-180': showFilters}"
           />
         </button>
       </div>
     </div>
-    
+
     <!-- Panel de filtros extendido (visible solo cuando se expande) -->
-    <div v-if="showFilters" class="px-4 pb-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+    <div
+      v-if="showFilters"
+      class="px-4 pb-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+    >
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
         <!-- Filtro de Instrumento -->
         <div class="filter-group">
@@ -132,15 +154,18 @@ const getTeacherName = (id: string) => {
             <span>Instrumento</span>
           </label>
           <div class="relative">
-            <select
-              v-model="filters.instrument"
-              class="filter-select"
-            >
+            <select v-model="filters.instrument" class="filter-select">
               <option value="">Todos los instrumentos</option>
-              <template v-for="(instruments, family) in instrumentoStore.instrumentsByFamily" :key="family">
-                <optgroup :label="family.charAt(0).toUpperCase() + family.slice(1)" class="font-medium">
-                  <option 
-                    v-for="instrument in instruments" 
+              <template
+                v-for="(instruments, family) in instrumentoStore.instrumentsByFamily"
+                :key="family"
+              >
+                <optgroup
+                  :label="family.charAt(0).toUpperCase() + family.slice(1)"
+                  class="font-medium"
+                >
+                  <option
+                    v-for="instrument in instruments"
                     :key="instrument"
                     :value="instrument"
                     class="pl-2"
@@ -152,7 +177,7 @@ const getTeacherName = (id: string) => {
             </select>
           </div>
         </div>
-        
+
         <!-- Filtro de Nivel -->
         <div class="filter-group">
           <label class="filter-label">
@@ -160,10 +185,7 @@ const getTeacherName = (id: string) => {
             <span>Nivel</span>
           </label>
           <div class="relative">
-            <select
-              v-model="filters.level"
-              class="filter-select"
-            >
+            <select v-model="filters.level" class="filter-select">
               <option value="">Todos los niveles</option>
               <option v-for="level in props.levelOptions" :key="level" :value="level">
                 {{ level }}
@@ -171,7 +193,7 @@ const getTeacherName = (id: string) => {
             </select>
           </div>
         </div>
-        
+
         <!-- Filtro de Profesor -->
         <div class="filter-group">
           <label class="filter-label">
@@ -179,12 +201,13 @@ const getTeacherName = (id: string) => {
             <span>Profesor</span>
           </label>
           <div class="relative">
-            <select
-              v-model="filters.teacherId"
-              class="filter-select"
-            >
+            <select v-model="filters.teacherId" class="filter-select">
               <option value="">Todos los profesores</option>
-              <option v-for="teacher in teachersStore.teachers" :key="teacher.id" :value="teacher.id">
+              <option
+                v-for="teacher in teachersStore.teachers"
+                :key="teacher.id"
+                :value="teacher.id"
+              >
                 {{ teacher.name }}
               </option>
             </select>
@@ -214,8 +237,8 @@ const getTeacherName = (id: string) => {
 
 /* Ocultar scrollbar pero mantener funcionalidad de scroll */
 .hide-scrollbar {
-  -ms-overflow-style: none;  /* IE y Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* IE y Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 .hide-scrollbar::-webkit-scrollbar {
@@ -228,8 +251,14 @@ const getTeacherName = (id: string) => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fadeIn {

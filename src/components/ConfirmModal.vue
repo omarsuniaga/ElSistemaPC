@@ -1,55 +1,70 @@
 <template>
-  <div v-if="show" class="fixed inset-0 bg-gray-500 bg-opacity-75 z-50 flex justify-center items-center">
+  <div
+    v-if="show"
+    class="fixed inset-0 bg-gray-500 bg-opacity-75 z-50 flex justify-center items-center"
+  >
     <div class="bg-white rounded-lg shadow-lg p-4 max-w-md w-full">
       <h2 class="text-lg font-bold mb-2">{{ title }}</h2>
       <p class="text-gray-600 mb-4">{{ message }}</p>
       <div class="flex justify-end gap-2 mt-4">
-        <button @click="handleCancel" :disabled="isLoading" class="bg-gray-200 hover:bg-gray-300 text-gray-600 py-2 px-4 rounded-lg font-medium">Cancelar</button>
-        <button @click="handleConfirm" :disabled="isLoading" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium">Confirmar</button>
+        <button
+          :disabled="isLoading"
+          class="bg-gray-200 hover:bg-gray-300 text-gray-600 py-2 px-4 rounded-lg font-medium"
+          @click="handleCancel"
+        >
+          Cancelar
+        </button>
+        <button
+          :disabled="isLoading"
+          class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium"
+          @click="handleConfirm"
+        >
+          Confirmar
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import {defineComponent} from "vue"
 
 export default defineComponent({
-  name: 'ConfirmModal',
+  name: "ConfirmModal",
   props: {
     show: {
       type: Boolean,
       required: true,
-      default: false
+      default: false,
     },
     title: {
       type: String,
-      required: true
+      required: true,
     },
     message: {
       type: String,
-      required: true
+      required: true,
     },
     isLoading: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
-  emits: ['confirm', 'cancel'],
-  setup(_, { emit }) {
+  emits: ["confirm", "cancel"],
+  setup(_, {emit}) {
     const handleConfirm = () => {
-      emit('confirm')
+      emit("confirm")
     }
 
     const handleCancel = () => {
-      emit('cancel')
+      emit("cancel")
     }
 
     return {
       handleConfirm,
-      handleCancel
+      handleCancel,
     }
-  }
+  },
 })
 </script>
 

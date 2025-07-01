@@ -5,15 +5,13 @@
     <div class="dashboard-header mb-8">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900 mb-2">
-            👑 Panel de Superusuario
-          </h1>
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">👑 Panel de Superusuario</h1>
           <p class="text-gray-600">
             Control total y monitoreo del sistema de gestión educativa musical
           </p>
         </div>
         <div class="flex items-center space-x-4">
-          <button @click="refreshDashboard" :disabled="loading" class="btn-refresh">
+          <button :disabled="loading" class="btn-refresh" @click="refreshDashboard">
             <span class="mr-2">🔄</span>
             Actualizar
           </button>
@@ -28,19 +26,19 @@
         Acciones Rápidas
       </h3>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <button @click="navigateToModule('usuarios')" class="action-button">
+        <button class="action-button" @click="navigateToModule('usuarios')">
           <div class="text-2xl mb-2">👥</div>
           <div class="text-sm font-medium">Gestionar Usuarios</div>
         </button>
-        <button @click="navigateToModule('roles')" class="action-button">
+        <button class="action-button" @click="navigateToModule('roles')">
           <div class="text-2xl mb-2">🛡️</div>
           <div class="text-sm font-medium">Configurar Roles</div>
         </button>
-        <button @click="navigateToModule('modulos')" class="action-button">
+        <button class="action-button" @click="navigateToModule('modulos')">
           <div class="text-2xl mb-2">📦</div>
           <div class="text-sm font-medium">Gestionar Módulos</div>
         </button>
-        <button @click="navigateToModule('auditoria')" class="action-button">
+        <button class="action-button" @click="navigateToModule('auditoria')">
           <div class="text-2xl mb-2">📋</div>
           <div class="text-sm font-medium">Ver Auditoría</div>
         </button>
@@ -91,84 +89,84 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import {ref, onMounted} from "vue"
+import {useRouter} from "vue-router"
 
-const router = useRouter();
-const loading = ref(false);
+const router = useRouter()
+const loading = ref(false)
 
 // Estados del dashboard
 const stats = ref({
   totalUsers: 0,
   activeUsers: 0,
-  activeModules: 8
-});
+  activeModules: 8,
+})
 
 const recentActivities = ref([
   {
-    icon: '👤',
-    description: 'Nuevo usuario registrado',
-    timestamp: 'Hace 5 minutos'
+    icon: "👤",
+    description: "Nuevo usuario registrado",
+    timestamp: "Hace 5 minutos",
   },
   {
-    icon: '🔧',
-    description: 'Configuración de roles actualizada',
-    timestamp: 'Hace 1 hora'
+    icon: "🔧",
+    description: "Configuración de roles actualizada",
+    timestamp: "Hace 1 hora",
   },
   {
-    icon: '🔄',
-    description: 'Respaldo del sistema completado',
-    timestamp: 'Hace 2 horas'
-  }
-]);
+    icon: "🔄",
+    description: "Respaldo del sistema completado",
+    timestamp: "Hace 2 horas",
+  },
+])
 
 // Métodos
 const refreshDashboard = async () => {
-  loading.value = true;
+  loading.value = true
   try {
     // Simular carga de datos
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
     // Actualizar estadísticas (por ahora datos mock)
     stats.value = {
       totalUsers: Math.floor(Math.random() * 100) + 50,
       activeUsers: Math.floor(Math.random() * 50) + 20,
-      activeModules: 8
-    };
-    
-    console.log('✅ Dashboard actualizado');
+      activeModules: 8,
+    }
+
+    console.log("✅ Dashboard actualizado")
   } catch (error) {
-    console.error('❌ Error al actualizar dashboard:', error);
+    console.error("❌ Error al actualizar dashboard:", error)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
 const navigateToModule = (module: string) => {
-  console.log(`Navegando a módulo: ${module}`);
-  
+  console.log(`Navegando a módulo: ${module}`)
+
   switch (module) {
-    case 'usuarios':
-      router.push('/superusuario/users');
-      break;
-    case 'roles':
-      router.push('/superusuario/roles');
-      break;
-    case 'modulos':
-      router.push('/superusuario/system');
-      break;
-    case 'auditoria':
-      router.push('/superusuario/audit');
-      break;
+    case "usuarios":
+      router.push("/superusuario/users")
+      break
+    case "roles":
+      router.push("/superusuario/roles")
+      break
+    case "modulos":
+      router.push("/superusuario/system")
+      break
+    case "auditoria":
+      router.push("/superusuario/audit")
+      break
     default:
-      console.warn(`Módulo no reconocido: ${module}`);
+      console.warn(`Módulo no reconocido: ${module}`)
   }
-};
+}
 
 // Inicialización
 onMounted(() => {
-  refreshDashboard();
-});
+  refreshDashboard()
+})
 </script>
 
 <style scoped>

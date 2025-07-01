@@ -1,7 +1,9 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- Header con navegación de fechas -->
-    <header class="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
+    <header
+      class="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700"
+    >
       <div class="px-6 py-4">
         <div class="flex items-center justify-between">
           <div>
@@ -12,44 +14,44 @@
               {{ formatDate(selectedDate) }} - {{ getDayName(selectedDate) }}
             </p>
           </div>
-          
+
           <!-- Controles de fecha -->
           <div class="flex items-center space-x-4">
             <div class="flex items-center space-x-2">
-              <button 
-                @click="goToPreviousDay"
+              <button
                 class="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                @click="goToPreviousDay"
               >
                 <ChevronLeftIcon class="w-5 h-5" />
               </button>
-              
+
               <div class="text-center min-w-[120px]">
-                <input 
-                  type="date" 
+                <input
                   v-model="selectedDateString"
-                  @change="onDateChange"
+                  type="date"
                   class="bg-transparent text-sm font-medium text-gray-900 dark:text-white border-0 focus:ring-0 cursor-pointer"
+                  @change="onDateChange"
                 />
               </div>
-              
-              <button 
-                @click="goToNextDay"
+
+              <button
                 class="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                @click="goToNextDay"
               >
                 <ChevronRightIcon class="w-5 h-5" />
               </button>
             </div>
-            
-            <button 
-              @click="goToToday"
+
+            <button
               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              @click="goToToday"
             >
               Hoy
             </button>
-              <!-- Acceso directo a reporte semanal -->
-            <button 
-              @click="handleGenerateWeeklyReport"
+            <!-- Acceso directo a reporte semanal -->
+            <button
               class="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+              @click="handleGenerateWeeklyReport"
             >
               <DocumentArrowDownIcon class="w-4 h-4" />
               <span>Reporte Semanal</span>
@@ -71,8 +73,12 @@
                 <AcademicCapIcon class="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Clases Programadas</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ dayMetrics.scheduledClasses }}</p>
+                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Clases Programadas
+                </p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                  {{ dayMetrics.scheduledClasses }}
+                </p>
               </div>
             </div>
           </div>
@@ -84,8 +90,12 @@
                 <UserIcon class="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Maestros Esperados</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ dayMetrics.expectedTeachers }}</p>
+                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Maestros Esperados
+                </p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                  {{ dayMetrics.expectedTeachers }}
+                </p>
               </div>
             </div>
           </div>
@@ -97,8 +107,12 @@
                 <UsersIcon class="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Estudiantes Esperados</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ dayMetrics.expectedStudents }}</p>
+                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Estudiantes Esperados
+                </p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                  {{ dayMetrics.expectedStudents }}
+                </p>
               </div>
             </div>
           </div>
@@ -110,8 +124,12 @@
                 <ChartBarIcon class="w-6 h-6 text-orange-600 dark:text-orange-400" />
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Tasa de Asistencia</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ dayMetrics.attendanceRate }}%</p>
+                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Tasa de Asistencia
+                </p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                  {{ dayMetrics.attendanceRate }}%
+                </p>
               </div>
             </div>
           </div>
@@ -126,51 +144,54 @@
               Monitoreo de Clases - Tiempo Real
             </h2>
           </div>
-          
+
           <div class="p-6">
             <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              <div 
-                v-for="classItem in currentClasses" 
+              <div
+                v-for="classItem in currentClasses"
                 :key="classItem.id"
                 class="border rounded-lg p-4 hover:shadow-md transition-shadow"
                 :class="getClassStatusColor(classItem.status)"
               >
                 <div class="flex items-center justify-between mb-2">
                   <h3 class="font-medium text-gray-900 dark:text-white">{{ classItem.name }}</h3>
-                  <span 
+                  <span
                     class="px-2 py-1 text-xs font-medium rounded-full"
                     :class="getStatusBadgeColor(classItem.status)"
                   >
                     {{ getStatusText(classItem.status) }}
                   </span>
                 </div>
-                
+
                 <div class="space-y-1 text-sm text-gray-600 dark:text-gray-400">
                   <p><strong>Maestro:</strong> {{ classItem.teacher }}</p>
                   <p><strong>Horario:</strong> {{ classItem.schedule }}</p>
-                  <p><strong>Asistencia:</strong> 
+                  <p>
+                    <strong>Asistencia:</strong>
                     <span class="font-medium text-gray-900 dark:text-white">
                       {{ classItem.presentStudents }}/{{ classItem.totalStudents }}
                     </span>
                   </p>
                 </div>
-                
+
                 <!-- Barra de progreso de asistencia -->
                 <div class="mt-3">
                   <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div 
+                    <div
                       class="h-2 rounded-full transition-all duration-300"
                       :class="getAttendanceBarColor(classItem.attendancePercentage)"
-                      :style="{ width: `${classItem.attendancePercentage}%` }"
-                    ></div>
+                      :style="{width: `${classItem.attendancePercentage}%`}"
+                    />
                   </div>
                 </div>
               </div>
             </div>
-            
+
             <div v-if="currentClasses.length === 0" class="text-center py-8">
               <AcademicCapIcon class="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p class="text-gray-500 dark:text-gray-400">No hay clases programadas para esta fecha</p>
+              <p class="text-gray-500 dark:text-gray-400">
+                No hay clases programadas para esta fecha
+              </p>
             </div>
           </div>
         </div>
@@ -184,13 +205,13 @@
               <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
                 Estudiantes Críticos - Registro de Asistencias
               </h2>
-              
+
               <!-- Filtros -->
               <div class="flex items-center space-x-4">
-                <select 
+                <select
                   v-model="selectedFilter"
-                  @change="applyFilter"
                   class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  @change="applyFilter"
                 >
                   <option value="most_absent">Más Ausentes</option>
                   <option value="most_present">Más Presentes</option>
@@ -199,55 +220,71 @@
                   <option value="alphabetical">Alfabético</option>
                   <option value="by_classes">Por Clases</option>
                 </select>
-                
+
                 <div class="relative">
-                  <input 
-                    type="text" 
+                  <input
                     v-model="searchQuery"
-                    @input="filterStudents"
+                    type="text"
                     placeholder="Buscar estudiante..."
                     class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 pl-10 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    @input="filterStudents"
                   />
                   <MagnifyingGlassIcon class="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                 </div>
               </div>
             </div>
           </div>
-          
+
           <div class="overflow-x-auto">
             <table class="w-full">
               <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  >
                     Estudiante
                   </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  >
                     Instrumento
                   </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  >
                     Clases Asignadas
                   </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  >
                     Ausencias
                   </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  >
                     Tasa Asistencia
                   </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  >
                     Acciones
                   </th>
                 </tr>
               </thead>
-              <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                <tr 
-                  v-for="student in filteredStudents" 
+              <tbody
+                class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"
+              >
+                <tr
+                  v-for="student in filteredStudents"
                   :key="student.id"
                   class="hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                       <div class="flex-shrink-0 h-10 w-10">
-                        <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                        <div
+                          class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center"
+                        >
                           <span class="text-white font-medium text-sm">
                             {{ getInitials(student.fullName) }}
                           </span>
@@ -270,10 +307,10 @@
                     {{ student.assignedClasses }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <button 
-                      @click="openCommunicationModal(student)"
+                    <button
                       class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium cursor-pointer transition-colors"
                       :class="getAbsencesBadgeColor(student.absences, student.assignedClasses)"
+                      @click="openCommunicationModal(student)"
                     >
                       {{ student.absences }}
                     </button>
@@ -285,25 +322,25 @@
                           {{ student.attendanceRate }}%
                         </div>
                         <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
-                          <div 
+                          <div
                             class="h-2 rounded-full transition-all duration-300"
                             :class="getAttendanceBarColor(student.attendanceRate)"
-                            :style="{ width: `${student.attendanceRate}%` }"
-                          ></div>
+                            :style="{width: `${student.attendanceRate}%`}"
+                          />
                         </div>
                       </div>
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
-                      @click="openCommunicationModal(student)"
                       class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-3"
+                      @click="openCommunicationModal(student)"
                     >
                       Contactar
                     </button>
                     <button
-                      @click="viewStudentDetails(student)"
                       class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
+                      @click="viewStudentDetails(student)"
                     >
                       Ver detalles
                     </button>
@@ -312,7 +349,7 @@
               </tbody>
             </table>
           </div>
-          
+
           <div v-if="filteredStudents.length === 0" class="text-center py-8">
             <UsersIcon class="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p class="text-gray-500 dark:text-gray-400">No se encontraron estudiantes</p>
@@ -322,12 +359,12 @@
     </main>
 
     <!-- Modal de comunicación -->
-    <div 
-      v-if="showCommunicationModal" 
+    <div
+      v-if="showCommunicationModal"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       @click="closeCommunicationModal"
     >
-      <div 
+      <div
         class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full m-4 max-h-[90vh] overflow-y-auto"
         @click.stop
       >
@@ -336,23 +373,27 @@
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
               Comunicación con Representante
             </h3>
-            <button 
-              @click="closeCommunicationModal"
+            <button
               class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              @click="closeCommunicationModal"
             >
               <XMarkIcon class="w-6 h-6" />
             </button>
           </div>
-          
+
           <div v-if="selectedStudent" class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
             <div class="flex items-center space-x-4">
-              <div class="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+              <div
+                class="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center"
+              >
                 <span class="text-white font-medium">
                   {{ getInitials(selectedStudent.fullName) }}
                 </span>
               </div>
               <div>
-                <h4 class="font-medium text-gray-900 dark:text-white">{{ selectedStudent.fullName }}</h4>
+                <h4 class="font-medium text-gray-900 dark:text-white">
+                  {{ selectedStudent.fullName }}
+                </h4>
                 <p class="text-sm text-gray-600 dark:text-gray-400">
                   {{ selectedStudent.instrument }} • {{ selectedStudent.absences }} ausencias
                 </p>
@@ -360,52 +401,59 @@
             </div>
           </div>
         </div>
-        
+
         <div class="p-6">
           <div class="mb-6">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Seleccionar Plantilla de Comunicación
             </label>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button 
-                v-for="template in communicationTemplates" 
+              <button
+                v-for="template in communicationTemplates"
                 :key="template.id"
-                @click="selectedTemplate = template"
                 class="p-4 border-2 rounded-lg text-left transition-colors"
-                :class="selectedTemplate?.id === template.id 
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                  : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'"
+                :class="
+                  selectedTemplate?.id === template.id
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                "
+                @click="selectedTemplate = template"
               >
                 <div class="flex items-center space-x-3">
                   <component :is="template.icon" class="w-5 h-5 text-gray-600 dark:text-gray-400" />
                   <div>
                     <h5 class="font-medium text-gray-900 dark:text-white">{{ template.title }}</h5>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ template.description }}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                      {{ template.description }}
+                    </p>
                   </div>
                 </div>
               </button>
             </div>
           </div>
-          
+
           <div v-if="selectedTemplate" class="mb-6">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Vista previa del mensaje
             </label>
             <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <p class="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{{ generateMessage() }}</p>
+              <p class="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">
+                {{ generateMessage() }}
+              </p>
             </div>
           </div>
-          
+
           <div class="flex items-center justify-end space-x-3">
-            <button 
-              @click="closeCommunicationModal"
+            <button
               class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              @click="closeCommunicationModal"
             >
               Cancelar
-            </button>            <button 
-              @click="handleSendWhatsAppMessage"
+            </button>
+            <button
               :disabled="!selectedTemplate"
               class="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              @click="handleSendWhatsAppMessage"
             >
               <span>📱</span>
               <span>Enviar por WhatsApp</span>
@@ -418,9 +466,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useClassMonitoring } from '../composables/useClassMonitoring'
+import {ref, computed, onMounted, onUnmounted} from "vue"
+import {useRouter} from "vue-router"
+import {useClassMonitoring} from "../composables/useClassMonitoring"
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -430,8 +478,8 @@ import {
   ChartBarIcon,
   DocumentArrowDownIcon,
   MagnifyingGlassIcon,
-  XMarkIcon
-} from '@heroicons/vue/24/outline'
+  XMarkIcon,
+} from "@heroicons/vue/24/outline"
 
 // Tipos
 interface CommunicationTemplate {
@@ -449,12 +497,12 @@ const {
   isLoading,
   selectedDate,
   realTimeUpdates,
-  
+
   // Datos
   dayMetrics,
   currentClasses,
   criticalStudents,
-  
+
   // Computed
   todayClasses,
   activeClasses,
@@ -462,39 +510,39 @@ const {
   upcomingClasses,
   highRiskStudents,
   averageAttendanceRate,
-  
+
   // Permisos
   canViewClassMonitoring,
   canViewStudentReports,
   canContactParents,
   canGenerateReports,
-  
+
   // Métodos principales
   loadDayData,
-  
+
   // Filtrado y búsqueda
   sortStudents,
   searchStudents,
-  
+
   // Comunicación
   generateCommunicationMessage,
   sendWhatsAppMessage,
-  
+
   // Reportes
   generateWeeklyReport,
-  
+
   // Tiempo real
   startRealTimeUpdates,
   stopRealTimeUpdates,
-  
+
   // Utilidades
-  getStudentInitials
+  getStudentInitials,
 } = useClassMonitoring()
 
 // Estado local adicional
 const selectedDateString = ref(formatDateForInput(new Date()))
-const selectedFilter = ref('most_absent')
-const searchQuery = ref('')
+const selectedFilter = ref("most_absent")
+const searchQuery = ref("")
 const showCommunicationModal = ref(false)
 const selectedStudent = ref<any | null>(null)
 const selectedTemplate = ref<CommunicationTemplate | null>(null)
@@ -502,10 +550,10 @@ const selectedTemplate = ref<CommunicationTemplate | null>(null)
 // Datos de plantillas de comunicación
 const communicationTemplates = ref<CommunicationTemplate[]>([
   {
-    id: 'warning',
-    title: 'Amonestación',
-    description: 'Llamado de atención por ausencias',
-    icon: 'ExclamationTriangleIcon',
+    id: "warning",
+    title: "Amonestación",
+    description: "Llamado de atención por ausencias",
+    icon: "ExclamationTriangleIcon",
     template: `Estimado/a {representante},
 
 Por medio de la presente nos dirigimos a usted para informarle sobre las ausencias de {estudiante} en las clases de {instrumento}.
@@ -516,13 +564,13 @@ Tasa de asistencia actual: {tasa_asistencia}%
 Le recordamos la importancia de la asistencia regular para el progreso académico.
 
 Atentamente,
-Dirección - El Sistema PC`
+Dirección - El Sistema PC`,
   },
   {
-    id: 'minor_fault',
-    title: 'Falta Leve',
-    description: 'Reflexión sobre comportamiento',
-    icon: 'ChatBubbleLeftIcon',
+    id: "minor_fault",
+    title: "Falta Leve",
+    description: "Reflexión sobre comportamiento",
+    icon: "ChatBubbleLeftIcon",
     template: `Estimado/a {representante},
 
 Nos comunicamos para conversar sobre la situación académica de {estudiante} en las clases de {instrumento}.
@@ -532,13 +580,13 @@ Hemos notado un patrón de ausencias que puede afectar su desarrollo musical. No
 ¿Podría contactarnos para agendar una cita?
 
 Cordialmente,
-Dirección Académica - El Sistema PC`
+Dirección Académica - El Sistema PC`,
   },
   {
-    id: 'expulsion',
-    title: 'Carta de Expulsión',
-    description: 'Notificación de expulsión por ausencias',
-    icon: 'NoSymbolIcon',
+    id: "expulsion",
+    title: "Carta de Expulsión",
+    description: "Notificación de expulsión por ausencias",
+    icon: "NoSymbolIcon",
     template: `Estimado/a {representante},
 
 Lamentablemente, después de múltiples intentos de comunicación, debemos informarle que {estudiante} será dado de baja del programa de {instrumento}.
@@ -548,13 +596,13 @@ Tasa de asistencia: {tasa_asistencia}%
 
 Esta decisión es definitiva según el reglamento interno.
 
-Dirección - El Sistema PC`
+Dirección - El Sistema PC`,
   },
   {
-    id: 'instrument_return',
-    title: 'Entrega de Instrumento',
-    description: 'Solicitud de devolución de instrumento',
-    icon: 'MusicalNoteIcon',
+    id: "instrument_return",
+    title: "Entrega de Instrumento",
+    description: "Solicitud de devolución de instrumento",
+    icon: "MusicalNoteIcon",
     template: `Estimado/a {representante},
 
 Por favor, proceda a la devolución del instrumento asignado a {estudiante} debido a su baja del programa.
@@ -564,13 +612,13 @@ Fecha límite de entrega: Próximos 7 días
 
 Puede acercarse en horario de oficina (9:00 AM - 5:00 PM).
 
-Administración - El Sistema PC`
+Administración - El Sistema PC`,
   },
   {
-    id: 'citation',
-    title: 'Citación al Representante',
-    description: 'Cita obligatoria con dirección',
-    icon: 'CalendarDaysIcon',
+    id: "citation",
+    title: "Citación al Representante",
+    description: "Cita obligatoria con dirección",
+    icon: "CalendarDaysIcon",
     template: `Estimado/a {representante},
 
 Por la presente lo/la citamos a una reunión OBLIGATORIA para tratar la situación académica de {estudiante}.
@@ -580,39 +628,39 @@ Asunto: Ausencias reiteradas en clases de {instrumento}
 
 Su asistencia es indispensable. Favor confirmar recepción.
 
-Dirección - El Sistema PC`
-  }
+Dirección - El Sistema PC`,
+  },
 ])
 
 // Computed
 const filteredStudents = computed(() => {
   let students = [...criticalStudents.value]
-  
+
   // Aplicar búsqueda
   if (searchQuery.value) {
     students = searchStudents(searchQuery.value)
   }
-  
+
   // Aplicar filtro de ordenamiento
   return sortStudents(selectedFilter.value, students)
 })
 
 // Métodos utilitarios
 function formatDate(date: Date): string {
-  return date.toLocaleDateString('es-ES', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  return date.toLocaleDateString("es-ES", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   })
 }
 
 function formatDateForInput(date: Date): string {
-  return date.toISOString().split('T')[0]
+  return date.toISOString().split("T")[0]
 }
 
 function getDayName(date: Date): string {
-  return date.toLocaleDateString('es-ES', { weekday: 'long' })
+  return date.toLocaleDateString("es-ES", {weekday: "long"})
 }
 
 function getInitials(name: string): string {
@@ -621,45 +669,47 @@ function getInitials(name: string): string {
 
 function getClassStatusColor(status: string): string {
   const colors = {
-    scheduled: 'border-gray-200 dark:border-gray-600',
-    in_progress: 'border-blue-300 bg-blue-50 dark:border-blue-600 dark:bg-blue-900/20',
-    completed: 'border-green-300 bg-green-50 dark:border-green-600 dark:bg-green-900/20',
-    cancelled: 'border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20'
+    scheduled: "border-gray-200 dark:border-gray-600",
+    in_progress: "border-blue-300 bg-blue-50 dark:border-blue-600 dark:bg-blue-900/20",
+    completed: "border-green-300 bg-green-50 dark:border-green-600 dark:bg-green-900/20",
+    cancelled: "border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20",
   }
   return colors[status as keyof typeof colors] || colors.scheduled
 }
 
 function getStatusBadgeColor(status: string): string {
   const colors = {
-    scheduled: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
-    in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-    completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-    cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+    scheduled: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+    in_progress: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+    completed: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+    cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
   }
   return colors[status as keyof typeof colors] || colors.scheduled
 }
 
 function getStatusText(status: string): string {
   const texts = {
-    scheduled: 'Programada',
-    in_progress: 'En Curso',
-    completed: 'Completada',
-    cancelled: 'Cancelada'
+    scheduled: "Programada",
+    in_progress: "En Curso",
+    completed: "Completada",
+    cancelled: "Cancelada",
   }
-  return texts[status as keyof typeof texts] || 'Desconocido'
+  return texts[status as keyof typeof texts] || "Desconocido"
 }
 
 function getAttendanceBarColor(percentage: number): string {
-  if (percentage >= 80) return 'bg-green-500'
-  if (percentage >= 60) return 'bg-yellow-500'
-  return 'bg-red-500'
+  if (percentage >= 80) return "bg-green-500"
+  if (percentage >= 60) return "bg-yellow-500"
+  return "bg-red-500"
 }
 
 function getAbsencesBadgeColor(absences: number, total: number): string {
   const percentage = ((total - absences) / total) * 100
-  if (percentage >= 80) return 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900 dark:text-green-300'
-  if (percentage >= 60) return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300'
-  return 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900 dark:text-red-300'
+  if (percentage >= 80)
+    return "bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900 dark:text-green-300"
+  if (percentage >= 60)
+    return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300"
+  return "bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900 dark:text-red-300"
 }
 
 // Métodos de navegación de fechas
@@ -714,14 +764,14 @@ function closeCommunicationModal() {
 }
 
 function generateMessage(): string {
-  if (!selectedTemplate.value || !selectedStudent.value) return ''
-  
+  if (!selectedTemplate.value || !selectedStudent.value) return ""
+
   return generateCommunicationMessage(selectedStudent.value, selectedTemplate.value.template)
 }
 
 function handleSendWhatsAppMessage() {
   if (!selectedStudent.value || !selectedTemplate.value) return
-  
+
   const message = generateMessage()
   sendWhatsAppMessage(selectedStudent.value, message)
   closeCommunicationModal()
@@ -744,10 +794,10 @@ onMounted(async () => {
   // Inicializar fecha seleccionada
   selectedDate.value = new Date()
   selectedDateString.value = formatDateForInput(new Date())
-  
+
   // Cargar datos iniciales
   await loadDayData()
-  
+
   // Iniciar actualizaciones en tiempo real
   startRealTimeUpdates()
 })
@@ -766,7 +816,8 @@ onUnmounted(() => {
 
 /* Animaciones para las cards */
 @keyframes pulse-gentle {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

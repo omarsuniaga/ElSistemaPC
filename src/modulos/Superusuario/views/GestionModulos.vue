@@ -44,16 +44,16 @@
             </select>
           </div>
           <div class="flex space-x-2">
-            <button 
-              @click="refreshModules"
+            <button
               :disabled="loading"
               class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              @click="refreshModules"
             >
               🔄 Actualizar
             </button>
-            <button 
-              @click="showCreateModuleModal = true"
+            <button
               class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              @click="showCreateModuleModal = true"
             >
               ➕ Agregar Módulo
             </button>
@@ -63,21 +63,21 @@
 
       <!-- Loading State -->
       <div v-if="loading" class="flex justify-center items-center py-8">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" />
         <span class="ml-2 text-gray-600">Cargando módulos...</span>
       </div>
 
       <!-- Error State -->
       <div v-else-if="error" class="p-6 text-center text-red-600">
         ❌ {{ error }}
-        <button @click="refreshModules" class="ml-2 text-blue-600 underline">Reintentar</button>
+        <button class="ml-2 text-blue-600 underline" @click="refreshModules">Reintentar</button>
       </div>
 
       <!-- Modules List -->
       <div v-else class="p-6">
         <div class="grid gap-6">
-          <div 
-            v-for="module in filteredModules" 
+          <div
+            v-for="module in filteredModules"
             :key="module.id"
             class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
           >
@@ -85,7 +85,7 @@
               <div class="flex-1">
                 <!-- Module Header -->
                 <div class="flex items-center space-x-3 mb-3">
-                  <div class="text-2xl">{{ module.icon || '📦' }}</div>
+                  <div class="text-2xl">{{ module.icon || "📦" }}</div>
                   <div>
                     <h3 class="font-semibold text-gray-900 text-lg">{{ module.name }}</h3>
                     <p class="text-sm text-gray-500">{{ module.description }}</p>
@@ -94,11 +94,17 @@
 
                 <!-- Module Status -->
                 <div class="flex items-center space-x-4 mb-3">
-                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
-                        :class="module.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-                    {{ module.enabled ? '✅ Activo' : '❌ Inactivo' }}
+                  <span
+                    class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                    :class="
+                      module.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    "
+                  >
+                    {{ module.enabled ? "✅ Activo" : "❌ Inactivo" }}
                   </span>
-                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                  <span
+                    class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                  >
                     {{ getCategoryLabel(module.category) }}
                   </span>
                   <span v-if="module.version" class="text-xs text-gray-500">
@@ -112,7 +118,7 @@
                     <h4 class="text-sm font-medium text-gray-700 mb-2">Rutas disponibles:</h4>
                     <ul class="text-sm text-gray-600 space-y-1">
                       <li v-for="route in module.routes" :key="route" class="flex items-center">
-                        <span class="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                        <span class="w-2 h-2 bg-blue-400 rounded-full mr-2" />
                         {{ route }}
                       </li>
                     </ul>
@@ -120,8 +126,8 @@
                   <div>
                     <h4 class="text-sm font-medium text-gray-700 mb-2">Roles con acceso:</h4>
                     <div class="flex flex-wrap gap-1">
-                      <span 
-                        v-for="role in module.allowedRoles" 
+                      <span
+                        v-for="role in module.allowedRoles"
                         :key="role"
                         class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700"
                       >
@@ -135,8 +141,8 @@
                 <div v-if="module.dependencies && module.dependencies.length > 0" class="mb-4">
                   <h4 class="text-sm font-medium text-gray-700 mb-2">Dependencias:</h4>
                   <div class="flex flex-wrap gap-1">
-                    <span 
-                      v-for="dep in module.dependencies" 
+                    <span
+                      v-for="dep in module.dependencies"
                       :key="dep"
                       class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800"
                     >
@@ -148,27 +154,29 @@
 
               <!-- Actions -->
               <div class="flex flex-col space-y-2 ml-4">
-                <button 
-                  @click="toggleModule(module)"
+                <button
                   :disabled="operationInProgress"
                   class="px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                  :class="module.enabled 
-                    ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                    : 'bg-green-100 text-green-700 hover:bg-green-200'"
+                  :class="
+                    module.enabled
+                      ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                      : 'bg-green-100 text-green-700 hover:bg-green-200'
+                  "
+                  @click="toggleModule(module)"
                 >
-                  {{ module.enabled ? '🔒 Desactivar' : '🔓 Activar' }}
+                  {{ module.enabled ? "🔒 Desactivar" : "🔓 Activar" }}
                 </button>
-                
-                <button 
-                  @click="configureModule(module)"
+
+                <button
                   class="px-4 py-2 bg-blue-100 text-blue-700 rounded-md text-sm font-medium hover:bg-blue-200"
+                  @click="configureModule(module)"
                 >
                   ⚙️ Configurar
                 </button>
-                
-                <button 
-                  @click="viewModuleDetails(module)"
+
+                <button
                   class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200"
+                  @click="viewModuleDetails(module)"
                 >
                   📋 Detalles
                 </button>
@@ -195,38 +203,43 @@
     </div>
 
     <!-- Create Module Modal -->
-    <div v-if="showCreateModuleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div
+      v-if="showCreateModuleModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
       <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div class="p-6">
           <h3 class="text-lg font-semibold mb-4">Agregar Nuevo Módulo</h3>
-          
+
           <form @submit.prevent="createNewModule">
             <div class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del módulo *</label>
-                <input 
-                  v-model="newModule.name" 
-                  type="text" 
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Nombre del módulo *</label
+                >
+                <input
+                  v-model="newModule.name"
+                  type="text"
                   required
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
                   placeholder="Ej: Gestión de Inventarios"
-                >
+                />
               </div>
-              
+
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                <textarea 
-                  v-model="newModule.description" 
+                <textarea
+                  v-model="newModule.description"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
                   rows="3"
                   placeholder="Descripción del módulo..."
-                ></textarea>
+                />
               </div>
-              
+
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
-                <select 
-                  v-model="newModule.category" 
+                <select
+                  v-model="newModule.category"
                   required
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
                 >
@@ -237,32 +250,32 @@
                   <option value="tools">Herramientas</option>
                 </select>
               </div>
-              
+
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Icono</label>
-                <input 
-                  v-model="newModule.icon" 
-                  type="text" 
+                <input
+                  v-model="newModule.icon"
+                  type="text"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
                   placeholder="📦"
-                >
+                />
               </div>
             </div>
-            
+
             <div class="flex justify-end space-x-3 mt-6">
-              <button 
+              <button
                 type="button"
-                @click="showCreateModuleModal = false"
                 class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                @click="showCreateModuleModal = false"
               >
                 Cancelar
               </button>
-              <button 
+              <button
                 type="submit"
                 :disabled="creatingModule"
                 class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
               >
-                {{ creatingModule ? 'Creando...' : 'Crear Módulo' }}
+                {{ creatingModule ? "Creando..." : "Crear Módulo" }}
               </button>
             </div>
           </form>
@@ -273,70 +286,67 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useSuperusuario } from '../composables/useSuperusuario'
+import {ref, computed, onMounted} from "vue"
+import {useSuperusuario} from "../composables/useSuperusuario"
 
 // Composable
-const { systemModules, loading, error, loadSystemModules, toggleModule } = useSuperusuario()
+const {systemModules, loading, error, loadSystemModules, toggleModule} = useSuperusuario()
 
 // State
-const statusFilter = ref('')
-const categoryFilter = ref('')
+const statusFilter = ref("")
+const categoryFilter = ref("")
 const showCreateModuleModal = ref(false)
 const operationInProgress = ref(false)
 const creatingModule = ref(false)
 
 const newModule = ref({
-  name: '',
-  description: '',
-  category: '',
-  icon: '📦'
+  name: "",
+  description: "",
+  category: "",
+  icon: "📦",
 })
 
 // Computed
 const filteredModules = computed(() => {
   if (!systemModules.value) return []
-  
-  return systemModules.value.filter(module => {
-    const matchesStatus = !statusFilter.value || 
-      (statusFilter.value === 'active' && module.enabled) ||
-      (statusFilter.value === 'inactive' && !module.enabled)
-    
+
+  return systemModules.value.filter((module) => {
+    const matchesStatus =
+      !statusFilter.value ||
+      (statusFilter.value === "active" && module.enabled) ||
+      (statusFilter.value === "inactive" && !module.enabled)
+
     const matchesCategory = !categoryFilter.value || module.category === categoryFilter.value
-    
+
     return matchesStatus && matchesCategory
   })
 })
 
-const activeModules = computed(() => 
-  systemModules.value?.filter(m => m.enabled).length || 0
-)
+const activeModules = computed(() => systemModules.value?.filter((m) => m.enabled).length || 0)
 
-const inactiveModules = computed(() => 
-  systemModules.value?.filter(m => !m.enabled).length || 0
-)
+const inactiveModules = computed(() => systemModules.value?.filter((m) => !m.enabled).length || 0)
 
 const totalModules = computed(() => systemModules.value?.length || 0)
 
 // Methods
 const getCategoryLabel = (category: string) => {
   const labels = {
-    'core': 'Core',
-    'admin': 'Administrativo',
-    'academic': 'Académico',
-    'tools': 'Herramientas'
+    core: "Core",
+    admin: "Administrativo",
+    academic: "Académico",
+    tools: "Herramientas",
   }
   return labels[category as keyof typeof labels] || category
 }
 
 const formatDate = (date: Date | string) => {
-  const d = typeof date === 'string' ? new Date(date) : date
-  return new Intl.DateTimeFormat('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+  const d = typeof date === "string" ? new Date(date) : date
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(d)
 }
 
@@ -345,39 +355,41 @@ const refreshModules = async () => {
 }
 
 const configureModule = (module: any) => {
-  console.log('Configurando módulo:', module.id)
+  console.log("Configurando módulo:", module.id)
   // TODO: Implementar configuración específica del módulo
   alert(`Configurando módulo: ${module.name}`)
 }
 
 const viewModuleDetails = (module: any) => {
-  console.log('Viendo detalles del módulo:', module.id)
+  console.log("Viendo detalles del módulo:", module.id)
   // TODO: Implementar modal de detalles
-  alert(`Detalles del módulo: ${module.name}\n\nEstado: ${module.enabled ? 'Activo' : 'Inactivo'}\nCategoría: ${getCategoryLabel(module.category)}\nRutas: ${module.routes?.join(', ') || 'N/A'}`)
+  alert(
+    `Detalles del módulo: ${module.name}\n\nEstado: ${module.enabled ? "Activo" : "Inactivo"}\nCategoría: ${getCategoryLabel(module.category)}\nRutas: ${module.routes?.join(", ") || "N/A"}`
+  )
 }
 
 const createNewModule = async () => {
   if (!newModule.value.name || !newModule.value.category) {
-    alert('Nombre y categoría son requeridos')
+    alert("Nombre y categoría son requeridos")
     return
   }
-  
+
   creatingModule.value = true
   try {
     // TODO: Implementar creación de módulo
-    console.log('Creando módulo:', newModule.value)
-    
+    console.log("Creando módulo:", newModule.value)
+
     // Simular creación
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
     showCreateModuleModal.value = false
-    newModule.value = { name: '', description: '', category: '', icon: '📦' }
-    
-    alert('Módulo creado exitosamente')
+    newModule.value = {name: "", description: "", category: "", icon: "📦"}
+
+    alert("Módulo creado exitosamente")
     await refreshModules()
   } catch (err) {
-    console.error('Error creating module:', err)
-    alert('Error al crear módulo: ' + (err as Error).message)
+    console.error("Error creating module:", err)
+    alert("Error al crear módulo: " + (err as Error).message)
   } finally {
     creatingModule.value = false
   }

@@ -1,21 +1,21 @@
 <template>
   <div class="h-full w-full">
-    <canvas ref="chartCanvas"></canvas>
+    <canvas ref="chartCanvas" />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, watch, PropType } from 'vue'
-import Chart from 'chart.js/auto'
-import { ChartData } from '../types/chartTypes'
+import {defineComponent, ref, onMounted, watch, PropType} from "vue"
+import Chart from "chart.js/auto"
+import {ChartData} from "../types/chartTypes"
 
 export default defineComponent({
-  name: 'AttendanceTrendChart',
+  name: "AttendanceTrendChart",
   props: {
     data: {
       type: Object as PropType<ChartData>,
-      required: true
-    }
+      required: true,
+    },
   },
   setup(props) {
     const chartCanvas = ref<HTMLCanvasElement | null>(null)
@@ -23,15 +23,15 @@ export default defineComponent({
 
     const createChart = () => {
       if (!chartCanvas.value) return
-      
-      const ctx = chartCanvas.value.getContext('2d')
+
+      const ctx = chartCanvas.value.getContext("2d")
       if (!ctx) return
 
       // Destroy existing chart if it exists
       if (chart) chart.destroy()
 
       chart = new Chart(ctx, {
-        type: 'line',
+        type: "line",
         data: props.data,
         options: {
           responsive: true,
@@ -41,36 +41,36 @@ export default defineComponent({
               beginAtZero: true,
               max: 100,
               ticks: {
-                callback: function(value) {
-                  return value + '%' // Añadir el símbolo de porcentaje a las etiquetas del eje Y
-                }
-              }
-            }
+                callback(value) {
+                  return value + "%" // Añadir el símbolo de porcentaje a las etiquetas del eje Y
+                },
+              },
+            },
           },
           plugins: {
-            legend: { position: 'top' }, // Posición de la leyenda en la parte superior
+            legend: {position: "top"}, // Posición de la leyenda en la parte superior
             tooltip: {
               callbacks: {
-                label: function(context) {
+                label(context) {
                   return `${context.dataset.label}: ${context.parsed.y}%`
-                }
-              }
-            }
+                },
+              },
+            },
           },
           interaction: {
-            mode: 'index',
-            intersect: false
+            mode: "index",
+            intersect: false,
           },
           elements: {
             line: {
-              tension: 0.4 // Líneas más suaves
+              tension: 0.4, // Líneas más suaves
             },
             point: {
               radius: 3,
-              hoverRadius: 5
-            }
-          }
-        }
+              hoverRadius: 5,
+            },
+          },
+        },
       })
     }
 
@@ -78,14 +78,18 @@ export default defineComponent({
       createChart()
     })
 
-    watch(() => props.data, () => {
-      createChart()
-    }, { deep: true })
+    watch(
+      () => props.data,
+      () => {
+        createChart()
+      },
+      {deep: true}
+    )
 
     return {
-      chartCanvas
+      chartCanvas,
     }
-  }
+  },
 })
 </script>
 

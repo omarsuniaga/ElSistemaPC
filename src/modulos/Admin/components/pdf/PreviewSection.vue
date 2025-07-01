@@ -1,24 +1,20 @@
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-        Vista Previa
-      </h3>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Vista Previa</h3>
       <button
-        @click="generatePreview"
         :disabled="isLoading"
         class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium disabled:text-gray-400"
+        @click="generatePreview"
       >
-        {{ isLoading ? 'Generando...' : 'Actualizar' }}
+        {{ isLoading ? "Generando..." : "Actualizar" }}
       </button>
     </div>
 
     <!-- Estado de carga -->
     <div v-if="isLoading" class="text-center py-8">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-      <p class="text-sm text-gray-600 dark:text-gray-400">
-        Generando vista previa...
-      </p>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4" />
+      <p class="text-sm text-gray-600 dark:text-gray-400">Generando vista previa...</p>
     </div>
 
     <!-- Estado vacío -->
@@ -27,9 +23,7 @@
       class="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg"
     >
       <DocumentIcon class="w-12 h-12 mx-auto text-gray-400 mb-4" />
-      <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-        No hay datos para mostrar
-      </p>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">No hay datos para mostrar</p>
       <p class="text-xs text-gray-500 dark:text-gray-500">
         Configura los filtros y genera una vista previa
       </p>
@@ -52,11 +46,9 @@
             <span class="text-sm font-medium text-gray-900 dark:text-white">
               {{ item.name || `Registro ${index + 1}` }}
             </span>
-            <span class="text-xs text-gray-500 dark:text-gray-500">
-              #{{ index + 1 }}
-            </span>
+            <span class="text-xs text-gray-500 dark:text-gray-500"> #{{ index + 1 }} </span>
           </div>
-          
+
           <div class="grid grid-cols-2 gap-2 text-xs">
             <div v-if="item.age" class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-400">Edad:</span>
@@ -83,9 +75,11 @@
               <span
                 :class="[
                   'px-2 py-1 rounded-full text-xs font-medium',
-                  item.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                  item.status === 'inactive' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                  'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                  item.status === 'active'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                    : item.status === 'inactive'
+                      ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
                 ]"
               >
                 {{ getStatusText(item.status) }}
@@ -96,7 +90,9 @@
       </div>
 
       <!-- Información adicional -->
-      <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+      <div
+        class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+      >
         <div class="flex items-center space-x-2 mb-2">
           <InformationCircleIcon class="w-4 h-4 text-blue-600" />
           <span class="text-sm font-medium text-blue-900 dark:text-blue-100">
@@ -114,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { DocumentIcon, InformationCircleIcon } from '@heroicons/vue/24/outline'
+import {DocumentIcon, InformationCircleIcon} from "@heroicons/vue/24/outline"
 
 // Props
 interface Props {
@@ -127,24 +123,24 @@ const props = defineProps<Props>()
 
 // Emits
 const emit = defineEmits<{
-  'generate-preview': []
+  "generate-preview": []
 }>()
 
 // Funciones
 const generatePreview = () => {
-  emit('generate-preview')
+  emit("generate-preview")
 }
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'active':
-      return 'Activo'
-    case 'inactive':
-      return 'Inactivo'
-    case 'pending':
-      return 'Pendiente'
+    case "active":
+      return "Activo"
+    case "inactive":
+      return "Inactivo"
+    case "pending":
+      return "Pendiente"
     default:
       return status
   }
 }
-</script> 
+</script>

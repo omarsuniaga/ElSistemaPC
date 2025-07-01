@@ -1,61 +1,61 @@
-import { ref, computed } from 'vue';
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy 
-} from 'firebase/firestore';
-import { db } from '../firebase/config';
-import { useAuthStore } from '../stores/auth';
+import {ref, computed} from "vue"
+import {
+  collection,
+  doc,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+} from "firebase/firestore"
+import {db} from "../firebase/config"
+import {useAuthStore} from "../stores/auth"
 
 export interface WhatsAppPreset {
-  id: string;
-  name: string;
-  category: 'disciplinary' | 'administrative' | 'reminder' | 'custom';
-  template: string;
-  variables: string[];
-  isActive: boolean;
-  createdBy: string;
-  isSystem: boolean;
-  order: number;
-  createdAt: Date;
-  updatedAt: Date;
+  id: string
+  name: string
+  category: "disciplinary" | "administrative" | "reminder" | "custom"
+  template: string
+  variables: string[]
+  isActive: boolean
+  createdBy: string
+  isSystem: boolean
+  order: number
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface MessageData {
-  studentName: string;
-  representanteName: string;
-  representantePhone: string;
-  className: string;
-  date: string;
-  absences: number;
-  teacherName: string;
-  institutionName: string;
+  studentName: string
+  representanteName: string
+  representantePhone: string
+  className: string
+  date: string
+  absences: number
+  teacherName: string
+  institutionName: string
   // Nuevas variables para fechas de rango
-  startDate?: string;
-  endDate?: string;
-  absenceDetails?: string;
-  attendanceRate?: number;
+  startDate?: string
+  endDate?: string
+  absenceDetails?: string
+  attendanceRate?: number
 }
 
-const COLLECTION_NAME = 'WHATSAPP_PRESETS';
+const COLLECTION_NAME = "WHATSAPP_PRESETS"
 
 export function useWhatsAppPresets() {
-  const authStore = useAuthStore();
-  const presets = ref<WhatsAppPreset[]>([]);
-  const loading = ref(false);
-  const error = ref<string | null>(null);
+  const authStore = useAuthStore()
+  const presets = ref<WhatsAppPreset[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
   // Presets del sistema por defecto
-  const defaultPresets: Omit<WhatsAppPreset, 'id' | 'createdAt' | 'updatedAt'>[] = [
+  const defaultPresets: Omit<WhatsAppPreset, "id" | "createdAt" | "updatedAt">[] = [
     {
-      name: 'Llamado de Atención',
-      category: 'disciplinary',
+      name: "Llamado de Atención",
+      category: "disciplinary",
       template: `🔔 *LLAMADO DE ATENCIÓN*
 
 Estimado/a {representanteName},
@@ -71,15 +71,23 @@ Es importante mantener la asistencia regular para el progreso académico del est
 Esperamos su comprensión y colaboración.
 
 *Academia Musical*`,
-      variables: ['studentName', 'representanteName', 'className', 'date', 'absences', 'teacherName', 'institutionName'],
+      variables: [
+        "studentName",
+        "representanteName",
+        "className",
+        "date",
+        "absences",
+        "teacherName",
+        "institutionName",
+      ],
       isActive: true,
-      createdBy: 'system',
+      createdBy: "system",
       isSystem: true,
-      order: 1
+      order: 1,
     },
     {
-      name: 'Amonestación Formal',
-      category: 'disciplinary',
+      name: "Amonestación Formal",
+      category: "disciplinary",
       template: `⚠️ *AMONESTACIÓN FORMAL*
 
 Estimado/a {representanteName},
@@ -97,15 +105,23 @@ Solicitamos su inmediata atención a este asunto.
 
 *{institutionName}*
 *Departamento Académico*`,
-      variables: ['studentName', 'representanteName', 'className', 'date', 'absences', 'teacherName', 'institutionName'],
+      variables: [
+        "studentName",
+        "representanteName",
+        "className",
+        "date",
+        "absences",
+        "teacherName",
+        "institutionName",
+      ],
       isActive: true,
-      createdBy: 'system',
+      createdBy: "system",
       isSystem: true,
-      order: 2
+      order: 2,
     },
     {
-      name: 'Recordatorio de Instrumento',
-      category: 'reminder',
+      name: "Recordatorio de Instrumento",
+      category: "reminder",
       template: `🎵 *RECORDATORIO - INSTRUMENTO MUSICAL*
 
 Estimado/a {representanteName},
@@ -121,15 +137,22 @@ La práctica con el instrumento propio es esencial para el progreso del estudian
 Gracias por su atención.
 
 *{institutionName}*`,
-      variables: ['studentName', 'representanteName', 'className', 'date', 'teacherName', 'institutionName'],
+      variables: [
+        "studentName",
+        "representanteName",
+        "className",
+        "date",
+        "teacherName",
+        "institutionName",
+      ],
       isActive: true,
-      createdBy: 'system',
+      createdBy: "system",
       isSystem: true,
-      order: 3
+      order: 3,
     },
     {
-      name: 'Suspensión Temporal',
-      category: 'disciplinary',
+      name: "Suspensión Temporal",
+      category: "disciplinary",
       template: `🔴 *SUSPENSIÓN TEMPORAL*
 
 Estimado/a {representanteName},
@@ -148,14 +171,23 @@ Para la reincorporación, deberá:
 
 *{institutionName}*
 *Coordinación Académica*`,
-      variables: ['studentName', 'representanteName', 'className', 'date', 'absences', 'teacherName', 'institutionName'],
+      variables: [
+        "studentName",
+        "representanteName",
+        "className",
+        "date",
+        "absences",
+        "teacherName",
+        "institutionName",
+      ],
       isActive: true,
-      createdBy: 'system',
+      createdBy: "system",
       isSystem: true,
-      order: 4    },
+      order: 4,
+    },
     {
-      name: 'Informe de Ausencias por Período',
-      category: 'administrative',  
+      name: "Informe de Ausencias por Período",
+      category: "administrative",
       template: `📊 *INFORME DE AUSENCIAS - PERÍODO*
 
 Estimado/a {representanteName},
@@ -174,15 +206,26 @@ Es importante mantener una asistencia regular para asegurar el progreso académi
 Agradecemos su atención.
 
 *{institutionName}*`,
-      variables: ['studentName', 'representanteName', 'className', 'startDate', 'endDate', 'absences', 'attendanceRate', 'absenceDetails', 'teacherName', 'institutionName'],
+      variables: [
+        "studentName",
+        "representanteName",
+        "className",
+        "startDate",
+        "endDate",
+        "absences",
+        "attendanceRate",
+        "absenceDetails",
+        "teacherName",
+        "institutionName",
+      ],
       isActive: true,
-      createdBy: 'system',
+      createdBy: "system",
       isSystem: true,
-      order: 6
+      order: 6,
     },
     {
-      name: 'Suspensión Permanente',
-      category: 'disciplinary',
+      name: "Suspensión Permanente",
+      category: "disciplinary",
       template: `⚫ *SUSPENSIÓN PERMANENTE*
 
 Estimado/a {representanteName},
@@ -200,146 +243,158 @@ Los documentos del estudiante estarán disponibles para retiro en coordinación.
 
 *{institutionName}*
 *Dirección Académica*`,
-      variables: ['studentName', 'representanteName', 'className', 'date', 'absences', 'teacherName', 'institutionName'],      isActive: true,
-      createdBy: 'system',
+      variables: [
+        "studentName",
+        "representanteName",
+        "className",
+        "date",
+        "absences",
+        "teacherName",
+        "institutionName",
+      ],
+      isActive: true,
+      createdBy: "system",
       isSystem: true,
-      order: 7
-    }
-  ];
+      order: 7,
+    },
+  ]
 
   // Cargar presets desde Firestore
   const loadPresets = async () => {
-    loading.value = true;
-    error.value = null;
-    
+    loading.value = true
+    error.value = null
+
     try {
       const q = query(
         collection(db, COLLECTION_NAME),
-        where('isActive', '==', true),
-        orderBy('order', 'asc')
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const loadedPresets: WhatsAppPreset[] = [];
-      
+        where("isActive", "==", true),
+        orderBy("order", "asc")
+      )
+
+      const querySnapshot = await getDocs(q)
+      const loadedPresets: WhatsAppPreset[] = []
+
       querySnapshot.forEach((doc) => {
         loadedPresets.push({
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate() || new Date()
-        } as WhatsAppPreset);
-      });
-      
+          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+        } as WhatsAppPreset)
+      })
+
       // Si no hay presets, crear los por defecto
       if (loadedPresets.length === 0) {
-        await initializeDefaultPresets();
-        await loadPresets(); // Recargar después de crear los defaults
-        return;
+        await initializeDefaultPresets()
+        await loadPresets() // Recargar después de crear los defaults
+        return
       }
-      
-      presets.value = loadedPresets;
+
+      presets.value = loadedPresets
     } catch (err) {
-      console.error('Error loading WhatsApp presets:', err);
-      error.value = 'Error al cargar los presets de WhatsApp';
+      console.error("Error loading WhatsApp presets:", err)
+      error.value = "Error al cargar los presets de WhatsApp"
     } finally {
-      loading.value = false;
+      loading.value = false
     }
-  };
+  }
 
   // Inicializar presets por defecto
   const initializeDefaultPresets = async () => {
-    if (!authStore.user?.uid) return;
-    
+    if (!authStore.user?.uid) return
+
     try {
       for (const preset of defaultPresets) {
         await addDoc(collection(db, COLLECTION_NAME), {
           ...preset,
           createdAt: new Date(),
-          updatedAt: new Date()
-        });
+          updatedAt: new Date(),
+        })
       }
     } catch (err) {
-      console.error('Error initializing default presets:', err);
+      console.error("Error initializing default presets:", err)
     }
-  };
+  }
   // Procesar template con datos
   const processTemplate = (template: string, data: MessageData): string => {
-    let processedTemplate = template;
-    
+    let processedTemplate = template
+
     // Reemplazar variables básicas
-    processedTemplate = processedTemplate.replace(/{studentName}/g, data.studentName);
-    processedTemplate = processedTemplate.replace(/{representanteName}/g, data.representanteName);
-    processedTemplate = processedTemplate.replace(/{className}/g, data.className);
-    processedTemplate = processedTemplate.replace(/{date}/g, data.date);
-    processedTemplate = processedTemplate.replace(/{absences}/g, data.absences.toString());
-    processedTemplate = processedTemplate.replace(/{teacherName}/g, data.teacherName);
-    processedTemplate = processedTemplate.replace(/{institutionName}/g, data.institutionName);
-    
+    processedTemplate = processedTemplate.replace(/{studentName}/g, data.studentName)
+    processedTemplate = processedTemplate.replace(/{representanteName}/g, data.representanteName)
+    processedTemplate = processedTemplate.replace(/{className}/g, data.className)
+    processedTemplate = processedTemplate.replace(/{date}/g, data.date)
+    processedTemplate = processedTemplate.replace(/{absences}/g, data.absences.toString())
+    processedTemplate = processedTemplate.replace(/{teacherName}/g, data.teacherName)
+    processedTemplate = processedTemplate.replace(/{institutionName}/g, data.institutionName)
+
     // Reemplazar nuevas variables opcionales
-    processedTemplate = processedTemplate.replace(/{startDate}/g, data.startDate || '');
-    processedTemplate = processedTemplate.replace(/{endDate}/g, data.endDate || '');
-    processedTemplate = processedTemplate.replace(/{absenceDetails}/g, data.absenceDetails || '');
-    processedTemplate = processedTemplate.replace(/{attendanceRate}/g, data.attendanceRate?.toString() || '0');
-    
-    return processedTemplate;
-  };
+    processedTemplate = processedTemplate.replace(/{startDate}/g, data.startDate || "")
+    processedTemplate = processedTemplate.replace(/{endDate}/g, data.endDate || "")
+    processedTemplate = processedTemplate.replace(/{absenceDetails}/g, data.absenceDetails || "")
+    processedTemplate = processedTemplate.replace(
+      /{attendanceRate}/g,
+      data.attendanceRate?.toString() || "0"
+    )
+
+    return processedTemplate
+  }
 
   // Copiar al portapapeles
   const copyToClipboard = async (text: string): Promise<boolean> => {
     try {
-      await navigator.clipboard.writeText(text);
-      return true;
+      await navigator.clipboard.writeText(text)
+      return true
     } catch (err) {
-      console.error('Error copying to clipboard:', err);
-      return false;
+      console.error("Error copying to clipboard:", err)
+      return false
     }
-  };
+  }
 
   // Agregar nuevo preset
-  const addPreset = async (preset: Omit<WhatsAppPreset, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (!authStore.user?.uid) throw new Error('Usuario no autenticado');
-    
+  const addPreset = async (preset: Omit<WhatsAppPreset, "id" | "createdAt" | "updatedAt">) => {
+    if (!authStore.user?.uid) throw new Error("Usuario no autenticado")
+
     try {
       await addDoc(collection(db, COLLECTION_NAME), {
         ...preset,
         createdBy: authStore.user.uid,
         createdAt: new Date(),
-        updatedAt: new Date()
-      });
-      
-      await loadPresets(); // Recargar presets
+        updatedAt: new Date(),
+      })
+
+      await loadPresets() // Recargar presets
     } catch (err) {
-      console.error('Error adding preset:', err);
-      throw err;
+      console.error("Error adding preset:", err)
+      throw err
     }
-  };
+  }
 
   // Actualizar preset
   const updatePreset = async (id: string, updates: Partial<WhatsAppPreset>) => {
     try {
       await updateDoc(doc(db, COLLECTION_NAME, id), {
         ...updates,
-        updatedAt: new Date()
-      });
-      
-      await loadPresets(); // Recargar presets
+        updatedAt: new Date(),
+      })
+
+      await loadPresets() // Recargar presets
     } catch (err) {
-      console.error('Error updating preset:', err);
-      throw err;
+      console.error("Error updating preset:", err)
+      throw err
     }
-  };
+  }
 
   // Eliminar preset
   const deletePreset = async (id: string) => {
     try {
-      await deleteDoc(doc(db, COLLECTION_NAME, id));
-      await loadPresets(); // Recargar presets
+      await deleteDoc(doc(db, COLLECTION_NAME, id))
+      await loadPresets() // Recargar presets
     } catch (err) {
-      console.error('Error deleting preset:', err);
-      throw err;
+      console.error("Error deleting preset:", err)
+      throw err
     }
-  };
+  }
 
   // Presets agrupados por categoría
   const presetsByCategory = computed(() => {
@@ -347,17 +402,17 @@ Los documentos del estudiante estarán disponibles para retiro en coordinación.
       disciplinary: [],
       administrative: [],
       reminder: [],
-      custom: []
-    };
-    
-    presets.value.forEach(preset => {
+      custom: [],
+    }
+
+    presets.value.forEach((preset) => {
       if (grouped[preset.category]) {
-        grouped[preset.category].push(preset);
+        grouped[preset.category].push(preset)
       }
-    });
-    
-    return grouped;
-  });
+    })
+
+    return grouped
+  })
 
   return {
     presets,
@@ -369,6 +424,6 @@ Los documentos del estudiante estarán disponibles para retiro en coordinación.
     copyToClipboard,
     addPreset,
     updatePreset,
-    deletePreset
-  };
+    deletePreset,
+  }
 }

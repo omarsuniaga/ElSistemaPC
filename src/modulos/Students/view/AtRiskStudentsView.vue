@@ -1,34 +1,34 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue'
-import { useStudentsStore } from '../store/students'
-import { useAttendanceStore } from '../../../stores/attendance'
-import { useAnalyticsStore } from '../../Analytics/store/analytics'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
-import { 
-  ExclamationTriangleIcon, 
-  CalendarIcon, 
-  MusicalNoteIcon, 
-  BookOpenIcon, 
-  ClockIcon 
-} from '@heroicons/vue/24/outline'
+import {ref, computed, onMounted, reactive} from "vue"
+import {useStudentsStore} from "../store/students"
+import {useAttendanceStore} from "../../../stores/attendance"
+import {useAnalyticsStore} from "../../Analytics/store/analytics"
+import {format} from "date-fns"
+import {es} from "date-fns/locale"
+import {
+  ExclamationTriangleIcon,
+  CalendarIcon,
+  MusicalNoteIcon,
+  BookOpenIcon,
+  ClockIcon,
+} from "@heroicons/vue/24/outline"
 
 // Define la interfaz del estudiante
 interface Student {
-  id: string;
-  name: string;
-  performance: number;
-  instrument: string;
-  attendance: number;
-  lastAccess: string;
-  riskFactors: string[];
-  recommendedActions: string[];
-  hasInstrument?: boolean;
-  musicalLanguage?: number;
-  basicConcepts?: number;
-  weeklyActivities?: number;
-  instrumentMastery?: number;
-  repertoireMastery?: number;
+  id: string
+  name: string
+  performance: number
+  instrument: string
+  attendance: number
+  lastAccess: string
+  riskFactors: string[]
+  recommendedActions: string[]
+  hasInstrument?: boolean
+  musicalLanguage?: number
+  basicConcepts?: number
+  weeklyActivities?: number
+  instrumentMastery?: number
+  repertoireMastery?: number
 }
 
 // Stores
@@ -39,14 +39,14 @@ const analyticsStore = useAnalyticsStore()
 // Estado de la UI
 const isLoading = ref(true)
 const atRiskStudents = computed<Student[]>(() => {
-  const students = analyticsStore.studentMetrics.atRiskStudents || [];
+  const students = analyticsStore.studentMetrics.atRiskStudents || []
   return students.map((student: any) => ({
     id: student.id,
     name: student.name,
     performance: student.performance,
     instrument: student.instrument,
     attendance: (student.attendance || 0) as number,
-    lastAccess: student.lastAccess || '' as string,
+    lastAccess: student.lastAccess || ("" as string),
     riskFactors: student.riskFactors || [],
     recommendedActions: student.recommendedActions || [],
     hasInstrument: student.hasInstrument !== undefined ? student.hasInstrument : false,
@@ -54,49 +54,49 @@ const atRiskStudents = computed<Student[]>(() => {
     basicConcepts: student.basicConcepts || 0,
     weeklyActivities: student.weeklyActivities || 0,
     instrumentMastery: student.instrumentMastery || 0,
-    repertoireMastery: student.repertoireMastery || 0
-  }));
+    repertoireMastery: student.repertoireMastery || 0,
+  }))
 })
 
 // Factores de riesgo y sus pesos
 const riskFactors = reactive({
-  attendance: { 
+  attendance: {
     weight: 30,
     threshold: 75,
-    label: 'Asistencia'
+    label: "Asistencia",
   },
-  musicalLanguage: { 
+  musicalLanguage: {
     weight: 20,
     threshold: 70,
-    label: 'Lenguaje Musical'
+    label: "Lenguaje Musical",
   },
-  basicConcepts: { 
-    weight: 15, 
+  basicConcepts: {
+    weight: 15,
     threshold: 70,
-    label: 'Conceptos Básicos'
+    label: "Conceptos Básicos",
   },
-  weeklyActivities: { 
+  weeklyActivities: {
     weight: 10,
     threshold: 2,
-    label: 'Actividades Semanales'
+    label: "Actividades Semanales",
   },
-  instrumentMastery: { 
+  instrumentMastery: {
     weight: 15,
     threshold: 65,
-    label: 'Dominio del Instrumento'
+    label: "Dominio del Instrumento",
   },
-  repertoireMastery: { 
+  repertoireMastery: {
     weight: 10,
     threshold: 60,
-    label: 'Dominio del Repertorio'
-  }
+    label: "Dominio del Repertorio",
+  },
 })
 
 // Método para calcular el nivel de riesgo
 const calculateRiskLevel = (performance: number, attendance: number) => {
-  if (performance < 60 || attendance < 70) return 'Alto'
-  if (performance < 75 || attendance < 85) return 'Medio'
-  return 'Bajo'
+  if (performance < 60 || attendance < 70) return "Alto"
+  if (performance < 75 || attendance < 85) return "Medio"
+  return "Bajo"
 }
 
 // Cargar los datos de análisis
@@ -105,83 +105,83 @@ onMounted(async () => {
     await analyticsStore.fetchAnalytics()
     isLoading.value = false
   } catch (error) {
-    console.error('Error al cargar los datos:', error)
+    console.error("Error al cargar los datos:", error)
   }
 })
 
 // Identificar factores de riesgo específicos para un estudiante
 const identifyRiskFactors = (student) => {
   const factors = []
-  
+
   // Verificar asistencia
   if (student.attendance < riskFactors.attendance.threshold) {
     factors.push({
-      factor: 'Baja asistencia',
+      factor: "Baja asistencia",
       value: `${student.attendance}%`,
       threshold: `${riskFactors.attendance.threshold}%`,
       icon: CalendarIcon,
-      suggestion: 'Programar reunión para discutir dificultades de asistencia'
+      suggestion: "Programar reunión para discutir dificultades de asistencia",
     })
   }
-  
+
   // Verificar lenguaje musical
   if (student.musicalLanguage < riskFactors.musicalLanguage.threshold) {
     factors.push({
-      factor: 'Bajo nivel en lenguaje musical',
+      factor: "Bajo nivel en lenguaje musical",
       value: `${student.musicalLanguage}%`,
       threshold: `${riskFactors.musicalLanguage.threshold}%`,
       icon: MusicalNoteIcon,
-      suggestion: 'Ofrecer material complementario y clases de refuerzo'
+      suggestion: "Ofrecer material complementario y clases de refuerzo",
     })
   }
-  
+
   // Verificar conceptos básicos
   if (student.basicConcepts < riskFactors.basicConcepts.threshold) {
     factors.push({
-      factor: 'Debilidad en conceptos básicos',
+      factor: "Debilidad en conceptos básicos",
       value: `${student.basicConcepts}%`,
       threshold: `${riskFactors.basicConcepts.threshold}%`,
       icon: BookOpenIcon,
-      suggestion: 'Asignar tutor para nivelación en conceptos fundamentales'
+      suggestion: "Asignar tutor para nivelación en conceptos fundamentales",
     })
   }
-  
+
   // Verificar factores específicos para estudiantes con instrumento
   if (student.hasInstrument) {
     // Verificar actividades semanales
     if (student.weeklyActivities < riskFactors.weeklyActivities.threshold) {
       factors.push({
-        factor: 'Pocas actividades semanales',
+        factor: "Pocas actividades semanales",
         value: `${student.weeklyActivities}`,
         threshold: `${riskFactors.weeklyActivities.threshold}`,
         icon: ClockIcon,
-        suggestion: 'Incrementar actividades prácticas y seguimiento de horario'
+        suggestion: "Incrementar actividades prácticas y seguimiento de horario",
       })
     }
-    
+
     // Verificar dominio del instrumento
     if (student.instrumentMastery < riskFactors.instrumentMastery.threshold) {
       factors.push({
-        factor: 'Bajo dominio del instrumento',
+        factor: "Bajo dominio del instrumento",
         value: `${student.instrumentMastery}%`,
         threshold: `${riskFactors.instrumentMastery.threshold}%`,
         icon: MusicalNoteIcon,
-        suggestion: 'Evaluar dificultades técnicas específicas y adaptar ejercicios'
+        suggestion: "Evaluar dificultades técnicas específicas y adaptar ejercicios",
       })
     }
-    
+
     // Verificar dominio del repertorio
     if (student.repertoireMastery < riskFactors.repertoireMastery.threshold) {
       factors.push({
-        factor: 'Bajo dominio del repertorio',
+        factor: "Bajo dominio del repertorio",
         value: `${student.repertoireMastery}%`,
         threshold: `${riskFactors.repertoireMastery.threshold}%`,
         icon: BookOpenIcon,
-        suggestion: 'Ajustar repertorio al nivel actual y establecer plan progresivo'
+        suggestion: "Ajustar repertorio al nivel actual y establecer plan progresivo",
       })
     }
   }
-  
+
   return factors
 }
 </script>
@@ -199,32 +199,35 @@ const identifyRiskFactors = (student) => {
 
     <!-- Loading state -->
     <div v-if="isLoading" class="flex justify-center items-center h-64">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" />
     </div>
 
     <!-- Contenido principal -->
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div 
-        v-for="student in atRiskStudents" 
-        :key="student.id" 
+      <div
+        v-for="student in atRiskStudents"
+        :key="student.id"
         class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700"
       >
         <div class="flex justify-between items-start mb-4">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
             {{ student.name }}
           </h3>
-          <span 
+          <span
             :class="{
               'px-2 py-1 text-sm rounded-full': true,
-              'bg-red-100 text-red-800': calculateRiskLevel(student.performance, student.attendance) === 'Alto',
-              'bg-yellow-100 text-yellow-800': calculateRiskLevel(student.performance, student.attendance) === 'Medio',
-              'bg-green-100 text-green-800': calculateRiskLevel(student.performance, student.attendance) === 'Bajo'
+              'bg-red-100 text-red-800':
+                calculateRiskLevel(student.performance, student.attendance) === 'Alto',
+              'bg-yellow-100 text-yellow-800':
+                calculateRiskLevel(student.performance, student.attendance) === 'Medio',
+              'bg-green-100 text-green-800':
+                calculateRiskLevel(student.performance, student.attendance) === 'Bajo',
             }"
           >
             Riesgo {{ calculateRiskLevel(student.performance, student.attendance) }}
           </span>
         </div>
-        
+
         <div class="space-y-3">
           <div class="flex justify-between">
             <span class="text-gray-600 dark:text-gray-400">Rendimiento:</span>
@@ -238,7 +241,7 @@ const identifyRiskFactors = (student) => {
             <span class="text-gray-600 dark:text-gray-400">Último acceso:</span>
             <span class="font-medium">{{ student.lastAccess }}</span>
           </div>
-          
+
           <div class="mt-4">
             <h4 class="font-medium mb-2">Factores de riesgo:</h4>
             <ul class="list-disc list-inside text-gray-600 dark:text-gray-400">
@@ -247,7 +250,7 @@ const identifyRiskFactors = (student) => {
               </li>
             </ul>
           </div>
-          
+
           <div class="mt-4">
             <h4 class="font-medium mb-2">Acciones recomendadas:</h4>
             <ul class="list-disc list-inside text-gray-600 dark:text-gray-400">

@@ -1,7 +1,7 @@
-import { defineStore } from 'pinia'
-import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore'
-import { db } from '../firebase'
-import { cacheService } from '../services/cacheService'
+import {defineStore} from "pinia"
+import {collection, getDocs, doc, setDoc, deleteDoc, updateDoc} from "firebase/firestore"
+import {db} from "../firebase"
+import {cacheService} from "../services/cacheService"
 
 export interface BaseState<T> {
   items: T[]
@@ -10,31 +10,28 @@ export interface BaseState<T> {
   lastSync: Date | null
 }
 
-export function createBaseStore<T extends { id: string }>(
-  storeName: string,
-  collectionName: string
-) {
+export function createBaseStore<T extends {id: string}>(storeName: string, collectionName: string) {
   return defineStore(storeName, {
     state: (): BaseState<T> => ({
       items: [],
       loading: false,
       error: null,
-      lastSync: null
+      lastSync: null,
     }),
 
     actions: {
       async fetchItems() {
         this.loading = true
         this.error = null
-        
+
         try {
           // Primero intentar obtener del caché
           const cachedData = await cacheService.getAllItems(storeName as any)
-          
+
           if (cachedData && cachedData.length > 0) {
             this.items = cachedData
             this.lastSync = new Date()
-            
+
             // Cargar datos de Firebase en segundo plano para mantener caché actualizado
             this.syncWithFirebase()
           } else {
@@ -52,9 +49,9 @@ export function createBaseStore<T extends { id: string }>(
       async syncWithFirebase() {
         try {
           const querySnapshot = await getDocs(collection(db, collectionName))
-          const items = querySnapshot.docs.map(doc => ({
+          const items = querySnapshot.docs.map((doc) => ({
             id: doc.id,
-            ...doc.data()
+            ...doc.data(),
           })) as T[]
 
           // Actualizar el store
@@ -69,15 +66,15 @@ export function createBaseStore<T extends { id: string }>(
         }
       },
 
-      async addItem(item: Omit<T, 'id'>) {
+      async addItem(item: Omit<T, "id">) {
         this.loading = true
         this.error = null
 
         try {
           // Crear nuevo documento en Firebase
           const newDocRef = doc(collection(db, collectionName))
-          const newItem = { ...item, id: newDocRef.id } as T
-          
+          const newItem = {...item, id: newDocRef.id} as T
+
           await setDoc(newDocRef, newItem)
 
           // Actualizar el store y el caché
@@ -104,11 +101,11 @@ export function createBaseStore<T extends { id: string }>(
           await updateDoc(docRef, updates)
 
           // Actualizar en el store
-          const index = this.items.findIndex(item => item.id === id)
+          const index = this.items.findIndex((item) => item.id === id)
           if (index !== -1) {
-            const updatedItem = { ...this.items[index], ...updates }
+            const updatedItem = {...this.items[index], ...updates}
             this.items[index] = updatedItem
-            
+
             // Actualizar en caché
             await cacheService.setItem(storeName as any, id, updatedItem)
           }
@@ -130,8 +127,8 @@ export function createBaseStore<T extends { id: string }>(
           await deleteDoc(doc(db, collectionName, id))
 
           // Eliminar del store
-          this.items = this.items.filter(item => item.id !== id)
-          
+          this.items = this.items.filter((item) => item.id !== id)
+
           // Eliminar del caché
           await cacheService.removeItem(storeName as any, id)
         } catch (error: any) {
@@ -146,7 +143,7 @@ export function createBaseStore<T extends { id: string }>(
       // Método para forzar una sincronización con Firebase
       async forceSync() {
         await this.syncWithFirebase()
-      }
-    }
+      },
+    },
   })
 }

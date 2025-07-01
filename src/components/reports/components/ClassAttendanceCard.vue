@@ -1,37 +1,33 @@
-
 <template>
   <div class="class-attendance-card">
     <div class="card-header">
       <div class="class-info">
         <h4 class="class-name">
-          <i class="fas fa-music"></i>
+          <i class="fas fa-music" />
           {{ classData.name }}
         </h4>
         <div class="class-meta">
           <span class="student-count">
-            <i class="fas fa-users"></i>
-            {{ classData.students.length }} estudiante{{ classData.students.length !== 1 ? 's' : '' }}
+            <i class="fas fa-users" />
+            {{ classData.students.length }} estudiante{{
+              classData.students.length !== 1 ? "s" : ""
+            }}
           </span>
           <span class="session-count">
-            <i class="fas fa-calendar-check"></i>
-            {{ classData.attendanceRecords.length }} sesión{{ classData.attendanceRecords.length !== 1 ? 'es' : '' }}
+            <i class="fas fa-calendar-check" />
+            {{ classData.attendanceRecords.length }} sesión{{
+              classData.attendanceRecords.length !== 1 ? "es" : ""
+            }}
           </span>
         </div>
       </div>
-      
+
       <div class="class-actions">
-        <button 
-          @click="toggleExpanded"
-          class="expand-btn"
-          :class="{ active: isExpanded }"
-        >
-          <i :class="isExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
+        <button class="expand-btn" :class="{active: isExpanded}" @click="toggleExpanded">
+          <i :class="isExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" />
         </button>
-        <button 
-          @click="openClassDetails"
-          class="details-btn"
-        >
-          <i class="fas fa-eye"></i>
+        <button class="details-btn" @click="openClassDetails">
+          <i class="fas fa-eye" />
           Ver detalles
         </button>
       </div>
@@ -41,7 +37,7 @@
       <div class="stats-row">
         <div class="stat-item present">
           <div class="stat-icon">
-            <i class="fas fa-check-circle"></i>
+            <i class="fas fa-check-circle" />
           </div>
           <div class="stat-content">
             <div class="stat-number">{{ classStats.totalPresent }}</div>
@@ -52,7 +48,7 @@
 
         <div class="stat-item late">
           <div class="stat-icon">
-            <i class="fas fa-clock"></i>
+            <i class="fas fa-clock" />
           </div>
           <div class="stat-content">
             <div class="stat-number">{{ classStats.totalLate }}</div>
@@ -63,7 +59,7 @@
 
         <div class="stat-item absent">
           <div class="stat-icon">
-            <i class="fas fa-times-circle"></i>
+            <i class="fas fa-times-circle" />
           </div>
           <div class="stat-content">
             <div class="stat-number">{{ classStats.totalAbsent }}</div>
@@ -74,7 +70,7 @@
 
         <div class="stat-item justified">
           <div class="stat-icon">
-            <i class="fas fa-clipboard-check"></i>
+            <i class="fas fa-clipboard-check" />
           </div>
           <div class="stat-content">
             <div class="stat-number">{{ classStats.totalJustified }}</div>
@@ -90,11 +86,11 @@
           <span class="rate-value">{{ classStats.attendanceRate }}%</span>
         </div>
         <div class="progress-container">
-          <div 
-            class="progress-fill" 
-            :style="{ width: classStats.attendanceRate + '%' }"
+          <div
+            class="progress-fill"
+            :style="{width: classStats.attendanceRate + '%'}"
             :class="getAttendanceRateClass(classStats.attendanceRate)"
-          ></div>
+          />
         </div>
       </div>
     </div>
@@ -105,26 +101,20 @@
         <!-- Recent sessions -->
         <div class="recent-sessions">
           <h5 class="section-subtitle">
-            <i class="fas fa-history"></i>
+            <i class="fas fa-history" />
             Sesiones Recientes
           </h5>
           <div class="sessions-list">
-            <div 
-              v-for="session in recentSessions"
-              :key="session.id"
-              class="session-item"
-            >
+            <div v-for="session in recentSessions" :key="session.id" class="session-item">
               <div class="session-date">
-                <i class="fas fa-calendar-alt"></i>
+                <i class="fas fa-calendar-alt" />
                 {{ formatDate(session.fecha) }}
               </div>
               <div class="session-stats">
                 <span class="session-present">{{ getSessionPresent(session) }} presentes</span>
                 <span class="session-absent">{{ getSessionAbsent(session) }} ausentes</span>
               </div>
-              <div class="session-rate">
-                {{ getSessionRate(session) }}%
-              </div>
+              <div class="session-rate">{{ getSessionRate(session) }}%</div>
             </div>
           </div>
         </div>
@@ -132,11 +122,11 @@
         <!-- Student summary -->
         <div class="students-summary">
           <h5 class="section-subtitle">
-            <i class="fas fa-user-graduate"></i>
+            <i class="fas fa-user-graduate" />
             Resumen por Estudiante
           </h5>
           <div class="students-grid">
-            <div 
+            <div
               v-for="student in classData.students"
               :key="student.id"
               class="student-summary-card"
@@ -144,16 +134,14 @@
               <div class="student-name">{{ student.name }}</div>
               <div class="student-attendance-summary">
                 <div class="attendance-dots">
-                  <span 
+                  <span
                     v-for="(status, date) in student.attendance"
                     :key="date"
                     :class="['attendance-dot', status]"
                     :title="`${formatDate(date)}: ${getStatusText(status)}`"
-                  ></span>
+                  />
                 </div>
-                <div class="student-rate">
-                  {{ getStudentAttendanceRate(student) }}%
-                </div>
+                <div class="student-rate">{{ getStudentAttendanceRate(student) }}%</div>
               </div>
             </div>
           </div>
@@ -164,20 +152,20 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
-import { format, parseISO } from 'date-fns'
-import { es } from 'date-fns/locale'
+import {ref, computed} from "vue"
+import {format, parseISO} from "date-fns"
+import {es} from "date-fns/locale"
 
 export default {
-  name: 'ClassAttendanceCard',
+  name: "ClassAttendanceCard",
   props: {
     classData: {
       type: Object,
-      required: true
-    }
+      required: true,
+    },
   },
-  emits: ['view-details'],
-  setup(props, { emit }) {
+  emits: ["view-details"],
+  setup(props, {emit}) {
     const isExpanded = ref(false)
 
     // Estadísticas de la clase
@@ -188,29 +176,28 @@ export default {
       let totalJustified = 0
       let totalSessions = 0
 
-      props.classData.students.forEach(student => {
-        Object.values(student.attendance || {}).forEach(status => {
+      props.classData.students.forEach((student) => {
+        Object.values(student.attendance || {}).forEach((status) => {
           totalSessions++
           switch (status) {
-            case 'present':
+            case "present":
               totalPresent++
               break
-            case 'absent':
+            case "absent":
               totalAbsent++
               break
-            case 'late':
+            case "late":
               totalLate++
               break
-            case 'justified':
+            case "justified":
               totalJustified++
               break
           }
         })
       })
 
-      const attendanceRate = totalSessions > 0 
-        ? Math.round(((totalPresent + totalLate) / totalSessions) * 100) 
-        : 0
+      const attendanceRate =
+        totalSessions > 0 ? Math.round(((totalPresent + totalLate) / totalSessions) * 100) : 0
 
       return {
         totalPresent,
@@ -218,7 +205,7 @@ export default {
         totalLate,
         totalJustified,
         totalSessions,
-        attendanceRate
+        attendanceRate,
       }
     })
 
@@ -236,16 +223,16 @@ export default {
     }
 
     const getAttendanceRateClass = (rate) => {
-      if (rate >= 90) return 'excellent'
-      if (rate >= 80) return 'good'
-      if (rate >= 70) return 'average'
-      return 'poor'
+      if (rate >= 90) return "excellent"
+      if (rate >= 80) return "good"
+      if (rate >= 70) return "average"
+      return "poor"
     }
 
     const formatDate = (dateString) => {
       try {
         const date = parseISO(dateString)
-        return format(date, 'dd MMM', { locale: es })
+        return format(date, "dd MMM", {locale: es})
       } catch (error) {
         return dateString
       }
@@ -274,22 +261,22 @@ export default {
     const getStudentAttendanceRate = (student) => {
       const attendanceEntries = Object.values(student.attendance || {})
       if (attendanceEntries.length === 0) return 0
-      
-      const presentCount = attendanceEntries.filter(status => 
-        status === 'present' || status === 'late'
+
+      const presentCount = attendanceEntries.filter(
+        (status) => status === "present" || status === "late"
       ).length
-      
+
       return Math.round((presentCount / attendanceEntries.length) * 100)
     }
 
     const getStatusText = (status) => {
       const texts = {
-        'present': 'Presente',
-        'absent': 'Ausente',
-        'late': 'Tardía',
-        'justified': 'Justificada'
+        present: "Presente",
+        absent: "Ausente",
+        late: "Tardía",
+        justified: "Justificada",
       }
-      return texts[status] || 'Desconocido'
+      return texts[status] || "Desconocido"
     }
 
     const toggleExpanded = () => {
@@ -297,7 +284,7 @@ export default {
     }
 
     const openClassDetails = () => {
-      emit('view-details', props.classData)
+      emit("view-details", props.classData)
     }
 
     return {
@@ -313,9 +300,9 @@ export default {
       getStudentAttendanceRate,
       getStatusText,
       toggleExpanded,
-      openClassDetails
+      openClassDetails,
     }
-  }
+  },
 }
 </script>
 
@@ -325,7 +312,9 @@ export default {
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .class-attendance-card:hover {
@@ -377,7 +366,8 @@ export default {
   gap: 8px;
 }
 
-.expand-btn, .details-btn {
+.expand-btn,
+.details-btn {
   padding: 8px 12px;
   border: 1px solid #dee2e6;
   background: white;
@@ -387,7 +377,8 @@ export default {
   transition: all 0.2s ease;
 }
 
-.expand-btn:hover, .details-btn:hover {
+.expand-btn:hover,
+.details-btn:hover {
   background: #f8f9fa;
   border-color: #0d6efd;
   color: #0d6efd;
@@ -419,19 +410,39 @@ export default {
   border: 1px solid #e9ecef;
 }
 
-.stat-item.present { background: #d4edda; border-color: #c3e6cb; }
-.stat-item.late { background: #fff3cd; border-color: #ffeaa7; }
-.stat-item.absent { background: #f8d7da; border-color: #f5c6cb; }
-.stat-item.justified { background: #d1ecf1; border-color: #bee5eb; }
+.stat-item.present {
+  background: #d4edda;
+  border-color: #c3e6cb;
+}
+.stat-item.late {
+  background: #fff3cd;
+  border-color: #ffeaa7;
+}
+.stat-item.absent {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+}
+.stat-item.justified {
+  background: #d1ecf1;
+  border-color: #bee5eb;
+}
 
 .stat-icon {
   font-size: 18px;
 }
 
-.stat-item.present .stat-icon { color: #155724; }
-.stat-item.late .stat-icon { color: #856404; }
-.stat-item.absent .stat-icon { color: #721c24; }
-.stat-item.justified .stat-icon { color: #0c5460; }
+.stat-item.present .stat-icon {
+  color: #155724;
+}
+.stat-item.late .stat-icon {
+  color: #856404;
+}
+.stat-item.absent .stat-icon {
+  color: #721c24;
+}
+.stat-item.justified .stat-icon {
+  color: #0c5460;
+}
 
 .stat-content {
   text-align: center;
@@ -491,10 +502,18 @@ export default {
   transition: width 0.3s ease;
 }
 
-.progress-fill.excellent { background: #28a745; }
-.progress-fill.good { background: #17a2b8; }
-.progress-fill.average { background: #ffc107; }
-.progress-fill.poor { background: #dc3545; }
+.progress-fill.excellent {
+  background: #28a745;
+}
+.progress-fill.good {
+  background: #17a2b8;
+}
+.progress-fill.average {
+  background: #ffc107;
+}
+.progress-fill.poor {
+  background: #dc3545;
+}
 
 .expanded-content {
   border-top: 1px solid #e9ecef;
@@ -594,10 +613,18 @@ export default {
   cursor: pointer;
 }
 
-.attendance-dot.present { background: #28a745; }
-.attendance-dot.late { background: #ffc107; }
-.attendance-dot.absent { background: #dc3545; }
-.attendance-dot.justified { background: #17a2b8; }
+.attendance-dot.present {
+  background: #28a745;
+}
+.attendance-dot.late {
+  background: #ffc107;
+}
+.attendance-dot.absent {
+  background: #dc3545;
+}
+.attendance-dot.justified {
+  background: #17a2b8;
+}
 
 .student-rate {
   font-size: 12px;
@@ -605,17 +632,20 @@ export default {
   color: #495057;
 }
 
-.expand-enter-active, .expand-leave-active {
+.expand-enter-active,
+.expand-leave-active {
   transition: all 0.3s ease;
   overflow: hidden;
 }
 
-.expand-enter-from, .expand-leave-to {
+.expand-enter-from,
+.expand-leave-to {
   opacity: 0;
   max-height: 0;
 }
 
-.expand-enter-to, .expand-leave-from {
+.expand-enter-to,
+.expand-leave-from {
   opacity: 1;
   max-height: 1000px;
 }
@@ -625,20 +655,20 @@ export default {
     flex-direction: column;
     gap: 12px;
   }
-  
+
   .class-actions {
     align-self: stretch;
     justify-content: space-between;
   }
-  
+
   .stats-row {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .students-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .session-item {
     flex-direction: column;
     align-items: stretch;

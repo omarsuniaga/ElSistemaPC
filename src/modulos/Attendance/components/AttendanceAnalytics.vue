@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useAttendanceStore } from '../store/attendance'
-import AbsenteesList from '../../../components/AbsenteesList.vue'
+import {ref, computed, onMounted, watch} from "vue"
+import {useAttendanceStore} from "../store/attendance"
+import AbsenteesList from "../../../components/AbsenteesList.vue"
 
 const attendanceStore = useAttendanceStore()
 
 const isLoading = ref(true)
-const error = ref('')
+const error = ref("")
 
 const analytics = computed(() => attendanceStore.analytics)
 
 const getAttendanceRateClass = (rate: number) => {
-  if (rate >= 90) return 'text-green-600 dark:text-green-400'
-  if (rate >= 75) return 'text-yellow-600 dark:text-yellow-400'
-  return 'text-red-600 dark:text-red-400'
+  if (rate >= 90) return "text-green-600 dark:text-green-400"
+  if (rate >= 75) return "text-yellow-600 dark:text-yellow-400"
+  return "text-red-600 dark:text-red-400"
 }
 
 const updateAnalytics = async () => {
@@ -21,8 +21,8 @@ const updateAnalytics = async () => {
     isLoading.value = true
     await attendanceStore.updateAnalytics()
   } catch (err) {
-    error.value = 'Error al cargar las estadísticas'
-    console.error('Error updating analytics:', err)
+    error.value = "Error al cargar las estadísticas"
+    console.error("Error updating analytics:", err)
   } finally {
     isLoading.value = false
   }
@@ -37,11 +37,14 @@ watch(() => attendanceStore.records.length, updateAnalytics)
   <div class="space-y-6">
     <!-- Loading State -->
     <div v-if="isLoading" class="flex justify-center items-center py-12">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-4 rounded-lg">
+    <div
+      v-else-if="error"
+      class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-4 rounded-lg"
+    >
       {{ error }}
     </div>
 
@@ -49,16 +52,12 @@ watch(() => attendanceStore.records.length, updateAnalytics)
       <!-- Overall Statistics -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="card">
-          <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-            Total Clases
-          </h3>
+          <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Total Clases</h3>
           <p class="text-2xl font-bold">{{ analytics?.totalClasses || 0 }}</p>
         </div>
 
         <div class="card">
-          <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-            Total Alumnos
-          </h3>
+          <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Total Alumnos</h3>
           <p class="text-2xl font-bold">{{ analytics?.totalStudents || 0 }}</p>
         </div>
 
@@ -66,7 +65,10 @@ watch(() => attendanceStore.records.length, updateAnalytics)
           <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
             Asistencia Promedio
           </h3>
-          <p class="text-2xl font-bold" :class="getAttendanceRateClass(analytics?.averageAttendance || 0)">
+          <p
+            class="text-2xl font-bold"
+            :class="getAttendanceRateClass(analytics?.averageAttendance || 0)"
+          >
             {{ Math.round(analytics?.averageAttendance || 0) }}%
           </p>
         </div>
@@ -76,7 +78,7 @@ watch(() => attendanceStore.records.length, updateAnalytics)
             Alumnos en Riesgo
           </h3>
           <p class="text-2xl font-bold text-red-600">
-            {{ analytics?.absentStudents.filter(s => s.attendanceRate < 75).length || 0 }}
+            {{ analytics?.absentStudents.filter((s) => s.attendanceRate < 75).length || 0 }}
           </p>
         </div>
       </div>
@@ -98,12 +100,15 @@ watch(() => attendanceStore.records.length, updateAnalytics)
                 </p>
               </div>
               <div class="text-right">
-                <p class="text-2xl font-bold" :class="getAttendanceRateClass((stats.present + stats.justified) / stats.total * 100)">
-                  {{ Math.round((stats.present + stats.justified) / stats.total * 100) }}%
+                <p
+                  class="text-2xl font-bold"
+                  :class="
+                    getAttendanceRateClass(((stats.present + stats.justified) / stats.total) * 100)
+                  "
+                >
+                  {{ Math.round(((stats.present + stats.justified) / stats.total) * 100) }}%
                 </p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">
-                  asistencia
-                </p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">asistencia</p>
               </div>
             </div>
 
@@ -113,8 +118,8 @@ watch(() => attendanceStore.records.length, updateAnalytics)
                 <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                   <div
                     class="h-full bg-green-500"
-                    :style="{ width: `${(stats.present / stats.total) * 100}%` }"
-                  ></div>
+                    :style="{width: `${(stats.present / stats.total) * 100}%`}"
+                  />
                 </div>
                 <span class="text-sm text-gray-600 dark:text-gray-400 min-w-[80px] text-right">
                   {{ stats.present }} presentes
@@ -125,8 +130,8 @@ watch(() => attendanceStore.records.length, updateAnalytics)
                 <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                   <div
                     class="h-full bg-red-500"
-                    :style="{ width: `${(stats.absent / stats.total) * 100}%` }"
-                  ></div>
+                    :style="{width: `${(stats.absent / stats.total) * 100}%`}"
+                  />
                 </div>
                 <span class="text-sm text-gray-600 dark:text-gray-400 min-w-[80px] text-right">
                   {{ stats.absent }} ausentes
@@ -137,8 +142,8 @@ watch(() => attendanceStore.records.length, updateAnalytics)
                 <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                   <div
                     class="h-full bg-yellow-500"
-                    :style="{ width: `${(stats.delayed / stats.total) * 100}%` }"
-                  ></div>
+                    :style="{width: `${(stats.delayed / stats.total) * 100}%`}"
+                  />
                 </div>
                 <span class="text-sm text-gray-600 dark:text-gray-400 min-w-[80px] text-right">
                   {{ stats.delayed }} tardanzas
@@ -149,8 +154,8 @@ watch(() => attendanceStore.records.length, updateAnalytics)
                 <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                   <div
                     class="h-full bg-blue-500"
-                    :style="{ width: `${(stats.justified / stats.total) * 100}%` }"
-                  ></div>
+                    :style="{width: `${(stats.justified / stats.total) * 100}%`}"
+                  />
                 </div>
                 <span class="text-sm text-gray-600 dark:text-gray-400 min-w-[80px] text-right">
                   {{ stats.justified }} justificados

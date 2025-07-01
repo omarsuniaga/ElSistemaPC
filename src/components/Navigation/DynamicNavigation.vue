@@ -4,22 +4,15 @@
   <nav class="dynamic-navigation">
     <!-- Loading State -->
     <div v-if="loading" class="flex justify-center py-4">
-      <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+      <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
     </div>
 
     <!-- Navigation Items -->
     <div v-else-if="navigationItems.length > 0" class="navigation-items">
-      <div 
-        v-for="item in navigationItems" 
-        :key="item.id"
-        class="navigation-item"
-      >
-        <router-link 
+      <div v-for="item in navigationItems" :key="item.id" class="navigation-item">
+        <router-link
           :to="item.path"
-          :class="[
-            'nav-link',
-            { 'active': isCurrentRoute(item.path) }
-          ]"
+          :class="['nav-link', {active: isCurrentRoute(item.path)}]"
           @click="handleNavClick(item)"
         >
           <span class="nav-icon">{{ item.icon }}</span>
@@ -36,49 +29,53 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { useNavigation } from '@/services/navigation/navigationService'
-import { useAuthStore } from '@/stores/auth'
+import {computed, onMounted, watch} from "vue"
+import {useRoute} from "vue-router"
+import {useNavigation} from "@/services/navigation/navigationService"
+import {useAuthStore} from "@/stores/auth"
 
 const props = defineProps({
   orientation: {
     type: String,
-    default: 'vertical', // 'vertical' | 'horizontal'
-    validator: (value: string) => ['vertical', 'horizontal'].includes(value)
+    default: "vertical", // 'vertical' | 'horizontal'
+    validator: (value: string) => ["vertical", "horizontal"].includes(value),
   },
   showIcons: {
     type: Boolean,
-    default: true
+    default: true,
   },
   compact: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 })
 
-const emit = defineEmits(['nav-click'])
+const emit = defineEmits(["nav-click"])
 
 const route = useRoute()
 const authStore = useAuthStore()
-const { navigationItems, loading, loadNavigation } = useNavigation()
+const {navigationItems, loading, loadNavigation} = useNavigation()
 
 // Methods
 const isCurrentRoute = (path: string): boolean => {
-  return route.path === path || route.path.startsWith(path + '/')
+  return route.path === path || route.path.startsWith(path + "/")
 }
 
 const handleNavClick = (item: any) => {
-  emit('nav-click', item)
+  emit("nav-click", item)
 }
 
 // Watchers
-watch(() => authStore.user, async (newUser, oldUser) => {
-  // Recargar navegación cuando cambie el usuario o su rol
-  if (newUser && (!oldUser || newUser.role !== oldUser.role)) {
-    await loadNavigation()
-  }
-}, { immediate: true })
+watch(
+  () => authStore.user,
+  async (newUser, oldUser) => {
+    // Recargar navegación cuando cambie el usuario o su rol
+    if (newUser && (!oldUser || newUser.role !== oldUser.role)) {
+      await loadNavigation()
+    }
+  },
+  {immediate: true}
+)
 
 // Lifecycle
 onMounted(async () => {

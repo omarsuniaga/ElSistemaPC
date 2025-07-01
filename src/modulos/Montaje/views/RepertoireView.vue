@@ -7,8 +7,8 @@
           <p class="text-gray-600">Organiza y gestiona las colecciones de repertorio musical</p>
         </div>
         <button
-          @click="showCreateModal = true"
           class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          @click="showCreateModal = true"
         >
           Nuevo Repertorio
         </button>
@@ -32,7 +32,10 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-          <select v-model="filters.estado" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          <select
+            v-model="filters.estado"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md"
+          >
             <option value="">Todos los estados</option>
             <option value="BORRADOR">Borrador</option>
             <option value="EN_REVISION">En Revisión</option>
@@ -44,7 +47,10 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Nivel</label>
-          <select v-model="filters.nivel" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          <select
+            v-model="filters.nivel"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md"
+          >
             <option value="">Todos los niveles</option>
             <option value="1">Nivel 1</option>
             <option value="2">Nivel 2</option>
@@ -67,7 +73,7 @@
 
     <!-- Lista de Repertorios -->
     <div v-if="loading" class="text-center py-8">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
       <p class="text-gray-500 mt-2">Cargando repertorios...</p>
     </div>
 
@@ -90,27 +96,29 @@
     <div v-if="totalPages > 1" class="mt-6 flex justify-center">
       <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
         <button
-          @click="currentPage = Math.max(1, currentPage - 1)"
           :disabled="currentPage === 1"
           class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+          @click="currentPage = Math.max(1, currentPage - 1)"
         >
           Anterior
         </button>
         <span
           v-for="page in visiblePages"
           :key="page"
-          @click="currentPage = page"
           class="relative inline-flex items-center px-4 py-2 border text-sm font-medium cursor-pointer"
-          :class="page === currentPage 
-            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' 
-            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'"
+          :class="
+            page === currentPage
+              ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+          "
+          @click="currentPage = page"
         >
           {{ page }}
         </span>
         <button
-          @click="currentPage = Math.min(totalPages, currentPage + 1)"
           :disabled="currentPage === totalPages"
           class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+          @click="currentPage = Math.min(totalPages, currentPage + 1)"
         >
           Siguiente
         </button>
@@ -127,31 +135,28 @@
     />
 
     <!-- Modal de Confirmación de Eliminación -->
-    <div 
+    <div
       v-if="showDeleteModal"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       @click="showDeleteModal = false"
     >
-      <div 
-        class="bg-white rounded-lg max-w-md w-full mx-4"
-        @click.stop
-      >
+      <div class="bg-white rounded-lg max-w-md w-full mx-4" @click.stop>
         <div class="p-6">
           <h3 class="text-lg font-medium mb-4">Confirmar Eliminación</h3>
           <p class="text-gray-600 mb-6">
-            ¿Estás seguro de que quieres eliminar el repertorio "{{ selectedRepertoire?.nombre }}"? 
+            ¿Estás seguro de que quieres eliminar el repertorio "{{ selectedRepertoire?.nombre }}"?
             Esta acción no se puede deshacer.
           </p>
           <div class="flex justify-end space-x-3">
             <button
-              @click="showDeleteModal = false"
               class="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              @click="showDeleteModal = false"
             >
               Cancelar
             </button>
             <button
-              @click="confirmDelete"
               class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              @click="confirmDelete"
             >
               Eliminar
             </button>
@@ -163,26 +168,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import type { Repertorio } from '../types'
-import { useRepertorio } from '../composables/useRepertorio'
-import RepertoireCard from '../components/RepertoireCard.vue'
-import RepertoireFormModal from '../components/RepertoireFormModal.vue'
+import {ref, computed, onMounted} from "vue"
+import type {Repertorio} from "../types"
+import {useRepertorio} from "../composables/useRepertorio"
+import RepertoireCard from "../components/RepertoireCard.vue"
+import RepertoireFormModal from "../components/RepertoireFormModal.vue"
 
-const { 
-  repertorios, 
-  loading, 
-  loadRepertorios, 
-  createRepertorio, 
-  updateRepertorio, 
-  deleteRepertorio: deleteRepertoirioService 
+const {
+  repertorios,
+  loading,
+  loadRepertorios,
+  createRepertorio,
+  updateRepertorio,
+  deleteRepertorio: deleteRepertoirioService,
 } = useRepertorio()
 
 const filters = ref({
-  tipo: '',
-  estado: '',
-  nivel: '',
-  search: ''
+  tipo: "",
+  estado: "",
+  nivel: "",
+  search: "",
 })
 
 const currentPage = ref(1)
@@ -196,23 +201,24 @@ const filteredRepertoires = computed(() => {
   let filtered = repertorios.value
 
   if (filters.value.tipo) {
-    filtered = filtered.filter(r => r.tipo === filters.value.tipo)
+    filtered = filtered.filter((r) => r.tipo === filters.value.tipo)
   }
 
   if (filters.value.estado) {
-    filtered = filtered.filter(r => r.estado === filters.value.estado)
+    filtered = filtered.filter((r) => r.estado === filters.value.estado)
   }
 
   if (filters.value.nivel) {
-    filtered = filtered.filter(r => r.nivelDificultad === parseInt(filters.value.nivel))
+    filtered = filtered.filter((r) => r.nivelDificultad === parseInt(filters.value.nivel))
   }
 
   if (filters.value.search) {
     const search = filters.value.search.toLowerCase()
-    filtered = filtered.filter(r =>
-      r.nombre.toLowerCase().includes(search) ||
-      r.descripcion?.toLowerCase().includes(search) ||
-      r.etiquetas?.some(tag => tag.toLowerCase().includes(search))
+    filtered = filtered.filter(
+      (r) =>
+        r.nombre.toLowerCase().includes(search) ||
+        r.descripcion?.toLowerCase().includes(search) ||
+        r.etiquetas?.some((tag) => tag.toLowerCase().includes(search))
     )
   }
 
@@ -225,23 +231,24 @@ const totalPages = computed(() => {
   let filtered = repertorios.value
 
   if (filters.value.tipo) {
-    filtered = filtered.filter(r => r.tipo === filters.value.tipo)
+    filtered = filtered.filter((r) => r.tipo === filters.value.tipo)
   }
 
   if (filters.value.estado) {
-    filtered = filtered.filter(r => r.estado === filters.value.estado)
+    filtered = filtered.filter((r) => r.estado === filters.value.estado)
   }
 
   if (filters.value.nivel) {
-    filtered = filtered.filter(r => r.nivelDificultad === parseInt(filters.value.nivel))
+    filtered = filtered.filter((r) => r.nivelDificultad === parseInt(filters.value.nivel))
   }
 
   if (filters.value.search) {
     const search = filters.value.search.toLowerCase()
-    filtered = filtered.filter(r =>
-      r.nombre.toLowerCase().includes(search) ||
-      r.descripcion?.toLowerCase().includes(search) ||
-      r.etiquetas?.some(tag => tag.toLowerCase().includes(search))
+    filtered = filtered.filter(
+      (r) =>
+        r.nombre.toLowerCase().includes(search) ||
+        r.descripcion?.toLowerCase().includes(search) ||
+        r.etiquetas?.some((tag) => tag.toLowerCase().includes(search))
     )
   }
 
@@ -273,7 +280,7 @@ const deleteRepertoire = (repertoire: Repertorio) => {
 
 const viewRepertoire = (repertoire: Repertorio) => {
   // Navegar a vista de detalle
-  console.log('View repertoire:', repertoire.id)
+  console.log("View repertoire:", repertoire.id)
 }
 
 const saveRepertoire = async (repertoire: Repertorio) => {
@@ -285,7 +292,7 @@ const saveRepertoire = async (repertoire: Repertorio) => {
     }
     closeModals()
   } catch (error) {
-    console.error('Error saving repertoire:', error)
+    console.error("Error saving repertoire:", error)
   }
 }
 
@@ -296,7 +303,7 @@ const confirmDelete = async () => {
       showDeleteModal.value = false
       selectedRepertoire.value = null
     } catch (error) {
-      console.error('Error deleting repertoire:', error)
+      console.error("Error deleting repertoire:", error)
     }
   }
 }

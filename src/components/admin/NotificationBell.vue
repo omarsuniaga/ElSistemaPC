@@ -1,16 +1,9 @@
 <template>
   <div class="notification-bell-container">
-    <button 
-      @click="toggleDropdown" 
-      class="notification-bell-button"
-      ref="bellButton"
-    >
+    <button ref="bellButton" class="notification-bell-button" @click="toggleDropdown">
       <BellIcon class="h-6 w-6" />
-      <span 
-        v-if="unreadCount > 0" 
-        class="notification-badge"
-      >
-        {{ unreadCount > 99 ? '99+' : unreadCount }}
+      <span v-if="unreadCount > 0" class="notification-badge">
+        {{ unreadCount > 99 ? "99+" : unreadCount }}
       </span>
     </button>
 
@@ -22,55 +15,37 @@
       leave-from-class="transform scale-100 opacity-100"
       leave-to-class="transform scale-95 opacity-0"
     >
-      <div 
-        v-if="isOpen" 
-        class="notification-dropdown"
-        ref="dropdown"
-      >
+      <div v-if="isOpen" ref="dropdown" class="notification-dropdown">
         <div class="notification-dropdown-header">
           <h3>Notificaciones</h3>
-          <button 
-            @click="viewAllNotifications" 
-            class="view-all-btn"
-          >
-            Ver todas
-          </button>
+          <button class="view-all-btn" @click="viewAllNotifications">Ver todas</button>
         </div>
 
-        <div 
-          v-if="notifications.length === 0" 
-          class="empty-notification"
-        >
+        <div v-if="notifications.length === 0" class="empty-notification">
           <p>No hay notificaciones nuevas</p>
         </div>
 
         <div v-else class="notification-list">
-          <div 
-            v-for="notification in notifications.slice(0, 5)" 
+          <div
+            v-for="notification in notifications.slice(0, 5)"
             :key="notification.id"
             class="notification-item"
-            :class="{ 'unread': !notification.read }"
+            :class="{unread: !notification.read}"
             @click="handleNotificationClick(notification)"
           >
-            <div 
-              class="notification-dot" 
-              :class="getNotificationTypeClass(notification.type)"
-            ></div>
+            <div class="notification-dot" :class="getNotificationTypeClass(notification.type)" />
             <div class="notification-content">
               <h4 class="notification-title">{{ notification.title }}</h4>
               <p class="notification-message">{{ notification.message }}</p>
-              <span class="notification-time">{{ formatNotificationTime(notification.createdAt) }}</span>
+              <span class="notification-time">{{
+                formatNotificationTime(notification.createdAt)
+              }}</span>
             </div>
           </div>
         </div>
 
         <div v-if="unreadCount > 0" class="notification-dropdown-footer">
-          <button 
-            @click="markAllAsRead" 
-            class="mark-all-read-btn"
-          >
-            Marcar todas como leídas
-          </button>
+          <button class="mark-all-read-btn" @click="markAllAsRead">Marcar todas como leídas</button>
         </div>
       </div>
     </transition>
@@ -78,100 +53,111 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { BellIcon } from '@heroicons/vue/24/outline';
-import { useNotificationsStore, type Notification } from '../../stores/notifications';
-import { formatDistance } from 'date-fns';
-import { es } from 'date-fns/locale';
+import {ref, computed, onMounted, onUnmounted} from "vue"
+import {useRouter} from "vue-router"
+import {BellIcon} from "@heroicons/vue/24/outline"
+import {useNotificationsStore, type Notification} from "../../stores/notifications"
+import {formatDistance} from "date-fns"
+import {es} from "date-fns/locale"
 
-const notificationsStore = useNotificationsStore();
-const router = useRouter();
+const notificationsStore = useNotificationsStore()
+const router = useRouter()
 
-const isOpen = ref(false);
-const bellButton = ref<HTMLElement | null>(null);
-const dropdown = ref<HTMLElement | null>(null);
+const isOpen = ref(false)
+const bellButton = ref<HTMLElement | null>(null)
+const dropdown = ref<HTMLElement | null>(null)
 
 // Computed properties
-const notifications = computed(() => notificationsStore.notifications);
-const unreadCount = computed(() => notificationsStore.unreadCount);
+const notifications = computed(() => notificationsStore.notifications)
+const unreadCount = computed(() => notificationsStore.unreadCount)
 
 // Methods
 const toggleDropdown = () => {
-  isOpen.value = !isOpen.value;
-};
+  isOpen.value = !isOpen.value
+}
 
 const closeDropdown = (event: MouseEvent) => {
-  if (isOpen.value && 
-      bellButton.value && 
-      dropdown.value && 
-      !bellButton.value.contains(event.target as Node) && 
-      !dropdown.value.contains(event.target as Node)) {
-    isOpen.value = false;
+  if (
+    isOpen.value &&
+    bellButton.value &&
+    dropdown.value &&
+    !bellButton.value.contains(event.target as Node) &&
+    !dropdown.value.contains(event.target as Node)
+  ) {
+    isOpen.value = false
   }
-};
+}
 
 const handleNotificationClick = (notification: Notification) => {
   // Mark as read if unread
   if (!notification.read && notification.id) {
-    notificationsStore.markAsRead(notification.id);
+    notificationsStore.markAsRead(notification.id)
   }
-  
+
   // Navigate if link exists
   if (notification.link) {
-    router.push(notification.link);
+    router.push(notification.link)
   }
-  
+
   // Close dropdown
-  isOpen.value = false;
-};
+  isOpen.value = false
+}
 
 const viewAllNotifications = () => {
-  router.push('/admin/notifications');
-  isOpen.value = false;
-};
+  router.push("/admin/notifications")
+  isOpen.value = false
+}
 
 const markAllAsRead = async () => {
   // Get all unread notifications
-  const unreadNotifications = notifications.value.filter(n => !n.read);
-  
+  const unreadNotifications = notifications.value.filter((n) => !n.read)
+
   // Mark each one as read
   for (const notification of unreadNotifications) {
     if (notification.id) {
-      await notificationsStore.markAsRead(notification.id);
+      await notificationsStore.markAsRead(notification.id)
     }
   }
-};
+}
 
 const getNotificationTypeClass = (type: string) => {
   switch (type) {
-    case 'error': return 'notification-error';
-    case 'warning': return 'notification-warning';
-    case 'success': return 'notification-success';
-    case 'info':
-    default: return 'notification-info';
+    case "error":
+      return "notification-error"
+    case "warning":
+      return "notification-warning"
+    case "success":
+      return "notification-success"
+    case "info":
+    default:
+      return "notification-info"
   }
-};
+}
 
 const formatNotificationTime = (createdAt: any) => {
-  if (!createdAt) return '';
-  
-  const date = createdAt instanceof Date ? createdAt : 
-               typeof createdAt === 'string' ? new Date(createdAt) :
-               createdAt.toDate ? createdAt.toDate() : new Date();
-  
-  return formatDistance(date, new Date(), { addSuffix: true, locale: es });
-};
+  if (!createdAt) return ""
+
+  const date =
+    createdAt instanceof Date
+      ? createdAt
+      : typeof createdAt === "string"
+        ? new Date(createdAt)
+        : createdAt.toDate
+          ? createdAt.toDate()
+          : new Date()
+
+  return formatDistance(date, new Date(), {addSuffix: true, locale: es})
+}
 
 // Lifecycle hooks
 onMounted(() => {
-  document.addEventListener('click', closeDropdown);
-  notificationsStore.fetchNotifications();
-});
+  document.addEventListener("click", closeDropdown)
+  notificationsStore.fetchNotifications()
+})
 
 onUnmounted(() => {
-  document.removeEventListener('click', closeDropdown);
-});
+  document.removeEventListener("click", closeDropdown)
+})
 </script>
 
 <style scoped>
@@ -221,7 +207,9 @@ onUnmounted(() => {
   max-height: 400px;
   background-color: white;
   border-radius: 8px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
   z-index: 50;
   overflow: hidden;
   display: flex;

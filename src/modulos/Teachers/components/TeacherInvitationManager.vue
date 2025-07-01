@@ -12,13 +12,10 @@
   />
 
   <!-- Indicador de notificaciones en la esquina (opcional) -->
-  <div
-    v-if="hasNewInvitations && !showInvitationModal"
-    class="fixed bottom-4 right-4 z-40"
-  >
+  <div v-if="hasNewInvitations && !showInvitationModal" class="fixed bottom-4 right-4 z-40">
     <button
-      @click="showLatestInvitation"
       class="relative bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-105"
+      @click="showLatestInvitation"
     >
       <BellIcon class="w-6 h-6" />
       <!-- Badge de contador -->
@@ -33,15 +30,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue';
-import { BellIcon } from '@heroicons/vue/24/outline';
-import { useToast } from '../../../composables/useToast';
-import { useTeacherNotifications } from '../composables/useTeacherNotifications';
-import ClassInvitationModal from './ClassInvitationModal.vue';
-import type { TeacherNotification } from '../services/teacherNotifications';
+import {ref, computed, watch, nextTick} from "vue"
+import {BellIcon} from "@heroicons/vue/24/outline"
+import {useToast} from "../../../composables/useToast"
+import {useTeacherNotifications} from "../composables/useTeacherNotifications"
+import ClassInvitationModal from "./ClassInvitationModal.vue"
+import type {TeacherNotification} from "../services/teacherNotifications"
 
 // Composables
-const toast = useToast();
+const toast = useToast()
 const {
   pendingInvitations,
   pendingInvitationsCount,
@@ -49,127 +46,127 @@ const {
   getLatestInvitation,
   acceptInvitation,
   rejectInvitation,
-  error: notificationError
-} = useTeacherNotifications();
+  error: notificationError,
+} = useTeacherNotifications()
 
 // Estado del modal
-const showInvitationModal = ref(false);
-const currentInvitation = ref<TeacherNotification | null>(null);
-const isProcessing = ref(false);
-const error = ref<string | null>(null);
+const showInvitationModal = ref(false)
+const currentInvitation = ref<TeacherNotification | null>(null)
+const isProcessing = ref(false)
+const error = ref<string | null>(null)
 
 // Computed
-const lastShownInvitationId = ref<string | null>(null);
-const shownInvitationIds = ref<Set<string>>(new Set());
+const lastShownInvitationId = ref<string | null>(null)
+const shownInvitationIds = ref<Set<string>>(new Set())
 
 // Observar nuevas invitaciones
 watch(
   () => pendingInvitations.value,
   (newInvitations) => {
-    console.log('Invitaciones pendientes actualizadas:', newInvitations.length);
-    
+    console.log("Invitaciones pendientes actualizadas:", newInvitations.length)
+
     // Buscar invitaciones que no se han mostrado antes
-    const newUnshownInvitations = newInvitations.filter(invitation => 
-      invitation.id && !shownInvitationIds.value.has(invitation.id)
-    );
+    const newUnshownInvitations = newInvitations.filter(
+      (invitation) => invitation.id && !shownInvitationIds.value.has(invitation.id)
+    )
 
     // Si hay invitaciones nuevas sin mostrar y no hay modal abierto
     if (newUnshownInvitations.length > 0 && !showInvitationModal.value) {
-      const latestInvitation = newUnshownInvitations[0];
-      console.log('Nueva invitación detectada:', latestInvitation.id);
-      showSpecificInvitation(latestInvitation);
+      const latestInvitation = newUnshownInvitations[0]
+      console.log("Nueva invitación detectada:", latestInvitation.id)
+      showSpecificInvitation(latestInvitation)
     }
   },
-  { deep: true, immediate: true }
-);
+  {deep: true, immediate: true}
+)
 
 // Métodos
 const showLatestInvitation = () => {
-  const latestInvitation = getLatestInvitation.value;
+  const latestInvitation = getLatestInvitation.value
   if (latestInvitation) {
-    showSpecificInvitation(latestInvitation);
+    showSpecificInvitation(latestInvitation)
   }
-};
+}
 
 const showSpecificInvitation = (invitation: TeacherNotification) => {
-  currentInvitation.value = invitation;
-  lastShownInvitationId.value = invitation.id!;
-  
+  currentInvitation.value = invitation
+  lastShownInvitationId.value = invitation.id!
+
   // Marcar como mostrada
   if (invitation.id) {
-    shownInvitationIds.value.add(invitation.id);
+    shownInvitationIds.value.add(invitation.id)
   }
-  
-  showInvitationModal.value = true;
-  error.value = null;
-  
-  console.log('Mostrando modal de invitación para:', invitation.id);
-};
+
+  showInvitationModal.value = true
+  error.value = null
+
+  console.log("Mostrando modal de invitación para:", invitation.id)
+}
 
 const handleCloseModal = () => {
-  console.log('Cerrando modal de invitación');
-  showInvitationModal.value = false;
+  console.log("Cerrando modal de invitación")
+  showInvitationModal.value = false
   // Limpiar después de la animación
   nextTick(() => {
-    currentInvitation.value = null;
-    error.value = null;
-  });
-};
+    currentInvitation.value = null
+    error.value = null
+  })
+}
 
 const handleAcceptInvitation = async (notificationId: string) => {
-  isProcessing.value = true;
-  error.value = null;
+  isProcessing.value = true
+  error.value = null
 
   try {
-    const result = await acceptInvitation(notificationId);
-    
+    const result = await acceptInvitation(notificationId)
+
     if (result.success) {
-      toast.success('¡Invitación aceptada!', 'Te has unido exitosamente a la clase compartida.');
-      handleCloseModal();
+      toast.success("¡Invitación aceptada!", "Te has unido exitosamente a la clase compartida.")
+      handleCloseModal()
     } else {
-      error.value = result.error || 'Error al aceptar la invitación';
+      error.value = result.error || "Error al aceptar la invitación"
     }
   } catch (err: any) {
-    error.value = err.message || 'Error inesperado al aceptar la invitación';
+    error.value = err.message || "Error inesperado al aceptar la invitación"
   } finally {
-    isProcessing.value = false;
+    isProcessing.value = false
   }
-};
+}
 
 const handleRejectInvitation = async (notificationId: string) => {
-  isProcessing.value = true;
-  error.value = null;
+  isProcessing.value = true
+  error.value = null
 
   try {
-    const result = await rejectInvitation(notificationId, 'Rechazada desde modal');
-    
+    const result = await rejectInvitation(notificationId, "Rechazada desde modal")
+
     if (result.success) {
-      toast.info('Invitación rechazada', 'Has rechazado la invitación a la clase compartida.');
-      handleCloseModal();
+      toast.info("Invitación rechazada", "Has rechazado la invitación a la clase compartida.")
+      handleCloseModal()
     } else {
-      error.value = result.error || 'Error al rechazar la invitación';
+      error.value = result.error || "Error al rechazar la invitación"
     }
   } catch (err: any) {
-    error.value = err.message || 'Error inesperado al rechazar la invitación';
+    error.value = err.message || "Error inesperado al rechazar la invitación"
   } finally {
-    isProcessing.value = false;
+    isProcessing.value = false
   }
-};
+}
 
 const handleRemindLater = () => {
-  toast.info('Recordatorio configurado', 'Te recordaremos sobre esta invitación más tarde.');
-  handleCloseModal();
-};
+  toast.info("Recordatorio configurado", "Te recordaremos sobre esta invitación más tarde.")
+  handleCloseModal()
+}
 
 // Observar errores del servicio de notificaciones
 watch(
   () => notificationError.value,
   (newError) => {
     if (newError) {
-      error.value = newError;
+      error.value = newError
     }
   }
-);
+)
 </script>
 
 <style scoped>
@@ -179,16 +176,21 @@ watch(
 }
 
 @keyframes bounce {
-  0%, 20%, 53%, 80%, 100% {
-    animation-timing-function: cubic-bezier(0.215, 0.610, 0.355, 1.000);
+  0%,
+  20%,
+  53%,
+  80%,
+  100% {
+    animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
     transform: translate3d(0, 0, 0);
   }
-  40%, 43% {
-    animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
+  40%,
+  43% {
+    animation-timing-function: cubic-bezier(0.755, 0.05, 0.855, 0.06);
     transform: translate3d(0, -8px, 0);
   }
   70% {
-    animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
+    animation-timing-function: cubic-bezier(0.755, 0.05, 0.855, 0.06);
     transform: translate3d(0, -4px, 0);
   }
   90% {

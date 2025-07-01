@@ -5,14 +5,15 @@
       <div>
         <h1 class="text-2xl font-bold">Espacio de Trabajo</h1>
         <p class="text-gray-600 text-sm">
-          presiona el botón evaluar y empieza a calificar a tus alumnos, selecciona una clase, selecciona a un grupo de alumnos y selecciona el contenido que vas a evaluar
+          presiona el botón evaluar y empieza a calificar a tus alumnos, selecciona una clase,
+          selecciona a un grupo de alumnos y selecciona el contenido que vas a evaluar
         </p>
       </div>
       <button
-        @click="toggleEvaluationMode"
         class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none"
+        @click="toggleEvaluationMode"
       >
-        {{ evaluationMode ? 'Guardar' : 'Evaluar' }}
+        {{ evaluationMode ? "Guardar" : "Evaluar" }}
       </button>
     </header>
 
@@ -24,8 +25,8 @@
           <li
             v-for="student in students"
             :key="student.id"
-            @click="selectStudent(student)"
             class="cursor-pointer hover:bg-gray-100 p-2 rounded flex items-center"
+            @click="selectStudent(student)"
           >
             <img :src="student.avatar" alt="avatar" class="w-8 h-8 rounded-full mr-2" />
             <span>{{ student.name }}</span>
@@ -42,18 +43,18 @@
         >
           <!-- Botón Delete (parte superior derecha) -->
           <button
-            @click="deleteCard(card)"
             class="absolute top-2 right-2 text-red-500 hover:text-red-600 focus:outline-none"
+            @click="deleteCard(card)"
           >
-            <i class="fas fa-trash"></i>
+            <i class="fas fa-trash" />
           </button>
 
           <!-- Título y Subtítulo -->
           <h2 class="text-lg font-bold">
-            {{ card.contentTitle || 'Contenido no seleccionado' }}
+            {{ card.contentTitle || "Contenido no seleccionado" }}
           </h2>
           <p class="text-gray-600 text-sm mb-2">
-            {{ card.contentSubtitle || 'Tema - Indicador' }}
+            {{ card.contentSubtitle || "Tema - Indicador" }}
           </p>
 
           <!-- Avatares (grupo de alumnos ordenado alfabéticamente) -->
@@ -76,25 +77,18 @@
           </div>
 
           <!-- Sección Calificadora: Linear Progress para cada indicador -->
-          <div
-            v-for="(indicator, idx) in card.indicators"
-            :key="indicator.uniqueId"
-            class="mb-4"
-          >
+          <div v-for="(indicator, idx) in card.indicators" :key="indicator.uniqueId" class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-1">
               {{ indicator.label }}
             </label>
             <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
-              <div
-                class="bg-blue-600 h-2.5 rounded-full"
-                :style="{ width: indicator.score + '%' }"
-              ></div>
+              <div class="bg-blue-600 h-2.5 rounded-full" :style="{width: indicator.score + '%'}" />
             </div>
             <input
+              v-model.number="indicator.score"
               type="range"
               min="0"
               max="100"
-              v-model.number="indicator.score"
               :disabled="card.locked"
               class="w-full"
             />
@@ -104,11 +98,11 @@
           <!-- Footer de Acciones: Botón Editar/Guardar -->
           <div class="flex justify-end space-x-2">
             <button
-              @click="toggleCardEdit(card)"
               class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none"
+              @click="toggleCardEdit(card)"
             >
-              <i v-if="card.locked" class="fas fa-edit"></i>
-              <i v-else class="fas fa-save"></i>
+              <i v-if="card.locked" class="fas fa-edit" />
+              <i v-else class="fas fa-save" />
             </button>
           </div>
         </div>
@@ -124,8 +118,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import RecursiveMenu from './RecursiveMenu.vue'
+import {ref} from "vue"
+import RecursiveMenu from "./RecursiveMenu.vue"
 
 // Modo de evaluación (global)
 const evaluationMode = ref(false)
@@ -141,64 +135,58 @@ let globalGroupCounter = 1
 
 // Datos simulados de alumnos
 const students = ref([
-  { id: 1, name: 'Patricia Lopez',    avatar: 'https://i.pravatar.cc/150?u=patricia' },
-  { id: 2, name: 'Maria Albonoz',     avatar: 'https://i.pravatar.cc/150?u=maria' },
-  { id: 3, name: 'Dyankeson Lamprea', avatar: 'https://i.pravatar.cc/150?u=dyankeson' },
-  { id: 4, name: 'Edelyn Abreu',      avatar: 'https://i.pravatar.cc/150?u=edelyn' },
-  { id: 5, name: 'Eilyn Michelle',    avatar: 'https://i.pravatar.cc/150?u=eilyn' },
-  { id: 6, name: 'Yuraima Mujica',    avatar: 'https://i.pravatar.cc/150?u=yuraima' },
-  { id: 7, name: 'John Doe',          avatar: 'https://i.pravatar.cc/150?u=johndoe' }
+  {id: 1, name: "Patricia Lopez", avatar: "https://i.pravatar.cc/150?u=patricia"},
+  {id: 2, name: "Maria Albonoz", avatar: "https://i.pravatar.cc/150?u=maria"},
+  {id: 3, name: "Dyankeson Lamprea", avatar: "https://i.pravatar.cc/150?u=dyankeson"},
+  {id: 4, name: "Edelyn Abreu", avatar: "https://i.pravatar.cc/150?u=edelyn"},
+  {id: 5, name: "Eilyn Michelle", avatar: "https://i.pravatar.cc/150?u=eilyn"},
+  {id: 6, name: "Yuraima Mujica", avatar: "https://i.pravatar.cc/150?u=yuraima"},
+  {id: 7, name: "John Doe", avatar: "https://i.pravatar.cc/150?u=johndoe"},
 ])
 
 // Datos simulados: menú recursivo de contenidos (estructura recursiva)
 const contents = ref([
   {
-    title: 'Figuras Rítmicas Básicas',
+    title: "Figuras Rítmicas Básicas",
     children: [
       {
-        title: 'Teoría y Solfeo',
+        title: "Teoría y Solfeo",
         children: [
-          { title: 'Unidad de Tiempo', type: 'indicator' },
-          { title: 'Ritmo Base', type: 'indicator' }
-        ]
+          {title: "Unidad de Tiempo", type: "indicator"},
+          {title: "Ritmo Base", type: "indicator"},
+        ],
       },
       {
-        title: 'Aplicaciones Prácticas',
-        children: [
-          { title: 'Ejercicios de Ritmo', type: 'indicator' }
-        ]
-      }
-    ]
+        title: "Aplicaciones Prácticas",
+        children: [{title: "Ejercicios de Ritmo", type: "indicator"}],
+      },
+    ],
   },
   {
-    title: 'Escalas Mayores',
+    title: "Escalas Mayores",
     children: [
       {
-        title: 'Teoría Musical',
-        children: [
-          { title: 'Construcción de Escalas', type: 'indicator' }
-        ]
+        title: "Teoría Musical",
+        children: [{title: "Construcción de Escalas", type: "indicator"}],
       },
       {
-        title: 'Ejercicios Prácticos',
-        children: [
-          { title: 'Ejercicios de Escalas', type: 'indicator' }
-        ]
-      }
-    ]
+        title: "Ejercicios Prácticos",
+        children: [{title: "Ejercicios de Escalas", type: "indicator"}],
+      },
+    ],
   },
   {
-    title: 'Cifrado Armónico',
+    title: "Cifrado Armónico",
     children: [
       {
-        title: 'Acordes',
+        title: "Acordes",
         children: [
-          { title: 'Triada Mayor', type: 'indicator' },
-          { title: 'Triada Menor', type: 'indicator' }
-        ]
-      }
-    ]
-  }
+          {title: "Triada Mayor", type: "indicator"},
+          {title: "Triada Menor", type: "indicator"},
+        ],
+      },
+    ],
+  },
 ])
 
 // Alterna el modo global de evaluación: Evaluar <-> Guardar
@@ -207,7 +195,7 @@ const toggleEvaluationMode = () => {
     evaluationMode.value = true
   } else {
     // Al presionar "Guardar", se guardan todas las cards en edición
-    evaluationCards.value.forEach(card => {
+    evaluationCards.value.forEach((card) => {
       if (!card.locked) {
         saveCard(card)
       }
@@ -218,7 +206,7 @@ const toggleEvaluationMode = () => {
 
 // Al seleccionar un alumno se agrega al array (evitando duplicados)
 const selectStudent = (student) => {
-  const exists = selectedStudents.value.some(s => s.id === student.id)
+  const exists = selectedStudents.value.some((s) => s.id === student.id)
   if (!exists) {
     selectedStudents.value.push(student)
   }
@@ -235,10 +223,10 @@ const createEvaluationCard = () => {
   const newCard = {
     id: Date.now(),
     group: [...selectedStudents.value],
-    contentTitle: '',
-    contentSubtitle: '',
+    contentTitle: "",
+    contentSubtitle: "",
     indicators: [],
-    locked: false
+    locked: false,
   }
   evaluationCards.value.push(newCard)
   activeCard.value = newCard
@@ -259,9 +247,9 @@ const handleContentSelection = (item, parentChain) => {
   // Se asignan el título y subtítulo según el parentChain e indicador
   if (parentChain && parentChain.length >= 2) {
     card.contentTitle = parentChain[0]
-    card.contentSubtitle = parentChain[1] + ' - ' + item.title
+    card.contentSubtitle = parentChain[1] + " - " + item.title
   } else {
-    card.contentTitle = parentChain ? parentChain[0] : ''
+    card.contentTitle = parentChain ? parentChain[0] : ""
     card.contentSubtitle = item.title
   }
 
@@ -271,11 +259,11 @@ const handleContentSelection = (item, parentChain) => {
     uniqueId,
     label: item.title,
     score: 0,
-    selectedStudents: card.group
+    selectedStudents: card.group,
   }
-  const exists = card.indicators.find(ind => ind.uniqueId === uniqueId)
+  const exists = card.indicators.find((ind) => ind.uniqueId === uniqueId)
   if (exists) {
-    newIndicator.uniqueId = uniqueId + '_' + globalGroupCounter++
+    newIndicator.uniqueId = uniqueId + "_" + globalGroupCounter++
   }
   card.indicators.push(newIndicator)
 }
@@ -283,11 +271,11 @@ const handleContentSelection = (item, parentChain) => {
 // Genera un nombre único combinando la fecha, el contenido, grupo e indicador
 const generateUniqueName = (item, card) => {
   const now = new Date()
-  const day = String(now.getDate()).padStart(2, '0')
-  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, "0")
+  const month = String(now.getMonth() + 1).padStart(2, "0")
   const year = now.getFullYear()
-  const groupId = card.group.length ? card.group[0].id : 'group'
-  return `${day}${month}${year}_${card.contentTitle.toLowerCase().replace(/\s+/g, '_')}_${groupId}_${item.title.toLowerCase().replace(/\s+/g, '_')}`
+  const groupId = card.group.length ? card.group[0].id : "group"
+  return `${day}${month}${year}_${card.contentTitle.toLowerCase().replace(/\s+/g, "_")}_${groupId}_${item.title.toLowerCase().replace(/\s+/g, "_")}`
 }
 
 // Alterna el modo de edición en una card: si está bloqueada, se vuelve a habilitar, y viceversa
@@ -307,10 +295,10 @@ const saveCard = (card) => {
 
 // Elimina una card de evaluación
 const deleteCard = (card) => {
-  const index = evaluationCards.value.findIndex(c => c.id === card.id)
+  const index = evaluationCards.value.findIndex((c) => c.id === card.id)
   if (index !== -1) {
     evaluationCards.value.splice(index, 1)
-    alert('Evaluación eliminada')
+    alert("Evaluación eliminada")
   }
 }
 </script>

@@ -25,9 +25,9 @@
   :progress="85"
   trend="up"
   :actions="[
-    { id: 'create', label: 'Nuevo', icon: 'PlusIcon', variant: 'success' },
-    { id: 'import', label: 'Importar', icon: 'DocumentArrowUpIcon', variant: 'secondary' },
-    { id: 'export', label: 'Exportar', icon: 'DocumentArrowDownIcon', variant: 'secondary' }
+    {id: 'create', label: 'Nuevo', icon: 'PlusIcon', variant: 'success'},
+    {id: 'import', label: 'Importar', icon: 'DocumentArrowUpIcon', variant: 'secondary'},
+    {id: 'export', label: 'Exportar', icon: 'DocumentArrowDownIcon', variant: 'secondary'},
   ]"
   @action="handleStudentAction"
 >
@@ -52,9 +52,9 @@
   :progress="92"
   trend="up"
   :actions="[
-    { id: 'create', label: 'Contratar', icon: 'UserPlusIcon', variant: 'success' },
-    { id: 'schedule', label: 'Horarios', icon: 'CalendarIcon', variant: 'primary' },
-    { id: 'export', label: 'Exportar', icon: 'DocumentArrowDownIcon', variant: 'secondary' }
+    {id: 'create', label: 'Contratar', icon: 'UserPlusIcon', variant: 'success'},
+    {id: 'schedule', label: 'Horarios', icon: 'CalendarIcon', variant: 'primary'},
+    {id: 'export', label: 'Exportar', icon: 'DocumentArrowDownIcon', variant: 'secondary'},
   ]"
   @action="handleTeacherAction"
 />
@@ -72,8 +72,8 @@
   :progress="78"
   trend="neutral"
   :actions="[
-    { id: 'create', label: 'Nueva Clase', icon: 'PlusIcon', variant: 'success' },
-    { id: 'schedule', label: 'Programar', icon: 'ClockIcon', variant: 'primary' }
+    {id: 'create', label: 'Nueva Clase', icon: 'PlusIcon', variant: 'success'},
+    {id: 'schedule', label: 'Programar', icon: 'ClockIcon', variant: 'primary'},
   ]"
   @action="handleClassAction"
 />
@@ -82,15 +82,15 @@
 // Métodos para manejar acciones
 const handleStudentAction = (actionId: string) => {
   switch (actionId) {
-    case 'create':
+    case "create":
       // Abrir modal de creación de estudiante
-      break;
-    case 'import':
+      break
+    case "import":
       // Abrir importador de estudiantes
-      break;
-    case 'export':
+      break
+    case "export":
       // Exportar datos de estudiantes
-      break;
+      break
   }
 }
 

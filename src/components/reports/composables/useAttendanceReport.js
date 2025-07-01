@@ -1,15 +1,15 @@
-import { ref, computed, reactive } from 'vue'
-import { useRoute } from 'vue-router'
-import { useAuthStore } from '../../../stores/auth'
-import { useClassesStore } from '../../../modulos/Classes/store/classes'
-import { useStudentsStore } from '../../../modulos/Students/store/students'
-import { useAttendanceStore } from '../../../modulos/Attendance/store/attendance'
-import { useTeachersStore } from '../../../modulos/Teachers/store/teachers'
-import { useObservationsStore } from '../../../stores/observations'
+import {ref, computed, reactive} from "vue"
+import {useRoute} from "vue-router"
+import {useAuthStore} from "../../../stores/auth"
+import {useClassesStore} from "../../../modulos/Classes/store/classes"
+import {useStudentsStore} from "../../../modulos/Students/store/students"
+import {useAttendanceStore} from "../../../modulos/Attendance/store/attendance"
+import {useTeachersStore} from "../../../modulos/Teachers/store/teachers"
+import {useObservationsStore} from "../../../stores/observations"
 // Importar el nuevo composable de datos de asistencia
-import { useAttendanceData } from '../attendance/composables/useAttendanceData'
+import {useAttendanceData} from "../attendance/composables/useAttendanceData"
 // Importar también la versión simplificada como alternativa
-import { useAttendanceDataSimple } from '../attendance/composables/useAttendanceDataSimple'
+import {useAttendanceDataSimple} from "../attendance/composables/useAttendanceDataSimple"
 import {
   startOfWeek,
   endOfWeek,
@@ -20,9 +20,9 @@ import {
   subMonths,
   format,
   parseISO,
-  isWithinInterval
-} from 'date-fns'
-import { es } from 'date-fns/locale'
+  isWithinInterval,
+} from "date-fns"
+import {es} from "date-fns/locale"
 
 /**
  * Composable principal para el informe de asistencia del profesor
@@ -41,32 +41,32 @@ export function useAttendanceReport() {
   // =====================================
   // ESTADO REACTIVO
   // =====================================
-  
+
   const loading = ref(false)
   const error = ref(null)
-  
+
   // Configuración de período
-  const selectedPeriod = ref('this_month') // 'today', 'this_week', 'this_month', 'last_week', 'last_month', 'custom'
+  const selectedPeriod = ref("this_month") // 'today', 'this_week', 'this_month', 'last_week', 'last_month', 'custom'
   const customDateRange = reactive({
     start: null,
-    end: null
+    end: null,
   })
-  
+
   // Datos del informe
   const reportData = reactive({
     classes: [],
     totalStudents: 0,
     dateRange: {
       start: null,
-      end: null
-    }
+      end: null,
+    },
   })
-  
+
   // Información del profesor
   const teacherInfo = reactive({
     id: null,
-    name: '',
-    email: ''
+    name: "",
+    email: "",
   })
 
   // =====================================
@@ -81,63 +81,65 @@ export function useAttendanceReport() {
   // Texto descriptivo del período seleccionado
   const selectedPeriodText = computed(() => {
     const periods = {
-      'today': 'Hoy',
-      'this_week': 'Esta semana',
-      'this_month': 'Este mes',
-      'last_week': 'Semana pasada',
-      'last_month': 'Mes pasado',
-      'custom': 'Período personalizado'
+      today: "Hoy",
+      this_week: "Esta semana",
+      this_month: "Este mes",
+      last_week: "Semana pasada",
+      last_month: "Mes pasado",
+      custom: "Período personalizado",
     }
-    return periods[selectedPeriod.value] || 'Período seleccionado'
+    return periods[selectedPeriod.value] || "Período seleccionado"
   })
 
   // Rango de fechas actual basado en el período seleccionado
   const actualDateRange = computed(() => {
     const now = new Date()
-    
+
     switch (selectedPeriod.value) {
-      case 'today':
+      case "today":
         return {
-          start: format(now, 'yyyy-MM-dd'),
-          end: format(now, 'yyyy-MM-dd')
+          start: format(now, "yyyy-MM-dd"),
+          end: format(now, "yyyy-MM-dd"),
         }
-      
-      case 'this_week':
+
+      case "this_week":
         return {
-          start: format(startOfWeek(now, { locale: es }), 'yyyy-MM-dd'),
-          end: format(endOfWeek(now, { locale: es }), 'yyyy-MM-dd')
+          start: format(startOfWeek(now, {locale: es}), "yyyy-MM-dd"),
+          end: format(endOfWeek(now, {locale: es}), "yyyy-MM-dd"),
         }
-      
-      case 'this_month':
+
+      case "this_month":
         return {
-          start: format(startOfMonth(now), 'yyyy-MM-dd'),
-          end: format(endOfMonth(now), 'yyyy-MM-dd')
+          start: format(startOfMonth(now), "yyyy-MM-dd"),
+          end: format(endOfMonth(now), "yyyy-MM-dd"),
         }
-      
-      case 'last_week':
+
+      case "last_week":
         const lastWeek = subWeeks(now, 1)
         return {
-          start: format(startOfWeek(lastWeek, { locale: es }), 'yyyy-MM-dd'),
-          end: format(endOfWeek(lastWeek, { locale: es }), 'yyyy-MM-dd')
+          start: format(startOfWeek(lastWeek, {locale: es}), "yyyy-MM-dd"),
+          end: format(endOfWeek(lastWeek, {locale: es}), "yyyy-MM-dd"),
         }
-      
-      case 'last_month':
+
+      case "last_month":
         const lastMonth = subMonths(now, 1)
         return {
-          start: format(startOfMonth(lastMonth), 'yyyy-MM-dd'),
-          end: format(endOfMonth(lastMonth), 'yyyy-MM-dd')
+          start: format(startOfMonth(lastMonth), "yyyy-MM-dd"),
+          end: format(endOfMonth(lastMonth), "yyyy-MM-dd"),
         }
-      
-      case 'custom':
+
+      case "custom":
         return {
-          start: customDateRange.start ? format(new Date(customDateRange.start), 'yyyy-MM-dd') : null,
-          end: customDateRange.end ? format(new Date(customDateRange.end), 'yyyy-MM-dd') : null
+          start: customDateRange.start
+            ? format(new Date(customDateRange.start), "yyyy-MM-dd")
+            : null,
+          end: customDateRange.end ? format(new Date(customDateRange.end), "yyyy-MM-dd") : null,
         }
-      
+
       default:
         return {
-          start: format(startOfMonth(now), 'yyyy-MM-dd'),
-          end: format(endOfMonth(now), 'yyyy-MM-dd')
+          start: format(startOfMonth(now), "yyyy-MM-dd"),
+          end: format(endOfMonth(now), "yyyy-MM-dd"),
         }
     }
   })
@@ -157,21 +159,21 @@ export function useAttendanceReport() {
     let totalJustified = 0
     let totalSessions = 0
 
-    reportData.classes.forEach(classData => {
-      classData.students.forEach(student => {
-        Object.values(student.attendance || {}).forEach(status => {
+    reportData.classes.forEach((classData) => {
+      classData.students.forEach((student) => {
+        Object.values(student.attendance || {}).forEach((status) => {
           totalSessions++
           switch (status) {
-            case 'present':
+            case "present":
               totalPresent++
               break
-            case 'absent':
+            case "absent":
               totalAbsent++
               break
-            case 'late':
+            case "late":
               totalLate++
               break
-            case 'justified':
+            case "justified":
               totalJustified++
               break
           }
@@ -179,9 +181,8 @@ export function useAttendanceReport() {
       })
     })
 
-    const attendanceRate = totalSessions > 0 
-      ? Math.round(((totalPresent + totalLate) / totalSessions) * 100) 
-      : 0
+    const attendanceRate =
+      totalSessions > 0 ? Math.round(((totalPresent + totalLate) / totalSessions) * 100) : 0
 
     return {
       totalPresent,
@@ -190,7 +191,7 @@ export function useAttendanceReport() {
       totalJustified,
       totalSessions,
       attendanceRate,
-      absenceRate: 100 - attendanceRate
+      absenceRate: 100 - attendanceRate,
     }
   })
 
@@ -199,27 +200,27 @@ export function useAttendanceReport() {
     // Aquí procesaremos los datos para crear gráficos
     const dailyStats = {}
     const weeklyStats = {}
-    
-    reportData.classes.forEach(classData => {
-      classData.attendanceRecords.forEach(record => {
+
+    reportData.classes.forEach((classData) => {
+      classData.attendanceRecords.forEach((record) => {
         const date = record.date
         if (!dailyStats[date]) {
-          dailyStats[date] = { present: 0, absent: 0, late: 0, total: 0 }
+          dailyStats[date] = {present: 0, absent: 0, late: 0, total: 0}
         }
-        
+
         // Procesar asistencias del día
-        Object.values(record.attendance || {}).forEach(status => {
+        Object.values(record.attendance || {}).forEach((status) => {
           dailyStats[date].total++
-          if (status === 'present') dailyStats[date].present++
-          else if (status === 'absent') dailyStats[date].absent++
-          else if (status === 'late') dailyStats[date].late++
+          if (status === "present") dailyStats[date].present++
+          else if (status === "absent") dailyStats[date].absent++
+          else if (status === "late") dailyStats[date].late++
         })
       })
     })
 
     return {
       daily: dailyStats,
-      weekly: weeklyStats
+      weekly: weeklyStats,
     }
   })
 
@@ -236,11 +237,11 @@ export function useAttendanceReport() {
       ausentes: [],
       tarde: [],
       justificados: [],
-      observaciones: ''
+      observaciones: "",
     }
 
     if (!attendanceDoc || !attendanceDoc.data) {
-      console.warn('Documento de asistencia inválido o vacío')
+      console.warn("Documento de asistencia inválido o vacío")
       return result
     }
 
@@ -255,11 +256,11 @@ export function useAttendanceReport() {
       result.tarde = attendanceDoc.data.tarde
     }
     if (Array.isArray(attendanceDoc.data.justificacion)) {
-      result.justificados = attendanceDoc.data.justificacion.map(j => j.id)
+      result.justificados = attendanceDoc.data.justificacion.map((j) => j.id)
     }
-    
-    result.observaciones = attendanceDoc.data.observations || ''
-    
+
+    result.observaciones = attendanceDoc.data.observations || ""
+
     return result
   }
 
@@ -268,7 +269,7 @@ export function useAttendanceReport() {
    */
   const countTotalStatus = (classData, status) => {
     let count = 0
-    
+
     for (const student of classData.students) {
       for (const date in student.attendance) {
         if (student.attendance[date] === status.toLowerCase()) {
@@ -276,7 +277,7 @@ export function useAttendanceReport() {
         }
       }
     }
-    
+
     return count
   }
 
@@ -286,17 +287,17 @@ export function useAttendanceReport() {
   const calculateAttendancePercentage = (classData) => {
     let total = 0
     let present = 0
-    
+
     for (const student of classData.students) {
       for (const date in student.attendance) {
         total++
         const status = student.attendance[date]
-        if (status === 'present' || status === 'late') {
+        if (status === "present" || status === "late") {
           present++
         }
       }
     }
-    
+
     return total > 0 ? Math.round((present / total) * 100) : 0
   }
 
@@ -306,17 +307,16 @@ export function useAttendanceReport() {
   const getStudentJustification = (classId, date, studentId) => {
     // Buscar en los documentos de asistencia
     const document = attendanceStore.attendanceDocuments.find(
-      doc => doc.classId === classId && 
-             (doc.fecha === date || doc.date === date)
+      (doc) => doc.classId === classId && (doc.fecha === date || doc.date === date)
     )
-    
+
     if (document && document.data && document.data.justificacion) {
-      const justification = document.data.justificacion.find(j => j.id === studentId)
+      const justification = document.data.justificacion.find((j) => j.id === studentId)
       if (justification) {
-        return justification.reason || justification.razon || ''
+        return justification.reason || justification.razon || ""
       }
     }
-    
+
     return null
   }
 
@@ -326,18 +326,18 @@ export function useAttendanceReport() {
   const validateDateRange = (startDate, endDate) => {
     const start = new Date(startDate)
     const end = new Date(endDate)
-    
+
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      throw new Error('Fechas inválidas')
+      throw new Error("Fechas inválidas")
     }
-    
+
     if (start > end) {
-      throw new Error('La fecha inicial debe ser anterior a la fecha final')
+      throw new Error("La fecha inicial debe ser anterior a la fecha final")
     }
-    
+
     return {
-      start: format(start, 'yyyy-MM-dd'),
-      end: format(end, 'yyyy-MM-dd')
+      start: format(start, "yyyy-MM-dd"),
+      end: format(end, "yyyy-MM-dd"),
     }
   }
 
@@ -357,16 +357,16 @@ export function useAttendanceReport() {
         await teachersStore.fetchTeachers()
       }
 
-      const teacher = teachersStore.teachers.find(t => t.id === currentTeacherId.value)
+      const teacher = teachersStore.teachers.find((t) => t.id === currentTeacherId.value)
       if (teacher) {
         Object.assign(teacherInfo, {
           id: teacher.id,
-          name: teacher.nombre || teacher.name || 'Profesor',
-          email: teacher.email || ''
+          name: teacher.nombre || teacher.name || "Profesor",
+          email: teacher.email || "",
         })
       }
     } catch (err) {
-      console.error('Error loading teacher info:', err)
+      console.error("Error loading teacher info:", err)
     }
   }
 
@@ -381,22 +381,25 @@ export function useAttendanceReport() {
 
       // Usar el método correcto del store
       const teacherClasses = await classesStore.fetchTeacherClasses(currentTeacherId.value)
-      
+
       console.log(`📚 Clases del maestro cargadas: ${teacherClasses.length}`)
-      
+
       if (teacherClasses.length > 0) {
-        console.log('📋 Clases encontradas:', teacherClasses.map(c => ({
-          id: c.id,
-          nombre: c.nombre || c.name,
-          instrumento: c.instrumento || c.instrument,
-          nivel: c.nivel || c.level,
-          alumnos: c.alumnos?.length || c.studentIds?.length || 0
-        })))
+        console.log(
+          "📋 Clases encontradas:",
+          teacherClasses.map((c) => ({
+            id: c.id,
+            nombre: c.nombre || c.name,
+            instrumento: c.instrumento || c.instrument,
+            nivel: c.nivel || c.level,
+            alumnos: c.alumnos?.length || c.studentIds?.length || 0,
+          }))
+        )
       }
 
       return teacherClasses
     } catch (err) {
-      console.error('❌ Error cargando clases del maestro:', err)
+      console.error("❌ Error cargando clases del maestro:", err)
       throw err
     }
   }
@@ -411,51 +414,59 @@ export function useAttendanceReport() {
         await studentsStore.fetchStudents()
       }
 
-      return classes.map(clase => {
+      return classes.map((clase) => {
         // Obtener IDs de estudiantes (diferentes nombres de campo posibles)
         const studentIds = clase.alumnos || clase.studentIds || clase.students || []
-        
-        const students = studentIds.map(studentId => {
-          const student = studentsStore.students.find(s => s.id === studentId)
-          if (!student) {
-            // Crear estudiante placeholder si no se encuentra
-            return {
-              id: studentId,
-              name: 'Estudiante Desconocido',
-              email: '',
-              attendance: {}
-            }
-          }
 
-          return {
-            id: student.id,
-            name: `${student.nombre || 'Estudiante'} ${student.apellido || ''}`.trim(),
-            email: student.email || '',
-            attendance: {} // Se llenará con los datos de asistencia
-          }
-        }).filter(Boolean)
+        const students = studentIds
+          .map((studentId) => {
+            const student = studentsStore.students.find((s) => s.id === studentId)
+            if (!student) {
+              // Crear estudiante placeholder si no se encuentra
+              return {
+                id: studentId,
+                name: "Estudiante Desconocido",
+                email: "",
+                attendance: {},
+              }
+            }
+
+            return {
+              id: student.id,
+              name: `${student.nombre || "Estudiante"} ${student.apellido || ""}`.trim(),
+              email: student.email || "",
+              attendance: {}, // Se llenará con los datos de asistencia
+            }
+          })
+          .filter(Boolean)
 
         // Determinar días de la semana de la clase
-        const daySchedule = clase.schedule ? 
-          clase.schedule.slots?.map(slot => {
-            const dayMap = { 
-              'domingo': 0, 'lunes': 1, 'martes': 2, 'miércoles': 3, 
-              'jueves': 4, 'viernes': 5, 'sábado': 6 
-            }
-            return dayMap[slot.day?.toLowerCase()] || 0
-          }) : []
+        const daySchedule = clase.schedule
+          ? clase.schedule.slots?.map((slot) => {
+              const dayMap = {
+                domingo: 0,
+                lunes: 1,
+                martes: 2,
+                miércoles: 3,
+                jueves: 4,
+                viernes: 5,
+                sábado: 6,
+              }
+              return dayMap[slot.day?.toLowerCase()] || 0
+            })
+          : []
 
         return {
           id: clase.id,
-          name: clase.nombre || clase.name || 'Clase sin nombre',
+          name: clase.nombre || clase.name || "Clase sin nombre",
           students,
           daySchedule,
           attendanceRecords: [], // Se llenará con los registros de asistencia
-          observations: [] // Observaciones de la clase
+          observations: [], // Observaciones de la clase
         }
       })
     } catch (err) {
-      console.error('Error loading class students:', err)
+      console.error("Error loading class students:", err)
       return []
     }
   }
@@ -465,64 +476,69 @@ export function useAttendanceReport() {
    */
   const loadAttendanceRecords = async (classesWithStudents) => {
     try {
-      const { start, end } = actualDateRange.value
+      const {start, end} = actualDateRange.value
       if (!start || !end) return classesWithStudents
 
       // Cargar documentos de asistencia para el rango de fechas
       await attendanceStore.fetchAttendanceByDateRange(start, end, currentTeacherId.value)
 
-      return classesWithStudents.map(classData => {
+      return classesWithStudents.map((classData) => {
         // Filtrar registros de asistencia para esta clase específica
-        const classAttendanceRecords = attendanceStore.attendanceDocuments.filter(doc => {
-          const docDate = doc.fecha || doc.date || ''
-          return doc.classId === classData.id && 
-                 docDate >= start && 
-                 docDate <= end
+        const classAttendanceRecords = attendanceStore.attendanceDocuments.filter((doc) => {
+          const docDate = doc.fecha || doc.date || ""
+          return doc.classId === classData.id && docDate >= start && docDate <= end
         })
 
-        console.log(`📋 Clase ${classData.name}: ${classAttendanceRecords.length} registros de asistencia`)
+        console.log(
+          `📋 Clase ${classData.name}: ${classAttendanceRecords.length} registros de asistencia`
+        )
 
         // Obtener fechas únicas con registros de asistencia
-        const relevantDates = Array.from(new Set(
-          classAttendanceRecords.map(doc => doc.fecha || doc.date || '')
-        )).filter(date => date).sort()
+        const relevantDates = Array.from(
+          new Set(classAttendanceRecords.map((doc) => doc.fecha || doc.date || ""))
+        )
+          .filter((date) => date)
+          .sort()
 
         // Procesar asistencia para cada estudiante
-        classData.students.forEach(student => {
+        classData.students.forEach((student) => {
           // Inicializar attendance como objeto vacío
           student.attendance = {}
-          
+
           // Procesar cada registro de asistencia
-          classAttendanceRecords.forEach(doc => {
-            const date = doc.fecha || doc.date || ''
+          classAttendanceRecords.forEach((doc) => {
+            const date = doc.fecha || doc.date || ""
             if (!date) return
 
             // Determinar estado del estudiante para esta fecha
-            let status = 'absent' // Por defecto ausente
-            
+            let status = "absent" // Por defecto ausente
+
             const docData = doc.data || {}
-            
+
             if (docData.presentes && docData.presentes.includes(student.id)) {
-              status = 'present'
+              status = "present"
             } else if (docData.tarde && docData.tarde.includes(student.id)) {
-              status = 'late'
-            } else if (docData.justificacion && docData.justificacion.some(j => j.id === student.id)) {
-              status = 'justified'
+              status = "late"
+            } else if (
+              docData.justificacion &&
+              docData.justificacion.some((j) => j.id === student.id)
+            ) {
+              status = "justified"
             } else if (docData.ausentes && docData.ausentes.includes(student.id)) {
-              status = 'absent'
+              status = "absent"
             }
-            
+
             student.attendance[date] = status
           })
         })
 
         // Procesar observaciones de la clase
         const observations = []
-        classAttendanceRecords.forEach(doc => {
+        classAttendanceRecords.forEach((doc) => {
           if (doc.data?.observations) {
             observations.push({
-              date: doc.fecha || doc.date || '',
-              text: doc.data.observations
+              date: doc.fecha || doc.date || "",
+              text: doc.data.observations,
             })
           }
         })
@@ -531,11 +547,11 @@ export function useAttendanceReport() {
           ...classData,
           attendanceRecords: classAttendanceRecords,
           observations,
-          relevantDates
+          relevantDates,
         }
       })
     } catch (err) {
-      console.error('Error loading attendance records:', err)
+      console.error("Error loading attendance records:", err)
       return classesWithStudents
     }
   }
@@ -548,55 +564,53 @@ export function useAttendanceReport() {
       loading.value = true
       error.value = null
 
-      console.log('🔄 Iniciando carga de datos del informe...')
-      
+      console.log("🔄 Iniciando carga de datos del informe...")
+
       // Validar ID del profesor
       if (!currentTeacherId.value) {
-        throw new Error('ID de profesor no disponible')
+        throw new Error("ID de profesor no disponible")
       }
-      
+
       // Validar rango de fechas
-      const { start, end } = validateDateRange(
-        actualDateRange.value.start, 
-        actualDateRange.value.end
-      )
+      const {start, end} = validateDateRange(actualDateRange.value.start, actualDateRange.value.end)
       console.log(`📆 Período: ${start} a ${end}`)
-      
+
       // 1. Cargar información del profesor
       await loadTeacherInfo()
-      
+
       // 2. Cargar clases del profesor
       const teacherClasses = await loadTeacherClasses()
-      
+
       if (teacherClasses.length === 0) {
-        console.warn('⚠️ No se encontraron clases para este profesor')
+        console.warn("⚠️ No se encontraron clases para este profesor")
         reportData.classes = []
         reportData.dateRange = actualDateRange.value
         return
       }
-      
+
       // 3. Cargar estudiantes de las clases
       const classesWithStudents = await loadClassStudents(teacherClasses)
-      
+
       // 4. Cargar registros de asistencia
       const finalClassData = await loadAttendanceRecords(classesWithStudents)
-      
+
       // 5. Actualizar datos del reporte
       reportData.classes = finalClassData
       reportData.dateRange = actualDateRange.value
 
-      console.log('✅ Datos del informe cargados exitosamente')
-      console.log('📊 Clases procesadas:', finalClassData.length)
-      console.log('👥 Total estudiantes:', totalStudents.value)
-      
+      console.log("✅ Datos del informe cargados exitosamente")
+      console.log("📊 Clases procesadas:", finalClassData.length)
+      console.log("👥 Total estudiantes:", totalStudents.value)
+
       // Log detallado por clase
-      finalClassData.forEach(classData => {
-        console.log(`📚 ${classData.name}: ${classData.students.length} estudiantes, ${classData.attendanceRecords.length} registros`)
+      finalClassData.forEach((classData) => {
+        console.log(
+          `📚 ${classData.name}: ${classData.students.length} estudiantes, ${classData.attendanceRecords.length} registros`
+        )
       })
-      
     } catch (err) {
-      console.error('❌ Error al cargar datos del informe:', err)
-      error.value = err.message || 'Error al cargar los datos del informe'
+      console.error("❌ Error al cargar datos del informe:", err)
+      error.value = err.message || "Error al cargar los datos del informe"
     } finally {
       loading.value = false
     }
@@ -611,54 +625,50 @@ export function useAttendanceReport() {
       loading.value = true
       error.value = null
 
-      console.log('🔄 Iniciando carga alternativa de datos del informe...')
-      
+      console.log("🔄 Iniciando carga alternativa de datos del informe...")
+
       // Validar ID del profesor
       if (!currentTeacherId.value) {
-        throw new Error('ID de profesor no disponible')
+        throw new Error("ID de profesor no disponible")
       }
-      
+
       // Validar rango de fechas
-      const { start, end } = validateDateRange(
-        actualDateRange.value.start, 
-        actualDateRange.value.end
-      )
+      const {start, end} = validateDateRange(actualDateRange.value.start, actualDateRange.value.end)
       console.log(`📆 Período: ${start} a ${end}`)
-      
+
       // 1. Cargar información del profesor
       await loadTeacherInfo()
-      
+
       // 2. Usar el nuevo composable para cargar clases del profesor
       const teacherClasses = await attendanceData.loadTeacherClasses(currentTeacherId.value)
-      
+
       if (teacherClasses.length === 0) {
-        console.warn('⚠️ No se encontraron clases para este profesor')
+        console.warn("⚠️ No se encontraron clases para este profesor")
         reportData.classes = []
         reportData.dateRange = actualDateRange.value
         return
       }
-      
+
       // 3. Usar el nuevo composable para cargar datos de asistencia
       const attendanceRecords = await attendanceData.fetchAttendanceData(
-        currentTeacherId.value, 
-        start, 
+        currentTeacherId.value,
+        start,
         end
       )
-      
+
       // 4. Procesar los datos usando ambos composables
       const processedClasses = await processClassesWithNewData(teacherClasses, attendanceRecords)
-      
+
       // 5. Actualizar datos del reporte
       reportData.classes = processedClasses
       reportData.dateRange = actualDateRange.value
 
-      console.log('✅ Datos del informe cargados exitosamente (método alternativo)')
-      console.log('📊 Clases procesadas:', processedClasses.length)
-      console.log('📄 Registros de asistencia:', attendanceRecords.length)
-      
+      console.log("✅ Datos del informe cargados exitosamente (método alternativo)")
+      console.log("📊 Clases procesadas:", processedClasses.length)
+      console.log("📄 Registros de asistencia:", attendanceRecords.length)
     } catch (err) {
-      console.error('❌ Error cargando datos del informe (método alternativo):', err)
-      error.value = err.message || 'Error al cargar el informe'
+      console.error("❌ Error cargando datos del informe (método alternativo):", err)
+      error.value = err.message || "Error al cargar el informe"
       throw err
     } finally {
       loading.value = false
@@ -669,55 +679,59 @@ export function useAttendanceReport() {
    * Procesar clases con los nuevos datos de asistencia
    */
   const processClassesWithNewData = async (teacherClasses, attendanceRecords) => {
-    const { start, end } = actualDateRange.value
-    
-    return teacherClasses.map(classData => {
+    const {start, end} = actualDateRange.value
+
+    return teacherClasses.map((classData) => {
       // Obtener estudiantes de la clase
-      const classStudents = (classData.alumnos || []).map(studentData => {
+      const classStudents = (classData.alumnos || []).map((studentData) => {
         const studentId = studentData.id || studentData.uid
-        const studentInfo = studentsStore.students?.find(s => s.id === studentId || s.uid === studentId)
-        
+        const studentInfo = studentsStore.students?.find(
+          (s) => s.id === studentId || s.uid === studentId
+        )
+
         return {
           id: studentId,
-          name: studentInfo?.nombre || studentData.nombre || 'Estudiante sin nombre',
-          email: studentInfo?.email || studentData.email || '',
-          attendance: {} // Se llenará a continuación
+          name: studentInfo?.nombre || studentData.nombre || "Estudiante sin nombre",
+          email: studentInfo?.email || studentData.email || "",
+          attendance: {}, // Se llenará a continuación
         }
       })
-      
+
       // Procesar asistencia usando el nuevo composable
       const attendanceByClass = attendanceData.attendanceByClass.value[classData.id] || []
-      
+
       // Procesar cada documento de asistencia
-      attendanceByClass.forEach(doc => {
+      attendanceByClass.forEach((doc) => {
         const date = doc.fecha || doc.date
         if (!date || date < start || date > end) return
-        
+
         const processedData = attendanceData.processAttendanceData(doc)
-        
+
         // Asignar estados de asistencia a cada estudiante
-        classStudents.forEach(student => {
+        classStudents.forEach((student) => {
           if (!student.attendance[date]) {
-            student.attendance[date] = 'absent' // Por defecto
+            student.attendance[date] = "absent" // Por defecto
           }
-          
+
           if (processedData.presentes.includes(student.id)) {
-            student.attendance[date] = 'present'
+            student.attendance[date] = "present"
           } else if (processedData.tarde.includes(student.id)) {
-            student.attendance[date] = 'late'
+            student.attendance[date] = "late"
           } else if (processedData.justificados.includes(student.id)) {
-            student.attendance[date] = 'justified'
+            student.attendance[date] = "justified"
           }
         })
       })
-      
+
       return {
         ...classData,
         students: classStudents,
-        observations: attendanceByClass.map(doc => ({
-          date: doc.fecha || doc.date,
-          text: attendanceData.processAttendanceData(doc).observaciones
-        })).filter(obs => obs.text)
+        observations: attendanceByClass
+          .map((doc) => ({
+            date: doc.fecha || doc.date,
+            text: attendanceData.processAttendanceData(doc).observaciones,
+          }))
+          .filter((obs) => obs.text),
       }
     })
   }
@@ -739,33 +753,33 @@ export function useAttendanceReport() {
     error,
     reportData,
     teacherInfo,
-    
+
     // Filtros
     selectedPeriod,
     customDateRange,
     selectedPeriodText,
     actualDateRange,
-    
+
     // Computed
     totalStudents,
     overviewStats,
     chartData,
-    
+
     // Métodos principales
     refreshData,
     handlePeriodChange,
-    
+
     // Funciones de utilidad
     processAttendanceData,
     countTotalStatus,
     calculateAttendancePercentage,
     getStudentJustification,
     validateDateRange,
-    
+
     // Stores (para debugging)
     classesStore,
     studentsStore,
     attendanceStore,
-    teachersStore
+    teachersStore,
   }
 }

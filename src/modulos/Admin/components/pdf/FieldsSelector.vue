@@ -1,19 +1,17 @@
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-        Campos a Incluir
-      </h3>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Campos a Incluir</h3>
       <div class="flex space-x-2">
         <button
-          @click="selectAll"
           class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+          @click="selectAll"
         >
           Seleccionar todos
         </button>
         <button
-          @click="deselectAll"
           class="text-sm text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 font-medium"
+          @click="deselectAll"
         >
           Deseleccionar todos
         </button>
@@ -30,8 +28,8 @@
           type="checkbox"
           :value="field"
           :checked="selectedFields.includes(field)"
-          @change="toggleField(field)"
           class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+          @change="toggleField(field)"
         />
         <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
           {{ getFieldLabel(field) }}
@@ -71,9 +69,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { DocumentIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
-import { usePDFReportTypes } from '../../composables/usePDFReportTypes'
+import {computed} from "vue"
+import {DocumentIcon, CheckCircleIcon} from "@heroicons/vue/24/outline"
+import {usePDFReportTypes} from "../../composables/usePDFReportTypes"
 
 // Props
 interface Props {
@@ -85,47 +83,58 @@ const props = defineProps<Props>()
 
 // Emits
 const emit = defineEmits<{
-  'update:selectedFields': [value: string[]]
+  "update:selectedFields": [value: string[]]
 }>()
 
 // Composables
-const { getFieldLabel } = usePDFReportTypes()
+const {getFieldLabel} = usePDFReportTypes()
 
 // Computed
 const availableFields = computed(() => {
-  const fieldMap: { [key: string]: string[] } = {
-    students: ['name', 'age', 'instrument', 'teacher', 'class', 'schedule', 'enrollmentDate', 'status', 'phone', 'email'],
-    classes: ['name', 'teacher', 'instrument', 'schedule', 'students', 'capacity', 'status'],
-    teachers: ['name', 'instrument', 'classes', 'students', 'phone', 'email', 'status'],
-    attendance: ['student', 'class', 'date', 'status', 'observations'],
-    performance: ['student', 'class', 'evaluation', 'score', 'date', 'comments']
+  const fieldMap: {[key: string]: string[]} = {
+    students: [
+      "name",
+      "age",
+      "instrument",
+      "teacher",
+      "class",
+      "schedule",
+      "enrollmentDate",
+      "status",
+      "phone",
+      "email",
+    ],
+    classes: ["name", "teacher", "instrument", "schedule", "students", "capacity", "status"],
+    teachers: ["name", "instrument", "classes", "students", "phone", "email", "status"],
+    attendance: ["student", "class", "date", "status", "observations"],
+    performance: ["student", "class", "evaluation", "score", "date", "comments"],
   }
-  
+
   return fieldMap[props.selectedReportType] || []
 })
 
 // Funciones
 const toggleField = (field: string) => {
   const newFields = props.selectedFields.includes(field)
-    ? props.selectedFields.filter(f => f !== field)
+    ? props.selectedFields.filter((f) => f !== field)
     : [...props.selectedFields, field]
-  
-  emit('update:selectedFields', newFields)
+
+  emit("update:selectedFields", newFields)
 }
 
 const selectAll = () => {
-  emit('update:selectedFields', [...availableFields.value])
+  emit("update:selectedFields", [...availableFields.value])
 }
 
 const deselectAll = () => {
-  emit('update:selectedFields', [])
+  emit("update:selectedFields", [])
 }
 </script>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import {defineComponent} from "vue"
 
 export default defineComponent({
-  name: 'FieldsSelector'
+  name: "FieldsSelector",
 })
-</script> 
+</script>

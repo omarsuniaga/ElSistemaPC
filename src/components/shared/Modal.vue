@@ -15,8 +15,10 @@
         </TransitionChild>
 
         <!-- Este elemento es para centrar el modal -->
-        <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-        
+        <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true"
+          >&#8203;</span
+        >
+
         <TransitionChild
           as="template"
           enter="ease-out duration-300"
@@ -26,32 +28,49 @@
           leave-from="opacity-100 translate-y-0 sm:scale-100"
           leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
         >
-          <div 
+          <div
             class="inline-block w-full transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all dark:bg-gray-800 sm:my-8 sm:w-full sm:max-w-lg sm:align-middle md:max-w-xl"
           >
             <div class="modal-header border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-              <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900 dark:text-white">
+              <DialogTitle
+                as="h3"
+                class="text-lg font-medium leading-6 text-gray-900 dark:text-white"
+              >
                 {{ title }}
               </DialogTitle>
-              <button 
-                @click="$emit('close')" 
+              <button
                 class="modal-close-btn ml-auto -mr-2 flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
                 aria-label="Cerrar"
+                @click="$emit('close')"
               >
-                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  class="h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
-            
+
             <div class="modal-body px-6 py-4 dark:text-gray-200">
               <div class="max-h-[calc(100vh-14rem)] overflow-y-auto custom-scrollbar">
-                <slot></slot>
+                <slot />
               </div>
             </div>
-            
-            <div v-if="$slots.footer" class="modal-footer border-t border-gray-200 bg-gray-50 px-6 py-3 dark:border-gray-700 dark:bg-gray-800/50">
-              <slot name="footer"></slot>
+
+            <div
+              v-if="$slots.footer"
+              class="modal-footer border-t border-gray-200 bg-gray-50 px-6 py-3 dark:border-gray-700 dark:bg-gray-800/50"
+            >
+              <slot name="footer" />
             </div>
           </div>
         </TransitionChild>
@@ -61,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { Dialog, DialogOverlay, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue'
+import {Dialog, DialogOverlay, DialogTitle, TransitionRoot, TransitionChild} from "@headlessui/vue"
 
 defineProps<{
   show: boolean
@@ -69,8 +88,14 @@ defineProps<{
 }>()
 
 defineEmits<{
-  (e: 'close'): void
+  (e: "close"): void
 }>()
+</script>
+
+<script lang="ts">
+export default {
+  name: "Modal",
+}
 </script>
 
 <style scoped>
@@ -117,7 +142,7 @@ defineEmits<{
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background-color: #475569;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background-color: #64748b;
   }
@@ -134,9 +159,3 @@ defineEmits<{
   opacity: 0;
 }
 </style>
-
-<script lang="ts">
-export default {
-  name: 'Modal'
-}
-</script>

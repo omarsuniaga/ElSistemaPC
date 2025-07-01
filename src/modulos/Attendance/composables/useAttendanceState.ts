@@ -1,53 +1,49 @@
 // src/modulos/attendance/composables/useAttendanceState.ts
-import { ref, computed } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { useClassesStore } from '@/modulos/Classes/store/classes'
-import { useStudentsStore } from '@/modulos/Students/store/students'
-import { useAttendanceStore } from '@/modulos/Attendance/store/attendance'
-import { useToast } from '@/modulos/Attendance/composables/useToast'
+import {ref, computed} from "vue"
+import {useAuthStore} from "@/stores/auth"
+import {useClassesStore} from "@/modulos/Classes/store/classes"
+import {useStudentsStore} from "@/modulos/Students/store/students"
+import {useAttendanceStore} from "@/modulos/Attendance/store/attendance"
+import {useToast} from "@/modulos/Attendance/composables/useToast"
 
-export function useAttendanceState(role: 'admin' | 'maestro' = 'maestro') {
-  const auth        = useAuthStore()
+export function useAttendanceState(role: "admin" | "maestro" = "maestro") {
+  const auth = useAuthStore()
   const classesStore = useClassesStore()
   const studentsStore = useStudentsStore()
   const attendanceStore = useAttendanceStore()
-  const toast       = useToast()
+  const toast = useToast()
 
   /*** Estado reactivo ***/
-  const selectedDate  = ref<string>( new Date().toISOString().slice(0,10) )
-  const selectedClass = ref<string>('')
-  const view          = ref<'calendar'|'class-select'|'attendance-form'>('calendar')
-  const loading       = ref<boolean>(false)
-  const error         = ref<string|null>(null)
+  const selectedDate = ref<string>(new Date().toISOString().slice(0, 10))
+  const selectedClass = ref<string>("")
+  const view = ref<"calendar" | "class-select" | "attendance-form">("calendar")
+  const loading = ref<boolean>(false)
+  const error = ref<string | null>(null)
 
   /*** Derived ***/
   // Lista de clases según rol
   const classOptions = computed(() => {
-    return role === 'admin'
+    return role === "admin"
       ? classesStore.classes
-      : classesStore.classes.filter(c => c.teacherId === auth.user?.uid)
+      : classesStore.classes.filter((c) => c.teacherId === auth.user?.uid)
   })
 
   // Alumnos de la clase seleccionada
   const students = computed(() =>
-    selectedClass.value
-      ? studentsStore.getStudentsByClass(selectedClass.value)
-      : []
+    selectedClass.value ? studentsStore.getStudentsByClass(selectedClass.value) : []
   )
 
   // Registros de asistencia cargados
   const attendanceRecords = computed(() => attendanceStore.attendanceRecords)
 
   // Estados de fecha para pintar el calendario
-  const dateStatuses = computed(() =>
-    attendanceStore.dateAttendanceStatuses
-  )
+  const dateStatuses = computed(() => attendanceStore.dateAttendanceStatuses)
 
   // IDs de clases que ya tienen asistencia en la fecha seleccionada
   const classesWithRecords = computed(() =>
     attendanceStore.attendanceDocuments
-      .filter(doc => doc.fecha === selectedDate.value)
-      .map(doc => doc.classId)
+      .filter((doc) => doc.fecha === selectedDate.value)
+      .map((doc) => doc.classId)
   )
 
   /*** Actions ***/
@@ -62,7 +58,7 @@ export function useAttendanceState(role: 'admin' | 'maestro' = 'maestro') {
         attendanceStore.fetchAllAttendanceDates(),
       ])
     } catch (e: any) {
-      error.value = e.message || 'Error al inicializar datos'
+      error.value = e.message || "Error al inicializar datos"
       toast.error(error.value)
     } finally {
       loading.value = false
@@ -87,12 +83,9 @@ export function useAttendanceState(role: 'admin' | 'maestro' = 'maestro') {
     loading.value = true
     error.value = null
     try {
-      await attendanceStore.fetchAttendanceDocument(
-        selectedDate.value,
-        selectedClass.value
-      )
+      await attendanceStore.fetchAttendanceDocument(selectedDate.value, selectedClass.value)
     } catch (e: any) {
-      error.value = e.message || 'Error al cargar asistencia'
+      error.value = e.message || "Error al cargar asistencia"
       toast.error(error.value)
     } finally {
       loading.value = false
@@ -105,9 +98,9 @@ export function useAttendanceState(role: 'admin' | 'maestro' = 'maestro') {
     error.value = null
     try {
       await attendanceStore.saveAllAttendanceChanges()
-      toast.success('Asistencia guardada')
+      toast.success("Asistencia guardada")
     } catch (e: any) {
-      error.value = e.message || 'Error al guardar asistencia'
+      error.value = e.message || "Error al guardar asistencia"
       toast.error(error.value)
     } finally {
       loading.value = false
@@ -116,7 +109,7 @@ export function useAttendanceState(role: 'admin' | 'maestro' = 'maestro') {
 
   // Cancela y vuelve a la vista de calendario
   function cancel() {
-    view.value = 'calendar'
+    view.value = "calendar"
   }
 
   return {

@@ -1,13 +1,13 @@
 <template>
   <div class="overflow-hidden">
     <!-- Table Header -->
-    <div class="bg-gray-50 dark:bg-gray-700 px-6 py-3 border-b border-gray-200 dark:border-gray-600">
+    <div
+      class="bg-gray-50 dark:bg-gray-700 px-6 py-3 border-b border-gray-200 dark:border-gray-600"
+    >
       <div class="flex items-center justify-between">
-        <h3 class="text-sm font-medium text-gray-900 dark:text-white">
-          Lista de Maestros
-        </h3>
+        <h3 class="text-sm font-medium text-gray-900 dark:text-white">Lista de Maestros</h3>
         <div class="text-sm text-gray-500 dark:text-gray-400">
-          {{ teachers.length }} maestro{{ teachers.length !== 1 ? 's' : '' }}
+          {{ teachers.length }} maestro{{ teachers.length !== 1 ? "s" : "" }}
         </div>
       </div>
     </div>
@@ -19,65 +19,55 @@
           <tr>
             <!-- Name -->
             <th
-              @click="handleSort('name')"
               class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none"
+              @click="handleSort('name')"
             >
               <div class="flex items-center space-x-1">
                 <span>Nombre</span>
-                <ChevronUpDownIcon 
-                  v-if="sortField !== 'name'"
-                  class="w-4 h-4 text-gray-400" 
-                />
-                <ChevronUpIcon 
-                  v-else-if="sortOrder === 'asc'"
-                  class="w-4 h-4 text-blue-500" 
-                />
-                <ChevronDownIcon 
-                  v-else
-                  class="w-4 h-4 text-blue-500" 
-                />
+                <ChevronUpDownIcon v-if="sortField !== 'name'" class="w-4 h-4 text-gray-400" />
+                <ChevronUpIcon v-else-if="sortOrder === 'asc'" class="w-4 h-4 text-blue-500" />
+                <ChevronDownIcon v-else class="w-4 h-4 text-blue-500" />
               </div>
             </th>
 
             <!-- Contact -->
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+            >
               Contacto
             </th>
 
             <!-- Specialties -->
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+            >
               Especialidades
             </th>
 
             <!-- Classes -->
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+            >
               Clases
             </th>
 
             <!-- Status -->
             <th
-              @click="handleSort('activo')"
               class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none"
+              @click="handleSort('activo')"
             >
               <div class="flex items-center space-x-1">
                 <span>Estado</span>
-                <ChevronUpDownIcon 
-                  v-if="sortField !== 'activo'"
-                  class="w-4 h-4 text-gray-400" 
-                />
-                <ChevronUpIcon 
-                  v-else-if="sortOrder === 'asc'"
-                  class="w-4 h-4 text-blue-500" 
-                />
-                <ChevronDownIcon 
-                  v-else
-                  class="w-4 h-4 text-blue-500" 
-                />
+                <ChevronUpDownIcon v-if="sortField !== 'activo'" class="w-4 h-4 text-gray-400" />
+                <ChevronUpIcon v-else-if="sortOrder === 'asc'" class="w-4 h-4 text-blue-500" />
+                <ChevronDownIcon v-else class="w-4 h-4 text-blue-500" />
               </div>
             </th>
 
             <!-- Actions -->
-            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th
+              class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+            >
               Acciones
             </th>
           </tr>
@@ -93,7 +83,9 @@
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center">
                 <div class="flex-shrink-0 h-10 w-10">
-                  <div class="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                  <div
+                    class="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center"
+                  >
                     <span class="text-sm font-medium text-blue-600 dark:text-blue-300">
                       {{ getInitials(teacher.nombre, teacher.apellido) }}
                     </span>
@@ -103,9 +95,7 @@
                   <div class="text-sm font-medium text-gray-900 dark:text-white">
                     {{ teacher.nombre }} {{ teacher.apellido }}
                   </div>
-                  <div class="text-sm text-gray-500 dark:text-gray-400">
-                    ID: {{ teacher.id }}
-                  </div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400">ID: {{ teacher.id }}</div>
                 </div>
               </div>
             </td>
@@ -155,16 +145,16 @@
                   'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
                   teacher.activo
                     ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
                 ]"
               >
                 <span
                   :class="[
                     'w-1.5 h-1.5 rounded-full mr-1.5',
-                    teacher.activo ? 'bg-green-400' : 'bg-red-400'
+                    teacher.activo ? 'bg-green-400' : 'bg-red-400',
                   ]"
-                ></span>
-                {{ teacher.activo ? 'Activo' : 'Inactivo' }}
+                />
+                {{ teacher.activo ? "Activo" : "Inactivo" }}
               </span>
             </td>
 
@@ -172,34 +162,34 @@
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <div class="flex items-center justify-end space-x-2">
                 <button
-                  @click="$emit('view-teacher', teacher)"
                   class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                   title="Ver detalles"
+                  @click="$emit('view-teacher', teacher)"
                 >
                   <EyeIcon class="w-4 h-4" />
                 </button>
                 <button
-                  @click="$emit('edit-teacher', teacher)"
                   class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                   title="Editar"
+                  @click="$emit('edit-teacher', teacher)"
                 >
                   <PencilIcon class="w-4 h-4" />
                 </button>
                 <button
-                  @click="$emit('assign-classes', teacher)"
                   class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                   title="Asignar clases"
+                  @click="$emit('assign-classes', teacher)"
                 >
                   <AcademicCapIcon class="w-4 h-4" />
                 </button>
                 <button
-                  @click="$emit('toggle-status', teacher)"
                   :class="[
                     teacher.activo
                       ? 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300'
-                      : 'text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300'
+                      : 'text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300',
                   ]"
                   :title="teacher.activo ? 'Desactivar' : 'Activar'"
+                  @click="$emit('toggle-status', teacher)"
                 >
                   <component :is="teacher.activo ? XMarkIcon : CheckIcon" class="w-4 h-4" />
                 </button>
@@ -224,7 +214,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import {ref, computed} from "vue"
 import {
   ChevronUpDownIcon,
   ChevronUpIcon,
@@ -233,8 +223,8 @@ import {
   PencilIcon,
   AcademicCapIcon,
   XMarkIcon,
-  CheckIcon
-} from '@heroicons/vue/24/outline'
+  CheckIcon,
+} from "@heroicons/vue/24/outline"
 
 // Props
 const props = defineProps<{
@@ -244,43 +234,43 @@ const props = defineProps<{
 
 // Emits
 defineEmits<{
-  'view-teacher': [teacher: any]
-  'edit-teacher': [teacher: any]
-  'assign-classes': [teacher: any]
-  'toggle-status': [teacher: any]
+  "view-teacher": [teacher: any]
+  "edit-teacher": [teacher: any]
+  "assign-classes": [teacher: any]
+  "toggle-status": [teacher: any]
 }>()
 
 // Sorting
-const sortField = ref<string>('nombre')
-const sortOrder = ref<'asc' | 'desc'>('asc')
+const sortField = ref<string>("nombre")
+const sortOrder = ref<"asc" | "desc">("asc")
 
 const handleSort = (field: string) => {
   if (sortField.value === field) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc"
   } else {
     sortField.value = field
-    sortOrder.value = 'asc'
+    sortOrder.value = "asc"
   }
 }
 
 const sortedTeachers = computed(() => {
   const teachers = [...props.teachers]
-  
+
   return teachers.sort((a, b) => {
     let aValue: any = a[sortField.value]
     let bValue: any = b[sortField.value]
-    
+
     // Handle specific field types
-    if (sortField.value === 'name') {
+    if (sortField.value === "name") {
       aValue = `${a.nombre} ${a.apellido}`.toLowerCase()
       bValue = `${b.nombre} ${b.apellido}`.toLowerCase()
     }
-    
+
     if (aValue < bValue) {
-      return sortOrder.value === 'asc' ? -1 : 1
+      return sortOrder.value === "asc" ? -1 : 1
     }
     if (aValue > bValue) {
-      return sortOrder.value === 'asc' ? 1 : -1
+      return sortOrder.value === "asc" ? 1 : -1
     }
     return 0
   })
@@ -288,7 +278,7 @@ const sortedTeachers = computed(() => {
 
 // Helper functions
 const getInitials = (firstName: string, lastName: string) => {
-  return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase()
+  return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`.toUpperCase()
 }
 
 const getTeacherSpecialties = (teacher: any) => {

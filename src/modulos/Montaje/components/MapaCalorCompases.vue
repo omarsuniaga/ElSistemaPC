@@ -4,24 +4,24 @@
       <h4 class="text-sm font-medium text-gray-700">Mapa de Calor - Compases</h4>
       <div class="flex items-center space-x-2">
         <div class="flex items-center space-x-1 text-xs">
-          <div class="h-3 w-3 bg-gray-300 rounded"></div>
+          <div class="h-3 w-3 bg-gray-300 rounded" />
           <span>Sin trabajar</span>
         </div>
         <div class="flex items-center space-x-1 text-xs">
-          <div class="h-3 w-3 bg-blue-400 rounded"></div>
+          <div class="h-3 w-3 bg-blue-400 rounded" />
           <span>Leído</span>
         </div>
         <div class="flex items-center space-x-1 text-xs">
-          <div class="h-3 w-3 bg-yellow-400 rounded"></div>
+          <div class="h-3 w-3 bg-yellow-400 rounded" />
           <span>Con dificultad</span>
         </div>
         <div class="flex items-center space-x-1 text-xs">
-          <div class="h-3 w-3 bg-green-400 rounded"></div>
+          <div class="h-3 w-3 bg-green-400 rounded" />
           <span>Logrado</span>
         </div>
       </div>
     </div>
-    
+
     <div class="compases-grid">
       <div
         v-for="compas in totalCompases"
@@ -29,7 +29,7 @@
         class="compas-cell"
         :class="[
           getEstadoClass(estadosCompases[compas] || 'sin_trabajar'),
-          { 'cursor-pointer': editable, 'hover:ring-2 hover:ring-blue-300': editable }
+          {'cursor-pointer': editable, 'hover:ring-2 hover:ring-blue-300': editable},
         ]"
         :title="`Compás ${compas}: ${getEstadoLabel(estadosCompases[compas] || 'sin_trabajar')}`"
         @click="editable && cambiarEstado(compas)"
@@ -61,8 +61,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { EstadoCompass } from '../types'
+import {computed} from "vue"
+import {EstadoCompass} from "../types"
 
 interface Props {
   obraId: string
@@ -72,11 +72,11 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'update-estado', obraId: string, compas: number, estado: string): void
+  (e: "update-estado", obraId: string, compas: number, estado: string): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  editable: false
+  editable: false,
 })
 
 const emit = defineEmits<Emits>()
@@ -86,7 +86,7 @@ const estadosOrden = [
   EstadoCompass.SIN_TRABAJAR,
   EstadoCompass.LEIDO,
   EstadoCompass.CON_DIFICULTAD,
-  EstadoCompass.LOGRADO
+  EstadoCompass.LOGRADO,
 ]
 
 // Computed
@@ -95,7 +95,7 @@ const estadisticas = computed(() => {
     sinTrabajar: 0,
     leidos: 0,
     conDificultad: 0,
-    logrados: 0
+    logrados: 0,
   }
 
   for (let i = 1; i <= props.totalCompases; i++) {
@@ -123,30 +123,30 @@ const estadisticas = computed(() => {
 function getEstadoClass(estado: string): string {
   switch (estado) {
     case EstadoCompass.SIN_TRABAJAR:
-      return 'bg-gray-300 text-gray-700'
+      return "bg-gray-300 text-gray-700"
     case EstadoCompass.LEIDO:
-      return 'bg-blue-400 text-blue-900'
+      return "bg-blue-400 text-blue-900"
     case EstadoCompass.CON_DIFICULTAD:
-      return 'bg-yellow-400 text-yellow-900'
+      return "bg-yellow-400 text-yellow-900"
     case EstadoCompass.LOGRADO:
-      return 'bg-green-400 text-green-900'
+      return "bg-green-400 text-green-900"
     default:
-      return 'bg-gray-300 text-gray-700'
+      return "bg-gray-300 text-gray-700"
   }
 }
 
 function getEstadoLabel(estado: string): string {
   switch (estado) {
     case EstadoCompass.SIN_TRABAJAR:
-      return 'Sin trabajar'
+      return "Sin trabajar"
     case EstadoCompass.LEIDO:
-      return 'Leído'
+      return "Leído"
     case EstadoCompass.CON_DIFICULTAD:
-      return 'Con dificultad'
+      return "Con dificultad"
     case EstadoCompass.LOGRADO:
-      return 'Logrado'
+      return "Logrado"
     default:
-      return 'Sin trabajar'
+      return "Sin trabajar"
   }
 }
 
@@ -158,7 +158,7 @@ function cambiarEstado(compas: number) {
   const siguienteIndice = (indiceActual + 1) % estadosOrden.length
   const nuevoEstado = estadosOrden[siguienteIndice]
 
-  emit('update-estado', props.obraId, compas, nuevoEstado)
+  emit("update-estado", props.obraId, compas, nuevoEstado)
 }
 </script>
 

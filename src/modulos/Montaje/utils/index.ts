@@ -2,17 +2,17 @@
  * Utility functions for the Montaje module
  */
 
-import type { DifficultyLevel, InstrumentType, WorkStatus } from '../types'
+import type {DifficultyLevel, InstrumentType, WorkStatus} from "../types"
 
 /**
  * Format date to readable string in Spanish
  */
 export const formatDate = (date: Date | string | number): string => {
   const d = new Date(date)
-  return d.toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
+  return d.toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   })
 }
 
@@ -21,12 +21,12 @@ export const formatDate = (date: Date | string | number): string => {
  */
 export const formatDateTime = (date: Date | string | number): string => {
   const d = new Date(date)
-  return d.toLocaleString('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+  return d.toLocaleString("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   })
 }
 
@@ -35,10 +35,10 @@ export const formatDateTime = (date: Date | string | number): string => {
  */
 export const getDifficultyLabel = (difficulty: DifficultyLevel): string => {
   const labels: Record<DifficultyLevel, string> = {
-    beginner: 'Principiante',
-    intermediate: 'Intermedio',
-    advanced: 'Avanzado',
-    professional: 'Profesional'
+    beginner: "Principiante",
+    intermediate: "Intermedio",
+    advanced: "Avanzado",
+    professional: "Profesional",
   }
   return labels[difficulty]
 }
@@ -48,10 +48,10 @@ export const getDifficultyLabel = (difficulty: DifficultyLevel): string => {
  */
 export const getDifficultyColor = (difficulty: DifficultyLevel): string => {
   const colors: Record<DifficultyLevel, string> = {
-    beginner: 'bg-green-100 text-green-800',
-    intermediate: 'bg-yellow-100 text-yellow-800',
-    advanced: 'bg-orange-100 text-orange-800',
-    professional: 'bg-red-100 text-red-800'
+    beginner: "bg-green-100 text-green-800",
+    intermediate: "bg-yellow-100 text-yellow-800",
+    advanced: "bg-orange-100 text-orange-800",
+    professional: "bg-red-100 text-red-800",
   }
   return colors[difficulty]
 }
@@ -61,22 +61,22 @@ export const getDifficultyColor = (difficulty: DifficultyLevel): string => {
  */
 export const getInstrumentLabel = (instrument: InstrumentType): string => {
   const labels: Record<InstrumentType, string> = {
-    violin: 'Violín',
-    viola: 'Viola',
-    cello: 'Violonchelo',
-    bass: 'Contrabajo',
-    flute: 'Flauta',
-    oboe: 'Oboe',
-    clarinet: 'Clarinete',
-    bassoon: 'Fagot',
-    horn: 'Trompa',
-    trumpet: 'Trompeta',
-    trombone: 'Trombón',
-    tuba: 'Tuba',
-    timpani: 'Timbales',
-    percussion: 'Percusión',
-    piano: 'Piano',
-    harp: 'Arpa'
+    violin: "Violín",
+    viola: "Viola",
+    cello: "Violonchelo",
+    bass: "Contrabajo",
+    flute: "Flauta",
+    oboe: "Oboe",
+    clarinet: "Clarinete",
+    bassoon: "Fagot",
+    horn: "Trompa",
+    trumpet: "Trompeta",
+    trombone: "Trombón",
+    tuba: "Tuba",
+    timpani: "Timbales",
+    percussion: "Percusión",
+    piano: "Piano",
+    harp: "Arpa",
   }
   return labels[instrument]
 }
@@ -86,10 +86,10 @@ export const getInstrumentLabel = (instrument: InstrumentType): string => {
  */
 export const getStatusLabel = (status: WorkStatus): string => {
   const labels: Record<WorkStatus, string> = {
-    active: 'Activa',
-    inactive: 'Inactiva',
-    completed: 'Completada',
-    archived: 'Archivada'
+    active: "Activa",
+    inactive: "Inactiva",
+    completed: "Completada",
+    archived: "Archivada",
   }
   return labels[status]
 }
@@ -99,10 +99,10 @@ export const getStatusLabel = (status: WorkStatus): string => {
  */
 export const getStatusColor = (status: WorkStatus): string => {
   const colors: Record<WorkStatus, string> = {
-    active: 'bg-green-100 text-green-800',
-    inactive: 'bg-gray-100 text-gray-800',
-    completed: 'bg-blue-100 text-blue-800',
-    archived: 'bg-yellow-100 text-yellow-800'
+    active: "bg-green-100 text-green-800",
+    inactive: "bg-gray-100 text-gray-800",
+    completed: "bg-blue-100 text-blue-800",
+    archived: "bg-yellow-100 text-yellow-800",
   }
   return colors[status]
 }
@@ -155,14 +155,14 @@ export const formatDuration = (minutes: number): string => {
   if (minutes < 60) {
     return `${minutes} min`
   }
-  
+
   const hours = Math.floor(minutes / 60)
   const remainingMinutes = minutes % 60
-  
+
   if (remainingMinutes === 0) {
     return `${hours}h`
   }
-  
+
   return `${hours}h ${remainingMinutes}m`
 }
 
@@ -170,22 +170,22 @@ export const formatDuration = (minutes: number): string => {
  * Get score color based on value
  */
 export const getScoreColor = (score: number): string => {
-  if (score >= 90) return 'text-green-600'
-  if (score >= 80) return 'text-blue-600'
-  if (score >= 70) return 'text-yellow-600'
-  if (score >= 60) return 'text-orange-600'
-  return 'text-red-600'
+  if (score >= 90) return "text-green-600"
+  if (score >= 80) return "text-blue-600"
+  if (score >= 70) return "text-yellow-600"
+  if (score >= 60) return "text-orange-600"
+  return "text-red-600"
 }
 
 /**
  * Get score background color
  */
 export const getScoreBackgroundColor = (score: number): string => {
-  if (score >= 90) return 'bg-green-100'
-  if (score >= 80) return 'bg-blue-100'
-  if (score >= 70) return 'bg-yellow-100'
-  if (score >= 60) return 'bg-orange-100'
-  return 'bg-red-100'
+  if (score >= 90) return "bg-green-100"
+  if (score >= 80) return "bg-blue-100"
+  if (score >= 70) return "bg-yellow-100"
+  if (score >= 60) return "bg-orange-100"
+  return "bg-red-100"
 }
 
 /**
@@ -193,19 +193,23 @@ export const getScoreBackgroundColor = (score: number): string => {
  */
 export const truncateText = (text: string, maxLength: number): string => {
   if (text.length <= maxLength) return text
-  return text.substr(0, maxLength) + '...'
+  return text.substr(0, maxLength) + "..."
 }
 
 /**
  * Sort array by property
  */
-export const sortBy = <T>(array: T[], property: keyof T, direction: 'asc' | 'desc' = 'asc'): T[] => {
+export const sortBy = <T>(
+  array: T[],
+  property: keyof T,
+  direction: "asc" | "desc" = "asc"
+): T[] => {
   return [...array].sort((a, b) => {
     const aValue = a[property]
     const bValue = b[property]
-    
-    if (aValue < bValue) return direction === 'asc' ? -1 : 1
-    if (aValue > bValue) return direction === 'asc' ? 1 : -1
+
+    if (aValue < bValue) return direction === "asc" ? -1 : 1
+    if (aValue > bValue) return direction === "asc" ? 1 : -1
     return 0
   })
 }
@@ -214,14 +218,17 @@ export const sortBy = <T>(array: T[], property: keyof T, direction: 'asc' | 'des
  * Group array by property
  */
 export const groupBy = <T>(array: T[], property: keyof T): Record<string, T[]> => {
-  return array.reduce((groups, item) => {
-    const key = String(item[property])
-    if (!groups[key]) {
-      groups[key] = []
-    }
-    groups[key].push(item)
-    return groups
-  }, {} as Record<string, T[]>)
+  return array.reduce(
+    (groups, item) => {
+      const key = String(item[property])
+      if (!groups[key]) {
+        groups[key] = []
+      }
+      groups[key].push(item)
+      return groups
+    },
+    {} as Record<string, T[]>
+  )
 }
 
 /**
@@ -245,7 +252,7 @@ export const deepClone = <T>(obj: T): T => {
 export const isEmpty = (obj: any): boolean => {
   if (obj == null) return true
   if (Array.isArray(obj)) return obj.length === 0
-  if (typeof obj === 'object') return Object.keys(obj).length === 0
+  if (typeof obj === "object") return Object.keys(obj).length === 0
   return false
 }
 
@@ -260,13 +267,13 @@ export const capitalize = (str: string): string => {
  * Format file size
  */
 export const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 Bytes'
-  
+  if (bytes === 0) return "0 Bytes"
+
   const k = 1024
-  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const sizes = ["Bytes", "KB", "MB", "GB"]
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
 }
 
 /**
@@ -277,17 +284,17 @@ export const stringToColor = (str: string): string => {
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash)
   }
-  
+
   const colors = [
-    'bg-red-100 text-red-800',
-    'bg-blue-100 text-blue-800',
-    'bg-green-100 text-green-800',
-    'bg-yellow-100 text-yellow-800',
-    'bg-purple-100 text-purple-800',
-    'bg-pink-100 text-pink-800',
-    'bg-indigo-100 text-indigo-800'
+    "bg-red-100 text-red-800",
+    "bg-blue-100 text-blue-800",
+    "bg-green-100 text-green-800",
+    "bg-yellow-100 text-yellow-800",
+    "bg-purple-100 text-purple-800",
+    "bg-pink-100 text-pink-800",
+    "bg-indigo-100 text-indigo-800",
   ]
-  
+
   return colors[Math.abs(hash) % colors.length]
 }
 
@@ -317,5 +324,5 @@ export const montajeUtils = {
   isEmpty,
   capitalize,
   formatFileSize,
-  stringToColor
+  stringToColor,
 }

@@ -5,10 +5,16 @@
       :key="activity.id"
       class="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
     >
-      <div :class="[`bg-${activity.color}-100 dark:bg-${activity.color}-900`, `text-${activity.color}-600 dark:text-${activity.color}-400`]" class="p-2 rounded-full">
+      <div
+        :class="[
+          `bg-${activity.color}-100 dark:bg-${activity.color}-900`,
+          `text-${activity.color}-600 dark:text-${activity.color}-400`,
+        ]"
+        class="p-2 rounded-full"
+      >
         <component :is="getIcon(activity.icon)" class="w-4 h-4" />
       </div>
-      
+
       <div class="flex-1 min-w-0">
         <p class="text-sm font-medium text-gray-900 dark:text-white">
           {{ activity.title }}
@@ -17,12 +23,12 @@
           {{ activity.description }}
         </p>
       </div>
-      
+
       <div class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
         {{ activity.time }}
       </div>
     </div>
-    
+
     <div v-if="activities.length === 0" class="text-center py-8">
       <div class="text-gray-400 dark:text-gray-500">
         <ClockIcon class="w-12 h-12 mx-auto mb-2" />
@@ -33,8 +39,8 @@
 </template>
 
 <script setup lang="ts">
-import { ClockIcon } from '@heroicons/vue/24/outline'
-import * as HeroIcons from '@heroicons/vue/24/outline'
+import {ClockIcon} from "@heroicons/vue/24/outline"
+import * as HeroIcons from "@heroicons/vue/24/outline"
 
 interface Activity {
   id: number

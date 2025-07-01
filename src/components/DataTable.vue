@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useTable } from '../composables/useTable'
-import type { TableColumn, FilterOption, ExportOptions } from '../types'
+import {ref, computed} from "vue"
+import {useTable} from "../composables/useTable"
+import type {TableColumn, FilterOption, ExportOptions} from "../types"
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -11,9 +11,9 @@ import {
   FunnelIcon,
   ArrowDownTrayIcon,
   ViewColumnsIcon,
-  XMarkIcon
-} from '@heroicons/vue/24/outline'
-import vuedraggable from 'vuedraggable'
+  XMarkIcon,
+} from "@heroicons/vue/24/outline"
+import vuedraggable from "vuedraggable"
 
 const props = defineProps<{
   items: any[]
@@ -26,7 +26,7 @@ const props = defineProps<{
 
 const showFilters = ref(false)
 const showColumnManager = ref(false)
-const exportFormat = ref<'xlsx' | 'csv'>('xlsx')
+const exportFormat = ref<"xlsx" | "csv">("xlsx")
 
 const {
   state,
@@ -41,11 +41,11 @@ const {
   clearFilters,
   toggleColumn,
   reorderColumns,
-  exportData
+  exportData,
 } = useTable(props.items, props.columns, {
   storageKey: props.storageKey || "",
   defaultPageSize: props.defaultPageSize || 10,
-  exportFileName: props.exportFileName || ""
+  exportFileName: props.exportFileName || "",
 })
 
 const pageSizeOptions = [10, 25, 50, 100]
@@ -54,19 +54,19 @@ const globalSearch = computed<string>({
   get: () => state.searchQuery,
   set: (value: string) => {
     state.searchQuery = value
-  }
+  },
 })
 
 const handleExport = () => {
   interface VisibleColumn {
-    id: string;
+    id: string
   }
 
   const options: ExportOptions = {
     format: exportFormat.value,
     filename: props.exportFileName || "",
     includeHeaders: true,
-    columnIds: visibleColumns.value.map((col: VisibleColumn) => col.id)
+    columnIds: visibleColumns.value.map((col: VisibleColumn) => col.id),
   }
   exportData(options)
 }
@@ -74,7 +74,7 @@ const handleExport = () => {
 const getSortIcon = (column: TableColumn) => {
   if (!column.sortable) return null
   if (state.value.sortBy !== column.key) return ChevronUpDownIcon
-  return state.value.sortOrder === 'asc' ? ChevronUpIcon : ChevronDownIcon
+  return state.value.sortOrder === "asc" ? ChevronUpIcon : ChevronDownIcon
 }
 </script>
 
@@ -89,30 +89,32 @@ const getSortIcon = (column: TableColumn) => {
           class="input w-24"
           @change="setPageSize(Number(($event.target as HTMLSelectElement).value))"
         >
-          <option v-for="option in pageSizeOptions" :key="option" :value="option">{{ option }}</option>
+          <option v-for="option in pageSizeOptions" :key="option" :value="option">
+            {{ option }}
+          </option>
         </select>
         <div class="flex items-center gap-4">
           <label for="globalSearch" class="text-sm font-medium">Buscar</label>
           <input
             id="globalSearch"
-            type="text"
             v-model="globalSearch"
+            type="text"
             placeholder="Escribe para buscar..."
             class="input w-64"
           />
         </div>
         <button
-          @click="showFilters = !showFilters"
           class="btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
-          :class="{ 'bg-blue-100 dark:bg-blue-900/30': showFilters }"
+          :class="{'bg-blue-100 dark:bg-blue-900/30': showFilters}"
+          @click="showFilters = !showFilters"
         >
           <FunnelIcon class="w-5 h-5" />
           Filtros
         </button>
 
         <button
-          @click="showColumnManager = !showColumnManager"
           class="btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
+          @click="showColumnManager = !showColumnManager"
         >
           <ViewColumnsIcon class="w-5 h-5" />
           Columnas
@@ -121,17 +123,14 @@ const getSortIcon = (column: TableColumn) => {
 
       <!-- Right Controls -->
       <div class="flex items-center gap-2">
-        <select
-                  v-model="exportFormat"
-                  class="input w-24"
-                >
-                  <option value="xlsx">Excel</option>
-                  <option value="csv">CSV</option>
-                </select>
+        <select v-model="exportFormat" class="input w-24">
+          <option value="xlsx">Excel</option>
+          <option value="csv">CSV</option>
+        </select>
 
         <button
-          @click="handleExport"
           class="btn bg-green-600 text-white hover:bg-green-700 flex items-center gap-2"
+          @click="handleExport"
         >
           <ArrowDownTrayIcon class="w-5 h-5" />
           Exportar
@@ -144,44 +143,28 @@ const getSortIcon = (column: TableColumn) => {
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-semibold">Filtros</h3>
         <button
-          @click="clearFilters"
           class="btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+          @click="clearFilters"
         >
           Limpiar
         </button>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div
-          v-for="filter in filterOptions"
-          :key="filter.id"
-          class="space-y-1"
-        >
+        <div v-for="filter in filterOptions" :key="filter.id" class="space-y-1">
           <label class="text-sm font-medium">{{ filter.label }}</label>
-          
+
           <template v-if="filter.type === 'select'">
-            <select
-              v-model="state.filters[filter.id]"
-              class="input"
-              :multiple="filter.multiple"
-            >
-              <option value="">{{ filter.placeholder || 'Seleccionar...' }}</option>
-              <option
-                v-for="option in filter.options"
-                :key="option.value"
-                :value="option.value"
-              >
+            <select v-model="state.filters[filter.id]" class="input" :multiple="filter.multiple">
+              <option value="">{{ filter.placeholder || "Seleccionar..." }}</option>
+              <option v-for="option in filter.options" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
             </select>
           </template>
 
           <template v-else-if="filter.type === 'date'">
-            <input
-              v-model="state.filters[filter.id]"
-              type="date"
-              class="input"
-            />
+            <input v-model="state.filters[filter.id]" type="date" class="input" />
           </template>
 
           <template v-else>
@@ -199,14 +182,14 @@ const getSortIcon = (column: TableColumn) => {
     <!-- Column Manager -->
     <div v-if="showColumnManager" class="card">
       <h3 class="text-lg font-semibold mb-4">Gestionar Columnas</h3>
-      
+
       <vuedraggable
         v-model="state.columnOrder"
         item-key="id"
         handle=".handle"
         @end="reorderColumns(state.columnOrder)"
       >
-        <template #item="{ element }">
+        <template #item="{element}">
           <div
             class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded mb-2"
           >
@@ -214,10 +197,10 @@ const getSortIcon = (column: TableColumn) => {
               <span class="handle cursor-move">⋮⋮</span>
               <input
                 type="checkbox"
-                :checked="state.columns.find(col => col.id === element)?.visible"
+                :checked="state.columns.find((col) => col.id === element)?.visible"
                 @change="toggleColumn(element)"
               />
-              <span>{{ state.columns.find(col => col.id === element)?.label }}</span>
+              <span>{{ state.columns.find((col) => col.id === element)?.label }}</span>
             </div>
           </div>
         </template>
@@ -229,8 +212,8 @@ const getSortIcon = (column: TableColumn) => {
       <table class="min-w-full">
         <thead class="bg-gray-50 dark:bg-gray-700">
           <tr>
-            <th 
-              v-for="column in columns" 
+            <th
+              v-for="column in columns"
               :key="column.key"
               class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
             >
@@ -239,17 +222,13 @@ const getSortIcon = (column: TableColumn) => {
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-          <tr 
-            v-for="(row, idx) in paginatedItems" 
-            :key="row.id || idx" 
+          <tr
+            v-for="(row, idx) in paginatedItems"
+            :key="row.id || idx"
             class="hover:bg-gray-50 dark:hover:bg-gray-800"
           >
-            <td
-              v-for="column in columns" 
-              :key="column.key"
-              class="px-6 py-4 whitespace-nowrap"
-            >
-              <div v-if="column.format" v-html="column.format(row[column.key])"></div>
+            <td v-for="column in columns" :key="column.key" class="px-6 py-4 whitespace-nowrap">
+              <div v-if="column.format" v-html="column.format(row[column.key])" />
               <div v-else>{{ row[column.key] }}</div>
             </td>
           </tr>
@@ -267,21 +246,19 @@ const getSortIcon = (column: TableColumn) => {
 
       <div class="flex items-center gap-2">
         <button
-          @click="setPage(pagination.currentPage - 1)"
           :disabled="pagination.currentPage === 1"
           class="btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+          @click="setPage(pagination.currentPage - 1)"
         >
           <ChevronLeftIcon class="w-5 h-5" />
         </button>
 
-        <span class="px-4 py-2">
-          Página {{ pagination.currentPage }} de {{ totalPages }}
-        </span>
+        <span class="px-4 py-2"> Página {{ pagination.currentPage }} de {{ totalPages }} </span>
 
         <button
-          @click="setPage(pagination.currentPage + 1)"
           :disabled="pagination.currentPage === totalPages"
           class="btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+          @click="setPage(pagination.currentPage + 1)"
         >
           <ChevronRightIcon class="w-5 h-5" />
         </button>

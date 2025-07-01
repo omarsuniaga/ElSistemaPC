@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { useTeacherNotifications } from '../composables/useTeacherNotifications';
-import TeacherNotificationsList from './TeacherNotificationsList.vue';
+import {useTeacherNotifications} from "../composables/useTeacherNotifications"
+import TeacherNotificationsList from "./TeacherNotificationsList.vue"
 
 // Props originales para compatibilidad (si se necesitan)
 interface Notification {
-  id: number;
-  title: string;
-  message: string;
-  date: Date;
-  read: boolean;
-  type: 'info' | 'reminder';
+  id: number
+  title: string
+  message: string
+  date: Date
+  read: boolean
+  type: "info" | "reminder"
 }
 
 const props = defineProps<{
-  notifications?: Notification[]; // Opcional para mantener compatibilidad
-}>();
+  notifications?: Notification[] // Opcional para mantener compatibilidad
+}>()
 
 // Usar el composable de notificaciones de maestros
 const {
@@ -25,29 +25,29 @@ const {
   rejectInvitation,
   markAsRead,
   deleteNotificationItem,
-  loadNotifications
-} = useTeacherNotifications();
+  loadNotifications,
+} = useTeacherNotifications()
 
 // Manejadores de eventos
 const handleAcceptInvitation = async (notificationId: string) => {
-  await acceptInvitation(notificationId);
-};
+  await acceptInvitation(notificationId)
+}
 
 const handleRejectInvitation = async (notificationId: string) => {
-  await rejectInvitation(notificationId);
-};
+  await rejectInvitation(notificationId)
+}
 
 const handleMarkAsRead = async (notificationId: string) => {
-  await markAsRead(notificationId);
-};
+  await markAsRead(notificationId)
+}
 
 const handleDeleteNotification = async (notificationId: string) => {
-  await deleteNotificationItem(notificationId);
-};
+  await deleteNotificationItem(notificationId)
+}
 
 const handleRetry = async () => {
-  await loadNotifications();
-};
+  await loadNotifications()
+}
 </script>
 
 <template>
@@ -63,9 +63,12 @@ const handleRetry = async () => {
       @delete-notification="handleDeleteNotification"
       @retry="handleRetry"
     />
-    
+
     <!-- Fallback para notificaciones originales (si existen) -->
-    <div v-if="props.notifications && props.notifications.length > 0" class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+    <div
+      v-if="props.notifications && props.notifications.length > 0"
+      class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4"
+    >
       <h3 class="text-md font-medium text-gray-900 dark:text-white mb-3">Otras Notificaciones</h3>
       <div class="space-y-3">
         <div
@@ -73,14 +76,20 @@ const handleRetry = async () => {
           :key="notification.id"
           class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
           :class="{
-            'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500': notification.type === 'info' && !notification.read,
-            'bg-amber-50 dark:bg-amber-900/20 border-l-4 border-l-amber-500': notification.type === 'reminder' && !notification.read
+            'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500':
+              notification.type === 'info' && !notification.read,
+            'bg-amber-50 dark:bg-amber-900/20 border-l-4 border-l-amber-500':
+              notification.type === 'reminder' && !notification.read,
           }"
         >
           <div class="flex justify-between">
             <h4 class="font-medium text-gray-800 dark:text-gray-200">{{ notification.title }}</h4>
             <span class="text-xs text-gray-500 dark:text-gray-400">
-              {{ new Intl.DateTimeFormat('es-ES', { dateStyle: 'short', timeStyle: 'short' }).format(notification.date) }}
+              {{
+                new Intl.DateTimeFormat("es-ES", {dateStyle: "short", timeStyle: "short"}).format(
+                  notification.date
+                )
+              }}
             </span>
           </div>
           <p class="text-sm text-gray-600 dark:text-gray-400">{{ notification.message }}</p>

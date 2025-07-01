@@ -3,11 +3,11 @@
  * @fileoverview Proporciona funcionalidades de manejo de errores de forma consistente
  */
 
-import { ref } from 'vue'
+import {ref} from "vue"
 
 export interface ErrorState {
   message: string | null
-  type?: 'error' | 'warning' | 'info'
+  type?: "error" | "warning" | "info"
   details?: any
 }
 
@@ -22,35 +22,35 @@ export function useErrorHandling() {
    * @returns El mensaje de error formateado
    */
   const handleError = (err: any, context?: string): string => {
-    console.error(context ? `[${context}]` : '[Error]', err)
-    
-    let message = 'Ha ocurrido un error inesperado'
-    
-    if (typeof err === 'string') {
+    console.error(context ? `[${context}]` : "[Error]", err)
+
+    let message = "Ha ocurrido un error inesperado"
+
+    if (typeof err === "string") {
       message = err
     } else if (err?.message) {
       message = err.message
     } else if (err?.code) {
       // Firebase errors
       switch (err.code) {
-        case 'permission-denied':
-          message = 'No tienes permisos para realizar esta acción'
+        case "permission-denied":
+          message = "No tienes permisos para realizar esta acción"
           break
-        case 'not-found':
-          message = 'El recurso solicitado no fue encontrado'
+        case "not-found":
+          message = "El recurso solicitado no fue encontrado"
           break
-        case 'network-request-failed':
-          message = 'Error de conexión. Verifica tu internet'
+        case "network-request-failed":
+          message = "Error de conexión. Verifica tu internet"
           break
         default:
-          message = err.message || 'Error desconocido'
+          message = err.message || "Error desconocido"
       }
     }
 
     error.value = {
       message,
-      type: 'error',
-      details: err
+      type: "error",
+      details: err,
     }
 
     return message
@@ -101,7 +101,7 @@ export function useErrorHandling() {
   const showWarning = (message: string) => {
     error.value = {
       message,
-      type: 'warning'
+      type: "warning",
     }
   }
 
@@ -112,7 +112,7 @@ export function useErrorHandling() {
   const showInfo = (message: string) => {
     error.value = {
       message,
-      type: 'info'
+      type: "info",
     }
   }
 
@@ -120,16 +120,16 @@ export function useErrorHandling() {
     // Estado
     error,
     isLoading,
-    
+
     // Métodos
     handleError,
     clearError,
     setLoading,
     executeWithErrorHandling,
     showWarning,
-    showInfo
+    showInfo,
   }
 }
 
 // Re-exportar para compatibilidad
-export { useErrorHandling as useErrorHandler }
+export {useErrorHandling as useErrorHandler}

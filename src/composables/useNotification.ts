@@ -1,68 +1,68 @@
-import { ref } from 'vue';
+import {ref} from "vue"
 
-type NotificationType = 'success' | 'error' | 'info' | 'warning';
+type NotificationType = "success" | "error" | "info" | "warning"
 
 interface Notification {
-  id: number;
-  message: string;
-  type: NotificationType;
-  timeout?: number;
+  id: number
+  message: string
+  type: NotificationType
+  timeout?: number
 }
 
-export function useNotification() {
-  const notifications = ref<Notification[]>([]);
-  let nextId = 0;
+export const useNotification = () => {
+  const notifications = ref<Notification[]>([])
+  let nextId = 0
 
   const showNotification = (
-    message: string, 
-    type: NotificationType = 'info', 
+    message: string,
+    type: NotificationType = "info",
     timeout: number = 3000
   ) => {
-    const id = nextId++;
+    const id = nextId++
     const notification: Notification = {
       id,
       message,
       type,
-      timeout
-    };
+      timeout,
+    }
 
-    notifications.value.push(notification);
+    notifications.value.push(notification)
 
     // Auto-remove notification after timeout
     if (timeout > 0) {
       setTimeout(() => {
-        removeNotification(id);
-      }, timeout);
+        removeNotification(id)
+      }, timeout)
     }
 
-    return id;
-  };
+    return id
+  }
 
   const removeNotification = (id: number) => {
-    const index = notifications.value.findIndex(n => n.id === id);
+    const index = notifications.value.findIndex((n) => n.id === id)
     if (index !== -1) {
-      notifications.value.splice(index, 1);
+      notifications.value.splice(index, 1)
     }
-  };
+  }
 
   const clearAllNotifications = () => {
-    notifications.value = [];
-  };
+    notifications.value = []
+  }
 
   return {
     notifications,
     showNotification,
     removeNotification,
-    clearAllNotifications
-  };
+    clearAllNotifications,
+  }
 }
 
 // Para usar con provide/inject
-export const notificationKey = Symbol('notification');
+export const notificationKey = Symbol("notification")
 
 // Para usar con app.config.globalProperties
-declare module 'vue' {
+declare module "vue" {
   interface ComponentCustomProperties {
-    $notify: typeof showNotification;
+    $notify: ReturnType<typeof useNotification>["showNotification"]
   }
 }

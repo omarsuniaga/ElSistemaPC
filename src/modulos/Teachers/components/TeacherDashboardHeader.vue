@@ -1,82 +1,97 @@
 <script setup lang="ts">
-import { type FunctionalComponent, computed } from 'vue';
-import { BookOpenIcon, ChartBarSquareIcon, CalendarIcon, ClockIcon, BellIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
-import { useGeneralNotifications } from '../composables/useGeneralNotifications';
-import { useAuthStore } from '../../../stores/auth';
-import { useTeachersStore } from '../store/teachers';
+import {type FunctionalComponent, computed} from "vue"
+import {
+  BookOpenIcon,
+  ChartBarSquareIcon,
+  CalendarIcon,
+  ClockIcon,
+  BellIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/vue/24/outline"
+import {useGeneralNotifications} from "../composables/useGeneralNotifications"
+import {useAuthStore} from "../../../stores/auth"
+import {useTeachersStore} from "../store/teachers"
 
 const props = defineProps<{
-  activeTab: string;
-}>();
+  activeTab: string
+}>()
 
-const emit = defineEmits(['set-active-tab']);
+const emit = defineEmits(["set-active-tab"])
 
 // Usar el store de autenticación y maestros
-const authStore = useAuthStore();
-const teachersStore = useTeachersStore();
+const authStore = useAuthStore()
+const teachersStore = useTeachersStore()
 
 // Usar el composable de notificaciones para obtener el contador
-const { unreadCount } = useGeneralNotifications();
+const {unreadCount} = useGeneralNotifications()
 
 // Computed values for notifications
-const hasNotifications = computed(() => unreadCount.value > 0);
-const notificationCount = computed(() => unreadCount.value);
+const hasNotifications = computed(() => unreadCount.value > 0)
+const notificationCount = computed(() => unreadCount.value)
 
 // Computed para obtener información del maestro actual
 const currentTeacher = computed(() => {
-  const teacherData = teachersStore.getTeacherById(authStore.user?.uid || '');
+  const teacherData = teachersStore.getTeacherById(authStore.user?.uid || "")
   return {
-    name: teacherData?.name || authStore.user?.email?.split('@')[0] || 'Maestro'
-  };
-});
+    name: teacherData?.name || authStore.user?.email?.split("@")[0] || "Maestro",
+  }
+})
 
-const tabs: Array<{ name: string; value: string; icon: FunctionalComponent }> = [
-  { name: 'Mis Clases', value: 'classes', icon: BookOpenIcon },
-  { name: 'Clases Emergentes', value: 'emergency', icon: ExclamationTriangleIcon },
-  { name: 'Notificaciones', value: 'notifications', icon: BellIcon },
-  { name: 'Métricas', value: 'overview', icon: ChartBarSquareIcon },
-  { name: 'Ausentes', value: 'schedule', icon: CalendarIcon }, // Renamed
-  { name: 'Observaciones', value: 'upcoming', icon: ClockIcon }, // Renamed
-];
+const tabs: Array<{name: string; value: string; icon: FunctionalComponent}> = [
+  {name: "Mis Clases", value: "classes", icon: BookOpenIcon},
+  {name: "Clases Emergentes", value: "emergency", icon: ExclamationTriangleIcon},
+  {name: "Notificaciones", value: "notifications", icon: BellIcon},
+  {name: "Métricas", value: "overview", icon: ChartBarSquareIcon},
+  {name: "Ausentes", value: "schedule", icon: CalendarIcon}, // Renamed
+  {name: "Observaciones", value: "upcoming", icon: ClockIcon}, // Renamed
+]
 
 const setActiveTab = (tab: string) => {
-  emit('set-active-tab', tab);
-};
+  emit("set-active-tab", tab)
+}
 </script>
 
 <template>
-  <header class="dashboard-header bg-white dark:bg-gray-800 p-3 md:p-4 rounded-lg shadow mb-4 md:mb-6">
+  <header
+    class="dashboard-header bg-white dark:bg-gray-800 p-3 md:p-4 rounded-lg shadow mb-4 md:mb-6"
+  >
     <h1 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
       <!-- nombre del maestro -->
-       {{ currentTeacher.name }}
+      {{ currentTeacher.name }}
     </h1>
-    <p class="text-sm md:text-base text-gray-600 dark:text-gray-400">Aquí puedes gestionar y visualizar información relevante sobre tus clases y estudiantes.</p>    <!-- Tabs de navegación -->
-    <div class="flex mt-4 md:mt-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">      <button
+    <p class="text-sm md:text-base text-gray-600 dark:text-gray-400">
+      Aquí puedes gestionar y visualizar información relevante sobre tus clases y estudiantes.
+    </p>
+    <!-- Tabs de navegación -->
+    <div class="flex mt-4 md:mt-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+      <button
         v-for="tab in tabs"
         :key="tab.value"
-        @click="setActiveTab(tab.value)"
         class="flex-shrink-0 px-3 md:px-4 py-2 font-medium text-xs md:text-sm focus:outline-none whitespace-nowrap relative"
         :class="{
           'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400': activeTab === tab.value,
-          'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== tab.value,
-          'tab-notifications-active': tab.value === 'notifications' && hasNotifications
+          'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300':
+            activeTab !== tab.value,
+          'tab-notifications-active': tab.value === 'notifications' && hasNotifications,
         }"
+        @click="setActiveTab(tab.value)"
       >
         <div class="flex items-center gap-1 relative">
           <component :is="tab.icon" class="h-3 w-3 md:h-4 md:w-4" />
-          {{ tab.name }}          <!-- Badge de notificaciones con animación -->
-          <span 
+          {{ tab.name }}
+          <!-- Badge de notificaciones con animación -->
+          <span
             v-if="tab.value === 'notifications' && hasNotifications && notificationCount > 0"
             class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold notification-badge"
           >
-            {{ notificationCount > 99 ? '99+' : notificationCount }}
+            {{ notificationCount > 99 ? "99+" : notificationCount }}
           </span>
-          
+
           <!-- Indicador de punto rojo simple (alternativo) -->
-          <span 
+          <span
             v-else-if="tab.value === 'notifications' && hasNotifications"
             class="absolute -top-1 -right-1 bg-red-500 rounded-full h-3 w-3 notification-dot"
-          ></span>
+          />
         </div>
       </button>
     </div>
@@ -102,7 +117,7 @@ const setActiveTab = (tab: string) => {
 /* Efecto de onda expansiva */
 .notification-badge::before,
 .notification-dot::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 50%;
@@ -169,7 +184,7 @@ const setActiveTab = (tab: string) => {
 }
 
 .tab-notifications-active::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -183,7 +198,8 @@ const setActiveTab = (tab: string) => {
 }
 
 @keyframes glow-tab {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0;
   }
   50% {

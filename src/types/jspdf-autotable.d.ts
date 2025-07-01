@@ -1,7 +1,7 @@
-import 'jspdf';
+import "jspdf"
 
-declare module 'jspdf' {
+declare module "jspdf" {
   interface jsPDF {
-    autoTable: (options: any) => jsPDF;
+    autoTable: (options: any) => jsPDF
   }
-} 
+}

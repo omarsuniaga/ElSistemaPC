@@ -4,13 +4,11 @@
     <div class="view-header">
       <div class="header-content">
         <h1 class="view-title">Centro de Colaboración</h1>
-        <p class="view-description">
-          Colabora con otros músicos y profesores en tiempo real
-        </p>
+        <p class="view-description">Colabora con otros músicos y profesores en tiempo real</p>
       </div>
       <div class="header-actions">
-        <button @click="showInviteModal = true" class="btn-primary">
-          <i class="fas fa-user-plus"></i>
+        <button class="btn-primary" @click="showInviteModal = true">
+          <i class="fas fa-user-plus" />
           Invitar Colaborador
         </button>
       </div>
@@ -20,14 +18,12 @@
     <div class="section">
       <h2 class="section-title">Sesiones Activas</h2>
       <div v-if="activeSessions.length === 0" class="empty-state">
-        <i class="fas fa-users"></i>
+        <i class="fas fa-users" />
         <p>No hay sesiones de colaboración activas</p>
-        <button @click="startNewSession" class="btn-primary">
-          Iniciar Sesión
-        </button>
+        <button class="btn-primary" @click="startNewSession">Iniciar Sesión</button>
       </div>
       <div v-else class="sessions-grid">
-        <div 
+        <div
           v-for="session in activeSessions"
           :key="session.id"
           class="session-card"
@@ -36,37 +32,32 @@
           <div class="session-header">
             <h3>{{ session.title }}</h3>
             <span class="session-status live">
-              <i class="fas fa-circle"></i>
+              <i class="fas fa-circle" />
               En vivo
             </span>
           </div>
           <p class="session-description">{{ session.description }}</p>
           <div class="session-participants">
             <div class="participants-avatars">
-              <div 
+              <div
                 v-for="participant in session.participants.slice(0, 3)"
                 :key="participant.id"
                 class="avatar"
                 :title="participant.name"
               >
-                <img 
-                  v-if="participant.avatar"
-                  :src="participant.avatar"
-                  :alt="participant.name"
-                >
+                <img v-if="participant.avatar" :src="participant.avatar" :alt="participant.name" />
                 <span v-else class="avatar-initials">
                   {{ getInitials(participant.name) }}
                 </span>
               </div>
-              <div 
-                v-if="session.participants.length > 3"
-                class="avatar-count"
-              >
+              <div v-if="session.participants.length > 3" class="avatar-count">
                 +{{ session.participants.length - 3 }}
               </div>
             </div>
             <span class="participants-count">
-              {{ session.participants.length }} participante{{ session.participants.length !== 1 ? 's' : '' }}
+              {{ session.participants.length }} participante{{
+                session.participants.length !== 1 ? "s" : ""
+              }}
             </span>
           </div>
           <div class="session-meta">
@@ -81,17 +72,13 @@
     <div class="section">
       <h2 class="section-title">Actividad Reciente</h2>
       <div class="activity-feed">
-        <div 
-          v-for="activity in recentActivity"
-          :key="activity.id"
-          class="activity-item"
-        >
+        <div v-for="activity in recentActivity" :key="activity.id" class="activity-item">
           <div class="activity-avatar">
-            <img 
+            <img
               v-if="activity.user.avatar"
               :src="activity.user.avatar"
               :alt="activity.user.name"
-            >
+            />
             <span v-else class="avatar-initials">
               {{ getInitials(activity.user.name) }}
             </span>
@@ -104,13 +91,11 @@
             </div>
             <div class="activity-meta">
               <span class="activity-time">{{ formatTimeAgo(activity.timestamp) }}</span>
-              <span v-if="activity.work" class="activity-work">
-                en {{ activity.work }}
-              </span>
+              <span v-if="activity.work" class="activity-work"> en {{ activity.work }} </span>
             </div>
           </div>
           <div class="activity-icon">
-            <i :class="getActivityIcon(activity.type)"></i>
+            <i :class="getActivityIcon(activity.type)" />
           </div>
         </div>
       </div>
@@ -120,20 +105,20 @@
     <div class="section">
       <div class="section-header">
         <h2 class="section-title">Recursos Compartidos</h2>
-        <button @click="showResourceModal = true" class="btn-secondary">
-          <i class="fas fa-plus"></i>
+        <button class="btn-secondary" @click="showResourceModal = true">
+          <i class="fas fa-plus" />
           Compartir Recurso
         </button>
       </div>
       <div class="resources-grid">
-        <div 
+        <div
           v-for="resource in sharedResources"
           :key="resource.id"
           class="resource-card"
           @click="openResource(resource)"
         >
           <div class="resource-icon">
-            <i :class="getResourceIcon(resource.type)"></i>
+            <i :class="getResourceIcon(resource.type)" />
           </div>
           <div class="resource-content">
             <h4>{{ resource.title }}</h4>
@@ -144,11 +129,11 @@
             </div>
           </div>
           <div class="resource-actions">
-            <button @click.stop="downloadResource(resource)" class="btn-icon">
-              <i class="fas fa-download"></i>
+            <button class="btn-icon" @click.stop="downloadResource(resource)">
+              <i class="fas fa-download" />
             </button>
-            <button @click.stop="shareResource(resource)" class="btn-icon">
-              <i class="fas fa-share"></i>
+            <button class="btn-icon" @click.stop="shareResource(resource)">
+              <i class="fas fa-share" />
             </button>
           </div>
         </div>
@@ -164,29 +149,25 @@
             <h3>Nuevo Comentario</h3>
             <select v-model="newComment.workId" class="form-select">
               <option value="">Seleccionar obra...</option>
-              <option 
-                v-for="work in availableWorks"
-                :key="work.id"
-                :value="work.id"
-              >
+              <option v-for="work in availableWorks" :key="work.id" :value="work.id">
                 {{ work.title }}
               </option>
             </select>
           </div>
           <div class="comment-input">
-            <textarea 
+            <textarea
               v-model="newComment.content"
               placeholder="Escribe tu comentario..."
               rows="3"
               class="form-textarea"
-            ></textarea>
+            />
             <div class="comment-actions">
-              <button 
-                @click="submitComment"
+              <button
                 :disabled="!newComment.content.trim()"
                 class="btn-primary"
+                @click="submitComment"
               >
-                <i class="fas fa-paper-plane"></i>
+                <i class="fas fa-paper-plane" />
                 Enviar
               </button>
             </div>
@@ -194,17 +175,9 @@
         </div>
 
         <div class="comments-list">
-          <div 
-            v-for="comment in comments"
-            :key="comment.id"
-            class="comment-item"
-          >
+          <div v-for="comment in comments" :key="comment.id" class="comment-item">
             <div class="comment-avatar">
-              <img 
-                v-if="comment.user.avatar"
-                :src="comment.user.avatar"
-                :alt="comment.user.name"
-              >
+              <img v-if="comment.user.avatar" :src="comment.user.avatar" :alt="comment.user.name" />
               <span v-else class="avatar-initials">
                 {{ getInitials(comment.user.name) }}
               </span>
@@ -219,12 +192,12 @@
               </div>
               <p class="comment-text">{{ comment.content }}</p>
               <div class="comment-actions">
-                <button @click="likeComment(comment)" class="comment-action">
-                  <i :class="comment.liked ? 'fas fa-heart' : 'far fa-heart'"></i>
+                <button class="comment-action" @click="likeComment(comment)">
+                  <i :class="comment.liked ? 'fas fa-heart' : 'far fa-heart'" />
                   {{ comment.likes }}
                 </button>
-                <button @click="replyToComment(comment)" class="comment-action">
-                  <i class="fas fa-reply"></i>
+                <button class="comment-action" @click="replyToComment(comment)">
+                  <i class="fas fa-reply" />
                   Responder
                 </button>
               </div>
@@ -241,13 +214,13 @@
         <form @submit.prevent="sendInvitation">
           <div class="form-group">
             <label>Email del colaborador</label>
-            <input 
+            <input
               v-model="invitation.email"
               type="email"
               required
               class="form-input"
               placeholder="ejemplo@email.com"
-            >
+            />
           </div>
           <div class="form-group">
             <label>Rol</label>
@@ -259,20 +232,16 @@
           </div>
           <div class="form-group">
             <label>Mensaje (opcional)</label>
-            <textarea 
+            <textarea
               v-model="invitation.message"
               rows="3"
               class="form-textarea"
               placeholder="Mensaje personalizado..."
-            ></textarea>
+            />
           </div>
           <div class="modal-actions">
-            <button type="button" @click="closeInviteModal" class="btn-secondary">
-              Cancelar
-            </button>
-            <button type="submit" class="btn-primary">
-              Enviar Invitación
-            </button>
+            <button type="button" class="btn-secondary" @click="closeInviteModal">Cancelar</button>
+            <button type="submit" class="btn-primary">Enviar Invitación</button>
           </div>
         </form>
       </div>
@@ -285,12 +254,7 @@
         <form @submit.prevent="shareNewResource">
           <div class="form-group">
             <label>Título</label>
-            <input 
-              v-model="newResource.title"
-              type="text"
-              required
-              class="form-input"
-            >
+            <input v-model="newResource.title" type="text" required class="form-input" />
           </div>
           <div class="form-group">
             <label>Tipo</label>
@@ -304,35 +268,24 @@
           </div>
           <div class="form-group">
             <label>Descripción</label>
-            <textarea 
-              v-model="newResource.description"
-              rows="3"
-              class="form-textarea"
-            ></textarea>
+            <textarea v-model="newResource.description" rows="3" class="form-textarea" />
           </div>
           <div class="form-group">
             <label>Archivo o URL</label>
-            <input 
+            <input
               v-if="newResource.type === 'LINK'"
               v-model="newResource.url"
               type="url"
               class="form-input"
               placeholder="https://..."
-            >
-            <input 
-              v-else
-              type="file"
-              @change="handleFileUpload"
-              class="form-input"
-            >
+            />
+            <input v-else type="file" class="form-input" @change="handleFileUpload" />
           </div>
           <div class="modal-actions">
-            <button type="button" @click="closeResourceModal" class="btn-secondary">
+            <button type="button" class="btn-secondary" @click="closeResourceModal">
               Cancelar
             </button>
-            <button type="submit" class="btn-primary">
-              Compartir
-            </button>
+            <button type="submit" class="btn-primary">Compartir</button>
           </div>
         </form>
       </div>
@@ -341,16 +294,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useCollaboration } from '../composables/useCollaboration'
-import type { 
-  CollaborationSession, 
-  Activity, 
-  SharedResource, 
-  Comment,
-  Work 
-} from '../types'
+import {ref, computed, onMounted} from "vue"
+import {useRouter} from "vue-router"
+import {useCollaboration} from "../composables/useCollaboration"
+import type {CollaborationSession, Activity, SharedResource, Comment, Work} from "../types"
 
 const router = useRouter()
 const {
@@ -363,7 +310,7 @@ const {
   joinSession: joinCollaborationSession,
   sendInvitation: sendCollaborationInvitation,
   shareResource: shareCollaborationResource,
-  addComment
+  addComment,
 } = useCollaboration()
 
 // State
@@ -372,35 +319,35 @@ const showResourceModal = ref(false)
 
 // Form data
 const invitation = ref({
-  email: '',
-  role: 'COLLABORATOR',
-  message: ''
+  email: "",
+  role: "COLLABORATOR",
+  message: "",
 })
 
 const newResource = ref({
-  title: '',
-  type: 'DOCUMENT',
-  description: '',
-  url: '',
-  file: null as File | null
+  title: "",
+  type: "DOCUMENT",
+  description: "",
+  url: "",
+  file: null as File | null,
 })
 
 const newComment = ref({
-  workId: '',
-  content: ''
+  workId: "",
+  content: "",
 })
 
 // Methods
 const startNewSession = async () => {
   try {
     const session = await startSession({
-      title: 'Nueva Sesión de Colaboración',
-      description: 'Sesión de trabajo colaborativo',
-      type: 'GENERAL'
+      title: "Nueva Sesión de Colaboración",
+      description: "Sesión de trabajo colaborativo",
+      type: "GENERAL",
     })
     await joinSession(session)
   } catch (error) {
-    console.error('Error starting session:', error)
+    console.error("Error starting session:", error)
   }
 }
 
@@ -408,9 +355,9 @@ const joinSession = async (session: CollaborationSession) => {
   try {
     await joinCollaborationSession(session.id)
     // Navigate to session view or open session modal
-    console.log('Joined session:', session.id)
+    console.log("Joined session:", session.id)
   } catch (error) {
-    console.error('Error joining session:', error)
+    console.error("Error joining session:", error)
   }
 }
 
@@ -418,12 +365,12 @@ const sendInvitation = async () => {
   try {
     await sendCollaborationInvitation({
       email: invitation.value.email,
-      role: invitation.value.role as 'VIEWER' | 'COLLABORATOR' | 'EDITOR',
-      message: invitation.value.message
+      role: invitation.value.role as "VIEWER" | "COLLABORATOR" | "EDITOR",
+      message: invitation.value.message,
     })
     closeInviteModal()
   } catch (error) {
-    console.error('Error sending invitation:', error)
+    console.error("Error sending invitation:", error)
   }
 }
 
@@ -434,11 +381,11 @@ const shareNewResource = async () => {
       type: newResource.value.type as any,
       description: newResource.value.description,
       url: newResource.value.url,
-      file: newResource.value.file
+      file: newResource.value.file,
     })
     closeResourceModal()
   } catch (error) {
-    console.error('Error sharing resource:', error)
+    console.error("Error sharing resource:", error)
   }
 }
 
@@ -447,39 +394,39 @@ const submitComment = async () => {
     try {
       await addComment({
         workId: newComment.value.workId || undefined,
-        content: newComment.value.content
+        content: newComment.value.content,
       })
-      newComment.value = { workId: '', content: '' }
+      newComment.value = {workId: "", content: ""}
     } catch (error) {
-      console.error('Error submitting comment:', error)
+      console.error("Error submitting comment:", error)
     }
   }
 }
 
 const likeComment = async (comment: Comment) => {
   // Implementation for liking a comment
-  console.log('Like comment:', comment.id)
+  console.log("Like comment:", comment.id)
 }
 
 const replyToComment = (comment: Comment) => {
   // Implementation for replying to a comment
-  console.log('Reply to comment:', comment.id)
+  console.log("Reply to comment:", comment.id)
 }
 
 const openResource = (resource: SharedResource) => {
   if (resource.url) {
-    window.open(resource.url, '_blank')
+    window.open(resource.url, "_blank")
   }
 }
 
 const downloadResource = (resource: SharedResource) => {
   // Implementation for downloading resource
-  console.log('Download resource:', resource.id)
+  console.log("Download resource:", resource.id)
 }
 
 const shareResource = (resource: SharedResource) => {
   // Implementation for sharing resource
-  console.log('Share resource:', resource.id)
+  console.log("Share resource:", resource.id)
 }
 
 const handleFileUpload = (event: Event) => {
@@ -491,66 +438,71 @@ const handleFileUpload = (event: Event) => {
 
 const closeInviteModal = () => {
   showInviteModal.value = false
-  invitation.value = { email: '', role: 'COLLABORATOR', message: '' }
+  invitation.value = {email: "", role: "COLLABORATOR", message: ""}
 }
 
 const closeResourceModal = () => {
   showResourceModal.value = false
   newResource.value = {
-    title: '',
-    type: 'DOCUMENT',
-    description: '',
-    url: '',
-    file: null
+    title: "",
+    type: "DOCUMENT",
+    description: "",
+    url: "",
+    file: null,
   }
 }
 
 // Utility functions
 const getInitials = (name: string) => {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
 }
 
 const getSessionTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
-    PRACTICE: 'Práctica',
-    REVIEW: 'Revisión',
-    PLANNING: 'Planificación',
-    GENERAL: 'General'
+    PRACTICE: "Práctica",
+    REVIEW: "Revisión",
+    PLANNING: "Planificación",
+    GENERAL: "General",
   }
   return labels[type] || type
 }
 
 const getResourceTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
-    SCORE: 'Partitura',
-    AUDIO: 'Audio',
-    VIDEO: 'Video',
-    DOCUMENT: 'Documento',
-    LINK: 'Enlace'
+    SCORE: "Partitura",
+    AUDIO: "Audio",
+    VIDEO: "Video",
+    DOCUMENT: "Documento",
+    LINK: "Enlace",
   }
   return labels[type] || type
 }
 
 const getResourceIcon = (type: string) => {
   const icons: Record<string, string> = {
-    SCORE: 'fas fa-music',
-    AUDIO: 'fas fa-volume-up',
-    VIDEO: 'fas fa-video',
-    DOCUMENT: 'fas fa-file-text',
-    LINK: 'fas fa-link'
+    SCORE: "fas fa-music",
+    AUDIO: "fas fa-volume-up",
+    VIDEO: "fas fa-video",
+    DOCUMENT: "fas fa-file-text",
+    LINK: "fas fa-link",
   }
-  return icons[type] || 'fas fa-file'
+  return icons[type] || "fas fa-file"
 }
 
 const getActivityIcon = (type: string) => {
   const icons: Record<string, string> = {
-    COMMENT: 'fas fa-comment',
-    EDIT: 'fas fa-edit',
-    SHARE: 'fas fa-share',
-    JOIN: 'fas fa-sign-in-alt',
-    UPLOAD: 'fas fa-upload'
+    COMMENT: "fas fa-comment",
+    EDIT: "fas fa-edit",
+    SHARE: "fas fa-share",
+    JOIN: "fas fa-sign-in-alt",
+    UPLOAD: "fas fa-upload",
   }
-  return icons[type] || 'fas fa-info-circle'
+  return icons[type] || "fas fa-info-circle"
 }
 
 const formatDuration = (startTime: string) => {
@@ -558,7 +510,7 @@ const formatDuration = (startTime: string) => {
   const now = new Date()
   const diff = now.getTime() - start.getTime()
   const minutes = Math.floor(diff / 60000)
-  
+
   if (minutes < 60) {
     return `${minutes} min`
   } else {
@@ -572,22 +524,22 @@ const formatTimeAgo = (timestamp: string) => {
   const time = new Date(timestamp)
   const diff = now.getTime() - time.getTime()
   const minutes = Math.floor(diff / 60000)
-  
-  if (minutes < 1) return 'Hace un momento'
+
+  if (minutes < 1) return "Hace un momento"
   if (minutes < 60) return `Hace ${minutes} min`
-  
+
   const hours = Math.floor(minutes / 60)
   if (hours < 24) return `Hace ${hours}h`
-  
+
   const days = Math.floor(hours / 24)
-  return `Hace ${days} día${days !== 1 ? 's' : ''}`
+  return `Hace ${days} día${days !== 1 ? "s" : ""}`
 }
 
 const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
+  return new Date(date).toLocaleDateString("es-ES", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   })
 }
 
@@ -720,8 +672,13 @@ onMounted(() => {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .session-description {

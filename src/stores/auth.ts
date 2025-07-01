@@ -1,18 +1,18 @@
-import { defineStore } from 'pinia'
-import { auth, db } from '@/firebase'
-import { 
-  signInWithEmailAndPassword, 
-  signOut as firebaseSignOut, 
-  onAuthStateChanged, 
-  createUserWithEmailAndPassword 
-} from 'firebase/auth'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { useStudentsStore } from '@/modulos/Students/store/students'
-import { useTeachersStore } from '@/modulos/Teachers/store/teachers'
-import { useClassesStore } from '@/modulos/Classes/store/classes'
-import { useAttendanceStore } from '@/modulos/Attendance/store/attendance'
-import { useScheduleStore } from '@/modulos/Schedules/store/schedule'
-import { getThemePreference } from '@/modulos/Users/service/userPreferences'
+import {defineStore} from "pinia"
+import {auth, db} from "@/firebase"
+import {
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+} from "firebase/auth"
+import {doc, getDoc, setDoc} from "firebase/firestore"
+import {useStudentsStore} from "@/modulos/Students/store/students"
+import {useTeachersStore} from "@/modulos/Teachers/store/teachers"
+import {useClassesStore} from "@/modulos/Classes/store/classes"
+import {useAttendanceStore} from "@/modulos/Attendance/store/attendance"
+import {useScheduleStore} from "@/modulos/Schedules/store/schedule"
+import {getThemePreference} from "@/modulos/Users/service/userPreferences"
 
 // Interfaz para el objeto de usuario
 interface User {
@@ -22,53 +22,74 @@ interface User {
   status?: string
   createdAt?: string
   updatedAt?: string
-  userRoles?: string[];
-  isDark?: boolean;
-  profileCompleted?: boolean;
+  userRoles?: string[]
+  isDark?: boolean
+  profileCompleted?: boolean
   // Agrega otros campos si es necesario
 }
 
 // Interfaz para las notificaciones
 interface Notification {
   message: string
-  type: 'success' | 'error' | 'info'
+  type: "success" | "error" | "info"
 }
 
 // Variable para controlar las llamadas concurrentes al checkAuth
 let authCheckPromise: Promise<any> | null = null
 
-export const useAuthStore = defineStore('auth', {
+export const useAuthStore = defineStore("auth", {
   state: () => ({
     user: null as User | null,
     isLoading: false,
     error: null as string | null,
     isInitialized: false,
     notifications: [] as Notification[],
-    dataInitialized: false
+    dataInitialized: false,
   }),
 
   getters: {
     // Retorna true si hay un usuario autenticado
-    isLoggedIn: (state) => !!state.user,    // Computed properties para roles
-    isDirector: (state) => state.user?.role === 'Director',
-    isTeacher: (state) => state.user?.role === 'Maestro',
-    isAdmin: (state) => state.user?.role === 'Admin',
-    isSuperusuario: (state) => state.user?.role === 'Superusuario',
+    isLoggedIn: (state) => !!state.user, // Computed properties para roles
+    isDirector: (state) => state.user?.role === "Director",
+    isTeacher: (state) => state.user?.role === "Maestro",
+    isAdmin: (state) => state.user?.role === "Admin",
+    isSuperusuario: (state) => state.user?.role === "Superusuario",
     // Retorna true si el usuario está aprobado
-    isApproved: (state) => state.user?.status === 'aprobado',
+    isApproved: (state) => state.user?.status === "aprobado",
     // Permisos para gestionar módulos
-    canManageStudents: (state) => ['Director', 'Maestro'].includes(state.user?.role || ''),
-    canManageAttendance: (state) => ['Director', 'Maestro'].includes(state.user?.role || ''),
-    canManageSchedule: (state) => ['Director', 'Maestro'].includes(state.user?.role || ''),    // Función para validar acceso a módulos específicos
+    canManageStudents: (state) => ["Director", "Maestro"].includes(state.user?.role || ""),
+    canManageAttendance: (state) => ["Director", "Maestro"].includes(state.user?.role || ""),
+    canManageSchedule: (state) => ["Director", "Maestro"].includes(state.user?.role || ""), // Función para validar acceso a módulos específicos
     canAccessModule: (state) => (moduleName: string) => {
       const roleModules = {
-        'Maestro': ['home', 'attendance', 'schedule', 'students'],
-        'Director': ['home', 'attendance', 'schedule', 'students', 'classes', 'reports', 'teachers', 'profile'],
-        'Admin': ['home', 'attendance', 'students', 'profile'],
-        'Superusuario': ['home', 'superusuario', 'system', 'audit', 'backup', 'permissions', 'users', 'roles']
+        Maestro: ["home", "attendance", "schedule", "students"],
+        Director: [
+          "home",
+          "attendance",
+          "schedule",
+          "students",
+          "classes",
+          "reports",
+          "teachers",
+          "profile",
+        ],
+        Admin: ["home", "attendance", "students", "profile"],
+        Superusuario: [
+          "home",
+          "superusuario",
+          "system",
+          "audit",
+          "backup",
+          "permissions",
+          "users",
+          "roles",
+        ],
       }
-      return state.user?.role && roleModules[state.user.role as keyof typeof roleModules]?.includes(moduleName)
-    }
+      return (
+        state.user?.role &&
+        roleModules[state.user.role as keyof typeof roleModules]?.includes(moduleName)
+      )
+    },
   },
 
   actions: {
@@ -81,55 +102,69 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
       try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password)
-        const userDocRef = doc(db, 'USERS', userCredential.user.uid)
+        const userDocRef = doc(db, "USERS", userCredential.user.uid)
         const userDoc = await getDoc(userDocRef)
-        
+
         if (!userDoc.exists()) {
           // Si el usuario no tiene perfil en la base de datos, no se le permite el acceso
-          throw new Error('No se encontró el perfil del usuario')
+          throw new Error("No se encontró el perfil del usuario")
         } else {
           const userData = userDoc.data()
           // Se asigna el perfil completo al estado
-          this.user = { uid: userCredential.user.uid, email: userCredential.user.email, ...userData } as User
-          
+          this.user = {
+            uid: userCredential.user.uid,
+            email: userCredential.user.email,
+            ...userData,
+          } as User
+
           // Redirigir según el estado del perfil
-          if (userData.status === 'pendiente' && !userData.profileCompleted) {
-            return { user: this.user, redirectTo: '/complete-profile', message: 'Por favor, completa tu perfil para continuar' }
+          if (userData.status === "pendiente" && !userData.profileCompleted) {
+            return {
+              user: this.user,
+              redirectTo: "/complete-profile",
+              message: "Por favor, completa tu perfil para continuar",
+            }
           }
-          if (userData.status === 'pendiente' && userData.profileCompleted) {
-            return { user: this.user, redirectTo: '/pending-approval', message: 'Tu cuenta está pendiente de aprobación' }
+          if (userData.status === "pendiente" && userData.profileCompleted) {
+            return {
+              user: this.user,
+              redirectTo: "/pending-approval",
+              message: "Tu cuenta está pendiente de aprobación",
+            }
           }
-          if (userData.status === 'rechazado') {
-            throw new Error('Tu solicitud de acceso ha sido rechazada. Contacta al administrador para más información.')
+          if (userData.status === "rechazado") {
+            throw new Error(
+              "Tu solicitud de acceso ha sido rechazada. Contacta al administrador para más información."
+            )
           }
-          if (userData.status !== 'aprobado') {
-            throw new Error('Tu cuenta está pendiente de aprobación')
+          if (userData.status !== "aprobado") {
+            throw new Error("Tu cuenta está pendiente de aprobación")
           }
-          
+
           // Notificar a roles administrativos
-          if (['Director', 'Admin'].includes(userData.role)) {
+          if (["Director", "Admin"].includes(userData.role)) {
             this.notifications.push({
               message: `¡Bienvenido ${userData.role}! Has iniciado sesión exitosamente.`,
-              type: 'success'
+              type: "success",
             })
           }
-            // Actualizar el último login en Firestore
-          await setDoc(userDocRef, { lastLogin: new Date().toISOString() }, { merge: true })
+          // Actualizar el último login en Firestore
+          await setDoc(userDocRef, {lastLogin: new Date().toISOString()}, {merge: true})
           // Inicializar datos de otros módulos
           await this.initializeData()
-          
+
           // Determinar redirección según el rol
-          let redirectTo = '/'
-          if (userData.role === 'Superusuario') {
-            redirectTo = '/superusuario/dashboard'
-          } else if (userData.role === 'Maestro') {
-            redirectTo = '/teacher'
-          } else if (['Director', 'Admin'].includes(userData.role)) {
-            redirectTo = '/dashboard'
+          let redirectTo = "/"
+          if (userData.role === "Superusuario") {
+            redirectTo = "/superusuario/dashboard"
+          } else if (userData.role === "Maestro") {
+            redirectTo = "/teacher"
+          } else if (["Director", "Admin"].includes(userData.role)) {
+            redirectTo = "/dashboard"
           }
-          
-          const isAdmin = ['Director', 'Admin', 'Superusuario'].includes(userData.role)
-          return { user: this.user, redirectTo, showNotification: isAdmin }
+
+          const isAdmin = ["Director", "Admin", "Superusuario"].includes(userData.role)
+          return {user: this.user, redirectTo, showNotification: isAdmin}
         }
       } catch (error: any) {
         this.error = this.parseAuthError(error)
@@ -137,16 +172,16 @@ export const useAuthStore = defineStore('auth', {
       } finally {
         this.isLoading = false
       }
-    },    /**
+    } /**
      * Cierra la sesión del usuario.
      * Limpia el estado del usuario y reinicia los stores de otros módulos.
-     */
+     */,
     async signOut() {
       try {
         await firebaseSignOut(auth)
         this.user = null
         this.dataInitialized = false
-        
+
         // Reinicia otros stores con manejo de errores individual
         try {
           const studentsStore = useStudentsStore()
@@ -154,7 +189,7 @@ export const useAuthStore = defineStore('auth', {
             studentsStore.$reset()
           }
         } catch (error) {
-          console.warn('No se pudo resetear el store de students:', error)
+          console.warn("No se pudo resetear el store de students:", error)
         }
 
         try {
@@ -163,7 +198,7 @@ export const useAuthStore = defineStore('auth', {
             classesStore.$reset()
           }
         } catch (error) {
-          console.warn('No se pudo resetear el store de classes:', error)
+          console.warn("No se pudo resetear el store de classes:", error)
         }
 
         try {
@@ -172,11 +207,10 @@ export const useAuthStore = defineStore('auth', {
             attendanceStore.$reset()
           }
         } catch (error) {
-          console.warn('No se pudo resetear el store de attendance:', error)
+          console.warn("No se pudo resetear el store de attendance:", error)
         }
-
       } catch (error: any) {
-        console.error('Error al cerrar sesión:', error)
+        console.error("Error al cerrar sesión:", error)
         throw error
       }
     },
@@ -190,21 +224,21 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-        await setDoc(doc(db, 'USERS', userCredential.user.uid), {
+        await setDoc(doc(db, "USERS", userCredential.user.uid), {
           uid: userCredential.user.uid,
           email: userCredential.user.email,
-          name: userData?.name || '',
-          phone: userData?.phone || '',
-          role: userData?.role || 'Maestro',
-          status: 'pendiente',
+          name: userData?.name || "",
+          phone: userData?.phone || "",
+          role: userData?.role || "Maestro",
+          status: "pendiente",
           profileCompleted: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          isDark: false // Tema claro por defecto
+          isDark: false, // Tema claro por defecto
         })
         return {
-          message: 'Registro exitoso. Por favor completa tu perfil para continuar.',
-          user: userCredential.user
+          message: "Registro exitoso. Por favor completa tu perfil para continuar.",
+          user: userCredential.user,
         }
       } catch (error: any) {
         this.error = this.parseAuthError(error)
@@ -229,39 +263,39 @@ export const useAuthStore = defineStore('auth', {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
           if (user) {
             try {
-              const userDoc = await getDoc(doc(db, 'USERS', user.uid))
+              const userDoc = await getDoc(doc(db, "USERS", user.uid))
               if (userDoc.exists()) {
                 const userData = userDoc.data()
-                if (userData.status === 'aprobado') {
-                  this.user = { uid: user.uid, email: user.email, ...userData } as User                  
+                if (userData.status === "aprobado") {
+                  this.user = {uid: user.uid, email: user.email, ...userData} as User
                   // Cargar preferencia de tema del usuario
                   try {
-                    const themePreference = await getThemePreference(user.uid);
+                    const themePreference = await getThemePreference(user.uid)
                     if (themePreference !== null) {
                       // Si existe una preferencia explícita, actualizar el usuario con ella
-                      this.user.isDark = themePreference;
+                      this.user.isDark = themePreference
                     } else if (this.user.isDark === undefined) {
                       // Si no hay preferencia explícita ni en el perfil, usar claro por defecto
-                      this.user.isDark = false;
+                      this.user.isDark = false
                       // Actualizar el perfil con el valor predeterminado
-                      await setDoc(doc(db, 'USERS', user.uid), { isDark: false }, { merge: true });
+                      await setDoc(doc(db, "USERS", user.uid), {isDark: false}, {merge: true})
                     }
                   } catch (error) {
-                    console.error('Error al cargar preferencia de tema:', error);
+                    console.error("Error al cargar preferencia de tema:", error)
                   }
                 } else {
-                  console.error('🔐 Usuario no aprobado, cerrando sesión')
+                  console.error("🔐 Usuario no aprobado, cerrando sesión")
                   await this.signOut()
                 }
               } else {
-                console.error('🔐 Usuario sin perfil y no es director, cerrando sesión')
+                console.error("🔐 Usuario sin perfil y no es director, cerrando sesión")
                 await this.signOut()
               }
             } catch (error) {
-              console.error('🔐 Error al obtener perfil:', error)
+              console.error("🔐 Error al obtener perfil:", error)
             }
           } else {
-            console.error('🔐 Debes ser miembro de el sistema punta cana, para obtener acceso')
+            console.error("🔐 Debes ser miembro de el sistema punta cana, para obtener acceso")
             this.user = null
           }
           this.isInitialized = true
@@ -293,11 +327,11 @@ export const useAuthStore = defineStore('auth', {
           teachersStore.fetchTeachers(),
           classesStore.fetchClasses(),
           attendanceStore.fetchAttendanceDocuments(),
-          scheduleStore.fetchAllSchedules()
+          scheduleStore.fetchAllSchedules(),
         ])
         this.dataInitialized = true
       } catch (error) {
-        console.error('Error initializing data:', error)
+        console.error("Error initializing data:", error)
         // No marcamos como inicializado para permitir reintentos
       }
     },
@@ -308,22 +342,22 @@ export const useAuthStore = defineStore('auth', {
     parseAuthError(error: any): string {
       const errorCode = error.code
       switch (errorCode) {
-        case 'auth/invalid-email':
-          return 'El correo electrónico no es válido'
-        case 'auth/user-disabled':
-          return 'Esta cuenta ha sido deshabilitada'
-        case 'auth/user-not-found':
-        case 'auth/wrong-password':
-          return 'Credenciales inválidas'
-        case 'auth/email-already-in-use':
-          return 'Este correo electrónico ya está registrado'
-        case 'auth/weak-password':
-          return 'La contraseña debe tener al menos 6 caracteres'
-        case 'auth/too-many-requests':
-          return 'Demasiados intentos fallidos. Por favor, intente más tarde'
+        case "auth/invalid-email":
+          return "El correo electrónico no es válido"
+        case "auth/user-disabled":
+          return "Esta cuenta ha sido deshabilitada"
+        case "auth/user-not-found":
+        case "auth/wrong-password":
+          return "Credenciales inválidas"
+        case "auth/email-already-in-use":
+          return "Este correo electrónico ya está registrado"
+        case "auth/weak-password":
+          return "La contraseña debe tener al menos 6 caracteres"
+        case "auth/too-many-requests":
+          return "Demasiados intentos fallidos. Por favor, intente más tarde"
         default:
-          return error.message ? error.message : 'Error de autenticación'
+          return error.message ? error.message : "Error de autenticación"
       }
-    }
-  }
+    },
+  },
 })

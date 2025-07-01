@@ -3,10 +3,10 @@
     <div v-if="shouldShowStatus" :class="['network-status', statusClass]">
       <div class="status-content">
         <div class="status-indicator">
-          <span :class="['status-dot', dotClass]"></span>
+          <span :class="['status-dot', dotClass]" />
           <span class="status-text">{{ statusText }}</span>
         </div>
-        
+
         <div v-if="showDetails" class="status-details">
           <p class="status-message">{{ statusMessage }}</p>
           <div v-if="lastChecked" class="last-check">
@@ -15,78 +15,67 @@
         </div>
 
         <div class="status-actions">
-          <button 
-            v-if="!isOnline" 
-            @click="forceCheck" 
-            :disabled="isChecking"
-            class="retry-btn"
-          >
-            <span v-if="isChecking" class="spinner"></span>
-            {{ isChecking ? 'Verificando...' : 'Reintentar' }}
+          <button v-if="!isOnline" :disabled="isChecking" class="retry-btn" @click="forceCheck">
+            <span v-if="isChecking" class="spinner" />
+            {{ isChecking ? "Verificando..." : "Reintentar" }}
           </button>
-          
-          <button 
-            @click="toggleDetails" 
+
+          <button
             class="details-btn"
             :title="showDetails ? 'Ocultar detalles' : 'Mostrar detalles'"
+            @click="toggleDetails"
           >
-            <span :class="['arrow', { 'rotated': showDetails }]">▼</span>
+            <span :class="['arrow', {rotated: showDetails}]">▼</span>
           </button>
         </div>
       </div>
 
       <!-- Barra de progreso para conexión lenta -->
       <div v-if="connectionQuality === 'slow'" class="progress-bar">
-        <div class="progress-fill"></div>
+        <div class="progress-fill" />
       </div>
     </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useNetworkStatus } from '@/composables/useNetworkStatus'
+import {computed, ref} from "vue"
+import {useNetworkStatus} from "@/composables/useNetworkStatus"
 
-const { 
-  isOnline, 
-  connectionQuality, 
-  lastChecked, 
-  isChecking, 
-  forceCheck 
-} = useNetworkStatus()
+const {isOnline, connectionQuality, lastChecked, isChecking, forceCheck} = useNetworkStatus()
 
 const showDetails = ref(false)
 
 const shouldShowStatus = computed(() => {
-  return !isOnline.value || connectionQuality.value === 'slow'
+  return !isOnline.value || connectionQuality.value === "slow"
 })
 
 const statusClass = computed(() => {
-  if (!isOnline.value) return 'offline'
-  if (connectionQuality.value === 'slow') return 'slow'
-  return 'online'
+  if (!isOnline.value) return "offline"
+  if (connectionQuality.value === "slow") return "slow"
+  return "online"
 })
 
 const dotClass = computed(() => {
-  if (!isOnline.value) return 'pulse-dot'
-  if (connectionQuality.value === 'slow') return 'slow-dot'
-  return 'online-dot'
+  if (!isOnline.value) return "pulse-dot"
+  if (connectionQuality.value === "slow") return "slow-dot"
+  return "online-dot"
 })
 
 const statusText = computed(() => {
-  if (!isOnline.value) return 'Sin conexión'
-  if (connectionQuality.value === 'slow') return 'Conexión lenta'
-  return 'Conectado'
+  if (!isOnline.value) return "Sin conexión"
+  if (connectionQuality.value === "slow") return "Conexión lenta"
+  return "Conectado"
 })
 
 const statusMessage = computed(() => {
   if (!isOnline.value) {
-    return 'Los cambios se sincronizarán cuando vuelvas a tener conexión. Puedes seguir trabajando normalmente.'
+    return "Los cambios se sincronizarán cuando vuelvas a tener conexión. Puedes seguir trabajando normalmente."
   }
-  if (connectionQuality.value === 'slow') {
-    return 'La conexión es lenta. Algunas funciones pueden tardar más de lo normal.'
+  if (connectionQuality.value === "slow") {
+    return "La conexión es lenta. Algunas funciones pueden tardar más de lo normal."
   }
-  return 'Conexión estable'
+  return "Conexión estable"
 })
 
 const toggleDetails = () => {
@@ -94,10 +83,10 @@ const toggleDetails = () => {
 }
 
 const formatTime = (date: Date): string => {
-  return date.toLocaleTimeString('es-ES', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
+  return date.toLocaleTimeString("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
   })
 }
 </script>
@@ -265,30 +254,47 @@ const formatTime = (date: Date): string => {
 
 /* Animations */
 @keyframes pulse {
-  0%, 100% { 
-    opacity: 1; 
+  0%,
+  100% {
+    opacity: 1;
     transform: scale(1);
   }
-  50% { 
-    opacity: 0.5; 
+  50% {
+    opacity: 0.5;
     transform: scale(0.8);
   }
 }
 
 @keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0.4; }
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0.4;
+  }
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes progress {
-  0% { transform: translateX(-100%); }
-  50% { transform: translateX(0%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 /* Transitions */
@@ -315,15 +321,15 @@ const formatTime = (date: Date): string => {
     align-items: stretch;
     gap: 12px;
   }
-  
+
   .status-indicator {
     justify-content: center;
   }
-  
+
   .status-details {
     text-align: center;
   }
-  
+
   .status-actions {
     justify-content: center;
   }

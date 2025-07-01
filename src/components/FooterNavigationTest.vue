@@ -4,23 +4,23 @@
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">
         Test del Footer Navigation - Superusuario
       </h1>
-      
+
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
         <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
           Estado de Autenticación
         </h2>
         <div class="space-y-2">
           <p class="text-gray-700 dark:text-gray-300">
-            <strong>Usuario autenticado:</strong> {{ authStore.isLoggedIn ? 'Sí' : 'No' }}
+            <strong>Usuario autenticado:</strong> {{ authStore.isLoggedIn ? "Sí" : "No" }}
           </p>
           <p class="text-gray-700 dark:text-gray-300">
-            <strong>Email:</strong> {{ authStore.user?.email || 'N/A' }}
+            <strong>Email:</strong> {{ authStore.user?.email || "N/A" }}
           </p>
           <p class="text-gray-700 dark:text-gray-300">
-            <strong>Rol:</strong> {{ authStore.user?.role || 'N/A' }}
+            <strong>Rol:</strong> {{ authStore.user?.role || "N/A" }}
           </p>
           <p class="text-gray-700 dark:text-gray-300">
-            <strong>Es Superusuario:</strong> {{ authStore.isSuperusuario ? 'Sí' : 'No' }}
+            <strong>Es Superusuario:</strong> {{ authStore.isSuperusuario ? "Sí" : "No" }}
           </p>
         </div>
       </div>
@@ -30,8 +30,8 @@
           Items del Footer Navigation
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div 
-            v-for="item in footerItems" 
+          <div
+            v-for="item in footerItems"
             :key="item.to"
             class="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
           >
@@ -43,8 +43,8 @@
                 <p class="text-xs text-gray-400 dark:text-gray-500">{{ item.ariaLabel }}</p>
               </div>
             </div>
-            <router-link 
-              :to="item.to" 
+            <router-link
+              :to="item.to"
               class="mt-2 inline-block text-primary-600 hover:text-primary-700 text-sm font-medium"
             >
               Ir a esta página →
@@ -71,9 +71,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useAuthStore } from '../stores/auth'
-import { superusuarioMenuItems } from '../modulos/Superusuario/constants/menuItems'
+import {computed} from "vue"
+import {useAuthStore} from "../stores/auth"
+import {superusuarioMenuItems} from "../modulos/Superusuario/constants/menuItems"
 
 const authStore = useAuthStore()
 
@@ -85,9 +85,9 @@ const footerItems = computed(() => {
       superusuarioMenuItems[1], // Usuarios
       superusuarioMenuItems[2], // Roles
       superusuarioMenuItems[3], // Permisos
-      superusuarioMenuItems[4]  // Sistema
-    ];
+      superusuarioMenuItems[4], // Sistema
+    ]
   }
-  return [];
+  return []
 })
 </script>

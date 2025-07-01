@@ -1,8 +1,6 @@
 <template>
   <div class="space-y-4">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-      Opciones Avanzadas
-    </h3>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Opciones Avanzadas</h3>
 
     <div class="space-y-4">
       <!-- Incluir fotos -->
@@ -10,8 +8,10 @@
         <input
           type="checkbox"
           :checked="pdfOptions.includePhotos"
-          @change="$emit('update:pdfOptions', { ...pdfOptions, includePhotos: $event.target.checked })"
           class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+          @change="
+            $emit('update:pdfOptions', {...pdfOptions, includePhotos: $event.target.checked})
+          "
         />
         <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
           Incluir fotos de estudiantes
@@ -23,8 +23,8 @@
         <input
           type="checkbox"
           :checked="pdfOptions.groupByClass"
-          @change="$emit('update:pdfOptions', { ...pdfOptions, groupByClass: $event.target.checked })"
           class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+          @change="$emit('update:pdfOptions', {...pdfOptions, groupByClass: $event.target.checked})"
         />
         <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
           Agrupar por clase
@@ -36,8 +36,8 @@
         <input
           type="checkbox"
           :checked="pdfOptions.includeStats"
-          @change="$emit('update:pdfOptions', { ...pdfOptions, includeStats: $event.target.checked })"
           class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+          @change="$emit('update:pdfOptions', {...pdfOptions, includeStats: $event.target.checked})"
         />
         <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
           Incluir estadísticas resumen
@@ -49,8 +49,8 @@
         <input
           type="checkbox"
           :checked="pdfOptions.includeLogo"
-          @change="$emit('update:pdfOptions', { ...pdfOptions, includeLogo: $event.target.checked })"
           class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+          @change="$emit('update:pdfOptions', {...pdfOptions, includeLogo: $event.target.checked})"
         />
         <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
           Incluir logo institucional
@@ -66,8 +66,8 @@
         </label>
         <select
           :value="pdfOptions.sortBy"
-          @change="$emit('update:pdfOptions', { ...pdfOptions, sortBy: $event.target.value })"
           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+          @change="$emit('update:pdfOptions', {...pdfOptions, sortBy: $event.target.value})"
         >
           <option value="name">Nombre</option>
           <option value="age">Edad</option>
@@ -80,13 +80,11 @@
 
       <!-- Orden -->
       <div class="space-y-2">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Orden
-        </label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"> Orden </label>
         <select
           :value="pdfOptions.sortOrder"
-          @change="$emit('update:pdfOptions', { ...pdfOptions, sortOrder: $event.target.value })"
           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+          @change="$emit('update:pdfOptions', {...pdfOptions, sortOrder: $event.target.value})"
         >
           <option value="asc">Ascendente (A-Z)</option>
           <option value="desc">Descendente (Z-A)</option>
@@ -118,6 +116,6 @@ const props = defineProps<Props>()
 
 // Emits
 const emit = defineEmits<{
-  'update:pdfOptions': [value: any]
+  "update:pdfOptions": [value: any]
 }>()
-</script> 
+</script>

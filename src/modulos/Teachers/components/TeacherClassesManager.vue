@@ -1,229 +1,255 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { useClassesStore } from '../../../modulos/Classes/store/classes';
-import { useInstrumentsStore } from '@/stores/instruments';
-import { useToast } from '../../../components/ui/toast/use-toast';
-import { PlusIcon, PencilIcon, TrashIcon, UserGroupIcon, ClockIcon } from '@heroicons/vue/24/outline';
-import ConfirmModal from '../../../components/ConfirmModal.vue';
+import {ref, computed, onMounted, watch} from "vue"
+import {useClassesStore} from "../../../modulos/Classes/store/classes"
+import {useInstrumentsStore} from "@/stores/instruments"
+import {useToast} from "../../../components/ui/toast/use-toast"
+import {PlusIcon, PencilIcon, TrashIcon, UserGroupIcon, ClockIcon} from "@heroicons/vue/24/outline"
+import ConfirmModal from "../../../components/ConfirmModal.vue"
 
 const props = defineProps({
   teacherId: {
     type: String,
-    required: true
+    required: true,
   },
   teacherName: {
     type: String,
-    default: ''
-  }
-});
+    default: "",
+  },
+})
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(["close"])
 
 // Stores
-const classesStore = useClassesStore();
-const instrumentsStore = useInstrumentsStore();
-const { toast } = useToast();
+const classesStore = useClassesStore()
+const instrumentsStore = useInstrumentsStore()
+const {toast} = useToast()
 
 // Estado
-const isLoading = ref(true);
-const showDeleteConfirm = ref(false);
-const classToDelete = ref(null);
-const showClassForm = ref(false);
-const currentClass = ref(null);
-const searchQuery = ref('');
-const filterInstrument = ref('');
+const isLoading = ref(true)
+const showDeleteConfirm = ref(false)
+const classToDelete = ref(null)
+const showClassForm = ref(false)
+const currentClass = ref(null)
+const searchQuery = ref("")
+const filterInstrument = ref("")
 
 // Cargar datos
 onMounted(async () => {
   try {
     if (classesStore.classes.length === 0) {
-      await classesStore.fetchClasses();
+      await classesStore.fetchClasses()
     }
   } catch (error) {
-    console.error('Error al cargar clases:', error);
+    console.error("Error al cargar clases:", error)
     toast({
-      title: 'Error',
-      description: 'No se pudieron cargar las clases. Por favor, intenta de nuevo.',
-      variant: 'destructive'
-    });
+      title: "Error",
+      description: "No se pudieron cargar las clases. Por favor, intenta de nuevo.",
+      variant: "destructive",
+    })
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-});
+})
 
 // Computed properties
 const teacherClasses = computed(() => {
-  return classesStore.getClassesByTeacher(props.teacherId) || [];
-});
+  return classesStore.getClassesByTeacher(props.teacherId) || []
+})
 
 const filteredClasses = computed(() => {
-  let result = teacherClasses.value;
-  
+  let result = teacherClasses.value
+
   // Filtrar por búsqueda
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    result = result.filter(classItem => 
-      classItem.name?.toLowerCase().includes(query) || 
-      classItem.instrument?.toLowerCase().includes(query) ||
-      classItem.level?.toLowerCase().includes(query)
-    );
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(
+      (classItem) =>
+        classItem.name?.toLowerCase().includes(query) ||
+        classItem.instrument?.toLowerCase().includes(query) ||
+        classItem.level?.toLowerCase().includes(query)
+    )
   }
-  
+
   // Filtrar por instrumento
   if (filterInstrument.value) {
-    result = result.filter(classItem => classItem.instrument === filterInstrument.value);
+    result = result.filter((classItem) => classItem.instrument === filterInstrument.value)
   }
-  
-  return result;
-});
+
+  return result
+})
 
 const instruments = computed(() => {
   // Obtener instrumentos únicos de las clases del maestro
-  const uniqueInstruments = new Set();
-  teacherClasses.value.forEach(classItem => {
+  const uniqueInstruments = new Set()
+  teacherClasses.value.forEach((classItem) => {
     if (classItem.instrument) {
-      uniqueInstruments.add(classItem.instrument);
+      uniqueInstruments.add(classItem.instrument)
     }
-  });
-  return Array.from(uniqueInstruments);
-});
+  })
+  return Array.from(uniqueInstruments)
+})
 
 const availableClasses = computed(() => {
   // Clases que no tienen maestro asignado
-  return classesStore.classes.filter(classItem => 
-    !classItem.teacherId || classItem.teacherId === null || classItem.teacherId === undefined
-  );
-});
+  return classesStore.classes.filter(
+    (classItem) =>
+      !classItem.teacherId || classItem.teacherId === null || classItem.teacherId === undefined
+  )
+})
 
 // Métodos
 const getInstrumentName = (instrumentId) => {
-  const instrument = instrumentsStore.instruments.find(i => i.id === instrumentId);
-  return instrument ? instrument.name : 'No asignado';
-};
+  const instrument = instrumentsStore.instruments.find((i) => i.id === instrumentId)
+  return instrument ? instrument.name : "No asignado"
+}
 
 const formatSchedule = (classItem) => {
   if (!classItem.schedule || !classItem.schedule.slots || classItem.schedule.slots.length === 0) {
-    return 'Sin horario';
+    return "Sin horario"
   }
 
-  const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-  
-  return classItem.schedule.slots.map(slot => {
-    let dayIndex = typeof slot.day === 'number' ? slot.day : parseInt(slot.day);
-    if (isNaN(dayIndex) || dayIndex < 0 || dayIndex > 6) dayIndex = 0;
-    
-    return `${dayNames[dayIndex]} ${slot.startTime || '00:00'}-${slot.endTime || '00:00'}`;
-  }).join(', ');
-};
+  const dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
+
+  return classItem.schedule.slots
+    .map((slot) => {
+      let dayIndex = typeof slot.day === "number" ? slot.day : parseInt(slot.day)
+      if (isNaN(dayIndex) || dayIndex < 0 || dayIndex > 6) dayIndex = 0
+
+      return `${dayNames[dayIndex]} ${slot.startTime || "00:00"}-${slot.endTime || "00:00"}`
+    })
+    .join(", ")
+}
 
 const getStudentCount = (classItem) => {
-  return classItem.studentIds?.length || 0;
-};
+  return classItem.studentIds?.length || 0
+}
 
 const openClassForm = (classItem = null) => {
-  currentClass.value = classItem;
-  showClassForm.value = true;
-};
+  currentClass.value = classItem
+  showClassForm.value = true
+}
 
 const confirmDeleteClass = (classItem) => {
-  classToDelete.value = classItem;
-  showDeleteConfirm.value = true;
-};
+  classToDelete.value = classItem
+  showDeleteConfirm.value = true
+}
 
 const deleteClass = async () => {
-  if (!classToDelete.value) return;
-  
+  if (!classToDelete.value) return
+
   try {
     // Desasignar el maestro de la clase en lugar de eliminarla
     await classesStore.updateClass({
       id: classToDelete.value.id,
-      teacherId: null
-    });
-    
+      teacherId: null,
+    })
+
     toast({
-      title: 'Éxito',
-      description: 'Clase desasignada correctamente',
-      variant: 'default'
-    });
+      title: "Éxito",
+      description: "Clase desasignada correctamente",
+      variant: "default",
+    })
   } catch (error) {
-    console.error('Error al desasignar clase:', error);
+    console.error("Error al desasignar clase:", error)
     toast({
-      title: 'Error',
-      description: 'No se pudo desasignar la clase. Por favor, intenta de nuevo.',
-      variant: 'destructive'
-    });
+      title: "Error",
+      description: "No se pudo desasignar la clase. Por favor, intenta de nuevo.",
+      variant: "destructive",
+    })
   } finally {
-    showDeleteConfirm.value = false;
-    classToDelete.value = null;
+    showDeleteConfirm.value = false
+    classToDelete.value = null
   }
-};
+}
 
 const assignClassToTeacher = async (classId) => {
   try {
     // Obtener la clase antes de asignarla
-    const classData = classesStore.getClassById(classId);
+    const classData = classesStore.getClassById(classId)
     if (!classData) {
-      throw new Error('Clase no encontrada');
+      throw new Error("Clase no encontrada")
     }
-    
+
     // Asignar profesor a la clase
     await classesStore.updateClass({
       ...classData,
-      teacherId: props.teacherId
-    });
-    
+      teacherId: props.teacherId,
+    })
+
     toast({
-      title: 'Éxito',
-      description: 'Clase asignada correctamente',
-      variant: 'default'
-    });
+      title: "Éxito",
+      description: "Clase asignada correctamente",
+      variant: "default",
+    })
   } catch (error) {
-    console.error('Error al asignar clase:', error);
+    console.error("Error al asignar clase:", error)
     toast({
-      title: 'Error',
-      description: 'No se pudo asignar la clase. Por favor, intenta de nuevo.',
-      variant: 'destructive'
-    });
+      title: "Error",
+      description: "No se pudo asignar la clase. Por favor, intenta de nuevo.",
+      variant: "destructive",
+    })
   }
-};
+}
 
 const handleClose = () => {
-  emit('close');
-};
+  emit("close")
+}
 </script>
 
 <template>
   <div class="teacher-classes-manager">
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-2xl font-bold">Clases de {{ teacherName }}</h2>
-      <button @click="handleClose" class="text-gray-500 hover:text-gray-700">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      <button class="text-gray-500 hover:text-gray-700" @click="handleClose">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
         </svg>
       </button>
     </div>
-    
+
     <!-- Filtros y búsqueda -->
     <div class="flex flex-col md:flex-row gap-4 mb-6">
       <div class="flex-1">
         <div class="relative">
-          <input 
-            type="text" 
-            v-model="searchQuery" 
-            placeholder="Buscar clases..." 
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Buscar clases..."
             class="pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
           />
           <div class="absolute left-3 top-2.5 text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           </div>
         </div>
       </div>
-      
+
       <div class="md:w-64">
-        <select 
-          v-model="filterInstrument" 
+        <select
+          v-model="filterInstrument"
           class="border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
         >
           <option value="">Todos los instrumentos</option>
@@ -232,39 +258,57 @@ const handleClose = () => {
           </option>
         </select>
       </div>
-      
+
       <div>
-        <button 
-          @click="openClassForm()" 
+        <button
           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center"
+          @click="openClassForm()"
         >
           <PlusIcon class="h-5 w-5 mr-2" />
           Asignar Clase
         </button>
       </div>
     </div>
-    
+
     <!-- Tabla de clases -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               Nombre
             </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               Instrumento
             </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               Nivel
             </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               Horario
             </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               Estudiantes
             </th>
-            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              scope="col"
+              class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               Acciones
             </th>
           </tr>
@@ -273,9 +317,25 @@ const handleClose = () => {
           <tr v-if="isLoading">
             <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
               <div class="flex justify-center">
-                <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  class="animate-spin h-5 w-5 text-blue-500"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  />
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
                 </svg>
               </div>
             </td>
@@ -293,12 +353,12 @@ const handleClose = () => {
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="text-sm text-gray-900">
-                {{ classItem.instrument || 'No asignado' }}
+                {{ classItem.instrument || "No asignado" }}
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="text-sm text-gray-900">
-                {{ classItem.level || 'No definido' }}
+                {{ classItem.level || "No definido" }}
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
@@ -314,17 +374,17 @@ const handleClose = () => {
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <div class="flex justify-end space-x-2">
-                <button 
-                  @click="openClassForm(classItem)" 
+                <button
                   class="text-blue-600 hover:text-blue-900"
                   title="Editar clase"
+                  @click="openClassForm(classItem)"
                 >
                   <PencilIcon class="h-5 w-5" />
                 </button>
-                <button 
-                  @click="confirmDeleteClass(classItem)" 
+                <button
                   class="text-red-600 hover:text-red-900"
                   title="Desasignar clase"
+                  @click="confirmDeleteClass(classItem)"
                 >
                   <TrashIcon class="h-5 w-5" />
                 </button>
@@ -334,13 +394,16 @@ const handleClose = () => {
         </tbody>
       </table>
     </div>
-    
+
     <!-- Modal para asignar clase -->
-    <div v-if="showClassForm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div
+      v-if="showClassForm"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
       <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden">
         <div class="px-6 py-4 bg-blue-600">
           <h3 class="text-lg font-medium text-white">
-            {{ currentClass ? 'Editar Clase' : 'Asignar Clase' }}
+            {{ currentClass ? "Editar Clase" : "Asignar Clase" }}
           </h3>
         </div>
         <div class="p-6">
@@ -350,15 +413,16 @@ const handleClose = () => {
               <div v-if="availableClasses.length === 0" class="text-center py-4 text-gray-500">
                 No hay clases disponibles para asignar
               </div>
-              <div 
-                v-for="classItem in availableClasses" 
+              <div
+                v-for="classItem in availableClasses"
                 :key="classItem.id"
                 class="border rounded-lg p-4 mb-2 hover:bg-gray-50 cursor-pointer"
                 @click="assignClassToTeacher(classItem.id)"
               >
                 <div class="font-medium">{{ classItem.name }}</div>
                 <div class="text-sm text-gray-600">
-                  {{ classItem.instrument || 'Sin instrumento' }} - {{ classItem.level || 'Sin nivel' }}
+                  {{ classItem.instrument || "Sin instrumento" }} -
+                  {{ classItem.level || "Sin nivel" }}
                 </div>
                 <div class="flex items-center text-sm text-gray-500 mt-1">
                   <ClockIcon class="h-4 w-4 mr-1" />
@@ -367,7 +431,7 @@ const handleClose = () => {
               </div>
             </div>
           </div>
-          
+
           <div class="flex justify-end gap-3 mt-6">
             <button
               type="button"
@@ -380,7 +444,7 @@ const handleClose = () => {
         </div>
       </div>
     </div>
-    
+
     <!-- Modal de confirmación para desasignar -->
     <ConfirmModal
       :show="showDeleteConfirm"

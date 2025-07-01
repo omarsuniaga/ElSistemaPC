@@ -3,10 +3,10 @@
   <ion-header class="dynamic-header">
     <ion-toolbar :style="headerStyles">
       <!-- Logo y título -->
-      <div class="header-brand" slot="start">
-        <img 
+      <div slot="start" class="header-brand">
+        <img
           v-if="appLogo.url && showLogo"
-          :src="appLogo.url" 
+          :src="appLogo.url"
           :alt="appLogo.alt"
           class="header-logo"
           @error="onLogoError"
@@ -22,36 +22,32 @@
       </div>
 
       <!-- Slot para contenido personalizado del centro -->
-      <div class="header-center" slot="start">
-        <slot name="center"></slot>
+      <div slot="start" class="header-center">
+        <slot name="center" />
       </div>
 
       <!-- Acciones del header -->
       <ion-buttons slot="end" class="header-actions">
         <!-- Notificaciones -->
-        <slot name="notifications"></slot>
-        
+        <slot name="notifications" />
+
         <!-- Menú de usuario -->
-        <slot name="user-menu"></slot>
-        
+        <slot name="user-menu" />
+
         <!-- Acciones adicionales -->
-        <slot name="actions"></slot>
+        <slot name="actions" />
       </ion-buttons>
     </ion-toolbar>
 
     <!-- Barra de progreso opcional -->
-    <ion-progress-bar 
-      v-if="showProgress"
-      :value="progressValue"
-      :color="progressColor"
-    />
+    <ion-progress-bar v-if="showProgress" :value="progressValue" :color="progressColor" />
   </ion-header>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { IonHeader, IonToolbar, IonTitle, IonButtons, IonProgressBar } from '@ionic/vue'
-import { useBranding } from '@/composables/useBranding'
+import {computed, ref} from "vue"
+import {IonHeader, IonToolbar, IonTitle, IonButtons, IonProgressBar} from "@ionic/vue"
+import {useBranding} from "@/composables/useBranding"
 
 interface Props {
   title?: string
@@ -64,23 +60,17 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: '',
+  title: "",
   showLogo: true,
   showTagline: false,
   showProgress: false,
   progressValue: 0,
-  progressColor: 'primary',
-  customStyles: () => ({})
+  progressColor: "primary",
+  customStyles: () => ({}),
 })
 
 // Branding composable
-const { 
-  appTitle, 
-  appTagline, 
-  appLogo, 
-  brandColors, 
-  getCSSVariables 
-} = useBranding()
+const {appTitle, appTagline, appLogo, brandColors, getCSSVariables} = useBranding()
 
 // Estado local
 const logoError = ref(false)
@@ -91,15 +81,15 @@ const displayTitle = computed(() => props.title || appTitle.value)
 // Estilos dinámicos del header
 const headerStyles = computed(() => {
   const baseStyles = {
-    '--background': brandColors.value.primary,
-    '--color': getContrastColor(brandColors.value.primary),
-    '--border-color': brandColors.value.primary,
-    ...getCSSVariables()
+    "--background": brandColors.value.primary,
+    "--color": getContrastColor(brandColors.value.primary),
+    "--border-color": brandColors.value.primary,
+    ...getCSSVariables(),
   }
 
   return {
     ...baseStyles,
-    ...props.customStyles
+    ...props.customStyles,
   }
 })
 
@@ -111,22 +101,22 @@ function onLogoError() {
 // Calcular color de contraste para texto
 function getContrastColor(hexColor: string): string {
   // Convertir hex a RGB
-  const hex = hexColor.replace('#', '')
+  const hex = hexColor.replace("#", "")
   const r = parseInt(hex.substr(0, 2), 16)
   const g = parseInt(hex.substr(2, 2), 16)
   const b = parseInt(hex.substr(4, 2), 16)
-  
+
   // Calcular luminancia
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-  
+
   // Retornar blanco o negro según la luminancia
-  return luminance > 0.5 ? '#000000' : '#ffffff'
+  return luminance > 0.5 ? "#000000" : "#ffffff"
 }
 
 // Exponer métodos si es necesario
 defineExpose({
   headerStyles,
-  displayTitle
+  displayTitle,
 })
 </script>
 
@@ -216,16 +206,16 @@ defineExpose({
     padding: 8px 12px;
     gap: 8px;
   }
-  
+
   .header-logo {
     height: 32px;
     max-width: 80px;
   }
-  
+
   .header-title {
     font-size: 1.2rem;
   }
-  
+
   .header-tagline {
     font-size: 0.75rem;
   }
@@ -235,7 +225,7 @@ defineExpose({
   .header-tagline {
     display: none;
   }
-  
+
   .header-title {
     font-size: 1.1rem;
   }
@@ -246,7 +236,7 @@ defineExpose({
   .header-logo {
     background: rgba(255, 255, 255, 0.15);
   }
-  
+
   .header-logo:hover {
     background: rgba(255, 255, 255, 0.25);
   }

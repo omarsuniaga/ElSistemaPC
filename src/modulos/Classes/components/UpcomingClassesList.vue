@@ -9,14 +9,17 @@
         Ver todas
       </router-link>
     </div>
-    
+
     <div v-if="classes.length === 0" class="p-4 text-center text-gray-500 dark:text-gray-400">
       No hay próximas clases programadas
     </div>
-    
+
     <div v-else class="space-y-4">
-      <div v-for="classItem in classes" :key="`${classItem.id}-${classItem.date}`" 
-           class="p-3 border border-gray-100 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
+      <div
+        v-for="classItem in classes"
+        :key="`${classItem.id}-${classItem.date}`"
+        class="p-3 border border-gray-100 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+      >
         <div class="flex justify-between items-start">
           <div>
             <h4 class="font-medium">{{ classItem.title }}</h4>
@@ -29,9 +32,7 @@
               <ClockIcon class="w-4 h-4 mr-1 text-blue-500" />
               {{ classItem.time }}
             </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              Sala: {{ classItem.room }}
-            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Sala: {{ classItem.room }}</p>
           </div>
         </div>
         <div class="mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
@@ -44,26 +45,26 @@
 </template>
 
 <script setup lang="ts">
-import { CalendarIcon, ClockIcon } from '@heroicons/vue/24/outline';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import {CalendarIcon, ClockIcon} from "@heroicons/vue/24/outline"
+import {format} from "date-fns"
+import {es} from "date-fns/locale"
 
 interface UpcomingClass {
-  id: string;
-  title: string;
-  date: Date;
-  time: string;
-  teacher: string;
-  students: number;
-  room: string;
+  id: string
+  title: string
+  date: Date
+  time: string
+  teacher: string
+  students: number
+  room: string
 }
 
 defineProps<{
-  classes: UpcomingClass[];
-}>();
+  classes: UpcomingClass[]
+}>()
 
 // Función para formatear fecha
 const formatDate = (date: Date) => {
-  return format(date, 'EEEE, d MMMM', { locale: es });
-};
+  return format(date, "EEEE, d MMMM", {locale: es})
+}
 </script>

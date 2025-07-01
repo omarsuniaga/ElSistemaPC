@@ -9,11 +9,8 @@
         </p>
       </div>
       <div class="header-actions">
-        <button 
-          @click="showCreateModal = true"
-          class="btn-primary"
-        >
-          <i class="fas fa-plus"></i>
+        <button class="btn-primary" @click="showCreateModal = true">
+          <i class="fas fa-plus" />
           Nuevo Plan
         </button>
       </div>
@@ -42,29 +39,27 @@
         </div>
         <div class="filter-group">
           <label>Búsqueda</label>
-          <input 
+          <input
             v-model="searchQuery"
             type="text"
             placeholder="Buscar planes..."
             class="form-input"
-          >
+          />
         </div>
       </div>
     </div>
 
     <!-- Plans Grid -->
     <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
+      <div class="spinner" />
       <p>Cargando planes...</p>
     </div>
 
     <div v-else-if="filteredPlans.length === 0" class="empty-state">
-      <i class="fas fa-calendar-alt"></i>
+      <i class="fas fa-calendar-alt" />
       <h3>No hay planes disponibles</h3>
       <p>Crea tu primer plan de montaje para comenzar</p>
-      <button @click="showCreateModal = true" class="btn-primary">
-        Crear Plan
-      </button>
+      <button class="btn-primary" @click="showCreateModal = true">Crear Plan</button>
     </div>
 
     <div v-else class="plans-grid">
@@ -93,12 +88,8 @@
         <h3>Confirmar eliminación</h3>
         <p>¿Estás seguro de que deseas eliminar este plan? Esta acción no se puede deshacer.</p>
         <div class="modal-actions">
-          <button @click="closeDeleteModal" class="btn-secondary">
-            Cancelar
-          </button>
-          <button @click="confirmDelete" class="btn-danger">
-            Eliminar
-          </button>
+          <button class="btn-secondary" @click="closeDeleteModal">Cancelar</button>
+          <button class="btn-danger" @click="confirmDelete">Eliminar</button>
         </div>
       </div>
     </div>
@@ -106,15 +97,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useMontaje } from '../composables/useMontaje'
-import type { Plan } from '../types'
-import PlanCard from '../components/PlanCard.vue'
-import PlanFormModal from '../components/PlanFormModal.vue'
+import {ref, computed, onMounted} from "vue"
+import {useRouter} from "vue-router"
+import {useMontaje} from "../composables/useMontaje"
+import type {Plan} from "../types"
+import PlanCard from "../components/PlanCard.vue"
+import PlanFormModal from "../components/PlanFormModal.vue"
 
 const router = useRouter()
-const { plans, loading, createPlan, updatePlan, deletePlan: removePlan } = useMontaje()
+const {plans, loading, createPlan, updatePlan, deletePlan: removePlan} = useMontaje()
 
 // State
 const showCreateModal = ref(false)
@@ -122,12 +113,12 @@ const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 const selectedPlan = ref<Plan | null>(null)
 const planToDelete = ref<Plan | null>(null)
-const searchQuery = ref('')
+const searchQuery = ref("")
 
 // Filters
 const filters = ref({
-  status: '',
-  period: ''
+  status: "",
+  period: "",
 })
 
 // Computed
@@ -135,18 +126,18 @@ const filteredPlans = computed(() => {
   let result = plans.value
 
   if (filters.value.status) {
-    result = result.filter(plan => plan.status === filters.value.status)
+    result = result.filter((plan) => plan.status === filters.value.status)
   }
 
   if (filters.value.period) {
-    result = result.filter(plan => plan.period === filters.value.period)
+    result = result.filter((plan) => plan.period === filters.value.period)
   }
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    result = result.filter(plan => 
-      plan.title.toLowerCase().includes(query) ||
-      plan.description.toLowerCase().includes(query)
+    result = result.filter(
+      (plan) =>
+        plan.title.toLowerCase().includes(query) || plan.description.toLowerCase().includes(query)
     )
   }
 
@@ -177,7 +168,7 @@ const handleSavePlan = async (planData: Partial<Plan>) => {
     }
     closeModal()
   } catch (error) {
-    console.error('Error saving plan:', error)
+    console.error("Error saving plan:", error)
   }
 }
 
@@ -187,7 +178,7 @@ const confirmDelete = async () => {
       await removePlan(planToDelete.value.id)
       closeDeleteModal()
     } catch (error) {
-      console.error('Error deleting plan:', error)
+      console.error("Error deleting plan:", error)
     }
   }
 }
@@ -307,8 +298,12 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-state i {

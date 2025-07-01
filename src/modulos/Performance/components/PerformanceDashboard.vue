@@ -9,25 +9,15 @@
         </p>
       </div>
       <div class="header-actions">
-        <button 
-          class="btn btn-primary"
-          @click="refreshData"
-          :disabled="loading"
-        >
+        <button class="btn btn-primary" :disabled="loading" @click="refreshData">
           <span>??</span>
           Actualizar
         </button>
-        <button 
-          class="btn btn-secondary"
-          @click="showFilters = !showFilters"
-        >
+        <button class="btn btn-secondary" @click="showFilters = !showFilters">
           <span>??</span>
           Filtros
         </button>
-        <button 
-          class="btn btn-secondary"
-          @click="exportData"
-        >
+        <button class="btn btn-secondary" @click="exportData">
           <span>??</span>
           Exportar
         </button>
@@ -48,7 +38,7 @@
             class="filter-multiselect"
           />
         </div>
-        
+
         <div class="filter-group">
           <label class="filter-label">Asistencia mínima (%)</label>
           <input
@@ -60,44 +50,26 @@
           />
           <span class="range-value">{{ minAttendance }}%</span>
         </div>
-        
+
         <div class="filter-group">
           <label class="filter-label">Puntuación mínima</label>
-          <input
-            v-model.number="minScore"
-            type="range"
-            min="0"
-            max="100"
-            class="filter-range"
-          />
+          <input v-model.number="minScore" type="range" min="0" max="100" class="filter-range" />
           <span class="range-value">{{ minScore }}</span>
         </div>
-        
+
         <div class="filter-group">
           <label class="filter-label">Rango de fechas</label>
           <div class="date-range">
-            <input
-              v-model="dateRange.start"
-              type="date"
-              class="filter-date"
-            />
+            <input v-model="dateRange.start" type="date" class="filter-date" />
             <span class="date-separator">a</span>
-            <input
-              v-model="dateRange.end"
-              type="date"
-              class="filter-date"
-            />
+            <input v-model="dateRange.end" type="date" class="filter-date" />
           </div>
         </div>
       </div>
-      
+
       <div class="filter-actions">
-        <button class="btn btn-sm btn-primary" @click="applyFilters">
-          Aplicar Filtros
-        </button>
-        <button class="btn btn-sm btn-secondary" @click="clearFilters">
-          Limpiar
-        </button>
+        <button class="btn btn-sm btn-primary" @click="applyFilters">Aplicar Filtros</button>
+        <button class="btn btn-sm btn-secondary" @click="clearFilters">Limpiar</button>
       </div>
     </div>
 
@@ -113,7 +85,7 @@
             <div class="summary-label">Total Estudiantes</div>
           </div>
         </div>
-        
+
         <div class="summary-card">
           <div class="summary-icon bg-green-100 text-green-600">
             <span>??</span>
@@ -123,7 +95,7 @@
             <div class="summary-label">Promedio General</div>
           </div>
         </div>
-        
+
         <div class="summary-card">
           <div class="summary-icon bg-purple-100 text-purple-600">
             <span>??</span>
@@ -133,7 +105,7 @@
             <div class="summary-label">Asistencia Promedio</div>
           </div>
         </div>
-        
+
         <div class="summary-card">
           <div class="summary-icon bg-orange-100 text-orange-600">
             <span>??</span>
@@ -151,18 +123,18 @@
       <div class="chart-card">
         <h3 class="chart-title">Distribución por Clasificación</h3>
         <div class="classification-chart">
-          <div 
-            v-for="(count, classification) in summary.classifications" 
+          <div
+            v-for="(count, classification) in summary.classifications"
             :key="classification"
             class="classification-bar"
           >
             <div class="classification-label">{{ classification }}</div>
             <div class="classification-progress">
-              <div 
+              <div
                 class="classification-fill"
                 :class="getClassificationColor(classification)"
-                :style="{ width: `${(count / summary.totalStudents) * 100}%` }"
-              ></div>
+                :style="{width: `${(count / summary.totalStudents) * 100}%`}"
+              />
             </div>
             <div class="classification-count">{{ count }}</div>
           </div>
@@ -173,11 +145,11 @@
     <!-- Tabs para diferentes vistas -->
     <div class="tabs-section">
       <div class="tabs-header">
-        <button 
-          v-for="tab in tabs" 
+        <button
+          v-for="tab in tabs"
           :key="tab.id"
           class="tab-button"
-          :class="{ 'tab-active': activeTab === tab.id }"
+          :class="{'tab-active': activeTab === tab.id}"
           @click="activeTab = tab.id"
         >
           <span>??</span>
@@ -185,7 +157,7 @@
           <span v-if="tab.count !== undefined" class="tab-count">{{ tab.count }}</span>
         </button>
       </div>
-      
+
       <div class="tabs-content">
         <!-- Vista general -->
         <div v-if="activeTab === 'general'" class="tab-panel">
@@ -202,23 +174,17 @@
               @needs-attention="handleNeedsAttention"
             />
           </div>
-          
+
           <!-- Paginación -->
           <div v-if="totalPages > 1" class="pagination">
-            <button 
-              class="pagination-btn"
-              :disabled="currentPage === 1"
-              @click="currentPage--"
-            >
+            <button class="pagination-btn" :disabled="currentPage === 1" @click="currentPage--">
               <span>??</span>
               Anterior
             </button>
-            
-            <div class="pagination-info">
-              Página {{ currentPage }} de {{ totalPages }}
-            </div>
-            
-            <button 
+
+            <div class="pagination-info">Página {{ currentPage }} de {{ totalPages }}</div>
+
+            <button
               class="pagination-btn"
               :disabled="currentPage === totalPages"
               @click="currentPage++"
@@ -237,8 +203,8 @@
               <p class="text-sm text-gray-600">Los 10 estudiantes con mejor rendimiento general</p>
             </div>
             <div class="performers-list">
-              <div 
-                v-for="(student, index) in topPerformers" 
+              <div
+                v-for="(student, index) in topPerformers"
                 :key="student.studentId"
                 class="performer-item"
               >
@@ -304,21 +270,21 @@
                   </div>
                 </div>
               </div>
-              
+
               <div class="analysis-card">
                 <h4>Alertas Activas</h4>
                 <div class="alerts-summary">
                   <div class="alert-item">
                     <span>??</span>
-                    <span>{{ getAlertsCount('attendance') }} con asistencia baja</span>
+                    <span>{{ getAlertsCount("attendance") }} con asistencia baja</span>
                   </div>
                   <div class="alert-item">
                     <span>??</span>
-                    <span>{{ getAlertsCount('performance') }} con rendimiento preocupante</span>
+                    <span>{{ getAlertsCount("performance") }} con rendimiento preocupante</span>
                   </div>
                   <div class="alert-item">
                     <span>??</span>
-                    <span>{{ getAlertsCount('trend') }} con tendencia descendente</span>
+                    <span>{{ getAlertsCount("trend") }} con tendencia descendente</span>
                   </div>
                 </div>
               </div>
@@ -339,23 +305,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import {ref, computed, onMounted, watch} from "vue"
 // import { Icon } from '@iconify/vue'; // Commented temporarily for build
-import { usePerformanceDashboard } from '../composables/usePerformanceDashboard';
-import StudentPerformanceCard from './StudentPerformanceCard.vue';
-import type { PerformanceFilters } from '../types/performance';
+import {usePerformanceDashboard} from "../composables/usePerformanceDashboard"
+import StudentPerformanceCard from "./StudentPerformanceCard.vue"
+import type {PerformanceFilters} from "../types/performance"
 
 // Props
 interface Props {
-  studentIds?: string[];
-  autoRefresh?: boolean;
-  refreshInterval?: number;
+  studentIds?: string[]
+  autoRefresh?: boolean
+  refreshInterval?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   autoRefresh: false,
-  refreshInterval: 300000 // 5 minutos
-});
+  refreshInterval: 300000, // 5 minutos
+})
 
 // Composable
 const {
@@ -368,174 +334,172 @@ const {
   summary,
   fetchStudentsPerformance,
   updateFilters,
-  exportData: exportPerformanceData
-} = usePerformanceDashboard();
+  exportData: exportPerformanceData,
+} = usePerformanceDashboard()
 
 // Estado local
-const showFilters = ref(false);
-const activeTab = ref('general');
-const currentPage = ref(1);
-const pageSize = 12;
+const showFilters = ref(false)
+const activeTab = ref("general")
+const currentPage = ref(1)
+const pageSize = 12
 
 // Filtros
-const selectedClassifications = ref<string[]>([]);
-const minAttendance = ref(0);
-const minScore = ref(0);
+const selectedClassifications = ref<string[]>([])
+const minAttendance = ref(0)
+const minScore = ref(0)
 const dateRange = ref({
-  start: '',
-  end: ''
-});
+  start: "",
+  end: "",
+})
 
 // Opciones
 const classificationOptions = [
-  'Excelente',
-  'Muy bueno', 
-  'Bueno',
-  'Regular',
-  'Necesita mejora',
-  'Preocupante'
-];
+  "Excelente",
+  "Muy bueno",
+  "Bueno",
+  "Regular",
+  "Necesita mejora",
+  "Preocupante",
+]
 
 // Tabs
 const tabs = computed(() => [
   {
-    id: 'general',
-    label: 'Vista General',
-    icon: 'heroicons:squares-2x2',
-    count: filteredStudents.value.length
+    id: "general",
+    label: "Vista General",
+    icon: "heroicons:squares-2x2",
+    count: filteredStudents.value.length,
   },
   {
-    id: 'top',
-    label: 'Top Performers',
-    icon: 'heroicons:trophy',
-    count: topPerformers.value.length
+    id: "top",
+    label: "Top Performers",
+    icon: "heroicons:trophy",
+    count: topPerformers.value.length,
   },
   {
-    id: 'attention',
-    label: 'Necesitan Atención',
-    icon: 'heroicons:exclamation-triangle',
-    count: studentsNeedingAttention.value.length
+    id: "attention",
+    label: "Necesitan Atención",
+    icon: "heroicons:exclamation-triangle",
+    count: studentsNeedingAttention.value.length,
   },
   {
-    id: 'analysis',
-    label: 'Análisis',
-    icon: 'heroicons:chart-bar-square'
-  }
-]);
+    id: "analysis",
+    label: "Análisis",
+    icon: "heroicons:chart-bar-square",
+  },
+])
 
 // Paginación
-const totalPages = computed(() => 
-  Math.ceil(filteredStudents.value.length / pageSize)
-);
+const totalPages = computed(() => Math.ceil(filteredStudents.value.length / pageSize))
 
 const paginatedStudents = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  const end = start + pageSize;
-  return filteredStudents.value.slice(start, end);
-});
+  const start = (currentPage.value - 1) * pageSize
+  const end = start + pageSize
+  return filteredStudents.value.slice(start, end)
+})
 
 // Métodos
 const refreshData = async () => {
-  await fetchStudentsPerformance(props.studentIds);
-};
+  await fetchStudentsPerformance(props.studentIds)
+}
 
 const applyFilters = () => {
   const filters: Partial<PerformanceFilters> = {
     classification: selectedClassifications.value,
     minAttendance: minAttendance.value,
     minScore: minScore.value,
-    dateRange: dateRange.value
-  };
-  
-  updateFilters(filters);
-  currentPage.value = 1; // Reset a primera página
-};
+    dateRange: dateRange.value,
+  }
+
+  updateFilters(filters)
+  currentPage.value = 1 // Reset a primera página
+}
 
 const clearFilters = () => {
-  selectedClassifications.value = [];
-  minAttendance.value = 0;
-  minScore.value = 0;
-  dateRange.value = { start: '', end: '' };
-  
+  selectedClassifications.value = []
+  minAttendance.value = 0
+  minScore.value = 0
+  dateRange.value = {start: "", end: ""}
+
   updateFilters({
     classification: [],
     minAttendance: 0,
     minScore: 0,
-    dateRange: { start: '', end: '' }
-  });
-  
-  currentPage.value = 1;
-};
+    dateRange: {start: "", end: ""},
+  })
+
+  currentPage.value = 1
+}
 
 const exportData = () => {
-  const data = exportPerformanceData();
+  const data = exportPerformanceData()
   // Implementar descarga de CSV/Excel
-  console.log('Exporting data:', data);
-};
+  console.log("Exporting data:", data)
+}
 
 // Handlers de eventos
 const handleViewDetails = (studentId: string) => {
   // Emit event o navigate to details
-  console.log('View details for student:', studentId);
-};
+  console.log("View details for student:", studentId)
+}
 
 const handleViewProfile = (studentId: string) => {
   // Navigate to student profile
-  console.log('View profile for student:', studentId);
-};
+  console.log("View profile for student:", studentId)
+}
 
 const handleNeedsAttention = (studentId: string) => {
   // Handle attention needed action
-  console.log('Student needs attention:', studentId);
-};
+  console.log("Student needs attention:", studentId)
+}
 
 // Utilidades
 const getClassificationColor = (classification: string) => {
   const classMap: Record<string, string> = {
-    'Excelente': 'bg-green-500',
-    'Muy bueno': 'bg-blue-500',
-    'Bueno': 'bg-blue-400',
-    'Regular': 'bg-yellow-500',
-    'Necesita mejora': 'bg-orange-500',
-    'Preocupante': 'bg-red-500'
-  };
-  return classMap[classification] || 'bg-gray-500';
-};
+    Excelente: "bg-green-500",
+    "Muy bueno": "bg-blue-500",
+    Bueno: "bg-blue-400",
+    Regular: "bg-yellow-500",
+    "Necesita mejora": "bg-orange-500",
+    Preocupante: "bg-red-500",
+  }
+  return classMap[classification] || "bg-gray-500"
+}
 
 const getRankClass = (index: number) => {
-  if (index === 0) return 'rank-gold';
-  if (index === 1) return 'rank-silver';
-  if (index === 2) return 'rank-bronze';
-  return 'rank-default';
-};
+  if (index === 0) return "rank-gold"
+  if (index === 1) return "rank-silver"
+  if (index === 2) return "rank-bronze"
+  return "rank-default"
+}
 
-const getAlertsCount = (type: 'attendance' | 'performance' | 'trend') => {
-  return students.value.filter(student => {
+const getAlertsCount = (type: "attendance" | "performance" | "trend") => {
+  return students.value.filter((student) => {
     switch (type) {
-      case 'attendance':
-        return student.attendanceMetrics.attendanceRate < 75;
-      case 'performance':
-        return student.overallScore < 60;
-      case 'trend':
-        return student.trends.overall < -10;
+      case "attendance":
+        return student.attendanceMetrics.attendanceRate < 75
+      case "performance":
+        return student.overallScore < 60
+      case "trend":
+        return student.trends.overall < -10
       default:
-        return false;
+        return false
     }
-  }).length;
-};
+  }).length
+}
 
 // Watchers
-watch(() => props.studentIds, refreshData, { immediate: false });
+watch(() => props.studentIds, refreshData, {immediate: false})
 
 // Lifecycle
 onMounted(() => {
-  refreshData();
-  
+  refreshData()
+
   // Auto refresh si está habilitado
   if (props.autoRefresh) {
-    setInterval(refreshData, props.refreshInterval);
+    setInterval(refreshData, props.refreshInterval)
   }
-});
+})
 </script>
 
 <style scoped>
@@ -1023,20 +987,20 @@ onMounted(() => {
   .performance-dashboard {
     padding: 1rem;
   }
-  
+
   .dashboard-header {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .students-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .tabs-header {
     flex-wrap: wrap;
   }
-  
+
   .summary-cards {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1046,10 +1010,9 @@ onMounted(() => {
   .summary-cards {
     grid-template-columns: 1fr;
   }
-  
+
   .filters-grid {
     grid-template-columns: 1fr;
   }
 }
 </style>
-

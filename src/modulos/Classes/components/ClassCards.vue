@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import ClassCard from './ClassCard.vue'
-import type { Class as ClassType } from '../types/class'
-
+import ClassCard from "./ClassCard.vue"
+import type {Class as ClassType} from "../types/class"
 
 const props = defineProps<{
-  classes: ClassType[];
-  studentCounts: Record<string, number>;
-  topStudents: Record<string, Array<{id: string, nombre: string, apellido: string}>>;
+  classes: ClassType[]
+  studentCounts: Record<string, number>
+  topStudents: Record<string, Array<{id: string; nombre: string; apellido: string}>>
 }>()
 
 const emit = defineEmits<{
-  (e: 'edit', id: string): void;
-  (e: 'delete', id: string): void;
-  (e: 'manage-students', id: string): void;
+  (e: "edit", id: string): void
+  (e: "delete", id: string): void
+  (e: "manage-students", id: string): void
 }>()
 </script>
 

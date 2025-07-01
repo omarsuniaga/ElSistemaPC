@@ -1,15 +1,19 @@
 <template>
-  <div class="p-4 space-y-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg shadow">
+  <div
+    class="p-4 space-y-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg shadow"
+  >
     <!-- Vista de selección de maestros -->
     <div v-if="!selectedTeacherId">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-bold text-primary-600 dark:text-primary-400">Informe de Asistencia</h2>
-        <button 
-          @click="refreshTeachers"
+        <h2 class="text-xl font-bold text-primary-600 dark:text-primary-400">
+          Informe de Asistencia
+        </h2>
+        <button
           :disabled="loading"
           class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
+          @click="refreshTeachers"
         >
-          <ArrowPathIcon class="h-4 w-4" :class="{ 'animate-spin': loading }" />
+          <ArrowPathIcon class="h-4 w-4" :class="{'animate-spin': loading}" />
           Actualizar
         </button>
       </div>
@@ -22,7 +26,9 @@
               Buscar maestro
             </label>
             <div class="relative">
-              <MagnifyingGlassIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <MagnifyingGlassIcon
+                class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
+              />
               <input
                 v-model="searchQuery"
                 type="text"
@@ -49,15 +55,34 @@
 
       <!-- Indicador de carga -->
       <div v-if="loading" class="flex justify-center items-center py-12">
-        <svg class="animate-spin h-10 w-10 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        <svg
+          class="animate-spin h-10 w-10 text-primary-500"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          />
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
         </svg>
         <span class="ml-3">Cargando maestros...</span>
       </div>
 
       <!-- Error -->
-      <div v-else-if="error" class="p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg">
+      <div
+        v-else-if="error"
+        class="p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg"
+      >
         {{ error }}
       </div>
 
@@ -66,12 +91,16 @@
         <div v-if="filteredTeachers.length === 0" class="text-center py-12">
           <UserGroupIcon class="h-16 w-16 mx-auto text-gray-400 mb-4" />
           <p class="text-lg text-gray-500 dark:text-gray-400 mb-2">
-            {{ searchQuery || statusFilter ? 'No se encontraron maestros con los filtros aplicados' : 'No hay maestros disponibles' }}
+            {{
+              searchQuery || statusFilter
+                ? "No se encontraron maestros con los filtros aplicados"
+                : "No hay maestros disponibles"
+            }}
           </p>
-          <button 
+          <button
             v-if="searchQuery || statusFilter"
-            @click="clearFilters"
             class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg"
+            @click="clearFilters"
           >
             Limpiar filtros
           </button>
@@ -81,22 +110,26 @@
           <div
             v-for="teacher in filteredTeachers"
             :key="teacher.id"
-            @click="selectTeacher(teacher)"
             class="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-6 cursor-pointer hover:shadow-lg hover:border-primary-300 dark:hover:border-primary-600 transition-all duration-200 group"
+            @click="selectTeacher(teacher)"
           >
             <!-- Avatar y nombre -->
             <div class="flex items-center mb-4">
-              <div class="w-16 h-16 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center overflow-hidden mr-4">
-                <img 
-                  v-if="teacher.photoURL" 
-                  :src="teacher.photoURL" 
+              <div
+                class="w-16 h-16 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center overflow-hidden mr-4"
+              >
+                <img
+                  v-if="teacher.photoURL"
+                  :src="teacher.photoURL"
                   :alt="teacher.name"
                   class="w-full h-full object-cover"
                 />
                 <UserIcon v-else class="h-8 w-8 text-white" />
               </div>
               <div class="flex-1">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary-600 dark:group-hover:text-primary-400">
+                <h3
+                  class="text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary-600 dark:group-hover:text-primary-400"
+                >
                   {{ teacher.name }}
                 </h3>
                 <p class="text-sm text-gray-600 dark:text-gray-400">{{ teacher.email }}</p>
@@ -127,14 +160,14 @@
               <span
                 :class="[
                   'px-2 py-1 text-xs rounded-full font-medium',
-                  teacher.status === 'activo' 
+                  teacher.status === 'activo'
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
                 ]"
               >
-                {{ teacher.status === 'activo' ? 'Activo' : 'Inactivo' }}
+                {{ teacher.status === "activo" ? "Activo" : "Inactivo" }}
               </span>
-              
+
               <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
                 <AcademicCapIcon class="h-4 w-4 mr-1" />
                 <span>{{ teacherClassesCount[teacher.id] || 0 }} clases</span>
@@ -143,7 +176,9 @@
 
             <!-- Botón de acción -->
             <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-              <button class="w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors">
+              <button
+                class="w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors"
+              >
                 Ver Informe de Asistencia
               </button>
             </div>
@@ -157,9 +192,9 @@
       <!-- Botón de regreso -->
       <div class="flex items-center justify-between mb-6">
         <div class="flex items-center">
-          <button 
-            @click="goBackToTeachers"
+          <button
             class="mr-4 p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            @click="goBackToTeachers"
           >
             <ArrowLeftIcon class="h-5 w-5" />
           </button>
@@ -170,27 +205,24 @@
       </div>
 
       <!-- Componente de informe detallado -->
-      <TeacherAttendanceReport 
-        :teacher-id="selectedTeacherId"
-        @back="goBackToTeachers"
-      />
+      <TeacherAttendanceReport :teacher-id="selectedTeacherId" @back="goBackToTeachers" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { 
-  UserGroupIcon, 
-  UserIcon, 
-  AcademicCapIcon, 
+import {ref, computed, onMounted} from "vue"
+import {
+  UserGroupIcon,
+  UserIcon,
+  AcademicCapIcon,
   MagnifyingGlassIcon,
   ArrowLeftIcon,
-  ArrowPathIcon
-} from '@heroicons/vue/24/outline'
-import { useTeachersStore } from '@/modulos/Teachers/store/teachers'
-import { useClassesStore } from '@/modulos/Classes/store/classes'
-import TeacherAttendanceReport from './reports/TeacherAttendanceReport.vue'
+  ArrowPathIcon,
+} from "@heroicons/vue/24/outline"
+import {useTeachersStore} from "@/modulos/Teachers/store/teachers"
+import {useClassesStore} from "@/modulos/Classes/store/classes"
+import TeacherAttendanceReport from "./reports/TeacherAttendanceReport.vue"
 
 // Types
 interface Teacher {
@@ -214,8 +246,8 @@ const classesStore = useClassesStore()
 // Estado
 const loading = ref(false)
 const error = ref<string | null>(null)
-const searchQuery = ref('')
-const statusFilter = ref('')
+const searchQuery = ref("")
+const statusFilter = ref("")
 const selectedTeacherId = ref<string | null>(null)
 
 // Computed
@@ -225,12 +257,11 @@ const filteredTeachers = computed(() => {
   // Filtrar por búsqueda
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    teachers = teachers.filter((teacher: Teacher) => 
-      teacher.name?.toLowerCase().includes(query) ||
-      teacher.email?.toLowerCase().includes(query) ||
-      teacher.specialties?.some((specialty: string) => 
-        specialty.toLowerCase().includes(query)
-      )
+    teachers = teachers.filter(
+      (teacher: Teacher) =>
+        teacher.name?.toLowerCase().includes(query) ||
+        teacher.email?.toLowerCase().includes(query) ||
+        teacher.specialties?.some((specialty: string) => specialty.toLowerCase().includes(query))
     )
   }
 
@@ -243,9 +274,9 @@ const filteredTeachers = computed(() => {
 })
 
 const selectedTeacherName = computed(() => {
-  if (!selectedTeacherId.value) return ''
+  if (!selectedTeacherId.value) return ""
   const teacher = teachersStore.teachers.find((t: Teacher) => t.id === selectedTeacherId.value)
-  return teacher?.name || 'Maestro'
+  return teacher?.name || "Maestro"
 })
 
 const teacherClassesCount = computed(() => {
@@ -263,14 +294,11 @@ const refreshTeachers = async () => {
   try {
     loading.value = true
     error.value = null
-    
-    await Promise.all([
-      teachersStore.fetchTeachers(),
-      classesStore.fetchClasses()
-    ])
+
+    await Promise.all([teachersStore.fetchTeachers(), classesStore.fetchClasses()])
   } catch (err: any) {
-    error.value = err.message || 'Error al cargar los maestros'
-    console.error('Error refreshing teachers:', err)
+    error.value = err.message || "Error al cargar los maestros"
+    console.error("Error refreshing teachers:", err)
   } finally {
     loading.value = false
   }
@@ -285,8 +313,8 @@ const goBackToTeachers = () => {
 }
 
 const clearFilters = () => {
-  searchQuery.value = ''
-  statusFilter.value = ''
+  searchQuery.value = ""
+  statusFilter.value = ""
 }
 
 // Inicialización
@@ -312,4 +340,4 @@ onMounted(async () => {
     grid-template-columns: repeat(1, 1fr);
   }
 }
-</style> 
+</style>

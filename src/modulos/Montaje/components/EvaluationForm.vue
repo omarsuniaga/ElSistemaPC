@@ -2,16 +2,12 @@
   <div class="evaluation-form bg-white rounded-lg shadow-sm border p-6">
     <div class="flex items-center justify-between mb-6">
       <h3 class="text-lg font-semibold text-gray-900">Evaluar Obra</h3>
-      <button
-        v-if="!isEmbedded"
-        @click="$emit('close')"
-        class="text-gray-400 hover:text-gray-600"
-      >
+      <button v-if="!isEmbedded" class="text-gray-400 hover:text-gray-600" @click="$emit('close')">
         ×
       </button>
     </div>
 
-    <form @submit.prevent="handleSubmit" class="space-y-6">
+    <form class="space-y-6" @submit.prevent="handleSubmit">
       <!-- Work Information -->
       <div class="bg-gray-50 rounded-lg p-4">
         <h4 class="font-medium text-gray-900 mb-2">{{ work.title }}</h4>
@@ -20,9 +16,7 @@
 
       <!-- Score -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          Puntuación (0-100) *
-        </label>
+        <label class="block text-sm font-medium text-gray-700 mb-2"> Puntuación (0-100) * </label>
         <div class="flex items-center space-x-4">
           <input
             v-model.number="form.score"
@@ -75,45 +69,35 @@
 
       <!-- Comments -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          Comentarios
-        </label>
+        <label class="block text-sm font-medium text-gray-700 mb-2"> Comentarios </label>
         <textarea
           v-model="form.comments"
           rows="4"
           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Proporciona comentarios detallados sobre la interpretación..."
-        ></textarea>
+        />
       </div>
 
       <!-- Recommendations -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          Recomendaciones
-        </label>
+        <label class="block text-sm font-medium text-gray-700 mb-2"> Recomendaciones </label>
         <textarea
           v-model="form.recommendations"
           rows="3"
           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Sugerencias para mejorar la interpretación..."
-        ></textarea>
+        />
       </div>
 
       <!-- Areas for Improvement -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          Áreas de mejora
-        </label>
+        <label class="block text-sm font-medium text-gray-700 mb-2"> Áreas de mejora </label>
         <div class="space-y-2">
-          <label
-            v-for="area in improvementAreas"
-            :key="area"
-            class="flex items-center space-x-2"
-          >
+          <label v-for="area in improvementAreas" :key="area" class="flex items-center space-x-2">
             <input
+              v-model="form.areasForImprovement"
               type="checkbox"
               :value="area"
-              v-model="form.areasForImprovement"
               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <span class="text-sm text-gray-700">{{ area }}</span>
@@ -132,7 +116,7 @@
           rows="2"
           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Notas internas del evaluador..."
-        ></textarea>
+        />
       </div>
 
       <!-- Error Message -->
@@ -140,7 +124,11 @@
         <div class="flex">
           <div class="text-red-500">
             <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+              <path
+                fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clip-rule="evenodd"
+              />
             </svg>
           </div>
           <div class="ml-3">
@@ -155,16 +143,16 @@
         <button
           v-if="!isEmbedded"
           type="button"
-          @click="$emit('close')"
           class="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+          @click="$emit('close')"
         >
           Cancelar
         </button>
         <button
           type="button"
-          @click="saveDraft"
           :disabled="loading"
           class="px-4 py-2 text-blue-700 border border-blue-300 rounded-md hover:bg-blue-50 disabled:opacity-50"
+          @click="saveDraft"
         >
           Guardar borrador
         </button>
@@ -173,7 +161,7 @@
           :disabled="loading || !isFormValid"
           class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {{ loading ? 'Enviando...' : 'Enviar Evaluación' }}
+          {{ loading ? "Enviando..." : "Enviar Evaluación" }}
         </button>
       </div>
     </form>
@@ -181,8 +169,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import type { Work, CreateEvaluationInput } from '../types'
+import {ref, computed, onMounted} from "vue"
+import type {Work, CreateEvaluationInput} from "../types"
 
 interface Props {
   work: Work
@@ -192,15 +180,15 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'close'): void
-  (e: 'submit', data: CreateEvaluationInput): void
-  (e: 'save-draft', data: CreateEvaluationInput): void
+  (e: "close"): void
+  (e: "submit", data: CreateEvaluationInput): void
+  (e: "save-draft", data: CreateEvaluationInput): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
   isEmbedded: false,
-  existingEvaluation: undefined
+  existingEvaluation: undefined,
 })
 
 const emit = defineEmits<Emits>()
@@ -209,84 +197,82 @@ const emit = defineEmits<Emits>()
 const form = ref<CreateEvaluationInput>({
   workId: props.work.id,
   score: 75,
-  comments: '',
-  recommendations: '',
+  comments: "",
+  recommendations: "",
   criteria: {},
   areasForImprovement: [],
-  privateNotes: ''
+  privateNotes: "",
 })
 
-const error = ref('')
+const error = ref("")
 
 // Evaluation criteria
 const evaluationCriteria = [
   {
-    key: 'technique',
-    name: 'Técnica',
-    description: 'Precisión técnica e interpretación'
+    key: "technique",
+    name: "Técnica",
+    description: "Precisión técnica e interpretación",
   },
   {
-    key: 'rhythm',
-    name: 'Ritmo',
-    description: 'Precisión rítmica y tempo'
+    key: "rhythm",
+    name: "Ritmo",
+    description: "Precisión rítmica y tempo",
   },
   {
-    key: 'intonation',
-    name: 'Afinación',
-    description: 'Precisión en la afinación'
+    key: "intonation",
+    name: "Afinación",
+    description: "Precisión en la afinación",
   },
   {
-    key: 'expression',
-    name: 'Expresión',
-    description: 'Musicalidad y expresión artística'
+    key: "expression",
+    name: "Expresión",
+    description: "Musicalidad y expresión artística",
   },
   {
-    key: 'ensemble',
-    name: 'Conjunto',
-    description: 'Coordinación con el grupo'
+    key: "ensemble",
+    name: "Conjunto",
+    description: "Coordinación con el grupo",
   },
   {
-    key: 'preparation',
-    name: 'Preparación',
-    description: 'Nivel de preparación de la obra'
-  }
+    key: "preparation",
+    name: "Preparación",
+    description: "Nivel de preparación de la obra",
+  },
 ]
 
 // Areas for improvement
 const improvementAreas = [
-  'Técnica instrumental',
-  'Lectura a primera vista',
-  'Interpretación musical',
-  'Dinámicas',
-  'Articulación',
-  'Fraseo',
-  'Tempo y ritmo',
-  'Afinación',
-  'Coordinación de conjunto',
-  'Preparación individual'
+  "Técnica instrumental",
+  "Lectura a primera vista",
+  "Interpretación musical",
+  "Dinámicas",
+  "Articulación",
+  "Fraseo",
+  "Tempo y ritmo",
+  "Afinación",
+  "Coordinación de conjunto",
+  "Preparación individual",
 ]
 
 // Computed properties
 const isFormValid = computed(() => {
-  return form.value.score >= 0 && 
-         form.value.score <= 100 &&
-         form.value.comments.trim() !== ''
+  return form.value.score >= 0 && form.value.score <= 100 && form.value.comments.trim() !== ""
 })
 
 // Methods
 const handleSubmit = () => {
   if (!isFormValid.value) {
-    error.value = 'Por favor, completa todos los campos obligatorios'
+    error.value = "Por favor, completa todos los campos obligatorios"
     return
   }
 
-  error.value = ''
-  emit('submit', { ...form.value })
+  error.value = ""
+  emit("submit", {...form.value})
 }
 
 const saveDraft = () => {
-  error.value = ''
-  emit('save-draft', { ...form.value })
+  error.value = ""
+  emit("save-draft", {...form.value})
 }
 
 // Initialize form with existing evaluation if provided
@@ -295,11 +281,11 @@ onMounted(() => {
     form.value = {
       workId: props.work.id,
       score: props.existingEvaluation.score,
-      comments: props.existingEvaluation.comments || '',
-      recommendations: props.existingEvaluation.recommendations || '',
-      criteria: { ...props.existingEvaluation.criteria },
+      comments: props.existingEvaluation.comments || "",
+      recommendations: props.existingEvaluation.recommendations || "",
+      criteria: {...props.existingEvaluation.criteria},
       areasForImprovement: [...(props.existingEvaluation.areasForImprovement || [])],
-      privateNotes: props.existingEvaluation.privateNotes || ''
+      privateNotes: props.existingEvaluation.privateNotes || "",
     }
   }
 })
@@ -308,7 +294,14 @@ onMounted(() => {
 <style scoped>
 /* Custom range slider styling */
 input[type="range"] {
-  background: linear-gradient(to right, #ef4444 0%, #f59e0b 25%, #eab308 50%, #22c55e 75%, #10b981 100%);
+  background: linear-gradient(
+    to right,
+    #ef4444 0%,
+    #f59e0b 25%,
+    #eab308 50%,
+    #22c55e 75%,
+    #10b981 100%
+  );
 }
 
 input[type="range"]::-webkit-slider-thumb {

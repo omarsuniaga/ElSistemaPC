@@ -1,144 +1,136 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
-import { useRoute } from 'vue-router';
-import { useTeachersStore } from '../../store/teachers';
-import { useClassesStore } from '../../../Classes/store/classes';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import TeacherWeeklySchedule from '../../components/TeacherWeeklySchedule.vue';
-import WeeklySchedulePrint from '../../components/WeeklySchedulePrint.vue';
-import html2pdf from 'html2pdf.js';
-import { getAuth } from 'firebase/auth';
-import { 
-  CalendarIcon, 
-  DocumentArrowDownIcon, 
-  ShareIcon, 
-  UserIcon
-} from '@heroicons/vue/24/outline';
+import {ref, computed, onMounted, watch, nextTick} from "vue"
+import {useRoute} from "vue-router"
+import {useTeachersStore} from "../../store/teachers"
+import {useClassesStore} from "../../../Classes/store/classes"
+import {format} from "date-fns"
+import {es} from "date-fns/locale"
+import TeacherWeeklySchedule from "../../components/TeacherWeeklySchedule.vue"
+import WeeklySchedulePrint from "../../components/WeeklySchedulePrint.vue"
+import html2pdf from "html2pdf.js"
+import {getAuth} from "firebase/auth"
+import {CalendarIcon, DocumentArrowDownIcon, ShareIcon, UserIcon} from "@heroicons/vue/24/outline"
 
 // Tipos para mejorar el tipado de maestro
 interface Teacher {
-  id: string;
-  name: string;
-  photoURL?: string;
-  specialties?: string[];
-  experiencia?: string;
-  phone?: string;
-  email?: string;
+  id: string
+  name: string
+  photoURL?: string
+  specialties?: string[]
+  experiencia?: string
+  phone?: string
+  email?: string
 }
 
-const route = useRoute();
-const auth = getAuth();
-const teachersStore = useTeachersStore();
-const classesStore = useClassesStore();
+const route = useRoute()
+const auth = getAuth()
+const teachersStore = useTeachersStore()
+const classesStore = useClassesStore()
 
-const isLoading = ref(true);
-const error = ref<string | null>(null);
+const isLoading = ref(true)
+const error = ref<string | null>(null)
 
 // Obtenemos el teacherId: si hay usuario autenticado lo usamos, si no, usamos el ID de la ruta
 const teacherId = computed(() => {
-  return auth.currentUser?.uid || (route.params.id as string);
-});
+  return auth.currentUser?.uid || (route.params.id as string)
+})
 
 // Propiedad para almacenar la información del maestro
-const teacher = ref<Teacher | null>(null);
+const teacher = ref<Teacher | null>(null)
 
 // Computed para obtener las clases del maestro a partir del store de clases
 const teacherClasses = computed(() => {
-  if (!teacherId.value) return [];
-  return classesStore.classes.filter(classItem => classItem.teacherId === teacherId.value);
-});
+  if (!teacherId.value) return []
+  return classesStore.classes.filter((classItem) => classItem.teacherId === teacherId.value)
+})
 
-const viewMode = ref<'interactive' | 'print'>('interactive');
+const viewMode = ref<"interactive" | "print">("interactive")
 
 // Computed para calcular las horas semanales
 const getWeeklyHours = computed(() => {
-  let total = 0;
-  const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  
-  weekDays.forEach(day => {
-    const dayClasses = classesStore.getClassByDaysAndTeacher(teacherId.value, day);
-    dayClasses.forEach(classItem => {
-      const scheduleForDay = classItem.schedule?.slots.find(slot => slot.day === day);
+  let total = 0
+  const weekDays = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
+
+  weekDays.forEach((day) => {
+    const dayClasses = classesStore.getClassByDaysAndTeacher(teacherId.value, day)
+    dayClasses.forEach((classItem) => {
+      const scheduleForDay = classItem.schedule?.slots.find((slot) => slot.day === day)
       if (scheduleForDay) {
-        const [startHour, startMinute] = scheduleForDay.startTime.split(':').map(Number);
-        const [endHour, endMinute] = scheduleForDay.endTime.split(':').map(Number);
-        const duration = (endHour - startHour) + (endMinute - startMinute) / 60;
-        total += duration;
+        const [startHour, startMinute] = scheduleForDay.startTime.split(":").map(Number)
+        const [endHour, endMinute] = scheduleForDay.endTime.split(":").map(Number)
+        const duration = endHour - startHour + (endMinute - startMinute) / 60
+        total += duration
       }
-    });
-  });
-  
-  return total;
-});
+    })
+  })
+
+  return total
+})
 
 // PDF y compartir (sin cambios significativos)
 const downloadPDF = (): void => {
-  const element = document.getElementById('schedule-pdf');
-  if (!element || !teacher.value) return;
-  
+  const element = document.getElementById("schedule-pdf")
+  if (!element || !teacher.value) return
+
   const options = {
     margin: 10,
     filename: `horario_${teacher.value.name}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
-  
-  html2pdf().from(element).set(options).save();
-};
+    image: {type: "jpeg", quality: 0.98},
+    html2canvas: {scale: 2, useCORS: true},
+    jsPDF: {unit: "mm", format: "a4", orientation: "portrait"},
+  }
+
+  html2pdf().from(element).set(options).save()
+}
 
 const shareSchedule = async (): Promise<void> => {
-  if (!teacher.value) return;
-  
+  if (!teacher.value) return
+
   try {
-    const element = document.getElementById('schedule-pdf');
-    if (!element) return;
-    
+    const element = document.getElementById("schedule-pdf")
+    if (!element) return
+
     const options = {
       margin: 10,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-    const pdfBlob = await html2pdf().from(element).set(options).outputPdf('blob');
-    const file = new File([pdfBlob], `horario_${teacher.value.name}.pdf`, { type: 'application/pdf' });
-    
-    if (navigator.share && navigator.canShare({ files: [file] })) {
+      image: {type: "jpeg", quality: 0.98},
+      html2canvas: {scale: 2, useCORS: true},
+      jsPDF: {unit: "mm", format: "a4", orientation: "portrait"},
+    }
+    const pdfBlob = await html2pdf().from(element).set(options).outputPdf("blob")
+    const file = new File([pdfBlob], `horario_${teacher.value.name}.pdf`, {type: "application/pdf"})
+
+    if (navigator.share && navigator.canShare({files: [file]})) {
       await navigator.share({
         files: [file],
         title: `Horario de ${teacher.value.name}`,
-        text: 'Aquí está el horario de clases'
-      });
+        text: "Aquí está el horario de clases",
+      })
     } else {
-      const fileURL = URL.createObjectURL(file);
-      window.open(fileURL, '_blank');
+      const fileURL = URL.createObjectURL(file)
+      window.open(fileURL, "_blank")
     }
   } catch (error) {
-    console.error('Error al compartir:', error);
+    console.error("Error al compartir:", error)
   }
-};
+}
 
 const getCurrentFormattedDate = (): string => {
-  return format(new Date(), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
-};
+  return format(new Date(), "EEEE, d 'de' MMMM 'de' yyyy", {locale: es})
+}
 
 const formatHours = (hours: number): string => {
-  return `${Math.floor(hours)} h ${Math.round((hours % 1) * 60)} min`;
-};
+  return `${Math.floor(hours)} h ${Math.round((hours % 1) * 60)} min`
+}
 
 // Cargar datos del maestro, clases y schedules
 const loadData = async () => {
   try {
-    isLoading.value = true;
-    error.value = null;
+    isLoading.value = true
+    error.value = null
 
-    await Promise.all([
-      teachersStore.fetchTeachers(),
-      classesStore.fetchClasses()
-    ]);
+    await Promise.all([teachersStore.fetchTeachers(), classesStore.fetchClasses()])
 
-    const fetchedTeacher = teachersStore.getTeacherById(teacherId.value);
+    const fetchedTeacher = teachersStore.getTeacherById(teacherId.value)
     if (fetchedTeacher) {
       teacher.value = {
         id: fetchedTeacher.id,
@@ -147,36 +139,36 @@ const loadData = async () => {
         specialties: fetchedTeacher.specialties,
         experiencia: fetchedTeacher.experiencia,
         phone: fetchedTeacher.phone,
-        email: fetchedTeacher.email
-      };
+        email: fetchedTeacher.email,
+      }
     } else {
-      teacher.value = null;
-      throw new Error('Maestro no encontrado');
+      teacher.value = null
+      throw new Error("Maestro no encontrado")
     }
   } catch (err: any) {
-    console.error('Error cargando datos:', err);
-    error.value = err.message || 'Error cargando datos';
+    console.error("Error cargando datos:", err)
+    error.value = err.message || "Error cargando datos"
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-};
+}
 
 onMounted(async () => {
-  await loadData();
-});
+  await loadData()
+})
 
 // Watch para recargar datos si cambia el teacherId
 watch(teacherId, async () => {
-  await loadData();
-});
+  await loadData()
+})
 
 const printSchedule = () => {
-  viewMode.value = 'print';
+  viewMode.value = "print"
   nextTick(() => {
-    window.print();
-    viewMode.value = 'interactive';
-  });
-};
+    window.print()
+    viewMode.value = "interactive"
+  })
+}
 </script>
 
 <template>
@@ -184,7 +176,9 @@ const printSchedule = () => {
     <!-- Header con título y botones -->
     <div class="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <h1
+          class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2"
+        >
           <CalendarIcon class="h-7 w-7 text-primary-600" />
           Horario de Clases
         </h1>
@@ -193,45 +187,48 @@ const printSchedule = () => {
         </p>
       </div>
       <div class="flex gap-2">
-        <button 
-          @click="downloadPDF"
+        <button
           class="btn btn-primary flex items-center gap-2 transition-all hover:scale-105"
+          @click="downloadPDF"
         >
           <DocumentArrowDownIcon class="w-5 h-5" />
           PDF
         </button>
-        <button 
-          @click="shareSchedule"
+        <button
           class="btn btn-outline flex items-center gap-2 transition-all hover:scale-105"
+          @click="shareSchedule"
         >
           <ShareIcon class="w-5 h-5" />
           Compartir
         </button>
         <button
-          @click="printSchedule"
           class="btn btn-secondary flex items-center gap-2 transition-all hover:scale-105"
+          @click="printSchedule"
         >
-          <i class="fas fa-print"></i>
+          <i class="fas fa-print" />
           Imprimir
         </button>
       </div>
     </div>
-    
+
     <!-- Estado de carga y errores -->
     <div v-if="isLoading" class="flex justify-center items-center py-12">
-      <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+      <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
     </div>
-    <div v-else-if="error" class="bg-red-100 dark:bg-red-900/30 p-4 rounded-lg text-red-700 dark:text-red-400">
+    <div
+      v-else-if="error"
+      class="bg-red-100 dark:bg-red-900/30 p-4 rounded-lg text-red-700 dark:text-red-400"
+    >
       {{ error }}
-      <button @click="loadData" class="ml-2 underline">Reintentar</button>
+      <button class="ml-2 underline" @click="loadData">Reintentar</button>
     </div>
-    
+
     <!-- Contenido PDF para descarga -->
-    <div 
+    <div
       v-else-if="teacher && !isLoading && !error"
-      id="schedule-pdf" 
+      id="schedule-pdf"
       class="bg-white text-black p-6 sm:p-8 rounded-lg shadow-lg mx-auto"
-      style="min-height: 297mm; width: 210mm; max-width: 100%;"
+      style="min-height: 297mm; width: 210mm; max-width: 100%"
     >
       <!-- Encabezado del PDF -->
       <div class="flex justify-between items-start border-b-2 border-gray-300 pb-4 mb-6">
@@ -247,17 +244,22 @@ const printSchedule = () => {
           <p class="text-sm text-gray-500">Año Académico {{ new Date().getFullYear() }}</p>
         </div>
       </div>
-      
+
       <!-- Información del Maestro -->
       <div class="mb-8">
-        <div class="flex items-center gap-2 bg-primary-50 p-3 rounded-t-lg border-b-2 border-primary-200">
+        <div
+          class="flex items-center gap-2 bg-primary-50 p-3 rounded-t-lg border-b-2 border-primary-200"
+        >
           <UserIcon class="h-5 w-5 text-primary-700" />
           <h2 class="text-lg font-bold text-primary-700">Información del Maestro</h2>
         </div>
         <div class="bg-gray-50 p-4 rounded-b-lg shadow-sm">
           <div class="flex items-center gap-4">
             <img
-              :src="teacher.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${teacher.name}`"
+              :src="
+                teacher.photoURL ||
+                `https://api.dicebear.com/7.x/avataaars/svg?seed=${teacher.name}`
+              "
               :alt="teacher.name"
               class="w-16 h-16 rounded-full"
             />
@@ -286,10 +288,12 @@ const printSchedule = () => {
           </div>
         </div>
       </div>
-      
+
       <!-- Horario de Clases -->
       <div class="mb-8">
-        <div class="flex items-center gap-2 bg-primary-50 p-3 rounded-t-lg border-b-2 border-primary-200">
+        <div
+          class="flex items-center gap-2 bg-primary-50 p-3 rounded-t-lg border-b-2 border-primary-200"
+        >
           <CalendarIcon class="h-5 w-5 text-primary-700" />
           <h2 class="text-lg font-bold text-primary-700">Horario de Clases</h2>
         </div>
@@ -309,32 +313,30 @@ const printSchedule = () => {
 
             <!-- Schedule display -->
             <div class="print:hidden">
-              <TeacherWeeklySchedule 
-                v-if="viewMode === 'interactive'"
-                :teacherId="teacherId" 
-              />
+              <TeacherWeeklySchedule v-if="viewMode === 'interactive'" :teacher-id="teacherId" />
             </div>
-            <div >
-              <WeeklySchedulePrint :teacherId="teacherId" />
+            <div>
+              <WeeklySchedulePrint :teacher-id="teacherId" />
             </div>
           </div>
-          <div v-else class="text-center py-4 text-gray-500">
-            No hay clases asignadas
-          </div>
+          <div v-else class="text-center py-4 text-gray-500">No hay clases asignadas</div>
         </div>
       </div>
-      
+
       <!-- Footer -->
       <div class="mt-8 pt-4 border-t text-center text-sm text-gray-500">
-        <p>Este horario puede estar sujeto a cambios. Para más información, contacte con la Administración.</p>
-        <p class="mt-1">© {{ new Date().getFullYear() }} El Sistema Punta Cana - Todos los derechos reservados</p>
+        <p>
+          Este horario puede estar sujeto a cambios. Para más información, contacte con la
+          Administración.
+        </p>
+        <p class="mt-1">
+          © {{ new Date().getFullYear() }} El Sistema Punta Cana - Todos los derechos reservados
+        </p>
       </div>
     </div>
-    
+
     <!-- En caso de no encontrar el maestro -->
-    <div v-else class="text-center py-12 text-gray-500">
-      No se encontró información del maestro
-    </div>
+    <div v-else class="text-center py-12 text-gray-500">No se encontró información del maestro</div>
   </div>
 </template>
 
@@ -360,11 +362,13 @@ const printSchedule = () => {
 }
 
 #schedule-pdf [class*="bg-"] {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 #schedule-pdf [class*="bg-"]:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 </style>

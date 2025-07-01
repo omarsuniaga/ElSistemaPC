@@ -1,11 +1,11 @@
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-        Tipo de Reporte
-      </h3>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Tipo de Reporte</h3>
       <span class="text-sm text-gray-500 dark:text-gray-400">
-        {{ selectedReportType ? getReportTypeById(selectedReportType)?.name : 'Selecciona un tipo' }}
+        {{
+          selectedReportType ? getReportTypeById(selectedReportType)?.name : "Selecciona un tipo"
+        }}
       </span>
     </div>
 
@@ -13,8 +13,8 @@
       <div
         v-for="type in reportTypes"
         :key="type.id"
-        @click="$emit('update:modelValue', type.id)"
         class="relative cursor-pointer group"
+        @click="$emit('update:modelValue', type.id)"
       >
         <div
           :class="[
@@ -22,7 +22,7 @@
             'hover:shadow-lg hover:scale-105',
             selectedReportType === type.id
               ? `${iconColors[type.color].border} ${iconColors[type.color].bg} border-2`
-              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
+              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600',
           ]"
         >
           <!-- Icono -->
@@ -32,7 +32,7 @@
                 'w-12 h-12 rounded-lg flex items-center justify-center',
                 selectedReportType === type.id
                   ? iconColors[type.color].bg
-                  : 'bg-gray-100 dark:bg-gray-700'
+                  : 'bg-gray-100 dark:bg-gray-700',
               ]"
             >
               <component
@@ -41,24 +41,21 @@
                   'w-6 h-6',
                   selectedReportType === type.id
                     ? iconColors[type.color].text
-                    : 'text-gray-600 dark:text-gray-400'
+                    : 'text-gray-600 dark:text-gray-400',
                 ]"
               />
             </div>
-            
+
             <!-- Checkbox visual -->
             <div
               :class="[
                 'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all',
                 selectedReportType === type.id
                   ? 'border-blue-500 bg-blue-500'
-                  : 'border-gray-300 dark:border-gray-600'
+                  : 'border-gray-300 dark:border-gray-600',
               ]"
             >
-              <CheckIcon
-                v-if="selectedReportType === type.id"
-                class="w-3 h-3 text-white"
-              />
+              <CheckIcon v-if="selectedReportType === type.id" class="w-3 h-3 text-white" />
             </div>
           </div>
 
@@ -69,7 +66,7 @@
                 'font-semibold text-sm',
                 selectedReportType === type.id
                   ? 'text-gray-900 dark:text-white'
-                  : 'text-gray-700 dark:text-gray-300'
+                  : 'text-gray-700 dark:text-gray-300',
               ]"
             >
               {{ type.name }}
@@ -79,7 +76,7 @@
                 'text-xs leading-relaxed',
                 selectedReportType === type.id
                   ? 'text-gray-600 dark:text-gray-400'
-                  : 'text-gray-500 dark:text-gray-500'
+                  : 'text-gray-500 dark:text-gray-500',
               ]"
             >
               {{ type.description }}
@@ -96,7 +93,7 @@
                   'px-2 py-1 text-xs rounded-full',
                   selectedReportType === type.id
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
                 ]"
               >
                 {{ getFieldLabel(field) }}
@@ -107,7 +104,7 @@
                   'px-2 py-1 text-xs rounded-full',
                   selectedReportType === type.id
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
                 ]"
               >
                 +{{ type.fields.length - 3 }}
@@ -150,7 +147,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import {computed} from "vue"
 import {
   UserGroupIcon,
   AcademicCapIcon,
@@ -158,9 +155,9 @@ import {
   ClipboardDocumentCheckIcon,
   ChartBarIcon,
   CheckIcon,
-  InformationCircleIcon
-} from '@heroicons/vue/24/outline'
-import { usePDFReportTypes } from '../../composables/usePDFReportTypes'
+  InformationCircleIcon,
+} from "@heroicons/vue/24/outline"
+import {usePDFReportTypes} from "../../composables/usePDFReportTypes"
 
 // Props
 interface Props {
@@ -171,27 +168,27 @@ const props = defineProps<Props>()
 
 // Emits
 const emit = defineEmits<{
-  'update:modelValue': [value: string]
+  "update:modelValue": [value: string]
 }>()
 
 // Composables
-const { reportTypes, iconColors, getReportTypeById, getFieldLabel } = usePDFReportTypes()
+const {reportTypes, iconColors, getReportTypeById, getFieldLabel} = usePDFReportTypes()
 
 // Computed
 const selectedReportType = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit("update:modelValue", value),
 })
 
 // Funciones
 const getIconComponent = (iconName: string) => {
-  const iconMap: { [key: string]: any } = {
+  const iconMap: {[key: string]: any} = {
     UserGroupIcon,
     AcademicCapIcon,
     UserIcon,
     ClipboardDocumentCheckIcon,
-    ChartBarIcon
+    ChartBarIcon,
   }
   return iconMap[iconName] || UserGroupIcon
 }
-</script> 
+</script>

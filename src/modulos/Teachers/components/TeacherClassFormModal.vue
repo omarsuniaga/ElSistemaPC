@@ -1,25 +1,32 @@
 <script setup lang="ts">
-import { Dialog, DialogPanel, DialogOverlay, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue';
-import ClassForm from '@/modulos/Classes/components/ClassForm.vue';
-import type { ClassData } from '../types/teacherTypes'; // Assuming types are moved
+import {
+  Dialog,
+  DialogPanel,
+  DialogOverlay,
+  DialogTitle,
+  TransitionRoot,
+  TransitionChild,
+} from "@headlessui/vue"
+import ClassForm from "@/modulos/Classes/components/ClassForm.vue"
+import type {ClassData} from "../types/teacherTypes" // Assuming types are moved
 
-const props = defineProps<{ 
-  show: boolean;
-  isEditing: boolean;
-  classData: Partial<ClassData> | null;
-}>();
-const emit = defineEmits(['update:show', 'save', 'cancel']);
+const props = defineProps<{
+  show: boolean
+  isEditing: boolean
+  classData: Partial<ClassData> | null
+}>()
+const emit = defineEmits(["update:show", "save", "cancel"])
 
 const closeModal = () => {
-  emit('update:show', false);
-  emit('cancel'); // Also emit cancel for consistency
-};
+  emit("update:show", false)
+  emit("cancel") // Also emit cancel for consistency
+}
 
 const handleSave = (data: Partial<ClassData>) => {
-  emit('save', data);
+  emit("save", data)
   // Optionally close modal on save, or let the parent handle it
-  // closeModal(); 
-};
+  // closeModal();
+}
 </script>
 
 <template>
@@ -39,7 +46,7 @@ const handleSave = (data: Partial<ClassData>) => {
         </TransitionChild>
 
         <span class="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
-        
+
         <TransitionChild
           as="template"
           enter="ease-out duration-300"
@@ -49,16 +56,14 @@ const handleSave = (data: Partial<ClassData>) => {
           leave-from="opacity-100 scale-100"
           leave-to="opacity-0 scale-95"
         >
-          <div class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
+          <div
+            class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg"
+          >
             <DialogPanel>
               <DialogTitle as="h2" class="text-xl font-semibold mb-4">
-                {{ isEditing ? 'Editar Clase' : 'Nueva Clase' }}
+                {{ isEditing ? "Editar Clase" : "Nueva Clase" }}
               </DialogTitle>
-              <ClassForm 
-                :class-data="classData"
-                @save="handleSave"
-                @cancel="closeModal"
-              />
+              <ClassForm :class-data="classData" @save="handleSave" @cancel="closeModal" />
             </DialogPanel>
           </div>
         </TransitionChild>

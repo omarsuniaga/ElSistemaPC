@@ -5,11 +5,11 @@
  */
 export const saveToLocalStorage = (key: string, data: any): void => {
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    localStorage.setItem(key, JSON.stringify(data))
   } catch (error) {
-    console.error('Error saving to localStorage:', error);
+    console.error("Error saving to localStorage:", error)
   }
-};
+}
 
 /**
  * Obtiene datos del localStorage
@@ -18,13 +18,13 @@ export const saveToLocalStorage = (key: string, data: any): void => {
  */
 export const getFromLocalStorage = <T>(key: string): T | null => {
   try {
-    const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : null;
+    const item = localStorage.getItem(key)
+    return item ? JSON.parse(item) : null
   } catch (error) {
-    console.error('Error reading from localStorage:', error);
-    return null;
+    console.error("Error reading from localStorage:", error)
+    return null
   }
-};
+}
 
 /**
  * Elimina datos del localStorage
@@ -32,19 +32,19 @@ export const getFromLocalStorage = <T>(key: string): T | null => {
  */
 export const removeFromLocalStorage = (key: string): void => {
   try {
-    localStorage.removeItem(key);
+    localStorage.removeItem(key)
   } catch (error) {
-    console.error('Error removing from localStorage:', error);
+    console.error("Error removing from localStorage:", error)
   }
-};
+}
 
 /**
  * Limpia todos los datos del localStorage
  */
 export const clearLocalStorage = (): void => {
   try {
-    localStorage.clear();
+    localStorage.clear()
   } catch (error) {
-    console.error('Error clearing localStorage:', error);
+    console.error("Error clearing localStorage:", error)
   }
-};
+}

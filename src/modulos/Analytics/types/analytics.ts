@@ -3,11 +3,11 @@ export interface KpiData {
   value: string | number
   trend: number
   icon: any
-  metricType?: 'currency' | 'percentage' | 'default'
+  metricType?: "currency" | "percentage" | "default"
 }
 
 export interface ReportConfig {
-  reportType: 'pdf' | 'xls' | 'html'
+  reportType: "pdf" | "xls" | "html"
   metrics: string[]
   dateRange: {
     start: Date

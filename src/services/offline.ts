@@ -1,6 +1,6 @@
-import { db } from '../firebase'
-import { openDB, type IDBPDatabase } from 'idb'
-import type { Student, Teacher, Class, Content } from '../types'
+import {db} from "../firebase"
+import {openDB, type IDBPDatabase} from "idb"
+import type {Student, Teacher, Class, Content} from "../types"
 
 interface OfflineDB extends IDBPDatabase {
   students: Student[]
@@ -11,32 +11,25 @@ interface OfflineDB extends IDBPDatabase {
 }
 
 // Initialize IndexedDB
-const dbPromise = openDB<OfflineDB>('academy-db', 1, {
+const dbPromise = openDB<OfflineDB>("academy-db", 1, {
   upgrade(db) {
     // Create stores for each data type
-    db.createObjectStore('students', { keyPath: 'id' })
-    db.createObjectStore('teachers', { keyPath: 'id' })
-    db.createObjectStore('classes', { keyPath: 'id' })
-    db.createObjectStore('contents', { keyPath: 'id' })
-    db.createObjectStore('attendance', { keyPath: 'id' })
-  }
+    db.createObjectStore("students", {keyPath: "id"})
+    db.createObjectStore("teachers", {keyPath: "id"})
+    db.createObjectStore("classes", {keyPath: "id"})
+    db.createObjectStore("contents", {keyPath: "id"})
+    db.createObjectStore("attendance", {keyPath: "id"})
+  },
 })
 
 // Generic function to sync data
-async function syncData<T>(
-  storeName: keyof OfflineDB,
-  onlineData: T[],
-  timestamp: string
-) {
+async function syncData<T>(storeName: keyof OfflineDB, onlineData: T[], timestamp: string) {
   const db = await dbPromise
-  const tx = db.transaction(storeName, 'readwrite')
+  const tx = db.transaction(storeName, "readwrite")
   const store = tx.objectStore(storeName)
 
   // Store the data
-  await Promise.all([
-    ...onlineData.map(item => store.put(item)),
-    tx.done
-  ])
+  await Promise.all([...onlineData.map((item) => store.put(item)), tx.done])
 
   // Update last sync timestamp
   localStorage.setItem(`lastSync_${storeName}`, timestamp)
@@ -80,15 +73,15 @@ export async function saveData<T>(
       // Store locally and mark for sync
       const db = await dbPromise
       await db.put(storeName, data)
-      
-      const pendingChanges = JSON.parse(localStorage.getItem('pendingChanges') || '[]')
+
+      const pendingChanges = JSON.parse(localStorage.getItem("pendingChanges") || "[]")
       pendingChanges.push({
         type: storeName,
         data,
-        action: 'save',
-        timestamp: new Date().toISOString()
+        action: "save",
+        timestamp: new Date().toISOString(),
       })
-      localStorage.setItem('pendingChanges', JSON.stringify(pendingChanges))
+      localStorage.setItem("pendingChanges", JSON.stringify(pendingChanges))
     }
   } catch (error) {
     console.error(`Error saving ${storeName}:`, error)
@@ -107,14 +100,14 @@ export async function deleteData<T>(
       await onlineDelete(id)
     } else {
       // Mark for deletion when back online
-      const pendingChanges = JSON.parse(localStorage.getItem('pendingChanges') || '[]')
+      const pendingChanges = JSON.parse(localStorage.getItem("pendingChanges") || "[]")
       pendingChanges.push({
         type: storeName,
         id,
-        action: 'delete',
-        timestamp: new Date().toISOString()
+        action: "delete",
+        timestamp: new Date().toISOString(),
       })
-      localStorage.setItem('pendingChanges', JSON.stringify(pendingChanges))
+      localStorage.setItem("pendingChanges", JSON.stringify(pendingChanges))
     }
   } catch (error) {
     console.error(`Error deleting ${storeName}:`, error)
@@ -123,35 +116,38 @@ export async function deleteData<T>(
 }
 
 // Sync pending changes when coming back online
-window.addEventListener('online', async () => {
-  const pendingChanges = JSON.parse(localStorage.getItem('pendingChanges') || '[]')
+window.addEventListener("online", async () => {
+  const pendingChanges = JSON.parse(localStorage.getItem("pendingChanges") || "[]")
   if (pendingChanges.length === 0) return
 
   for (const change of pendingChanges) {
     try {
       switch (change.action) {
-        case 'save':
+        case "save":
           await db.collection(change.type).doc(change.data.id).set(change.data)
           break
-        case 'delete':
+        case "delete":
           await db.collection(change.type).doc(change.id).delete()
           break
       }
     } catch (error) {
-      console.error('Error syncing change:', error)
+      console.error("Error syncing change:", error)
     }
   }
 
-  localStorage.removeItem('pendingChanges')
+  localStorage.removeItem("pendingChanges")
 })
 
 // Register service worker for offline support
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(registration => {
-      console.log('ServiceWorker registered:', registration)
-    }).catch(error => {
-      console.error('ServiceWorker registration failed:', error)
-    })
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((registration) => {
+        console.log("ServiceWorker registered:", registration)
+      })
+      .catch((error) => {
+        console.error("ServiceWorker registration failed:", error)
+      })
   })
 }

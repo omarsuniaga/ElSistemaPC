@@ -1,64 +1,68 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import type { JustificationData } from '../types/attendance';
-import { useAttendanceStore } from '../store/attendance';
+import {ref, onMounted} from "vue"
+import type {JustificationData} from "../types/attendance"
+import {useAttendanceStore} from "../store/attendance"
 
 const props = defineProps<{
-  studentId: string;
-  classId?: string;
-  date?: string;
-}>();
+  studentId: string
+  classId?: string
+  date?: string
+}>()
 
-const attendanceStore = useAttendanceStore();
-const justifications = ref<JustificationData[]>([]);
-const loading = ref(true);
-const error = ref<string | null>(null);
+const attendanceStore = useAttendanceStore()
+const justifications = ref<JustificationData[]>([])
+const loading = ref(true)
+const error = ref<string | null>(null)
 
 const statusLabels = {
-  pending: 'Pendiente',
-  approved: 'Aprobada',
-  rejected: 'Rechazada'
-};
+  pending: "Pendiente",
+  approved: "Aprobada",
+  rejected: "Rechazada",
+}
 
 const statusColors = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  approved: 'bg-green-100 text-green-800',
-  rejected: 'bg-red-100 text-red-800'
-};
+  pending: "bg-yellow-100 text-yellow-800",
+  approved: "bg-green-100 text-green-800",
+  rejected: "bg-red-100 text-red-800",
+}
 
 const loadJustifications = async () => {
   try {
-    loading.value = true;
-    error.value = null;
-    justifications.value = await attendanceStore.fetchJustifications(props.studentId, props.classId, props.date);
+    loading.value = true
+    error.value = null
+    justifications.value = await attendanceStore.fetchJustifications(
+      props.studentId,
+      props.classId,
+      props.date
+    )
   } catch (err) {
-    error.value = 'Error al cargar las justificaciones';
-    console.error(err);
+    error.value = "Error al cargar las justificaciones"
+    console.error(err)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
-onMounted(loadJustifications);
+onMounted(loadJustifications)
 
 const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-};
+  return new Date(date).toLocaleDateString("es-ES", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })
+}
 
 const isExpired = (timeLimit: string) => {
-  return new Date(timeLimit) < new Date();
-};
+  return new Date(timeLimit) < new Date()
+}
 </script>
 
 <template>
   <div class="space-y-4">
     <!-- Estado de carga -->
     <div v-if="loading" class="text-center py-4">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
       <p class="mt-2 text-gray-600">Cargando justificaciones...</p>
     </div>
 
@@ -69,14 +73,24 @@ const isExpired = (timeLimit: string) => {
 
     <!-- Lista de justificaciones -->
     <div v-else-if="justifications.length > 0" class="space-y-4">
-      <div v-for="justification in justifications" :key="justification.id" class="bg-white rounded-lg shadow p-4">
+      <div
+        v-for="justification in justifications"
+        :key="justification.id"
+        class="bg-white rounded-lg shadow p-4"
+      >
         <!-- Encabezado -->
         <div class="flex justify-between items-start mb-4">
           <div class="flex items-center space-x-2">
-            <span class="inline-block px-2 py-1 text-xs font-semibold rounded-full" :class="statusColors[justification.approvalStatus]">
+            <span
+              class="inline-block px-2 py-1 text-xs font-semibold rounded-full"
+              :class="statusColors[justification.approvalStatus]"
+            >
               {{ statusLabels[justification.approvalStatus] }}
             </span>
-            <span v-if="isExpired(justification.timeLimit)" class="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+            <span
+              v-if="isExpired(justification.timeLimit)"
+              class="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800"
+            >
               Expirada
             </span>
           </div>
@@ -123,4 +137,4 @@ const isExpired = (timeLimit: string) => {
       <p class="text-gray-600">No hay justificaciones para mostrar</p>
     </div>
   </div>
-</template> 
+</template>

@@ -2,18 +2,16 @@
   <div class="plan-detail-view">
     <!-- Loading State -->
     <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
+      <div class="spinner" />
       <p>Cargando plan...</p>
     </div>
 
     <!-- Error State -->
     <div v-else-if="error" class="error-state">
-      <i class="fas fa-exclamation-triangle"></i>
+      <i class="fas fa-exclamation-triangle" />
       <h3>Error al cargar el plan</h3>
       <p>{{ error }}</p>
-      <button @click="$router.go(-1)" class="btn-secondary">
-        Volver
-      </button>
+      <button class="btn-secondary" @click="$router.go(-1)">Volver</button>
     </div>
 
     <!-- Plan Content -->
@@ -21,8 +19,8 @@
       <!-- Header -->
       <div class="plan-header">
         <div class="header-main">
-          <button @click="$router.go(-1)" class="btn-back">
-            <i class="fas fa-arrow-left"></i>
+          <button class="btn-back" @click="$router.go(-1)">
+            <i class="fas fa-arrow-left" />
             Volver
           </button>
           <div class="plan-info">
@@ -39,12 +37,12 @@
           </div>
         </div>
         <div class="header-actions">
-          <button @click="showEditModal = true" class="btn-secondary">
-            <i class="fas fa-edit"></i>
+          <button class="btn-secondary" @click="showEditModal = true">
+            <i class="fas fa-edit" />
             Editar
           </button>
-          <button @click="exportPlan" class="btn-primary">
-            <i class="fas fa-download"></i>
+          <button class="btn-primary" @click="exportPlan">
+            <i class="fas fa-download" />
             Exportar
           </button>
         </div>
@@ -66,23 +64,17 @@
               <span class="progress-value">{{ completedWorks }}/{{ totalWorks }}</span>
             </div>
             <div class="progress-bar">
-              <div 
-                class="progress-fill" 
-                :style="{ width: `${worksProgress}%` }"
-              ></div>
+              <div class="progress-fill" :style="{width: `${worksProgress}%`}" />
             </div>
           </div>
-          
+
           <div class="progress-card">
             <div class="progress-header">
               <h3>Objetivos Alcanzados</h3>
               <span class="progress-value">{{ completedObjectives }}/{{ totalObjectives }}</span>
             </div>
             <div class="progress-bar">
-              <div 
-                class="progress-fill" 
-                :style="{ width: `${objectivesProgress}%` }"
-              ></div>
+              <div class="progress-fill" :style="{width: `${objectivesProgress}%`}" />
             </div>
           </div>
         </div>
@@ -92,8 +84,8 @@
       <div class="plan-section">
         <div class="section-header">
           <h2>Objetivos</h2>
-          <button @click="showObjectiveModal = true" class="btn-small">
-            <i class="fas fa-plus"></i>
+          <button class="btn-small" @click="showObjectiveModal = true">
+            <i class="fas fa-plus" />
             Agregar
           </button>
         </div>
@@ -101,11 +93,11 @@
           <p>No hay objetivos definidos</p>
         </div>
         <div v-else class="objectives-list">
-          <div 
+          <div
             v-for="objective in plan.objectives"
             :key="objective.id"
             class="objective-item"
-            :class="{ 'completed': objective.completed }"
+            :class="{completed: objective.completed}"
           >
             <div class="objective-content">
               <h4>{{ objective.title }}</h4>
@@ -114,18 +106,16 @@
                 <span class="priority" :class="`priority-${objective.priority.toLowerCase()}`">
                   {{ objective.priority }}
                 </span>
-                <span class="deadline">
-                  Fecha límite: {{ formatDate(objective.deadline) }}
-                </span>
+                <span class="deadline"> Fecha límite: {{ formatDate(objective.deadline) }} </span>
               </div>
             </div>
             <div class="objective-actions">
-              <button 
-                @click="toggleObjectiveCompletion(objective)"
+              <button
                 class="btn-toggle"
-                :class="{ 'completed': objective.completed }"
+                :class="{completed: objective.completed}"
+                @click="toggleObjectiveCompletion(objective)"
               >
-                <i :class="objective.completed ? 'fas fa-check' : 'far fa-circle'"></i>
+                <i :class="objective.completed ? 'fas fa-check' : 'far fa-circle'" />
               </button>
             </div>
           </div>
@@ -136,8 +126,8 @@
       <div class="plan-section">
         <div class="section-header">
           <h2>Obras Asociadas</h2>
-          <button @click="showWorksModal = true" class="btn-small">
-            <i class="fas fa-plus"></i>
+          <button class="btn-small" @click="showWorksModal = true">
+            <i class="fas fa-plus" />
             Asociar Obra
           </button>
         </div>
@@ -145,7 +135,7 @@
           <p>No hay obras asociadas a este plan</p>
         </div>
         <div v-else class="works-grid">
-          <div 
+          <div
             v-for="work in associatedWorks"
             :key="work.id"
             class="work-card"
@@ -160,10 +150,7 @@
             <p class="work-composer">{{ work.composer }}</p>
             <div class="work-progress">
               <div class="progress-bar small">
-                <div 
-                  class="progress-fill" 
-                  :style="{ width: `${work.progress}%` }"
-                ></div>
+                <div class="progress-fill" :style="{width: `${work.progress}%`}" />
               </div>
               <span class="progress-text">{{ work.progress }}%</span>
             </div>
@@ -175,14 +162,14 @@
       <div class="plan-section">
         <h2>Cronograma</h2>
         <div class="timeline">
-          <div 
+          <div
             v-for="milestone in plan.milestones"
             :key="milestone.id"
             class="timeline-item"
-            :class="{ 'completed': milestone.completed }"
+            :class="{completed: milestone.completed}"
           >
             <div class="timeline-marker">
-              <i :class="milestone.completed ? 'fas fa-check' : 'far fa-circle'"></i>
+              <i :class="milestone.completed ? 'fas fa-check' : 'far fa-circle'" />
             </div>
             <div class="timeline-content">
               <h4>{{ milestone.title }}</h4>
@@ -210,20 +197,11 @@
         <form @submit.prevent="addObjective">
           <div class="form-group">
             <label>Título</label>
-            <input 
-              v-model="newObjective.title" 
-              type="text" 
-              required 
-              class="form-input"
-            >
+            <input v-model="newObjective.title" type="text" required class="form-input" />
           </div>
           <div class="form-group">
             <label>Descripción</label>
-            <textarea 
-              v-model="newObjective.description" 
-              rows="3" 
-              class="form-input"
-            ></textarea>
+            <textarea v-model="newObjective.description" rows="3" class="form-input" />
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -236,21 +214,14 @@
             </div>
             <div class="form-group">
               <label>Fecha límite</label>
-              <input 
-                v-model="newObjective.deadline" 
-                type="date" 
-                required 
-                class="form-input"
-              >
+              <input v-model="newObjective.deadline" type="date" required class="form-input" />
             </div>
           </div>
           <div class="modal-actions">
-            <button type="button" @click="closeObjectiveModal" class="btn-secondary">
+            <button type="button" class="btn-secondary" @click="closeObjectiveModal">
               Cancelar
             </button>
-            <button type="submit" class="btn-primary">
-              Agregar
-            </button>
+            <button type="submit" class="btn-primary">Agregar</button>
           </div>
         </form>
       </div>
@@ -261,11 +232,11 @@
       <div class="modal-content large" @click.stop>
         <h3>Asociar Obras al Plan</h3>
         <div class="works-selection">
-          <div 
+          <div
             v-for="work in availableWorks"
             :key="work.id"
             class="work-option"
-            :class="{ 'selected': selectedWorks.includes(work.id) }"
+            :class="{selected: selectedWorks.includes(work.id)}"
             @click="toggleWorkSelection(work.id)"
           >
             <div class="work-info">
@@ -273,17 +244,15 @@
               <p>{{ work.composer }}</p>
             </div>
             <div class="work-checkbox">
-              <i :class="selectedWorks.includes(work.id) ? 'fas fa-check-square' : 'far fa-square'"></i>
+              <i
+                :class="selectedWorks.includes(work.id) ? 'fas fa-check-square' : 'far fa-square'"
+              />
             </div>
           </div>
         </div>
         <div class="modal-actions">
-          <button @click="closeWorksModal" class="btn-secondary">
-            Cancelar
-          </button>
-          <button @click="associateWorks" class="btn-primary">
-            Asociar Obras
-          </button>
+          <button class="btn-secondary" @click="closeWorksModal">Cancelar</button>
+          <button class="btn-primary" @click="associateWorks">Asociar Obras</button>
         </div>
       </div>
     </div>
@@ -291,22 +260,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useMontaje } from '../composables/useMontaje'
-import type { Plan, Objective, Work } from '../types'
-import PlanFormModal from '../components/PlanFormModal.vue'
+import {ref, computed, onMounted} from "vue"
+import {useRoute, useRouter} from "vue-router"
+import {useMontaje} from "../composables/useMontaje"
+import type {Plan, Objective, Work} from "../types"
+import PlanFormModal from "../components/PlanFormModal.vue"
 
 const route = useRoute()
 const router = useRouter()
-const { 
-  currentPlan: plan, 
-  loading, 
-  error, 
-  updatePlan, 
+const {
+  currentPlan: plan,
+  loading,
+  error,
+  updatePlan,
   getPlanById,
   associatedWorks,
-  availableWorks 
+  availableWorks,
 } = useMontaje()
 
 // State
@@ -317,31 +286,31 @@ const selectedWorks = ref<string[]>([])
 
 // New objective form
 const newObjective = ref<Partial<Objective>>({
-  title: '',
-  description: '',
-  priority: 'MEDIUM',
-  deadline: '',
-  completed: false
+  title: "",
+  description: "",
+  priority: "MEDIUM",
+  deadline: "",
+  completed: false,
 })
 
 // Computed
-const completedWorks = computed(() => 
-  associatedWorks.value.filter(work => work.status === 'COMPLETED').length
+const completedWorks = computed(
+  () => associatedWorks.value.filter((work) => work.status === "COMPLETED").length
 )
 
 const totalWorks = computed(() => associatedWorks.value.length)
 
-const worksProgress = computed(() => 
+const worksProgress = computed(() =>
   totalWorks.value > 0 ? (completedWorks.value / totalWorks.value) * 100 : 0
 )
 
-const completedObjectives = computed(() => 
-  plan.value?.objectives.filter(obj => obj.completed).length ?? 0
+const completedObjectives = computed(
+  () => plan.value?.objectives.filter((obj) => obj.completed).length ?? 0
 )
 
 const totalObjectives = computed(() => plan.value?.objectives.length ?? 0)
 
-const objectivesProgress = computed(() => 
+const objectivesProgress = computed(() =>
   totalObjectives.value > 0 ? (completedObjectives.value / totalObjectives.value) * 100 : 0
 )
 
@@ -352,17 +321,17 @@ const handleUpdatePlan = async (planData: Partial<Plan>) => {
       await updatePlan(plan.value.id, planData)
       showEditModal.value = false
     } catch (error) {
-      console.error('Error updating plan:', error)
+      console.error("Error updating plan:", error)
     }
   }
 }
 
 const toggleObjectiveCompletion = async (objective: Objective) => {
   if (plan.value) {
-    const updatedObjectives = plan.value.objectives.map(obj => 
-      obj.id === objective.id ? { ...obj, completed: !obj.completed } : obj
+    const updatedObjectives = plan.value.objectives.map((obj) =>
+      obj.id === objective.id ? {...obj, completed: !obj.completed} : obj
     )
-    await updatePlan(plan.value.id, { objectives: updatedObjectives })
+    await updatePlan(plan.value.id, {objectives: updatedObjectives})
   }
 }
 
@@ -371,14 +340,14 @@ const addObjective = async () => {
     const objective: Objective = {
       id: Date.now().toString(),
       title: newObjective.value.title,
-      description: newObjective.value.description || '',
-      priority: newObjective.value.priority as 'HIGH' | 'MEDIUM' | 'LOW',
+      description: newObjective.value.description || "",
+      priority: newObjective.value.priority as "HIGH" | "MEDIUM" | "LOW",
       deadline: newObjective.value.deadline!,
-      completed: false
+      completed: false,
     }
-    
+
     const updatedObjectives = [...plan.value.objectives, objective]
-    await updatePlan(plan.value.id, { objectives: updatedObjectives })
+    await updatePlan(plan.value.id, {objectives: updatedObjectives})
     closeObjectiveModal()
   }
 }
@@ -386,11 +355,11 @@ const addObjective = async () => {
 const closeObjectiveModal = () => {
   showObjectiveModal.value = false
   newObjective.value = {
-    title: '',
-    description: '',
-    priority: 'MEDIUM',
-    deadline: '',
-    completed: false
+    title: "",
+    description: "",
+    priority: "MEDIUM",
+    deadline: "",
+    completed: false,
   }
 }
 
@@ -406,7 +375,7 @@ const toggleWorkSelection = (workId: string) => {
 const associateWorks = async () => {
   if (plan.value) {
     const updatedWorkIds = [...(plan.value.workIds || []), ...selectedWorks.value]
-    await updatePlan(plan.value.id, { workIds: updatedWorkIds })
+    await updatePlan(plan.value.id, {workIds: updatedWorkIds})
     closeWorksModal()
   }
 }
@@ -422,24 +391,24 @@ const viewWork = (work: Work) => {
 
 const exportPlan = () => {
   // Implementation for PDF export
-  console.log('Exporting plan to PDF...')
+  console.log("Exporting plan to PDF...")
 }
 
 const getStatusLabel = (status: string) => {
   const labels: Record<string, string> = {
-    DRAFT: 'Borrador',
-    ACTIVE: 'Activo',
-    COMPLETED: 'Completado',
-    ARCHIVED: 'Archivado'
+    DRAFT: "Borrador",
+    ACTIVE: "Activo",
+    COMPLETED: "Completado",
+    ARCHIVED: "Archivado",
   }
   return labels[status] || status
 }
 
 const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  return new Date(date).toLocaleDateString("es-ES", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   })
 }
 
@@ -478,8 +447,12 @@ onMounted(async () => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-state i {

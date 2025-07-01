@@ -3,7 +3,7 @@
  * Utilidad para carga perezosa optimizada de componentes
  */
 
-import { defineAsyncComponent, AsyncComponentLoader } from 'vue'
+import {defineAsyncComponent, AsyncComponentLoader} from "vue"
 
 interface LazyLoadOptions {
   loadingComponent?: any
@@ -16,39 +16,30 @@ interface LazyLoadOptions {
 /**
  * Crea un componente con carga perezosa optimizada
  */
-export function createLazyComponent(
-  loader: AsyncComponentLoader,
-  options: LazyLoadOptions = {}
-) {
-  const {
-    loadingComponent,
-    errorComponent,
-    delay = 200,
-    timeout = 10000,
-    retries = 3
-  } = options
+export function createLazyComponent(loader: AsyncComponentLoader, options: LazyLoadOptions = {}) {
+  const {loadingComponent, errorComponent, delay = 200, timeout = 10000, retries = 3} = options
 
   return defineAsyncComponent({
     loader: async () => {
       let attempt = 0
-      
+
       const tryLoad = async (): Promise<any> => {
         try {
           return await loader()
         } catch (error) {
           attempt++
-          
+
           if (attempt < retries) {
             console.warn(`🔄 Reintentando carga de componente (intento ${attempt}/${retries})`)
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
+            await new Promise((resolve) => setTimeout(resolve, 1000 * attempt))
             return tryLoad()
           }
-          
-          console.error('❌ Error al cargar componente después de', retries, 'intentos:', error)
+
+          console.error("❌ Error al cargar componente después de", retries, "intentos:", error)
           throw error
         }
       }
-      
+
       return tryLoad()
     },
     loadingComponent,
@@ -57,15 +48,15 @@ export function createLazyComponent(
     timeout,
     onError: (error, retry, fail, attempts) => {
       console.error(`🚨 Error en carga de componente (intento ${attempts}):`, error)
-      
+
       if (attempts <= retries) {
-        console.log('🔄 Reintentando...')
+        console.log("🔄 Reintentando...")
         retry()
       } else {
-        console.error('❌ Carga fallida definitivamente')
+        console.error("❌ Carga fallida definitivamente")
         fail()
       }
-    }
+    },
   })
 }
 
@@ -74,12 +65,12 @@ export function createLazyComponent(
  */
 export class ModulePreloader {
   private static loadedModules = new Set<string>()
-  
+
   static async preloadModule(moduleLoader: () => Promise<any>, moduleName: string) {
     if (this.loadedModules.has(moduleName)) {
       return
     }
-    
+
     try {
       console.log(`📦 Precargando módulo: ${moduleName}`)
       await moduleLoader()
@@ -89,14 +80,17 @@ export class ModulePreloader {
       console.error(`❌ Error precargando módulo ${moduleName}:`, error)
     }
   }
-  
+
   static preloadCriticalModules() {
     // Precargar módulos críticos en segundo plano
     if (import.meta.env.PROD) {
       setTimeout(() => {
-        this.preloadModule(() => import('@/modulos/Students/store/students'), 'students-store')
-        this.preloadModule(() => import('@/modulos/Teachers/store/teachers'), 'teachers-store')
-        this.preloadModule(() => import('@/modulos/Attendance/store/attendance'), 'attendance-store')
+        this.preloadModule(() => import("@/modulos/Students/store/students"), "students-store")
+        this.preloadModule(() => import("@/modulos/Teachers/store/teachers"), "teachers-store")
+        this.preloadModule(
+          () => import("@/modulos/Attendance/store/attendance"),
+          "attendance-store"
+        )
       }, 2000)
     }
   }
@@ -111,7 +105,7 @@ export const LoadingComponent = {
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
       <span class="ml-2 text-gray-600 dark:text-gray-300">Cargando...</span>
     </div>
-  `
+  `,
 }
 
 /**
@@ -126,5 +120,5 @@ export const ErrorComponent = {
       </svg>
       <span>Error al cargar el componente</span>
     </div>
-  `
+  `,
 }

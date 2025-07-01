@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
+import {ref, watch} from "vue"
+import {ChevronUpIcon, ChevronDownIcon} from "@heroicons/vue/24/outline"
 
 interface Section {
-  label: string;
-  items: string[];
+  label: string
+  items: string[]
 }
 
 const props = defineProps<{
-  modelValue: string;
-  placeholder?: string;
-  sections: Section[];
-  disabled?: boolean;
+  modelValue: string
+  placeholder?: string
+  sections: Section[]
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void;
+  (e: "update:modelValue", value: string): void
 }>()
 
 const isOpen = ref(false)
@@ -30,7 +30,7 @@ const toggleSection = (label: string) => {
 }
 
 const selectItem = (item: string) => {
-  emit('update:modelValue', item)
+  emit("update:modelValue", item)
   isOpen.value = false
 }
 
@@ -42,25 +42,28 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 }
 
-watch(() => isOpen.value, (newValue) => {
-  if (newValue) {
-    document.addEventListener('click', handleClickOutside)
-  } else {
-    document.removeEventListener('click', handleClickOutside)
+watch(
+  () => isOpen.value,
+  (newValue) => {
+    if (newValue) {
+      document.addEventListener("click", handleClickOutside)
+    } else {
+      document.removeEventListener("click", handleClickOutside)
+    }
   }
-})
+)
 </script>
 
 <template>
-  <div class="relative" ref="dropdownRef">
+  <div ref="dropdownRef" class="relative">
     <!-- Selected value display -->
     <div
-      @click="isOpen = !disabled && !isOpen"
       class="form-input flex justify-between items-center cursor-pointer"
-      :class="{ 'opacity-50 cursor-not-allowed': disabled }"
+      :class="{'opacity-50 cursor-not-allowed': disabled}"
+      @click="isOpen = !disabled && !isOpen"
     >
-      <span :class="{ 'text-gray-400': !modelValue }">
-        {{ modelValue || placeholder || 'Select an option' }}
+      <span :class="{'text-gray-400': !modelValue}">
+        {{ modelValue || placeholder || "Select an option" }}
       </span>
       <ChevronDownIcon v-if="!isOpen" class="w-5 h-5 text-gray-400" />
       <ChevronUpIcon v-else class="w-5 h-5 text-gray-400" />
@@ -71,11 +74,15 @@ watch(() => isOpen.value, (newValue) => {
       v-if="isOpen"
       class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-y-auto"
     >
-      <div v-for="section in sections" :key="section.label" class="border-b last:border-b-0 border-gray-200 dark:border-gray-700">
+      <div
+        v-for="section in sections"
+        :key="section.label"
+        class="border-b last:border-b-0 border-gray-200 dark:border-gray-700"
+      >
         <!-- Section header -->
         <div
-          @click="toggleSection(section.label)"
           class="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+          @click="toggleSection(section.label)"
         >
           <span class="font-medium text-gray-700 dark:text-gray-200">{{ section.label }}</span>
           <ChevronDownIcon
@@ -86,13 +93,19 @@ watch(() => isOpen.value, (newValue) => {
         </div>
 
         <!-- Section items -->
-        <div v-if="expandedSections.has(section.label)" class="border-t border-gray-200 dark:border-gray-700">
+        <div
+          v-if="expandedSections.has(section.label)"
+          class="border-t border-gray-200 dark:border-gray-700"
+        >
           <div
             v-for="item in section.items"
             :key="item"
-            @click="selectItem(item)"
             class="px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-            :class="{ 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-200': modelValue === item }"
+            :class="{
+              'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-200':
+                modelValue === item,
+            }"
+            @click="selectItem(item)"
           >
             {{ item }}
           </div>

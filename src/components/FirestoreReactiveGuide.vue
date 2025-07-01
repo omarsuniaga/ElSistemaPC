@@ -5,7 +5,7 @@
 <template>
   <div class="reactive-guide p-6">
     <h1 class="text-2xl font-bold mb-4">Guía de Implementación Reactiva</h1>
-    
+
     <div class="mb-8">
       <h2 class="text-xl font-semibold mb-2">Consultas reactivas con Firestore</h2>
       <pre class="bg-gray-100 p-4 rounded overflow-auto">
@@ -29,7 +29,7 @@ const queryConstraints = computed(() => {
 const { items, loading, error } = useFirestoreCollection('students', queryConstraints)
       </pre>
     </div>
-    
+
     <div class="mb-8">
       <h2 class="text-xl font-semibold mb-2">Consultas paginadas para datos históricos</h2>
       <pre class="bg-gray-100 p-4 rounded overflow-auto">
@@ -56,10 +56,10 @@ const loadMore = () => {
 }
       </pre>
     </div>
-    
+
     <div class="mb-8">
       <h2 class="text-xl font-semibold mb-2">Componentes UI reutilizables</h2>
-      
+
       <h3 class="text-lg font-medium mb-2">1. BaseModal</h3>
       <pre class="bg-gray-100 p-4 rounded overflow-auto">
 &lt;BaseModal
@@ -76,7 +76,7 @@ const loadMore = () => {
   &lt;/template&gt;
 &lt;/BaseModal&gt;
       </pre>
-      
+
       <h3 class="text-lg font-medium mt-4 mb-2">2. BaseCard</h3>
       <pre class="bg-gray-100 p-4 rounded overflow-auto">
 &lt;BaseCard
@@ -97,7 +97,7 @@ const loadMore = () => {
   &lt;/template&gt;
 &lt;/BaseCard&gt;
       </pre>
-      
+
       <h3 class="text-lg font-medium mt-4 mb-2">3. BaseList</h3>
       <pre class="bg-gray-100 p-4 rounded overflow-auto">
 &lt;BaseList
@@ -123,20 +123,25 @@ const loadMore = () => {
 &lt;/BaseList&gt;
       </pre>
     </div>
-    
+
     <div class="mb-8">
       <h2 class="text-xl font-semibold mb-2">Mejores prácticas para UX/UI reactivo</h2>
       <ul class="list-disc pl-6 space-y-2">
-        <li>Utiliza <code>computed</code> y <code>watch</code> para responder a cambios en los datos</li>
+        <li>
+          Utiliza <code>computed</code> y <code>watch</code> para responder a cambios en los datos
+        </li>
         <li>Implementa modales con <code>Teleport</code> para evitar problemas de z-index</li>
         <li>Usa animaciones sutiles para mejorar la experiencia de usuario</li>
-        <li>Desuscríbete de los listener de Firestore al desmontar componentes usando <code>onUnmounted</code></li>
+        <li>
+          Desuscríbete de los listener de Firestore al desmontar componentes usando
+          <code>onUnmounted</code>
+        </li>
         <li>Maneja los estados de carga y error de forma consistente en toda la aplicación</li>
         <li>Utiliza <code>onMounted</code> para inicializar datos cuando el componente se monta</li>
         <li>Para consultas grandes, implementa paginación para mejorar el rendimiento</li>
       </ul>
     </div>
-    
+
     <div>
       <h2 class="text-xl font-semibold mb-2">Integración con Pinia</h2>
       <pre class="bg-gray-100 p-4 rounded overflow-auto">

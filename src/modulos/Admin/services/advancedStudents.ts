@@ -1,19 +1,19 @@
 // src/modulos/Admin/services/advancedStudents.ts
-import { db } from '@/firebase'
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  query, 
-  where, 
-  orderBy 
-} from 'firebase/firestore'
-import Papa from 'papaparse'
-import * as XLSX from 'xlsx'
-import { jsPDF } from 'jspdf'
-import type { Student } from '../../Students/types/student'
+import {db} from "@/firebase"
+import {
+  collection,
+  doc,
+  getDocs,
+  addDoc,
+  updateDoc,
+  query,
+  where,
+  orderBy,
+} from "firebase/firestore"
+import Papa from "papaparse"
+import * as XLSX from "xlsx"
+import {jsPDF} from "jspdf"
+import type {Student} from "../../Students/types/student"
 
 // Types
 export interface ImportResult {
@@ -59,7 +59,7 @@ export interface SatisfactionMetrics {
 }
 
 export interface ChurnPrediction {
-  riskLevel: 'low' | 'medium' | 'high'
+  riskLevel: "low" | "medium" | "high"
   probability: number
   factors: string[]
   recommendations: string[]
@@ -68,7 +68,7 @@ export interface ChurnPrediction {
 export interface Document {
   id: string
   studentId: string
-  type: 'contract' | 'certificate' | 'report' | 'other'
+  type: "contract" | "certificate" | "report" | "other"
   name: string
   url: string
   uploadedAt: Date
@@ -77,7 +77,7 @@ export interface Document {
 // Advanced Students Service
 export class AdvancedStudentsService {
   private static instance: AdvancedStudentsService
-  
+
   static getInstance(): AdvancedStudentsService {
     if (!this.instance) {
       this.instance = new AdvancedStudentsService()
@@ -93,7 +93,7 @@ export class AdvancedStudentsService {
         imported: 0,
         failed: 0,
         errors: [],
-        duplicates: 0
+        duplicates: 0,
       }
 
       return new Promise((resolve) => {
@@ -101,7 +101,7 @@ export class AdvancedStudentsService {
           header: true,
           complete: async (results) => {
             const data = results.data as any[]
-            
+
             for (const row of data) {
               try {
                 // Validar datos requeridos
@@ -122,7 +122,6 @@ export class AdvancedStudentsService {
                 const studentData = this.mapCSVToStudent(row)
                 await this.createStudentFromImport(studentData)
                 result.imported++
-
               } catch (error: any) {
                 result.errors.push(`Fila ${data.indexOf(row) + 1}: ${error.message}`)
                 result.failed++
@@ -135,7 +134,7 @@ export class AdvancedStudentsService {
           error: (error) => {
             result.errors.push(`Error al procesar CSV: ${error.message}`)
             resolve(result)
-          }
+          },
         })
       })
     } catch (error: any) {
@@ -150,11 +149,11 @@ export class AdvancedStudentsService {
         imported: 0,
         failed: 0,
         errors: [],
-        duplicates: 0
+        duplicates: 0,
       }
 
       const buffer = await file.arrayBuffer()
-      const workbook = XLSX.read(buffer, { type: 'buffer' })
+      const workbook = XLSX.read(buffer, {type: "buffer"})
       const sheetName = workbook.SheetNames[0]
       const worksheet = workbook.Sheets[sheetName]
       const data = XLSX.utils.sheet_to_json(worksheet)
@@ -179,7 +178,6 @@ export class AdvancedStudentsService {
           const studentData = this.mapExcelToStudent(row)
           await this.createStudentFromImport(studentData)
           result.imported++
-
         } catch (error: any) {
           result.errors.push(`Fila ${data.indexOf(row) + 1}: ${error.message}`)
           result.failed++
@@ -188,7 +186,6 @@ export class AdvancedStudentsService {
 
       result.success = result.imported > 0
       return result
-
     } catch (error: any) {
       throw new Error(`Error importando Excel: ${error.message}`)
     }
@@ -198,10 +195,10 @@ export class AdvancedStudentsService {
   async sendBulkEmailToStudents(studentIds: string[], message: EmailMessage): Promise<void> {
     try {
       // Simular envío de email (integrar con servicio real de email)
-      console.log('🚀 Enviando emails masivos:', {
+      console.log("🚀 Enviando emails masivos:", {
         recipients: studentIds.length,
         subject: message.subject,
-        hasAttachments: (message.attachments?.length || 0) > 0
+        hasAttachments: (message.attachments?.length || 0) > 0,
       })
 
       // Aquí integrarías con un servicio como SendGrid, Mailgun, etc.
@@ -210,8 +207,7 @@ export class AdvancedStudentsService {
       }
 
       // Registrar actividad
-      await this.logBulkActivity('bulk_email', studentIds, message.subject)
-
+      await this.logBulkActivity("bulk_email", studentIds, message.subject)
     } catch (error: any) {
       throw new Error(`Error enviando emails masivos: ${error.message}`)
     }
@@ -219,9 +215,9 @@ export class AdvancedStudentsService {
 
   async sendWhatsAppToParents(studentIds: string[], message: string): Promise<void> {
     try {
-      console.log('📱 Enviando WhatsApp a padres:', {
+      console.log("📱 Enviando WhatsApp a padres:", {
         recipients: studentIds.length,
-        messageLength: message.length
+        messageLength: message.length,
       })
 
       // Integrar con API de WhatsApp Business
@@ -230,8 +226,7 @@ export class AdvancedStudentsService {
       }
 
       // Registrar actividad
-      await this.logBulkActivity('bulk_whatsapp', studentIds, 'WhatsApp masivo')
-
+      await this.logBulkActivity("bulk_whatsapp", studentIds, "WhatsApp masivo")
     } catch (error: any) {
       throw new Error(`Error enviando WhatsApp: ${error.message}`)
     }
@@ -242,15 +237,15 @@ export class AdvancedStudentsService {
     try {
       const student = await this.getStudentById(studentId)
       if (!student) {
-        throw new Error('Estudiante no encontrado')
+        throw new Error("Estudiante no encontrado")
       }
 
       // Obtener progreso de clases
       const classProgress = await this.getStudentClassProgress(studentId)
-      
+
       // Calcular progreso general
       const overallProgress = this.calculateOverallProgress(classProgress)
-      
+
       // Generar recomendaciones
       const recommendations = this.generateRecommendations(classProgress)
 
@@ -260,9 +255,8 @@ export class AdvancedStudentsService {
         overallProgress,
         classProgress,
         recommendations,
-        generatedAt: new Date()
+        generatedAt: new Date(),
       }
-
     } catch (error: any) {
       throw new Error(`Error generando reporte de progreso: ${error.message}`)
     }
@@ -276,11 +270,11 @@ export class AdvancedStudentsService {
 
       // Crear PDF
       const pdf = new jsPDF()
-      
+
       // Header
       pdf.setFontSize(20)
-      pdf.text('Lista de Clase', 20, 30)
-      
+      pdf.text("Lista de Clase", 20, 30)
+
       pdf.setFontSize(14)
       pdf.text(`Clase: ${classInfo.name}`, 20, 50)
       pdf.text(`Maestro: ${classInfo.teacherName}`, 20, 65)
@@ -289,12 +283,12 @@ export class AdvancedStudentsService {
       // Lista de estudiantes
       pdf.setFontSize(12)
       let yPosition = 100
-      
+
       students.forEach((student, index) => {
         const text = `${index + 1}. ${student.nombre} ${student.apellido} - ${student.email}`
         pdf.text(text, 20, yPosition)
         yPosition += 15
-        
+
         // Nueva página si es necesario
         if (yPosition > 250) {
           pdf.addPage()
@@ -302,8 +296,7 @@ export class AdvancedStudentsService {
         }
       })
 
-      return new Blob([pdf.output('blob')], { type: 'application/pdf' })
-
+      return new Blob([pdf.output("blob")], {type: "application/pdf"})
     } catch (error: any) {
       throw new Error(`Error generando PDF de lista: ${error.message}`)
     }
@@ -315,38 +308,36 @@ export class AdvancedStudentsService {
       const attendanceStats = await this.getStudentAttendanceStats(studentId)
 
       const pdf = new jsPDF()
-      
+
       // Certificado de asistencia
       pdf.setFontSize(24)
-      pdf.text('CERTIFICADO DE ASISTENCIA', 20, 50)
-      
+      pdf.text("CERTIFICADO DE ASISTENCIA", 20, 50)
+
       pdf.setFontSize(16)
       pdf.text(`Se certifica que ${student.nombre} ${student.apellido}`, 20, 80)
       pdf.text(`ha mantenido una asistencia del ${attendanceStats.percentage}%`, 20, 100)
       pdf.text(`durante el período académico.`, 20, 120)
-      
+
       pdf.setFontSize(12)
       pdf.text(`Fecha de emisión: ${new Date().toLocaleDateString()}`, 20, 160)
 
-      return new Blob([pdf.output('blob')], { type: 'application/pdf' })
-
+      return new Blob([pdf.output("blob")], {type: "application/pdf"})
     } catch (error: any) {
       throw new Error(`Error generando certificado: ${error.message}`)
     }
   }
 
   // ANÁLISIS Y MÉTRICAS
-  async getStudentRetentionRate(period: { start: Date; end: Date }): Promise<number> {
+  async getStudentRetentionRate(period: {start: Date; end: Date}): Promise<number> {
     try {
       const startStudents = await this.getActiveStudentsAtDate(period.start)
       const endStudents = await this.getActiveStudentsAtDate(period.end)
-      
-      const retainedStudents = startStudents.filter(student => 
-        endStudents.some(endStudent => endStudent.id === student.id)
+
+      const retainedStudents = startStudents.filter((student) =>
+        endStudents.some((endStudent) => endStudent.id === student.id)
       )
 
       return startStudents.length > 0 ? (retainedStudents.length / startStudents.length) * 100 : 0
-
     } catch (error: any) {
       throw new Error(`Error calculando tasa de retención: ${error.message}`)
     }
@@ -362,8 +353,8 @@ export class AdvancedStudentsService {
           teaching: 4.5,
           facilities: 4.1,
           communication: 4.2,
-          value: 4.0
-        }
+          value: 4.0,
+        },
       }
     } catch (error: any) {
       throw new Error(`Error obteniendo métricas de satisfacción: ${error.message}`)
@@ -382,13 +373,13 @@ export class AdvancedStudentsService {
 
       // Factor: Asistencia baja
       if (attendanceHistory.averageAttendance < 70) {
-        factors.push('Asistencia baja (< 70%)')
+        factors.push("Asistencia baja (< 70%)")
         riskScore += 30
       }
 
       // Factor: Pagos atrasados
       if (paymentHistory.latePayments > 2) {
-        factors.push('Pagos frecuentemente atrasados')
+        factors.push("Pagos frecuentemente atrasados")
         riskScore += 25
       }
 
@@ -396,15 +387,15 @@ export class AdvancedStudentsService {
       const lastActivity = new Date(student.updatedAt || student.createdAt)
       const daysSinceActivity = (Date.now() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
       if (daysSinceActivity > 30) {
-        factors.push('Sin actividad en más de 30 días')
+        factors.push("Sin actividad en más de 30 días")
         riskScore += 20
       }
 
       // Determinar nivel de riesgo
-      let riskLevel: 'low' | 'medium' | 'high'
-      if (riskScore >= 50) riskLevel = 'high'
-      else if (riskScore >= 25) riskLevel = 'medium'
-      else riskLevel = 'low'
+      let riskLevel: "low" | "medium" | "high"
+      if (riskScore >= 50) riskLevel = "high"
+      else if (riskScore >= 25) riskLevel = "medium"
+      else riskLevel = "low"
 
       // Generar recomendaciones
       const recommendations = this.generateChurnRecommendations(factors, riskLevel)
@@ -413,9 +404,8 @@ export class AdvancedStudentsService {
         riskLevel,
         probability: Math.min(riskScore, 100),
         factors,
-        recommendations
+        recommendations,
       }
-
     } catch (error: any) {
       throw new Error(`Error prediciendo deserción: ${error.message}`)
     }
@@ -426,21 +416,20 @@ export class AdvancedStudentsService {
     try {
       // Simular subida de documento (integrar con Firebase Storage)
       const documentUrl = `https://storage.example.com/students/${studentId}/${document.name}`
-      
+
       const documentRecord: Document = {
         id: this.generateId(),
         studentId,
         type: this.detectDocumentType(document.name),
         name: document.name,
         url: documentUrl,
-        uploadedAt: new Date()
+        uploadedAt: new Date(),
       }
 
       // Guardar en Firestore
-      await addDoc(collection(db, 'student_documents'), documentRecord)
+      await addDoc(collection(db, "student_documents"), documentRecord)
 
       return documentRecord
-
     } catch (error: any) {
       throw new Error(`Error subiendo documento: ${error.message}`)
     }
@@ -449,14 +438,13 @@ export class AdvancedStudentsService {
   async getStudentDocuments(studentId: string): Promise<Document[]> {
     try {
       const q = query(
-        collection(db, 'student_documents'),
-        where('studentId', '==', studentId),
-        orderBy('uploadedAt', 'desc')
+        collection(db, "student_documents"),
+        where("studentId", "==", studentId),
+        orderBy("uploadedAt", "desc")
       )
-      
-      const snapshot = await getDocs(q)
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Document))
 
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}) as Document)
     } catch (error: any) {
       throw new Error(`Error obteniendo documentos: ${error.message}`)
     }
@@ -464,9 +452,9 @@ export class AdvancedStudentsService {
 
   // MÉTODOS AUXILIARES PRIVADOS
   private async findStudentByEmail(email: string): Promise<Student[]> {
-    const q = query(collection(db, 'ALUMNOS'), where('email', '==', email))
+    const q = query(collection(db, "ALUMNOS"), where("email", "==", email))
     const snapshot = await getDocs(q)
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student))
+    return snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}) as Student)
   }
 
   private mapCSVToStudent(row: any): Partial<Student> {
@@ -476,10 +464,10 @@ export class AdvancedStudentsService {
       email: row.email?.trim().toLowerCase(),
       telefono: row.telefono?.trim(),
       instrumento: row.instrumento?.trim(),
-      nivel: row.nivel?.trim() || 'Principiante',
+      nivel: row.nivel?.trim() || "Principiante",
       activo: true,
       fechaInscripcion: new Date(),
-      observaciones: row.observaciones?.trim() || ''
+      observaciones: row.observaciones?.trim() || "",
     }
   }
 
@@ -488,10 +476,10 @@ export class AdvancedStudentsService {
   }
 
   private async createStudentFromImport(studentData: Partial<Student>): Promise<void> {
-    await addDoc(collection(db, 'ALUMNOS'), {
+    await addDoc(collection(db, "ALUMNOS"), {
       ...studentData,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     })
   }
 
@@ -505,30 +493,34 @@ export class AdvancedStudentsService {
     console.log(`📱 WhatsApp enviado al padre del estudiante ${studentId}`)
   }
 
-  private async logBulkActivity(type: string, studentIds: string[], description: string): Promise<void> {
-    await addDoc(collection(db, 'activity_logs'), {
+  private async logBulkActivity(
+    type: string,
+    studentIds: string[],
+    description: string
+  ): Promise<void> {
+    await addDoc(collection(db, "activity_logs"), {
       type,
-      targetType: 'students',
+      targetType: "students",
       targetIds: studentIds,
       description,
-      performedBy: 'admin', // Obtener del contexto de usuario
-      timestamp: new Date()
+      performedBy: "admin", // Obtener del contexto de usuario
+      timestamp: new Date(),
     })
   }
 
   private async getStudentById(studentId: string): Promise<Student> {
     // Implementar obtención de estudiante por ID
-    throw new Error('Not implemented')
+    throw new Error("Not implemented")
   }
 
   private async getStudentsByClass(classId: string): Promise<Student[]> {
     // Implementar obtención de estudiantes por clase
-    throw new Error('Not implemented')
+    throw new Error("Not implemented")
   }
 
   private async getClassInfo(classId: string): Promise<any> {
     // Implementar obtención de información de clase
-    throw new Error('Not implemented')
+    throw new Error("Not implemented")
   }
 
   private async getStudentClassProgress(studentId: string): Promise<ClassProgress[]> {
@@ -544,15 +536,15 @@ export class AdvancedStudentsService {
 
   private generateRecommendations(classProgress: ClassProgress[]): string[] {
     const recommendations: string[] = []
-    
-    const lowPerformance = classProgress.filter(cp => cp.performance < 70)
+
+    const lowPerformance = classProgress.filter((cp) => cp.performance < 70)
     if (lowPerformance.length > 0) {
-      recommendations.push('Considerar refuerzo en clases con bajo rendimiento')
+      recommendations.push("Considerar refuerzo en clases con bajo rendimiento")
     }
 
-    const lowAttendance = classProgress.filter(cp => cp.attendance < 80)
+    const lowAttendance = classProgress.filter((cp) => cp.attendance < 80)
     if (lowAttendance.length > 0) {
-      recommendations.push('Mejorar asistencia regular a clases')
+      recommendations.push("Mejorar asistencia regular a clases")
     }
 
     return recommendations
@@ -563,46 +555,48 @@ export class AdvancedStudentsService {
     return []
   }
 
-  private async getStudentAttendanceStats(studentId: string): Promise<{ percentage: number }> {
+  private async getStudentAttendanceStats(studentId: string): Promise<{percentage: number}> {
     // Implementar obtención de estadísticas de asistencia
-    return { percentage: 85 }
+    return {percentage: 85}
   }
 
-  private async getStudentAttendanceHistory(studentId: string): Promise<{ averageAttendance: number }> {
+  private async getStudentAttendanceHistory(
+    studentId: string
+  ): Promise<{averageAttendance: number}> {
     // Implementar obtención de historial de asistencia
-    return { averageAttendance: 82 }
+    return {averageAttendance: 82}
   }
 
-  private async getStudentPaymentHistory(studentId: string): Promise<{ latePayments: number }> {
+  private async getStudentPaymentHistory(studentId: string): Promise<{latePayments: number}> {
     // Implementar obtención de historial de pagos
-    return { latePayments: 1 }
+    return {latePayments: 1}
   }
 
   private generateChurnRecommendations(factors: string[], riskLevel: string): string[] {
     const recommendations: string[] = []
-    
-    if (riskLevel === 'high') {
-      recommendations.push('Contactar inmediatamente al estudiante')
-      recommendations.push('Ofrecer sesión de recuperación personalizada')
+
+    if (riskLevel === "high") {
+      recommendations.push("Contactar inmediatamente al estudiante")
+      recommendations.push("Ofrecer sesión de recuperación personalizada")
     }
-    
-    if (factors.some(f => f.includes('Asistencia'))) {
-      recommendations.push('Implementar plan de seguimiento de asistencia')
+
+    if (factors.some((f) => f.includes("Asistencia"))) {
+      recommendations.push("Implementar plan de seguimiento de asistencia")
     }
-    
-    if (factors.some(f => f.includes('Pagos'))) {
-      recommendations.push('Revisar opciones de pago flexible')
+
+    if (factors.some((f) => f.includes("Pagos"))) {
+      recommendations.push("Revisar opciones de pago flexible")
     }
 
     return recommendations
   }
 
-  private detectDocumentType(filename: string): Document['type'] {
+  private detectDocumentType(filename: string): Document["type"] {
     const lower = filename.toLowerCase()
-    if (lower.includes('contract') || lower.includes('contrato')) return 'contract'
-    if (lower.includes('certificate') || lower.includes('certificado')) return 'certificate'
-    if (lower.includes('report') || lower.includes('reporte')) return 'report'
-    return 'other'
+    if (lower.includes("contract") || lower.includes("contrato")) return "contract"
+    if (lower.includes("certificate") || lower.includes("certificado")) return "certificate"
+    if (lower.includes("report") || lower.includes("reporte")) return "report"
+    return "other"
   }
 
   private generateId(): string {

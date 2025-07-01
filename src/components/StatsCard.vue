@@ -1,5 +1,8 @@
 <template>
-  <div class="relative overflow-hidden rounded-lg p-6" :class="bgColorClass || 'bg-white dark:bg-gray-800'">
+  <div
+    class="relative overflow-hidden rounded-lg p-6"
+    :class="bgColorClass || 'bg-white dark:bg-gray-800'"
+  >
     <dt>
       <div class="absolute rounded-md p-3" :class="iconColorClass || 'text-gray-500'">
         <component :is="icon" class="h-6 w-6" aria-hidden="true" />
@@ -14,7 +17,7 @@
 
 <script setup lang="ts">
 // Change the import to get the Component type correctly
-import type { FunctionalComponent, SVGAttributes } from 'vue'
+import type {FunctionalComponent, SVGAttributes} from "vue"
 
 defineProps<{
   icon: FunctionalComponent<SVGAttributes>

@@ -2,25 +2,40 @@
   <div class="bg-white rounded-lg shadow-md p-6">
     <div class="flex items-center justify-between mb-6">
       <h3 class="text-lg font-semibold text-gray-900 flex items-center">
-        <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        <svg
+          class="w-5 h-5 mr-2 text-gray-600"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+          />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+          />
         </svg>
         Configuración del Sistema
       </h3>
       <div class="flex space-x-2">
         <button
-          @click="resetToDefaults"
           class="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md transition-colors"
+          @click="resetToDefaults"
         >
           Restablecer
         </button>
         <button
-          @click="saveConfiguration"
           class="px-3 py-1 text-sm text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors"
           :disabled="saving"
+          @click="saveConfiguration"
         >
-          {{ saving ? 'Guardando...' : 'Guardar' }}
+          {{ saving ? "Guardando..." : "Guardar" }}
         </button>
       </div>
     </div>
@@ -31,11 +46,13 @@
         <button
           v-for="tab in tabs"
           :key="tab.id"
-          @click="activeTab = tab.id"
           class="py-2 px-1 border-b-2 font-medium text-sm transition-colors"
-          :class="activeTab === tab.id 
-            ? 'border-indigo-500 text-indigo-600' 
-            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+          :class="
+            activeTab === tab.id
+              ? 'border-indigo-500 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          "
+          @click="activeTab = tab.id"
         >
           {{ tab.name }}
         </button>
@@ -51,9 +68,9 @@
             v-model="config.general.academyName"
             type="text"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-          >
+          />
         </div>
-        
+
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Zona Horaria</label>
           <select
@@ -97,7 +114,7 @@
           v-model="config.general.maintenanceMode"
           type="checkbox"
           class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-        >
+        />
         <label for="maintenance-mode" class="ml-2 block text-sm text-gray-900">
           Modo de mantenimiento
         </label>
@@ -108,47 +125,55 @@
     <div v-if="activeTab === 'security'" class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Longitud mínima de contraseña</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2"
+            >Longitud mínima de contraseña</label
+          >
           <input
             v-model.number="config.security.minPasswordLength"
             type="number"
             min="6"
             max="20"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-          >
+          />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Tiempo de sesión (minutos)</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2"
+            >Tiempo de sesión (minutos)</label
+          >
           <input
             v-model.number="config.security.sessionTimeout"
             type="number"
             min="15"
             max="480"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-          >
+          />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Intentos de login máximos</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2"
+            >Intentos de login máximos</label
+          >
           <input
             v-model.number="config.security.maxLoginAttempts"
             type="number"
             min="3"
             max="10"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-          >
+          />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Bloqueo temporal (minutos)</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2"
+            >Bloqueo temporal (minutos)</label
+          >
           <input
             v-model.number="config.security.lockoutDuration"
             type="number"
             min="5"
             max="60"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-          >
+          />
         </div>
       </div>
 
@@ -159,7 +184,7 @@
             v-model="config.security.requireStrongPassword"
             type="checkbox"
             class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-          >
+          />
           <label for="require-strong-password" class="ml-2 block text-sm text-gray-900">
             Requerir contraseñas fuertes
           </label>
@@ -171,7 +196,7 @@
             v-model="config.security.enable2FA"
             type="checkbox"
             class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-          >
+          />
           <label for="enable-2fa" class="ml-2 block text-sm text-gray-900">
             Habilitar autenticación de dos factores
           </label>
@@ -183,7 +208,7 @@
             v-model="config.security.logSecurityEvents"
             type="checkbox"
             class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-          >
+          />
           <label for="log-security-events" class="ml-2 block text-sm text-gray-900">
             Registrar eventos de seguridad
           </label>
@@ -200,7 +225,7 @@
             v-model="config.notifications.adminEmail"
             type="email"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-          >
+          />
         </div>
 
         <div>
@@ -209,7 +234,7 @@
             v-model="config.notifications.smtpHost"
             type="text"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-          >
+          />
         </div>
 
         <div>
@@ -218,7 +243,7 @@
             v-model.number="config.notifications.smtpPort"
             type="number"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-          >
+          />
         </div>
 
         <div>
@@ -227,7 +252,7 @@
             v-model="config.notifications.smtpUser"
             type="text"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-          >
+          />
         </div>
       </div>
 
@@ -238,7 +263,7 @@
             v-model="config.notifications.enableEmail"
             type="checkbox"
             class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-          >
+          />
           <label for="email-notifications" class="ml-2 block text-sm text-gray-900">
             Habilitar notificaciones por email
           </label>
@@ -250,7 +275,7 @@
             v-model="config.notifications.enableSMS"
             type="checkbox"
             class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-          >
+          />
           <label for="sms-notifications" class="ml-2 block text-sm text-gray-900">
             Habilitar notificaciones por SMS
           </label>
@@ -262,7 +287,7 @@
             v-model="config.notifications.enablePush"
             type="checkbox"
             class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-          >
+          />
           <label for="push-notifications" class="ml-2 block text-sm text-gray-900">
             Habilitar notificaciones push
           </label>
@@ -291,7 +316,7 @@
             v-model="config.backup.time"
             type="time"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-          >
+          />
         </div>
 
         <div>
@@ -302,7 +327,7 @@
             min="7"
             max="365"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-          >
+          />
         </div>
 
         <div>
@@ -325,7 +350,7 @@
             v-model="config.backup.autoBackup"
             type="checkbox"
             class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-          >
+          />
           <label for="auto-backup" class="ml-2 block text-sm text-gray-900">
             Backup automático habilitado
           </label>
@@ -337,7 +362,7 @@
             v-model="config.backup.compress"
             type="checkbox"
             class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-          >
+          />
           <label for="compress-backup" class="ml-2 block text-sm text-gray-900">
             Comprimir archivos de backup
           </label>
@@ -349,7 +374,7 @@
             v-model="config.backup.encrypt"
             type="checkbox"
             class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-          >
+          />
           <label for="encrypt-backup" class="ml-2 block text-sm text-gray-900">
             Encriptar archivos de backup
           </label>
@@ -361,21 +386,21 @@
         <h4 class="font-medium text-gray-900 mb-3">Acciones de Backup</h4>
         <div class="flex space-x-3">
           <button
-            @click="createManualBackup"
             class="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
             :disabled="creatingBackup"
+            @click="createManualBackup"
           >
-            {{ creatingBackup ? 'Creando...' : 'Crear Backup Manual' }}
+            {{ creatingBackup ? "Creando..." : "Crear Backup Manual" }}
           </button>
           <button
-            @click="testBackupSystem"
             class="px-4 py-2 text-sm text-blue-600 hover:text-blue-800 border border-blue-300 rounded-md transition-colors"
+            @click="testBackupSystem"
           >
             Probar Sistema
           </button>
           <button
-            @click="restoreFromBackup"
             class="px-4 py-2 text-sm text-green-600 hover:text-green-800 border border-green-300 rounded-md transition-colors"
+            @click="restoreFromBackup"
           >
             Restaurar
           </button>
@@ -391,7 +416,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import {ref, computed, onMounted} from "vue"
 
 interface SystemConfig {
   general: {
@@ -437,27 +462,27 @@ const emit = defineEmits<{
 }>()
 
 // State
-const activeTab = ref('general')
+const activeTab = ref("general")
 const saving = ref(false)
 const creatingBackup = ref(false)
 const showSaveMessage = ref(false)
-const saveMessage = ref('')
-const saveMessageType = ref<'success' | 'error'>('success')
+const saveMessage = ref("")
+const saveMessageType = ref<"success" | "error">("success")
 
 const tabs = [
-  { id: 'general', name: 'General' },
-  { id: 'security', name: 'Seguridad' },
-  { id: 'notifications', name: 'Notificaciones' },
-  { id: 'backup', name: 'Backup' }
+  {id: "general", name: "General"},
+  {id: "security", name: "Seguridad"},
+  {id: "notifications", name: "Notificaciones"},
+  {id: "backup", name: "Backup"},
 ]
 
 const config = ref<SystemConfig>({
   general: {
-    academyName: 'Academia de Música',
-    timezone: 'America/Mexico_City',
-    defaultLanguage: 'es',
-    currency: 'MXN',
-    maintenanceMode: false
+    academyName: "Academia de Música",
+    timezone: "America/Mexico_City",
+    defaultLanguage: "es",
+    currency: "MXN",
+    maintenanceMode: false,
   },
   security: {
     minPasswordLength: 8,
@@ -466,33 +491,33 @@ const config = ref<SystemConfig>({
     lockoutDuration: 15,
     requireStrongPassword: true,
     enable2FA: false,
-    logSecurityEvents: true
+    logSecurityEvents: true,
   },
   notifications: {
-    adminEmail: 'admin@academia.com',
-    smtpHost: 'smtp.gmail.com',
+    adminEmail: "admin@academia.com",
+    smtpHost: "smtp.gmail.com",
     smtpPort: 587,
-    smtpUser: '',
+    smtpUser: "",
     enableEmail: true,
     enableSMS: false,
-    enablePush: true
+    enablePush: true,
   },
   backup: {
-    frequency: 'daily',
-    time: '02:00',
+    frequency: "daily",
+    time: "02:00",
     retentionDays: 30,
-    location: 'cloud',
+    location: "cloud",
     autoBackup: true,
     compress: true,
-    encrypt: true
-  }
+    encrypt: true,
+  },
 })
 
 // Computed
 const saveMessageClass = computed(() => {
-  return saveMessageType.value === 'success' 
-    ? 'bg-green-50 text-green-800' 
-    : 'bg-red-50 text-red-800'
+  return saveMessageType.value === "success"
+    ? "bg-green-50 text-green-800"
+    : "bg-red-50 text-red-800"
 })
 
 // Methods
@@ -500,21 +525,23 @@ const saveConfiguration = async () => {
   saving.value = true
   try {
     // Simular guardado de configuración
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    emit('configurationSaved', config.value)
-    showSuccessMessage('Configuración guardada exitosamente')
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    emit("configurationSaved", config.value)
+    showSuccessMessage("Configuración guardada exitosamente")
   } catch (error) {
-    showErrorMessage('Error al guardar la configuración')
+    showErrorMessage("Error al guardar la configuración")
   } finally {
     saving.value = false
   }
 }
 
 const resetToDefaults = () => {
-  if (confirm('¿Está seguro de que desea restablecer la configuración a los valores por defecto?')) {
+  if (
+    confirm("¿Está seguro de que desea restablecer la configuración a los valores por defecto?")
+  ) {
     loadDefaultConfig()
-    showSuccessMessage('Configuración restablecida a valores por defecto')
+    showSuccessMessage("Configuración restablecida a valores por defecto")
   }
 }
 
@@ -522,12 +549,12 @@ const createManualBackup = async () => {
   creatingBackup.value = true
   try {
     // Simular creación de backup
-    await new Promise(resolve => setTimeout(resolve, 3000))
-    
-    emit('backupCreated')
-    showSuccessMessage('Backup creado exitosamente')
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+
+    emit("backupCreated")
+    showSuccessMessage("Backup creado exitosamente")
   } catch (error) {
-    showErrorMessage('Error al crear el backup')
+    showErrorMessage("Error al crear el backup")
   } finally {
     creatingBackup.value = false
   }
@@ -535,19 +562,23 @@ const createManualBackup = async () => {
 
 const testBackupSystem = () => {
   // Simular prueba del sistema de backup
-  showSuccessMessage('Sistema de backup funcionando correctamente')
+  showSuccessMessage("Sistema de backup funcionando correctamente")
 }
 
 const restoreFromBackup = () => {
-  if (confirm('¿Está seguro de que desea restaurar desde un backup? Esta acción no se puede deshacer.')) {
-    emit('backupRestored')
-    showSuccessMessage('Restauración iniciada. El sistema se reiniciará.')
+  if (
+    confirm(
+      "¿Está seguro de que desea restaurar desde un backup? Esta acción no se puede deshacer."
+    )
+  ) {
+    emit("backupRestored")
+    showSuccessMessage("Restauración iniciada. El sistema se reiniciará.")
   }
 }
 
 const showSuccessMessage = (message: string) => {
   saveMessage.value = message
-  saveMessageType.value = 'success'
+  saveMessageType.value = "success"
   showSaveMessage.value = true
   setTimeout(() => {
     showSaveMessage.value = false
@@ -556,7 +587,7 @@ const showSuccessMessage = (message: string) => {
 
 const showErrorMessage = (message: string) => {
   saveMessage.value = message
-  saveMessageType.value = 'error'
+  saveMessageType.value = "error"
   showSaveMessage.value = true
   setTimeout(() => {
     showSaveMessage.value = false
@@ -566,11 +597,11 @@ const showErrorMessage = (message: string) => {
 const loadDefaultConfig = () => {
   config.value = {
     general: {
-      academyName: 'Academia de Música',
-      timezone: 'America/Mexico_City',
-      defaultLanguage: 'es',
-      currency: 'MXN',
-      maintenanceMode: false
+      academyName: "Academia de Música",
+      timezone: "America/Mexico_City",
+      defaultLanguage: "es",
+      currency: "MXN",
+      maintenanceMode: false,
     },
     security: {
       minPasswordLength: 8,
@@ -579,32 +610,32 @@ const loadDefaultConfig = () => {
       lockoutDuration: 15,
       requireStrongPassword: true,
       enable2FA: false,
-      logSecurityEvents: true
+      logSecurityEvents: true,
     },
     notifications: {
-      adminEmail: 'admin@academia.com',
-      smtpHost: 'smtp.gmail.com',
+      adminEmail: "admin@academia.com",
+      smtpHost: "smtp.gmail.com",
       smtpPort: 587,
-      smtpUser: '',
+      smtpUser: "",
       enableEmail: true,
       enableSMS: false,
-      enablePush: true
+      enablePush: true,
     },
     backup: {
-      frequency: 'daily',
-      time: '02:00',
+      frequency: "daily",
+      time: "02:00",
       retentionDays: 30,
-      location: 'cloud',
+      location: "cloud",
       autoBackup: true,
       compress: true,
-      encrypt: true
-    }
+      encrypt: true,
+    },
   }
 }
 
 const loadConfiguration = () => {
   // En una aplicación real, esto cargaría la configuración desde la API
-  console.log('Loading system configuration...')
+  console.log("Loading system configuration...")
 }
 
 // Lifecycle

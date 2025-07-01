@@ -1,8 +1,8 @@
 // src/composables/useRBACManagement.ts
 
-import { ref, computed } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { RBACPersistenceService, type NavigationItem } from '@/services/rbac/rbacPersistenceService'
+import {ref, computed} from "vue"
+import {useAuthStore} from "@/stores/auth"
+import {RBACPersistenceService, type NavigationItem} from "@/services/rbac/rbacPersistenceService"
 
 export interface Role {
   id: string
@@ -34,13 +34,13 @@ export function useRBACManagement() {
   const loadRoles = async () => {
     try {
       loading.value = true
-      console.log('🔄 Cargando roles desde Firestore...')
+      console.log("🔄 Cargando roles desde Firestore...")
       const savedRoles = await RBACPersistenceService.getRoles()
       roles.value = savedRoles
       console.log(`✅ ${savedRoles.length} roles cargados`)
     } catch (err) {
-      error.value = 'Error al cargar roles'
-      console.error('Error loading roles:', err)
+      error.value = "Error al cargar roles"
+      console.error("Error loading roles:", err)
     } finally {
       loading.value = false
     }
@@ -50,13 +50,13 @@ export function useRBACManagement() {
   const loadPermissions = async () => {
     try {
       loading.value = true
-      console.log('🔄 Cargando permisos desde Firestore...')
+      console.log("🔄 Cargando permisos desde Firestore...")
       const savedPermissions = await RBACPersistenceService.getPermissions()
       permissions.value = savedPermissions
       console.log(`✅ ${savedPermissions.length} permisos cargados`)
     } catch (err) {
-      error.value = 'Error al cargar permisos'
-      console.error('Error loading permissions:', err)
+      error.value = "Error al cargar permisos"
+      console.error("Error loading permissions:", err)
     } finally {
       loading.value = false
     }
@@ -66,13 +66,13 @@ export function useRBACManagement() {
   const loadNavigationConfig = async () => {
     try {
       loading.value = true
-      console.log('🔄 Cargando configuración de navegación desde Firestore...')
+      console.log("🔄 Cargando configuración de navegación desde Firestore...")
       const savedNavigation = await RBACPersistenceService.getNavigationConfig()
       navigationConfig.value = savedNavigation
       console.log(`✅ ${savedNavigation.length} elementos de navegación cargados`)
     } catch (err) {
-      error.value = 'Error al cargar configuración de navegación'
-      console.error('Error loading navigation config:', err)
+      error.value = "Error al cargar configuración de navegación"
+      console.error("Error loading navigation config:", err)
     } finally {
       loading.value = false
     }
@@ -82,20 +82,20 @@ export function useRBACManagement() {
   const forceInitializeRBAC = async () => {
     try {
       loading.value = true
-      console.log('🔄 Inicializando datos RBAC por defecto...')
-      
+      console.log("🔄 Inicializando datos RBAC por defecto...")
+
       // Usar el servicio de persistencia para inicializar
-      await RBACPersistenceService.initializeDefaultConfig('system-init')
-      
+      await RBACPersistenceService.initializeDefaultConfig("system-init")
+
       // Recargar todos los datos
       await loadPermissions()
       await loadRoles()
       await loadNavigationConfig()
-      
-      console.log('✅ Inicialización RBAC completada!')
+
+      console.log("✅ Inicialización RBAC completada!")
     } catch (err) {
-      error.value = 'Error al forzar inicialización RBAC'
-      console.error('Error forcing RBAC initialization:', err)
+      error.value = "Error al forzar inicialización RBAC"
+      console.error("Error forcing RBAC initialization:", err)
       throw err
     } finally {
       loading.value = false
@@ -103,15 +103,15 @@ export function useRBACManagement() {
   }
 
   // Función para guardar cambios en roles
-  const saveRoles = async (updatedBy: string = 'system') => {
+  const saveRoles = async (updatedBy: string = "system") => {
     try {
       loading.value = true
-      console.log('💾 Guardando roles en Firestore...')
+      console.log("💾 Guardando roles en Firestore...")
       await RBACPersistenceService.saveRoles(roles.value, updatedBy)
-      console.log('✅ Roles guardados correctamente')
+      console.log("✅ Roles guardados correctamente")
     } catch (err) {
-      error.value = 'Error al guardar roles'
-      console.error('Error saving roles:', err)
+      error.value = "Error al guardar roles"
+      console.error("Error saving roles:", err)
       throw err
     } finally {
       loading.value = false
@@ -119,15 +119,15 @@ export function useRBACManagement() {
   }
 
   // Función para guardar cambios en permisos
-  const savePermissions = async (updatedBy: string = 'system') => {
+  const savePermissions = async (updatedBy: string = "system") => {
     try {
       loading.value = true
-      console.log('💾 Guardando permisos en Firestore...')
+      console.log("💾 Guardando permisos en Firestore...")
       await RBACPersistenceService.savePermissions(permissions.value, updatedBy)
-      console.log('✅ Permisos guardados correctamente')
+      console.log("✅ Permisos guardados correctamente")
     } catch (err) {
-      error.value = 'Error al guardar permisos'
-      console.error('Error saving permissions:', err)
+      error.value = "Error al guardar permisos"
+      console.error("Error saving permissions:", err)
       throw err
     } finally {
       loading.value = false
@@ -135,15 +135,15 @@ export function useRBACManagement() {
   }
 
   // Función para guardar configuración de navegación
-  const saveNavigationConfig = async (updatedBy: string = 'system') => {
+  const saveNavigationConfig = async (updatedBy: string = "system") => {
     try {
       loading.value = true
-      console.log('💾 Guardando configuración de navegación en Firestore...')
+      console.log("💾 Guardando configuración de navegación en Firestore...")
       await RBACPersistenceService.saveNavigationConfig(navigationConfig.value, updatedBy)
-      console.log('✅ Configuración de navegación guardada correctamente')
+      console.log("✅ Configuración de navegación guardada correctamente")
     } catch (err) {
-      error.value = 'Error al guardar configuración de navegación'
-      console.error('Error saving navigation config:', err)
+      error.value = "Error al guardar configuración de navegación"
+      console.error("Error saving navigation config:", err)
       throw err
     } finally {
       loading.value = false
@@ -155,39 +155,41 @@ export function useRBACManagement() {
     try {
       loading.value = true
       console.log(`🔄 Actualizando permiso de estudiantes para maestro ${teacherId}...`)
-      
+
       const authStore = useAuthStore()
       const currentUser = authStore.user
-      
+
       if (!currentUser) {
-        throw new Error('No hay usuario autenticado')
+        throw new Error("No hay usuario autenticado")
       }
 
       // Encontrar el rol del maestro y actualizarlo
-      const teacherRole = roles.value.find(role => role.name === 'Maestro' || role.name === 'Maestro Avanzado')
-      
+      const teacherRole = roles.value.find(
+        (role) => role.name === "Maestro" || role.name === "Maestro Avanzado"
+      )
+
       if (teacherRole) {
         const updatedPermissions = [...teacherRole.permissions]
-        
+
         if (canViewAll) {
           // Agregar permiso para ver todos los estudiantes
-          if (!updatedPermissions.includes('Ver Todos los Estudiantes')) {
-            updatedPermissions.push('Ver Todos los Estudiantes')
+          if (!updatedPermissions.includes("Ver Todos los Estudiantes")) {
+            updatedPermissions.push("Ver Todos los Estudiantes")
           }
           // Remover permiso limitado si existe
-          const limitedIndex = updatedPermissions.indexOf('Ver Estudiantes de Clases Propias')
+          const limitedIndex = updatedPermissions.indexOf("Ver Estudiantes de Clases Propias")
           if (limitedIndex > -1) {
             updatedPermissions.splice(limitedIndex, 1)
           }
         } else {
           // Remover permiso de ver todos los estudiantes
-          const allStudentsIndex = updatedPermissions.indexOf('Ver Todos los Estudiantes')
+          const allStudentsIndex = updatedPermissions.indexOf("Ver Todos los Estudiantes")
           if (allStudentsIndex > -1) {
             updatedPermissions.splice(allStudentsIndex, 1)
           }
           // Agregar permiso limitado si no existe
-          if (!updatedPermissions.includes('Ver Estudiantes de Clases Propias')) {
-            updatedPermissions.push('Ver Estudiantes de Clases Propias')
+          if (!updatedPermissions.includes("Ver Estudiantes de Clases Propias")) {
+            updatedPermissions.push("Ver Estudiantes de Clases Propias")
           }
         }
 
@@ -195,71 +197,77 @@ export function useRBACManagement() {
         teacherRole.permissions = updatedPermissions
         await saveRoles(currentUser.uid)
       }
-      
-      console.log('✅ Permiso de estudiantes actualizado correctamente')
+
+      console.log("✅ Permiso de estudiantes actualizado correctamente")
     } catch (err) {
-      error.value = 'Error al actualizar permiso de estudiantes'
-      console.error('Error updating teacher student view permission:', err)
+      error.value = "Error al actualizar permiso de estudiantes"
+      console.error("Error updating teacher student view permission:", err)
       throw err
     } finally {
       loading.value = false
-    }  
+    }
   }
   // Verificar si un maestro puede ver todos los estudiantes
   const getTeacherStudentViewPermission = async (_teacherId: string): Promise<boolean> => {
     try {
       // Buscar en los roles si el maestro tiene el permiso
-      const teacherRole = roles.value.find(role => role.name === 'Maestro' || role.name === 'Maestro Avanzado')
+      const teacherRole = roles.value.find(
+        (role) => role.name === "Maestro" || role.name === "Maestro Avanzado"
+      )
       const permissions = teacherRole?.permissions || []
-      
+
       // Si tiene el permiso de ver todos los estudiantes, retornar true
-      return permissions.includes('Ver Todos los Estudiantes')
+      return permissions.includes("Ver Todos los Estudiantes")
     } catch (err) {
-      console.error('Error getting teacher permissions:', err)
+      console.error("Error getting teacher permissions:", err)
       return false
     }
   }
 
   // Verificar si un usuario tiene un permiso específico
   const hasPermission = (userRole: string, permissionName: string): boolean => {
-    const role = roles.value.find(r => r.name.toLowerCase() === userRole.toLowerCase())
+    const role = roles.value.find((r) => r.name.toLowerCase() === userRole.toLowerCase())
     return role ? role.permissions.includes(permissionName) : false
   }
 
   // Obtener configuración de navegación para un rol específico
   const getNavigationForRole = (userRole: string): NavigationItem[] => {
-    return navigationConfig.value.filter(item => 
-      item.isActive && item.roles.includes(userRole)
-    ).sort((a, b) => a.order - b.order)
+    return navigationConfig.value
+      .filter((item) => item.isActive && item.roles.includes(userRole))
+      .sort((a, b) => a.order - b.order)
   }
 
   // Verificar si un usuario puede acceder a una ruta específica
   const canAccessRoute = (userRole: string, routePath: string): boolean => {
     const allowedNavigation = getNavigationForRole(userRole)
-    return allowedNavigation.some(item => item.path === routePath)
+    return allowedNavigation.some((item) => item.path === routePath)
   }
 
   // Actualizar configuración de navegación para un rol
-  const updateNavigationForRole = async (roleName: string, updates: Partial<NavigationItem>[], updatedBy: string) => {
+  const updateNavigationForRole = async (
+    roleName: string,
+    updates: Partial<NavigationItem>[],
+    updatedBy: string
+  ) => {
     try {
       loading.value = true
       console.log(`🔄 Actualizando navegación para rol ${roleName}...`)
-      
+
       // Actualizar elementos de navegación
-      updates.forEach(update => {
-        const existingItem = navigationConfig.value.find(item => item.id === update.id)
+      updates.forEach((update) => {
+        const existingItem = navigationConfig.value.find((item) => item.id === update.id)
         if (existingItem) {
           Object.assign(existingItem, update)
         }
       })
-      
+
       // Guardar cambios
       await saveNavigationConfig(updatedBy)
-      
-      console.log('✅ Navegación actualizada correctamente')
+
+      console.log("✅ Navegación actualizada correctamente")
     } catch (err) {
-      error.value = 'Error al actualizar navegación'
-      console.error('Error updating navigation:', err)
+      error.value = "Error al actualizar navegación"
+      console.error("Error updating navigation:", err)
       throw err
     } finally {
       loading.value = false
@@ -269,7 +277,7 @@ export function useRBACManagement() {
   // Obtener permisos por módulo
   const getPermissionsByModule = computed(() => {
     const grouped: Record<string, Permission[]> = {}
-    permissions.value.forEach(permission => {
+    permissions.value.forEach((permission) => {
       if (!grouped[permission.module]) {
         grouped[permission.module] = []
       }
@@ -284,57 +292,57 @@ export function useRBACManagement() {
   // Función para inicializar el composable manualmente
   const initialize = async () => {
     try {
-      console.log('🔄 Inicializando RBAC Management...')
-      
+      console.log("🔄 Inicializando RBAC Management...")
+
       await loadRoles()
       await loadPermissions()
       await loadNavigationConfig()
-      
-      console.log('📊 Estado después de cargar:', {
+
+      console.log("📊 Estado después de cargar:", {
         roles: roles.value.length,
         permissions: permissions.value.length,
-        navigation: navigationConfig.value.length
+        navigation: navigationConfig.value.length,
       })
-      
+
       // Si no hay datos, inicializar automáticamente
       if (roles.value.length === 0 || permissions.value.length === 0) {
-        console.log('⚠️ No se encontraron datos, inicializando automáticamente...')
+        console.log("⚠️ No se encontraron datos, inicializando automáticamente...")
         await forceInitializeRBAC()
-        
+
         // Verificar que se crearon los datos
-        console.log('📊 Estado después de inicializar:', {
+        console.log("📊 Estado después de inicializar:", {
           roles: roles.value.length,
           permissions: permissions.value.length,
-          navigation: navigationConfig.value.length
+          navigation: navigationConfig.value.length,
         })
       } else {
-        console.log('✅ Datos RBAC cargados correctamente')
+        console.log("✅ Datos RBAC cargados correctamente")
       }
     } catch (error) {
-      console.error('❌ Error en initialize:', error)
-      error.value = 'Error al inicializar RBAC'
+      console.error("❌ Error en initialize:", error)
+      error.value = "Error al inicializar RBAC"
       throw error
     }
   }
 
   // Crear un nuevo rol
-  const createRole = async (roleData: Omit<Role, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const createRole = async (roleData: Omit<Role, "id" | "createdAt" | "updatedAt">) => {
     try {
       loading.value = true
       const newRole: Role = {
         id: `role-${Date.now()}`,
         ...roleData,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
-      
+
       roles.value.push(newRole)
-      await saveRoles('system')
-      
-      console.log('✅ Rol creado exitosamente')
+      await saveRoles("system")
+
+      console.log("✅ Rol creado exitosamente")
     } catch (err) {
-      error.value = 'Error al crear rol'
-      console.error('Error creating role:', err)
+      error.value = "Error al crear rol"
+      console.error("Error creating role:", err)
       throw err
     } finally {
       loading.value = false
@@ -345,23 +353,23 @@ export function useRBACManagement() {
   const updateRole = async (roleId: string, updates: Partial<Role>) => {
     try {
       loading.value = true
-      const roleIndex = roles.value.findIndex(r => r.id === roleId)
-      
+      const roleIndex = roles.value.findIndex((r) => r.id === roleId)
+
       if (roleIndex === -1) {
-        throw new Error('Rol no encontrado')
+        throw new Error("Rol no encontrado")
       }
-      
+
       roles.value[roleIndex] = {
         ...roles.value[roleIndex],
         ...updates,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
-      
-      await saveRoles('system')
-      console.log('✅ Rol actualizado exitosamente')
+
+      await saveRoles("system")
+      console.log("✅ Rol actualizado exitosamente")
     } catch (err) {
-      error.value = 'Error al actualizar rol'
-      console.error('Error updating role:', err)
+      error.value = "Error al actualizar rol"
+      console.error("Error updating role:", err)
       throw err
     } finally {
       loading.value = false
@@ -372,19 +380,19 @@ export function useRBACManagement() {
   const deleteRole = async (roleId: string) => {
     try {
       loading.value = true
-      const roleIndex = roles.value.findIndex(r => r.id === roleId)
-      
+      const roleIndex = roles.value.findIndex((r) => r.id === roleId)
+
       if (roleIndex === -1) {
-        throw new Error('Rol no encontrado')
+        throw new Error("Rol no encontrado")
       }
-      
+
       roles.value.splice(roleIndex, 1)
-      await saveRoles('system')
-      
-      console.log('✅ Rol eliminado exitosamente')  
+      await saveRoles("system")
+
+      console.log("✅ Rol eliminado exitosamente")
     } catch (err) {
-      error.value = 'Error al eliminar rol'
-      console.error('Error deleting role:', err)
+      error.value = "Error al eliminar rol"
+      console.error("Error deleting role:", err)
       throw err
     } finally {
       loading.value = false
@@ -392,37 +400,37 @@ export function useRBACManagement() {
   }
 
   // Crear un nuevo permiso
-  const createPermission = async (permissionData: Omit<Permission, 'id'>) => {
+  const createPermission = async (permissionData: Omit<Permission, "id">) => {
     try {
       loading.value = true
       const newPermission: Permission = {
         id: `permission-${Date.now()}`,
-        ...permissionData
+        ...permissionData,
       }
-      
+
       permissions.value.push(newPermission)
-      await savePermissions('system')
-      
-      console.log('✅ Permiso creado exitosamente')
+      await savePermissions("system")
+
+      console.log("✅ Permiso creado exitosamente")
     } catch (err) {
-      error.value = 'Error al crear permiso'
-      console.error('Error creating permission:', err)
+      error.value = "Error al crear permiso"
+      console.error("Error creating permission:", err)
       throw err
     } finally {
       loading.value = false
     }
-  }  // Función de diagnóstico para permisos
+  } // Función de diagnóstico para permisos
   const debugPermissions = () => {
-    console.log('=== DIAGNÓSTICO DE PERMISOS ===')
-    console.log('Total de permisos cargados:', permissions.value.length)
-    console.log('Permisos detallados:')
+    console.log("=== DIAGNÓSTICO DE PERMISOS ===")
+    console.log("Total de permisos cargados:", permissions.value.length)
+    console.log("Permisos detallados:")
     permissions.value.forEach((permission, index) => {
       console.log(`  ${index + 1}. ID: "${permission.id}" | Nombre: "${permission.name}"`)
     })
-    console.log('=== FIN DIAGNÓSTICO ===')
+    console.log("=== FIN DIAGNÓSTICO ===")
     return {
       totalPermissions: permissions.value.length,
-      permissions: permissions.value.map(p => ({ id: p.id, name: p.name }))
+      permissions: permissions.value.map((p) => ({id: p.id, name: p.name})),
     }
   }
 
@@ -430,40 +438,40 @@ export function useRBACManagement() {
   const updatePermission = async (permissionId: string, updates: Partial<Permission>) => {
     try {
       loading.value = true
-      
-      console.log('🔄 Actualizando permiso:', {
+
+      console.log("🔄 Actualizando permiso:", {
         permissionId,
         updates,
         totalPermissions: permissions.value.length,
-        permissionIds: permissions.value.map(p => ({ id: p.id, name: p.name }))
+        permissionIds: permissions.value.map((p) => ({id: p.id, name: p.name})),
       })
-      
+
       // Ejecutar diagnóstico antes de buscar
       debugPermissions()
-      
-      const permissionIndex = permissions.value.findIndex(p => p.id === permissionId)
-      
+
+      const permissionIndex = permissions.value.findIndex((p) => p.id === permissionId)
+
       if (permissionIndex === -1) {
-        console.error('❌ Permiso no encontrado:', {
+        console.error("❌ Permiso no encontrado:", {
           searchId: permissionId,
-          availableIds: permissions.value.map(p => p.id),
-          availablePermissions: permissions.value.map(p => ({ id: p.id, name: p.name }))
+          availableIds: permissions.value.map((p) => p.id),
+          availablePermissions: permissions.value.map((p) => ({id: p.id, name: p.name})),
         })
         throw new Error(`Permiso no encontrado. ID buscado: ${permissionId}`)
       }
-      
-      console.log('✅ Permiso encontrado en índice:', permissionIndex)
-      
+
+      console.log("✅ Permiso encontrado en índice:", permissionIndex)
+
       permissions.value[permissionIndex] = {
         ...permissions.value[permissionIndex],
-        ...updates
+        ...updates,
       }
-      
-      await savePermissions('system')
-      console.log('✅ Permiso actualizado exitosamente')
+
+      await savePermissions("system")
+      console.log("✅ Permiso actualizado exitosamente")
     } catch (err) {
-      error.value = 'Error al actualizar permiso'
-      console.error('Error updating permission:', err)
+      error.value = "Error al actualizar permiso"
+      console.error("Error updating permission:", err)
       throw err
     } finally {
       loading.value = false
@@ -474,31 +482,31 @@ export function useRBACManagement() {
   const deletePermission = async (permissionId: string) => {
     try {
       loading.value = true
-      const permissionIndex = permissions.value.findIndex(p => p.id === permissionId)
-      
+      const permissionIndex = permissions.value.findIndex((p) => p.id === permissionId)
+
       if (permissionIndex === -1) {
-        throw new Error('Permiso no encontrado')
+        throw new Error("Permiso no encontrado")
       }
-      
+
       // Remover el permiso de todos los roles que lo tengan
-      roles.value.forEach(role => {
+      roles.value.forEach((role) => {
         const permissionName = permissions.value[permissionIndex].name
         const index = role.permissions.indexOf(permissionName)
         if (index > -1) {
           role.permissions.splice(index, 1)
         }
       })
-      
+
       permissions.value.splice(permissionIndex, 1)
-      
+
       // Guardar tanto roles como permisos
-      await savePermissions('system')
-      await saveRoles('system')
-      
-      console.log('✅ Permiso eliminado exitosamente')
+      await savePermissions("system")
+      await saveRoles("system")
+
+      console.log("✅ Permiso eliminado exitosamente")
     } catch (err) {
-      error.value = 'Error al eliminar permiso'
-      console.error('Error deleting permission:', err)
+      error.value = "Error al eliminar permiso"
+      console.error("Error deleting permission:", err)
       throw err
     } finally {
       loading.value = false
@@ -532,6 +540,6 @@ export function useRBACManagement() {
     createPermission,
     updatePermission,
     deletePermission,
-    debugPermissions
+    debugPermissions,
   }
 }

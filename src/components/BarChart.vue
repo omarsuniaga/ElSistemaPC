@@ -5,13 +5,13 @@
 </template>
 
 <script setup lang="ts">
-import { Bar } from 'vue-chartjs'
-import '../../../utils/chartConfig'
-import type { ChartData, ChartOptions } from 'chart.js'
+import {Bar} from "vue-chartjs"
+import "../../../utils/chartConfig"
+import type {ChartData, ChartOptions} from "chart.js"
 
 defineProps<{
-  chartData: ChartData<'bar'>,
-  options?: ChartOptions<'bar'>
+  chartData: ChartData<"bar">
+  options?: ChartOptions<"bar">
 }>()
 </script>
 

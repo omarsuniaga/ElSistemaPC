@@ -1,12 +1,11 @@
-
 <script lang="ts">
-import { defineComponent } from 'vue'
-import { useAlertsStore } from '../../../stores/alerts'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import {defineComponent} from "vue"
+import {useAlertsStore} from "../../../stores/alerts"
+import {format} from "date-fns"
+import {es} from "date-fns/locale"
 
 export default defineComponent({
-  name: 'AttendanceAlerts',
+  name: "AttendanceAlerts",
 
   setup() {
     const alertsStore = useAlertsStore()
@@ -18,62 +17,60 @@ export default defineComponent({
       fetchRules: alertsStore.fetchRules,
       updateAlertStatus: alertsStore.updateAlertStatus,
       getActiveAlerts: alertsStore.getActiveAlerts,
-      getHighPriorityAlerts: alertsStore.getHighPriorityAlerts
-    }
-  },
-
-  methods: {
-    getAlertTypeLabel(type: string): string {
-      const labels = {
-        ConsecutiveAbsences: 'Ausencias Consecutivas',
-        LowAttendance: 'Baja Asistencia',
-        LatePattern: 'Patrón de Retrasos'
-      }
-      return labels[type as keyof typeof labels] || type
-    },
-
-    getAlertClass(priority: string): string {
-      const classes = {
-        High: 'alert-danger',
-        Medium: 'alert-warning',
-        Low: 'alert-info'
-      }
-      return classes[priority as keyof typeof classes] || 'alert-secondary'
-    },
-
-    formatDate(date: string): string {
-      return format(new Date(date), 'PPP', { locale: es })
-    },
-
-    async dismissAlert(alertId: string) {
-      try {
-        await this.updateAlertStatus(alertId, 'Dismissed')
-      } catch (error) {
-        console.error('Error al descartar la alerta:', error)
-      }
-    },
-
-    async markAsSent(alertId: string) {
-      try {
-        await this.updateAlertStatus(alertId, 'Sent')
-      } catch (error) {
-        console.error('Error al marcar la alerta como enviada:', error)
-      }
+      getHighPriorityAlerts: alertsStore.getHighPriorityAlerts,
     }
   },
 
   async created() {
     await this.fetchAlerts()
     await this.fetchRules()
-  }
+  },
+
+  methods: {
+    getAlertTypeLabel(type: string): string {
+      const labels = {
+        ConsecutiveAbsences: "Ausencias Consecutivas",
+        LowAttendance: "Baja Asistencia",
+        LatePattern: "Patrón de Retrasos",
+      }
+      return labels[type as keyof typeof labels] || type
+    },
+
+    getAlertClass(priority: string): string {
+      const classes = {
+        High: "alert-danger",
+        Medium: "alert-warning",
+        Low: "alert-info",
+      }
+      return classes[priority as keyof typeof classes] || "alert-secondary"
+    },
+
+    formatDate(date: string): string {
+      return format(new Date(date), "PPP", {locale: es})
+    },
+
+    async dismissAlert(alertId: string) {
+      try {
+        await this.updateAlertStatus(alertId, "Dismissed")
+      } catch (error) {
+        console.error("Error al descartar la alerta:", error)
+      }
+    },
+
+    async markAsSent(alertId: string) {
+      try {
+        await this.updateAlertStatus(alertId, "Sent")
+      } catch (error) {
+        console.error("Error al marcar la alerta como enviada:", error)
+      }
+    },
+  },
 })
 </script>
 
 <template>
   <div class="attendance-alerts">
-    <div v-if="isLoading" class="loading">
-      Cargando alertas...
-    </div>
+    <div v-if="isLoading" class="loading">Cargando alertas...</div>
     <div v-else-if="error" class="error">
       {{ error }}
     </div>
@@ -93,7 +90,14 @@ export default defineComponent({
                 <p>Ausencias consecutivas: {{ alert.details.absences }}</p>
               </div>
               <div v-else-if="alert.type === 'LowAttendance'">
-                <p>Tasa de asistencia: {{ alert.details && alert.details.attendanceRate != null ? (alert.details.attendanceRate * 100).toFixed(1) + '%' : 'N/A' }}</p>
+                <p>
+                  Tasa de asistencia:
+                  {{
+                    alert.details && alert.details.attendanceRate != null
+                      ? (alert.details.attendanceRate * 100).toFixed(1) + "%"
+                      : "N/A"
+                  }}
+                </p>
               </div>
               <div v-else-if="alert.type === 'LatePattern'">
                 <p>Días con retraso: {{ alert.details.lateDays?.length }}</p>
@@ -101,10 +105,10 @@ export default defineComponent({
             </div>
           </div>
           <div class="alert-actions">
-            <button @click="dismissAlert(alert.id)" class="btn btn-outline-danger">
+            <button class="btn btn-outline-danger" @click="dismissAlert(alert.id)">
               Descartar
             </button>
-            <button @click="markAsSent(alert.id)" class="btn btn-primary">
+            <button class="btn btn-primary" @click="markAsSent(alert.id)">
               Marcar como enviada
             </button>
           </div>
@@ -117,8 +121,12 @@ export default defineComponent({
         <div v-if="getActiveAlerts.length === 0" class="no-alerts">
           No hay alertas activas en este momento.
         </div>
-        <div v-else v-for="alert in getActiveAlerts" :key="alert.id" 
-             :class="['alert', getAlertClass(alert.priority)]">
+        <div
+          v-for="alert in getActiveAlerts"
+          v-else
+          :key="alert.id"
+          :class="['alert', getAlertClass(alert.priority)]"
+        >
           <div class="alert-header">
             <span class="alert-type">{{ getAlertTypeLabel(alert.type) }}</span>
             <span class="alert-priority">{{ alert.priority }}</span>
@@ -128,7 +136,7 @@ export default defineComponent({
             <p>{{ alert.message }}</p>
           </div>
           <div class="alert-actions">
-            <button @click="dismissAlert(alert.id)" class="btn btn-sm btn-outline-secondary">
+            <button class="btn btn-sm btn-outline-secondary" @click="dismissAlert(alert.id)">
               Descartar
             </button>
           </div>
@@ -209,7 +217,9 @@ export default defineComponent({
   color: #6c757d;
 }
 
-.loading, .error, .no-alerts {
+.loading,
+.error,
+.no-alerts {
   text-align: center;
   padding: 2rem;
   color: #666;

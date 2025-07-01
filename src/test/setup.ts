@@ -1,39 +1,64 @@
-/**
- * Test setup configuration
- * Global test utilities and mocks
- */
+import { vi, beforeEach } from "vitest";
+import { config } from "@vue/test-utils";
+import { createPinia, setActivePinia } from 'pinia';
 
-import { vi, beforeEach } from 'vitest'
-import { config } from '@vue/test-utils'
+// --- Firebase Mocking ---
+// This mock is now more complete to satisfy the imports in the app's source code.
+vi.mock('firebase/firestore', async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        getFirestore: vi.fn(),
+        initializeFirestore: vi.fn(),
+        persistentLocalCache: vi.fn(),
+        persistentMultipleTabManager: vi.fn(),
+    };
+});
 
-// Mock Firebase
-vi.mock('@/firebase', () => ({
-  auth: {
-    currentUser: null,
-    onAuthStateChanged: vi.fn(),
-    signInWithEmailAndPassword: vi.fn(),
-    signOut: vi.fn()
-  },
-  db: {
-    collection: vi.fn(),
-    doc: vi.fn(),
-    getDocs: vi.fn(),
-    getDoc: vi.fn(),
-    addDoc: vi.fn(),
-    updateDoc: vi.fn(),
-    deleteDoc: vi.fn()
-  }
-}))
+vi.mock('@/firebase/config', () => ({
+  auth: { currentUser: null },
+  db: {},
+  storage: {},
+}));
+
+// --- Pinia Setup ---
+beforeEach(() => {
+  const pinia = createPinia();
+  setActivePinia(pinia);
+});
+
+// --- Vue Router Mock ---
+vi.mock("vue-router", () => ({
+  createRouter: vi.fn(() => ({ beforeEach: vi.fn() })),
+  createWebHistory: vi.fn(),
+  useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn() })),
+  useRoute: vi.fn(() => ({ params: {}, query: {} })),
+}));
+
+// --- Global Mocks & Cleanup ---
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+config.global.mocks = {
+  $t: (key) => key, // Mock i18n
+};
 
 // Mock Pinia
-vi.mock('pinia', () => ({
+vi.mock("pinia", () => ({
   defineStore: vi.fn(() => vi.fn()),
   createPinia: vi.fn(),
-  setActivePinia: vi.fn()
+  setActivePinia: vi.fn(),
 }))
 
 // Mock Vue Router
-vi.mock('vue-router', () => ({
+vi.mock("vue-router", () => ({
   createRouter: vi.fn(),
   createWebHistory: vi.fn(),
   useRouter: vi.fn(() => ({
@@ -41,27 +66,27 @@ vi.mock('vue-router', () => ({
     replace: vi.fn(),
     go: vi.fn(),
     back: vi.fn(),
-    forward: vi.fn()
+    forward: vi.fn(),
   })),
   useRoute: vi.fn(() => ({
     params: {},
     query: {},
-    path: '/',
-    name: 'home'
-  }))
+    path: "/",
+    name: "home",
+  })),
 }))
 
 // Global test utilities
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
-  disconnect: vi.fn()
+  disconnect: vi.fn(),
 }))
 
 // Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -69,8 +94,8 @@ Object.defineProperty(window, 'matchMedia', {
     removeListener: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn()
-  }))
+    dispatchEvent: vi.fn(),
+  })),
 })
 
 // Mock localStorage
@@ -78,18 +103,18 @@ const localStorageMock = {
   getItem: vi.fn(),
   setItem: vi.fn(),
   removeItem: vi.fn(),
-  clear: vi.fn()
+  clear: vi.fn(),
 }
-vi.stubGlobal('localStorage', localStorageMock)
+vi.stubGlobal("localStorage", localStorageMock)
 
 // Mock sessionStorage
 const sessionStorageMock = {
   getItem: vi.fn(),
   setItem: vi.fn(),
   removeItem: vi.fn(),
-  clear: vi.fn()
+  clear: vi.fn(),
 }
-vi.stubGlobal('sessionStorage', sessionStorageMock)
+vi.stubGlobal("sessionStorage", sessionStorageMock)
 
 // Reset mocks before each test
 beforeEach(() => {
@@ -112,12 +137,12 @@ config.global.mocks = {
     replace: vi.fn(),
     go: vi.fn(),
     back: vi.fn(),
-    forward: vi.fn()
+    forward: vi.fn(),
   },
   $route: {
     params: {},
     query: {},
-    path: '/',
-    name: 'home'
-  }
+    path: "/",
+    name: "home",
+  },
 }

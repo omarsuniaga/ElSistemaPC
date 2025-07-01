@@ -1,5 +1,5 @@
 <template>
-  <div 
+  <div
     class="bg-gradient-to-r p-6 rounded-xl shadow-lg cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
     :class="[`${gradient}`, 'text-white']"
     @click="$emit('click')"
@@ -22,9 +22,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { ChevronRightIcon } from '@heroicons/vue/24/outline'
-import * as HeroIcons from '@heroicons/vue/24/outline'
+import {computed} from "vue"
+import {ChevronRightIcon} from "@heroicons/vue/24/outline"
+import * as HeroIcons from "@heroicons/vue/24/outline"
 
 interface Props {
   title: string

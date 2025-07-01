@@ -1,22 +1,35 @@
 <template>
-  <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div
+    class="fixed inset-0 z-50 overflow-y-auto"
+    aria-labelledby="modal-title"
+    role="dialog"
+    aria-modal="true"
+  >
     <!-- Background overlay -->
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div
+      class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+    >
       <div
         class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
         aria-hidden="true"
         @click="handleCancel"
-      ></div>
+      />
 
       <!-- Modal positioning -->
-      <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+      <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true"
+        >&#8203;</span
+      >
 
       <!-- Modal content -->
-      <div class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full sm:p-6">
+      <div
+        class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full sm:p-6"
+      >
         <!-- Header -->
-        <div class="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-600">
+        <div
+          class="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-600"
+        >
           <div>
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white" id="modal-title">
+            <h3 id="modal-title" class="text-lg font-medium text-gray-900 dark:text-white">
               Crear Nuevo Estudiante
             </h3>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -24,15 +37,15 @@
             </p>
           </div>
           <button
-            @click="handleCancel"
             class="rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            @click="handleCancel"
           >
             <XMarkIcon class="h-6 w-6" />
           </button>
         </div>
 
         <!-- Form -->
-        <form @submit.prevent="handleSubmit" class="mt-6">
+        <form class="mt-6" @submit.prevent="handleSubmit">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Personal Information Section -->
             <div class="col-span-2">
@@ -54,7 +67,9 @@
                 class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
                 placeholder="Nombre completo del estudiante"
               />
-              <p v-if="errors.name" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errors.name }}</p>
+              <p v-if="errors.name" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                {{ errors.name }}
+              </p>
             </div>
 
             <!-- Email -->
@@ -70,7 +85,9 @@
                 class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
                 placeholder="correo@ejemplo.com"
               />
-              <p v-if="errors.email" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errors.email }}</p>
+              <p v-if="errors.email" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                {{ errors.email }}
+              </p>
             </div>
 
             <!-- Phone -->
@@ -86,12 +103,17 @@
                 class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
                 placeholder="(123) 456-7890"
               />
-              <p v-if="errors.phone" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errors.phone }}</p>
+              <p v-if="errors.phone" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                {{ errors.phone }}
+              </p>
             </div>
 
             <!-- Birth Date -->
             <div>
-              <label for="birthDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                for="birthDate"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Fecha de Nacimiento *
               </label>
               <input
@@ -101,12 +123,17 @@
                 required
                 class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
               />
-              <p v-if="errors.birthDate" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errors.birthDate }}</p>
+              <p v-if="errors.birthDate" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                {{ errors.birthDate }}
+              </p>
             </div>
 
             <!-- Address -->
             <div class="col-span-2">
-              <label for="address" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                for="address"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Dirección
               </label>
               <textarea
@@ -127,7 +154,10 @@
 
             <!-- Parent Name -->
             <div>
-              <label for="parentName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                for="parentName"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Nombre del Padre/Tutor *
               </label>
               <input
@@ -138,12 +168,17 @@
                 class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
                 placeholder="Nombre completo del padre o tutor"
               />
-              <p v-if="errors.parentName" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errors.parentName }}</p>
+              <p v-if="errors.parentName" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                {{ errors.parentName }}
+              </p>
             </div>
 
             <!-- Parent Phone -->
             <div>
-              <label for="parentPhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                for="parentPhone"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Teléfono del Padre/Tutor *
               </label>
               <input
@@ -154,12 +189,17 @@
                 class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
                 placeholder="(123) 456-7890"
               />
-              <p v-if="errors.parentPhone" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errors.parentPhone }}</p>
+              <p v-if="errors.parentPhone" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                {{ errors.parentPhone }}
+              </p>
             </div>
 
             <!-- Parent Email -->
             <div class="col-span-2">
-              <label for="parentEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                for="parentEmail"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Correo del Padre/Tutor
               </label>
               <input
@@ -169,7 +209,9 @@
                 class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
                 placeholder="correo@ejemplo.com"
               />
-              <p v-if="errors.parentEmail" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errors.parentEmail }}</p>
+              <p v-if="errors.parentEmail" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                {{ errors.parentEmail }}
+              </p>
             </div>
 
             <!-- Academic Information -->
@@ -191,9 +233,9 @@
                   class="flex items-center space-x-2 p-3 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                 >
                   <input
+                    v-model="form.instruments"
                     type="checkbox"
                     :value="instrument.value"
-                    v-model="form.instruments"
                     class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <span class="text-sm text-gray-900 dark:text-white">
@@ -201,7 +243,9 @@
                   </span>
                 </label>
               </div>
-              <p v-if="errors.instruments" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errors.instruments }}</p>
+              <p v-if="errors.instruments" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                {{ errors.instruments }}
+              </p>
             </div>
 
             <!-- Grade Level -->
@@ -220,12 +264,17 @@
                 <option value="intermediate">Intermedio</option>
                 <option value="advanced">Avanzado</option>
               </select>
-              <p v-if="errors.grade" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errors.grade }}</p>
+              <p v-if="errors.grade" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                {{ errors.grade }}
+              </p>
             </div>
 
             <!-- Status -->
             <div>
-              <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                for="status"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Estado Inicial
               </label>
               <select
@@ -255,11 +304,13 @@
           </div>
 
           <!-- Actions -->
-          <div class="mt-8 flex items-center justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-600">
+          <div
+            class="mt-8 flex items-center justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-600"
+          >
             <button
               type="button"
-              @click="handleCancel"
               class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              @click="handleCancel"
             >
               Cancelar
             </button>
@@ -269,9 +320,24 @@
               class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span v-if="isSubmitting" class="flex items-center">
-                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  />
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
                 </svg>
                 Creando...
               </span>
@@ -287,13 +353,13 @@
 <script setup lang="ts">
 // Define component name
 defineOptions({
-  name: 'StudentCreateModal'
+  name: "StudentCreateModal",
 })
 
-import { ref, reactive } from 'vue'
-import { XMarkIcon } from '@heroicons/vue/24/outline'
-import { useAdminStudentsStore } from '../store/adminStudents'
-import type { Student } from '../store/adminStudents'
+import {ref, reactive} from "vue"
+import {XMarkIcon} from "@heroicons/vue/24/outline"
+import {useAdminStudentsStore} from "../store/adminStudents"
+import type {Student} from "../store/adminStudents"
 
 // Emits
 interface Emits {
@@ -311,102 +377,102 @@ const isSubmitting = ref(false)
 
 // Form data
 const form = reactive({
-  name: '',
-  email: '',
-  phone: '',
-  birthDate: '',
-  address: '',
-  parentName: '',
-  parentPhone: '',
-  parentEmail: '',
+  name: "",
+  email: "",
+  phone: "",
+  birthDate: "",
+  address: "",
+  parentName: "",
+  parentPhone: "",
+  parentEmail: "",
   instruments: [] as string[],
-  grade: '' as 'beginner' | 'intermediate' | 'advanced' | '',
-  status: 'pending' as 'active' | 'inactive' | 'pending',
-  notes: ''
+  grade: "" as "beginner" | "intermediate" | "advanced" | "",
+  status: "pending" as "active" | "inactive" | "pending",
+  notes: "",
 })
 
 // Form errors
 const errors = reactive({
-  name: '',
-  email: '',
-  phone: '',
-  birthDate: '',
-  parentName: '',
-  parentPhone: '',
-  parentEmail: '',
-  instruments: '',
-  grade: ''
+  name: "",
+  email: "",
+  phone: "",
+  birthDate: "",
+  parentName: "",
+  parentPhone: "",
+  parentEmail: "",
+  instruments: "",
+  grade: "",
 })
 
 // Available instruments
 const availableInstruments = [
-  { value: 'piano', label: 'Piano' },
-  { value: 'guitar', label: 'Guitarra' },
-  { value: 'violin', label: 'Violín' },
-  { value: 'drums', label: 'Batería' },
-  { value: 'voice', label: 'Canto' },
-  { value: 'bass', label: 'Bajo' },
-  { value: 'flute', label: 'Flauta' },
-  { value: 'saxophone', label: 'Saxofón' },
-  { value: 'trumpet', label: 'Trompeta' },
-  { value: 'cello', label: 'Violonchelo' }
+  {value: "piano", label: "Piano"},
+  {value: "guitar", label: "Guitarra"},
+  {value: "violin", label: "Violín"},
+  {value: "drums", label: "Batería"},
+  {value: "voice", label: "Canto"},
+  {value: "bass", label: "Bajo"},
+  {value: "flute", label: "Flauta"},
+  {value: "saxophone", label: "Saxofón"},
+  {value: "trumpet", label: "Trompeta"},
+  {value: "cello", label: "Violonchelo"},
 ]
 
 // Methods
 const validateForm = (): boolean => {
   // Clear previous errors
-  Object.keys(errors).forEach(key => {
-    errors[key as keyof typeof errors] = ''
+  Object.keys(errors).forEach((key) => {
+    errors[key as keyof typeof errors] = ""
   })
 
   let isValid = true
 
   // Required fields validation
   if (!form.name.trim()) {
-    errors.name = 'El nombre es requerido'
+    errors.name = "El nombre es requerido"
     isValid = false
   }
 
   if (!form.email.trim()) {
-    errors.email = 'El correo electrónico es requerido'
+    errors.email = "El correo electrónico es requerido"
     isValid = false
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    errors.email = 'El correo electrónico no es válido'
+    errors.email = "El correo electrónico no es válido"
     isValid = false
   }
 
   if (!form.phone.trim()) {
-    errors.phone = 'El teléfono es requerido'
+    errors.phone = "El teléfono es requerido"
     isValid = false
   }
 
   if (!form.birthDate) {
-    errors.birthDate = 'La fecha de nacimiento es requerida'
+    errors.birthDate = "La fecha de nacimiento es requerida"
     isValid = false
   }
 
   if (!form.parentName.trim()) {
-    errors.parentName = 'El nombre del padre/tutor es requerido'
+    errors.parentName = "El nombre del padre/tutor es requerido"
     isValid = false
   }
 
   if (!form.parentPhone.trim()) {
-    errors.parentPhone = 'El teléfono del padre/tutor es requerido'
+    errors.parentPhone = "El teléfono del padre/tutor es requerido"
     isValid = false
   }
 
   if (form.parentEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.parentEmail)) {
-    errors.parentEmail = 'El correo electrónico del padre/tutor no es válido'
+    errors.parentEmail = "El correo electrónico del padre/tutor no es válido"
     isValid = false
   }
 
   if (form.instruments.length === 0) {
-    errors.instruments = 'Debe seleccionar al menos un instrumento'
+    errors.instruments = "Debe seleccionar al menos un instrumento"
     isValid = false
   }
 
   if (!form.grade) {
-    errors.grade = 'El nivel es requerido'
+    errors.grade = "El nivel es requerido"
     isValid = false
   }
 
@@ -426,14 +492,13 @@ const handleSubmit = async () => {
       birthDate: new Date(form.birthDate),
       enrollmentDate: new Date(),
       classes: [],
-      createdBy: 'current_user_id' // Replace with actual user ID
+      createdBy: "current_user_id", // Replace with actual user ID
     }
 
     const newStudent = await studentsStore.createStudent(studentData)
-    emit('created', newStudent)
-    
+    emit("created", newStudent)
   } catch (error) {
-    console.error('Error creating student:', error)
+    console.error("Error creating student:", error)
     // Handle error (show notification, etc.)
   } finally {
     isSubmitting.value = false
@@ -441,7 +506,7 @@ const handleSubmit = async () => {
 }
 
 const handleCancel = () => {
-  emit('close')
+  emit("close")
 }
 </script>
 
@@ -450,7 +515,9 @@ const handleCancel = () => {
 input:focus,
 select:focus,
 textarea:focus {
-  box-shadow: 0 0 0 2px rgb(59 130 246), 0 0 0 4px rgb(59 130 246 / 0.1);
+  box-shadow:
+    0 0 0 2px rgb(59 130 246),
+    0 0 0 4px rgb(59 130 246 / 0.1);
   outline: none;
 }
 
@@ -471,7 +538,11 @@ input[type="checkbox"]:checked {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>

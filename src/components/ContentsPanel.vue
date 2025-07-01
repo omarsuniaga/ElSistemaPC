@@ -1,23 +1,22 @@
 <template>
-  <aside 
+  <aside
     :class="[
       'transition-transform duration-300 ease-in-out z-20 fixed lg:relative',
       'lg:w-1/4 p-4 border-l border-gray-200 dark:border-gray-700',
       'bg-white dark:bg-gray-800 shadow-lg lg:shadow-none',
       'top-0 bottom-0',
       expanded ? 'translate-x-0' : 'translate-x-full lg:w-0 lg:p-0',
-      isMobile ? 'w-[65%] left-1/2 -translate-x-1/2' : ''
+      isMobile ? 'w-[65%] left-1/2 -translate-x-1/2' : '',
     ]"
   >
     <div class="flex justify-between items-center mb-4">
-      <h2 
-        class="text-xl font-semibold dark:text-white"
-        :class="{ 'hidden lg:hidden': !expanded }"
-      >Contenidos</h2>
-      <button 
-        @click="$emit('toggle-panel')"
+      <h2 class="text-xl font-semibold dark:text-white" :class="{'hidden lg:hidden': !expanded}">
+        Contenidos
+      </h2>
+      <button
         class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         :title="expanded ? 'Contraer panel' : 'Expandir panel'"
+        @click="$emit('toggle-panel')"
       >
         <XMarkIcon v-if="isMobile" class="h-5 w-5 text-gray-500 dark:text-gray-400" />
         <ChevronRightIcon v-else-if="expanded" class="h-5 w-5 text-gray-500 dark:text-gray-400" />
@@ -26,9 +25,12 @@
     </div>
 
     <div v-if="expanded" class="overflow-y-auto h-[calc(100vh-180px)]">
-      <RecursiveMenu :items="contents" @item-selected="(item, chain) => $emit('select-content', item, chain)" />
+      <RecursiveMenu
+        :items="contents"
+        @item-selected="(item, chain) => $emit('select-content', item, chain)"
+      />
     </div>
-    
+
     <div v-if="!expanded" class="flex flex-col items-center gap-4">
       <button
         v-for="(item, index) in contents"
@@ -40,8 +42,8 @@
         {{ item.title.charAt(0) }}
       </button>
       <button
-        @click="$emit('toggle-panel')"
         class="text-gray-500 dark:text-gray-400 text-xs hover:text-blue-500 dark:hover:text-blue-400 mt-2"
+        @click="$emit('toggle-panel')"
       >
         Expandir
       </button>
@@ -50,27 +52,23 @@
 </template>
 
 <script setup>
-import { 
-  XMarkIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from '@heroicons/vue/20/solid'
-import RecursiveMenu from './RecursiveMenu.vue'
+import {XMarkIcon, ChevronLeftIcon, ChevronRightIcon} from "@heroicons/vue/20/solid"
+import RecursiveMenu from "./RecursiveMenu.vue"
 
 defineProps({
   contents: {
     type: Array,
-    required: true
+    required: true,
   },
   expanded: {
     type: Boolean,
-    default: false
+    default: false,
   },
   isMobile: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 })
 
-defineEmits(['toggle-panel', 'select-content'])
+defineEmits(["toggle-panel", "select-content"])
 </script>

@@ -5,17 +5,17 @@
       {{ title }}
     </h3>
     <div class="h-64">
-      <slot></slot>
+      <slot />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { FunctionalComponent, SVGAttributes } from 'vue'
+import type {FunctionalComponent, SVGAttributes} from "vue"
 
 defineProps<{
-  title: string;
-  icon: FunctionalComponent<SVGAttributes>;
-  iconClass?: string;
-}>();
+  title: string
+  icon: FunctionalComponent<SVGAttributes>
+  iconClass?: string
+}>()
 </script>

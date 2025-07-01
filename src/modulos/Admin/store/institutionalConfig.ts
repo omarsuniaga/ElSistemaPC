@@ -1,19 +1,8 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { 
-  doc, 
-  getDoc, 
-  setDoc, 
-  updateDoc, 
-  serverTimestamp 
-} from 'firebase/firestore'
-import { 
-  ref as storageRef, 
-  uploadBytes, 
-  getDownloadURL, 
-  deleteObject 
-} from 'firebase/storage'
-import { db, storage } from '@/firebase'
+import {defineStore} from "pinia"
+import {ref, computed} from "vue"
+import {doc, getDoc, setDoc, updateDoc, serverTimestamp} from "firebase/firestore"
+import {ref as storageRef, uploadBytes, getDownloadURL, deleteObject} from "firebase/storage"
+import {db, storage} from "@/firebase"
 
 // Tipos para la configuración institucional
 export interface InstitutionalConfig {
@@ -33,16 +22,16 @@ export interface InstitutionalConfig {
 }
 
 const DEFAULT_CONFIG: InstitutionalConfig = {
-  title_institucional: 'El Sistema Punta Cana',
-  url_institucional: '',
+  title_institucional: "El Sistema Punta Cana",
+  url_institucional: "",
 }
 
-const CONFIG_COLLECTION = 'CONFIGURACION'
-const CONFIG_DOC_ID = 'app_config'
+const CONFIG_COLLECTION = "CONFIGURACION"
+const CONFIG_DOC_ID = "app_config"
 
-export const useInstitutionalConfigStore = defineStore('institutionalConfig', () => {
+export const useInstitutionalConfigStore = defineStore("institutionalConfig", () => {
   // Estado
-  const config = ref<InstitutionalConfig>({ ...DEFAULT_CONFIG })
+  const config = ref<InstitutionalConfig>({...DEFAULT_CONFIG})
   const isLoading = ref(false)
   const isUploading = ref(false)
   const error = ref<string | null>(null)
@@ -60,21 +49,21 @@ export const useInstitutionalConfigStore = defineStore('institutionalConfig', ()
     try {
       const configDocRef = doc(db, CONFIG_COLLECTION, CONFIG_DOC_ID)
       const docSnap = await getDoc(configDocRef)
-      
+
       if (docSnap.exists()) {
         const docData = docSnap.data() as InstitutionalConfig
         config.value = {
           id: docSnap.id,
           ...DEFAULT_CONFIG,
-          ...docData
+          ...docData,
         }
       } else {
         await createDefaultConfig()
       }
     } catch (err) {
-      console.error('Error loading institutional config:', err)
-      error.value = 'Error al cargar la configuración institucional'
-      config.value = { ...DEFAULT_CONFIG }
+      console.error("Error loading institutional config:", err)
+      error.value = "Error al cargar la configuración institucional"
+      config.value = {...DEFAULT_CONFIG}
     } finally {
       isLoading.value = false
     }
@@ -84,20 +73,20 @@ export const useInstitutionalConfigStore = defineStore('institutionalConfig', ()
   const createDefaultConfig = async () => {
     try {
       const configDocRef = doc(db, CONFIG_COLLECTION, CONFIG_DOC_ID)
-      const newConfig: Omit<InstitutionalConfig, 'id'> = {
+      const newConfig: Omit<InstitutionalConfig, "id"> = {
         ...DEFAULT_CONFIG,
         created_at: serverTimestamp(),
-        updated_at: serverTimestamp()
+        updated_at: serverTimestamp(),
       }
-      
+
       await setDoc(configDocRef, newConfig)
-      
+
       config.value = {
         id: configDocRef.id,
-        ...newConfig
+        ...newConfig,
       }
     } catch (err) {
-      console.error('Error creating default config:', err)
+      console.error("Error creating default config:", err)
       throw err
     }
   }
@@ -108,13 +97,13 @@ export const useInstitutionalConfigStore = defineStore('institutionalConfig', ()
       const configDocRef = doc(db, CONFIG_COLLECTION, CONFIG_DOC_ID)
       await updateDoc(configDocRef, {
         title_institucional: newTitle,
-        updated_at: serverTimestamp()
+        updated_at: serverTimestamp(),
       })
       config.value.title_institucional = newTitle
       return true
     } catch (err) {
-      console.error('Error updating institutional title:', err)
-      error.value = 'Error al actualizar el título institucional'
+      console.error("Error updating institutional title:", err)
+      error.value = "Error al actualizar el título institucional"
       return false
     }
   }
@@ -125,8 +114,9 @@ export const useInstitutionalConfigStore = defineStore('institutionalConfig', ()
     error.value = null
 
     try {
-      if (!file.type.startsWith('image/')) throw new Error('El archivo debe ser una imagen')
-      if (file.size > 5 * 1024 * 1024) throw new Error('El archivo es demasiado grande. Máximo 5MB.')
+      if (!file.type.startsWith("image/")) throw new Error("El archivo debe ser una imagen")
+      if (file.size > 5 * 1024 * 1024)
+        throw new Error("El archivo es demasiado grande. Máximo 5MB.")
 
       if (config.value.url_institucional) {
         await removeLogo()
@@ -139,14 +129,14 @@ export const useInstitutionalConfigStore = defineStore('institutionalConfig', ()
       const configDocRef = doc(db, CONFIG_COLLECTION, CONFIG_DOC_ID)
       await updateDoc(configDocRef, {
         url_institucional: downloadURL,
-        updated_at: serverTimestamp()
+        updated_at: serverTimestamp(),
       })
 
       config.value.url_institucional = downloadURL
       return true
     } catch (err) {
-      console.error('Error uploading logo:', err)
-      error.value = err instanceof Error ? err.message : 'Error al subir el logo'
+      console.error("Error uploading logo:", err)
+      error.value = err instanceof Error ? err.message : "Error al subir el logo"
       return false
     } finally {
       isUploading.value = false
@@ -163,15 +153,15 @@ export const useInstitutionalConfigStore = defineStore('institutionalConfig', ()
 
       const configDocRef = doc(db, CONFIG_COLLECTION, CONFIG_DOC_ID)
       await updateDoc(configDocRef, {
-        url_institucional: '',
-        updated_at: serverTimestamp()
+        url_institucional: "",
+        updated_at: serverTimestamp(),
       })
 
-      config.value.url_institucional = ''
+      config.value.url_institucional = ""
       return true
     } catch (err) {
-      console.error('Error removing logo:', err)
-      error.value = 'Error al eliminar el logo'
+      console.error("Error removing logo:", err)
+      error.value = "Error al eliminar el logo"
       return false
     }
   }
@@ -180,15 +170,15 @@ export const useInstitutionalConfigStore = defineStore('institutionalConfig', ()
   const updateConfig = async (newConfig: Partial<InstitutionalConfig>): Promise<boolean> => {
     try {
       const configDocRef = doc(db, CONFIG_COLLECTION, CONFIG_DOC_ID)
-      const updateData = { ...newConfig, updated_at: serverTimestamp() }
-      
+      const updateData = {...newConfig, updated_at: serverTimestamp()}
+
       await updateDoc(configDocRef, updateData)
-      
-      config.value = { ...config.value, ...newConfig }
+
+      config.value = {...config.value, ...newConfig}
       return true
     } catch (err) {
-      console.error('Error updating config:', err)
-      error.value = 'Error al actualizar la configuración'
+      console.error("Error updating config:", err)
+      error.value = "Error al actualizar la configuración"
       return false
     }
   }
@@ -202,8 +192,8 @@ export const useInstitutionalConfigStore = defineStore('institutionalConfig', ()
       await updateConfig(DEFAULT_CONFIG)
       return true
     } catch (err) {
-      console.error('Error resetting config:', err)
-      error.value = 'Error al resetear la configuración'
+      console.error("Error resetting config:", err)
+      error.value = "Error al resetear la configuración"
       return false
     }
   }
@@ -230,6 +220,6 @@ export const useInstitutionalConfigStore = defineStore('institutionalConfig', ()
     removeLogo,
     updateConfig,
     resetConfig,
-    clearError
+    clearError,
   }
 })

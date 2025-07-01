@@ -4,15 +4,18 @@
       <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-200">
         <div class="flex justify-between items-center">
-          <h2 class="text-xl font-semibold text-gray-900">
-            💬 Observaciones - {{ obra?.titulo }}
-          </h2>
+          <h2 class="text-xl font-semibold text-gray-900">💬 Observaciones - {{ obra?.titulo }}</h2>
           <button
-            @click="$emit('close')"
             class="text-gray-400 hover:text-gray-600 transition-colors"
+            @click="$emit('close')"
           >
             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -21,7 +24,7 @@
       <!-- Content -->
       <div class="p-6">
         <!-- Formulario de nueva observación -->
-        <form @submit.prevent="guardarObservacion" class="space-y-4 mb-6">
+        <form class="space-y-4 mb-6" @submit.prevent="guardarObservacion">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Tipo de Observación
@@ -90,22 +93,18 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Observación
-            </label>
+            <label class="block text-sm font-medium text-gray-700 mb-2"> Observación </label>
             <textarea
               v-model="nuevaObservacion.contenido"
               rows="4"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Describe la observación, sugerencia o recomendación..."
               required
-            ></textarea>
+            />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Prioridad
-            </label>
+            <label class="block text-sm font-medium text-gray-700 mb-2"> Prioridad </label>
             <select
               v-model="nuevaObservacion.prioridad"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -119,9 +118,7 @@
 
           <!-- Opciones para estudiantes (solo para maestros) -->
           <div v-if="puedeEvaluarEstudiantes">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Tipo de Evaluación
-            </label>
+            <label class="block text-sm font-medium text-gray-700 mb-2"> Tipo de Evaluación </label>
             <div class="space-y-2">
               <label class="flex items-center space-x-2">
                 <input
@@ -181,8 +178,8 @@
           <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
             <button
               type="button"
-              @click="$emit('close')"
               class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+              @click="$emit('close')"
             >
               Cancelar
             </button>
@@ -224,15 +221,18 @@
                   {{ formatDate(observacion.fechaCreacion) }}
                 </span>
               </div>
-              
+
               <p class="text-sm text-gray-700 mb-2">{{ observacion.contenido }}</p>
-              
-              <div v-if="observacion.compassInicio && observacion.compassFin" class="text-xs text-gray-600">
+
+              <div
+                v-if="observacion.compassInicio && observacion.compassFin"
+                class="text-xs text-gray-600"
+              >
                 Compases {{ observacion.compassInicio }}-{{ observacion.compassFin }}
               </div>
-              
+
               <div v-if="observacion.instrumentos?.length" class="text-xs text-gray-600 mt-1">
-                Instrumentos: {{ observacion.instrumentos.join(', ') }}
+                Instrumentos: {{ observacion.instrumentos.join(", ") }}
               </div>
             </div>
           </div>
@@ -243,17 +243,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import type { Obra, ObservacionPedagogica } from '../types'
+import {ref, computed} from "vue"
+import {useAuthStore} from "@/stores/auth"
+import type {Obra, ObservacionPedagogica} from "../types"
 
 interface Props {
   obra: Obra | null
 }
 
 interface Emits {
-  (e: 'close'): void
-  (e: 'guardar', observacion: ObservacionPedagogica): void
+  (e: "close"): void
+  (e: "guardar", observacion: ObservacionPedagogica): void
 }
 
 defineProps<Props>()
@@ -263,73 +263,73 @@ const authStore = useAuthStore()
 
 // Estado reactivo
 const nuevaObservacion = ref({
-  tipo: '',
-  contenido: '',
+  tipo: "",
+  contenido: "",
   compassInicio: null as number | null,
   compassFin: null as number | null,
   instrumentos: [] as string[],
-  prioridad: 'media',
-  tipoEvaluacion: 'general',
-  evaluacionesIndividuales: {} as Record<string, string>
+  prioridad: "media",
+  tipoEvaluacion: "general",
+  evaluacionesIndividuales: {} as Record<string, string>,
 })
 
 // Datos simulados (reemplazar con datos reales)
 const observacionesExistentes = ref<any[]>([
   {
-    id: '1',
-    tipo: 'articulacion',
-    contenido: 'Mejorar la articulación en los pasajes rápidos de cuerda.',
-    prioridad: 'alta',
+    id: "1",
+    tipo: "articulacion",
+    contenido: "Mejorar la articulación en los pasajes rápidos de cuerda.",
+    prioridad: "alta",
     fechaCreacion: new Date(Date.now() - 24 * 60 * 60 * 1000),
     compassInicio: 45,
     compassFin: 60,
-    instrumentos: ['Violín I', 'Violín II']
-  }
+    instrumentos: ["Violín I", "Violín II"],
+  },
 ])
 
 const estudiantesDisponibles = ref([
-  { id: '1', nombre: 'Ana María González' },
-  { id: '2', nombre: 'Carlos Mendoza' },
-  { id: '3', nombre: 'Sofia Rodriguez' }
+  {id: "1", nombre: "Ana María González"},
+  {id: "2", nombre: "Carlos Mendoza"},
+  {id: "3", nombre: "Sofia Rodriguez"},
 ])
 
 // Computed
 const puedeEvaluarEstudiantes = computed(() => {
-  return authStore.user?.role === 'Maestro'
+  return authStore.user?.role === "Maestro"
 })
 
 // Methods
 function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('es-ES', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(date)
 }
 
 function getTipoObservacionClass(tipo: string): string {
   const clases = {
-    dinamica: 'bg-blue-100 text-blue-800',
-    articulacion: 'bg-green-100 text-green-800',
-    tempo: 'bg-yellow-100 text-yellow-800',
-    afinacion: 'bg-purple-100 text-purple-800',
-    ritmo: 'bg-red-100 text-red-800',
-    ensemble: 'bg-indigo-100 text-indigo-800',
-    tecnica: 'bg-orange-100 text-orange-800',
-    expresion: 'bg-pink-100 text-pink-800',
-    general: 'bg-gray-100 text-gray-800'
+    dinamica: "bg-blue-100 text-blue-800",
+    articulacion: "bg-green-100 text-green-800",
+    tempo: "bg-yellow-100 text-yellow-800",
+    afinacion: "bg-purple-100 text-purple-800",
+    ritmo: "bg-red-100 text-red-800",
+    ensemble: "bg-indigo-100 text-indigo-800",
+    tecnica: "bg-orange-100 text-orange-800",
+    expresion: "bg-pink-100 text-pink-800",
+    general: "bg-gray-100 text-gray-800",
   }
   return clases[tipo as keyof typeof clases] || clases.general
 }
 
 function getPrioridadClass(prioridad: string): string {
   const clases = {
-    baja: 'bg-green-100 text-green-800',
-    media: 'bg-yellow-100 text-yellow-800',
-    alta: 'bg-orange-100 text-orange-800',
-    critica: 'bg-red-100 text-red-800'
+    baja: "bg-green-100 text-green-800",
+    media: "bg-yellow-100 text-yellow-800",
+    alta: "bg-orange-100 text-orange-800",
+    critica: "bg-red-100 text-red-800",
   }
   return clases[prioridad as keyof typeof clases] || clases.media
 }
@@ -343,22 +343,24 @@ function guardarObservacion() {
     instrumentosInvolucrados: nuevaObservacion.value.instrumentos,
     prioridad: nuevaObservacion.value.prioridad as any,
     fechaCreacion: new Date(),
-    autorId: authStore.user?.uid || '',
+    autorId: authStore.user?.uid || "",
     // Agregar otros campos según el tipo definido
   }
 
   // Incluir evaluaciones si es necesario
-  if (nuevaObservacion.value.tipoEvaluacion === 'individual') {
+  if (nuevaObservacion.value.tipoEvaluacion === "individual") {
     // Lógica para manejar evaluaciones individuales
-    console.log('Evaluaciones individuales:', nuevaObservacion.value.evaluacionesIndividuales)
+    console.log("Evaluaciones individuales:", nuevaObservacion.value.evaluacionesIndividuales)
   }
 
-  emit('guardar', observacion as ObservacionPedagogica)
+  emit("guardar", observacion as ObservacionPedagogica)
 }
 </script>
 
 <style scoped>
 .transition-colors {
-  transition: color 0.2s ease, background-color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
 }
 </style>

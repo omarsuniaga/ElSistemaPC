@@ -1,7 +1,7 @@
 <!-- src/modulos/Admin/components/modals/BulkWhatsAppModal.vue -->
 <template>
   <TransitionRoot appear :show="isOpen" as="template">
-    <Dialog as="div" @close="closeModal" class="relative z-50">
+    <Dialog as="div" class="relative z-50" @close="closeModal">
       <TransitionChild
         as="template"
         enter="duration-300 ease-out"
@@ -25,8 +25,13 @@
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95"
           >
-            <DialogPanel class="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-              <DialogTitle as="h3" class="text-lg font-bold leading-6 text-gray-900 dark:text-white mb-4">
+            <DialogPanel
+              class="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all"
+            >
+              <DialogTitle
+                as="h3"
+                class="text-lg font-bold leading-6 text-gray-900 dark:text-white mb-4"
+              >
                 💬 Envío Masivo WhatsApp
               </DialogTitle>
 
@@ -38,19 +43,24 @@
                       Destinatarios Seleccionados ({{ selectedStudents.length }})
                     </h4>
                     <div class="flex items-center space-x-2">
-                      <span class="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
+                      <span
+                        class="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded"
+                      >
                         {{ validPhoneNumbers }} números válidos
                       </span>
                       <button
-                        @click="showRecipientsList = !showRecipientsList"
                         class="text-blue-600 hover:text-blue-700 text-sm"
+                        @click="showRecipientsList = !showRecipientsList"
                       >
-                        {{ showRecipientsList ? 'Ocultar' : 'Ver Lista' }}
+                        {{ showRecipientsList ? "Ocultar" : "Ver Lista" }}
                       </button>
                     </div>
                   </div>
-                  
-                  <div v-if="showRecipientsList" class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 max-h-32 overflow-y-auto">
+
+                  <div
+                    v-if="showRecipientsList"
+                    class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 max-h-32 overflow-y-auto"
+                  >
                     <div class="space-y-2">
                       <div
                         v-for="student in selectedStudents"
@@ -61,17 +71,19 @@
                           {{ student.firstName }} {{ student.lastName }}
                         </span>
                         <div class="flex items-center space-x-2">
-                          <span 
+                          <span
                             :class="[
                               'px-2 py-1 rounded text-xs',
-                              student.phone ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                              student.phone
+                                ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                                : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200',
                             ]"
                           >
-                            {{ student.phone || 'Sin teléfono' }}
+                            {{ student.phone || "Sin teléfono" }}
                           </span>
                           <button
-                            @click="removeRecipient(student.id)"
                             class="text-red-600 hover:text-red-800"
+                            @click="removeRecipient(student.id)"
                           >
                             <XMarkIcon class="w-3 h-3" />
                           </button>
@@ -88,8 +100,8 @@
                   </label>
                   <select
                     v-model="selectedTemplate"
-                    @change="loadTemplate"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    @change="loadTemplate"
                   >
                     <option value="">Seleccionar plantilla...</option>
                     <option value="reminder">Recordatorio de Clase</option>
@@ -105,7 +117,9 @@
                   <div class="space-y-4">
                     <!-- Message -->
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      >
                         Mensaje WhatsApp *
                         <span class="text-xs text-gray-500 ml-2">
                           ({{ messageLength }}/{{ maxLength }} caracteres)
@@ -127,15 +141,15 @@ Variables disponibles:
 📝 Tip: Los mensajes cortos y directos funcionan mejor en WhatsApp"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none"
                         required
-                      ></textarea>
+                      />
                       <div class="flex justify-between mt-1">
                         <div class="text-xs text-gray-500">
                           Variables: {firstName}, {lastName}, {academyName}, {date}, {time}
                         </div>
-                        <div 
+                        <div
                           :class="[
                             'text-xs',
-                            messageLength > maxLength * 0.9 ? 'text-red-600' : 'text-gray-500'
+                            messageLength > maxLength * 0.9 ? 'text-red-600' : 'text-gray-500',
                           ]"
                         >
                           {{ messageLength }}/{{ maxLength }}
@@ -155,7 +169,7 @@ Variables disponibles:
                           Incluir enlace a la academia
                         </span>
                       </label>
-                      
+
                       <label class="flex items-center">
                         <input
                           v-model="whatsappData.scheduleSend"
@@ -169,10 +183,15 @@ Variables disponibles:
                     </div>
 
                     <!-- Scheduled Send -->
-                    <div v-if="whatsappData.scheduleSend" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                    <div
+                      v-if="whatsappData.scheduleSend"
+                      class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4"
+                    >
                       <div class="grid grid-cols-2 gap-4">
                         <div>
-                          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                          >
                             Fecha
                           </label>
                           <input
@@ -183,7 +202,9 @@ Variables disponibles:
                           />
                         </div>
                         <div>
-                          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                          >
                             Hora
                           </label>
                           <input
@@ -202,10 +223,14 @@ Variables disponibles:
                   <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Vista Previa WhatsApp
                   </h4>
-                  <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4 border-l-4 border-green-500">
+                  <div
+                    class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4 border-l-4 border-green-500"
+                  >
                     <div class="whatsapp-preview">
                       <div class="flex items-center space-x-2 mb-2">
-                        <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                        <div
+                          class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center"
+                        >
                           <span class="text-white text-xs font-bold">A</span>
                         </div>
                         <div>
@@ -213,7 +238,11 @@ Variables disponibles:
                             Academia Musical
                           </div>
                           <div class="text-xs text-gray-500">
-                            {{ whatsappData.scheduleSend ? `Programado: ${whatsappData.scheduleDate} ${whatsappData.scheduleTime}` : 'Ahora' }}
+                            {{
+                              whatsappData.scheduleSend
+                                ? `Programado: ${whatsappData.scheduleDate} ${whatsappData.scheduleTime}`
+                                : "Ahora"
+                            }}
                           </div>
                         </div>
                       </div>
@@ -222,7 +251,13 @@ Variables disponibles:
                           {{ previewMessage }}
                         </div>
                         <div class="text-xs text-gray-500 mt-2 text-right">
-                          {{ new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) }} ✓✓
+                          {{
+                            new Date().toLocaleTimeString("es-ES", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          }}
+                          ✓✓
                         </div>
                       </div>
                     </div>
@@ -233,7 +268,7 @@ Variables disponibles:
                 <div v-if="isSending" class="progress-section mb-6">
                   <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
                     <div class="flex items-center space-x-3">
-                      <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600"></div>
+                      <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600" />
                       <div>
                         <div class="text-sm font-medium text-green-900 dark:text-green-100">
                           Enviando mensajes WhatsApp...
@@ -246,32 +281,38 @@ Variables disponibles:
                     <div class="mt-2 bg-green-200 dark:bg-green-700 rounded-full h-2">
                       <div
                         class="bg-green-600 dark:bg-green-400 h-2 rounded-full transition-all duration-300"
-                        :style="{ width: `${(sendProgress.sent / sendProgress.total) * 100}%` }"
-                      ></div>
+                        :style="{width: `${(sendProgress.sent / sendProgress.total) * 100}%`}"
+                      />
                     </div>
                   </div>
                 </div>
               </div>
 
               <!-- Actions -->
-              <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-600">
+              <div
+                class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-600"
+              >
                 <button
-                  @click="closeModal"
                   :disabled="isSending"
                   class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  @click="closeModal"
                 >
                   Cancelar
                 </button>
                 <button
-                  @click="sendMessages"
                   :disabled="!canSend || isSending"
                   class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  @click="sendMessages"
                 >
                   <ChatBubbleLeftRightIcon class="w-4 h-4" />
                   <span>
-                    {{ isSending ? 'Enviando...' : 
-                       whatsappData.scheduleSend ? 'Programar Mensajes' : 
-                       `Enviar a ${validPhoneNumbers} números` }}
+                    {{
+                      isSending
+                        ? "Enviando..."
+                        : whatsappData.scheduleSend
+                          ? "Programar Mensajes"
+                          : `Enviar a ${validPhoneNumbers} números`
+                    }}
                   </span>
                 </button>
               </div>
@@ -284,15 +325,9 @@ Variables disponibles:
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import {
-  Dialog,
-  DialogPanel,
-  DialogTitle,
-  TransitionChild,
-  TransitionRoot,
-} from '@headlessui/vue'
-import { XMarkIcon, ChatBubbleLeftRightIcon } from '@heroicons/vue/24/outline'
+import {ref, computed, watch} from "vue"
+import {Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot} from "@headlessui/vue"
+import {XMarkIcon, ChatBubbleLeftRightIcon} from "@heroicons/vue/24/outline"
 
 interface Student {
   id: string
@@ -327,20 +362,20 @@ const emit = defineEmits<{
 
 // Constantes
 const maxLength = 4096 // Límite de caracteres de WhatsApp
-const today = new Date().toISOString().split('T')[0]
+const today = new Date().toISOString().split("T")[0]
 
 // Estado local
 const showRecipientsList = ref(false)
-const selectedTemplate = ref('')
+const selectedTemplate = ref("")
 const isSending = ref(false)
-const sendProgress = ref<SendProgress>({ sent: 0, total: 0 })
+const sendProgress = ref<SendProgress>({sent: 0, total: 0})
 
 const whatsappData = ref<WhatsAppData>({
-  message: '',
+  message: "",
   includeLink: false,
   scheduleSend: false,
   scheduleDate: today,
-  scheduleTime: '09:00'
+  scheduleTime: "09:00",
 })
 
 // Templates predefinidas
@@ -355,7 +390,7 @@ Te recordamos que tienes clase de música hoy.
 
 ¡No olvides traer tu instrumento! 🎵
 
-{academyName}`
+{academyName}`,
   },
   payment: {
     message: `Hola {firstName}! 👋
@@ -366,7 +401,7 @@ Te recordamos que tienes un pago pendiente por tus clases de música.
 
 Para cualquier consulta, contáctanos.
 
-{academyName}`
+{academyName}`,
   },
   celebration: {
     message: `¡Felicitaciones {firstName}! 🎉🎵
@@ -375,7 +410,7 @@ Queremos felicitarte por tu excelente progreso en las clases de música.
 
 ¡Sigue así! Tu dedicación es inspiradora.
 
-{academyName}`
+{academyName}`,
   },
   announcement: {
     message: `Hola {firstName}! 👋
@@ -386,13 +421,13 @@ Tenemos una novedad importante que queremos compartir contigo:
 
 ¡Gracias por ser parte de nuestra comunidad musical! 🎵
 
-{academyName}`
-  }
+{academyName}`,
+  },
 }
 
 // Computed
 const validPhoneNumbers = computed(() => {
-  return props.selectedStudents.filter(student => student.phone).length
+  return props.selectedStudents.filter((student) => student.phone).length
 })
 
 const messageLength = computed(() => {
@@ -400,16 +435,18 @@ const messageLength = computed(() => {
 })
 
 const canSend = computed(() => {
-  return whatsappData.value.message.trim() && 
-         validPhoneNumbers.value > 0 &&
-         !isSending.value &&
-         (!whatsappData.value.scheduleSend || 
-          (whatsappData.value.scheduleDate && whatsappData.value.scheduleTime))
+  return (
+    whatsappData.value.message.trim() &&
+    validPhoneNumbers.value > 0 &&
+    !isSending.value &&
+    (!whatsappData.value.scheduleSend ||
+      (whatsappData.value.scheduleDate && whatsappData.value.scheduleTime))
+  )
 })
 
 const previewMessage = computed(() => {
-  if (!whatsappData.value.message) return ''
-  
+  if (!whatsappData.value.message) return ""
+
   // Simular reemplazo de variables con el primer estudiante
   let preview = whatsappData.value.message
   if (props.selectedStudents.length > 0) {
@@ -417,28 +454,31 @@ const previewMessage = computed(() => {
     preview = preview
       .replace(/{firstName}/g, firstStudent.firstName)
       .replace(/{lastName}/g, firstStudent.lastName)
-      .replace(/{academyName}/g, 'Academia Musical')
+      .replace(/{academyName}/g, "Academia Musical")
       .replace(/{date}/g, new Date().toLocaleDateString())
-      .replace(/{time}/g, new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }))
+      .replace(
+        /{time}/g,
+        new Date().toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit"})
+      )
   }
-  
+
   if (whatsappData.value.includeLink) {
-    preview += '\n\n🌐 www.academia-musical.com'
+    preview += "\n\n🌐 www.academia-musical.com"
   }
-  
+
   return preview
 })
 
 // Methods
 const closeModal = () => {
   if (!isSending.value) {
-    emit('close')
+    emit("close")
   }
 }
 
 const removeRecipient = (studentId: string) => {
-  const updatedStudents = props.selectedStudents.filter(s => s.id !== studentId)
-  emit('close') // Temporal - idealmente se actualizaría la lista sin cerrar
+  const updatedStudents = props.selectedStudents.filter((s) => s.id !== studentId)
+  emit("close") // Temporal - idealmente se actualizaría la lista sin cerrar
 }
 
 const loadTemplate = () => {
@@ -453,43 +493,42 @@ const sendMessages = async () => {
 
   try {
     isSending.value = true
-    const studentsWithPhone = props.selectedStudents.filter(student => student.phone)
-    sendProgress.value = { sent: 0, total: studentsWithPhone.length }
+    const studentsWithPhone = props.selectedStudents.filter((student) => student.phone)
+    sendProgress.value = {sent: 0, total: studentsWithPhone.length}
 
     // Simular envío progresivo
     for (let i = 0; i < studentsWithPhone.length; i++) {
       const student = studentsWithPhone[i]
-      
+
       // Simular procesamiento
-      await new Promise(resolve => setTimeout(resolve, 800))
-      
+      await new Promise((resolve) => setTimeout(resolve, 800))
+
       // TODO: Implementar envío real de WhatsApp
       await sendWhatsAppToStudent(student)
-      
+
       sendProgress.value.sent++
     }
 
     // Éxito
-    emit('sent', studentsWithPhone.length)
-    
+    emit("sent", studentsWithPhone.length)
+
     // Limpiar formulario
     whatsappData.value = {
-      message: '',
+      message: "",
       includeLink: false,
       scheduleSend: false,
       scheduleDate: today,
-      scheduleTime: '09:00'
+      scheduleTime: "09:00",
     }
-    selectedTemplate.value = ''
-    
-    closeModal()
+    selectedTemplate.value = ""
 
+    closeModal()
   } catch (error) {
-    console.error('Error enviando mensajes WhatsApp:', error)
+    console.error("Error enviando mensajes WhatsApp:", error)
     // TODO: Mostrar error al usuario
   } finally {
     isSending.value = false
-    sendProgress.value = { sent: 0, total: 0 }
+    sendProgress.value = {sent: 0, total: 0}
   }
 }
 
@@ -499,36 +538,46 @@ const sendWhatsAppToStudent = async (student: Student) => {
     message: whatsappData.value.message
       .replace(/{firstName}/g, student.firstName)
       .replace(/{lastName}/g, student.lastName)
-      .replace(/{academyName}/g, 'Academia Musical')
+      .replace(/{academyName}/g, "Academia Musical")
       .replace(/{date}/g, new Date().toLocaleDateString())
-      .replace(/{time}/g, new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })),
+      .replace(
+        /{time}/g,
+        new Date().toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit"})
+      ),
     scheduleSend: whatsappData.value.scheduleSend,
-    scheduleDateTime: whatsappData.value.scheduleSend ? 
-      `${whatsappData.value.scheduleDate} ${whatsappData.value.scheduleTime}` : null
+    scheduleDateTime: whatsappData.value.scheduleSend
+      ? `${whatsappData.value.scheduleDate} ${whatsappData.value.scheduleTime}`
+      : null,
   })
 }
 
 // Watchers
-watch(() => props.isOpen, (newValue) => {
-  if (!newValue) {
-    // Reset al cerrar
-    showRecipientsList.value = false
-    selectedTemplate.value = ''
-    if (!isSending.value) {
-      whatsappData.value = {
-        message: '',
-        includeLink: false,
-        scheduleSend: false,
-        scheduleDate: today,
-        scheduleTime: '09:00'
+watch(
+  () => props.isOpen,
+  (newValue) => {
+    if (!newValue) {
+      // Reset al cerrar
+      showRecipientsList.value = false
+      selectedTemplate.value = ""
+      if (!isSending.value) {
+        whatsappData.value = {
+          message: "",
+          includeLink: false,
+          scheduleSend: false,
+          scheduleDate: today,
+          scheduleTime: "09:00",
+        }
       }
     }
   }
-})
+)
 </script>
 
 <style scoped>
 .whatsapp-preview {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 </style>
