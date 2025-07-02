@@ -474,35 +474,35 @@ function formatSchedule(schedule: any): string {
   // Helper function to format time in 12-hour format
   const formatTime = (time: string): string => {
     if (!time) return ""
-    
+
     // Handle both HH:mm and HH:mm:ss formats
-    const [hours, minutes] = time.split(':').map(Number)
+    const [hours, minutes] = time.split(":").map(Number)
     if (isNaN(hours) || isNaN(minutes)) return time
-    
+
     const hour12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours
-    const ampm = hours >= 12 ? 'pm' : 'am'
-    const minutesStr = minutes.toString().padStart(2, '0')
-    
+    const ampm = hours >= 12 ? "pm" : "am"
+    const minutesStr = minutes.toString().padStart(2, "0")
+
     return `${hour12}:${minutesStr} ${ampm}`
   }
 
   // Helper function to translate day names to Spanish
   const translateDay = (day: string): string => {
     const dayTranslations: Record<string, string> = {
-      'Monday': 'Lunes',
-      'Tuesday': 'Martes', 
-      'Wednesday': 'Miércoles',
-      'Thursday': 'Jueves',
-      'Friday': 'Viernes',
-      'Saturday': 'Sábado',
-      'Sunday': 'Domingo',
-      'Lunes': 'Lunes',
-      'Martes': 'Martes',
-      'Miércoles': 'Miércoles', 
-      'Jueves': 'Jueves',
-      'Viernes': 'Viernes',
-      'Sábado': 'Sábado',
-      'Domingo': 'Domingo'
+      Monday: "Lunes",
+      Tuesday: "Martes",
+      Wednesday: "Miércoles",
+      Thursday: "Jueves",
+      Friday: "Viernes",
+      Saturday: "Sábado",
+      Sunday: "Domingo",
+      Lunes: "Lunes",
+      Martes: "Martes",
+      Miércoles: "Miércoles",
+      Jueves: "Jueves",
+      Viernes: "Viernes",
+      Sábado: "Sábado",
+      Domingo: "Domingo",
     }
     return dayTranslations[day] || day
   }
@@ -510,15 +510,15 @@ function formatSchedule(schedule: any): string {
   // Handle array of schedules (multiple time slots)
   if (Array.isArray(schedule)) {
     const formattedSlots = schedule
-      .filter(slot => slot.day && slot.startTime && slot.endTime)
-      .map(slot => {
+      .filter((slot) => slot.day && slot.startTime && slot.endTime)
+      .map((slot) => {
         const day = translateDay(slot.day)
         const startTime = formatTime(slot.startTime)
         const endTime = formatTime(slot.endTime)
         return `${day} ${startTime} a ${endTime}`
       })
-    
-    return formattedSlots.length > 0 ? formattedSlots.join(' y ') : "Sin horario válido"
+
+    return formattedSlots.length > 0 ? formattedSlots.join(" y ") : "Sin horario válido"
   }
 
   // Handle schedule with slots property
@@ -531,8 +531,8 @@ function formatSchedule(schedule: any): string {
         const endTime = formatTime(slot.endTime)
         return `${day} ${startTime} a ${endTime}`
       })
-    
-    return formattedSlots.length > 0 ? formattedSlots.join(' y ') : "Sin horario válido"
+
+    return formattedSlots.length > 0 ? formattedSlots.join(" y ") : "Sin horario válido"
   }
 
   // Handle single schedule object

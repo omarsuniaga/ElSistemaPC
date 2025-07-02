@@ -99,6 +99,11 @@
         </div>
       </section>
 
+      <!-- Notificaciones de Asistencia -->
+      <section class="mb-8">
+        <AttendanceNotifications />
+      </section>
+
       <!-- Main Dashboard Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Left Column - Management Modules -->
@@ -256,6 +261,7 @@ import SystemStatusWidget from "../components/SystemStatusWidget.vue"
 import PendingApprovalsList from "../components/PendingApprovalsList.vue"
 import CreateClassModal from "../components/CreateClassModal.vue"
 import AssignTeacherModal from "../components/AssignTeacherModal.vue"
+import AttendanceNotifications from "../../components/admin/AttendanceNotifications.vue"
 
 const router = useRouter()
 const {

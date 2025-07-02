@@ -1,13 +1,13 @@
 // src/modulos/Teachers/types/class.ts
-import {AttendanceRecord} from '../../Attendance/types/attendance'
-import type {WorkspaceElement} from '../../Workspace/types/workspace'
+import {AttendanceRecord} from "../../Attendance/types/attendance"
+import type {WorkspaceElement} from "../../Workspace/types/workspace"
 
 /**
  * Roles de maestros en una clase
  */
 export enum TeacherRole {
-  LEAD = 'lead', // Maestro Encargado (principal)
-  ASSISTANT = 'assistant', // Maestro Asistente
+  LEAD = "lead", // Maestro Encargado (principal)
+  ASSISTANT = "assistant", // Maestro Asistente
 }
 
 /**
@@ -62,10 +62,10 @@ export interface ClassData {
       }
   classroom?: string
   contentIds?: string[]
-  status?: 'active' | 'inactive' | 'suspended'
+  status?: "active" | "inactive" | "suspended"
   createdAt?: Date
   updatedAt?: Date
-  changeHistory?: { timestamp: Date; changes: string }[]
+  changeHistory?: {timestamp: Date; changes: string}[]
 }
 
 /**
@@ -152,7 +152,7 @@ export interface ClassAttendance {
  */
 export interface TeacherClassView extends ClassData {
   myRole?: TeacherRole
-  myPermissions?: ClassTeacher['permissions']
+  myPermissions?: ClassTeacher["permissions"]
   leadTeacher?: {
     id: string
     name: string
@@ -192,7 +192,7 @@ export interface AssistantInvitationResponse {
 /**
  * Permisos disponibles para maestros en clases compartidas
  */
-export type SharedClassPermission = 'read' | 'write' | 'manage'
+export type SharedClassPermission = "read" | "write" | "manage"
 
 /**
  * Datos para compartir una clase con otro maestro
@@ -241,6 +241,6 @@ export interface ClassStats {
 /* Tipos para operaciones CRUD */
 
 // Para crear una clase, se omite el id (que se genera en la base).
-export type ClassCreate = Omit<ClassData, 'id'>
+export type ClassCreate = Omit<ClassData, "id">
 // Para actualizar una clase, todos los campos son opcionales a partir de ClassCreate.
 export type ClassUpdate = Partial<ClassCreate>

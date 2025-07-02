@@ -11,7 +11,9 @@
         leave-from="opacity-100"
         leave-to="opacity-0"
       >
-        <div class="fixed inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm transition-opacity" />
+        <div
+          class="fixed inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm transition-opacity"
+        />
       </TransitionChild>
 
       <!-- Modal Container -->
@@ -26,7 +28,9 @@
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95"
           >
-            <DialogPanel class="w-full max-w-4xl transform overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-2xl transition-all">
+            <DialogPanel
+              class="w-full max-w-4xl transform overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-2xl transition-all"
+            >
               <!-- Header -->
               <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
                 <div class="flex items-center justify-between">
@@ -46,16 +50,21 @@
 
               <!-- Content -->
               <div class="max-h-[calc(100vh-8rem)] overflow-y-auto">
-                <form @submit.prevent="handleSubmit" class="px-6 py-4">
+                <form class="px-6 py-4" @submit.prevent="handleSubmit">
                   <!-- Basic Information Section -->
                   <div class="mb-8">
-                    <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <h4
+                      class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-2"
+                    >
                       Información Básica
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <!-- Class Name -->
                       <div>
-                        <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label
+                          for="name"
+                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
                           Nombre de la clase <span class="text-red-500">*</span>
                         </label>
                         <input
@@ -70,7 +79,10 @@
 
                       <!-- Instrument -->
                       <div>
-                        <label for="instrument" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label
+                          for="instrument"
+                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
                           Instrumento <span class="text-red-500">*</span>
                         </label>
                         <select
@@ -93,7 +105,10 @@
 
                       <!-- Level -->
                       <div>
-                        <label for="level" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label
+                          for="level"
+                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
                           Nivel <span class="text-red-500">*</span>
                         </label>
                         <select
@@ -112,7 +127,10 @@
 
                       <!-- Capacity -->
                       <div>
-                        <label for="capacity" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label
+                          for="capacity"
+                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
                           Capacidad máxima
                         </label>
                         <input
@@ -129,7 +147,10 @@
 
                     <!-- Description -->
                     <div class="mt-4">
-                      <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label
+                        for="description"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      >
                         Descripción
                       </label>
                       <textarea
@@ -144,13 +165,18 @@
 
                   <!-- Teachers Section -->
                   <div class="mb-8">
-                    <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <h4
+                      class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-2"
+                    >
                       Profesores
                     </h4>
-                    
+
                     <!-- Main Teacher -->
                     <div class="mb-4">
-                      <label for="teacherId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label
+                        for="teacherId"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      >
                         Profesor Principal <span class="text-red-500">*</span>
                       </label>
                       <select
@@ -168,7 +194,9 @@
 
                     <!-- Shared Teachers -->
                     <div class="mb-4">
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      >
                         Profesores Colaboradores
                       </label>
                       <div class="space-y-2">
@@ -185,11 +213,14 @@
                               :value="teacher.id"
                               class="h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 dark:focus:ring-indigo-400"
                             />
-                            <label :for="`shared-teacher-${teacher.id}`" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label
+                              :for="`shared-teacher-${teacher.id}`"
+                              class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300"
+                            >
                               {{ teacher.name }}
                             </label>
                           </div>
-                          
+
                           <!-- Permission Level -->
                           <div v-if="classForm.sharedWith.includes(teacher.id)" class="ml-4">
                             <select
@@ -203,8 +234,11 @@
                             </select>
                           </div>
                         </div>
-                        
-                        <div v-if="availableSharedTeachers.length === 0" class="text-sm text-gray-500 dark:text-gray-400 italic text-center py-4">
+
+                        <div
+                          v-if="availableSharedTeachers.length === 0"
+                          class="text-sm text-gray-500 dark:text-gray-400 italic text-center py-4"
+                        >
                           No hay otros profesores disponibles para colaborar
                         </div>
                       </div>
@@ -213,10 +247,12 @@
 
                   <!-- Schedule Section -->
                   <div class="mb-8">
-                    <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <h4
+                      class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-2"
+                    >
                       Horarios
                     </h4>
-                    
+
                     <div class="space-y-4">
                       <div
                         v-for="(schedule, index) in classForm.schedules"
@@ -226,7 +262,9 @@
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                           <!-- Day -->
                           <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label
+                              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                            >
                               Día de la semana
                             </label>
                             <select
@@ -246,7 +284,9 @@
 
                           <!-- Start Time -->
                           <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label
+                              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                            >
                               Hora de inicio
                             </label>
                             <input
@@ -258,7 +298,9 @@
 
                           <!-- End Time -->
                           <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label
+                              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                            >
                               Hora de fin
                             </label>
                             <input
@@ -283,10 +325,17 @@
                         </div>
 
                         <!-- Schedule Validation Message -->
-                        <div v-if="!isValidSchedule(schedule)" class="mt-2 text-sm text-red-600 dark:text-red-400">
+                        <div
+                          v-if="!isValidSchedule(schedule)"
+                          class="mt-2 text-sm text-red-600 dark:text-red-400"
+                        >
                           <div class="flex items-center">
                             <svg class="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                              <path
+                                fill-rule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                clip-rule="evenodd"
+                              />
                             </svg>
                             {{ getScheduleErrorMessage(schedule) }}
                           </div>
@@ -299,8 +348,18 @@
                         class="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
                         @click="addScheduleSlot"
                       >
-                        <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        <svg
+                          class="h-4 w-4 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                          />
                         </svg>
                         Agregar otro horario
                       </button>
@@ -309,13 +368,17 @@
 
                   <!-- Students Section -->
                   <div class="mb-8">
-                    <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <h4
+                      class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-2"
+                    >
                       Estudiantes
                     </h4>
-                    
+
                     <!-- Search Input -->
                     <div class="relative mb-4">
-                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <div
+                        class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                      >
                         <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" />
                       </div>
                       <input
@@ -327,21 +390,41 @@
                     </div>
 
                     <!-- Students List -->
-                    <div class="border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 max-h-64 overflow-y-auto">
+                    <div
+                      class="border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 max-h-64 overflow-y-auto"
+                    >
                       <!-- Loading State -->
                       <div v-if="loading.students" class="flex items-center justify-center py-8">
-                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
-                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">Cargando estudiantes...</span>
+                        <div
+                          class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"
+                        />
+                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-400"
+                          >Cargando estudiantes...</span
+                        >
                       </div>
 
                       <!-- Empty State -->
                       <div v-else-if="filteredStudents.length === 0" class="text-center py-8">
                         <div class="text-gray-500 dark:text-gray-400">
-                          <svg class="mx-auto h-12 w-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 48 48">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M34 34l-1.5-1.5m0 0A12 12 0 1014 14a12 12 0 0018.5 18.5z" />
+                          <svg
+                            class="mx-auto h-12 w-12 mb-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 48 48"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M34 34l-1.5-1.5m0 0A12 12 0 1014 14a12 12 0 0018.5 18.5z"
+                            />
                           </svg>
                           <p class="text-sm">
-                            {{ students.length === 0 ? 'No hay estudiantes disponibles' : 'No se encontraron estudiantes' }}
+                            {{
+                              students.length === 0
+                                ? "No hay estudiantes disponibles"
+                                : "No se encontraron estudiantes"
+                            }}
                           </p>
                         </div>
                       </div>
@@ -360,14 +443,14 @@
                             :value="student.id"
                             class="h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 dark:focus:ring-indigo-400"
                           />
-                          <label
-                            :for="`student-${student.id}`"
-                            class="ml-3 flex-1 cursor-pointer"
-                          >
+                          <label :for="`student-${student.id}`" class="ml-3 flex-1 cursor-pointer">
                             <div class="text-sm font-medium text-gray-900 dark:text-white">
                               {{ student.nombre }} {{ student.apellido }}
                             </div>
-                            <div v-if="student.instrumento" class="text-xs text-gray-500 dark:text-gray-400">
+                            <div
+                              v-if="student.instrumento"
+                              class="text-xs text-gray-500 dark:text-gray-400"
+                            >
                               {{ student.instrumento }}
                             </div>
                           </label>
@@ -375,10 +458,21 @@
                       </div>
 
                       <!-- Selected Count -->
-                      <div v-if="classForm.studentIds.length > 0" class="border-t border-gray-200 dark:border-gray-600 px-3 py-2 bg-gray-50 dark:bg-gray-600">
+                      <div
+                        v-if="classForm.studentIds.length > 0"
+                        class="border-t border-gray-200 dark:border-gray-600 px-3 py-2 bg-gray-50 dark:bg-gray-600"
+                      >
                         <p class="text-xs text-gray-600 dark:text-gray-400">
-                          {{ classForm.studentIds.length }} estudiante{{ classForm.studentIds.length !== 1 ? 's' : '' }} seleccionado{{ classForm.studentIds.length !== 1 ? 's' : '' }}
-                          <span v-if="classForm.capacity && classForm.studentIds.length > classForm.capacity" class="text-red-500">
+                          {{ classForm.studentIds.length }} estudiante{{
+                            classForm.studentIds.length !== 1 ? "s" : ""
+                          }}
+                          seleccionado{{ classForm.studentIds.length !== 1 ? "s" : "" }}
+                          <span
+                            v-if="
+                              classForm.capacity && classForm.studentIds.length > classForm.capacity
+                            "
+                            class="text-red-500"
+                          >
                             (Excede la capacidad máxima de {{ classForm.capacity }})
                           </span>
                         </p>
@@ -387,16 +481,25 @@
                   </div>
 
                   <!-- Form Validation Messages -->
-                  <div v-if="validationErrors.length > 0" class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div
+                    v-if="validationErrors.length > 0"
+                    class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+                  >
                     <div class="flex">
                       <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        <path
+                          fill-rule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                          clip-rule="evenodd"
+                        />
                       </svg>
                       <div class="ml-3">
                         <h3 class="text-sm font-medium text-red-800 dark:text-red-200">
                           Por favor, corrige los siguientes errores:
                         </h3>
-                        <ul class="mt-2 text-sm text-red-700 dark:text-red-300 list-disc list-inside">
+                        <ul
+                          class="mt-2 text-sm text-red-700 dark:text-red-300 list-disc list-inside"
+                        >
                           <li v-for="error in validationErrors" :key="error">
                             {{ error }}
                           </li>
@@ -408,7 +511,9 @@
               </div>
 
               <!-- Footer -->
-              <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/50">
+              <div
+                class="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/50"
+              >
                 <div class="flex items-center justify-between">
                   <div class="text-sm text-gray-500 dark:text-gray-400">
                     <span class="text-red-500">*</span> Campos obligatorios
@@ -427,11 +532,27 @@
                       class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       @click="handleSubmit"
                     >
-                      <svg v-if="saving" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        v-if="saving"
+                        class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          class="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          stroke-width="4"
+                        />
+                        <path
+                          class="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
                       </svg>
-                      {{ saving ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear Clase') }}
+                      {{ saving ? "Guardando..." : isEditing ? "Actualizar" : "Crear Clase" }}
                     </button>
                   </div>
                 </div>
@@ -445,14 +566,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
-import { debounce } from "lodash-es"
-import { Dialog, DialogPanel, TransitionRoot, TransitionChild, DialogTitle } from "@headlessui/vue"
-import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline'
-import { useTeachersStore } from "../../Teachers/store/teachers"
-import { useStudentsStore } from "../../Students/store/students"
-import { useNotification } from "@/composables/useNotification"
-import type { ClassData } from "../types/class"
+import {ref, computed, watch, onMounted, nextTick} from "vue"
+import {debounce} from "lodash-es"
+import {Dialog, DialogPanel, TransitionRoot, TransitionChild, DialogTitle} from "@headlessui/vue"
+import {MagnifyingGlassIcon, XMarkIcon} from "@heroicons/vue/24/outline"
+import {useTeachersStore} from "../../Teachers/store/teachers"
+import {useStudentsStore} from "../../Students/store/students"
+import {useNotification} from "@/composables/useNotification"
+import type {ClassData} from "../types/class"
 
 // Props
 interface Props {
@@ -461,19 +582,19 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  classData: null
+  classData: null,
 })
 
 // Emits
 const emit = defineEmits<{
-  (e: 'close'): void
-  (e: 'save', data: Partial<ClassData>): void
+  (e: "close"): void
+  (e: "save", data: Partial<ClassData>): void
 }>()
 
 // Stores and Composables
 const teachersStore = useTeachersStore()
 const studentsStore = useStudentsStore()
-const { showNotification } = useNotification()
+const {showNotification} = useNotification()
 
 // State
 const saving = ref(false)
@@ -521,7 +642,7 @@ const classForm = ref<ClassFormData>({
   studentIds: [],
   sharedWith: [],
   permissions: {},
-  schedules: [{ day: "", startTime: "", endTime: "" }],
+  schedules: [{day: "", startTime: "", endTime: ""}],
 })
 
 // Computed Properties
@@ -534,48 +655,56 @@ const availableSharedTeachers = computed(() =>
 // Enhanced validation with detailed error messages
 const validationErrors = computed(() => {
   const errors: string[] = []
-  
+
   if (!classForm.value.name.trim()) {
     errors.push("El nombre de la clase es obligatorio")
   }
-  
+
   if (!classForm.value.instrument) {
     errors.push("Debe seleccionar un instrumento")
   }
-  
+
   if (!classForm.value.level) {
     errors.push("Debe seleccionar un nivel")
   }
-  
+
   if (!classForm.value.teacherId) {
     errors.push("Debe seleccionar un profesor principal")
   }
-  
+
   // Validate schedules
-  const hasValidSchedule = classForm.value.schedules.some(schedule => 
-    schedule.day && schedule.startTime && schedule.endTime && 
-    schedule.startTime < schedule.endTime
+  const hasValidSchedule = classForm.value.schedules.some(
+    (schedule) =>
+      schedule.day &&
+      schedule.startTime &&
+      schedule.endTime &&
+      schedule.startTime < schedule.endTime
   )
-  
+
   if (!hasValidSchedule) {
     errors.push("Debe agregar al menos un horario válido")
   }
-  
+
   // Check for invalid schedules
-  const invalidSchedules = classForm.value.schedules.filter(schedule => 
-    schedule.day && schedule.startTime && schedule.endTime && 
-    schedule.startTime >= schedule.endTime
+  const invalidSchedules = classForm.value.schedules.filter(
+    (schedule) =>
+      schedule.day &&
+      schedule.startTime &&
+      schedule.endTime &&
+      schedule.startTime >= schedule.endTime
   )
-  
+
   if (invalidSchedules.length > 0) {
     errors.push("Algunos horarios tienen hora de inicio posterior a la de fin")
   }
-  
+
   // Check capacity
   if (classForm.value.capacity && classForm.value.studentIds.length > classForm.value.capacity) {
-    errors.push(`Se han seleccionado más estudiantes (${classForm.value.studentIds.length}) que la capacidad máxima (${classForm.value.capacity})`)
+    errors.push(
+      `Se han seleccionado más estudiantes (${classForm.value.studentIds.length}) que la capacidad máxima (${classForm.value.capacity})`
+    )
   }
-  
+
   return errors
 })
 
@@ -586,12 +715,16 @@ const filteredStudents = computed(() => {
   if (!studentSearchTerm.value.trim()) {
     return students.value
   }
-  
-  const searchTerms = studentSearchTerm.value.toLowerCase().split(' ').filter(term => term.length > 0)
-  
-  return students.value.filter(student => {
-    const searchText = `${student.nombre || ''} ${student.apellido || ''} ${student.instrumento || ''}`.toLowerCase()
-    return searchTerms.every(term => searchText.includes(term))
+
+  const searchTerms = studentSearchTerm.value
+    .toLowerCase()
+    .split(" ")
+    .filter((term) => term.length > 0)
+
+  return students.value.filter((student) => {
+    const searchText =
+      `${student.nombre || ""} ${student.apellido || ""} ${student.instrumento || ""}`.toLowerCase()
+    return searchTerms.every((term) => searchText.includes(term))
   })
 })
 
@@ -607,7 +740,8 @@ const getScheduleErrorMessage = (schedule: ScheduleSlot): string => {
   if (!schedule.day) return "Seleccione un día"
   if (!schedule.startTime) return "Ingrese la hora de inicio"
   if (!schedule.endTime) return "Ingrese la hora de fin"
-  if (schedule.startTime >= schedule.endTime) return "La hora de inicio debe ser anterior a la hora de fin"
+  if (schedule.startTime >= schedule.endTime)
+    return "La hora de inicio debe ser anterior a la hora de fin"
   return ""
 }
 
@@ -655,7 +789,7 @@ const handleSubmit = async () => {
 
   try {
     const now = new Date()
-    
+
     // Prepare class data
     const classData: Partial<ClassData> = {
       name: classForm.value.name.trim(),
@@ -665,17 +799,20 @@ const handleSubmit = async () => {
       sharedWith: classForm.value.sharedWith,
       status: classForm.value.status,
       // Convert schedules to the format expected by the parent component
-      schedule: classForm.value.schedules.find(s => s.day && s.startTime && s.endTime) ? {
-        day: classForm.value.schedules[0].day,
-        startTime: classForm.value.schedules[0].startTime,
-        endTime: classForm.value.schedules[0].endTime,
-      } : undefined,
+      schedule: classForm.value.schedules.find((s) => s.day && s.startTime && s.endTime)
+        ? {
+            day: classForm.value.schedules[0].day,
+            startTime: classForm.value.schedules[0].startTime,
+            endTime: classForm.value.schedules[0].endTime,
+          }
+        : undefined,
       updatedAt: now,
     }
 
     // Add metadata based on form fields
     if (classForm.value.instrument) {
-      classData.description = `${classData.description}\nInstrumento: ${classForm.value.instrument}\nNivel: ${classForm.value.level}`.trim()
+      classData.description =
+        `${classData.description}\nInstrumento: ${classForm.value.instrument}\nNivel: ${classForm.value.level}`.trim()
     }
 
     // If editing, preserve ID and creation date
@@ -697,10 +834,7 @@ const handleSubmit = async () => {
     emit("close")
   } catch (error) {
     console.error("Error al guardar la clase:", error)
-    showNotification(
-      "Error al guardar la clase. Por favor, inténtalo de nuevo.",
-      "error"
-    )
+    showNotification("Error al guardar la clase. Por favor, inténtalo de nuevo.", "error")
   } finally {
     saving.value = false
   }
@@ -719,7 +853,7 @@ const resetForm = () => {
     studentIds: [],
     sharedWith: [],
     permissions: {},
-    schedules: [{ day: "", startTime: "", endTime: "" }],
+    schedules: [{day: "", startTime: "", endTime: ""}],
   }
   studentSearchTerm.value = ""
 }
@@ -727,7 +861,7 @@ const resetForm = () => {
 // Event handlers
 const handleClose = () => {
   if (!saving.value) {
-    emit('close')
+    emit("close")
   }
 }
 
@@ -738,10 +872,10 @@ onMounted(async () => {
     loading.value.students = true
 
     await Promise.all([
-      teachersStore.fetchTeachers().then(data => {
+      teachersStore.fetchTeachers().then((data) => {
         teachers.value = data || teachersStore.teachers
       }),
-      studentsStore.fetchStudents().then(data => {
+      studentsStore.fetchStudents().then((data) => {
         students.value = data || studentsStore.students
       }),
     ])
@@ -772,15 +906,19 @@ const populateFormWithClassData = (classData: ClassData) => {
     studentIds: classData.studentIds || [],
     sharedWith: classData.sharedWith || [],
     permissions: {},
-    schedules: classData.schedule ? [{
-      day: classData.schedule.day,
-      startTime: classData.schedule.startTime,
-      endTime: classData.schedule.endTime,
-    }] : [{ day: "", startTime: "", endTime: "" }],
+    schedules: classData.schedule
+      ? [
+          {
+            day: classData.schedule.day,
+            startTime: classData.schedule.startTime,
+            endTime: classData.schedule.endTime,
+          },
+        ]
+      : [{day: "", startTime: "", endTime: ""}],
   }
-  
+
   // Set default permissions for shared teachers
-  classData.sharedWith?.forEach(teacherId => {
+  classData.sharedWith?.forEach((teacherId) => {
     classForm.value.permissions[teacherId] = ["read"]
   })
 }
@@ -809,7 +947,7 @@ watch(
   (newSharedWith, oldSharedWith) => {
     // Remove permissions for teachers no longer shared
     if (oldSharedWith) {
-      oldSharedWith.forEach(teacherId => {
+      oldSharedWith.forEach((teacherId) => {
         if (!newSharedWith.includes(teacherId)) {
           delete classForm.value.permissions[teacherId]
         }
@@ -817,13 +955,13 @@ watch(
     }
 
     // Add default permissions for new shared teachers
-    newSharedWith.forEach(teacherId => {
+    newSharedWith.forEach((teacherId) => {
       if (!classForm.value.permissions[teacherId]) {
         classForm.value.permissions[teacherId] = ["read"]
       }
     })
   },
-  { deep: true }
+  {deep: true}
 )
 
 // Watch for classData changes
@@ -836,7 +974,7 @@ watch(
       resetForm()
     }
   },
-  { immediate: true }
+  {immediate: true}
 )
 </script>
 

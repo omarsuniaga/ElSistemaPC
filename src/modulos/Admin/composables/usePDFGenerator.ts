@@ -497,74 +497,15 @@ export function usePDFGenerator() {
 
     console.log("📊 Schedule data total:", scheduleData.length, scheduleData)
 
-    // Si no hay datos reales, usar datos de ejemplo para depuración
+    // Si no hay datos reales, devolver un array vacío
     if (scheduleData.length === 0) {
-      console.log("⚠️ No se encontraron datos reales, usando datos de ejemplo para pruebas")
-      return generateSampleScheduleData()
+      console.log("⚠️ No se encontraron datos reales de horario.")
+      return []
     }
 
     return scheduleData
   }
 
-  // Función para generar datos de ejemplo si no hay datos reales
-  const generateSampleScheduleData = () => {
-    return [
-      {
-        day: "Lunes",
-        startTime: "09:00",
-        endTime: "10:30",
-        className: "Piano Básico",
-        teacherName: "María González",
-        aula: "Aula 1",
-        studentCount: 5,
-        classId: "sample1",
-        teacherId: "teacher1",
-        students: [
-          {id: "st1", name: "Juan Pérez"},
-          {id: "st2", name: "Ana López"},
-        ],
-      },
-      {
-        day: "Lunes",
-        startTime: "11:00",
-        endTime: "12:30",
-        className: "Guitarra Intermedio",
-        teacherName: "María González",
-        aula: "Aula 2",
-        studentCount: 3,
-        classId: "sample2",
-        teacherId: "teacher1",
-        students: [{id: "st3", name: "Carlos Rivera"}],
-      },
-      {
-        day: "Martes",
-        startTime: "14:00",
-        endTime: "15:30",
-        className: "Violín Avanzado",
-        teacherName: "Pedro Martínez",
-        aula: "Aula 3",
-        studentCount: 2,
-        classId: "sample3",
-        teacherId: "teacher2",
-        students: [{id: "st4", name: "Laura Silva"}],
-      },
-      {
-        day: "Miércoles",
-        startTime: "10:00",
-        endTime: "11:30",
-        className: "Piano Básico",
-        teacherName: "María González",
-        aula: "Aula 1",
-        studentCount: 5,
-        classId: "sample1",
-        teacherId: "teacher1",
-        students: [
-          {id: "st1", name: "Juan Pérez"},
-          {id: "st2", name: "Ana López"},
-        ],
-      },
-    ]
-  }
   const getClassesStatistics = () => {
     const classesMap = new Map<string, number>()
 

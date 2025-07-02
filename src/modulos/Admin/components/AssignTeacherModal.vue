@@ -603,11 +603,17 @@ import {
   AcademicCapIcon,
   UserIcon,
 } from "@heroicons/vue/24/outline"
+import {useClassesStore} from "../../../stores/classes"
+import {useTeachersStore} from "../../../stores/teachers"
 
 const emit = defineEmits<{
   close: []
   assigned: [assignmentData: any]
 }>()
+
+// Stores
+const classesStore = useClassesStore()
+const teachersStore = useTeachersStore()
 
 // Form state
 const currentStep = ref(0)
@@ -647,72 +653,9 @@ const steps = [
   {id: "config", title: "Configuración"},
 ]
 
-// Mock data - in production, this would come from the store
-const classes = ref([
-  {
-    id: "1",
-    name: "Piano Intermedio A",
-    category: "piano",
-    level: "intermediate",
-    duration: 60,
-    maxStudents: 12,
-    enrolledStudents: 8,
-    currentTeacher: null,
-  },
-  {
-    id: "2",
-    name: "Violín Principiante",
-    category: "violin",
-    level: "beginner",
-    duration: 45,
-    maxStudents: 10,
-    enrolledStudents: 6,
-    currentTeacher: "Juan Pérez",
-  },
-  {
-    id: "3",
-    name: "Guitarra Avanzada",
-    category: "guitar",
-    level: "advanced",
-    duration: 90,
-    maxStudents: 8,
-    enrolledStudents: 5,
-    currentTeacher: null,
-  },
-])
-
-const teachers = ref([
-  {
-    id: "1",
-    name: "María González",
-    email: "maria@musicacademy.com",
-    specialties: ["piano", "theory"],
-    currentClasses: 3,
-    experience: 8,
-    availability: "available",
-    conflictHours: 0,
-  },
-  {
-    id: "2",
-    name: "Carlos Rodriguez",
-    email: "carlos@musicacademy.com",
-    specialties: ["guitar", "voice"],
-    currentClasses: 5,
-    experience: 12,
-    availability: "partial",
-    conflictHours: 2,
-  },
-  {
-    id: "3",
-    name: "Ana López",
-    email: "ana@musicacademy.com",
-    specialties: ["violin", "theory"],
-    currentClasses: 2,
-    experience: 6,
-    availability: "available",
-    conflictHours: 0,
-  },
-])
+// Real data from stores
+const classes = computed(() => classesStore.classes)
+const teachers = computed(() => teachersStore.teachers)
 
 // Computed properties
 const minDate = computed(() => {
@@ -819,8 +762,13 @@ const handleSubmit = async () => {
   isSubmitting.value = true
 
   try {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    // TODO: Implementar la lógica real de asignación de maestro a clase
+    // Esto probablemente implicaría una llamada a un servicio o store de clases
+    console.log("Asignando maestro a clase:", {
+      class: selectedClass.value,
+      teacher: selectedTeacher.value,
+      assignment: assignmentData.value,
+    })
 
     // Emit the assignment event
     emit("assigned", {
@@ -883,7 +831,10 @@ const getAvailabilityLabel = (availability: string) => {
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
+  // Load data from stores
+  await Promise.all([classesStore.fetchClasses(), teachersStore.loadTeachers()])
+
   // Set default start date to tomorrow
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)

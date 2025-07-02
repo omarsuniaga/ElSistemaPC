@@ -42,8 +42,9 @@ const METRICS_WINDOW = 60000 // 1 minute
 
 // Simulate response time measurements for different modules (would be real measurements in production)
 const measureResponseTime = (moduleType: string): number => {
-  // In a real app, these would be actual performance measurements
-  // Here we're simulating realistic values based on module type
+  // ESTO ES UN PLACEHOLDER: En una aplicación real, estas serían mediciones de rendimiento reales
+  // obtenidas de un sistema de monitoreo de infraestructura o APM (Application Performance Monitoring).
+  // Actualmente, simula valores realistas basados en el tipo de módulo.
   const baseTimes: Record<string, number> = {
     auth: 45,
     classes: 67,
@@ -364,7 +365,8 @@ export function useSystemAnalytics() {
 
   // Initialize data on mount
   onMounted(() => {
-    initializeAnalytics()
+    // initializeAnalytics() // Deshabilitado: esta función es solo para simulación de datos.
+    // En un entorno de producción, los datos reales se cargarían aquí o a través de suscripciones.
   })
 
   // Track real activities from the system

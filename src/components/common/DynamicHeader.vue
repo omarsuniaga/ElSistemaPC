@@ -27,16 +27,18 @@
       </div>
 
       <!-- Acciones del header -->
-      <ion-buttons slot="end" class="header-actions">
-        <!-- Notificaciones -->
-        <slot name="notifications" />
+      <template #end>
+        <ion-buttons class="header-actions">
+          <!-- Notificaciones -->
+          <slot name="notifications" />
 
-        <!-- Menú de usuario -->
-        <slot name="user-menu" />
+          <!-- Menú de usuario -->
+          <slot name="user-menu" />
 
-        <!-- Acciones adicionales -->
-        <slot name="actions" />
-      </ion-buttons>
+          <!-- Acciones adicionales -->
+          <slot name="actions" />
+        </ion-buttons>
+      </template>
     </ion-toolbar>
 
     <!-- Barra de progreso opcional -->

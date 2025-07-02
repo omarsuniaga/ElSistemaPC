@@ -5,6 +5,23 @@
 [build.environment]
   NODE_VERSION = "20"
   NETLIFY_SKIP_MIGRATIONS = "true"
+  # Variables para integración con Firebase Functions
+  VITE_FIREBASE_FUNCTIONS_URL = "https://us-central1-orquestapuntacana.cloudfunctions.net"
+  VITE_WHATSAPP_API_URL = "https://us-central1-orquestapuntacana.cloudfunctions.net/whatsappApi"
+  VITE_ENVIRONMENT = "production"
+
+# Configuración de build específica para diferentes contextos
+[context.production.environment]
+  VITE_ENVIRONMENT = "production"
+  VITE_DEBUG_MODE = "false"
+
+[context.deploy-preview.environment]
+  VITE_ENVIRONMENT = "preview"
+  VITE_DEBUG_MODE = "true"
+
+[context.branch-deploy.environment]
+  VITE_ENVIRONMENT = "development"
+  VITE_DEBUG_MODE = "true"
 
 [build.processing]
   skip_processing = false

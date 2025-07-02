@@ -483,7 +483,7 @@ export class AdvancedStudentsService {
       const topPerformers = attendanceRates.filter((rate) => rate > 0.9).length
 
       // Calculate revenue impact (estimated)
-      const averageMonthlyFee = 150 // This should come from actual class fees
+      const averageMonthlyFee = 150 // TODO: Obtener de la configuración del sistema o de las tarifas de clases reales // This should come from actual class fees
       const revenueImpact = activeStudents * averageMonthlyFee
 
       return {

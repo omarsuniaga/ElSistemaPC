@@ -34,7 +34,13 @@ export default defineConfig({
     },
     // Mock Firebase for testing
     deps: {
-      inline: ["firebase", "@firebase/app", "@firebase/auth", "@firebase/firestore", "@firebase/storage"],
+      inline: [
+        "firebase",
+        "@firebase/app",
+        "@firebase/auth",
+        "@firebase/firestore",
+        "@firebase/storage",
+      ],
     },
   },
 })

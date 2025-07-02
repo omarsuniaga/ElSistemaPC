@@ -1,4 +1,4 @@
-<!-- views/ClassesView.vue -->
+si<!-- views/ClassesView.vue -->
 <script setup lang="ts">
 import {ref, computed, onMounted, watch, onBeforeMount} from "vue"
 import {useClassesStore} from "../modulos/Classes/store/classes"
@@ -21,6 +21,9 @@ import {
   BookOpenIcon,
   EllipsisVerticalIcon,
   ArrowLeftIcon,
+  EyeIcon,
+  PencilIcon,
+  UsersIcon,
 } from "@heroicons/vue/24/outline"
 
 interface ClassData {
@@ -578,41 +581,82 @@ watch([successMessage, errorMessage], clearMessages)
                     {{ getTeacherName(classItem.teacherId) }} • {{ classItem.level }}
                   </p>
                 </div>
-                <div class="ml-3 flex-shrink-0">
+                <div class="ml-3 flex items-center gap-2">
+                  <!-- Contador de estudiantes -->
                   <span
                     class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full"
                   >
                     {{ classItem.studentIds ? classItem.studentIds.length : 0 }}
                   </span>
+
+                  <!-- Botones de acción visibles -->
+                  <div class="flex items-center gap-1">
+                    <button
+                      class="p-1.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition-colors"
+                      title="Ver detalles"
+                      @click.stop="
+                        handleView({
+                          ...classItem,
+                          level: classItem.level || 'Iniciación',
+                          teacherId: classItem.teacherId || '',
+                          studentIds: classItem.studentIds || [],
+                          schedule: classItem.schedule || {days: [], startTime: '', endTime: ''},
+                        })
+                      "
+                    >
+                      <EyeIcon class="w-4 h-4" />
+                    </button>
+
+                    <button
+                      class="p-1.5 rounded-full hover:bg-yellow-100 dark:hover:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 transition-colors"
+                      title="Editar clase"
+                      @click.stop="handleEdit(classItem.id)"
+                    >
+                      <PencilIcon class="w-4 h-4" />
+                    </button>
+
+                    <button
+                      class="p-1.5 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 text-green-600 dark:text-green-400 transition-colors"
+                      title="Gestionar estudiantes"
+                      @click.stop="showStudentList(classItem.id)"
+                    >
+                      <UsersIcon class="w-4 h-4" />
+                    </button>
+
+                    <button
+                      class="p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 transition-colors"
+                      title="Eliminar clase"
+                      @click.stop="handleDelete(classItem.id)"
+                    >
+                      <TrashIcon class="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
+                <!-- Menú desplegable simplificado -->
                 <div class="ml-2 relative" @click.stop>
                   <button
                     class="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     @click="toggleDropdown(classItem.id, $event)"
                   >
-                    <EllipsisVerticalIcon class="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                    <EllipsisVerticalIcon class="h-4 w-4 text-gray-400 dark:text-gray-500" />
                   </button>
                   <div
                     v-if="activeDropdown === classItem.id"
-                    class="absolute right-0 mt-1 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-1 w-36 z-10"
+                    class="absolute right-0 mt-1 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-1 w-40 z-10"
                   >
                     <button
-                      class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
-                      @click="handleEdit(classItem.id)"
+                      class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                      @click="$router.push(`/classes/${classItem.id}`)"
                     >
-                      Editar
+                      <EyeIcon class="w-4 h-4" />
+                      Ver detalles completos
                     </button>
                     <button
-                      class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
-                      @click="showStudentList(classItem.id)"
+                      class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                      @click="$router.push(`/classes/${classItem.id}/edit`)"
                     >
-                      Estudiantes
-                    </button>
-                    <button
-                      class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
-                      @click="handleDelete(classItem.id)"
-                    >
-                      Eliminar
+                      <PencilIcon class="w-4 h-4" />
+                      Editar en página completa
                     </button>
                   </div>
                 </div>

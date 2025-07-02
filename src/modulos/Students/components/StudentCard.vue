@@ -244,12 +244,12 @@ const displayAttendance = computed(() => {
   if (lastMonthAttendance.value > 0) {
     return lastMonthAttendance.value
   }
-  
+
   // Si no hay datos calculados pero hay datos de props, usarlos
   if (props.attendance > 0) {
     return props.attendance
   }
-  
+
   // Si no hay datos, mostrar 0
   return 0
 })

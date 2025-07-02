@@ -1,6 +1,12 @@
 <template>
   <TransitionRoot :show="open" as="template">
-    <Dialog :open="open" as="div" class="fixed inset-0 z-50 overflow-y-auto" @close="handleClose" @open="lockBodyScroll">
+    <Dialog
+      :open="open"
+      as="div"
+      class="fixed inset-0 z-50 overflow-y-auto"
+      @close="handleClose"
+      @open="lockBodyScroll"
+    >
       <div class="min-h-screen px-4 text-center">
         <!-- Overlay -->
         <TransitionChild
@@ -12,7 +18,10 @@
           leave-from="opacity-100"
           leave-to="opacity-0"
         >
-          <div class="fixed inset-0 bg-black/30 dark:bg-black/60 transition-opacity" aria-hidden="true" />
+          <div
+            class="fixed inset-0 bg-black/30 dark:bg-black/60 transition-opacity"
+            aria-hidden="true"
+          />
         </TransitionChild>
 
         <!-- Modal Container -->
@@ -27,278 +36,306 @@
               leave-from="opacity-100 translate-y-0 sm:scale-100"
               leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-            <DialogPanel class="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-              <div class="flex items-center justify-between mb-4">
-                <DialogTitle as="h3" class="text-xl font-semibold leading-6 text-gray-900 dark:text-white">
-                  {{ isEditing ? "Editar Clase" : "Crear Clase" }}
-                </DialogTitle>
-                <button
-                  type="button"
-                  class="rounded-md text-gray-400 hover:text-gray-500 dark:text-gray-400 dark:hover:text-gray-300 focus:outline-none"
-                  @click="handleClose"
-                >
-                  <span class="sr-only">Cerrar</span>
-                  <XMarkIcon class="h-6 w-6" aria-hidden="true" />
-                </button>
-              </div>
-
-          <form @submit.prevent="handleSubmit">
-            <div class="mb-4">
-              <label for="name" class="block text-sm font-medium text-gray-700">
-                Nombre de la clase
-              </label>
-              <input
-                id="name"
-                v-model="studentForm.name"
-                type="text"
-                class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
-                placeholder="Nombre de la clase"
-              />
-            </div>
-
-            <div class="mb-4">
-              <label for="instrument" class="block text-sm font-medium text-gray-700">
-                Instrumento
-              </label>
-              <input
-                id="instrument"
-                v-model="studentForm.instrument"
-                type="text"
-                class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
-                placeholder="Instrumento"
-              />
-            </div>
-
-            <div class="mb-4">
-              <label for="level" class="block text-sm font-medium text-gray-700"> Nivel </label>
-              <input
-                id="level"
-                v-model="studentForm.level"
-                type="text"
-                class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
-                placeholder="Nivel"
-              />
-            </div>
-
-            <div class="mb-4">
-              <label for="status" class="block text-sm font-medium text-gray-700"> Estado </label>
-              <select
-                id="status"
-                v-model="studentForm.status"
-                class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
+              <DialogPanel
+                class="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all"
               >
-                <option value="active">Activo</option>
-                <option value="inactive">Inactivo</option>
-                <option value="suspended">Suspendido</option>
-              </select>
-            </div>
-
-            <div class="mb-4">
-              <label for="description" class="block text-sm font-medium text-gray-700">
-                Descripción
-              </label>
-              <textarea
-                id="description"
-                v-model="studentForm.description"
-                class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
-                placeholder="Descripción"
-              />
-            </div>
-
-            <div class="mb-4">
-              <label for="capacity" class="block text-sm font-medium text-gray-700">
-                Capacidad
-              </label>
-              <input
-                id="capacity"
-                v-model="studentForm.capacity"
-                type="number"
-                class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
-                placeholder="Capacidad"
-              />
-            </div>
-
-            <div class="mb-4">
-              <label for="teacherId" class="block text-sm font-medium text-gray-700">
-                Profesor
-              </label>
-              <select
-                id="teacherId"
-                v-model="studentForm.teacherId"
-                class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
-              >
-                <option v-for="teacher in teachers" :key="teacher.id" :value="teacher.id">
-                  {{ teacher.name }}
-                </option>
-              </select>
-            </div>
-
-            <div class="mb-4">
-              <label for="studentIds" class="block text-sm font-medium text-gray-700 mb-2">
-                Estudiantes
-              </label>
-              <!-- Search input -->
-              <div class="relative mb-2">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <MagnifyingGlassIcon class="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  id="studentSearch"
-                  v-model="studentSearchTerm"
-                  type="text"
-                  class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  placeholder="Buscar estudiantes..."
-                />
-              </div>
-              
-              <!-- Student list -->
-              <div class="h-48 overflow-y-auto border rounded-md border-gray-200 dark:border-gray-700 p-2 bg-white dark:bg-gray-800">
-                <!-- Loading state -->
-                <div v-if="loading.students" class="flex justify-center items-center h-full">
-                  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-                </div>
-                
-                <!-- Empty state -->
-                <div v-else-if="!loading.students && filteredStudents.length === 0" class="text-center text-gray-500 py-4">
-                  {{ students.length === 0 ? 'No hay estudiantes disponibles' : 'No se encontraron estudiantes que coincidan con la búsqueda' }}
-                </div>
-                
-                <!-- Students list -->
-                <div v-else class="space-y-1">
-                  <div 
-                    v-for="student in filteredStudents" 
-                    :key="student.id" 
-                    class="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors duration-150"
+                <div class="flex items-center justify-between mb-4">
+                  <DialogTitle
+                    as="h3"
+                    class="text-xl font-semibold leading-6 text-gray-900 dark:text-white"
                   >
-                    <input
-                      :id="`student-${student.id}`"
-                      v-model="studentForm.studentIds"
-                      type="checkbox"
-                      :value="student.id"
-                      class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
-                      @change="onStudentSelected"
-                    />
-                    <label 
-                      :for="`student-${student.id}`"
-                      class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer flex-1"
-                    >
-                      {{ student.nombre }} {{ student.apellido }}
-                      <span v-if="student.instrumento" class="text-xs text-gray-500 ml-2">
-                        ({{ student.instrumento }})
-                      </span>
+                    {{ isEditing ? "Editar Clase" : "Crear Clase" }}
+                  </DialogTitle>
+                  <button
+                    type="button"
+                    class="rounded-md text-gray-400 hover:text-gray-500 dark:text-gray-400 dark:hover:text-gray-300 focus:outline-none"
+                    @click="handleClose"
+                  >
+                    <span class="sr-only">Cerrar</span>
+                    <XMarkIcon class="h-6 w-6" aria-hidden="true" />
+                  </button>
+                </div>
+
+                <form @submit.prevent="handleSubmit">
+                  <div class="mb-4">
+                    <label for="name" class="block text-sm font-medium text-gray-700">
+                      Nombre de la clase
                     </label>
+                    <input
+                      id="name"
+                      v-model="studentForm.name"
+                      type="text"
+                      class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
+                      placeholder="Nombre de la clase"
+                    />
                   </div>
-                </div>
-                
-                <!-- Debug info (only in development) -->
-                <div v-if="isDevelopment" class="mt-4 p-3 text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-                  <div class="font-medium mb-1">Información de depuración:</div>
-                  <div>• Estudiantes cargados: {{ students.length }}</div>
-                  <div>• Estudiantes filtrados: {{ filteredStudents.length }}</div>
-                  <div v-if="filteredStudents.length > 0" class="mt-2">
-                    <div class="font-medium">Ejemplo de estudiante:</div>
-                    <pre class="text-xs overflow-auto p-2 bg-white dark:bg-gray-900 rounded mt-1">{{ JSON.stringify(filteredStudents[0], null, 2) }}</pre>
+
+                  <div class="mb-4">
+                    <label for="instrument" class="block text-sm font-medium text-gray-700">
+                      Instrumento
+                    </label>
+                    <input
+                      id="instrument"
+                      v-model="studentForm.instrument"
+                      type="text"
+                      class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
+                      placeholder="Instrumento"
+                    />
                   </div>
-                </div>
-              </div>
-            </div>
 
-            <div class="mb-4">
-              <label for="sharedWith" class="block text-sm font-medium text-gray-700">
-                Compartir con
-              </label>
-              <select
-                id="sharedWith"
-                v-model="studentForm.sharedWith"
-                multiple
-                class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
-              >
-                <option
-                  v-for="teacher in availableSharedTeachers"
-                  :key="teacher.id"
-                  :value="teacher.id"
-                >
-                  {{ teacher.name }}
-                </option>
-              </select>
-            </div>
+                  <div class="mb-4">
+                    <label for="level" class="block text-sm font-medium text-gray-700">
+                      Nivel
+                    </label>
+                    <input
+                      id="level"
+                      v-model="studentForm.level"
+                      type="text"
+                      class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
+                      placeholder="Nivel"
+                    />
+                  </div>
 
-            <div class="mb-4">
-              <label for="permissions" class="block text-sm font-medium text-gray-700">
-                Permisos
-              </label>
-              <div
-                v-for="teacherId in studentForm.sharedWith"
-                :key="teacherId"
-                class="flex items-center"
-              >
-                <span class="mr-2">{{ getTeacherName(teacherId) }}</span>
-                <select
-                  v-model="studentForm.permissions[teacherId]"
-                  class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
-                >
-                  <option value="read">Lectura</option>
-                  <option value="write">Escritura</option>
-                  <option value="manage">Administración</option>
-                </select>
-              </div>
-            </div>
+                  <div class="mb-4">
+                    <label for="status" class="block text-sm font-medium text-gray-700">
+                      Estado
+                    </label>
+                    <select
+                      id="status"
+                      v-model="studentForm.status"
+                      class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
+                    >
+                      <option value="active">Activo</option>
+                      <option value="inactive">Inactivo</option>
+                      <option value="suspended">Suspendido</option>
+                    </select>
+                  </div>
 
-            <div class="mb-4">
-              <label for="schedules" class="block text-sm font-medium text-gray-700">
-                Horarios
-              </label>
-              <div
-                v-for="(schedule, index) in studentForm.schedules"
-                :key="index"
-                class="flex items-center"
-              >
-                <input
-                  v-model="schedule.day"
-                  type="text"
-                  class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
-                  placeholder="Día"
-                />
-                <input
-                  v-model="schedule.startTime"
-                  type="time"
-                  class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
-                  placeholder="Hora de inicio"
-                />
-                <input
-                  v-model="schedule.endTime"
-                  type="time"
-                  class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
-                  placeholder="Hora de fin"
-                />
-                <button
-                  type="button"
-                  class="ml-2 rounded-md bg-red-500 p-2 text-sm text-white hover:bg-red-700"
-                  @click="removeScheduleSlot(index)"
-                >
-                  Eliminar
-                </button>
-              </div>
-              <button
-                type="button"
-                class="mt-2 rounded-md bg-blue-500 p-2 text-sm text-white hover:bg-blue-700"
-                @click="addScheduleSlot"
-              >
-                Agregar horario
-              </button>
-            </div>
+                  <div class="mb-4">
+                    <label for="description" class="block text-sm font-medium text-gray-700">
+                      Descripción
+                    </label>
+                    <textarea
+                      id="description"
+                      v-model="studentForm.description"
+                      class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
+                      placeholder="Descripción"
+                    />
+                  </div>
 
-            <div class="mt-4 flex justify-end">
-              <button
-                type="submit"
-                :disabled="!isFormValid || saving"
-                class="inline-flex justify-center rounded-md border border-transparent bg-blue-500 py-2 px-4 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                {{ isEditing ? "Actualizar" : "Crear" }}
-              </button>
-            </div>
-          </form>
-            </DialogPanel>
+                  <div class="mb-4">
+                    <label for="capacity" class="block text-sm font-medium text-gray-700">
+                      Capacidad
+                    </label>
+                    <input
+                      id="capacity"
+                      v-model="studentForm.capacity"
+                      type="number"
+                      class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
+                      placeholder="Capacidad"
+                    />
+                  </div>
+
+                  <div class="mb-4">
+                    <label for="teacherId" class="block text-sm font-medium text-gray-700">
+                      Profesor
+                    </label>
+                    <select
+                      id="teacherId"
+                      v-model="studentForm.teacherId"
+                      class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
+                    >
+                      <option v-for="teacher in teachers" :key="teacher.id" :value="teacher.id">
+                        {{ teacher.name }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="mb-4">
+                    <label for="studentIds" class="block text-sm font-medium text-gray-700 mb-2">
+                      Estudiantes
+                    </label>
+                    <!-- Search input -->
+                    <div class="relative mb-2">
+                      <div
+                        class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                      >
+                        <MagnifyingGlassIcon class="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input
+                        id="studentSearch"
+                        v-model="studentSearchTerm"
+                        type="text"
+                        class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                        placeholder="Buscar estudiantes..."
+                      />
+                    </div>
+
+                    <!-- Student list -->
+                    <div
+                      class="h-48 overflow-y-auto border rounded-md border-gray-200 dark:border-gray-700 p-2 bg-white dark:bg-gray-800"
+                    >
+                      <!-- Loading state -->
+                      <div v-if="loading.students" class="flex justify-center items-center h-full">
+                        <div
+                          class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"
+                        />
+                      </div>
+
+                      <!-- Empty state -->
+                      <div
+                        v-else-if="!loading.students && filteredStudents.length === 0"
+                        class="text-center text-gray-500 py-4"
+                      >
+                        {{
+                          students.length === 0
+                            ? "No hay estudiantes disponibles"
+                            : "No se encontraron estudiantes que coincidan con la búsqueda"
+                        }}
+                      </div>
+
+                      <!-- Students list -->
+                      <div v-else class="space-y-1">
+                        <div
+                          v-for="student in filteredStudents"
+                          :key="student.id"
+                          class="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors duration-150"
+                        >
+                          <input
+                            :id="`student-${student.id}`"
+                            v-model="studentForm.studentIds"
+                            type="checkbox"
+                            :value="student.id"
+                            class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+                            @change="onStudentSelected"
+                          />
+                          <label
+                            :for="`student-${student.id}`"
+                            class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer flex-1"
+                          >
+                            {{ student.nombre }} {{ student.apellido }}
+                            <span v-if="student.instrumento" class="text-xs text-gray-500 ml-2">
+                              ({{ student.instrumento }})
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <!-- Debug info (only in development) -->
+                      <div
+                        v-if="isDevelopment"
+                        class="mt-4 p-3 text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+                      >
+                        <div class="font-medium mb-1">Información de depuración:</div>
+                        <div>• Estudiantes cargados: {{ students.length }}</div>
+                        <div>• Estudiantes filtrados: {{ filteredStudents.length }}</div>
+                        <div v-if="filteredStudents.length > 0" class="mt-2">
+                          <div class="font-medium">Ejemplo de estudiante:</div>
+                          <pre
+                            class="text-xs overflow-auto p-2 bg-white dark:bg-gray-900 rounded mt-1"
+                            >{{ JSON.stringify(filteredStudents[0], null, 2) }}</pre
+                          >
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="mb-4">
+                    <label for="sharedWith" class="block text-sm font-medium text-gray-700">
+                      Compartir con
+                    </label>
+                    <select
+                      id="sharedWith"
+                      v-model="studentForm.sharedWith"
+                      multiple
+                      class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
+                    >
+                      <option
+                        v-for="teacher in availableSharedTeachers"
+                        :key="teacher.id"
+                        :value="teacher.id"
+                      >
+                        {{ teacher.name }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="mb-4">
+                    <label for="permissions" class="block text-sm font-medium text-gray-700">
+                      Permisos
+                    </label>
+                    <div
+                      v-for="teacherId in studentForm.sharedWith"
+                      :key="teacherId"
+                      class="flex items-center"
+                    >
+                      <span class="mr-2">{{ getTeacherName(teacherId) }}</span>
+                      <select
+                        v-model="studentForm.permissions[teacherId]"
+                        class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
+                      >
+                        <option value="read">Lectura</option>
+                        <option value="write">Escritura</option>
+                        <option value="manage">Administración</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="mb-4">
+                    <label for="schedules" class="block text-sm font-medium text-gray-700">
+                      Horarios
+                    </label>
+                    <div
+                      v-for="(schedule, index) in studentForm.schedules"
+                      :key="index"
+                      class="flex items-center"
+                    >
+                      <input
+                        v-model="schedule.day"
+                        type="text"
+                        class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
+                        placeholder="Día"
+                      />
+                      <input
+                        v-model="schedule.startTime"
+                        type="time"
+                        class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
+                        placeholder="Hora de inicio"
+                      />
+                      <input
+                        v-model="schedule.endTime"
+                        type="time"
+                        class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
+                        placeholder="Hora de fin"
+                      />
+                      <button
+                        type="button"
+                        class="ml-2 rounded-md bg-red-500 p-2 text-sm text-white hover:bg-red-700"
+                        @click="removeScheduleSlot(index)"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      class="mt-2 rounded-md bg-blue-500 p-2 text-sm text-white hover:bg-blue-700"
+                      @click="addScheduleSlot"
+                    >
+                      Agregar horario
+                    </button>
+                  </div>
+
+                  <div class="mt-4 flex justify-end">
+                    <button
+                      type="submit"
+                      :disabled="!isFormValid || saving"
+                      class="inline-flex justify-center rounded-md border border-transparent bg-blue-500 py-2 px-4 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >
+                      {{ isEditing ? "Actualizar" : "Crear" }}
+                    </button>
+                  </div>
+                </form>
+              </DialogPanel>
             </TransitionChild>
           </div>
         </div>
@@ -308,10 +345,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, shallowRef, nextTick, defineAsyncComponent, withDefaults } from 'vue'
-import { debounce } from "lodash-es"
+import {
+  ref,
+  computed,
+  watch,
+  onMounted,
+  shallowRef,
+  nextTick,
+  defineAsyncComponent,
+  withDefaults,
+} from "vue"
+import {debounce} from "lodash-es"
 import {Dialog, DialogPanel, TransitionRoot, TransitionChild, DialogTitle} from "@headlessui/vue"
-import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import {MagnifyingGlassIcon, XMarkIcon} from "@heroicons/vue/24/outline"
 import {useTeachersStore} from "../../Teachers/store/teachers"
 import {useStudentsStore} from "../../Students/store/students"
 import {useNotification} from "@/composables/useNotification"
@@ -323,15 +369,15 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  classData: null
+  classData: null,
 })
 
 const emit = defineEmits<{
-  (e: 'close'): void
-  (e: 'save', data: Partial<ClassData>): void
+  (e: "close"): void
+  (e: "save", data: Partial<ClassData>): void
 }>()
 
-const isDevelopment = import.meta.env.MODE === 'development'
+const isDevelopment = import.meta.env.MODE === "development"
 
 const teachersStore = useTeachersStore()
 const studentsStore = useStudentsStore()
@@ -420,29 +466,29 @@ watch(studentSearchTerm, (newTerm) => {
     updateStudentSearch(newTerm)
   } else {
     // Reset immediately when search is cleared
-    studentSearchTerm.value = ''
+    studentSearchTerm.value = ""
   }
 })
 
 // Optimized filtering function
 const filterStudents = (items: any[], searchTerm: string) => {
   if (!searchTerm) return items
-  
-  const searchTerms = searchTerm.split(' ').filter(term => term.length > 0)
+
+  const searchTerms = searchTerm.split(" ").filter((term) => term.length > 0)
   if (searchTerms.length === 0) return items
-  
+
   return items.filter((student) => {
     // Normalize student data
-    const nombre = normalizeText(student.nombre || '')
-    const apellido = normalizeText(student.apellido || '')
-    const instrumento = normalizeText(student.instrumento || '')
+    const nombre = normalizeText(student.nombre || "")
+    const apellido = normalizeText(student.apellido || "")
+    const instrumento = normalizeText(student.instrumento || "")
     const fullName = `${nombre} ${apellido}`.trim()
-    
+
     // Check if all search terms match any field
-    return searchTerms.every(term => {
+    return searchTerms.every((term) => {
       const normalizedTerm = normalizeText(term)
       if (!normalizedTerm) return true
-      
+
       return (
         nombre.includes(normalizedTerm) ||
         apellido.includes(normalizedTerm) ||
@@ -510,7 +556,7 @@ const getTeacherName = (teacherId: string): string => {
 const onStudentSelected = () => {
   // Optional: Add any logic needed when a student is selected
   // For example, you could close a dropdown or show a confirmation
-  console.log('Selected students:', studentForm.value.studentIds)
+  console.log("Selected students:", studentForm.value.studentIds)
 }
 
 // Functions for managing multiple schedules
@@ -929,12 +975,8 @@ watch(
         description: classData.description || "",
         capacity: classData.capacity || 8,
         teacherId: classData.teacherId || "",
-        studentIds: Array.isArray(classData.studentIds)
-          ? [...classData.studentIds]
-          : [],
-        sharedWith: Array.isArray(classData.sharedWith)
-          ? [...classData.sharedWith]
-          : [],
+        studentIds: Array.isArray(classData.studentIds) ? [...classData.studentIds] : [],
+        sharedWith: Array.isArray(classData.sharedWith) ? [...classData.sharedWith] : [],
         permissions: {...(classData.permissions || {})},
         schedules,
       }
@@ -947,15 +989,15 @@ watch(
 
 const handleClose = () => {
   unlockBodyScroll()
-  emit('close')
+  emit("close")
 }
 
 function lockBodyScroll() {
-  document.body.style.overflow = 'hidden';
+  document.body.style.overflow = "hidden"
 }
 
 function unlockBodyScroll() {
-  document.body.style.overflow = '';
+  document.body.style.overflow = ""
 }
 </script>
 

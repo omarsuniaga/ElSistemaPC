@@ -196,5 +196,29 @@ document.addEventListener("DOMContentLoaded", () => {
 // Verificar configuración RBAC
 verifyRBACSetup()
 
+// Inicializar sistema de notificaciones de asistencia
+async function initializeAttendanceNotifications() {
+  try {
+    // Importar e inicializar el sistema de notificaciones
+    const {default: notificationSystem} = await import("./services/attendanceNotificationManager")
+
+    console.log("🔔 Inicializando sistema de notificaciones de asistencia...")
+
+    // Forzar auto-inicialización
+    await notificationSystem.forceAutoInitialize()
+
+    // Exponer en desarrollo para debugging
+    if (import.meta.env.DEV) {
+      ;(window as any).attendanceNotifications = notificationSystem
+      console.log("🔧 Sistema de notificaciones disponible en window.attendanceNotifications")
+    }
+  } catch (error) {
+    console.error("❌ Error inicializando notificaciones de asistencia:", error)
+  }
+}
+
+// Inicializar notificaciones después de un breve delay para permitir que el router esté listo
+setTimeout(initializeAttendanceNotifications, 3000)
+
 // Registrar Service Worker para PWA
 registerServiceWorker()

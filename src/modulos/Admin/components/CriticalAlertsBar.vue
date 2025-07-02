@@ -239,36 +239,6 @@ const removeAlert = (id: string) => {
 }
 
 // Simular algunas alertas críticas para demostración
-onMounted(() => {
-  if (criticalAlerts.value.length === 0) {
-    // Ejemplo de alertas
-    criticalAlerts.value = [
-      {
-        id: "1",
-        title: "Servidor sobrecargado",
-        message: "El servidor principal está operando al 95% de capacidad",
-        severity: "critical",
-        timestamp: new Date(Date.now() - 300000), // 5 minutos atrás
-        affectedUsers: 45,
-        actions: [
-          {id: "scale", label: "Escalar recursos", type: "primary"},
-          {id: "restart", label: "Reiniciar servicio", type: "danger"},
-        ],
-      },
-      {
-        id: "2",
-        title: "Fallo en backup automático",
-        message: "El backup programado de las 02:00 AM falló",
-        severity: "high",
-        timestamp: new Date(Date.now() - 3600000), // 1 hora atrás
-        actions: [
-          {id: "retry", label: "Reintentar backup", type: "primary"},
-          {id: "manual", label: "Backup manual", type: "secondary"},
-        ],
-      },
-    ]
-  }
-})
 
 // Auto-refresh if enabled
 if (props.autoRefresh) {

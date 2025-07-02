@@ -4,7 +4,7 @@ const adminRoutes: RouteRecordRaw[] = [
   {
     path: "/admin",
     name: "AdminModule",
-    component: () => import("../views/SuperAdminDashboardUnified.vue"),
+    component: () => import("../views/SuperAdminDashboard.vue"),
     meta: {
       title: "Panel de Administración - Super Admin",
       requiresAuth: true,
@@ -23,11 +23,16 @@ const adminRoutes: RouteRecordRaw[] = [
     },
   },
   {
-    path: "/admin/super",
-    name: "SuperAdminDashboard",
-    redirect: "/admin", // Redirigir al SuperAdmin principal
+    path: "/admin/reporteAsistenciaDiaria",
+    name: "ReporteAsistencia",
+    component: () => import("@/views/reporteAsistenciaDiaria.vue"),
     meta: {
+      title: "Reporte de Asistencias Diarias",
       requiresAuth: true,
+      permissions: {
+        module: "admin",
+        action: "view_dashboard",
+      },
     },
   },
   {
@@ -44,9 +49,10 @@ const adminRoutes: RouteRecordRaw[] = [
     },
   },
   {
-    path: "/admin/dashboard-classic",
+    path: "/admin/analytics",
     name: "SuperAdminDashboardClassic",
-    component: () => import("../views/SuperAdminDashboard.vue"),
+    // component: () => import("@/modulos/Admin/components/analyticsPanel.vue"),
+    component: () => import("../../../views/DailyMonitoringView.vue"),
     meta: {
       title: "Panel Super Admin - Versión Clásica",
       requiresAuth: true,
@@ -282,7 +288,7 @@ const adminRoutes: RouteRecordRaw[] = [
     },
   },
   {
-    path: "/admin/inventory",
+    path: "/admin/instruments",
     name: "AdminInventory",
     component: () => import("../views/AdminInventoryView.vue"),
     meta: {

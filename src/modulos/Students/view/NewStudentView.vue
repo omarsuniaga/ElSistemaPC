@@ -23,7 +23,7 @@ const showNotification = (message: string, type = "success") => {
   }, 7000)
 }
 
-const newStudent = ref<Omit<Student, 'id'> & {id?: string}>({
+const newStudent = ref<Omit<Student, "id"> & {id?: string}>({
   nombre: "",
   apellido: "",
   instrumento: "",

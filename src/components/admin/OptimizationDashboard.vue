@@ -4,11 +4,13 @@
     <ion-header>
       <ion-toolbar>
         <ion-title>Centro de Control de Optimización</ion-title>
-        <ion-buttons slot="end">
-          <ion-button :disabled="loading" @click="refreshMetrics">
-            <ion-icon :icon="refresh" />
-          </ion-button>
-        </ion-buttons>
+        <template #end>
+          <ion-buttons>
+            <ion-button :disabled="loading" @click="refreshMetrics">
+              <ion-icon :icon="refresh" />
+            </ion-button>
+          </ion-buttons>
+        </template>
       </ion-toolbar>
     </ion-header>
 
@@ -102,7 +104,9 @@
               </div>
               <div class="cache-actions">
                 <ion-button size="small" color="warning" @click="clearCache">
-                  <ion-icon slot="start" :icon="trashOutline" />
+                  <template #start>
+                    <ion-icon :icon="trashOutline" />
+                  </template>
                   Limpiar Cache
                 </ion-button>
               </div>
@@ -121,7 +125,9 @@
           <ion-card-content>
             <ion-list>
               <ion-item v-for="issue in criticalIssues" :key="issue">
-                <ion-icon slot="start" :icon="alertCircleOutline" color="danger" />
+                <template #start>
+                  <ion-icon :icon="alertCircleOutline" color="danger" />
+                </template>
                 <ion-label>{{ issue }}</ion-label>
               </ion-item>
             </ion-list>
@@ -139,7 +145,9 @@
           <ion-card-content>
             <ion-list>
               <ion-item v-for="recommendation in recommendations" :key="recommendation">
-                <ion-icon slot="start" :icon="checkmarkCircleOutline" color="success" />
+                <template #start>
+                  <ion-icon :icon="checkmarkCircleOutline" color="success" />
+                </template>
                 <ion-label>{{ recommendation }}</ion-label>
               </ion-item>
             </ion-list>
@@ -200,7 +208,9 @@
                 size="default"
                 @click="preloadComponents"
               >
-                <ion-icon slot="start" :icon="cloudDownloadOutline" />
+                <template #start>
+                  <ion-icon :icon="cloudDownloadOutline" />
+                </template>
                 Precargar Componentes
               </ion-button>
 
@@ -210,7 +220,9 @@
                 size="default"
                 @click="optimizeImages"
               >
-                <ion-icon slot="start" :icon="imageOutline" />
+                <template #start>
+                  <ion-icon :icon="imageOutline" />
+                </template>
                 Optimizar Imágenes
               </ion-button>
 
@@ -220,12 +232,16 @@
                 size="default"
                 @click="analyzeBundle"
               >
-                <ion-icon slot="start" :icon="analyticsOutline" />
+                <template #start>
+                  <ion-icon :icon="analyticsOutline" />
+                </template>
                 Analizar Bundle
               </ion-button>
 
               <ion-button :disabled="loading" color="success" size="default" @click="exportReport">
-                <ion-icon slot="start" :icon="downloadOutline" />
+                <template #start>
+                  <ion-icon :icon="downloadOutline" />
+                </template>
                 Exportar Reporte
               </ion-button>
             </div>

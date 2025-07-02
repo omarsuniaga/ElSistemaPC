@@ -78,14 +78,14 @@ const handleSubmit = async () => {
     console.error("No hay datos del formulario para guardar")
     return
   }
-  
+
   console.log("🔄 Iniciando actualización del estudiante:", studentId)
   console.log("📝 Datos a guardar:", JSON.stringify(formData.value, null, 2))
-  
+
   isLoading.value = true
   error.value = null
   successMessage.value = null
-  
+
   try {
     // Asegurarnos que grupo sea un array antes de guardar
     if (!Array.isArray(formData.value.grupo)) {
@@ -94,15 +94,15 @@ const handleSubmit = async () => {
 
     console.log("📤 Enviando datos al store...")
     await studentsStore.updateStudent(String(studentId), formData.value)
-    
+
     console.log("✅ Estudiante actualizado exitosamente en Firestore")
     successMessage.value = "Estudiante actualizado exitosamente"
-    
+
     console.log("🔄 Refrescando lista de estudiantes...")
-    
+
     // Refrescar la lista de estudiantes para asegurar que los cambios se reflejen
     await studentsStore.fetchStudents()
-    
+
     // Esperar un poco para mostrar el mensaje de éxito antes de redirigir
     setTimeout(() => {
       console.log("🏠 Redirigiendo a la lista de estudiantes...")

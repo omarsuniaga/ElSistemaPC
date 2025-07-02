@@ -372,9 +372,10 @@ const canEditTeacher = computed(() => rbacStore.canAccess("teachers", "edit"))
 
 // Mock stats - in a real app, this would come from the store or API
 const teacherStats = computed(() => ({
-  totalClasses: 12,
-  totalStudents: 25,
-  weeklyHours: 20,
+  // TODO: Obtener estadísticas reales del maestro del store o API
+  totalClasses: 0,
+  totalStudents: 0,
+  weeklyHours: 0,
 }))
 
 // Colors and styling
@@ -420,38 +421,7 @@ const loadTeacher = async () => {
   try {
     isLoading.value = true
     const teacherId = route.params.id as string
-
-    // In a real app, you would fetch from the store
-    // For now, create a mock teacher
-    teacher.value = {
-      uid: teacherId,
-      id: teacherId,
-      name: `Maestro ${teacherId}`,
-      email: `maestro${teacherId}@academia.com`,
-      phone: "+1 (555) 123-4567",
-      address: "123 Music Street, Music City",
-      hireDate: new Date("2022-01-15"),
-      status: TeacherStatus.ACTIVE,
-      specialties: ["Piano", "Teoría Musical"],
-      hourlyRate: 50,
-      biography:
-        "Maestro experimentado con más de 10 años de experiencia enseñando piano y teoría musical. Graduado del Conservatorio Nacional con honores.",
-      experience: "10 años enseñando piano y teoría musical",
-      qualifications: [
-        {
-          title: "Licenciatura en Música",
-          institution: "Conservatorio Nacional",
-          year: 2010,
-        },
-        {
-          title: "Certificación en Pedagogía Musical",
-          institution: "Instituto de Música Avanzada",
-          year: 2015,
-        },
-      ],
-      createdAt: new Date("2022-01-15"),
-      updatedAt: new Date(),
-    }
+    teacher.value = await teachersStore.fetchTeacherById(teacherId)
   } catch (error) {
     console.error("Error loading teacher:", error)
     teacher.value = null

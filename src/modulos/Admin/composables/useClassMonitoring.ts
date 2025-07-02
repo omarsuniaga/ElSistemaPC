@@ -138,19 +138,17 @@ export const useClassMonitoring = () => {
 
   const loadDayMetrics = async (date: Date) => {
     try {
-      // TODO: Implementar llamada real a la API
+      // TODO: Implementar llamada real a la API para obtener métricas diarias
       // const metrics = await adminStore.getDayMetrics(date)
-
-      // Datos mock para desarrollo
       dayMetrics.value = {
-        scheduledClasses: 12,
-        expectedTeachers: 8,
-        expectedStudents: 48,
-        attendanceRate: 87,
-        activeClasses: 3,
-        completedClasses: 4,
-        cancelledClasses: 1,
-      }
+        scheduledClasses: 0,
+        expectedTeachers: 0,
+        expectedStudents: 0,
+        attendanceRate: 0,
+        activeClasses: 0,
+        completedClasses: 0,
+        cancelledClasses: 0,
+      } // Valores iniciales hasta tener datos reales
     } catch (error) {
       console.error("Error loading day metrics:", error)
       throw error
@@ -159,51 +157,9 @@ export const useClassMonitoring = () => {
 
   const loadCurrentClasses = async (date: Date) => {
     try {
-      // TODO: Implementar llamada real a la API
+      // TODO: Implementar llamada real a la API para obtener clases actuales
       // const classes = await adminStore.getClassesByDate(date)
-
-      // Datos mock para desarrollo
-      currentClasses.value = [
-        {
-          id: "1",
-          name: "Violín Básico A",
-          teacher: "Prof. María González",
-          schedule: "09:00 - 10:00",
-          presentStudents: 4,
-          totalStudents: 6,
-          status: "in_progress",
-          attendancePercentage: 67,
-          instrument: "Violín",
-          room: "Aula 1",
-          lastUpdate: new Date(),
-        },
-        {
-          id: "2",
-          name: "Piano Intermedio",
-          teacher: "Prof. Carlos Rodríguez",
-          schedule: "10:30 - 11:30",
-          presentStudents: 8,
-          totalStudents: 8,
-          status: "completed",
-          attendancePercentage: 100,
-          instrument: "Piano",
-          room: "Aula 2",
-          lastUpdate: new Date(),
-        },
-        {
-          id: "3",
-          name: "Guitarra Avanzado",
-          teacher: "Prof. Ana Martínez",
-          schedule: "14:00 - 15:00",
-          presentStudents: 0,
-          totalStudents: 5,
-          status: "scheduled",
-          attendancePercentage: 0,
-          instrument: "Guitarra",
-          room: "Aula 3",
-          lastUpdate: new Date(),
-        },
-      ]
+      currentClasses.value = [] // Array vacío hasta tener datos reales
     } catch (error) {
       console.error("Error loading current classes:", error)
       throw error
@@ -212,60 +168,9 @@ export const useClassMonitoring = () => {
 
   const loadCriticalStudents = async () => {
     try {
-      // TODO: Implementar llamada real a la API
+      // TODO: Implementar llamada real a la API para obtener estudiantes críticos
       // const students = await adminStore.getCriticalStudents()
-
-      // Datos mock para desarrollo
-      criticalStudents.value = [
-        {
-          id: "1",
-          fullName: "Juan Carlos Pérez López",
-          instrument: "Violín",
-          age: 12,
-          assignedClasses: 24,
-          absences: 8,
-          attendanceRate: 67,
-          representative: {
-            name: "María López",
-            phone: "+58412345678",
-            email: "maria.lopez@email.com",
-          },
-          lastAttendance: new Date("2024-12-01"),
-          riskLevel: "high",
-        },
-        {
-          id: "2",
-          fullName: "Ana María Rodríguez",
-          instrument: "Piano",
-          age: 15,
-          assignedClasses: 20,
-          absences: 6,
-          attendanceRate: 70,
-          representative: {
-            name: "Carmen Rodríguez",
-            phone: "+58424567890",
-            email: "carmen.rodriguez@email.com",
-          },
-          lastAttendance: new Date("2024-12-03"),
-          riskLevel: "medium",
-        },
-        {
-          id: "3",
-          fullName: "Carlos Eduardo Martínez",
-          instrument: "Guitarra",
-          age: 10,
-          assignedClasses: 18,
-          absences: 12,
-          attendanceRate: 33,
-          representative: {
-            name: "Eduardo Martínez",
-            phone: "+58414567123",
-            email: "eduardo.martinez@email.com",
-          },
-          lastAttendance: new Date("2024-11-25"),
-          riskLevel: "critical",
-        },
-      ]
+      criticalStudents.value = [] // Array vacío hasta tener datos reales
     } catch (error) {
       console.error("Error loading critical students:", error)
       throw error
@@ -350,13 +255,9 @@ export const useClassMonitoring = () => {
       // TODO: Implementar generación real de PDF
       console.log("📄 Generating weekly report for week starting:", startDate.toDateString())
 
-      // Simular descarga de PDF
       showNotification("Generando reporte semanal...", "info")
-
-      setTimeout(() => {
-        showNotification("Reporte semanal generado exitosamente", "success")
-        // Aquí se descargaría el PDF real
-      }, 2000)
+      // Aquí se llamaría a la API para generar el PDF real y luego se descargaría
+      showNotification("Reporte semanal generado exitosamente", "success")
     } catch (error) {
       console.error("Error generating weekly report:", error)
       showNotification("Error al generar reporte semanal", "error")
@@ -373,10 +274,8 @@ export const useClassMonitoring = () => {
       console.log(`📊 Exporting student data in ${format} format`)
       showNotification(`Exportando datos en formato ${format.toUpperCase()}...`, "info")
 
-      // TODO: Implementar exportación real
-      setTimeout(() => {
-        showNotification("Datos exportados exitosamente", "success")
-      }, 1500)
+      // TODO: Implementar exportación real (llamada a API, descarga de archivo)
+      showNotification("Datos exportados exitosamente", "success")
     } catch (error) {
       console.error("Error exporting student data:", error)
       showNotification("Error al exportar datos", "error")

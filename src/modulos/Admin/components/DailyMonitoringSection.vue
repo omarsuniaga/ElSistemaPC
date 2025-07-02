@@ -386,40 +386,36 @@ const autoRefreshInterval = ref<NodeJS.Timeout | null>(null)
 
 // Computed stats
 const stats = computed(() => {
-  const totalStudents = studentsStore.studentStats.active
-  const present = Math.floor(totalStudents * 0.87) // 87% de asistencia promedio
+  const totalStudents = studentsStore.studentStats.total
+  // TODO: Obtener el número real de estudiantes presentes hoy del store de asistencia
+  const present = Math.floor(totalStudents * 0.87) // Estimación hasta tener datos reales
   const absent = totalStudents - present
   const activeClasses = classesStore.classes.filter((c) => c.status === "active").length
-  const efficiency = Math.floor((present / totalStudents) * 100) || 0
+  const efficiency = totalStudents > 0 ? Math.floor((present / totalStudents) * 100) : 0
 
   return {
     present,
     absent,
     activeClasses,
     efficiency,
-    presentPercentage: totalStudents > 0 ? Math.floor((present / totalStudents) * 100) : 0,
+    presentPercentage: efficiency,
     absentPercentage: totalStudents > 0 ? Math.floor((absent / totalStudents) * 100) : 0,
     classesPercentage: Math.min(
       100,
       Math.floor((activeClasses / Math.max(1, Math.ceil(totalStudents / 8))) * 100)
     ),
     efficiencyPercentage: efficiency,
-    presentTrend: "+3%",
-    absentTrend: "-5%",
-    classesTrend: "+2",
-    efficiencyTrend: "+1%",
+    presentTrend: "N/A", // TODO: Obtener tendencia real
+    absentTrend: "N/A", // TODO: Obtener tendencia real
+    classesTrend: "N/A", // TODO: Obtener tendencia real
+    efficiencyTrend: "N/A", // TODO: Obtener tendencia real
   }
 })
 
 // Horarios de asistencia por hora
 const hourlyAttendance = computed(() => {
-  const hours = ["8AM", "9AM", "10AM", "11AM", "12PM", "1PM", "2PM", "3PM", "4PM", "5PM"]
-  const baseAttendance = Math.floor(stats.value.present / 10)
-
-  return hours.map((time, index) => ({
-    time,
-    attendance: baseAttendance + Math.floor(Math.random() * 5) + (index < 4 ? 2 : 0),
-  }))
+  // TODO: Obtener datos reales de asistencia por hora del store o API
+  return []
 })
 
 const maxHourlyAttendance = computed(() => {
@@ -475,53 +471,19 @@ const activitySummary = computed(() => {
   }).length
 
   return {
-    attendanceRecords: Math.floor(stats.value.activeClasses * 0.8),
+    attendanceRecords: 0, // TODO: Obtener el número real de registros de asistencia
     newStudents: newStudentsToday,
-    observations: Math.floor(stats.value.present * 0.05),
-    recentAttendance: ["Prof. García", "Prof. Martínez"],
-    recentStudents:
-      newStudentsToday > 0 ? ["Juan Pérez", "María López"].slice(0, newStudentsToday) : [],
-    recentObservations: ["Tardanza repetida", "Excelente progreso"],
+    observations: 0, // TODO: Obtener el número real de observaciones
+    recentAttendance: [], // TODO: Obtener registros de asistencia recientes
+    recentStudents: [], // TODO: Obtener nombres de estudiantes recientes
+    recentObservations: [], // TODO: Obtener observaciones recientes
   }
 })
 
 // Próximas actividades
 const upcomingActivities = computed(() => {
-  const activities = []
-
-  const now = new Date()
-  const nextHour = new Date(now.getTime() + 60 * 60 * 1000)
-
-  if (stats.value.activeClasses > 0) {
-    activities.push({
-      id: "next-class",
-      title: "Próxima Clase",
-      description: "Piano Intermedio - Sala 2",
-      time: nextHour.toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit"}),
-      type: "class",
-      priority: "high",
-    })
-  }
-
-  activities.push({
-    id: "attendance-reminder",
-    title: "Recordatorio de Asistencia",
-    description: "Verificar asistencia de clases de la tarde",
-    time: "2:00 PM",
-    type: "reminder",
-    priority: "medium",
-  })
-
-  activities.push({
-    id: "daily-report",
-    title: "Reporte Diario",
-    description: "Generar reporte de actividades del día",
-    time: "6:00 PM",
-    type: "report",
-    priority: "low",
-  })
-
-  return activities
+  // TODO: Obtener actividades próximas reales del sistema (ej. eventos, clases, recordatorios)
+  return []
 })
 
 // Methods

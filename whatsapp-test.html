@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test WhatsApp Messaging</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.connecting {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        #qrContainer {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        #qrCode {
+            max-width: 300px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+        }
+        
+        .form-group {
+            margin: 15px 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .response {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            background-color: #f8f9fa;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎵 Music Academy - WhatsApp Test</h1>
+    
+    <div class="container">
+        <h2>Estado de Conexión</h2>
+        <div id="status" class="status">Verificando...</div>
+        <button onclick="checkStatus()">Actualizar Estado</button>
+        <button onclick="initConnection()">Inicializar Conexión</button>
+        <button onclick="restart()">Reiniciar</button>
+    </div>
+    
+    <div class="container" id="qrContainer">
+        <h2>Código QR</h2>
+        <p>Escanea este código con tu WhatsApp para conectar:</p>
+        <img id="qrCode" src="" alt="QR Code" style="display: none;">
+        <button onclick="loadQR()">Cargar QR</button>
+    </div>
+    
+    <div class="container">
+        <h2>Enviar Mensaje</h2>
+        <div class="form-group">
+            <label for="phoneNumber">Número de Teléfono:</label>
+            <input type="tel" id="phoneNumber" placeholder="Ej: +18091234567 o 8091234567">
+        </div>
+        <div class="form-group">
+            <label for="message">Mensaje:</label>
+            <textarea id="message" rows="3" placeholder="Escribe tu mensaje aquí..."></textarea>
+        </div>
+        <button onclick="sendMessage()" id="sendBtn">Enviar Mensaje</button>
+        <div id="sendResponse" class="response" style="display: none;"></div>
+    </div>
+    
+    <div class="container">
+        <h2>Historial de Mensajes</h2>
+        <button onclick="loadHistory()">Cargar Historial</button>
+        <div id="historyResponse" class="response" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://whatsappapi-4ffilcsmva-uc.a.run.app';
+        
+        async function checkStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const data = await response.json();
+                
+                const statusEl = document.getElementById('status');
+                statusEl.textContent = `Estado: ${data.status} | Listo: ${data.isReady} | QR: ${data.hasQR}`;
+                
+                // Actualizar clase CSS según el estado
+                statusEl.className = 'status';
+                if (data.status === 'connected') {
+                    statusEl.classList.add('connected');
+                } else if (data.status === 'disconnected') {
+                    statusEl.classList.add('disconnected');
+                } else {
+                    statusEl.classList.add('connecting');
+                }
+                
+                // Habilitar/deshabilitar botón de envío
+                document.getElementById('sendBtn').disabled = !data.isReady;
+                
+                // Auto-cargar QR si está disponible
+                if (data.hasQR && data.status !== 'connected') {
+                    loadQR();
+                }
+                
+            } catch (error) {
+                document.getElementById('status').textContent = 'Error al verificar estado: ' + error.message;
+                document.getElementById('status').className = 'status disconnected';
+            }
+        }
+        
+        async function initConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/init`, { method: 'POST' });
+                const data = await response.json();
+                
+                alert(data.message || 'Conexión inicializada');
+                
+                // Esperar un poco y verificar estado
+                setTimeout(checkStatus, 2000);
+                
+            } catch (error) {
+                alert('Error al inicializar: ' + error.message);
+            }
+        }
+        
+        async function restart() {
+            try {
+                const response = await fetch(`${API_BASE}/restart`, { method: 'POST' });
+                const data = await response.json();
+                
+                alert(data.message || 'Sistema reiniciado');
+                
+                // Esperar un poco y verificar estado
+                setTimeout(checkStatus, 3000);
+                
+            } catch (error) {
+                alert('Error al reiniciar: ' + error.message);
+            }
+        }
+        
+        async function loadQR() {
+            try {
+                const response = await fetch(`${API_BASE}/qr`);
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const qrUrl = URL.createObjectURL(blob);
+                    
+                    const qrImg = document.getElementById('qrCode');
+                    qrImg.src = qrUrl;
+                    qrImg.style.display = 'block';
+                } else {
+                    const errorData = await response.json();
+                    alert('Error al cargar QR: ' + (errorData.message || 'QR no disponible'));
+                }
+                
+            } catch (error) {
+                alert('Error al cargar QR: ' + error.message);
+            }
+        }
+        
+        async function sendMessage() {
+            const phoneNumber = document.getElementById('phoneNumber').value.trim();
+            const message = document.getElementById('message').value.trim();
+            
+            if (!phoneNumber || !message) {
+                alert('Por favor completa el número de teléfono y el mensaje');
+                return;
+            }
+            
+            const responseEl = document.getElementById('sendResponse');
+            responseEl.style.display = 'block';
+            responseEl.textContent = 'Enviando mensaje...';
+            responseEl.className = 'response';
+            
+            try {
+                const response = await fetch(`${API_BASE}/send-message`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        phoneNumber: phoneNumber,
+                        message: message
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    responseEl.textContent = `✅ Mensaje enviado exitosamente!\n\nRespuesta: ${JSON.stringify(data, null, 2)}`;
+                    responseEl.classList.add('success');
+                    
+                    // Limpiar campos
+                    document.getElementById('message').value = '';
+                } else {
+                    responseEl.textContent = `❌ Error al enviar mensaje:\n\n${JSON.stringify(data, null, 2)}`;
+                    responseEl.classList.add('error');
+                }
+                
+            } catch (error) {
+                responseEl.textContent = `❌ Error de conexión: ${error.message}`;
+                responseEl.classList.add('error');
+            }
+        }
+        
+        async function loadHistory() {
+            const responseEl = document.getElementById('historyResponse');
+            responseEl.style.display = 'block';
+            responseEl.textContent = 'Cargando historial...';
+            responseEl.className = 'response';
+            
+            try {
+                const response = await fetch(`${API_BASE}/history`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    responseEl.textContent = `📋 Historial de mensajes:\n\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    responseEl.textContent = `❌ Error al cargar historial:\n\n${JSON.stringify(data, null, 2)}`;
+                    responseEl.classList.add('error');
+                }
+                
+            } catch (error) {
+                responseEl.textContent = `❌ Error de conexión: ${error.message}`;
+                responseEl.classList.add('error');
+            }
+        }
+        
+        // Verificar estado inicial
+        checkStatus();
+        
+        // Auto-verificar estado cada 10 segundos
+        setInterval(checkStatus, 10000);
+    </script>
+</body>
+</html>

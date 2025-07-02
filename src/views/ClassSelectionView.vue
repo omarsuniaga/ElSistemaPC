@@ -3,7 +3,7 @@
     <h2 class="text-lg font-semibold mb-3 text-center sm:text-left">Seleccionar Clase</h2>
     <DateClassSelector
       v-model="selectedClass"
-      v-model:selectedDate="selectedDate"
+      v-model:selected-date="selectedDate"
       :day-filter="true"
       :is-loading="isLoading"
       :classes-with-records="classesWithRecords"

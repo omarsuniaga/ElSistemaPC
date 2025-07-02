@@ -249,8 +249,11 @@ export const useStudentsStore = defineStore("students", {
     },
     async updateStudent(id: string, updates: Partial<Student>) {
       console.log(`[studentsStore] updateStudent: Iniciando actualización para ID: ${id}`)
-      console.log(`[studentsStore] updateStudent: Datos recibidos:`, JSON.stringify(updates, null, 2))
-      
+      console.log(
+        `[studentsStore] updateStudent: Datos recibidos:`,
+        JSON.stringify(updates, null, 2)
+      )
+
       this.loading = true
       try {
         // Asegurarse de que el campo grupo sea siempre un array si está presente
@@ -260,13 +263,16 @@ export const useStudentsStore = defineStore("students", {
           }
         }
 
-        console.log(`[studentsStore] updateStudent: Datos normalizados:`, JSON.stringify(updates, null, 2))
+        console.log(
+          `[studentsStore] updateStudent: Datos normalizados:`,
+          JSON.stringify(updates, null, 2)
+        )
         console.log(`[studentsStore] updateStudent: Llamando a updateStudentFirebase...`)
-        
+
         await updateStudentFirebase(id, updates)
-        
+
         console.log(`[studentsStore] updateStudent: ✅ Guardado exitoso en Firestore`)
-        
+
         const index = this.students.findIndex((item) => item.id === id)
         if (index !== -1) {
           console.log(`[studentsStore] updateStudent: Actualizando estado local (índice: ${index})`)
@@ -282,7 +288,9 @@ export const useStudentsStore = defineStore("students", {
           }
           console.log(`[studentsStore] updateStudent: ✅ Estado local actualizado`)
         } else {
-          console.warn(`[studentsStore] updateStudent: ⚠️ No se encontró el estudiante con ID ${id} en el estado local`)
+          console.warn(
+            `[studentsStore] updateStudent: ⚠️ No se encontró el estudiante con ID ${id} en el estado local`
+          )
         }
         return this.students[index]
       } catch (error: any) {
@@ -311,21 +319,23 @@ export const useStudentsStore = defineStore("students", {
         const clasesConAlumno = classesStore.classes.filter(
           (c) => Array.isArray(c.studentIds) && c.studentIds.includes(id)
         )
-        console.log(`[studentsStore] deleteStudent: Encontradas ${clasesConAlumno.length} clases con el alumno`)
-        
+        console.log(
+          `[studentsStore] deleteStudent: Encontradas ${clasesConAlumno.length} clases con el alumno`
+        )
+
         for (const clase of clasesConAlumno) {
           const nuevosIds = clase.studentIds.filter((sid) => sid !== id)
           await classesStore.updateClass(clase.id, {studentIds: nuevosIds})
           console.log(`[studentsStore] deleteStudent: Eliminado de clase: ${clase.name}`)
         }
-        
+
         console.log(`[studentsStore] deleteStudent: 2. Eliminando de Firestore...`)
         // 2. Eliminar el alumno de Firestore
         await deleteStudentFirebase(id)
-        
+
         console.log(`[studentsStore] deleteStudent: 3. Actualizando estado local...`)
         this.students = this.students.filter((item) => item.id !== id)
-        
+
         console.log(`[studentsStore] deleteStudent: ✅ Estudiante eliminado exitosamente`)
       } catch (error: any) {
         console.error(`[studentsStore] deleteStudent: ❌ Error eliminando estudiante:`, error)

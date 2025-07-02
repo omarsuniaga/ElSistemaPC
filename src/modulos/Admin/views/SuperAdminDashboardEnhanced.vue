@@ -1,6 +1,6 @@
 <template>
   <div
-    class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800"
+    class="min-h-screen bg-gradient-to-br mb-16 from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800"
   >
     <!-- Enhanced Hero Header -->
     <div class="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">

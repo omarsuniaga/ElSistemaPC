@@ -93,11 +93,11 @@ export function useSuperAdminCharts() {
     ]
     const currentMonth = new Date().getMonth()
 
-    // Simular datos de inscripciones por mes
+    // TODO: Obtener datos reales de inscripciones por mes del store o API
     const enrollmentData = months.slice(0, currentMonth + 1).map((month, index) => ({
       month,
-      students: Math.floor(Math.random() * 25) + 10,
-      revenue: Math.floor(Math.random() * 80000) + 50000,
+      students: 0, // Reemplazar con datos reales
+      revenue: 0, // Reemplazar con datos reales
     }))
 
     return {
@@ -165,7 +165,8 @@ export function useSuperAdminCharts() {
   // Chart: Ingresos mensuales
   const revenueChart = computed(() => {
     const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun"]
-    const revenueData = months.map(() => Math.floor(Math.random() * 100000) + 200000)
+    // TODO: Obtener datos reales de ingresos mensuales del store o API
+    const revenueData = months.map(() => 0) // Reemplazar con datos reales
 
     return {
       type: "bar",
@@ -220,9 +221,10 @@ export function useSuperAdminCharts() {
 
   // Chart: Asistencia por clase
   const attendanceChart = computed(() => {
+    // TODO: Obtener datos reales de asistencia por clase del store o API
     const attendanceData = classes.value.slice(0, 10).map((cls) => ({
       name: cls.nombre || "Clase sin nombre",
-      attendance: Math.floor(Math.random() * 30) + 70,
+      attendance: 0, // Reemplazar con datos reales
     }))
 
     return {
@@ -350,10 +352,11 @@ export function useSuperAdminCharts() {
 
   // Chart: Performance de maestros
   const teacherPerformanceChart = computed(() => {
+    // TODO: Obtener datos reales de rendimiento de maestros del store o API
     const teacherData = teachers.value.slice(0, 8).map((teacher) => ({
       name: `${teacher.nombre} ${teacher.apellido}`,
-      students: teacher.totalStudents || Math.floor(Math.random() * 20) + 5,
-      rating: teacher.rating || (Math.random() * 2 + 3).toFixed(1),
+      students: 0, // Reemplazar con datos reales
+      rating: 0, // Reemplazar con datos reales
     }))
 
     return {
@@ -437,29 +440,29 @@ export function useSuperAdminCharts() {
         title: "Tasa de Conversión",
         value: totalStudents > 0 ? Math.round((activeStudents / totalStudents) * 100) : 0,
         suffix: "%",
-        trend: "up",
-        change: "+2.3%",
+        trend: "N/A", // TODO: Obtener tendencia real
+        change: "N/A", // TODO: Obtener cambio real
       },
       retention: {
         title: "Retención Mensual",
-        value: 87,
+        value: 0, // TODO: Obtener valor real
         suffix: "%",
-        trend: "up",
-        change: "+1.2%",
+        trend: "N/A", // TODO: Obtener tendencia real
+        change: "N/A", // TODO: Obtener cambio real
       },
       satisfaction: {
         title: "Satisfacción",
-        value: 4.6,
+        value: 0, // TODO: Obtener valor real
         suffix: "/5",
-        trend: "up",
-        change: "+0.1",
+        trend: "N/A", // TODO: Obtener tendencia real
+        change: "N/A", // TODO: Obtener cambio real
       },
       growth: {
         title: "Crecimiento",
-        value: 12,
+        value: 0, // TODO: Obtener valor real
         suffix: "%",
-        trend: "up",
-        change: "+3.8%",
+        trend: "N/A", // TODO: Obtener tendencia real
+        change: "N/A", // TODO: Obtener cambio real
       },
     }
   })

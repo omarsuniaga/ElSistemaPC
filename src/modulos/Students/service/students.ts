@@ -436,7 +436,7 @@ export const updateStudentFirebase = async (
   try {
     console.log(`[updateStudentFirebase] Iniciando actualización para ID: ${id}`)
     console.log(`[updateStudentFirebase] Datos recibidos:`, JSON.stringify(student, null, 2))
-    
+
     const docRef = doc(db, COLLECTION_NAME, id)
     // Filtrar propiedades undefined y normalizar el campo grupo
     const cleanStudent = Object.entries(student).reduce(
@@ -465,7 +465,7 @@ export const updateStudentFirebase = async (
       ...cleanStudent,
       updatedAt: serverTimestamp(),
     })
-    
+
     console.log(`[updateStudentFirebase] ✅ Documento actualizado exitosamente en Firestore`)
   } catch (error) {
     console.error(`[updateStudentFirebase] ❌ Error al actualizar documento:`, error)

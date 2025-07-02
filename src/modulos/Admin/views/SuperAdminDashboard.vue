@@ -198,9 +198,7 @@
         <div
           class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 space-y-2 sm:space-y-0"
         >
-          <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-            Acciones
-          </h2>
+          <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Acciones</h2>
           <div class="flex items-center space-x-2">
             <span class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Modo Admin</span>
             <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
@@ -278,6 +276,16 @@
           <ChevronRightIcon class="w-4 h-4" />
         </RouterLink>
       </div>
+      <div class="hidden lg:flex">
+        <RouterLink
+          to="/admin/Daily"
+          class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+        >
+          <CogIcon class="w-5 h-5" />
+          <span>Panel Integral</span>
+          <ChevronRightIcon class="w-4 h-4" />
+        </RouterLink>
+      </div>
 
       <!-- Main Content Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -341,6 +349,8 @@
               />
             </div>
           </div>
+          <!-- Daily Monitoring Section -->
+          <ReporteAsistenciaDiaria />
 
           <!-- Analytics Dashboard -->
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
@@ -393,6 +403,7 @@
               />
             </div>
           </div>
+        
 
           <!-- Actividad Reciente -->
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
@@ -415,8 +426,6 @@
             <RecentActivityFeed :activities="recentActivities" />
           </div>
 
-          <!-- Daily Monitoring Section -->
-          <DailyMonitoringSection />
         </div>
 
         <!-- Right Column - Quick Access & Alerts -->
@@ -558,7 +567,6 @@ import CreateUserModal from "../components/CreateUserModal.vue"
 import GlobalViewModal from "../components/GlobalViewModal.vue"
 import SystemConfigModal from "../components/SystemConfigModal.vue"
 import PDFGeneratorModal from "../components/PDFGeneratorModal.vue"
-import DailyMonitoringSection from "../components/DailyMonitoringSection.vue"
 
 // Stores
 import {useAdminStudentsStore} from "../store/adminStudents"
@@ -567,6 +575,7 @@ import {useClassesStore} from "../../Classes/store/classes"
 import {useAuthStore} from "../../../stores/auth"
 import {useTheme} from "../../../composables/useTheme"
 import {useRealTimeNotifications} from "../composables/useRealTimeNotifications"
+import ReporteAsistenciaDiaria from "@/views/ReporteAsistenciaDiaria.vue"
 
 // Setup
 const router = useRouter()
@@ -584,7 +593,6 @@ const {
   unreadCount,
   markAsRead,
   dismissNotification,
-  createNotification,
 } = useRealTimeNotifications()
 
 // State
@@ -640,109 +648,88 @@ const activeClassesCount = computed(() => {
 })
 
 const attendancePercentage = computed(() => {
-  const totalStudents = studentsStore.studentStats.active
+  const totalStudents = studentsStore.studentStats.total
+  const activeStudents = studentsStore.studentStats.active
   if (totalStudents === 0) return "0%"
-  const attendanceRate = Math.floor(totalStudents * 0.87)
-  return `${Math.floor((attendanceRate / totalStudents) * 100)}%`
+  return `${Math.floor((activeStudents / totalStudents) * 100)}%`
 })
 
-const attendanceTrend = computed(() => "+5%")
-const classesTrend = computed(() => `+${stats.value.recentClasses}`)
-const observationsTrend = computed(() => "+1")
-const performanceTrend = computed(() => "+3%")
+const attendanceTrend = computed(() => {
+  // TODO: Calcular tendencia real comparando con semana/mes anterior
+  // Requerirá datos históricos de asistencia
+  return "+0%" // Neutro hasta tener datos reales
+})
+
+const classesTrend = computed(() => {
+  const newClassesThisMonth = stats.value.recentClasses
+  return newClassesThisMonth > 0 ? `+${newClassesThisMonth}` : "0"
+})
+
+const observationsTrend = computed(() => {
+  // TODO: Calcular tendencia real de observaciones
+  return "+0" // Neutro hasta tener datos reales
+})
+
+const performanceTrend = computed(() => {
+  // TODO: Calcular tendencia real de rendimiento académico
+  return "+0%" // Neutro hasta tener datos reales
+})
 
 const currentObservations = computed(() => {
+  // TODO: Obtener el número real de observaciones activas o pendientes del store de observaciones
+  // Por ahora, se mantiene un valor estimado o se retorna 0 si no hay datos.
   const totalStudents = studentsStore.studentStats.total
-  return Math.floor(totalStudents * 0.03)
+  return Math.floor(totalStudents * 0.03) // Mantener estimación hasta tener datos reales
 })
 
-const performancePercentage = computed(() => "94%")
+const performancePercentage = computed(() => {
+  // TODO: Obtener el porcentaje de rendimiento real del sistema o de los estudiantes
+  return "N/A" // Valor neutro hasta tener datos reales
+})
 
-// Analytics data
+// Analytics data - Preparado para datos reales de los stores
 const attendanceData = computed(() => {
-  const totalClasses = classesStore.classes.length
-  const baseAttendance = Math.floor(totalClasses * 0.85)
-  return Array.from({length: 7}, (_, i) =>
-    Math.max(baseAttendance + Math.floor(Math.random() * 10 - 5), totalClasses * 0.7)
-  )
+  // TODO: Implementar studentsStore.getAttendanceHistoryData() para datos reales
+  // Por ahora retornamos array vacío hasta que los stores expongan datos históricos
+  return []
 })
 
 const classesData = computed(() => {
-  const activeClasses = activeClassesCount.value
-  return Array.from({length: 7}, (_, i) =>
-    Math.max(activeClasses + Math.floor(Math.random() * 6 - 3), Math.floor(activeClasses * 0.8))
-  )
+  // TODO: Implementar classesStore.getClassesHistoryData() para datos reales
+  // Por ahora retornamos array vacío hasta que los stores expongan datos históricos
+  return []
 })
 
 const observationsData = computed(() => {
-  const avgObservations = Math.floor(studentsStore.studentStats.total * 0.05)
-  return Array.from({length: 7}, (_, i) =>
-    Math.max(avgObservations + Math.floor(Math.random() * 4 - 2), 0)
-  )
+  // TODO: Implementar observationsStore.getObservationsHistoryData() para datos reales
+  // Por ahora retornamos array vacío hasta que los stores expongan datos históricos
+  return []
 })
 
 const performanceData = computed(() => {
-  const activeStudents = studentsStore.studentStats.active
-  const basePerformance = Math.floor(activeStudents * 0.9)
-  return Array.from({length: 7}, (_, i) =>
-    Math.max(basePerformance + Math.floor(Math.random() * 10 - 5), activeStudents * 0.8)
-  )
+  // TODO: Implementar performanceStore.getPerformanceHistoryData() para datos reales
+  // Por ahora retornamos array vacío hasta que los stores expongan datos históricos
+  return []
 })
 
 // Recent activities
 const recentActivities = computed(() => {
-  const activities = []
-
-  const recentStudents = studentsStore.students
-    .filter((student) => {
-      const enrollmentDate = new Date(student.enrollmentDate)
-      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
-      return enrollmentDate >= dayAgo
-    })
-    .slice(0, 2)
-
-  recentStudents.forEach((student, index) => {
-    activities.push({
-      id: `student-${student.id}`,
-      type: "user_created",
-      title: "Nuevo estudiante registrado",
-      description: `${student.name} se registró en el sistema`,
-      time: `${(index + 1) * 5} min`,
-      icon: "UserPlusIcon",
-      color: "blue",
-    })
-  })
-
-  return activities.slice(0, 5)
+  // TODO: Obtener actividades recientes reales del sistema (ej. de un store de actividades o logs)
+  return []
 })
 
-// System alerts
+// System alerts - ahora se obtienen directamente de criticalNotifications
 const systemAlerts = computed(() => {
-  const alerts = []
-
-  const pendingCount = studentsStore.studentStats.pending
-  if (pendingCount > 5) {
-    alerts.push({
-      id: "pending-students",
-      type: "warning" as const,
-      title: "Estudiantes Pendientes",
-      description: `${pendingCount} estudiantes requieren aprobación`,
-      time: "1 hora",
-    })
-  }
-
-  const newStudentsThisMonth = studentsStore.studentStats.newThisMonth
-  if (newStudentsThisMonth > 10) {
-    alerts.push({
-      id: "growth-alert",
-      type: "info" as const,
-      title: "Crecimiento Acelerado",
-      description: `${newStudentsThisMonth} nuevos estudiantes este mes`,
-      time: "1 día",
-    })
-  }
-
-  return alerts.slice(0, 3)
+  // Usar las notificaciones críticas reales del sistema
+  return criticalNotifications.value
+    .map((notification) => ({
+      id: notification.id,
+      type: notification.type as "warning" | "info" | "error" | "success",
+      title: notification.title,
+      description: notification.message,
+      time: formatTimeAgo(notification.timestamp),
+    }))
+    .slice(0, 3)
 })
 
 // Methods
@@ -904,59 +891,6 @@ const formatTimeAgo = (timestamp: any) => {
   return `${days} días`
 }
 
-// Auto-generate notifications for demo
-const generateDemoNotifications = async () => {
-  try {
-    const pendingCount = studentsStore.studentStats.pending
-    if (pendingCount > 3) {
-      await createNotification({
-        title: "Estudiantes Pendientes",
-        message: `${pendingCount} estudiantes requieren aprobación urgente`,
-        type: "error",
-        source: "students",
-        priority: "high",
-        isRead: false,
-      })
-    }
-
-    if (stats.value.totalStudents > 50) {
-      await createNotification({
-        title: "Sistema Optimizado",
-        message: "Nuevas funciones de análisis disponibles para academias grandes",
-        type: "info",
-        source: "system",
-        priority: "medium",
-        isRead: false,
-      })
-    }
-
-    const activeRate = (studentsStore.studentStats.active / studentsStore.studentStats.total) * 100
-    if (activeRate > 85) {
-      await createNotification({
-        title: "Excelente Retención",
-        message: `${activeRate.toFixed(1)}% de estudiantes activos - ¡Felicitaciones!`,
-        type: "success",
-        source: "system",
-        priority: "low",
-        isRead: false,
-      })
-    }
-
-    if (stats.value.totalClasses < 10 && studentsStore.studentStats.active > 30) {
-      await createNotification({
-        title: "Capacidad de Clases",
-        message: "Considera agregar más clases para la demanda actual",
-        type: "warning",
-        source: "classes",
-        priority: "medium",
-        isRead: false,
-      })
-    }
-  } catch (error) {
-    console.error("Error generating demo notifications:", error)
-  }
-}
-
 // Close notifications when clicking outside
 const handleClickOutside = (event: Event) => {
   const target = event.target as Element
@@ -968,12 +902,7 @@ const handleClickOutside = (event: Event) => {
 // Lifecycle
 onMounted(async () => {
   await loadData()
-
-  // Generate demo notifications after data is loaded
-  setTimeout(() => {
-    generateDemoNotifications()
-  }, 2000)
-
+  // Ya no necesitamos generar notificaciones demo - usamos las reales del sistema
   document.addEventListener("click", handleClickOutside)
 })
 

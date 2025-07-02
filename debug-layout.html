@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Layout - WhatsApp Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .debug-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .layout-section {
+            border: 2px solid #e5e7eb;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .header-section {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        
+        .content-section {
+            border-color: #10b981;
+            background-color: #ecfdf5;
+            min-height: 300px;
+        }
+        
+        .footer-section {
+            border-color: #f59e0b;
+            background-color: #fffbeb;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 40;
+        }
+        
+        .label {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: white;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+        
+        .button-test {
+            background-color: #16a34a;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px 5px;
+            position: relative;
+            z-index: 50;
+        }
+        
+        .button-test:hover {
+            background-color: #15803d;
+        }
+        
+        .z-info {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 4px;
+            padding: 8px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        
+        .fixed-notice {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #dc2626;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div class="fixed-notice">
+        Z-Index Test: Esta caja debería estar por encima de todo
+    </div>
+
+    <div class="debug-container">
+        <h1>🔧 Debug Layout - WhatsApp Panel</h1>
+        <p>Esta página simula el layout del panel de WhatsApp para identificar problemas de visibilidad.</p>
+        
+        <!-- Header simulado -->
+        <div class="layout-section header-section">
+            <span class="label">Header (z-index: 50)</span>
+            <h3>🎵 Music Academy - Header</h3>
+            <p>Header fijo en la parte superior</p>
+        </div>
+        
+        <!-- Contenido principal -->
+        <div class="layout-section content-section">
+            <span class="label">Contenido Principal (z-index: 5-10)</span>
+            <h3>Panel de WhatsApp - Pestaña "Prueba"</h3>
+            
+            <div>
+                <label>Número de teléfono:</label><br>
+                <input type="tel" style="width: 100%; padding: 8px; margin: 5px 0;" placeholder="+1234567890">
+            </div>
+            
+            <div>
+                <label>Mensaje:</label><br>
+                <textarea style="width: 100%; padding: 8px; margin: 5px 0; height: 80px;" placeholder="Mensaje de prueba..."></textarea>
+            </div>
+            
+            <!-- Estos botones deberían ser visibles -->
+            <button class="button-test" onclick="testButton()">
+                🚀 Enviar Mensaje (Z-Index: 50)
+            </button>
+            
+            <button class="button-test" onclick="testButton()" style="background-color: #3b82f6;">
+                🔄 Actualizar Estado
+            </button>
+            
+            <div class="z-info">
+                <strong>Z-Index Info:</strong>
+                <ul>
+                    <li>Header: z-index: 50</li>
+                    <li>Botones: z-index: 50</li>
+                    <li>Footer Menu: z-index: 40</li>
+                    <li>Contenido: z-index: 5-10</li>
+                </ul>
+            </div>
+            
+            <p><strong>Problema identificado:</strong> El menú footer (z-index: 40) puede estar ocultando los botones.</p>
+            
+            <div style="background: #f3f4f6; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                <h4>🔧 Soluciones aplicadas:</h4>
+                <ul>
+                    <li>✅ Agregado <code>pb-20</code> (padding-bottom: 5rem) al contenedor principal</li>
+                    <li>✅ Agregado <code>pb-6</code> al contenedor interno</li>
+                    <li>✅ Z-index: 10 para botones</li>
+                    <li>✅ Z-index: 5 para contenedores</li>
+                    <li>✅ Padding bottom adicional en móviles: 8rem</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Espaciador para simular contenido adicional -->
+        <div style="height: 200px; background: linear-gradient(45deg, #f0f9ff 25%, transparent 25%), linear-gradient(-45deg, #f0f9ff 25%, transparent 25%); background-size: 20px 20px;">
+            <p style="padding: 20px; text-align: center; color: #6b7280;">
+                📱 Área de scroll adicional para probar visibilidad en diferentes posiciones
+            </p>
+        </div>
+    </div>
+    
+    <!-- Footer simulado -->
+    <div class="layout-section footer-section">
+        <span class="label">Footer Menu (z-index: 40)</span>
+        <div style="display: flex; justify-content: space-around; align-items: center; padding: 10px;">
+            <div style="text-align: center;">🏠<br><small>Inicio</small></div>
+            <div style="text-align: center;">👥<br><small>Alumnos</small></div>
+            <div style="text-align: center;">📱<br><small>WhatsApp</small></div>
+            <div style="text-align: center;">⚙️<br><small>Config</small></div>
+            <div style="text-align: center;">👤<br><small>Perfil</small></div>
+        </div>
+    </div>
+
+    <script>
+        function testButton() {
+            alert('🎉 ¡Botón funciona correctamente!\n\nEsto significa que el botón es clickeable y no está oculto por el menú.');
+        }
+        
+        // Mostrar información de pantalla
+        function showScreenInfo() {
+            const info = `
+📱 Información de Pantalla:
+• Ancho: ${window.innerWidth}px
+• Alto: ${window.innerHeight}px
+• Scroll Y: ${window.scrollY}px
+• User Agent: ${navigator.userAgent.includes('Mobile') ? 'Móvil' : 'Desktop'}
+            `;
+            console.log(info);
+        }
+        
+        window.addEventListener('scroll', () => {
+            console.log('Scroll Y:', window.scrollY);
+        });
+        
+        showScreenInfo();
+        window.addEventListener('resize', showScreenInfo);
+    </script>
+</body>
+</html>

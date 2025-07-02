@@ -89,9 +89,9 @@ export default defineConfig(({mode}) => {
       "process.env.VITE_USE_EMULATORS": JSON.stringify(env.VITE_USE_EMULATORS),
     },
     server: {
-      port: 3000,
+      port: 3001,
       host: true,
-      strictPort: false,
+      strictPort: true,
       cors: true,
       headers: {
         "Access-Control-Allow-Origin": "*",
@@ -104,7 +104,8 @@ export default defineConfig(({mode}) => {
       },
       hmr: {
         overlay: true,
-        clientPort: undefined,
+        port: 3002,
+        clientPort: 3002,
         timeout: 30000,
       },
       proxy: {

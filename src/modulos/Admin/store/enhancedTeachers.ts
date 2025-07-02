@@ -208,17 +208,9 @@ export const useEnhancedTeachersStore = defineStore("enhancedTeachers", () => {
   }
 
   const getPerformanceTrends = () => {
-    // This would calculate performance trends over time
-    // For now, return mock data structure
+    // TODO: Implementar la lógica para calcular tendencias de rendimiento reales a lo largo del tiempo
     return {
-      monthly: [
-        {month: "Ene", average: 4.2},
-        {month: "Feb", average: 4.3},
-        {month: "Mar", average: 4.1},
-        {month: "Abr", average: 4.4},
-        {month: "May", average: 4.5},
-        {month: "Jun", average: 4.6},
-      ],
+      monthly: [], // Reemplazar con datos reales
       byPerformanceLevel: [
         {level: "Excelente", count: performanceStats.value.excellent},
         {level: "Bueno", count: performanceStats.value.good},

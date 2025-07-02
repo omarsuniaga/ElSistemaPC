@@ -3,6 +3,7 @@ import {createRouter, createWebHistory, RouteRecordRaw} from "vue-router"
 import {useAuthStore} from "../stores/auth"
 import {rbacGuard} from "./guards/rbacGuard"
 import {navigationGuard} from "../guards/navigationGuard"
+import {roleBasedRedirectGuard} from "./guards/roleBasedRedirect"
 import {instrumentsRoutes} from "../modulos/Instruments/router"
 import studentRoutes from "../modulos/Students/router"
 import montajeRoutes from "../modulos/Montaje/router"
@@ -260,7 +261,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/dashboard",
     name: "AdminHomeView",
-    component: () => import("../modulos/Admin/views/SuperAdminDashboard.vue"),
+    component: () => import("../views/AdminMotherDashboard.vue"),
     meta: {
       requiresAuth: true,
       requiresRBAC: true,
@@ -277,6 +278,30 @@ const routes: Array<RouteRecordRaw> = [
       requiresRBAC: true,
       moduleKey: "reports",
       permission: "admin_view",
+    },
+  },
+  {
+    path: "/admin/reports",
+    name: "AdminReportsCenter",
+    component: () => import("../components/reports/ReportsCenter.vue"),
+    meta: {
+      requiresAuth: true,
+      requiresRBAC: true,
+      // moduleKey: "reports",
+      moduleKey: "dashboard",
+      permission: "admin_view",
+    },
+  },
+  {
+    path: "/admin/asistencia-diaria",
+    name: "ReporteAsistenciaDiaria",
+    component: () => import("../views/ReporteAsistenciaDiaria.vue"),
+    meta: {
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: "attendance",
+      permission: "admin_view",
+      allowedRoles: ["Superusuario", "Director", "Admin"],
     },
   },
   {
@@ -409,6 +434,48 @@ const routes: Array<RouteRecordRaw> = [
     },
   },
 
+  // Demo de Notificaciones de Asistencia (Solo Admin/Director)
+  {
+    path: "/admin/attendance-notifications-demo",
+    name: "AttendanceNotificationsDemo",
+    component: () => import("../components/demo/AttendanceNotificationDemo.vue"),
+    meta: {
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: "admin",
+      permission: "system_demo",
+      allowedRoles: ["Admin", "Director", "SuperAdmin"],
+    },
+  },
+
+  // Probador de Escalación de Inasistencias (Solo Admin/Director)
+  {
+    path: "/admin/escalation-tester",
+    name: "EscalationTester",
+    component: () => import("../components/demo/EscalationTester.vue"),
+    meta: {
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: "admin",
+      permission: "system_demo",
+      allowedRoles: ["Admin", "Director", "SuperAdmin"],
+    },
+  },
+
+  // Sistema de Plantillas de Mensajes (Solo Admin/Director)
+  {
+    path: "/admin/templates",
+    name: "TemplateManager",
+    component: () => import("../components/templates/TemplateManager.vue"),
+    meta: {
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: "admin",
+      permission: "template_management",
+      allowedRoles: ["Admin", "Director", "SuperAdmin"],
+    },
+  },
+
   // Rutas de contenidos y configuración (RBAC)
   {
     path: "/contents",
@@ -521,13 +588,18 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
 
+  console.log("🛡️ [Router] Navegando a:", to.path)
+  console.log("🛡️ [Router] Usuario:", authStore.user?.role)
+
   // Permitir rutas públicas
   if (to.meta.public) {
+    console.log("🛡️ [Router] Ruta pública, permitir")
     return next()
   }
 
   // Esperar a que la autenticación esté inicializada antes de tomar decisiones
   if (!authStore.isInitialized) {
+    console.log("🛡️ [Router] Auth no inicializada, esperando...")
     try {
       await authStore.checkAuth()
     } catch (error) {
@@ -537,16 +609,37 @@ router.beforeEach(async (to, from, next) => {
 
   // Verificar autenticación
   if (to.meta.requiresAuth && !authStore.isLoggedIn) {
+    console.log("🛡️ [Router] No autenticado, redirigir a login")
     return next("/login")
   }
 
   // Evitar redirección infinita
   if (to.path === "/login" && authStore.isLoggedIn) {
+    console.log("🛡️ [Router] Ya autenticado, evitar login")
     return next("/")
+  }
+
+  // 🔄 NUEVA FUNCIONALIDAD: Redirección basada en roles para usuarios admin
+  // Este guard redirige automáticamente a usuarios admin a rutas de admin
+  if (authStore.isLoggedIn && authStore.user) {
+    console.log("🔄 [Router] Verificando redirección de roles...")
+    try {
+      const wasRedirected = await roleBasedRedirectGuard(to, from, next)
+      // Si roleBasedRedirectGuard realizó una redirección, terminar aquí
+      if (wasRedirected) {
+        console.log("🔄 [Router] Redirección realizada, terminando")
+        return // El guard ya manejó la redirección
+      }
+      console.log("🔄 [Router] No se realizó redirección, continuando")
+    } catch (error) {
+      console.error("Error en role-based redirect guard:", error)
+      // Continuar con la navegación normal si hay error
+    }
   }
 
   // Verificación RBAC para rutas que lo requieran
   if (to.meta.requiresRBAC && to.meta.moduleKey && to.meta.permission) {
+    console.log("🛡️ [Router] Verificando RBAC...")
     try {
       await rbacGuard(to, from, next)
       return // rbacGuard ya maneja el next()
@@ -558,6 +651,7 @@ router.beforeEach(async (to, from, next) => {
 
   // Verificación legacy de allowedRoles (para rutas que aún no se han migrado)
   if (to.meta.allowedRoles && Array.isArray(to.meta.allowedRoles)) {
+    console.log("🛡️ [Router] Verificando allowedRoles...")
     const userRole = authStore.user?.role
     if (!userRole || !to.meta.allowedRoles.includes(userRole)) {
       return next("/dashboard")
@@ -566,6 +660,7 @@ router.beforeEach(async (to, from, next) => {
   // Guard de navegación RBAC configurable (nuevo sistema)
   // Solo aplicar si la ruta no tiene configuración legacy específica
   if (!to.meta.requiresRBAC && !to.meta.allowedRoles) {
+    console.log("🛡️ [Router] Verificando navigation guard...")
     try {
       await navigationGuard(to, from, next)
       return // navigationGuard ya maneja el next()
@@ -575,6 +670,7 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
+  console.log("🛡️ [Router] Navegación permitida a:", to.path)
   next()
 })
 

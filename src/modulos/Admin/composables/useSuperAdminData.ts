@@ -214,9 +214,9 @@ export function useSuperAdminData() {
 
     return months.slice(0, currentMonth + 1).map((month, index) => ({
       month,
-      students: Math.floor(Math.random() * 20) + 10,
-      teachers: Math.floor(Math.random() * 3) + 1,
-      revenue: Math.floor(Math.random() * 50000) + 100000,
+      students: 0, // TODO: Obtener datos reales de estudiantes inscritos
+      teachers: 0, // TODO: Obtener datos reales de maestros contratados
+      revenue: 0, // TODO: Obtener datos reales de ingresos
     }))
   }
 
@@ -238,13 +238,13 @@ export function useSuperAdminData() {
       overall: kpis.value.attendanceRate,
       byInstrument: generateInstrumentDistribution().map((item) => ({
         ...item,
-        attendance: Math.floor(Math.random() * 30) + 70,
+        attendance: 0, // TODO: Obtener datos reales de asistencia por instrumento
       })),
       trends: Array.from({length: 7}, (_, i) => ({
         day: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toLocaleDateString("es-ES", {
           weekday: "short",
         }),
-        attendance: Math.floor(Math.random() * 20) + 75,
+        attendance: 0, // TODO: Obtener datos reales de tendencias de asistencia
       })).reverse(),
     }
   }
@@ -260,19 +260,19 @@ export function useSuperAdminData() {
         month: new Date(Date.now() - i * 30 * 24 * 60 * 60 * 1000).toLocaleDateString("es-ES", {
           month: "short",
         }),
-        revenue: monthlyRevenue * (0.8 + Math.random() * 0.4),
+        revenue: 0, // TODO: Obtener datos reales de tendencias de ingresos
       })).reverse(),
     }
   }
 
   function calculateGrowthRate() {
-    // Simulado - en producción calcularía basado en datos históricos
-    return Math.floor(Math.random() * 20) + 5
+    // TODO: Implementar cálculo de tasa de crecimiento basado en datos históricos reales
+    return 0 // Valor neutro hasta tener datos reales
   }
 
   function calculateRetentionRate() {
-    // Simulado - en producción calcularía basado en datos reales
-    return Math.floor(Math.random() * 15) + 80
+    // TODO: Implementar cálculo de tasa de retención basado en datos reales
+    return 0 // Valor neutro hasta tener datos reales
   }
 
   // Métodos principales

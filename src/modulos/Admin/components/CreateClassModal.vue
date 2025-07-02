@@ -663,13 +663,8 @@ const weekDays = [
   {value: 0, label: "Domingo", short: "D"},
 ]
 
-// Mock data - in production, this would come from the store
-const availableRooms = ref([
-  {id: "1", name: "Aula Piano 1", capacity: 15},
-  {id: "2", name: "Aula Piano 2", capacity: 12},
-  {id: "3", name: "Salón Principal", capacity: 30},
-  {id: "4", name: "Aula Violín", capacity: 10},
-])
+// TODO: Obtener datos reales de las aulas/salas de un store o API
+const availableRooms = ref([])
 
 // Computed
 const minDate = computed(() => {
@@ -736,8 +731,8 @@ const handleSubmit = async () => {
   isSubmitting.value = true
 
   try {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    // TODO: Implementar la lógica real para crear la clase (ej. classesStore.createClass(formData.value))
+    console.log("Creando clase con datos:", formData.value)
 
     // Emit the created event with form data
     emit("created", {...formData.value})

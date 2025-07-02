@@ -1,54 +1,54 @@
-import { vi, beforeEach } from "vitest";
-import { config } from "@vue/test-utils";
-import { createPinia, setActivePinia } from 'pinia';
+import {vi, beforeEach} from "vitest"
+import {config} from "@vue/test-utils"
+import {createPinia, setActivePinia} from "pinia"
 
 // --- Firebase Mocking ---
 // This mock is now more complete to satisfy the imports in the app's source code.
-vi.mock('firebase/firestore', async (importOriginal) => {
-    const actual = await importOriginal();
-    return {
-        ...actual,
-        getFirestore: vi.fn(),
-        initializeFirestore: vi.fn(),
-        persistentLocalCache: vi.fn(),
-        persistentMultipleTabManager: vi.fn(),
-    };
-});
+vi.mock("firebase/firestore", async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    getFirestore: vi.fn(),
+    initializeFirestore: vi.fn(),
+    persistentLocalCache: vi.fn(),
+    persistentMultipleTabManager: vi.fn(),
+  }
+})
 
-vi.mock('@/firebase/config', () => ({
-  auth: { currentUser: null },
+vi.mock("@/firebase/config", () => ({
+  auth: {currentUser: null},
   db: {},
   storage: {},
-}));
+}))
 
 // --- Pinia Setup ---
 beforeEach(() => {
-  const pinia = createPinia();
-  setActivePinia(pinia);
-});
+  const pinia = createPinia()
+  setActivePinia(pinia)
+})
 
 // --- Vue Router Mock ---
 vi.mock("vue-router", () => ({
-  createRouter: vi.fn(() => ({ beforeEach: vi.fn() })),
+  createRouter: vi.fn(() => ({beforeEach: vi.fn()})),
   createWebHistory: vi.fn(),
-  useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn() })),
-  useRoute: vi.fn(() => ({ params: {}, query: {} })),
-}));
+  useRouter: vi.fn(() => ({push: vi.fn(), replace: vi.fn()})),
+  useRoute: vi.fn(() => ({params: {}, query: {}})),
+}))
 
 // --- Global Mocks & Cleanup ---
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
-}));
+}))
 
 beforeEach(() => {
-  vi.clearAllMocks();
-});
+  vi.clearAllMocks()
+})
 
 config.global.mocks = {
   $t: (key) => key, // Mock i18n
-};
+}
 
 // Mock Pinia
 vi.mock("pinia", () => ({

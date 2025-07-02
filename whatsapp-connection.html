@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Connection - Music Academy</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #25d366;
+            margin-bottom: 20px;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.connecting {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        #qrCode {
+            max-width: 300px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        button {
+            background-color: #25d366;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #1da851;
+        }
+        
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .test-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .test-section.show {
+            display: block;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 5px 0 15px 0;
+            box-sizing: border-box;
+        }
+        
+        .response {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            text-align: left;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Music Academy - WhatsApp Connection</h1>
+        
+        <div id="status" class="status">Verificando estado...</div>
+        
+        <div>
+            <button onclick="initConnection()">Inicializar WhatsApp</button>
+            <button onclick="checkStatus()">Verificar Estado</button>
+            <button onclick="loadQR()">Cargar QR</button>
+        </div>
+        
+        <div id="qrContainer" style="margin: 20px 0;">
+            <img id="qrCode" src="" alt="QR Code" style="display: none;">
+            <p id="qrMessage">Haz clic en "Inicializar WhatsApp" para comenzar</p>
+        </div>
+        
+        <div id="testSection" class="test-section">
+            <h3>🧪 Probar Envío de Mensaje</h3>
+            <input type="tel" id="phoneNumber" placeholder="Número de teléfono (ej: +18091234567)">
+            <textarea id="message" placeholder="Mensaje de prueba..." rows="3">🎵 ¡Hola! Este es un mensaje de prueba desde Music Academy.\n\n¡WhatsApp está funcionando correctamente! 🎸</textarea>
+            <button onclick="sendTestMessage()">Enviar Mensaje de Prueba</button>
+            <div id="testResponse" class="response" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://whatsappapi-4ffilcsmva-uc.a.run.app';
+        let isConnected = false;
+        
+        async function checkStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const data = await response.json();
+                
+                const statusEl = document.getElementById('status');
+                statusEl.textContent = `Estado: ${data.status} | Listo: ${data.isReady}`;
+                
+                if (data.status === 'connected' && data.isReady) {
+                    statusEl.className = 'status connected';
+                    isConnected = true;
+                    document.getElementById('testSection').classList.add('show');
+                    document.getElementById('qrCode').style.display = 'none';
+                    document.getElementById('qrMessage').textContent = '✅ WhatsApp conectado! Puedes enviar mensajes.';
+                } else if (data.status === 'connecting' || data.status === 'qr_ready') {
+                    statusEl.className = 'status connecting';
+                    isConnected = false;
+                    if (data.hasQR) {
+                        loadQR();
+                    }
+                } else {
+                    statusEl.className = 'status disconnected';
+                    isConnected = false;
+                    document.getElementById('testSection').classList.remove('show');
+                }
+                
+            } catch (error) {
+                document.getElementById('status').textContent = 'Error al verificar estado: ' + error.message;
+                document.getElementById('status').className = 'status disconnected';
+            }
+        }
+        
+        async function initConnection() {
+            try {
+                document.getElementById('qrMessage').textContent = 'Inicializando WhatsApp...';
+                
+                const response = await fetch(`${API_BASE}/init`, { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('qrMessage').textContent = 'Generando código QR...';
+                    setTimeout(() => {
+                        loadQR();
+                        checkStatus();
+                    }, 3000);
+                } else {
+                    throw new Error(data.message || 'Error al inicializar');
+                }
+                
+            } catch (error) {
+                document.getElementById('qrMessage').textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        async function loadQR() {
+            try {
+                const response = await fetch(`${API_BASE}/qr`);
+                
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    
+                    if (contentType && contentType.includes('image/png')) {
+                        const blob = await response.blob();
+                        const qrUrl = URL.createObjectURL(blob);
+                        
+                        const qrImg = document.getElementById('qrCode');
+                        qrImg.src = qrUrl;
+                        qrImg.style.display = 'block';
+                        document.getElementById('qrMessage').textContent = '📱 Escanea este código QR con WhatsApp';
+                        
+                        // Verificar estado cada 3 segundos
+                        const interval = setInterval(async () => {
+                            await checkStatus();
+                            if (isConnected) {
+                                clearInterval(interval);
+                            }
+                        }, 3000);
+                        
+                    } else {
+                        const data = await response.json();
+                        document.getElementById('qrMessage').textContent = data.message || 'QR no disponible';
+                    }
+                } else {
+                    const errorData = await response.json();
+                    document.getElementById('qrMessage').textContent = 'Error: ' + (errorData.message || 'No se pudo cargar el QR');
+                }
+                
+            } catch (error) {
+                document.getElementById('qrMessage').textContent = 'Error al cargar QR: ' + error.message;
+            }
+        }
+        
+        async function sendTestMessage() {
+            const phoneNumber = document.getElementById('phoneNumber').value.trim();
+            const message = document.getElementById('message').value.trim();
+            
+            if (!phoneNumber || !message) {
+                alert('Por favor completa el número de teléfono y el mensaje');
+                return;
+            }
+            
+            if (!isConnected) {
+                alert('WhatsApp no está conectado. Conecta primero escaneando el QR.');
+                return;
+            }
+            
+            const responseEl = document.getElementById('testResponse');
+            responseEl.style.display = 'block';
+            responseEl.textContent = 'Enviando mensaje...';
+            responseEl.className = 'response';
+            
+            try {
+                const response = await fetch(`${API_BASE}/send-message`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        number: phoneNumber,
+                        message: message
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    responseEl.textContent = `✅ ¡Mensaje enviado exitosamente!\n\nID: ${data.messageId || 'N/A'}\nA: ${phoneNumber}\nMensaje: ${message}`;
+                    responseEl.className = 'response success';
+                } else {
+                    responseEl.textContent = `❌ Error al enviar mensaje:\n\n${JSON.stringify(data, null, 2)}`;
+                    responseEl.className = 'response error';
+                }
+                
+            } catch (error) {
+                responseEl.textContent = `❌ Error de conexión: ${error.message}`;
+                responseEl.className = 'response error';
+            }
+        }
+        
+        // Verificar estado inicial
+        checkStatus();
+        
+        // Auto-verificar cada 10 segundos
+        setInterval(checkStatus, 10000);
+    </script>
+</body>
+</html>

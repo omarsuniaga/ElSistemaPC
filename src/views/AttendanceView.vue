@@ -124,7 +124,7 @@
           </div>
           <DateClassSelector
             v-model="selectedClass"
-            v-model:selectedDate="selectedDate"
+            v-model:selected-date="selectedDate"
             :day-filter="true"
             :is-loading="isLoading"
             :classes-with-records="classesWithRecordsForSelectedDate"

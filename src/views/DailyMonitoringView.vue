@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 px-4 sm:px-6 lg:px-8">
+  <div class="min-h-screen mb-16 bg-gray-50 dark:bg-gray-900 py-6 px-4 sm:px-6 lg:px-8">
     <!-- Header con título y controles principales -->
     <header class="mb-8">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -265,7 +265,14 @@
     </section>
 
     <!-- Alumnos con Mayor Ausencia -->
-    <AbsenteesList class="mb-8" :class-name="selectedClass" :limit="5" />
+    <AbsenteesList 
+      class="mb-8" 
+      :absentees="absentStudents" 
+      @contact="handleContactStudent"
+      @justify="handleJustifyAbsence"
+      @follow-up="handleFollowUp"
+      @notify-all="handleNotifyAll"
+    />
 
     <!-- Estados de carga y error -->
     <div v-if="loading" class="flex justify-center items-center py-8">
@@ -808,6 +815,7 @@ import {useFirestoreCollection} from "../composables/useFirestoreCollection"
 import {where, QueryConstraint, Timestamp} from "firebase/firestore"
 import Modal from "../components/ConfirmModal.vue"
 import JustifiedAbsenceModal from "../components/JustifiedAbsenceModal.vue" // Asegúrate que tenga export default
+import AbsenteesList from "../components/monitoring/AbsenteesList.vue"
 import {
   ChartBarIcon,
   DocumentTextIcon,
@@ -922,8 +930,55 @@ const stats = computed(() => {
   const late = attendance.value.filter((record) => record.status === "late").length
   const justified = attendance.value.filter((record) => record.status === "justified").length
 
-  return {total, present, absent, late, justified}
+  return {
+    total,
+    present,
+    absent,
+    late,
+    justified,
+    attendanceRate: total > 0 ? ((present + late) / total) * 100 : 0,
+  }
 })
+
+// Obtener estudiantes ausentes para el componente AbsenteesList
+const absentStudents = computed(() => {
+  return attendance.value
+    .filter((record) => record.status === "absent")
+    .map((record) => ({
+      id: record.id,
+      studentId: record.studentId,
+      studentName: record.student?.firstName + " " + record.student?.lastName || "Estudiante desconocido",
+      className: classes.value.find((cls) => cls.id === record.classId)?.name || "Clase desconocida",
+      classTime: record.classTime || "00:00",
+      teacherName: classes.value.find((cls) => cls.id === record.classId)?.teacherName || "Profesor desconocido",
+      reason: record.observations || "",
+      consecutiveAbsences: 1, // Esto debería calcularse desde un análisis histórico
+      lastContactDate: record.date,
+      parentPhone: record.student?.phone || "",
+      parentEmail: record.student?.email || "",
+    }))
+})
+
+// Funciones para manejar eventos del componente AbsenteesList
+const handleContactStudent = (absentee: any) => {
+  console.log("Contactar estudiante:", absentee)
+  // Aquí implementar lógica de contacto (WhatsApp, Email, etc.)
+}
+
+const handleJustifyAbsence = (absentee: any) => {
+  console.log("Justificar ausencia:", absentee)
+  // Aquí implementar lógica para marcar como justificada
+}
+
+const handleFollowUp = (absentee: any) => {
+  console.log("Programar seguimiento:", absentee)
+  // Aquí implementar lógica de seguimiento
+}
+
+const handleNotifyAll = (absentees: any[]) => {
+  console.log("Notificar a todos:", absentees)
+  // Aquí implementar lógica para notificar a todos los padres
+}
 
 // Métodos para mostrar etiquetas y clases según el estado
 const getStatusLabel = (status: string) => {

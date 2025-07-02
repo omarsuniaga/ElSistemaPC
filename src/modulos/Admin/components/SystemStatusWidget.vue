@@ -214,14 +214,7 @@ const emit = defineEmits<{
 const refreshing = ref(false)
 
 // Mock alerts - en producción esto vendría del store
-const alerts = ref<Alert[]>([
-  {
-    id: "1",
-    type: "warning",
-    title: "Carga del sistema alta",
-    description: "El sistema está experimentando una carga superior al 80%",
-  },
-])
+const alerts = ref<Alert[]>([])
 
 // Computed
 const healthScore = computed(() => {
@@ -339,8 +332,6 @@ const refreshStatus = async () => {
   refreshing.value = true
   try {
     emit("refresh")
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
   } finally {
     refreshing.value = false
   }

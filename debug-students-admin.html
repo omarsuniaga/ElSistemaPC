@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Students Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .debug-info {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            padding: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug - Estudiantes del Sistema</h1>
+        
+        <div class="section">
+            <h3>📊 Estado del Sistema</h3>
+            <button class="button" onclick="checkSystemStatus()">Verificar Estado del Sistema</button>
+            <div id="systemStatus" class="debug-info"></div>
+        </div>
+
+        <div class="section">
+            <h3>👤 Usuario Actual</h3>
+            <button class="button" onclick="checkCurrentUser()">Verificar Usuario y Permisos</button>
+            <div id="userInfo" class="debug-info"></div>
+        </div>
+
+        <div class="section">
+            <h3>📚 Datos de Estudiantes</h3>
+            <button class="button" onclick="checkStudentsData()">Verificar Estudiantes en Firestore</button>
+            <button class="button" onclick="checkLocalStorage()">Verificar Caché Local</button>
+            <div id="studentsData" class="debug-info"></div>
+        </div>
+
+        <div class="section">
+            <h3>🔧 Herramientas de Debug</h3>
+            <button class="button" onclick="clearCache()">Limpiar Caché</button>
+            <button class="button" onclick="forceReload()">Forzar Recarga</button>
+            <button class="button" onclick="testFirebaseConnection()">Probar Conexión Firebase</button>
+        </div>
+
+        <div class="section">
+            <h3>📝 Recomendaciones</h3>
+            <div id="recommendations" class="debug-info">
+Pasos para resolver el problema:
+
+1. ✅ Verificar que el usuario está autenticado
+2. ✅ Verificar permisos del usuario actual
+3. ✅ Confirmar que hay datos en la colección ALUMNOS
+4. ✅ Verificar que la función getStudentsFirebase() retorna datos
+5. ✅ Confirmar que el componente AdminStudentsView está recibiendo los datos
+6. ✅ Verificar que los filtros no están bloqueando la visualización
+
+Posibles causas del problema:
+- Usuario sin permisos para ver estudiantes
+- Colección ALUMNOS vacía
+- Error en la función de carga de datos
+- Filtros aplicados que ocultan todos los estudiantes
+- Problema de caché local
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            return `[${timestamp}] ${prefix} ${message}`;
+        }
+
+        function checkSystemStatus() {
+            const output = document.getElementById('systemStatus');
+            output.innerHTML = log('Verificando estado del sistema...\n');
+            
+            // Verificar si estamos en localhost
+            const isLocalhost = window.location.hostname === 'localhost';
+            output.innerHTML += log(`Ejecutándose en: ${window.location.origin}`) + '\n';
+            output.innerHTML += log(`Puerto detectado: ${window.location.port}`) + '\n';
+            
+            // Verificar Vue app
+            if (window.Vue || document.querySelector('[data-v-]')) {
+                output.innerHTML += log('Aplicación Vue detectada', 'success') + '\n';
+            } else {
+                output.innerHTML += log('Aplicación Vue NO detectada', 'error') + '\n';
+            }
+            
+            // Verificar Firebase
+            if (window.firebase || window.getFirestore) {
+                output.innerHTML += log('Firebase detectado', 'success') + '\n';
+            } else {
+                output.innerHTML += log('Firebase NO detectado', 'error') + '\n';
+            }
+        }
+
+        function checkCurrentUser() {
+            const output = document.getElementById('userInfo');
+            output.innerHTML = log('Verificando usuario actual...\n');
+            
+            // Esta información debe ser obtenida desde la aplicación Vue
+            output.innerHTML += log('Para verificar el usuario actual:') + '\n';
+            output.innerHTML += log('1. Abrir DevTools (F12)') + '\n';
+            output.innerHTML += log('2. Ir a Console') + '\n';
+            output.innerHTML += log('3. Ejecutar: window.__VUE_APP__.config.globalProperties.$store.auth.user') + '\n';
+            output.innerHTML += log('4. O verificar en Application > Local Storage > authStore') + '\n';
+        }
+
+        function checkStudentsData() {
+            const output = document.getElementById('studentsData');
+            output.innerHTML = log('Verificando datos de estudiantes...\n');
+            
+            output.innerHTML += log('Para verificar los datos:') + '\n';
+            output.innerHTML += log('1. Abrir Firebase Console') + '\n';
+            output.innerHTML += log('2. Ir a Firestore Database') + '\n';
+            output.innerHTML += log('3. Buscar colección "ALUMNOS"') + '\n';
+            output.innerHTML += log('4. Verificar que existen documentos') + '\n';
+            output.innerHTML += log('5. En DevTools: localStorage.getItem("students_[USER_ID]_all")') + '\n';
+        }
+
+        function checkLocalStorage() {
+            const output = document.getElementById('studentsData');
+            output.innerHTML += '\n' + log('Verificando caché local...') + '\n';
+            
+            const keys = Object.keys(localStorage).filter(key => key.startsWith('students_'));
+            if (keys.length > 0) {
+                output.innerHTML += log(`Encontradas ${keys.length} entradas de caché de estudiantes:`, 'success') + '\n';
+                keys.forEach(key => {
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key));
+                        const studentsCount = data.data ? data.data.length : 0;
+                        const timestamp = new Date(data.timestamp).toLocaleString();
+                        output.innerHTML += log(`  - ${key}: ${studentsCount} estudiantes (${timestamp})`) + '\n';
+                    } catch (e) {
+                        output.innerHTML += log(`  - ${key}: Error al leer caché`, 'error') + '\n';
+                    }
+                });
+            } else {
+                output.innerHTML += log('No se encontraron datos de estudiantes en caché', 'error') + '\n';
+            }
+        }
+
+        function clearCache() {
+            const keys = Object.keys(localStorage).filter(key => key.startsWith('students_'));
+            keys.forEach(key => localStorage.removeItem(key));
+            
+            const output = document.getElementById('studentsData');
+            output.innerHTML += '\n' + log(`Limpiadas ${keys.length} entradas de caché`, 'success') + '\n';
+        }
+
+        function forceReload() {
+            window.location.reload(true);
+        }
+
+        function testFirebaseConnection() {
+            const output = document.getElementById('studentsData');
+            output.innerHTML += '\n' + log('Para probar la conexión Firebase:') + '\n';
+            output.innerHTML += log('1. Abrir DevTools Console') + '\n';
+            output.innerHTML += log('2. Ejecutar el siguiente código:') + '\n';
+            output.innerHTML += log('   import { collection, getDocs } from "firebase/firestore";') + '\n';
+            output.innerHTML += log('   import { db } from "./src/firebase";') + '\n';
+            output.innerHTML += log('   getDocs(collection(db, "ALUMNOS")).then(snapshot => console.log("Estudiantes:", snapshot.size));') + '\n';
+        }
+
+        // Ejecutar verificación inicial
+        window.onload = function() {
+            checkSystemStatus();
+        };
+    </script>
+</body>
+</html>
