@@ -542,6 +542,10 @@ import {useClassesStore} from "@/modulos/Classes/store/classes"
 import {useStudentsStore} from "@/modulos/Students/store/students"
 import {useAttendanceStore} from "@/modulos/Attendance/store/attendance"
 
+// Firebase
+import {db} from "@/firebase"
+import {collection, doc, setDoc} from "firebase/firestore"
+
 // Types
 interface AttendanceRecord {
   date: string
@@ -679,10 +683,6 @@ async function generateSampleData() {
   console.log("🎭 Generando datos de asistencia de muestra...")
 
   try {
-    // Importar Firebase
-    const {db} = await import("@/firebase")
-    const {collection, doc, setDoc} = await import("firebase/firestore")
-
     // Obtener las clases del maestro actual
     const teacherClassIds = teacherClasses.value.map((c) => c.id)
 

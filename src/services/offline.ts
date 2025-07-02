@@ -1,7 +1,8 @@
-import {db} from "../firebase"
+﻿import {db} from "../firebase"
 import {openDB, type IDBPDatabase} from "idb"
 import type {Student, Teacher, Class, Content} from "../types"
 
+import {collection, getDocs} from "firebase/firestore"
 interface OfflineDB extends IDBPDatabase {
   students: Student[]
   teachers: Teacher[]

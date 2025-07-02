@@ -1,8 +1,9 @@
-import {ref, computed, Ref} from "vue"
+﻿import {ref, computed, Ref} from "vue"
 import {useFirestore} from "@/composables/useFirestore"
 import {useMontajeStore} from "../store/montaje"
 import {EstadoCompass, TipoInstrumento} from "../types"
 
+import {doc, updateDoc} from "firebase/firestore"
 // Tipos para el tracking de la selección
 interface CompasSeleccionado {
   obraId: string

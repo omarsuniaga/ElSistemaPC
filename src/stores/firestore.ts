@@ -1,6 +1,7 @@
-import {defineStore} from "pinia"
+﻿import {defineStore} from "pinia"
 import {getAuth} from "firebase/auth"
 import {
+import {doc, updateDoc} from "firebase/firestore"
   getCollection,
   getDocument,
   createDocument,

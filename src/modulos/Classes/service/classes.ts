@@ -748,7 +748,6 @@ export const addAssistantTeacherToClass = async (
     if (!classDoc.exists()) {
       console.error("❌ [addAssistantTeacherToClass] Clase no encontrada:", inviteData.classId)
       // Listar todas las clases disponibles para debug
-      const {getDocs, collection} = await import("firebase/firestore")
       const classesSnapshot = await getDocs(collection(db, CLASSES_COLLECTION))
       console.log("📋 [addAssistantTeacherToClass] Clases disponibles:")
       classesSnapshot.docs.forEach((doc) => {

@@ -1,4 +1,4 @@
-// src/modulos/Montaje/store/montaje.ts
+﻿// src/modulos/Montaje/store/montaje.ts
 
 import {defineStore} from "pinia"
 import {ref, computed} from "vue"
@@ -136,7 +136,7 @@ export const useMontajeStore = defineStore("montaje", () => {
         console.log('📚 Obra no encontrada en "obras", intentando en "repertorios"...')
         try {
           // doc y getDoc ya están importados arriba
-          const {db} = await import("@/firebase")
+          
 
           const docRef = doc(db, "repertorios", obraId)
           const docSnap = await getDoc(docRef)
@@ -158,7 +158,7 @@ export const useMontajeStore = defineStore("montaje", () => {
         console.log('📖 Intentando en "montaje-repertorios"...')
         try {
           // doc y getDoc ya están importados arriba
-          const {db} = await import("@/firebase")
+          
 
           const docRef = doc(db, "montaje-repertorios", obraId)
           const docSnap = await getDoc(docRef)

@@ -26,7 +26,6 @@
 </template>
 
 <script setup lang="ts">
-import {defineProps} from "vue"
 import ClassDetailView from "../../../modulos/Classes/view/ClassDetailView.vue"
 
 const props = defineProps({

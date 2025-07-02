@@ -1,6 +1,7 @@
-import * as functions from "firebase-functions"
+﻿import * as functions from "firebase-functions"
 import * as admin from "firebase-admin"
 import {
+import {collection, getDocs} from "firebase/firestore"
   makeWASocket,
   DisconnectReason,
   fetchLatestBaileysVersion,

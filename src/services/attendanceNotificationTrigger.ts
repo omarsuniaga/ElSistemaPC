@@ -13,6 +13,8 @@ import {
   serverTimestamp,
   onSnapshot,
   Timestamp,
+  updateDoc,
+  doc,
 } from "firebase/firestore"
 
 // Interfaces
@@ -266,8 +268,6 @@ const watchForNewAttendance = (): (() => void) => {
  */
 const markAsRead = async (notificationId: string): Promise<void> => {
   try {
-    const {updateDoc, doc} = await import("firebase/firestore")
-
     await updateDoc(doc(db, NOTIFICATIONS_COLLECTION, notificationId), {
       read: true,
       readAt: serverTimestamp(),

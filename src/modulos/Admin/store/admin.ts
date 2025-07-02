@@ -1,7 +1,8 @@
-import {defineStore} from "pinia"
+﻿import {defineStore} from "pinia"
 import {ref, computed} from "vue"
 import {DashboardStats, Activity, adminService} from "../services/adminService"
 
+import {collection, doc, getDocs, updateDoc} from "firebase/firestore"
 interface SystemStatus {
   database: "online" | "offline" | "warning"
   storage: "online" | "offline" | "warning"

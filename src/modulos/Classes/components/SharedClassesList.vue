@@ -292,7 +292,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, withDefaults} from "vue"
+import {ref, computed, onMounted} from "vue"
 import {useAuthStore} from "../../../stores/auth"
 import {useTeachersStore} from "../../Teachers/store/teachers"
 import {useClassesStore} from "../store/classes"

@@ -1,8 +1,9 @@
-import {describe, it, expect, beforeEach, vi, type Mock} from "vitest"
+﻿import {describe, it, expect, beforeEach, vi, type Mock} from "vitest"
 import {ref} from "vue"
 import {useHeatmapTracking} from "../composables/useHeatmapTracking"
 import {EstadoCompass, TipoInstrumento} from "../types"
 
+import {doc, updateDoc} from "firebase/firestore"
 // Mock de los stores y composables
 vi.mock("@/composables/useFirestore", () => ({
   useFirestore: () => ({
