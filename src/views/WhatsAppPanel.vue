@@ -1390,6 +1390,7 @@ const sendMessage = async () => {
       body: JSON.stringify({
         number: messageForm.recipient,
         message: messageForm.content,
+        validateNumber: true,
       }),
     })
 
@@ -1440,13 +1441,32 @@ const clearMessage = () => {
 }
 
 // Métodos de envío masivo
-const getBulkRecipientCount = () => {
-  if (!bulkForm.recipients.trim()) return 0
-  const numbers = bulkForm.recipients
-    .split(/[,\n]/)
-    .map((num) => num.trim())
-    .filter((num) => num.length > 0)
-  return numbers.length
+// Función auxiliar para limpiar y validar números de teléfono
+const cleanPhoneNumbers = (input: string): string[] => {
+  if (!input?.trim()) return []
+  
+  return input
+    .split(/[,\n;]/) // Separar por comas, nuevas líneas o punto y coma
+    .map((num: string) => num.trim().replace(/[^+\d]/g, "")) // Limpiar caracteres no válidos
+    .filter((num: string) => num.length >= 10) // Filtrar números muy cortos
+    .map((num: string) => {
+      // Asegurar formato internacional
+      if (!num.startsWith("+")) {
+        if (num.length === 10) {
+          return "+1" + num // Asumir NANP para números de 10 dígitos
+        } else if (num.length === 11 && num.startsWith("1")) {
+          return "+" + num
+        }
+        return "+" + num
+      }
+      return num
+    })
+    .filter((num: string) => num.length > 5) // Filtro final
+}
+
+const getBulkRecipientCount = (): number => {
+  const cleanNumbers = cleanPhoneNumbers(bulkForm.recipients)
+  return cleanNumbers.length
 }
 
 const getEstimatedTime = () => {
@@ -1499,11 +1519,28 @@ const formatTime = (milliseconds) => {
 const sendBulkMessage = async () => {
   if (!canSendBulk()) return
 
-  // Parsear destinatarios
-  const recipients = bulkForm.recipients
-    .split(/[,\n]/)
-    .map((num) => num.trim())
-    .filter((num) => num.length > 0)
+  // Debug del estado del formulario
+  console.log("🔍 Estado del formulario al iniciar:")
+  console.log("  - bulkForm.recipients:", JSON.stringify(bulkForm.recipients))
+  console.log("  - bulkForm.message:", JSON.stringify(bulkForm.message))
+  console.log("  - bulkForm.selectedTemplate:", JSON.stringify(bulkForm.selectedTemplate))
+  
+  // Verificar si el mensaje está vacío o es undefined
+  if (!bulkForm.message || bulkForm.message.trim() === "") {
+    alert("❌ Error: El mensaje está vacío. Por favor escribe un mensaje antes de enviar.")
+    console.error("❌ bulkForm.message está vacío:", bulkForm.message)
+    return
+  }
+
+  // Usar la función centralizada para limpiar números
+  const recipients = cleanPhoneNumbers(bulkForm.recipients)
+
+  console.log("📋 Números procesados:", recipients)
+
+  if (recipients.length === 0) {
+    alert("❌ No se encontraron números de teléfono válidos.\n\nFormato esperado:\n+1234567890 o 1234567890")
+    return
+  }
 
   if (recipients.length > 50) {
     alert(
@@ -1556,18 +1593,57 @@ const sendBulkMessage = async () => {
       try {
         console.log(`📱 Enviando a ${recipient} (${i + 1}/${recipients.length})`)
 
+        // Validación adicional antes del envío
+        if (!recipient || !bulkForm.message || recipient.length < 10) {
+          throw new Error(`Datos inválidos - Número: "${recipient}", Mensaje: "${bulkForm.message ? 'OK' : 'VACÍO'}"`)
+        }
+
+        const payload = {
+          number: recipient.trim(),
+          message: bulkForm.message.trim(),
+          validateNumber: true,
+        }
+
+        // Debugging más detallado
+        console.log("📦 Payload a enviar:")
+        console.log("  - number:", JSON.stringify(payload.number))
+        console.log("  - message:", JSON.stringify(payload.message))
+        console.log("  - payload completo:", JSON.stringify(payload))
+
+        // Validación final antes del envío
+        if (!payload.number || !payload.message) {
+          throw new Error(`Payload inválido - number: "${payload.number}", message: "${payload.message}"`)
+        }
+
         const response = await fetch("https://whatsappapi-4ffilcsmva-uc.a.run.app/send-message", {
           method: "POST",
           headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({
-            recipient,
-            message: bulkForm.message,
-          }),
+          body: JSON.stringify(payload),
         })
 
         const result = await response.json()
 
-        if (response.ok && result.success) {
+        // Manejo específico de errores HTTP
+        if (!response.ok) {
+          let errorMessage = "Error de servidor"
+          
+          if (response.status === 400) {
+            errorMessage = `Error 400: ${result.message || result.error || "Número y mensaje son requeridos"}`
+            console.error("❌ Error 400 - Datos enviados:")
+            console.error("  - recipient:", JSON.stringify(recipient))
+            console.error("  - message:", JSON.stringify(bulkForm.message))
+            console.error("  - payload enviado:", JSON.stringify(payload))
+            console.error("  - respuesta del servidor:", JSON.stringify(result))
+          } else if (response.status === 401) {
+            errorMessage = "Error 401: No autorizado"
+          } else if (response.status === 429) {
+            errorMessage = "Error 429: Demasiadas solicitudes"
+          }
+          
+          throw new Error(errorMessage)
+        }
+
+        if (result.success) {
           results.successful++
           bulkProgress.successful++
           results.details.push({
@@ -1737,6 +1813,39 @@ const formatDate = (date: Date) => {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date)
+}
+
+// Función de test para la API de WhatsApp (disponible en window para debugging)
+window.testWhatsAppAPI = async (recipient, message) => {
+  console.log("🧪 Test de API WhatsApp:")
+  console.log("  - recipient:", JSON.stringify(recipient))
+  console.log("  - message:", JSON.stringify(message))
+  
+  const payload = { number: recipient, message: message, validateNumber: true }
+  console.log("  - payload:", JSON.stringify(payload))
+  
+  try {
+    const response = await fetch("https://whatsappapi-4ffilcsmva-uc.a.run.app/send-message", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload),
+    })
+    
+    const result = await response.json()
+    console.log("  - response status:", response.status)
+    console.log("  - response result:", JSON.stringify(result))
+    
+    if (!response.ok) {
+      console.error("❌ Error en API:", result)
+    } else {
+      console.log("✅ API funcionó correctamente")
+    }
+    
+    return { response, result }
+  } catch (error) {
+    console.error("❌ Error en test:", error)
+    return { error }
+  }
 }
 
 // Inicialización
