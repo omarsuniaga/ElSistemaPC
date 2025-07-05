@@ -3,16 +3,21 @@ import {createApp} from "vue"
 import {createPinia} from "pinia"
 import router from "./router"
 import App from "./App.vue"
-import {useNotification, notificationKey} from "@/composables/useNotification"
+import {useNotification} from "@/composables/useNotification"
 import {registerServiceWorker} from "./registerServiceWorker"
 import {createBrowserDebugFunction} from "./utils/testAttendanceSystem"
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate"
+
+// ✅ PRIORIDAD: Inicializar Firebase ANTES que cualquier otra cosa
+console.log("🔍 [Main] Iniciando inicialización de Firebase...")
 import "./firebase/config"
+import "./firebase"
+console.log("✅ [Main] Firebase importado correctamente")
 
 // Sistemas de optimización avanzada
 import {createPerformancePlugin} from "@/utils/performance/monitor"
 import {createCachePlugin} from "@/utils/cache/smartCache"
-import {createLazyComponent, ModulePreloader} from "@/utils/performance/lazyLoader"
+import {ModulePreloader} from "@/utils/performance/lazyLoader"
 import {imageOptimizer} from "@/utils/optimization/imageOptimizer"
 import {logger} from "@/utils/logging/logger"
 
@@ -51,10 +56,6 @@ async function verifyRBACSetup() {
 // Crear la aplicación
 const app = createApp(App)
 
-// Configurar notificaciones globales
-const {showNotification} = useNotification()
-app.config.globalProperties.$notify = showNotification
-
 // Configurar manejador global de errores avanzado
 app.config.errorHandler = (err, instance, info) => {
   console.error("🚨 Error de aplicación:", err)
@@ -90,8 +91,29 @@ const pinia = createPinia()
 pinia.use(piniaPluginPersistedstate)
 app.use(pinia)
 
-// Configurar Router
+// Configurar notificaciones globales (después de Pinia)
+const {showNotification} = useNotification()
+app.config.globalProperties.$notify = showNotification
+
+// Configurar Router con verificación de Firebase
+console.log("🔍 [Main] Configurando router...")
 app.use(router)
+
+// Verificar estado de Firebase después de montar el router
+router.afterEach((to, from) => {
+  // Solo verificar en desarrollo y si no es una ruta pública
+  if (import.meta.env.DEV && !to.meta?.public) {
+    import("./firebase").then((firebaseModule) => {
+      const {isFirebaseReady} = firebaseModule
+      if (isFirebaseReady && !isFirebaseReady()) {
+        console.warn("⚠️ [Router] Navegando pero Firebase no está completamente listo:", {
+          to: to.path,
+          from: from.path,
+        })
+      }
+    })
+  }
+})
 
 // Sistemas de optimización avanzada
 app.use(createPerformancePlugin())
@@ -106,6 +128,18 @@ setupGlobalTheme()
 // Configurar función de debugging global en desarrollo
 if (import.meta.env.DEV) {
   createBrowserDebugFunction()
+
+  // 🔍 Diagnóstico Firebase al iniciar la aplicación
+  setTimeout(() => {
+    console.log("🔍 [Main] Verificando Firebase después de la inicialización...")
+    import("./utils/firebase-debug")
+      .then(() => {
+        console.log("✅ [Main] Diagnóstico Firebase completado")
+      })
+      .catch((error) => {
+        console.error("❌ [Main] Error en diagnóstico Firebase:", error)
+      })
+  }, 2000)
 
   // Importar funciones de testing de rendimiento y branding
   Promise.all([
@@ -173,6 +207,36 @@ if (import.meta.env.DEV) {
 // Montar la aplicación
 app.mount("#app")
 
+// Debug stores after mounting
+setTimeout(() => {
+  console.log("🔍 [Store Debug] Verificando stores después del montaje...")
+  
+  try {
+    // Check Pinia through the app instance
+    const piniaInstance = app.config.globalProperties.$pinia
+    if (piniaInstance) {
+      console.log("✅ [Store Debug] Pinia está disponible")
+      console.log("📊 [Store Debug] Estados de Pinia:", Object.keys(piniaInstance.state.value))
+      
+      // Check students store specifically
+      if (piniaInstance.state.value.students) {
+        console.log("✅ [Store Debug] StudentsStore encontrado:", {
+          students: piniaInstance.state.value.students.students?.length || 0,
+          loading: piniaInstance.state.value.students.loading,
+          error: piniaInstance.state.value.students.error,
+        })
+      } else {
+        console.log("❌ [Store Debug] StudentsStore NO encontrado")
+        console.log("📋 [Store Debug] Stores disponibles:", Object.keys(piniaInstance.state.value))
+      }
+    } else {
+      console.log("❌ [Store Debug] Pinia NO está disponible")
+    }
+  } catch (error) {
+    console.error("🚨 [Store Debug] Error verificando stores:", error)
+  }
+}, 3000)
+
 // Inicializar sistemas de optimización después del montaje
 document.addEventListener("DOMContentLoaded", () => {
   // Configurar lazy loading para componentes críticos
@@ -196,29 +260,29 @@ document.addEventListener("DOMContentLoaded", () => {
 // Verificar configuración RBAC
 verifyRBACSetup()
 
-// Inicializar sistema de notificaciones de asistencia
-async function initializeAttendanceNotifications() {
-  try {
-    // Importar e inicializar el sistema de notificaciones
-    const {default: notificationSystem} = await import("./services/attendanceNotificationManager")
+// Inicializar sistema de notificaciones de asistencia (DESACTIVADO)
+// async function initializeAttendanceNotifications() {
+//   try {
+//     // Importar e inicializar el sistema de notificaciones
+//     const {default: notificationSystem} = await import("./services/attendanceNotificationManager")
 
-    console.log("🔔 Inicializando sistema de notificaciones de asistencia...")
+//     console.log("🔔 Inicializando sistema de notificaciones de asistencia...")
 
-    // Forzar auto-inicialización
-    await notificationSystem.forceAutoInitialize()
+//     // Forzar auto-inicialización
+//     await notificationSystem.forceAutoInitialize()
 
-    // Exponer en desarrollo para debugging
-    if (import.meta.env.DEV) {
-      ;(window as any).attendanceNotifications = notificationSystem
-      console.log("🔧 Sistema de notificaciones disponible en window.attendanceNotifications")
-    }
-  } catch (error) {
-    console.error("❌ Error inicializando notificaciones de asistencia:", error)
-  }
-}
+//     // Exponer en desarrollo para debugging
+//     if (import.meta.env.DEV) {
+//       ;(window as any).attendanceNotifications = notificationSystem
+//       console.log("🔧 Sistema de notificaciones disponible en window.attendanceNotifications")
+//     }
+//   } catch (error) {
+//     console.error("❌ Error inicializando notificaciones de asistencia:", error)
+//   }
+// }
 
-// Inicializar notificaciones después de un breve delay para permitir que el router esté listo
-setTimeout(initializeAttendanceNotifications, 3000)
+// Inicializar notificaciones después de un breve delay para permitir que el router esté listo (DESACTIVADO)
+// setTimeout(initializeAttendanceNotifications, 3000)
 
 // Registrar Service Worker para PWA
 registerServiceWorker()

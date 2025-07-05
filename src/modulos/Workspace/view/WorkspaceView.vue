@@ -255,7 +255,7 @@ import EvaluationCard from "../components/EvaluationCard.vue"
 
 // Stores
 import {useAttendanceStore} from "../../Classes/stores/attendance"
-import {useStudentsStore} from "../stores/students"
+import {useStudentsStore} from "../../Students/store/students"
 import {useClassesStore} from "../../Classes/stores/classes"
 import {useQualificationStore} from "../../Classes/stores/qualification"
 

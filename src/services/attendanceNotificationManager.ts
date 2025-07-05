@@ -2,6 +2,7 @@
 // Se ejecuta al iniciar la aplicación para configurar listeners automáticos
 
 import {attendanceNotificationSystem} from "./attendanceNotificationTrigger"
+import {isFirebaseReady} from "../firebase"
 // import { useAuthStore } from '../stores/authStore' // No se puede usar aquí directamente
 
 interface NotificationSystemState {
@@ -26,6 +27,15 @@ class AttendanceNotificationManager {
   async initialize(): Promise<void> {
     try {
       console.log("🔧 Inicializando sistema de notificaciones de asistencia...")
+
+      // Verificar que Firebase esté listo
+      if (!isFirebaseReady()) {
+        console.warn(
+          "⚠️ Firebase no está listo, no se inicializarán las notificaciones de asistencia"
+        )
+        this.state.lastError = "Firebase no está inicializado"
+        return
+      }
 
       // TEMPORAL: Comentado verificación de permisos debido a problema con useAuthStore
       // const authStore = useAuthStore()
@@ -56,12 +66,8 @@ class AttendanceNotificationManager {
       const errorMessage = error instanceof Error ? error.message : "Error desconocido"
       this.state.lastError = errorMessage
       console.error("❌ Error inicializando sistema de notificaciones:", errorMessage)
-
-      // Intentar recuperación automática en 30 segundos
-      setTimeout(() => {
-        console.log("🔄 Intentando recuperación automática del sistema de notificaciones...")
-        this.initialize()
-      }, 30000)
+      
+      // NO reintentar automáticamente para evitar bucles infinitos
     }
   }
 
@@ -100,7 +106,7 @@ class AttendanceNotificationManager {
    * Verifica si el usuario tiene permisos para recibir notificaciones
    */
   private hasNotificationPermissions(userRole: string): boolean {
-    const allowedRoles = ["Admin", "Director", "SuperAdmin"]
+    const allowedRoles = ["Admin", "Director", "SuperAdmin", "Maestro"]
     return allowedRoles.includes(userRole)
   }
 
@@ -198,11 +204,11 @@ export const notificationSystem = {
   forceAutoInitialize: autoInitialize,
 }
 
-// Auto-inicializar si estamos en el browser
-if (typeof window !== "undefined") {
-  // Ejecutar en el próximo tick para permitir que Vue se inicialice
-  setTimeout(autoInitialize, 100)
-}
+// Auto-inicializar si estamos en el browser (DESACTIVADO por problemas de rendimiento)
+// if (typeof window !== "undefined") {
+//   // Ejecutar en el próximo tick para permitir que Vue se inicialice
+//   setTimeout(autoInitialize, 100)
+// }
 
 export default notificationSystem
 

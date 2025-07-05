@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {ref, computed, onMounted} from "vue"
 import {useRepertoireStore} from "../stores/repertoire"
-import {useStudentsStore} from "../stores/students"
+import {useStudentsStore} from "../modulos/Students/store/students"
 import type {Repertoire, MusicalWork, Measure} from "../types/repertoire"
 import {INSTRUMENT_SECTIONS} from "../types/repertoire"
 import {

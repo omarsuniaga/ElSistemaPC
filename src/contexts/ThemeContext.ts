@@ -1,6 +1,5 @@
-import {ref, computed, inject, provide, onMounted, watch, type Ref} from "vue"
+import {ref, inject, provide, onMounted, type Ref} from "vue"
 import {getThemePreference, saveThemePreference} from "../modulos/Users/service/userPreferences"
-import {useAuthStore} from "../stores/auth"
 
 // Clave para inyección de dependencia
 const ThemeSymbol = Symbol("theme")
@@ -16,7 +15,17 @@ export interface ThemeContext {
  */
 export function createThemeContext() {
   const isDarkMode = ref(false)
-  const authStore = useAuthStore()
+
+  // Función para obtener authStore de manera segura
+  const getAuthStore = async () => {
+    try {
+      const {useAuthStore} = await import("../stores/auth")
+      return useAuthStore()
+    } catch (error) {
+      console.warn("AuthStore no disponible:", error)
+      return null
+    }
+  }
 
   // Aplicar tema al elemento body
   const applyTheme = (isDark: boolean) => {
@@ -35,7 +44,8 @@ export function createThemeContext() {
     applyTheme(isDarkMode.value)
 
     // Guardar preferencia en Firestore si el usuario está autenticado
-    if (authStore.user?.uid) {
+    const authStore = await getAuthStore()
+    if (authStore?.user?.uid) {
       try {
         await saveThemePreference(authStore.user.uid, isDarkMode.value)
         console.log("Preferencia de tema actualizada")
@@ -45,28 +55,10 @@ export function createThemeContext() {
     }
   }
 
-  // Cargar preferencia cuando el usuario cambia
-  watch(
-    () => authStore.user?.uid,
-    async (newUserId) => {
-      if (newUserId) {
-        try {
-          const preference = await getThemePreference(newUserId)
-          if (preference !== null) {
-            isDarkMode.value = preference
-            applyTheme(preference)
-          }
-        } catch (error) {
-          console.error("Error al cargar preferencia de tema:", error)
-        }
-      }
-    },
-    {immediate: true}
-  )
-
-  // Inicializar tema al montar la aplicación
-  onMounted(async () => {
-    if (authStore.user?.uid) {
+  // Cargar preferencia cuando hay cambios
+  const loadUserThemePreference = async () => {
+    const authStore = await getAuthStore()
+    if (authStore?.user?.uid) {
       try {
         const preference = await getThemePreference(authStore.user.uid)
         if (preference !== null) {
@@ -74,9 +66,14 @@ export function createThemeContext() {
           applyTheme(preference)
         }
       } catch (error) {
-        console.error("Error al cargar preferencia de tema inicial:", error)
+        console.error("Error al cargar preferencia de tema:", error)
       }
     }
+  }
+
+  // Inicializar tema al montar la aplicación
+  onMounted(async () => {
+    await loadUserThemePreference()
   })
 
   return {

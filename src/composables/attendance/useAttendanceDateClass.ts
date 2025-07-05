@@ -168,10 +168,20 @@ export function useAttendanceDateClass(state: ReturnType<typeof useAttendanceSta
             return false
           }
           try {
-            const slotDayName = format(new Date(2024, 0, slot.day + 1), "EEEE", {locale: es})
-            return slotDayName === dayOfWeek
+            // Mapeo directo de números a nombres de días
+            const dayNames = [
+              "domingo",
+              "lunes",
+              "martes",
+              "miércoles",
+              "jueves",
+              "viernes",
+              "sábado",
+            ]
+            const slotDayName = dayNames[slot.day]
+            return slotDayName === dayOfWeek.toLowerCase()
           } catch (error) {
-            console.error(`[DateClass] Error formatting date for slot.day:`, slot.day, error)
+            console.error(`[DateClass] Error mapping slot.day:`, slot.day, error)
             return false
           }
         })

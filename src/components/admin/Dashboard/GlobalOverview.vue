@@ -76,7 +76,8 @@
 
 <script setup lang="ts">
 import {ref, onMounted} from "vue"
-import {getFunctions, httpsCallable} from "firebase/functions"
+import {httpsCallable} from "firebase/functions"
+import {functions} from "@/firebase"
 import {Timestamp} from "firebase/firestore"
 import {whatsappService} from "../../../services/whatsappService"
 
@@ -228,7 +229,6 @@ const notificationCategoryChartOptions = {
   },
 }
 
-const functions = getFunctions()
 const checkNotificationFunctions = httpsCallable(functions, "checkNotificationFunctionsHealth")
 
 const fetchGlobalOverviewData = async () => {

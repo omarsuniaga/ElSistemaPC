@@ -110,7 +110,7 @@
 <script setup lang="ts">
 import {ref, computed, onMounted} from "vue"
 import {useAttendanceStore} from "../stores/attendance"
-import {useStudentsStore} from "../stores/students"
+import {useStudentsStore} from "../../Students/store/students"
 import {format, parseISO} from "date-fns"
 import {es} from "date-fns/locale"
 import {CheckCircleIcon, XCircleIcon, ClockIcon, DocumentCheckIcon} from "@heroicons/vue/24/outline"

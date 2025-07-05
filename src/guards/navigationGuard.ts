@@ -1,7 +1,4 @@
-// src/guards/navigationGuard.ts
-
 import {NavigationGuardNext, RouteLocationNormalized} from "vue-router"
-import {useAuthStore} from "@/stores/auth"
 import {NavigationService} from "@/services/navigation/navigationService"
 
 /**
@@ -13,10 +10,12 @@ export const navigationGuard = async (
   from: RouteLocationNormalized,
   next: NavigationGuardNext
 ) => {
-  const authStore = useAuthStore()
-  const navigationService = NavigationService.getInstance()
-
   try {
+    // Importar dinámicamente para evitar problemas de inicialización de Pinia
+    const {useAuthStore} = await import("@/stores/auth")
+    const authStore = useAuthStore()
+    const navigationService = NavigationService.getInstance()
+
     // Verificar si el usuario está autenticado
     if (!authStore.user) {
       console.warn("🚫 Usuario no autenticado, redirigiendo a login")
@@ -42,15 +41,77 @@ export const navigationGuard = async (
       console.warn(`🚫 Acceso denegado a ${to.path} para rol ${authStore.user.role}`)
 
       // Redirigir a página de no autorizado o dashboard por defecto
-      const redirectPath = getDefaultRouteForRole(authStore.user.role)
+      const redirectPath = getDefaultRouteForRole(authStore.user.role || "")
       next(redirectPath)
     }
   } catch (error) {
     console.error("Error en guard de navegación:", error)
 
-    // En caso de error, permitir acceso a rutas básicas según el rol
-    const fallbackRoute = getDefaultRouteForRole(authStore.user?.role || "")
+    // En caso de error, permitir acceso a rutas básicas
+    const fallbackRoute = "/dashboard"
     next(fallbackRoute)
+  }
+}
+
+/**
+ * Guard simplificado para verificar solo roles específicos
+ */
+export const roleGuard = (allowedRoles: string[]) => {
+  return async (
+    to: RouteLocationNormalized,
+    from: RouteLocationNormalized,
+    next: NavigationGuardNext
+  ) => {
+    try {
+      const {useAuthStore} = await import("@/stores/auth")
+      const authStore = useAuthStore()
+
+      if (!authStore.user) {
+        next("/login")
+        return
+      }
+
+      if (allowedRoles.includes(authStore.user.role || "")) {
+        next()
+      } else {
+        console.warn(
+          `🚫 Acceso denegado por rol. Requerido: ${allowedRoles.join(", ")}, Usuario: ${authStore.user.role || "undefined"}`
+        )
+        next("/unauthorized")
+      }
+    } catch (error) {
+      console.error("Error en roleGuard:", error)
+      next("/login")
+    }
+  }
+}
+
+/**
+ * Guard específico para superusuario
+ */
+export const superuserGuard = async (
+  to: RouteLocationNormalized,
+  from: RouteLocationNormalized,
+  next: NavigationGuardNext
+) => {
+  try {
+    const {useAuthStore} = await import("@/stores/auth")
+    const authStore = useAuthStore()
+
+    if (!authStore.user) {
+      next("/login")
+      return
+    }
+
+    if (authStore.user.role === "Superusuario") {
+      next()
+    } else {
+      console.warn(`🚫 Acceso denegado a área de superusuario. Usuario: ${authStore.user.role}`)
+      next("/unauthorized")
+    }
+  } catch (error) {
+    console.error("Error en superuserGuard:", error)
+    next("/login")
   }
 }
 
@@ -67,54 +128,4 @@ function getDefaultRouteForRole(userRole: string): string {
   }
 
   return defaultRoutes[userRole] || "/dashboard"
-}
-
-/**
- * Guard simplificado para verificar solo roles específicos
- */
-export const roleGuard = (allowedRoles: string[]) => {
-  return (
-    to: RouteLocationNormalized,
-    from: RouteLocationNormalized,
-    next: NavigationGuardNext
-  ) => {
-    const authStore = useAuthStore()
-
-    if (!authStore.user) {
-      next("/login")
-      return
-    }
-
-    if (allowedRoles.includes(authStore.user.role)) {
-      next()
-    } else {
-      console.warn(
-        `🚫 Acceso denegado por rol. Requerido: ${allowedRoles.join(", ")}, Usuario: ${authStore.user.role}`
-      )
-      next("/unauthorized")
-    }
-  }
-}
-
-/**
- * Guard específico para superusuario
- */
-export const superuserGuard = (
-  to: RouteLocationNormalized,
-  from: RouteLocationNormalized,
-  next: NavigationGuardNext
-) => {
-  const authStore = useAuthStore()
-
-  if (!authStore.user) {
-    next("/login")
-    return
-  }
-
-  if (authStore.user.role === "Superusuario") {
-    next()
-  } else {
-    console.warn(`🚫 Acceso denegado a área de superusuario. Usuario: ${authStore.user.role}`)
-    next("/unauthorized")
-  }
 }

@@ -326,6 +326,31 @@ export const useObservationsStore = defineStore("observations", () => {
       // Limpiar cache
       cache.value.clear()
 
+      // Crear notificación para administradores
+      try {
+        const {createStudentObservationNotification} = await import("@/services/adminNotificationService")
+        
+        // Determinar tipo de observación basado en la prioridad y tipo
+        let observationType: "positive" | "negative" | "neutral" = "neutral"
+        if (createdObservation.type === "comportamiento" && createdObservation.priority === "alta") {
+          observationType = "negative"
+        } else if (createdObservation.type === "academico" && createdObservation.priority === "baja") {
+          observationType = "positive"
+        } else if (createdObservation.priority === "critica") {
+          observationType = "negative"
+        }
+
+        await createStudentObservationNotification({
+          teacherId: createdObservation.authorId,
+          studentId: createdObservation.taggedStudents[0] || "unknown", // Tomar el primer estudiante etiquetado
+          observationType,
+          observationText: createdObservation.text,
+          severity: createdObservation.priority === "critica" ? "high" : createdObservation.priority === "alta" ? "medium" : "low",
+        })
+      } catch (error) {
+        console.warn("No se pudo crear notificación para la observación:", error)
+      }
+
       console.log(`[ObservationsStore] Created observation: ${docRef.id}`)
       return createdObservation
     } catch (err: any) {

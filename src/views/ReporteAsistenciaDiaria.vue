@@ -6,12 +6,7 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between py-6">
           <div class="flex items-center space-x-4">
-            <router-link
-              to="/admin"
-              class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            >
-              <ArrowLeftIcon class="h-6 w-6" />
-            </router-link>
+      
             <div>
               <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
                 📊 Reporte de Asistencia Diaria
@@ -512,6 +507,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de notificaciones WhatsApp -->
+    <WhatsAppNotificacionesModal
+      :is-visible="showWhatsAppModal"
+      @close="showWhatsAppModal = false"
+      @messages-sent="handleWhatsAppMessagesSent"
+    />
   </div>
 </template>
 
@@ -519,7 +521,6 @@
 import {ref, computed, onMounted} from "vue"
 import {useRouter} from "vue-router"
 import {
-  ArrowLeftIcon,
   ArrowPathIcon,
   CheckCircleIcon,
   ClockIcon,
@@ -527,6 +528,9 @@ import {
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/vue/24/outline"
+
+// Componentes
+import WhatsAppNotificacionesModal from "@/components/WhatsAppNotificacionesModal.vue"
 
 // Servicios
 import {getDailyAttendanceReport} from "../services/dailyAttendanceService"
@@ -557,7 +561,7 @@ interface AttendanceSummary {
   justificados: number
 }
 
-interface StudentForNotification {
+interface _StudentForNotification {
   id: string
   studentId: string
   name: string
@@ -574,6 +578,7 @@ const sendingNotifications = ref(false)
 const selectedDate = ref(new Date().toISOString().split("T")[0])
 const searchTerm = ref("")
 const statusFilter = ref("")
+const showWhatsAppModal = ref(false)
 
 // Datos de asistencia
 const attendanceData = ref<AttendanceRecord[]>([])
@@ -740,6 +745,25 @@ const loadAttendanceData = async (): Promise<void> => {
 
 const refreshData = (): void => {
   loadAttendanceData()
+}
+
+const openWhatsAppModal = (): void => {
+  showWhatsAppModal.value = true
+}
+
+const handleWhatsAppMessagesSent = (result: { success: number; failed: number; messages: any[] }): void => {
+  console.log("📱 Mensajes enviados desde reporte diario:", result)
+  
+  // Mostrar notificación de éxito
+  alert(`✅ Mensajes enviados!\n\nExitosos: ${result.success}\nFallidos: ${result.failed}`)
+  
+  // Cerrar modal
+  showWhatsAppModal.value = false
+  
+  // Opcionalmente recargar datos
+  if (result.success > 0) {
+    loadAttendanceData()
+  }
 }
 
 const notifyLateStudents = async (): Promise<void> => {

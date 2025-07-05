@@ -1,7 +1,8 @@
-// Sistema de Notificaciones de Asistencia para Admin/Director
+// Sistema de Notificaciones de Asistencia para Admin
+
 // Detecta nuevos registros de asistencia y notifica a roles administrativos
 
-import {db} from "../firebase"
+import {db, isFirebaseReady} from "../firebase"
 import {
   collection,
   addDoc,
@@ -45,16 +46,52 @@ interface NotificationTrigger {
 }
 
 // Colecciones
-const NOTIFICATIONS_COLLECTION = "admin_notifications"
+const NOTIFICATIONS_COLLECTION = "ADMIN_NOTIFICATIONS"
 const ATTENDANCE_COLLECTION = "ASISTENCIAS"
 const CLASSES_COLLECTION = "CLASES"
-const USERS_COLLECTION = "users"
+const USERS_COLLECTION = "USERS"
+
+/**
+ * Verifica si una colección existe y tiene documentos
+ */
+const checkCollectionExists = async (collectionName: string): Promise<boolean> => {
+  try {
+    if (!isFirebaseReady() || !db) {
+      return false
+    }
+
+    const collectionRef = collection(db, collectionName)
+    const snapshot = await getDocs(query(collectionRef, limit(1)))
+    return !snapshot.empty
+  } catch (error) {
+    console.warn(`⚠️ No se pudo verificar la colección ${collectionName}:`, error)
+    return false
+  }
+}
 
 /**
  * Obtiene información del maestro
  */
 const getTeacherInfo = async (teacherId: string): Promise<{name: string; email?: string}> => {
   try {
+    if (!isFirebaseReady() || !db) {
+      console.warn("Firebase no está listo, usando datos por defecto")
+      return {name: `Maestro ${teacherId}`}
+    }
+
+    // Verificar si la colección de usuarios existe
+    const usersCollectionExists = await checkCollectionExists(USERS_COLLECTION)
+    if (!usersCollectionExists) {
+      console.warn(`⚠️ Colección '${USERS_COLLECTION}' no existe o está vacía`)
+      return {name: `Maestro ${teacherId}`}
+    }
+
+    // Verificar db antes de crear query
+    if (!db) {
+      console.warn("❌ db instance no disponible para consulta de maestro")
+      return {name: `Maestro ${teacherId}`}
+    }
+
     const teacherQuery = query(
       collection(db, USERS_COLLECTION),
       where("uid", "==", teacherId),
@@ -85,6 +122,24 @@ const getTeacherInfo = async (teacherId: string): Promise<{name: string; email?:
  */
 const getClassInfo = async (classId: string): Promise<{name: string; studentCount: number}> => {
   try {
+    if (!isFirebaseReady() || !db) {
+      console.warn("Firebase no está listo, usando datos por defecto")
+      return {name: `Clase ${classId}`, studentCount: 0}
+    }
+
+    // Verificar si la colección de clases existe
+    const classesCollectionExists = await checkCollectionExists(CLASSES_COLLECTION)
+    if (!classesCollectionExists) {
+      console.warn(`⚠️ Colección '${CLASSES_COLLECTION}' no existe o está vacía`)
+      return {name: `Clase ${classId}`, studentCount: 0}
+    }
+
+    // Verificar db antes de crear query
+    if (!db) {
+      console.warn("❌ db instance no disponible para consulta de clase")
+      return {name: `Clase ${classId}`, studentCount: 0}
+    }
+
     const classQuery = query(
       collection(db, CLASSES_COLLECTION),
       where("id", "==", classId),
@@ -117,7 +172,7 @@ const calculateUrgency = (stats: {
   tarde: number
   total: number
 }): "low" | "medium" | "high" => {
-  const {presentes, ausentes, tarde, total} = stats
+  const {ausentes, tarde, total} = stats
 
   if (total === 0) return "low"
 
@@ -142,6 +197,11 @@ const calculateUrgency = (stats: {
  */
 const createAttendanceNotification = async (attendanceDoc: any): Promise<void> => {
   try {
+    if (!isFirebaseReady() || !db) {
+      console.error("❌ Firebase no está listo, no se puede crear notificación")
+      return
+    }
+
     const data = attendanceDoc.data()
 
     if (!data.data) {
@@ -181,11 +241,10 @@ const createAttendanceNotification = async (attendanceDoc: any): Promise<void> =
     }
 
     // Crear notificación
-    const notification: AttendanceNotification = {
-      type: "new_attendance_report",
+    const notification = {
+      type: "attendance_report", // Actualizado para coincidir con el nuevo servicio
       title: "📊 Nuevo Reporte de Asistencia",
       message,
-      date: data.fecha || new Date().toISOString().split("T")[0],
       teacherId: data.teacherId || data.uid,
       teacherName: teacherInfo.name,
       classId: data.classId,
@@ -198,9 +257,18 @@ const createAttendanceNotification = async (attendanceDoc: any): Promise<void> =
       timestamp: new Date(),
       read: false,
       urgency,
+      metadata: {
+        date: data.fecha || new Date().toISOString().split("T")[0],
+        createdAt: new Date().toISOString(),
+      },
     }
 
     // Guardar en Firebase
+    if (!db) {
+      console.error("❌ db instance no disponible para guardar notificación")
+      return
+    }
+    
     await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
       ...notification,
       timestamp: serverTimestamp(),
@@ -223,54 +291,125 @@ const createAttendanceNotification = async (attendanceDoc: any): Promise<void> =
 const watchForNewAttendance = (): (() => void) => {
   console.log("🔍 Iniciando observador de nuevos reportes de asistencia...")
 
-  try {
-    // Verificar que Firebase esté inicializado
-    if (!db) {
-      console.error("❌ Firebase no está inicializado")
-      return () => {}
-    }
-
-    // Obtener timestamp actual para solo detectar documentos nuevos
-    const startTime = Timestamp.now()
-
-    const attendanceQuery = query(
-      collection(db, ATTENDANCE_COLLECTION),
-      where("createdAt", ">=", startTime),
-      orderBy("createdAt", "desc")
+  // Verificar que Firebase esté inicializado inmediatamente
+  if (!isFirebaseReady() || !db) {
+    console.error(
+      "❌ Firebase no está inicializado correctamente. No se puede iniciar el observador."
     )
-
-    // Listener en tiempo real
-    const unsubscribe = onSnapshot(
-      attendanceQuery,
-      (snapshot) => {
-        snapshot.docChanges().forEach(async (change) => {
-          if (change.type === "added") {
-            console.log("📋 Nuevo reporte de asistencia detectado:", change.doc.id)
-
-            // Crear notificación de forma asíncrona
-            try {
-              await createAttendanceNotification(change.doc)
-            } catch (error) {
-              console.error("Error procesando nuevo reporte:", error)
-            }
-          }
-        })
-      },
-      (error) => {
-        console.error("❌ Error en observador de asistencia:", error)
-      }
-    )
-
-    console.log("✅ Observador de asistencia activo")
-
-    // Retornar función de cleanup
+    // Retornar función de cleanup vacía
     return () => {
-      console.log("🛑 Deteniendo observador de asistencia")
-      unsubscribe()
+      console.log("🛑 Observador no estaba activo (Firebase no inicializado)")
     }
-  } catch (error) {
-    console.error("❌ Error inicializando observador de asistencia:", error)
-    return () => {}
+  }
+
+  let cleanupFunction: (() => void) | null = null
+
+  // Función asíncrona para la inicialización
+  const initializeWatcher = async () => {
+    try {
+      // Verificar que Firebase esté inicializado (segunda verificación)
+      if (!isFirebaseReady() || !db) {
+        console.error("❌ Firebase no está inicializado correctamente en initializeWatcher")
+        return
+      }
+
+      // Verificar que las colecciones necesarias existan
+      const attendanceExists = await checkCollectionExists(ATTENDANCE_COLLECTION)
+      const notificationsExists = await checkCollectionExists(NOTIFICATIONS_COLLECTION)
+
+      if (!attendanceExists) {
+        console.warn(
+          `⚠️ Colección de asistencias '${ATTENDANCE_COLLECTION}' no existe. El observador estará inactivo hasta que se cree.`
+        )
+        return
+      }
+
+      if (!notificationsExists) {
+        console.warn(
+          `⚠️ Colección de notificaciones '${NOTIFICATIONS_COLLECTION}' no existe. Creando primera notificación...`
+        )
+        try {
+          // Verificar db nuevamente antes de usar collection()
+          if (!db) {
+            console.error("❌ db instance perdida durante inicialización")
+            return
+          }
+          
+          await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
+            type: "system_init",
+            title: "🔧 Sistema de Notificaciones Iniciado",
+            message: "El sistema de notificaciones de asistencia está ahora activo",
+            timestamp: serverTimestamp(),
+            read: false,
+            urgency: "low",
+            _isSystemGenerated: true,
+          })
+          console.log("✅ Colección de notificaciones inicializada")
+        } catch (error) {
+          console.error("❌ Error creando colección de notificaciones:", error)
+          return
+        }
+      }
+
+      // Obtener timestamp actual para solo detectar documentos nuevos
+      const startTime = Timestamp.now()
+
+      // Verificar db otra vez antes de crear query
+      if (!db) {
+        console.error("❌ db instance perdida antes de crear query")
+        return
+      }
+
+      const attendanceQuery = query(
+        collection(db, ATTENDANCE_COLLECTION),
+        where("createdAt", ">=", startTime),
+        orderBy("createdAt", "desc")
+      )
+
+      // Listener en tiempo real
+      const unsubscribe = onSnapshot(
+        attendanceQuery,
+        (snapshot) => {
+          snapshot.docChanges().forEach(async (change) => {
+            if (change.type === "added") {
+              console.log("📋 Nuevo reporte de asistencia detectado:", change.doc.id)
+
+              // Crear notificación de forma asíncrona
+              try {
+                await createAttendanceNotification(change.doc)
+              } catch (error) {
+                console.error("Error procesando nuevo reporte:", error)
+              }
+            }
+          })
+        },
+        (error) => {
+          console.error("❌ Error en observador de asistencia:", error)
+        }
+      )
+
+      console.log("✅ Observador de asistencia activo")
+      
+      // Guardar la función de cleanup
+      cleanupFunction = () => {
+        console.log("🛑 Deteniendo observador de asistencia")
+        unsubscribe()
+      }
+    } catch (error) {
+      console.error("❌ Error inicializando observador de asistencia:", error)
+    }
+  }
+
+  // Inicializar de forma asíncrona
+  initializeWatcher()
+
+  // Retornar función de cleanup inmediatamente
+  return () => {
+    if (cleanupFunction) {
+      cleanupFunction()
+    } else {
+      console.log("🛑 Observador no estaba activo")
+    }
   }
 }
 
@@ -279,6 +418,11 @@ const watchForNewAttendance = (): (() => void) => {
  */
 const markAsRead = async (notificationId: string): Promise<void> => {
   try {
+    if (!isFirebaseReady() || !db) {
+      console.error("❌ Firebase no está listo para marcar notificación como leída")
+      return
+    }
+
     await updateDoc(doc(db, NOTIFICATIONS_COLLECTION, notificationId), {
       read: true,
       readAt: serverTimestamp(),
@@ -295,6 +439,11 @@ const markAsRead = async (notificationId: string): Promise<void> => {
  */
 const getUnreadNotifications = async (): Promise<AttendanceNotification[]> => {
   try {
+    if (!isFirebaseReady() || !db) {
+      console.error("❌ Firebase no está listo para obtener notificaciones no leídas")
+      return []
+    }
+
     const notificationsQuery = query(
       collection(db, NOTIFICATIONS_COLLECTION),
       where("read", "==", false),
@@ -329,6 +478,11 @@ const getNotificationStats = async (): Promise<{
   low: number
 }> => {
   try {
+    if (!isFirebaseReady() || !db) {
+      console.error("❌ Firebase no está listo para obtener estadísticas de notificaciones")
+      return {total: 0, high: 0, medium: 0, low: 0}
+    }
+
     const notificationsQuery = query(
       collection(db, NOTIFICATIONS_COLLECTION),
       where("read", "==", false),

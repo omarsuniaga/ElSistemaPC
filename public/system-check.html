@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificación del Sistema</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .success { color: green; }
+        .warning { color: orange; }
+        .error { color: red; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Verificación del Sistema de Notificaciones</h1>
+    
+    <div id="status">
+        <h2>Estado Actual:</h2>
+        <div id="firebase-status">🔄 Verificando Firebase...</div>
+        <div id="notifications-status">🔄 Verificando Sistema de Notificaciones...</div>
+    </div>
+
+    <div id="actions">
+        <h2>Acciones:</h2>
+        <button onclick="testFirebase()">🔥 Probar Firebase</button>
+        <button onclick="testNotifications()">📢 Probar Notificaciones</button>
+        <button onclick="initializeNotifications()">🚀 Inicializar Notificaciones</button>
+        <button onclick="checkStatus()">📊 Ver Estado</button>
+    </div>
+
+    <div id="logs">
+        <h2>Logs:</h2>
+        <div id="log-container"></div>
+    </div>
+
+    <script type="module">
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const logElement = document.createElement('div');
+            logElement.className = `log ${type}`;
+            logElement.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logElement);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Funciones globales para los botones
+        window.testFirebase = async () => {
+            try {
+                log('🔥 Probando conexión a Firebase...', 'info');
+                const firebase = await import('/src/firebase.js');
+                
+                const isReady = firebase.isFirebaseReady();
+                log(`📊 Firebase Ready: ${isReady ? '✅' : '❌'}`, isReady ? 'success' : 'error');
+                
+                document.getElementById('firebase-status').innerHTML = 
+                    isReady ? '✅ Firebase: Conectado' : '❌ Firebase: Desconectado';
+                    
+            } catch (error) {
+                log(`❌ Error probando Firebase: ${error.message}`, 'error');
+                document.getElementById('firebase-status').innerHTML = '❌ Firebase: Error';
+            }
+        };
+
+        window.testNotifications = async () => {
+            try {
+                log('📢 Probando sistema de notificaciones...', 'info');
+                const notifications = await import('/src/services/attendanceNotificationManager.js');
+                
+                const status = notifications.default.getStatus();
+                const health = notifications.default.healthCheck();
+                
+                log(`📊 Sistema activo: ${status.isActive ? '✅' : '❌'}`, status.isActive ? 'success' : 'warning');
+                log(`🏥 Salud del sistema: ${health ? '✅' : '⚠️'}`, health ? 'success' : 'warning');
+                log(`⏱️ Tiempo activo: ${status.uptime} segundos`, 'info');
+                
+                document.getElementById('notifications-status').innerHTML = 
+                    health ? '✅ Notificaciones: Funcionando' : '⚠️ Notificaciones: Con problemas';
+                    
+            } catch (error) {
+                log(`❌ Error probando notificaciones: ${error.message}`, 'error');
+                document.getElementById('notifications-status').innerHTML = '❌ Notificaciones: Error';
+            }
+        };
+
+        window.initializeNotifications = async () => {
+            try {
+                log('🚀 Inicializando sistema de notificaciones...', 'info');
+                const notifications = await import('/src/services/attendanceNotificationManager.js');
+                
+                await notifications.default.initialize();
+                log('✅ Sistema de notificaciones inicializado', 'success');
+                
+                // Verificar estado después de inicializar
+                setTimeout(() => window.testNotifications(), 1000);
+                
+            } catch (error) {
+                log(`❌ Error inicializando notificaciones: ${error.message}`, 'error');
+            }
+        };
+
+        window.checkStatus = async () => {
+            await window.testFirebase();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await window.testNotifications();
+        };
+
+        // Verificación automática al cargar la página
+        setTimeout(() => {
+            log('🔧 Iniciando verificación automática...', 'info');
+            window.checkStatus();
+        }, 1000);
+    </script>
+</body>
+</html>

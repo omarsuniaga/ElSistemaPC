@@ -11,7 +11,6 @@ import {
   orderBy,
 } from "firebase/firestore"
 import {db} from "../firebase/config"
-import {useAuthStore} from "../stores/auth"
 
 export interface WhatsAppPreset {
   id: string
@@ -46,10 +45,20 @@ export interface MessageData {
 const COLLECTION_NAME = "WHATSAPP_PRESETS"
 
 export function useWhatsAppPresets() {
-  const authStore = useAuthStore()
   const presets = ref<WhatsAppPreset[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+
+  // Función para obtener authStore de manera segura
+  const getAuthStore = async () => {
+    try {
+      const {useAuthStore} = await import("../stores/auth")
+      return useAuthStore()
+    } catch (error) {
+      console.warn("AuthStore no disponible:", error)
+      return null
+    }
+  }
 
   // Presets del sistema por defecto
   const defaultPresets: Omit<WhatsAppPreset, "id" | "createdAt" | "updatedAt">[] = [
@@ -301,7 +310,8 @@ Los documentos del estudiante estarán disponibles para retiro en coordinación.
 
   // Inicializar presets por defecto
   const initializeDefaultPresets = async () => {
-    if (!authStore.user?.uid) return
+    const authStore = await getAuthStore()
+    if (!authStore?.user?.uid) return
 
     try {
       for (const preset of defaultPresets) {
@@ -353,7 +363,8 @@ Los documentos del estudiante estarán disponibles para retiro en coordinación.
 
   // Agregar nuevo preset
   const addPreset = async (preset: Omit<WhatsAppPreset, "id" | "createdAt" | "updatedAt">) => {
-    if (!authStore.user?.uid) throw new Error("Usuario no autenticado")
+    const authStore = await getAuthStore()
+    if (!authStore?.user?.uid) throw new Error("Usuario no autenticado")
 
     try {
       await addDoc(collection(db, COLLECTION_NAME), {

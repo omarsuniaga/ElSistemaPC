@@ -150,8 +150,19 @@ export const useAuthStore = defineStore("auth", {
           }
           // Actualizar el último login en Firestore
           await setDoc(userDocRef, {lastLogin: new Date().toISOString()}, {merge: true})
+          
+          // Crear notificación de login para profesores
+          if (userData.role === "Maestro") {
+            this.createTeacherLoginNotification(userCredential.user.uid)
+          }
+          
           // Inicializar datos de otros módulos
           await this.initializeData()
+
+          // Inicializar sistema de notificaciones para roles administrativos
+          if (["Director", "Admin", "Superusuario"].includes(userData.role)) {
+            this.initializeAttendanceNotifications()
+          }
 
           // Determinar redirección según el rol
           let redirectTo = "/"
@@ -357,6 +368,51 @@ export const useAuthStore = defineStore("auth", {
           return "Demasiados intentos fallidos. Por favor, intente más tarde"
         default:
           return error.message ? error.message : "Error de autenticación"
+      }
+    },
+
+    // Inicializar sistema de notificaciones de asistencia
+    async initializeAttendanceNotifications() {
+      try {
+        console.log(
+          "🔔 Inicializando sistema de notificaciones de asistencia para usuario administrativo..."
+        )
+
+        // Importar dinámicamente para evitar dependencias circulares
+        const {default: notificationSystem} = await import(
+          "@/services/attendanceNotificationManager"
+        )
+
+        // Esperar un poco para asegurar que Firebase esté completamente listo
+        setTimeout(async () => {
+          try {
+            await notificationSystem.initialize()
+
+            // Exponer en desarrollo para debugging
+            if (import.meta.env.DEV) {
+              ;(window as any).attendanceNotifications = notificationSystem
+              console.log(
+                "🔧 Sistema de notificaciones disponible en window.attendanceNotifications"
+              )
+            }
+          } catch (error) {
+            console.error("❌ Error inicializando notificaciones de asistencia:", error)
+          }
+        }, 2000) // Esperar 2 segundos después del login exitoso
+      } catch (error) {
+        console.error("❌ Error importando sistema de notificaciones:", error)
+      }
+    },
+
+    // Crear notificación de login de profesor
+    async createTeacherLoginNotification(teacherId: string) {
+      try {
+        // Importar dinámicamente para evitar dependencias circulares
+        const {createTeacherLoginNotification} = await import("@/services/adminNotificationService")
+        
+        await createTeacherLoginNotification(teacherId)
+      } catch (error) {
+        console.error("❌ Error creando notificación de login:", error)
       }
     },
   },

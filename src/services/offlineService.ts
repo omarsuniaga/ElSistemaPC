@@ -33,7 +33,20 @@ export function useOfflineService() {
   // Composables
   const offlineDB = useOfflineDB()
   const offlineSync = useGlobalOfflineSync()
-  const {showNotification} = useNotifications()
+  
+  // Lazy initialization of notifications to avoid Pinia dependency issues
+  let notifications: ReturnType<typeof useNotifications> | null = null
+  const getNotifications = () => {
+    if (!notifications) {
+      try {
+        notifications = useNotifications()
+      } catch (error) {
+        console.debug("🔔 Notifications not available yet:", error)
+        return {showNotification: () => ""}
+      }
+    }
+    return notifications
+  }
 
   // Estado
   const isInitialized = ref(false)
@@ -65,7 +78,7 @@ export function useOfflineService() {
 
       // Notificar si hay operaciones pendientes
       if (syncStats.value.pending > 0) {
-        showNotification(
+        getNotifications().showNotification(
           `Hay ${syncStats.value.pending} operaciones pendientes de sincronización`,
           "info"
         )
@@ -119,7 +132,7 @@ export function useOfflineService() {
     console.log(`📝 Asistencia guardada offline: ${id}`)
 
     if (!isOnline.value) {
-      showNotification("Asistencia guardada offline. Se sincronizará cuando haya conexión.", "info")
+      getNotifications().showNotification("Asistencia guardada offline. Se sincronizará cuando haya conexión.", "info")
     }
 
     return attendance
@@ -178,7 +191,7 @@ export function useOfflineService() {
     console.log(`👨‍🏫 Profesor guardado offline: ${id}`)
 
     if (!isOnline.value) {
-      showNotification("Profesor guardado offline. Se sincronizará cuando haya conexión.", "info")
+      getNotifications().showNotification("Profesor guardado offline. Se sincronizará cuando haya conexión.", "info")
     }
 
     return teacher
@@ -228,7 +241,7 @@ export function useOfflineService() {
     console.log(`📋 Observación guardada offline: ${id}`)
 
     if (!isOnline.value) {
-      showNotification(
+      getNotifications().showNotification(
         "Observación guardada offline. Se sincronizará cuando haya conexión.",
         "info"
       )
@@ -320,18 +333,18 @@ export function useOfflineService() {
       await updateSyncStats()
 
       if (syncedCount > 0) {
-        showNotification(`✅ ${syncedCount} operaciones sincronizadas exitosamente`, "success")
+        getNotifications().showNotification(`✅ ${syncedCount} operaciones sincronizadas exitosamente`, "success")
       }
 
       if (errorCount > 0) {
-        showNotification(`⚠️ ${errorCount} operaciones con errores de sincronización`, "warning")
+        getNotifications().showNotification(`⚠️ ${errorCount} operaciones con errores de sincronización`, "warning")
       }
 
       console.log(`✅ Sincronización completada: ${syncedCount} exitosas, ${errorCount} errores`)
       return errorCount === 0
     } catch (error) {
       console.error("❌ Error en sincronización:", error)
-      showNotification("Error durante la sincronización", "error")
+      getNotifications().showNotification("Error durante la sincronización", "error")
       return false
     }
   }
@@ -398,10 +411,10 @@ export function useOfflineService() {
     try {
       await offlineDB.clearAllData()
       await updateSyncStats()
-      showNotification("Todos los datos offline han sido eliminados", "info")
+      getNotifications().showNotification("Todos los datos offline han sido eliminados", "info")
     } catch (error) {
       console.error("Error limpiando datos offline:", error)
-      showNotification("Error al limpiar datos offline", "error")
+      getNotifications().showNotification("Error al limpiar datos offline", "error")
     }
   }
 

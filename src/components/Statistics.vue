@@ -16,7 +16,7 @@ import {
   type ChartData,
   type ChartOptions,
 } from "chart.js"
-import {useStudentsStore} from "../stores/students"
+import {useStudentsStore} from "../modulos/Students/store/students"
 import {useTeachersStore} from "../stores/teachers"
 import {useClassesStore} from "../stores/classes"
 import {useAttendanceStore} from "../stores/attendance"

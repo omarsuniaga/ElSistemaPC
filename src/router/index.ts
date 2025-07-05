@@ -293,6 +293,17 @@ const routes: Array<RouteRecordRaw> = [
     },
   },
   {
+    path: "/admin/notifications",
+    name: "AdminNotifications",
+    component: () => import("../views/AdminNotificationsView.vue"),
+    meta: {
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: "dashboard",
+      permission: "admin_view",
+    },
+  },
+  {
     path: "/admin/asistencia-diaria",
     name: "ReporteAsistenciaDiaria",
     component: () => import("../views/ReporteAsistenciaDiaria.vue"),

@@ -173,7 +173,7 @@ import {ref, computed} from "vue"
 import type {MusicalWork, Measure, Instrument} from "../types/repertoire"
 import {INSTRUMENT_SECTIONS} from "../types/repertoire"
 import {useRepertoireStore} from "../stores/repertoire"
-import {useStudentsStore} from "../stores/students"
+import {useStudentsStore} from "../../Students/store/students"
 
 const props = defineProps<{
   work: MusicalWork

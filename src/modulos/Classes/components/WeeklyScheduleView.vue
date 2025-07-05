@@ -770,13 +770,7 @@ import {useTeachersStore} from "../../Teachers/store/teachers"
 import {useStudentsStore} from "../../Students/store/students"
 import {useClassesStore} from "../store/classes"
 import {useAuthStore} from "../../../stores/auth"
-import {
-  getAppConfig,
-  setAppConfig,
-  getActiveTimeRange,
-  isHourInActivePeriods,
-  type AppConfig,
-} from "../service/appConfig"
+import {getAppConfig, setAppConfig, type AppConfig} from "../service/appConfig"
 import ScheduleStatsBar from "./ScheduleStatsBar.vue"
 import type {ClassData} from "../types/class"
 
@@ -824,6 +818,154 @@ const timeConfig = ref<AppConfig>({
   esTarde: true,
   esNoche: true,
   viewMode: "standard",
+})
+
+// Computed properties
+const allClasses = computed(() => {
+  return props.classes || classesStore.classes || []
+})
+
+const teachers = computed(() => {
+  return teachersStore.teachers || []
+})
+
+const students = computed(() => {
+  return studentsStore.students || []
+})
+
+const instruments = computed(() => {
+  const instrumentSet = new Set<string>()
+  allClasses.value.forEach((classItem) => {
+    if (classItem.instrument) {
+      instrumentSet.add(classItem.instrument)
+    }
+  })
+  return Array.from(instrumentSet).sort()
+})
+
+const filteredClasses = computed(() => {
+  let classes = allClasses.value
+
+  // Apply search filter
+  if (searchTerm.value) {
+    const term = searchTerm.value.toLowerCase()
+    classes = classes.filter(
+      (classItem) =>
+        classItem.name?.toLowerCase().includes(term) ||
+        classItem.instrument?.toLowerCase().includes(term) ||
+        classItem.description?.toLowerCase().includes(term)
+    )
+  }
+
+  // Apply teacher filter
+  if (selectedTeacher.value) {
+    classes = classes.filter((classItem) => classItem.teacherId === selectedTeacher.value)
+  }
+
+  // Apply instrument filter
+  if (selectedInstrument.value) {
+    classes = classes.filter((classItem) => classItem.instrument === selectedInstrument.value)
+  }
+
+  // Apply program filter
+  if (selectedProgram.value) {
+    classes = classes.filter((classItem) => classItem.level === selectedProgram.value)
+  }
+
+  // Apply shared classes filter
+  if (filterType.value !== "all") {
+    switch (filterType.value) {
+      case "owned":
+        classes = classes.filter((classItem) => classItem.teacherId === currentTeacherId)
+        break
+      case "shared-with-me":
+        classes = classes.filter((classItem) => isSharedWithMe(classItem))
+        break
+      case "shared-owned":
+        classes = classes.filter((classItem) => isMySharedClass(classItem))
+        break
+    }
+  }
+
+  // Apply time period filters
+  if (!timeConfig.value.esTemprano || !timeConfig.value.esTarde || !timeConfig.value.esNoche) {
+    classes = classes.filter((classItem) => {
+      const schedules = getClassSchedules(classItem)
+      return schedules.some((schedule) => {
+        if (!schedule.startTime) return true
+        
+        const [hours] = schedule.startTime.split(":").map(Number)
+        
+        // Check if class falls within active time periods
+        if (timeConfig.value.esTemprano && hours >= 7 && hours < 14) return true
+        if (timeConfig.value.esTarde && hours >= 14 && hours < 19) return true
+        if (timeConfig.value.esNoche && hours >= 19 && hours < 23) return true
+        
+        return false
+      })
+    })
+  }
+
+  return classes
+})
+
+const weekDays = computed(() => {
+  const days = []
+  for (let i = 0; i < 6; i++) {
+    const date = new Date(currentWeekStart.value)
+    date.setDate(currentWeekStart.value.getDate() + i)
+    
+    const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+    const dayNamesSpanish = [
+      "Domingo",
+      "Lunes",
+      "Martes",
+      "Miércoles",
+      "Jueves",
+      "Viernes",
+      "Sábado",
+    ]
+    
+    days.push({
+      key: dayNames[date.getDay()],
+      name: dayNamesSpanish[date.getDay()],
+      date: date.toLocaleDateString("es-ES", {day: "numeric", month: "short"}),
+      fullDate: date,
+    })
+  }
+  return days
+})
+
+const timeSlots = computed(() => {
+  const slots = []
+  
+  // Generate time slots based on active periods
+  if (timeConfig.value.esTemprano) {
+    for (let hour = 7; hour < 14; hour++) {
+      slots.push(`${hour.toString().padStart(2, "0")}:00`)
+    }
+  }
+  
+  if (timeConfig.value.esTarde) {
+    for (let hour = 14; hour < 19; hour++) {
+      slots.push(`${hour.toString().padStart(2, "0")}:00`)
+    }
+  }
+  
+  if (timeConfig.value.esNoche) {
+    for (let hour = 19; hour < 23; hour++) {
+      slots.push(`${hour.toString().padStart(2, "0")}:00`)
+    }
+  }
+  
+  // If no periods are selected, show all day
+  if (!timeConfig.value.esTemprano && !timeConfig.value.esTarde && !timeConfig.value.esNoche) {
+    for (let hour = 7; hour < 23; hour++) {
+      slots.push(`${hour.toString().padStart(2, "0")}:00`)
+    }
+  }
+  
+  return slots
 })
 
 // Set current week to start of week (Monday)
@@ -938,7 +1080,7 @@ const getSharedTeachers = (classItem: ClassData | null) => {
 // Permissions modal functions
 const openShareModal = (classItem: ClassData) => {
   selectedClassForPermissions.value = classItem
-  tempPermissions.value = {...classItem.permissions} || {}
+  tempPermissions.value = {...(classItem.permissions || {})}
   showPermissionsModal.value = true
 }
 
@@ -1032,12 +1174,6 @@ const formatTimeSlot = (timeSlot: string) => {
   const ampm = hour >= 12 ? "PM" : "AM"
   const displayHour = hour % 12 || 12
   return `${displayHour}:${minutes} ${ampm}`
-}
-
-const formatHour = (hour: number) => {
-  const ampm = hour >= 12 ? "PM" : "AM"
-  const displayHour = hour % 12 || 12
-  return `${displayHour}:00 ${ampm}`
 }
 
 const formatTime = (time: string) => {

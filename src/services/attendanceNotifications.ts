@@ -1,7 +1,7 @@
 // Servicio de Notificaciones de Asistencia por WhatsApp
 // Sistema inteligente con tono adaptativo según comportamiento semanal
 
-import {db} from "../firebase"
+import {db, functions} from "../firebase"
 import {
   collection,
   doc,
@@ -14,7 +14,7 @@ import {
   orderBy,
   limit,
 } from "firebase/firestore"
-import {getFunctions, httpsCallable} from "firebase/functions"
+import {httpsCallable} from "firebase/functions"
 
 // Interfaces
 interface Student {
@@ -62,9 +62,30 @@ interface NotificationHistory {
 const STUDENTS_COLLECTION = "ALUMNOS"
 const HISTORY_COLLECTION = "historial_mensajes_whatsapp"
 
-// Inicializar Firebase Functions
-const functions = getFunctions()
-const getStudentAttendanceSummary = httpsCallable(functions, "getStudentAttendanceSummary")
+// Inicializar Firebase Functions con verificación
+const initializeFirebaseFunctions = () => {
+  if (!functions) {
+    console.error("❌ [AttendanceNotifications] Firebase Functions no está inicializado")
+    throw new Error("Firebase Functions no está disponible")
+  }
+  return httpsCallable(functions, "getStudentAttendanceSummary")
+}
+
+// Función de verificación que se inicializa de manera lazy
+let getStudentAttendanceSummary: any = null
+
+const ensureFunctionsInitialized = () => {
+  if (!getStudentAttendanceSummary) {
+    try {
+      getStudentAttendanceSummary = initializeFirebaseFunctions()
+      console.log("✅ [AttendanceNotifications] Firebase Functions inicializado correctamente")
+    } catch (error) {
+      console.error("❌ [AttendanceNotifications] Error inicializando Functions:", error)
+      throw error
+    }
+  }
+  return getStudentAttendanceSummary
+}
 
 /**
  * Plantillas de mensajes con tono adaptativo según escalación por inasistencias
@@ -359,9 +380,21 @@ export const notifyUnexcusedAbsences = async (
       }
 
       // Contar ausencias usando la Firebase Function
-      const summaryResult = await getStudentAttendanceSummary({studentId})
-      const summary = summaryResult.data as {absentCount: number; lateCount: number}
-      const totalAbsences = summary.absentCount
+      let totalAbsences = 0
+      try {
+        const getStudentSummary = ensureFunctionsInitialized()
+        const summaryResult = await getStudentSummary({studentId})
+        const summary = summaryResult.data as {absentCount: number; lateCount: number}
+        totalAbsences = summary.absentCount
+      } catch (functionError: any) {
+        console.warn(
+          `⚠️ Cloud Function no disponible para ${student.nombre}. Error:`,
+          functionError?.message || functionError
+        )
+        // Si hay error CORS o de Functions, saltar este estudiante por ahora
+        results.failed++
+        continue
+      }
 
       const escalationLevel = getEscalationLevel(totalAbsences)
 

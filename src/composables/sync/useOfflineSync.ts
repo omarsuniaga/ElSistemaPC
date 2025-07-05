@@ -356,10 +356,24 @@ export const useSyncStore = defineStore("sync", () => {
   }
 })
 
-// Auto-inicializar cuando se importe
+// Auto-inicializar cuando se importe - pero solo después de que Pinia esté disponible
 if (typeof window !== "undefined") {
   document.addEventListener("visibilitychange", () => {
-    const syncStore = useSyncStore()
-    syncStore.handleAppVisibilityChange()
+    try {
+      // Verificar que tenemos un contexto Vue/Pinia válido
+      import("pinia")
+        .then(({getActivePinia}) => {
+          if (getActivePinia()) {
+            const syncStore = useSyncStore()
+            syncStore.handleAppVisibilityChange()
+          }
+        })
+        .catch(() => {
+          // Pinia no está disponible aún, silently fail
+          console.debug("🔔 Pinia no disponible para sync en evento de visibilidad")
+        })
+    } catch (error) {
+      console.debug("🔔 Error manejando cambio de visibilidad:", error)
+    }
   })
 }

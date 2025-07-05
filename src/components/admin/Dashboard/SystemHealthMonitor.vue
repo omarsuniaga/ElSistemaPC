@@ -48,7 +48,7 @@
 import {ref, onMounted} from "vue"
 import {db} from "../../../firebase"
 import {collection, getDocs, limit, query} from "firebase/firestore"
-import {getFunctions} from "firebase/functions"
+import {functions} from "@/firebase"
 import {QuestionMarkCircleIcon} from "@heroicons/vue/24/solid"
 
 defineOptions({name: "SystemHealthMonitor"})
@@ -73,8 +73,6 @@ const services = ref([
       "Verifica la disponibilidad y el correcto funcionamiento de las funciones de Firebase encargadas de las notificaciones.",
   },
 ])
-
-const functions = getFunctions()
 
 const checkSystemHealth = async () => {
   loading.value = true

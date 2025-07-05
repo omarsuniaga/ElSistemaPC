@@ -11,8 +11,20 @@
         <p class="mt-1 text-md text-gray-600 dark:text-gray-400">
           Vista general del estado y rendimiento de la academia.
         </p>
+        <!-- menu de accesos directos -->
+        <div class="grid grid-cols-2 gap-4">
+          <RouterLink
+            to="/admin/notifications"
+            class="block p-4 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition"
+          >
+            <h2 class="font-semibold text-lg">Notificaciones</h2>
+            <p class="text-sm text-gray-600">Revisa las notificaciones recientes.</p>
+          </RouterLink>
+        </div>
       </div>
-
+      <!-- Divider -->
+      <hr class="border-gray-200 dark:border-gray-700 mb-8" />
+      
       <!-- Global Overview Section -->
       <GlobalOverview />
 

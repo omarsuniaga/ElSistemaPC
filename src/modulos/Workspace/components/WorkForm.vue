@@ -3,7 +3,7 @@ import {ref, computed} from "vue"
 import {Dialog, DialogPanel} from "@headlessui/vue"
 import type {MusicalWork} from "../types/repertoire"
 import {INSTRUMENT_SECTIONS} from "../types/repertoire"
-import {useStudentsStore} from "../stores/students"
+import {useStudentsStore} from "../../Students/store/students"
 import FileUpload from "./FileUpload.vue"
 import * as yup from "yup"
 

@@ -84,7 +84,7 @@
 <script setup lang="ts">
 import {ref, computed, onMounted, watch} from "vue"
 import {XMarkIcon, CheckIcon} from "@heroicons/vue/24/outline"
-import {useStudentsStore} from "../stores/students"
+import {useStudentsStore} from "../store/students"
 import StudentAvatar from "./StudentAvatar.vue"
 
 const props = defineProps({
