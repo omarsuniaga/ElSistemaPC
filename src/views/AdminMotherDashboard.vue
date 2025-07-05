@@ -44,12 +44,12 @@
 </template>
 
 <script setup lang="ts">
-import DashboardKPIs from "../components/Admin/Dashboard/DashboardKPIs.vue"
-import WeeklyAttendanceChart from "../components/Admin/Dashboard/WeeklyAttendanceChart.vue"
-import QuickActionsPanel from "../components/Admin/Dashboard/QuickActionsPanel.vue"
-import SystemHealthMonitor from "../components/Admin/Dashboard/SystemHealthMonitor.vue"
-import PendingNotifications from "../components/Admin/Dashboard/PendingNotifications.vue"
-import GlobalOverview from "../components/Admin/Dashboard/GlobalOverview.vue"
+import DashboardKPIs from "../components/admin/Dashboard/DashboardKPIs.vue"
+import WeeklyAttendanceChart from "../components/admin/Dashboard/WeeklyAttendanceChart.vue"
+import QuickActionsPanel from "../components/admin/Dashboard/QuickActionsPanel.vue"
+import SystemHealthMonitor from "../components/admin/Dashboard/SystemHealthMonitor.vue"
+import PendingNotifications from "../components/admin/Dashboard/PendingNotifications.vue"
+import GlobalOverview from "../components/admin/Dashboard/GlobalOverview.vue"
 
 defineOptions({
   name: "AdminMotherDashboard",
