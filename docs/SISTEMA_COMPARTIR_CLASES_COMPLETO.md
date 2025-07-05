@@ -17,6 +17,7 @@ Se ha implementado exitosamente un sistema completo que permite a los maestros c
 ### 1. Composables Principales
 
 #### `useTeacherCollaboration.ts`
+
 - **Función**: Maneja todas las clases del maestro (principales y compartidas)
 - **Métodos clave**:
   - `fetchMyClasses()`: Obtiene clases donde es encargado y asistente
@@ -25,6 +26,7 @@ Se ha implementado exitosamente un sistema completo que permite a los maestros c
   - `updatePermissions()`: Actualiza permisos del asistente
 
 #### `useGeneralNotifications.ts` y `useTeacherNotifications.ts`
+
 - **Función**: Manejan el sistema de notificaciones en tiempo real
 - **Características**:
   - Badge rojo animado con contador
@@ -35,6 +37,7 @@ Se ha implementado exitosamente un sistema completo que permite a los maestros c
 ### 2. Componentes UI
 
 #### `ShareClassModal.vue`
+
 - **Funcionalidad**: Modal para invitar maestros
 - **Características**:
   - Selector de maestro (excluye maestro actual)
@@ -43,6 +46,7 @@ Se ha implementado exitosamente un sistema completo que permite a los maestros c
   - Interfaz intuitiva y responsiva
 
 #### `TeacherClassesCard.vue` (Actualizado)
+
 - **Nuevas características**:
   - Botón "Compartir Clase" (solo para maestros principales)
   - Badge "Compartida" para clases donde el usuario es asistente
@@ -50,10 +54,12 @@ Se ha implementado exitosamente un sistema completo que permite a los maestros c
   - Diferenciación visual clara
 
 #### `TeacherDashboardHeader.vue`
+
 - **Badge de notificaciones**: Animado, se actualiza en tiempo real
 - **Indicador visual**: Muestra número de notificaciones pendientes
 
 #### `NotificationsSection.vue` y `TeacherNotificationsList.vue`
+
 - **Gestión completa**: Aceptar/rechazar invitaciones
 - **Filtros**: Por tipo de notificación
 - **Estados**: Pendiente, aceptada, rechazada, leída
@@ -61,11 +67,13 @@ Se ha implementado exitosamente un sistema completo que permite a los maestros c
 ### 3. Servicios Backend
 
 #### `classes.ts`
+
 - **`inviteAssistantTeacher()`**: Crea notificación de invitación
 - **Validaciones**: Evita duplicados, verifica permisos
 - **Integración**: Con sistema de notificaciones
 
 #### `teacherNotifications.ts`
+
 - **`createClassInvitationNotification()`**: Crea notificación de invitación
 - **`acceptClassInvitation()`**: Acepta invitación y actualiza clase
 - **`rejectClassInvitation()`**: Rechaza invitación
@@ -74,6 +82,7 @@ Se ha implementado exitosamente un sistema completo que permite a los maestros c
 ## Flujo de Usuario
 
 ### 1. Maestro Invita a Otro Maestro
+
 1. Maestro principal ve botón "Compartir Clase" en su tarjeta de clase
 2. Hace clic y se abre `ShareClassModal`
 3. Selecciona maestro de la lista (filtrada automáticamente)
@@ -81,12 +90,14 @@ Se ha implementado exitosamente un sistema completo que permite a los maestros c
 5. Envía invitación
 
 ### 2. Maestro Recibe Invitación
+
 1. Badge rojo aparece en "Notificaciones" con animación
 2. Va a la pestaña de notificaciones
 3. Ve la invitación con detalles de la clase
 4. Puede aceptar o rechazar con botones dedicados
 
 ### 3. Clase Compartida Aceptada
+
 1. Badge rojo desaparece automáticamente
 2. Clase aparece en dashboard del maestro asistente
 3. Tarjeta tiene badge "Compartida" y muestra maestro principal
@@ -95,21 +106,25 @@ Se ha implementado exitosamente un sistema completo que permite a los maestros c
 ## Características Técnicas
 
 ### Tiempo Real
+
 - **Firebase Listeners**: Actualizaciones instantáneas
 - **Estado Reactivo**: Vue 3 Composition API
 - **Optimización**: Caché local para mejor rendimiento
 
 ### Manejo de Errores
+
 - **Clases Eliminadas**: Notificaciones marcadas como inválidas
 - **Validaciones**: Frontend y backend
 - **Feedback**: Mensajes claros al usuario
 
 ### Interfaz de Usuario
+
 - **Responsiva**: Funciona en desktop y móvil
 - **Accesible**: ARIA labels y navegación por teclado
 - **Animaciones**: Suaves y no intrusivas
 
 ### Permisos Granulares
+
 - **Tomar Asistencia**: `canTakeAttendance`
 - **Añadir Observaciones**: `canAddObservations`
 - **Ver Historial**: `canViewAttendanceHistory`
@@ -118,42 +133,46 @@ Se ha implementado exitosamente un sistema completo que permite a los maestros c
 ## Estructura de Datos
 
 ### TeacherClassView
+
 ```typescript
 interface TeacherClassView extends ClassData {
-  myRole: 'lead' | 'assistant';
-  myPermissions?: ClassTeacher['permissions'];
+  myRole: "lead" | "assistant"
+  myPermissions?: ClassTeacher["permissions"]
   leadTeacher?: {
-    id: string;
-    name: string;
-  };
-  assistantTeachers?: ClassTeacher[];
+    id: string
+    name: string
+  }
+  assistantTeachers?: ClassTeacher[]
 }
 ```
 
 ### Notificación de Invitación
+
 ```typescript
 interface TeacherNotification {
-  id?: string;
-  type: 'class-invitation' | 'general';
-  status: 'unread' | 'read' | 'pending' | 'accepted' | 'rejected' | 'invalid';
-  title: string;
-  message: string;
-  teacherId: string;
-  classId?: string;
-  className?: string;
-  fromUserId?: string;
-  fromUserName?: string;
-  permissions?: ClassTeacher['permissions'];
-  createdAt: Date | Timestamp;
+  id?: string
+  type: "class-invitation" | "general"
+  status: "unread" | "read" | "pending" | "accepted" | "rejected" | "invalid"
+  title: string
+  message: string
+  teacherId: string
+  classId?: string
+  className?: string
+  fromUserId?: string
+  fromUserName?: string
+  permissions?: ClassTeacher["permissions"]
+  createdAt: Date | Timestamp
 }
 ```
 
 ## Archivos Modificados/Creados
 
 ### Nuevos Archivos
+
 - `src/modulos/Teachers/components/ShareClassModal.vue`
 
 ### Archivos Modificados
+
 - `src/modulos/Teachers/components/TeacherClassesCard.vue`
 - `src/modulos/Teachers/view/TeacherDashboardPage.vue`
 - `src/modulos/Classes/composables/useTeacherCollaboration.ts`
@@ -163,6 +182,7 @@ interface TeacherNotification {
 ## Testing y Validación
 
 ### Casos de Prueba Implementados
+
 1. ✅ Invitar maestro a clase existente
 2. ✅ Aceptar invitación válida
 3. ✅ Rechazar invitación
@@ -172,6 +192,7 @@ interface TeacherNotification {
 7. ✅ Permisos granulares funcionando
 
 ### Scripts de Debug Incluidos
+
 - `test-notification-badge.js`: Prueba badge de notificaciones
 - `cleanup-invalid-notifications.js`: Limpia notificaciones inválidas
 - `repair-notifications.js`: Repara notificaciones corruptas
@@ -186,6 +207,7 @@ interface TeacherNotification {
 ## Estado del Proyecto
 
 🟢 **COMPLETO** - Sistema de compartir clases completamente funcional
+
 - Todas las características principales implementadas
 - Interfaz intuitiva y responsiva
 - Manejo robusto de errores

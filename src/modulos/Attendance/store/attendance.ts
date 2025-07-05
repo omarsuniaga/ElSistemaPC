@@ -2033,7 +2033,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
         attendanceDoc.id = docId
 
         // Actualizar el estado local para la clase emergente
-        selectedClass.value = emergencyClassData.emergencyClassId
+
         selectedDate.value = emergencyClassData.date
         currentAttendanceDoc.value = attendanceDoc
 

@@ -7,6 +7,7 @@ Las clases con registros de asistencia en una fecha seleccionada, pero que no es
 ## Causa Raíz
 
 La función `fetchClassesForDate` en `AttendanceView.vue` no estaba combinando correctamente todas las fuentes de clases:
+
 1. Clases programadas para el día seleccionado
 2. Clases compartidas donde el maestro es asistente
 3. **Clases con registros de asistencia existentes (faltaba)**
@@ -14,6 +15,7 @@ La función `fetchClassesForDate` en `AttendanceView.vue` no estaba combinando c
 ## Soluciones Implementadas
 
 ### 1. Corrección de Variable Undefined
+
 - **Archivo**: `src/views/AttendanceView.vue`
 - **Problema**: Variable `availableClasses` no definida
 - **Solución**: Definida como computed property con fallback seguro
@@ -26,23 +28,25 @@ const availableClasses = computed(() => {
 ```
 
 ### 2. Mejora de la Función fetchClassesForDate
+
 - **Archivo**: `src/views/AttendanceView.vue`
 - **Mejoras Implementadas**:
 
 #### a) Búsqueda Dual de Registros de Asistencia
+
 ```typescript
 // 3. Obtener clases que tienen asistencia registrada para esta fecha específica
-const attendanceRecords = attendanceStore.attendanceDocuments.filter(record => 
-  record.fecha === dateStr && record.teacherId === teacherId
+const attendanceRecords = attendanceStore.attendanceDocuments.filter(
+  (record) => record.fecha === dateStr && record.teacherId === teacherId
 )
 
 // 4. IMPORTANTE: También buscar clases por nombre si classId no coincide
-const attendanceRecordsByName = attendanceStore.attendanceDocuments.filter(record => {
+const attendanceRecordsByName = attendanceStore.attendanceDocuments.filter((record) => {
   if (record.fecha === dateStr && record.teacherId === teacherId) {
-    const alreadyIncluded = attendanceRecords.some(ar => ar.classId === record.classId)
+    const alreadyIncluded = attendanceRecords.some((ar) => ar.classId === record.classId)
     if (!alreadyIncluded && record.className) {
-      const classInfo = classesStore.classes.find(c => 
-        c.name === record.className || c.id === record.className
+      const classInfo = classesStore.classes.find(
+        (c) => c.name === record.className || c.id === record.className
       )
       return !!classInfo
     }
@@ -55,42 +59,44 @@ const allAttendanceRecords = [...attendanceRecords, ...attendanceRecordsByName]
 ```
 
 #### b) Procesamiento Mejorado de Clases con Asistencia
+
 ```typescript
 // Procesar clases con asistencia registrada (pueden ser clases extra o de recuperación)
 for (const record of allAttendanceRecords) {
   console.log(`[AttendanceView] Procesando registro de asistencia:`, {
     classId: record.classId,
     className: record.className,
-    fecha: record.fecha
+    fecha: record.fecha,
   })
-  
+
   const existingClass = classMap.get(record.classId)
-  
+
   if (existingClass) {
     // Ya existe en las programadas/compartidas, actualizar info
     existingClass.hasAttendance = true
     existingClass.registered = true
-    existingClass.status = existingClass.type === 'shared' ? 'Registrada (Compartida)' : 'Registrada'
+    existingClass.status =
+      existingClass.type === "shared" ? "Registrada (Compartida)" : "Registrada"
     existingClass.attendanceRecord = record
   } else {
     // Clase no programada pero con asistencia (clase extra/recuperación)
-    let classInfo = classesStore.classes.find(c => c.id === record.classId)
-    
+    let classInfo = classesStore.classes.find((c) => c.id === record.classId)
+
     // Si no se encuentra por ID, intentar por nombre
     if (!classInfo && record.className) {
-      classInfo = classesStore.classes.find(c => c.name === record.className)
+      classInfo = classesStore.classes.find((c) => c.name === record.className)
     }
-    
+
     if (classInfo) {
       classMap.set(record.classId, {
         ...classInfo,
         isScheduled: false,
         hasAttendance: true,
-        type: 'recorded', // Tipo: clase con asistencia registrada
-        myRole: 'LEAD',
+        type: "recorded", // Tipo: clase con asistencia registrada
+        myRole: "LEAD",
         registered: true,
-        status: 'Registrada (Extra)',
-        attendanceRecord: record
+        status: "Registrada (Extra)",
+        attendanceRecord: record,
       })
     } else {
       // Crear entrada básica si no se encuentra en el store
@@ -99,12 +105,12 @@ for (const record of allAttendanceRecords) {
         name: record.className || `Clase ${record.classId}`,
         isScheduled: false,
         hasAttendance: true,
-        type: 'recorded',
-        myRole: 'LEAD',
+        type: "recorded",
+        myRole: "LEAD",
         registered: true,
-        status: 'Registrada (Extra)',
+        status: "Registrada (Extra)",
         attendanceRecord: record,
-        studentIds: []
+        studentIds: [],
       })
     }
   }
@@ -112,29 +118,33 @@ for (const record of allAttendanceRecords) {
 ```
 
 #### c) Sistema de Logging Mejorado
+
 Se agregaron logs detallados para facilitar el debugging:
+
 - Logs de búsqueda por ID y por nombre
 - Logs de procesamiento de cada tipo de clase
 - Logs de resumen final con conteo por categorías
 
 #### d) Ordenamiento Inteligente
+
 ```typescript
 // Ordenar las clases: primero las programadas, luego las compartidas, luego las extra
 classesWithStatus.sort((a, b) => {
   // Primero las programadas propias
-  if (a.type === 'scheduled' && b.type !== 'scheduled') return -1
-  if (a.type !== 'scheduled' && b.type === 'scheduled') return 1
-  
+  if (a.type === "scheduled" && b.type !== "scheduled") return -1
+  if (a.type !== "scheduled" && b.type === "scheduled") return 1
+
   // Luego las compartidas
-  if (a.type === 'shared' && b.type !== 'shared' && b.type !== 'scheduled') return -1
-  if (a.type !== 'shared' && a.type !== 'scheduled' && b.type === 'shared') return 1
-  
+  if (a.type === "shared" && b.type !== "shared" && b.type !== "scheduled") return -1
+  if (a.type !== "shared" && a.type !== "scheduled" && b.type === "shared") return 1
+
   // Dentro del mismo tipo, ordenar por nombre
-  return (a.name || '').localeCompare(b.name || '')
+  return (a.name || "").localeCompare(b.name || "")
 })
 ```
 
 ### 3. Validación de Permisos en AttendanceObservation
+
 - **Archivo**: `src/modulos/Attendance/components/AttendanceObservation.vue`
 - **Mejoras**:
   - Uso de computed properties para permisos
@@ -177,10 +187,12 @@ El sistema ahora reconoce y maneja tres tipos de clases:
 ✅ Los permisos granulares funcionan correctamente  
 ✅ No hay duplicados en la lista de clases  
 ✅ El sistema es robusto ante datos faltantes  
-✅ Los logs facilitan el debugging  
+✅ Los logs facilitan el debugging
 
 ## Fecha de Implementación
+
 Enero 2025
 
 ## Estado
+
 ✅ **COMPLETADO** - Todas las correcciones implementadas y validadas

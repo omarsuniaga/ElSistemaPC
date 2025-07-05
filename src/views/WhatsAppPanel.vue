@@ -1444,7 +1444,7 @@ const clearMessage = () => {
 // Función auxiliar para limpiar y validar números de teléfono
 const cleanPhoneNumbers = (input: string): string[] => {
   if (!input?.trim()) return []
-  
+
   return input
     .split(/[,\n;]/) // Separar por comas, nuevas líneas o punto y coma
     .map((num: string) => num.trim().replace(/[^+\d]/g, "")) // Limpiar caracteres no válidos
@@ -1524,7 +1524,7 @@ const sendBulkMessage = async () => {
   console.log("  - bulkForm.recipients:", JSON.stringify(bulkForm.recipients))
   console.log("  - bulkForm.message:", JSON.stringify(bulkForm.message))
   console.log("  - bulkForm.selectedTemplate:", JSON.stringify(bulkForm.selectedTemplate))
-  
+
   // Verificar si el mensaje está vacío o es undefined
   if (!bulkForm.message || bulkForm.message.trim() === "") {
     alert("❌ Error: El mensaje está vacío. Por favor escribe un mensaje antes de enviar.")
@@ -1538,7 +1538,9 @@ const sendBulkMessage = async () => {
   console.log("📋 Números procesados:", recipients)
 
   if (recipients.length === 0) {
-    alert("❌ No se encontraron números de teléfono válidos.\n\nFormato esperado:\n+1234567890 o 1234567890")
+    alert(
+      "❌ No se encontraron números de teléfono válidos.\n\nFormato esperado:\n+1234567890 o 1234567890"
+    )
     return
   }
 
@@ -1595,7 +1597,9 @@ const sendBulkMessage = async () => {
 
         // Validación adicional antes del envío
         if (!recipient || !bulkForm.message || recipient.length < 10) {
-          throw new Error(`Datos inválidos - Número: "${recipient}", Mensaje: "${bulkForm.message ? 'OK' : 'VACÍO'}"`)
+          throw new Error(
+            `Datos inválidos - Número: "${recipient}", Mensaje: "${bulkForm.message ? "OK" : "VACÍO"}"`
+          )
         }
 
         const payload = {
@@ -1612,7 +1616,9 @@ const sendBulkMessage = async () => {
 
         // Validación final antes del envío
         if (!payload.number || !payload.message) {
-          throw new Error(`Payload inválido - number: "${payload.number}", message: "${payload.message}"`)
+          throw new Error(
+            `Payload inválido - number: "${payload.number}", message: "${payload.message}"`
+          )
         }
 
         const response = await fetch("https://whatsappapi-4ffilcsmva-uc.a.run.app/send-message", {
@@ -1626,7 +1632,7 @@ const sendBulkMessage = async () => {
         // Manejo específico de errores HTTP
         if (!response.ok) {
           let errorMessage = "Error de servidor"
-          
+
           if (response.status === 400) {
             errorMessage = `Error 400: ${result.message || result.error || "Número y mensaje son requeridos"}`
             console.error("❌ Error 400 - Datos enviados:")
@@ -1639,7 +1645,7 @@ const sendBulkMessage = async () => {
           } else if (response.status === 429) {
             errorMessage = "Error 429: Demasiadas solicitudes"
           }
-          
+
           throw new Error(errorMessage)
         }
 
@@ -1820,31 +1826,31 @@ window.testWhatsAppAPI = async (recipient, message) => {
   console.log("🧪 Test de API WhatsApp:")
   console.log("  - recipient:", JSON.stringify(recipient))
   console.log("  - message:", JSON.stringify(message))
-  
-  const payload = { number: recipient, message: message, validateNumber: true }
+
+  const payload = {number: recipient, message, validateNumber: true}
   console.log("  - payload:", JSON.stringify(payload))
-  
+
   try {
     const response = await fetch("https://whatsappapi-4ffilcsmva-uc.a.run.app/send-message", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(payload),
     })
-    
+
     const result = await response.json()
     console.log("  - response status:", response.status)
     console.log("  - response result:", JSON.stringify(result))
-    
+
     if (!response.ok) {
       console.error("❌ Error en API:", result)
     } else {
       console.log("✅ API funcionó correctamente")
     }
-    
-    return { response, result }
+
+    return {response, result}
   } catch (error) {
     console.error("❌ Error en test:", error)
-    return { error }
+    return {error}
   }
 }
 

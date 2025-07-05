@@ -25,6 +25,7 @@ scripts/
 ## 🧑‍🏫 Permisos Implementados - ROL MAESTRO
 
 ### ✅ Permisos CRUD Confirmados
+
 - **Asistencia diaria**: Registrar ✓, Editar ✓ (scope: clase)
 - **Observaciones del día**: Registrar ✓, Editar ✓ (scope: clase)
 - **Montaje de obras asignadas**: Registrar ✓, Editar ✓ (scope: clase)
@@ -40,6 +41,7 @@ scripts/
 - **Ver métricas de sus alumnos**: Leer ✓ (scope: clase)
 
 ### ❌ Restricciones Confirmadas
+
 - ❌ No puede generar reportes institucionales
 - ❌ No puede ver información confidencial de alumnos
 - ❌ No puede gestionar otros maestros
@@ -51,6 +53,7 @@ scripts/
 ## 🧑‍🎓 Permisos Implementados - ROL DIRECTOR
 
 ### ✅ Permisos CRUD + Supervisión + Reportes Confirmados
+
 - **Repertorios**: Registrar ✓, Editar ✓ (scope: global)
 - **Obras musicales**: Registrar ✓, Editar ✓ (scope: global)
 - **Compases de las obras**: Registrar ✓, Editar ✓ (scope: global)
@@ -74,14 +77,15 @@ scripts/
 ## 📊 PDFs y Reportes Implementados - DIRECTOR
 
 ### ✅ Reportes Confirmados
-| Tipo de Reporte | Implementado | Scope |
-|-----------------|--------------|-------|
-| **Asistencia** | ✓ | Por día, mes, personalizado |
-| **Progreso por alumno** | ✓ | % positivos en indicadores |
-| **Listados por clases/maestros** | ✓ | Por agrupación o grupo |
-| **Horarios** | ✓ | Por alumno, maestro, clase, día |
-| **Obras trabajadas** | ✓ | Resumen de estado de compases |
-| **Reporte general** | ✓ | Análisis completo de desempeño |
+
+| Tipo de Reporte                  | Implementado | Scope                           |
+| -------------------------------- | ------------ | ------------------------------- |
+| **Asistencia**                   | ✓            | Por día, mes, personalizado     |
+| **Progreso por alumno**          | ✓            | % positivos en indicadores      |
+| **Listados por clases/maestros** | ✓            | Por agrupación o grupo          |
+| **Horarios**                     | ✓            | Por alumno, maestro, clase, día |
+| **Obras trabajadas**             | ✓            | Resumen de estado de compases   |
+| **Reporte general**              | ✓            | Análisis completo de desempeño  |
 
 ---
 
@@ -99,7 +103,7 @@ scripts/
   "version": "1.0.0"
 }
 
-// /roles/Director  
+// /roles/Director
 {
   "puedeEditarObras": true,
   "puedeEvaluarMaestros": true,
@@ -119,55 +123,52 @@ scripts/
 ```vue
 <template>
   <!-- Solo Director puede generar reportes -->
-  <PermissionGuard 
-    :resource="ResourceType.ATTENDANCE_REPORTS" 
+  <PermissionGuard
+    :resource="ResourceType.ATTENDANCE_REPORTS"
     :action="PermissionAction.GENERATE_REPORTS"
   >
     <button @click="generateReport">📊 Generar Reporte</button>
   </PermissionGuard>
 
   <!-- Solo Director puede ver info confidencial -->
-  <PermissionGuard 
-    :resource="ResourceType.CONFIDENTIAL_INFO" 
-    :action="PermissionAction.READ"
-  >
+  <PermissionGuard :resource="ResourceType.CONFIDENTIAL_INFO" :action="PermissionAction.READ">
     <button @click="viewConfidential">🔒 Info Confidencial</button>
   </PermissionGuard>
 </template>
 
 <script setup>
-import { usePermissions } from '../modulos/Auth/composables/usePermissions'
-import { ResourceType, PermissionAction } from '../modulos/Auth/types/permissions'
-import PermissionGuard from '../modulos/Auth/components/PermissionGuard.vue'
+import {usePermissions} from "../modulos/Auth/composables/usePermissions"
+import {ResourceType, PermissionAction} from "../modulos/Auth/types/permissions"
+import PermissionGuard from "../modulos/Auth/components/PermissionGuard.vue"
 
-const { hasPermission, userRole, hasGlobalScope } = usePermissions()
+const {hasPermission, userRole, hasGlobalScope} = usePermissions()
 </script>
 ```
 
 ### 2. **En Stores/Actions**
 
 ```typescript
-import { usePermissions } from '../modulos/Auth/composables/usePermissions'
-import { ResourceType, PermissionAction } from '../modulos/Auth/types/permissions'
+import {usePermissions} from "../modulos/Auth/composables/usePermissions"
+import {ResourceType, PermissionAction} from "../modulos/Auth/types/permissions"
 
 export const attendanceActions = {
   async recordAttendance(studentId: string, status: string) {
-    const { hasPermission } = usePermissions()
-    
+    const {hasPermission} = usePermissions()
+
     // Verificar permiso antes de ejecutar
     if (!hasPermission(ResourceType.DAILY_ATTENDANCE, PermissionAction.CREATE)) {
-      throw new Error('No tiene permisos para registrar asistencia')
+      throw new Error("No tiene permisos para registrar asistencia")
     }
-    
+
     // Lógica de registro de asistencia...
-  }
+  },
 }
 ```
 
 ### 3. **En Servicios**
 
 ```typescript
-import { PermissionsService } from '../modulos/Auth/services/permissionsService'
+import {PermissionsService} from "../modulos/Auth/services/permissionsService"
 
 export const attendanceService = {
   async updateAttendance(userId: string, studentId: string, data: any) {
@@ -175,20 +176,20 @@ export const attendanceService = {
     const validation = await PermissionsService.validateUserAction(
       userId,
       UserRole.MAESTRO,
-      'puedeEditarAsistencia',
-      'estudiante',
-      { 
+      "puedeEditarAsistencia",
+      "estudiante",
+      {
         studentClassId: data.classId,
-        userClassIds: ['violin-basico', 'piano-intermedio'] 
+        userClassIds: ["violin-basico", "piano-intermedio"],
       }
     )
-    
+
     if (!validation.allowed) {
       throw new Error(validation.reason)
     }
-    
+
     // Proceder con la actualización...
-  }
+  },
 }
 ```
 
@@ -211,14 +212,14 @@ npx tsx scripts/setup-permissions.ts
 ### 2. **Verificar Configuración**
 
 ```typescript
-import { PermissionsService } from './src/modulos/Auth/services/permissionsService'
+import {PermissionsService} from "./src/modulos/Auth/services/permissionsService"
 
 // Verificar que los permisos están configurados
-const maestroPermissions = await PermissionsService.getRolePermissions('Maestro')
-const directorPermissions = await PermissionsService.getRolePermissions('Director')
+const maestroPermissions = await PermissionsService.getRolePermissions("Maestro")
+const directorPermissions = await PermissionsService.getRolePermissions("Director")
 
-console.log('Maestro:', maestroPermissions)
-console.log('Director:', directorPermissions)
+console.log("Maestro:", maestroPermissions)
+console.log("Director:", directorPermissions)
 ```
 
 ---
@@ -226,6 +227,7 @@ console.log('Director:', directorPermissions)
 ## 🎯 Próximos Pasos
 
 ### ✅ **YA COMPLETADO**
+
 1. ✅ Sistema de tipos y permisos estáticos
 2. ✅ Composable de permisos
 3. ✅ Componente de guardia UI
@@ -234,6 +236,7 @@ console.log('Director:', directorPermissions)
 6. ✅ Ejemplos de implementación
 
 ### 🔄 **INTEGRACIÓN PENDIENTE**
+
 1. **Migrar componentes existentes** a usar `PermissionGuard`
 2. **Actualizar stores** para usar `usePermissions`
 3. **Integrar en rutas** el sistema de permisos

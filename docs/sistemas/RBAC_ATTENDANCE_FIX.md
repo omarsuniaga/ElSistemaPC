@@ -21,30 +21,31 @@ El sistema presentaba un bucle infinito de redirecciones cuando un maestro inten
 
 ```typescript
 // Verificación especial para maestros en rutas de teacher
-if (userRole?.toLowerCase() === 'maestro' && to.path.startsWith('/teacher')) {
-  console.log(`✅ RBAC Guard: Acceso maestro permitido para ruta teacher: ${to.path}`);
-  return next();
+if (userRole?.toLowerCase() === "maestro" && to.path.startsWith("/teacher")) {
+  console.log(`✅ RBAC Guard: Acceso maestro permitido para ruta teacher: ${to.path}`)
+  return next()
 }
 
 // Redirección especial para maestros que intentan acceder a rutas de admin
-if (userRole?.toLowerCase() === 'maestro' && to.path.startsWith('/attendance/')) {
-  console.log(`🔄 RBAC Guard: Redirigiendo maestro de ruta admin ${to.path} a ruta teacher`);
-  const pathParts = to.path.split('/');
+if (userRole?.toLowerCase() === "maestro" && to.path.startsWith("/attendance/")) {
+  console.log(`🔄 RBAC Guard: Redirigiendo maestro de ruta admin ${to.path} a ruta teacher`)
+  const pathParts = to.path.split("/")
   // Extraer date y classId si están presentes: /attendance/:date/:classId
   if (pathParts.length >= 4) {
-    const date = pathParts[2];
-    const classId = pathParts[3];
-    return next(`/teacher/attendance/${date}/${classId}`);
+    const date = pathParts[2]
+    const classId = pathParts[3]
+    return next(`/teacher/attendance/${date}/${classId}`)
   } else if (pathParts.length >= 3) {
-    const date = pathParts[2];
-    return next(`/teacher/attendance/${date}`);
+    const date = pathParts[2]
+    return next(`/teacher/attendance/${date}`)
   } else {
-    return next('/teacher/attendance/calendar');
+    return next("/teacher/attendance/calendar")
   }
 }
 ```
 
 **Características clave:**
+
 - **Acceso directo** para maestros a rutas `/teacher/*`
 - **Redirección automática** de rutas `/attendance/*` a `/teacher/attendance/*` para maestros
 - **Parsing inteligente** de parámetros de ruta (fecha y classId)
@@ -55,15 +56,19 @@ if (userRole?.toLowerCase() === 'maestro' && to.path.startsWith('/attendance/'))
 ```typescript
 function handleClassSelect(classId: string) {
   // ...
-  const userRole = authStore.user?.role?.toLowerCase() || ''
+  const userRole = authStore.user?.role?.toLowerCase() || ""
   console.log(`[AttendanceView] handleClassSelect: Usuario completo:`, authStore.user)
-  console.log(`[AttendanceView] handleClassSelect: Rol del usuario: '${userRole}' (original: '${authStore.user?.role}')`)
-  
-  if (userRole === 'maestro' || userRole === 'teacher') {
+  console.log(
+    `[AttendanceView] handleClassSelect: Rol del usuario: '${userRole}' (original: '${authStore.user?.role}')`
+  )
+
+  if (userRole === "maestro" || userRole === "teacher") {
     // Formatear fecha para maestros (YYYYMMDD)
-    const dateFormatted = selectedDate.value.replace(/-/g, '')
+    const dateFormatted = selectedDate.value.replace(/-/g, "")
     routePath = `/teacher/attendance/${dateFormatted}/${classId}`
-    console.log(`[AttendanceView] handleClassSelect: Rol maestro detectado, navegando a: ${routePath}`)
+    console.log(
+      `[AttendanceView] handleClassSelect: Rol maestro detectado, navegando a: ${routePath}`
+    )
   } else {
     // Para admin/director usar la ruta original
     routePath = `/attendance/${selectedDate.value}/${classId}`
@@ -77,34 +82,36 @@ function handleClassSelect(classId: string) {
 
 ```typescript
 // Redirigir según el rol del usuario
-const normalizedRole = userRole?.toLowerCase() || '';
+const normalizedRole = userRole?.toLowerCase() || ""
 
-if (normalizedRole.includes('maestro') || normalizedRole.includes('teacher')) {
+if (normalizedRole.includes("maestro") || normalizedRole.includes("teacher")) {
   // Si el maestro está intentando acceder a rutas /attendance/, redirigir a /teacher/attendance/calendar
-  if (to.path.startsWith('/attendance/')) {
-    next('/teacher/attendance/calendar?redirected=true');
+  if (to.path.startsWith("/attendance/")) {
+    next("/teacher/attendance/calendar?redirected=true")
   } else {
     // Para otras rutas denegadas, redirigir al dashboard del maestro
-    next('/teacher?redirected=true');
+    next("/teacher?redirected=true")
   }
-} else if (normalizedRole.includes('director') || normalizedRole.includes('admin')) {
-  next('/attendance/calendar?redirected=true');
-} else if (normalizedRole.includes('superusuario')) {
-  next('/superusuario/dashboard?redirected=true');
+} else if (normalizedRole.includes("director") || normalizedRole.includes("admin")) {
+  next("/attendance/calendar?redirected=true")
+} else if (normalizedRole.includes("superusuario")) {
+  next("/superusuario/dashboard?redirected=true")
 } else {
-  next('/unauthorized');
+  next("/unauthorized")
 }
 ```
 
 ## Rutas Corregidas
 
 ### Para Maestros:
+
 - ✅ `/teacher/attendance/calendar` - Calendario de asistencia del maestro
 - ✅ `/teacher/attendance/:date/:classId` - Detalle de asistencia específica
 - ✅ `/teacher/attendance/:date` - Asistencia por fecha
 - 🔄 `/attendance/*` → **Auto-redirección** a `/teacher/attendance/*`
 
 ### Para Administradores/Directores:
+
 - ✅ `/attendance/calendar` - Calendario de asistencia administrativo
 - ✅ `/attendance/:date/:classId` - Detalle de asistencia administrativo
 
@@ -125,7 +132,7 @@ El sistema ahora incluye logs detallados para facilitar el debugging:
 ✅ **Problema resuelto**: Los maestros ahora pueden acceder correctamente a las listas de asistencia  
 ✅ **Sin bucles infinitos**: El sistema maneja redirecciones de forma segura  
 ✅ **Navegación correcta**: Cada rol navega a sus rutas apropiadas  
-✅ **Debugging mejorado**: Logs claros para identificar problemas futuros  
+✅ **Debugging mejorado**: Logs claros para identificar problemas futuros
 
 ## Próximos Pasos
 

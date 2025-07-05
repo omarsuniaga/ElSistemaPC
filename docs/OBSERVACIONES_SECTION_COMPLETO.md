@@ -7,12 +7,14 @@ El componente `ObservacionesSection` ya tiene **toda la funcionalidad solicitada
 ### 🎯 Características Implementadas
 
 #### 1. **Listado de Clases con Menú Hamburguesa**
+
 - ✅ Muestra todas las clases del maestro actual
 - ✅ Menú hamburguesa (⋮) en cada clase con opciones:
   - "Ver todas las observaciones"
   - "Expandir/Contraer historial"
 
 #### 2. **Historial de Observaciones por Clase**
+
 - ✅ Expandir/contraer observaciones por clase
 - ✅ Carga lazy de observaciones (solo cuando se expande)
 - ✅ Muestra información completa de cada observación:
@@ -23,15 +25,18 @@ El componente `ObservacionesSection` ya tiene **toda la funcionalidad solicitada
   - **Estudiante** relacionado (si aplica)
 
 #### 3. **Filtrado por Maestro**
+
 - ✅ Solo muestra clases donde el maestro actual es profesor principal o asistente
 - ✅ Utiliza `inject('currentTeacherId')` para obtener el ID del maestro
 
 #### 4. **Estados de Carga y Error**
+
 - ✅ Indicador de carga mientras se cargan las observaciones
 - ✅ Mensaje cuando no hay observaciones
 - ✅ Mensaje cuando no hay clases disponibles
 
 #### 5. **Interfaz Moderna y Responsiva**
+
 - ✅ Diseño con Tailwind CSS
 - ✅ Modo oscuro/claro
 - ✅ Animaciones y transiciones suaves
@@ -41,34 +46,40 @@ El componente `ObservacionesSection` ya tiene **toda la funcionalidad solicitada
 ## 🔧 Estructura del Componente
 
 ### Props
+
 ```typescript
 props: {
-  classes: Array<any>; // Clases del maestro
+  classes: Array<any> // Clases del maestro
 }
 ```
 
 ### Funciones Principales
 
 #### `toggleClassExpansion(classId: string)`
+
 - Expande/contrae el historial de una clase
 - Carga automáticamente las observaciones si no están cargadas
 
 #### `loadClassObservations(classId: string)`
+
 - Carga las observaciones de una clase específica
 - Usa `attendanceStore.fetchObservationsForClass(classId)`
 
 #### `formatDate(dateString: string)`
+
 - Formatea fechas para mostrar en formato legible
 - Ejemplo: "13/06/2025 14:30"
 
 #### `getAuthorName(observation: any)`
+
 - Obtiene el nombre del autor de la observación
 - Fallback a "Autor desconocido" si no hay información
 
 #### `getObservationTypeColor(type: string)`
+
 - Retorna clases CSS para colorear según el tipo:
   - `positive`: Verde
-  - `negative`: Rojo  
+  - `negative`: Rojo
   - `neutral`: Azul
   - `general`: Gris
 
@@ -91,16 +102,15 @@ props: {
 ## 🔗 Integración en el Dashboard
 
 ### Ubicación
+
 - **Tab**: "upcoming" (Observaciones)
 - **Componente padre**: `TeacherDashboardPage.vue`
 - **Prop**: `:classes="teacherClasses"`
 
 ### Código de Integración
+
 ```vue
-<ObservacionesSection
-  v-if="activeTab === 'upcoming'"
-  :classes="teacherClasses"
-/>
+<ObservacionesSection v-if="activeTab === 'upcoming'" :classes="teacherClasses" />
 ```
 
 ## 🚀 Funcionalidad en Acción
@@ -115,6 +125,7 @@ props: {
 **NO SE REQUIERE IMPLEMENTACIÓN ADICIONAL**
 
 El componente `ObservacionesSection` ya tiene implementada toda la funcionalidad solicitada:
+
 - ✅ Listado de clases con menú hamburguesa
 - ✅ Historial de observaciones por clase
 - ✅ Información detallada (fecha, autor, tipo, contenido)

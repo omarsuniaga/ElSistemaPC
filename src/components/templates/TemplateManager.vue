@@ -23,7 +23,9 @@
       </div>
 
       <!-- Filtros y búsqueda -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+      <div
+        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6"
+      >
         <div class="flex flex-wrap items-center gap-4">
           <div class="flex-1 min-w-64">
             <input
@@ -98,9 +100,7 @@
           <div class="p-4">
             <!-- Preview del contenido -->
             <div class="mb-4">
-              <p class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                Vista previa:
-              </p>
+              <p class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Vista previa:</p>
               <div class="bg-gray-50 dark:bg-gray-700 rounded-md p-3 text-xs">
                 <p class="text-gray-700 dark:text-gray-300 line-clamp-3">
                   {{ getPreviewText(template) }}
@@ -132,11 +132,13 @@
                   <div
                     v-for="level in 4"
                     :key="level"
-                    :class="level <= template.escalationLevel
-                      ? 'bg-red-500'
-                      : 'bg-gray-200 dark:bg-gray-600'"
+                    :class="
+                      level <= template.escalationLevel
+                        ? 'bg-red-500'
+                        : 'bg-gray-200 dark:bg-gray-600'
+                    "
                     class="w-2 h-2 rounded-full"
-                  ></div>
+                  />
                 </div>
                 <span class="text-xs font-medium text-red-600">
                   Nivel {{ template.escalationLevel }}
@@ -147,12 +149,14 @@
             <!-- Estado -->
             <div class="flex items-center justify-between mb-4">
               <span
-                :class="template.isActive
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'"
+                :class="
+                  template.isActive
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                "
                 class="px-2 py-1 text-xs font-medium rounded-full"
               >
-                {{ template.isActive ? 'Activa' : 'Inactiva' }}
+                {{ template.isActive ? "Activa" : "Inactiva" }}
               </span>
               <span class="text-xs text-gray-500 dark:text-gray-400">
                 {{ template.variables.length }} variables
@@ -194,10 +198,7 @@
       </div>
 
       <!-- Estado vacío -->
-      <div
-        v-if="filteredTemplates.length === 0"
-        class="text-center py-12"
-      >
+      <div v-if="filteredTemplates.length === 0" class="text-center py-12">
         <div class="text-gray-500 dark:text-gray-400">
           <span class="text-4xl mb-4 block">📄</span>
           <h3 class="text-lg font-medium mb-2">No se encontraron plantillas</h3>
@@ -225,8 +226,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue"
-import { templateManager, type MessageTemplate } from "../../services/templates/templateManager"
+import {ref, computed, onMounted} from "vue"
+import {templateManager, type MessageTemplate} from "../../services/templates/templateManager"
 import TemplateEditorModal from "./TemplateEditorModal.vue"
 import TemplatePreviewModal from "./TemplatePreviewModal.vue"
 
@@ -248,7 +249,7 @@ const filteredTemplates = computed(() => {
   if (searchTerm.value) {
     const term = searchTerm.value.toLowerCase()
     filtered = filtered.filter(
-      template =>
+      (template) =>
         template.name.toLowerCase().includes(term) ||
         template.description.toLowerCase().includes(term) ||
         template.content.toLowerCase().includes(term)
@@ -257,23 +258,23 @@ const filteredTemplates = computed(() => {
 
   // Filtro por categoría
   if (selectedCategory.value) {
-    filtered = filtered.filter(template => template.category === selectedCategory.value)
+    filtered = filtered.filter((template) => template.category === selectedCategory.value)
   }
 
   // Filtro por estado
   if (selectedStatus.value) {
     switch (selectedStatus.value) {
       case "active":
-        filtered = filtered.filter(template => template.isActive)
+        filtered = filtered.filter((template) => template.isActive)
         break
       case "inactive":
-        filtered = filtered.filter(template => !template.isActive)
+        filtered = filtered.filter((template) => !template.isActive)
         break
       case "system":
-        filtered = filtered.filter(template => template.isSystem)
+        filtered = filtered.filter((template) => template.isSystem)
         break
       case "custom":
-        filtered = filtered.filter(template => !template.isSystem)
+        filtered = filtered.filter((template) => !template.isSystem)
         break
     }
   }
@@ -332,12 +333,12 @@ const getPreviewText = (template: MessageTemplate): string => {
   preview = preview.replace(/\{className\}/g, "Violín Intermedio")
   preview = preview.replace(/\{date\}/g, new Date().toLocaleDateString("es-ES"))
   preview = preview.replace(/\{academyName\}/g, "Academia Musical El Sistema")
-  
+
   return preview.length > 150 ? preview.substring(0, 150) + "..." : preview
 }
 
 const editTemplate = (template: MessageTemplate): void => {
-  editingTemplate.value = { ...template }
+  editingTemplate.value = {...template}
 }
 
 const previewTemplate = (template: MessageTemplate): void => {

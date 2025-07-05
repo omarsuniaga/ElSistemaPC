@@ -5,19 +5,21 @@
 Para que el módulo Montaje funcione correctamente, se requieren los siguientes índices compuestos en Firestore:
 
 ### 1. Evaluaciones Continuas
+
 ```
 Collection: montaje-evaluaciones
 Fields: obraId (Ascending), tipo (Ascending), fecha (Descending)
 ```
 
 ### 2. Observaciones Pedagógicas (múltiples filtros)
+
 ```
 Collection: montaje-observaciones
 Fields: obraId (Ascending), fechaCreacion (Descending)
 ```
 
 ```
-Collection: montaje-observaciones  
+Collection: montaje-observaciones
 Fields: fraseId (Ascending), fechaCreacion (Descending)
 ```
 
@@ -27,6 +29,7 @@ Fields: metadatos.resuelto (Ascending), fechaCreacion (Descending)
 ```
 
 ### 3. Obras por Repertorio
+
 ```
 Collection: montaje-obras
 Fields: repertorioId (Ascending), auditoria.activo (Ascending), auditoria.fechaCreacion (Descending)
@@ -35,12 +38,14 @@ Fields: repertorioId (Ascending), auditoria.activo (Ascending), auditoria.fechaC
 ## Cómo Crear los Índices
 
 ### Opción 1: Firebase Console
+
 1. Ve a Firebase Console: https://console.firebase.google.com/
 2. Selecciona tu proyecto: orquestapuntacana
 3. Ve a Firestore Database > Indexes
 4. Crea los índices compuestos listados arriba
 
 ### Opción 2: Firebase CLI
+
 ```bash
 # Instalar Firebase CLI si no está instalado
 npm install -g firebase-tools
@@ -53,6 +58,7 @@ firebase deploy --only firestore:rules,firestore:indexes
 ```
 
 ### Opción 3: Configuración Automática
+
 Los índices se crearán automáticamente cuando se ejecuten las consultas por primera vez en producción. Firebase mostrará enlaces para crear los índices faltantes.
 
 ## Estado Actual
@@ -76,7 +82,7 @@ Agregar al archivo `firestore.indexes.json`:
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "tipo", 
+          "fieldPath": "tipo",
           "order": "ASCENDING"
         },
         {
@@ -87,7 +93,7 @@ Agregar al archivo `firestore.indexes.json`:
     },
     {
       "collectionGroup": "montaje-observaciones",
-      "queryScope": "COLLECTION", 
+      "queryScope": "COLLECTION",
       "fields": [
         {
           "fieldPath": "obraId",
@@ -104,7 +110,7 @@ Agregar al archivo `firestore.indexes.json`:
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "fraseId", 
+          "fieldPath": "fraseId",
           "order": "ASCENDING"
         },
         {
@@ -122,7 +128,7 @@ Agregar al archivo `firestore.indexes.json`:
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "fechaCreacion", 
+          "fieldPath": "fechaCreacion",
           "order": "DESCENDING"
         }
       ]

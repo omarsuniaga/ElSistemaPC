@@ -1,9 +1,11 @@
 # 🧪 Guía de Pruebas - Módulo de Clases Compartidas con Gestión de Permisos
 
 ## 🎯 Objetivo
+
 Verificar que el módulo de clases compartidas funciona correctamente con la estructura de Firestore, donde la propiedad `teachers` (array) determina si una clase es compartida, y que la gestión de permisos se actualiza correctamente en Firestore.
 
 ## 📋 Pre-requisitos
+
 1. La aplicación debe estar ejecutándose (`npm run dev`)
 2. Navegar a la sección de Administración de Clases
 3. Tener la consola del navegador abierta (F12)
@@ -11,39 +13,43 @@ Verificar que el módulo de clases compartidas funciona correctamente con la est
 ## 🔧 Scripts de Prueba Disponibles
 
 ### 1. Scripts de Análisis Básico
+
 ```javascript
 // Cargar scripts en consola:
 // Copiar y pegar el contenido de cada archivo .js en la consola
 
 // Después cargar las funciones:
-debugFirestoreClasses()      // Analizar datos actuales
-verifySharedClassesModule()  // Verificar funcionamiento del módulo
-realFirestoreTest()          // Prueba completa con datos reales
+debugFirestoreClasses() // Analizar datos actuales
+verifySharedClassesModule() // Verificar funcionamiento del módulo
+realFirestoreTest() // Prueba completa con datos reales
 ```
 
 ### 2. Scripts de Datos de Prueba
+
 ```javascript
 // Generar datos de prueba basados en Firestore:
-generateFirestoreTestData()  // Crear datos de prueba
-loadFirestoreTestData()      // Cargar en la aplicación
+generateFirestoreTestData() // Crear datos de prueba
+loadFirestoreTestData() // Cargar en la aplicación
 
 // Datos específicos de tu clase real:
-injectTestSharedClass()      // Inyectar clase de ejemplo
-setupTestEnvironment()       // Configurar entorno completo
+injectTestSharedClass() // Inyectar clase de ejemplo
+setupTestEnvironment() // Configurar entorno completo
 ```
 
 ### 3. **NUEVO** - Scripts de Prueba de Permisos
+
 ```javascript
 // Probar sistema de permisos:
-testPermissionsSystem()      // Crear datos con permisos detallados
-loadPermissionsTestData()    // Cargar datos con permisos en la app
-testPermissionsUI()          // Probar interfaz de gestión de permisos
-simulatePermissionUpdate()   // Simular actualización de permisos
+testPermissionsSystem() // Crear datos con permisos detallados
+loadPermissionsTestData() // Cargar datos con permisos en la app
+testPermissionsUI() // Probar interfaz de gestión de permisos
+simulatePermissionUpdate() // Simular actualización de permisos
 ```
 
 ## 📊 Estructura de Datos Esperada
 
 ### Clase Compartida con Permisos (Firestore)
+
 ```javascript
 {
   id: "6URLsR4hz1U3OkphzGZo",
@@ -72,11 +78,13 @@ simulatePermissionUpdate()   // Simular actualización de permisos
 ```
 
 ### Niveles de Permisos Disponibles
+
 - **Solo Lectura**: Ver información básica, estudiantes y horarios
-- **Editor**: Lectura + editar clase y gestionar estudiantes  
+- **Editor**: Lectura + editar clase y gestionar estudiantes
 - **Administrador**: Editor + gestionar otros maestros y horarios
 
 ### Clase NO Compartida
+
 ```javascript
 {
   id: "clase-no-compartida",
@@ -90,12 +98,14 @@ simulatePermissionUpdate()   // Simular actualización de permisos
 ## 🚀 Pasos de Prueba
 
 ### Paso 1: Verificar Estado Actual
+
 1. Abrir consola del navegador
 2. Ejecutar: `debugFirestoreClasses()`
 3. Revisar qué clases se detectan como compartidas
 4. Verificar si hay datos en el store
 
 ### Paso 2: Generar Datos de Prueba (si es necesario)
+
 ```javascript
 // Si no hay datos o no se ven clases compartidas:
 generateFirestoreTestData()
@@ -110,6 +120,7 @@ location.reload()
 ```
 
 ### Paso 3: Verificar UI
+
 1. Navegar al tab "Clases Compartidas"
 2. Verificar que aparece el contador con el número correcto
 3. Verificar que se muestran las clases compartidas
@@ -117,6 +128,7 @@ location.reload()
 5. **NUEVO**: Verificar que se abre el diálogo de gestión de permisos
 
 ### Paso 4: Prueba Completa con Permisos
+
 ```javascript
 // Ejecutar análisis completo:
 realFirestoreTest()
@@ -129,6 +141,7 @@ forceDataRefresh()
 ```
 
 ### **NUEVO** - Paso 5: Prueba de Gestión de Permisos
+
 1. **Abrir diálogo de permisos**: Click en botón de editar permisos
 2. **Cambiar nivel**: Seleccionar "Editor" o "Administrador"
 3. **Verificar permisos específicos**: Los checkboxes deben actualizarse automáticamente
@@ -138,6 +151,7 @@ forceDataRefresh()
 ## ✅ Resultados Esperados
 
 ### En Consola
+
 ```
 🔗 AdminClassesView - Clases compartidas encontradas: 3
 - Clase de Piano: teachers = [teacher1, teacher2]
@@ -146,6 +160,7 @@ forceDataRefresh()
 ```
 
 ### En UI
+
 - **Tab "Clases Compartidas"** debe mostrar un contador (ej: "3")
 - **Lista de clases compartidas** debe mostrar todas las clases con `teachers.length > 0`
 - **Filtros** deben funcionar correctamente
@@ -154,12 +169,14 @@ forceDataRefresh()
 ## 🔍 Puntos de Verificación
 
 ### ✅ Lógica Correcta
+
 - [x] Se usa `cls.teachers` (no `cls.sharedWith`)
 - [x] Se verifica que `teachers` sea un array
 - [x] Se verifica que `teachers.length > 0`
 - [x] Compatibilidad con `teachers` como array de strings o objetos
 
 ### ✅ UI Funcional
+
 - [x] Tab de clases compartidas visible
 - [x] Contador muestra número correcto
 - [x] Lista muestra clases compartidas
@@ -170,6 +187,7 @@ forceDataRefresh()
 - [x] **NUEVO**: Cambios de permisos se guardan en Firestore
 
 ### ✅ Gestión de Permisos
+
 - [x] **NUEVO**: Niveles de acceso (Lectura, Editor, Administrador)
 - [x] **NUEVO**: Permisos específicos configurables
 - [x] **NUEVO**: Actualización en tiempo real
@@ -177,6 +195,7 @@ forceDataRefresh()
 - [x] **NUEVO**: Botón "Eliminar Acceso" funcional
 
 ### ✅ Datos Consistentes
+
 - [x] AdminClassesView pasa todas las clases a SharedClassesList
 - [x] SharedClassesList filtra usando `teachers`
 - [x] Logs de debug muestran proceso de filtrado
@@ -185,25 +204,33 @@ forceDataRefresh()
 ## 🚨 Problemas Comunes y Soluciones
 
 ### Problema: No se ven clases compartidas
+
 **Soluciones:**
+
 1. Verificar que las clases tengan `teachers` poblado
 2. Ejecutar `generateFirestoreTestData()` para datos de prueba
 3. Verificar logs en consola con `debugFirestoreClasses()`
 
 ### Problema: Contador en 0 pero hay clases compartidas
+
 **Soluciones:**
+
 1. Verificar estructura de datos con `realFirestoreTest()`
 2. Comprobar que no se esté usando `sharedWith` en lugar de `teachers`
 3. Forzar actualización con `forceDataRefresh()`
 
 ### Problema: No se ven botones de editar permisos
+
 **Soluciones:**
+
 1. Verificar que eres propietario de la clase (`isClassOwner`)
 2. Ejecutar `testPermissionsSystem()` para datos con permisos
 3. Verificar que los maestros aparecen en la sección "Maestros con Acceso"
 
 ### Problema: Error al guardar permisos
+
 **Soluciones:**
+
 1. Verificar conexión con Firestore
 2. Comprobar que tienes permisos de propietario
 3. Revisar logs de consola para errores específicos
@@ -212,6 +239,7 @@ forceDataRefresh()
 ## 📝 Notas Técnicas
 
 ### Cambios Implementados
+
 1. **AdminClassesView.vue**: Actualizado para usar `teachers` en filtros
 2. **SharedClassesList.vue**: Filtra usando `teachers.length > 0`
 3. **class.ts**: Tipo actualizado para permitir `teachers: (string | ClassTeacher)[]`
@@ -221,6 +249,7 @@ forceDataRefresh()
 7. **NUEVO - Sistema de permisos**: 3 niveles + permisos específicos configurables
 
 ### Estructura Firestore Soportada
+
 - `teachers: string[]` - Array de IDs de maestros (solo IDs)
 - `teachers: ClassTeacher[]` - Array de objetos maestro con permisos
 - `teachers: (string | ClassTeacher)[]` - Array mixto (compatibilidad)
@@ -228,6 +257,7 @@ forceDataRefresh()
 - `teachers: undefined` - Sin compartir (legacy)
 
 ### **NUEVO** - Sistema de Permisos
+
 - **Niveles**: Solo lectura, Editor, Administrador
 - **Permisos específicos**: 7 permisos granulares configurables
 - **Actualización en Firestore**: Cambios se guardan automáticamente

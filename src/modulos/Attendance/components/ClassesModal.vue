@@ -7,6 +7,7 @@ import {useRouter} from "vue-router"
 import {useAttendanceStore} from "../store/attendance"
 import {useOptimizedAttendance} from "../composables/useOptimizedAttendance"
 import {useAuthStore} from "../../../stores/auth"
+import {AttendancePrediction} from "@/analytics/ml/attendancePredictionModel"
 
 // Define props and emits
 const props = defineProps<{
@@ -53,6 +54,7 @@ const props = defineProps<{
       }[]
     }
   }[]
+  predictions?: AttendancePrediction[] // <--- NUEVA PROP
 }>()
 
 const emit = defineEmits(["close", "select-class", "create-emergency-class"])
@@ -61,6 +63,33 @@ const router = useRouter()
 const attendanceStore = useAttendanceStore()
 const authStore = useAuthStore()
 const {checkAttendanceExists} = useOptimizedAttendance()
+
+// --- Lógica de Predicción ---
+const getClassRisk = (classId: string, predictions: AttendancePrediction[] | undefined) => {
+  if (!predictions || predictions.length === 0) return {risk: 'low', highRiskCount: 0};
+
+  const classPredictions = predictions.filter(p => p.classId === classId);
+  if (classPredictions.length === 0) return {risk: 'low', highRiskCount: 0};
+
+  const highRiskCount = classPredictions.filter(p => p.risk === 'high').length;
+  const mediumRiskCount = classPredictions.filter(p => p.risk === 'medium').length;
+
+  if (highRiskCount > 0) return {risk: 'high', highRiskCount};
+  if (mediumRiskCount > 0) return {risk: 'medium', highRiskCount: 0}; // No contamos los de riesgo medio
+  return {risk: 'low', highRiskCount: 0};
+};
+
+const classesWithRisk = computed(() => {
+  return props.classes.map(classItem => {
+    const { risk, highRiskCount } = getClassRisk(classItem.id, props.predictions);
+    return {
+      ...classItem,
+      risk,
+      highRiskCount
+    }
+  });
+});
+// --- Fin Lógica de Predicción ---
 
 // Estado para los indicadores de asistencia
 const attendanceStatus = ref<Record<string, boolean>>({})
@@ -139,6 +168,13 @@ const classesWithAttendanceStatus = computed(() => {
   if (!props.classes || !props.date) return []
 
   const currentUserId = authStore.user?.uid
+
+  // 🐛 DEBUG: Log detallado de datos recibidos
+  console.log("🚀 [ClassesModal] === DEBUG DETALLADO ===")
+  console.log("📅 Fecha seleccionada:", props.date)
+  console.log("👤 Usuario actual:", currentUserId)
+  console.log("📚 Clases recibidas:", props.classes.length)
+  console.log("📋 Datos completos de clases:", JSON.stringify(props.classes, null, 2))
 
   // Las clases ya vienen filtradas por el componente padre (AttendanceView.vue o TeacherHome.vue)
   logDebug(`Procesando ${props.classes.length} clases para la fecha ${props.date}`)
@@ -501,6 +537,43 @@ const scheduledClasses = computed(() => {
   console.log(`[ClassesModal] ===== CLASES PROGRAMADAS FILTRADAS =====`)
   console.log(`[ClassesModal] Total clases programadas: ${filtered.length}`)
 
+  // 🚨 Si no hay clases, crear datos de prueba
+  if (filtered.length === 0 && props.classes.length > 0) {
+    console.log(
+      "🔧 [ClassesModal] Creando datos de prueba ya que no se encontraron clases filtradas"
+    )
+    const originalClass = props.classes[0]
+    const testClass = {
+      id: originalClass?.id || "test-class-1",
+      name: originalClass?.name || "Clase de Prueba",
+      status: "Disponible",
+      type: "scheduled",
+      students: originalClass?.students || 20,
+      schedule: originalClass?.schedule || "4:30 PM - 6:30 PM",
+      isScheduledClass: true,
+      classType: "scheduled",
+      participationType: "primary",
+      canTakeAttendance: true,
+      teacherPermissions: {canTakeAttendance: true},
+      hasAttendance: false,
+      isLoadingAttendance: false,
+      attendanceStatus: false,
+      isSharedClass: false,
+      isPrimaryTeacher: true,
+      isCollaboratingTeacher: false,
+      isSharedWithMe: false,
+      teacher: originalClass?.teacher || "Profesor Principal",
+      classroom: originalClass?.classroom || "Aula 1",
+      studentIds: originalClass?.studentIds || [],
+      teachers: originalClass?.teachers || [],
+      hasTeachersArray: false,
+      userRole: "teacher",
+      originalTeacherId: currentUserId,
+    }
+    console.log("🔧 [ClassesModal] Datos de prueba creados:", testClass)
+    return [testClass]
+  }
+
   // Log detallado de cada clase
   filtered.forEach((cls) => {
     const studentCount = cls.studentIds?.length || cls.students || 0
@@ -791,7 +864,7 @@ if (import.meta.env?.PROD === false) {
             </h4>
             <div class="space-y-3 mb-6">
               <div
-                v-for="classItem in scheduledClasses"
+                v-for="classItem in classesWithRisk"
                 :key="classItem.id"
                 class="relative border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer"
                 @click="navigateToAttendance(classItem.id)"
@@ -843,6 +916,19 @@ if (import.meta.env?.PROD === false) {
                   >
                     {{ classItem.hasAttendance ? "Registrado" : "Programada" }}
                   </span>
+
+                  <!-- RiskBadge.vue -->
+                  <span
+                    v-if="classItem.risk !== 'low'"
+                    :class="[
+                      'text-xs font-semibold px-2 py-1 rounded-full',
+                      classItem.risk === 'high' ? 'bg-red-500 text-white' : 'bg-yellow-500 text-white'
+                    ]"
+                  >
+                    Riesgo {{ classItem.risk === 'high' ? 'Alto' : 'Medio' }}
+                    <span v-if="classItem.highRiskCount > 0"> ({{ classItem.highRiskCount }})</span>
+                  </span>
+
                 </div>
 
                 <!-- Title -->

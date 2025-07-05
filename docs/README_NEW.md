@@ -109,12 +109,14 @@ npm run dev
 ## 🔧 Scripts Disponibles
 
 ### Desarrollo
+
 ```bash
 npm run dev              # Servidor de desarrollo
 npm run preview          # Vista previa de producción
 ```
 
 ### Testing
+
 ```bash
 npm run test             # Tests en modo watch
 npm run test:run         # Ejecutar tests una vez
@@ -123,6 +125,7 @@ npm run test:ui          # Interfaz de tests
 ```
 
 ### Build y Análisis
+
 ```bash
 npm run build            # Build de producción
 npm run build:analyze    # Build + análisis de bundle
@@ -130,6 +133,7 @@ npm run analyze:bundle   # Solo análisis de bundle
 ```
 
 ### Calidad de Código
+
 ```bash
 npm run lint             # Lint y fix automático
 npm run lint:check       # Solo verificar lint
@@ -137,6 +141,7 @@ npm run type-check       # Verificación de tipos
 ```
 
 ### Deploy
+
 ```bash
 npm run deploy           # Deploy a Firebase
 ```
@@ -200,12 +205,14 @@ npm run test:ui
 ## 🐛 Debugging
 
 ### Modo Desarrollo
+
 ```bash
 # Habilitar logs detallados
 VITE_DEBUG_MODE=true npm run dev
 ```
 
 ### Análisis de Bundle
+
 ```bash
 # Generar reporte de tamaño
 npm run build:analyze
@@ -217,9 +224,9 @@ El proyecto incluye utilidades de debugging accesibles en el navegador:
 
 ```javascript
 // En desarrollo, accesible desde console del navegador
-__DEBUG__.debugManager    // Manager de debugging
-__DEBUG__.getErrors()     // Obtener errores almacenados
-__DEBUG__.clearErrors()   // Limpiar errores
+__DEBUG__.debugManager // Manager de debugging
+__DEBUG__.getErrors() // Obtener errores almacenados
+__DEBUG__.clearErrors() // Limpiar errores
 ```
 
 ## 📚 Documentación
@@ -247,6 +254,7 @@ __DEBUG__.clearErrors()   // Limpiar errores
 ## 📝 Changelog
 
 ### v1.1.0 (2025-06-06)
+
 - ✅ Consolidación de módulos de asistencia
 - ✅ Implementación de alias de rutas @/
 - ✅ Sistema de manejo de errores estandarizado
@@ -257,6 +265,7 @@ __DEBUG__.clearErrors()   // Limpiar errores
 - ✅ Configuración de ESLint
 
 ### v1.0.0 (2024)
+
 - 🎉 Lanzamiento inicial
 - 👥 Sistema de gestión de estudiantes y profesores
 - 📊 Sistema de asistencia básico

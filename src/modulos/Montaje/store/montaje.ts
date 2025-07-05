@@ -136,7 +136,6 @@ export const useMontajeStore = defineStore("montaje", () => {
         console.log('📚 Obra no encontrada en "obras", intentando en "repertorios"...')
         try {
           // doc y getDoc ya están importados arriba
-          
 
           const docRef = doc(db, "repertorios", obraId)
           const docSnap = await getDoc(docRef)
@@ -158,7 +157,6 @@ export const useMontajeStore = defineStore("montaje", () => {
         console.log('📖 Intentando en "montaje-repertorios"...')
         try {
           // doc y getDoc ya están importados arriba
-          
 
           const docRef = doc(db, "montaje-repertorios", obraId)
           const docSnap = await getDoc(docRef)

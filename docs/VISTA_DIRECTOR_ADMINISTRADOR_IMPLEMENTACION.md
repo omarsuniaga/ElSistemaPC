@@ -28,7 +28,7 @@ Se ha implementado una vista profesional y completa para la gestión de usuarios
 2. **KPIs Dinámicos**:
    - Clases programadas del día
    - Maestros esperados
-   - Estudiantes esperados  
+   - Estudiantes esperados
    - Tasa de asistencia global
 
 3. **Monitoreo de Clases**:
@@ -49,7 +49,7 @@ Se ha implementado una vista profesional y completa para la gestión de usuarios
      - Falta Leve
      - Carta de Expulsión
      - Entrega de Instrumento
-     - Citación al Representante  
+     - Citación al Representante
    - Vista previa del mensaje personalizado
    - Envío directo por WhatsApp
 
@@ -81,7 +81,7 @@ interface ClassMonitoringData {
   schedule: string
   presentStudents: number
   totalStudents: number
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+  status: "scheduled" | "in_progress" | "completed" | "cancelled"
   attendancePercentage: number
   instrument: string
   room: string
@@ -102,7 +102,7 @@ interface CriticalStudent {
     email: string
   }
   lastAttendance: Date | null
-  riskLevel: 'low' | 'medium' | 'high' | 'critical'
+  riskLevel: "low" | "medium" | "high" | "critical"
 }
 ```
 
@@ -165,7 +165,7 @@ Se agregó nueva ruta para el monitoreo:
 Para facilitar el desarrollo y pruebas, se incluyen datos mock realistas:
 
 - 12 clases programadas
-- 8 maestros esperados  
+- 8 maestros esperados
 - 48 estudiantes esperados
 - 87% tasa de asistencia promedio
 - 3 estudiantes críticos con diferentes niveles de riesgo

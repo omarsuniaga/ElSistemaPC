@@ -73,61 +73,61 @@ export const defaultConfig: SystemConfig = {
       enableValidation: true,
       normalizeNumbers: true,
       allowedCountryCodes: ["+58"], // Venezuela
-      requireAtLeastOneNumber: true
+      requireAtLeastOneNumber: true,
     },
     messages: {
       maxLength: 4096, // Límite de WhatsApp
       enableSpamDetection: true,
-      maxUrgenctKeywords: 2
+      maxUrgenctKeywords: 2,
     },
     timing: {
       allowedHours: {
         start: 6, // 6:00 AM
-        end: 23 // 11:00 PM
+        end: 23, // 11:00 PM
       },
       allowWeekends: true,
-      warnSuboptimalTiming: true
-    }
+      warnSuboptimalTiming: true,
+    },
   },
   rateLimit: {
     messages: {
       perMinute: 10,
       perHour: 100,
-      perDay: 500
+      perDay: 500,
     },
     cooldown: {
       betweenMessages: 2000, // 2 segundos
-      afterFailure: 5000 // 5 segundos
+      afterFailure: 5000, // 5 segundos
     },
     batch: {
       maxSize: 50,
-      optimalSize: 10
-    }
+      optimalSize: 10,
+    },
   },
   errorHandling: {
     retries: {
       maxAttempts: 3,
       baseDelay: 1000, // 1 segundo
       maxDelay: 30000, // 30 segundos
-      backoffMultiplier: 2
+      backoffMultiplier: 2,
     },
     monitoring: {
       maxErrorHistorySize: 1000,
       errorRetentionDays: 7,
-      healthCheckInterval: 300000 // 5 minutos
+      healthCheckInterval: 300000, // 5 minutos
     },
     alerts: {
       criticalErrorThreshold: 50, // 50% de errores
       warningErrorThreshold: 20, // 20% de errores
-      enableAutoSuspension: true
-    }
+      enableAutoSuspension: true,
+    },
   },
   notifications: {
     defaultBatchSize: 10,
     enableDryRun: false,
     enableProgressTracking: true,
-    enableDetailedLogging: true
-  }
+    enableDetailedLogging: true,
+  },
 }
 
 /**
@@ -138,21 +138,21 @@ export const developmentConfig: Partial<SystemConfig> = {
     messages: {
       perMinute: 5,
       perHour: 20,
-      perDay: 50
+      perDay: 50,
     },
     cooldown: {
       betweenMessages: 5000, // 5 segundos más lento
-      afterFailure: 10000
+      afterFailure: 10000,
     },
     batch: {
       maxSize: 10,
-      optimalSize: 3
-    }
+      optimalSize: 3,
+    },
   },
   notifications: {
     enableDryRun: true, // Por defecto en desarrollo
-    enableDetailedLogging: true
-  }
+    enableDetailedLogging: true,
+  },
 }
 
 /**
@@ -163,24 +163,24 @@ export const productionConfig: Partial<SystemConfig> = {
     messages: {
       perMinute: 15,
       perHour: 200,
-      perDay: 1000
+      perDay: 1000,
     },
     cooldown: {
       betweenMessages: 1500, // Más rápido en producción
-      afterFailure: 3000
-    }
+      afterFailure: 3000,
+    },
   },
   errorHandling: {
     alerts: {
       enableAutoSuspension: true,
       criticalErrorThreshold: 30, // Más estricto
-      warningErrorThreshold: 15
-    }
+      warningErrorThreshold: 15,
+    },
   },
   notifications: {
     enableDryRun: false,
-    enableDetailedLogging: false // Menos logs en producción
-  }
+    enableDetailedLogging: false, // Menos logs en producción
+  },
 }
 
 /**
@@ -189,35 +189,35 @@ export const productionConfig: Partial<SystemConfig> = {
 export const testingConfig: Partial<SystemConfig> = {
   validation: {
     phoneNumber: {
-      enableValidation: false // Permitir números fake en tests
+      enableValidation: false, // Permitir números fake en tests
     },
     timing: {
       allowedHours: {
         start: 0,
-        end: 23 // Permitir cualquier hora en tests
-      }
-    }
+        end: 23, // Permitir cualquier hora en tests
+      },
+    },
   },
   rateLimit: {
     messages: {
       perMinute: 1000, // Sin límites en tests
       perHour: 10000,
-      perDay: 100000
+      perDay: 100000,
     },
     cooldown: {
       betweenMessages: 0, // Sin delays en tests
-      afterFailure: 0
-    }
+      afterFailure: 0,
+    },
   },
   errorHandling: {
     retries: {
-      maxAttempts: 1 // Sin reintentos en tests
-    }
+      maxAttempts: 1, // Sin reintentos en tests
+    },
   },
   notifications: {
     enableDryRun: true, // Siempre dry run en tests
-    enableProgressTracking: false
-  }
+    enableProgressTracking: false,
+  },
 }
 
 /**
@@ -240,7 +240,7 @@ class ConfigManager {
       if (process.env.NODE_ENV === "production") return "production"
       if (process.env.NODE_ENV === "test") return "testing"
     }
-    
+
     if (typeof window !== "undefined") {
       if (window.location.hostname === "localhost") return "development"
       if (window.location.hostname.includes("test")) return "testing"
@@ -253,7 +253,7 @@ class ConfigManager {
    * Carga la configuración según el entorno
    */
   private loadConfig(): SystemConfig {
-    let config = { ...defaultConfig }
+    let config = {...defaultConfig}
 
     switch (this.environment) {
       case "development":
@@ -275,14 +275,14 @@ class ConfigManager {
    * Merge recursivo de configuraciones
    */
   private mergeConfigs(base: SystemConfig, override: Partial<SystemConfig>): SystemConfig {
-    const result = { ...base }
+    const result = {...base}
 
     for (const key in override) {
       const overrideValue = override[key as keyof SystemConfig]
       if (overrideValue && typeof overrideValue === "object" && !Array.isArray(overrideValue)) {
         result[key as keyof SystemConfig] = {
           ...result[key as keyof SystemConfig],
-          ...overrideValue
+          ...overrideValue,
         } as any
       } else if (overrideValue !== undefined) {
         result[key as keyof SystemConfig] = overrideValue as any
@@ -296,14 +296,14 @@ class ConfigManager {
    * Obtiene la configuración actual
    */
   getConfig(): SystemConfig {
-    return { ...this.currentConfig }
+    return {...this.currentConfig}
   }
 
   /**
    * Obtiene una sección específica de la configuración
    */
   getSection<T extends keyof SystemConfig>(section: T): SystemConfig[T] {
-    return { ...this.currentConfig[section] }
+    return {...this.currentConfig[section]}
   }
 
   /**
@@ -342,7 +342,7 @@ class ConfigManager {
   /**
    * Valida la configuración actual
    */
-  validateConfig(): { isValid: boolean; errors: string[] } {
+  validateConfig(): {isValid: boolean; errors: string[]} {
     const errors: string[] = []
     const config = this.currentConfig
 
@@ -367,7 +367,7 @@ class ConfigManager {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     }
   }
 }
@@ -394,5 +394,5 @@ export default {
   defaultConfig,
   developmentConfig,
   productionConfig,
-  testingConfig
+  testingConfig,
 }

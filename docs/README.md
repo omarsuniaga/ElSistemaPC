@@ -9,7 +9,9 @@ Esta carpeta contiene toda la documentación del sistema de gestión de la Acade
 ## 📁 **ESTRUCTURA DE DOCUMENTACIÓN**
 
 ### 🏗️ **[SISTEMAS](./sistemas/)**
+
 Documentación de sistemas principales y arquitectura
+
 - `SISTEMA_INVITACIONES_MAESTROS_FINAL.md` - Sistema completo de invitaciones entre maestros
 - `SISTEMA_PERMISOS_COMPLETADO.md` - Sistema de permisos y autorización
 - `SISTEMA_PERMISOS_SUPERUSUARIO_COMPLETADO.md` - Permisos de superusuario
@@ -19,7 +21,9 @@ Documentación de sistemas principales y arquitectura
 - `RBAC_ATTENDANCE_FIX.md` - Correcciones del sistema de asistencia RBAC
 
 ### ⚙️ **[IMPLEMENTACIONES](./implementaciones/)**
+
 Documentación de funcionalidades implementadas
+
 - `INVITACIONES_MAESTROS_COMPLETADO_FINAL.md` - Implementación completa de invitaciones
 - `IMPLEMENTACION_MODAL_JUSTIFICACION_COMPLETADA.md` - Modal de justificación de faltas
 - `PERMISOS_IMPLEMENTACION_COMPLETA.md` - Implementación completa de permisos
@@ -33,7 +37,9 @@ Documentación de funcionalidades implementadas
 - `FINAL_IMPLEMENTATION_SUMMARY.md` - Resumen final de implementaciones
 
 ### 📦 **[MÓDULOS](./modulos/)**
+
 Documentación específica de módulos del sistema
+
 - `MODULO_MONTAJE_COMPLETADO.md` - Módulo de montaje musical
 - `MODULO_MONTAJE_FINALIZADO.md` - Finalización del módulo de montaje
 - `MONTAJE_DARK_MODE_IMPLEMENTATION.md` - Modo oscuro para montaje
@@ -44,7 +50,9 @@ Documentación específica de módulos del sistema
 - `ATTENDANCE_SERVICE_IMPROVEMENTS.md` - Mejoras del servicio de asistencia
 
 ### 🚀 **[OPTIMIZACIONES](./optimizaciones/)**
+
 Documentación de optimizaciones y mejoras de rendimiento
+
 - `OPTIMIZACION_COMPLETADA.md` - Optimizaciones generales completadas
 - `OPTIMIZACION_FINALIZADA.md` - Finalización de optimizaciones
 - `OPTIMIZACION_VALIDACION.md` - Validación de optimizaciones
@@ -52,7 +60,9 @@ Documentación de optimizaciones y mejoras de rendimiento
 - `OPTIMIZATION_SUMMARY.md` - Resumen de optimizaciones
 
 ### 🔧 **[CORRECCIONES](./correcciones/)**
+
 Documentación de correcciones y fixes
+
 - `CORRECION_IMPORT_PATH_COMPLETADA.md` - Corrección de rutas de importación
 - `CORRECCION_ERRORES_COMPLETADA.md` - Corrección general de errores
 - `SUPERUSUARIO_DASHBOARD_FIX.md` - Corrección del dashboard de superusuario
@@ -61,7 +71,9 @@ Documentación de correcciones y fixes
 - `FIRESTORE_INDEXES.md` - Configuración de índices de Firestore
 
 ### 🧪 **[TESTING](./testing/)**
+
 Documentación de pruebas y validaciones
+
 - `RBAC_TESTING_GUIDE.md` - Guía de testing para RBAC
 - `test-teacher-invitations.js` - Script de pruebas para invitaciones de maestros
 
@@ -70,6 +82,7 @@ Documentación de pruebas y validaciones
 ## 📄 **DOCUMENTOS PRINCIPALES**
 
 ### En la raíz de docs/
+
 - `PROYECTO_COMPLETADO.md` - Estado general del proyecto
 - `RESUMEN_IMPLEMENTACION_ESPAÑOL.md` - Resumen completo en español
 - `RutaProcesamientoDatos.md` - Ruta de procesamiento de datos
@@ -80,17 +93,20 @@ Documentación de pruebas y validaciones
 ## 🎯 **DOCUMENTOS MÁS IMPORTANTES**
 
 ### 🏆 **Para Desarrolladores**
+
 1. **[Sistema de Invitaciones](./sistemas/SISTEMA_INVITACIONES_MAESTROS_FINAL.md)** - Sistema principal actual
 2. **[RBAC Completo](./sistemas/RBAC_SISTEMA_COMPLETO.md)** - Sistema de permisos
 3. **[Testing Guide](./testing/RBAC_TESTING_GUIDE.md)** - Guía de pruebas
 4. **[Corrección de Imports](./correcciones/CORRECION_IMPORT_PATH_COMPLETADA.md)** - Última corrección
 
 ### 📋 **Para Administradores**
+
 1. **[Proyecto Completado](./PROYECTO_COMPLETADO.md)** - Estado general
 2. **[Sistema de Permisos](./sistemas/SISTEMA_PERMISOS_COMPLETADO.md)** - Gestión de usuarios
 3. **[Optimizaciones](./optimizaciones/OPTIMIZATION_SUMMARY.md)** - Mejoras implementadas
 
 ### 👨‍🏫 **Para Usuarios Finales (Maestros)**
+
 1. **[Colaboración entre Maestros](./implementaciones/COLABORACION_MAESTROS_COMPLETADO.md)**
 2. **[Invitaciones Completadas](./implementaciones/INVITACIONES_MAESTROS_COMPLETADO_FINAL.md)**
 3. **[Módulo de Asistencia](./modulos/REVISION_MODULO_ATTENDANCE_COMPLETADA.md)**
@@ -118,8 +134,9 @@ Documentación de pruebas y validaciones
 ## 🤝 **CONTRIBUCIÓN**
 
 Al generar nueva documentación:
+
 1. **Colocar en la carpeta apropiada** según el tipo de documento
-2. **Usar nombres descriptivos** con sufijos como `_COMPLETADO.md` o `_FINAL.md`  
+2. **Usar nombres descriptivos** con sufijos como `_COMPLETADO.md` o `_FINAL.md`
 3. **Incluir fecha** de creación/actualización
 4. **Actualizar este índice** agregando la nueva documentación
 

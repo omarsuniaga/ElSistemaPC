@@ -1,20 +1,41 @@
 <template>
-  <div class="class-observations-manager">
+  <div class="class-observations-manager dark:bg-gray-800">
     <!-- Modal de observaciones específico para una clase -->
     <div
       v-if="isOpen"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
     >
-      <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden">
+      <div
+        class="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-6xl w-full mx-2 sm:mx-4 max-h-[95vh] sm:max-h-[90vh] overflow-hidden"
+      >
         <!-- Header del modal -->
-        <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6">
+        <div
+          class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 sm:p-4 md:p-6 dark:bg-gray-800"
+        >
           <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-2xl font-bold mb-2">📝 Observaciones de Clase</h2>
-              <p class="text-blue-100">{{ className }} - {{ formatDate(selectedDate) }}</p>
+            <div class="flex-1 min-w-0 pr-3">
+              <h2 class="text-lg sm:text-xl md:text-2xl font-bold mb-1 md:mb-2 truncate">
+                📝 Observaciones de Clase
+              </h2>
+              <p class="text-blue-100 dark:text-blue-200 text-sm sm:text-base truncate">
+                {{ displayClassName }} -
+                {{
+                  isValidDate(selectedDate)
+                    ? formatDate(selectedDate)
+                    : "Seleccione una fecha válida"
+                }}
+              </p>
             </div>
-            <button class="text-white hover:text-gray-300 transition-colors" @click="closeModal">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button
+              class="text-white hover:text-gray-300 transition-colors flex-shrink-0"
+              @click="closeModal"
+            >
+              <svg
+                class="w-5 h-5 sm:w-6 sm:h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   stroke-linecap="round"
                   stroke-linejoin="round"
@@ -27,57 +48,80 @@
         </div>
 
         <!-- Contenido del modal -->
-        <div class="p-6 overflow-y-auto max-h-[calc(90vh-150px)]">
+        <div
+          class="p-3 sm:p-4 md:p-6 overflow-y-auto max-h-[calc(95vh-120px)] sm:max-h-[calc(90vh-150px)] dark:bg-gray-900 dark:text-gray-200"
+        >
           <!-- Estadísticas rápidas de la clase -->
-          <div v-if="classStats" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div
+            v-if="classStats"
+            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6"
+          >
+            <div
+              class="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-3 md:p-4"
+            >
               <div class="flex items-center">
-                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <div
+                  class="w-10 h-10 bg-blue-100 dark:bg-blue-800 rounded-lg flex items-center justify-center"
+                >
                   <span class="text-2xl">📝</span>
                 </div>
                 <div class="ml-3">
-                  <div class="text-lg font-bold text-blue-900">{{ classStats.total }}</div>
-                  <div class="text-sm text-blue-600">Total observaciones</div>
+                  <div class="text-lg font-bold text-blue-900 dark:text-blue-200">
+                    {{ classStats.total }}
+                  </div>
+                  <div class="text-sm text-blue-600 dark:text-blue-300">Total observaciones</div>
                 </div>
               </div>
             </div>
 
-            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div
+              class="bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg p-3 md:p-4"
+            >
               <div class="flex items-center">
-                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <div
+                  class="w-10 h-10 bg-green-100 dark:bg-green-800 rounded-lg flex items-center justify-center"
+                >
                   <span class="text-2xl">👨‍🏫</span>
                 </div>
                 <div class="ml-3">
-                  <div class="text-lg font-bold text-green-900">{{ classStats.teacherCount }}</div>
-                  <div class="text-sm text-green-600">Maestros activos</div>
+                  <div class="text-lg font-bold text-green-900 dark:text-green-200">
+                    {{ classStats.teacherCount }}
+                  </div>
+                  <div class="text-sm text-green-600 dark:text-green-300">Maestros activos</div>
                 </div>
               </div>
             </div>
 
-            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <div
+              class="bg-purple-50 dark:bg-purple-900 border border-purple-200 dark:border-purple-700 rounded-lg p-3 md:p-4"
+            >
               <div class="flex items-center">
-                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <div
+                  class="w-10 h-10 bg-purple-100 dark:bg-purple-800 rounded-lg flex items-center justify-center"
+                >
                   <span class="text-2xl">📅</span>
                 </div>
                 <div class="ml-3">
-                  <div class="text-sm font-medium text-purple-900">
+                  <div class="text-sm font-medium text-purple-900 dark:text-purple-200">
                     {{ formatDate(classStats.lastObservation) }}
                   </div>
-                  <div class="text-sm text-purple-600">Última observación</div>
+                  <div class="text-sm text-purple-600 dark:text-purple-300">Última observación</div>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Filtros y acciones rápidas -->
-          <div class="bg-gray-50 rounded-lg p-4 mb-6">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+            <div class="flex flex-col gap-3">
               <div class="flex flex-col sm:flex-row gap-3">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Período</label>
+                <div class="flex-1 min-w-0">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Período</label
+                  >
                   <select
                     v-model="selectedPeriod"
-                    class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     @change="loadObservationsForPeriod"
                   >
                     <option value="today">Solo hoy</option>
@@ -87,12 +131,14 @@
                   </select>
                 </div>
 
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                <div class="flex-1 min-w-0">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >Tipo</label
+                  >
                   <select
                     v-model="selectedType"
-                    class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    @change="filterObservations"
+                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    @change="() => filterObservations()"
                   >
                     <option value="">Todos los tipos</option>
                     <option value="general">General</option>
@@ -104,9 +150,9 @@
                 </div>
               </div>
 
-              <div class="flex gap-2">
+              <div class="flex justify-center sm:justify-end">
                 <button
-                  class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
+                  class="w-full sm:w-auto px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 flex items-center justify-center gap-2 transition-colors"
                   @click="showCreateForm = true"
                 >
                   <span>➕</span>
@@ -118,22 +164,28 @@
 
           <!-- Lista de observaciones -->
           <div class="space-y-4">
-            <div v-if="loading" class="text-center py-8">
+            <div v-if="loading || initialLoading" class="text-center py-8">
               <div
-                class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+                class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"
               />
-              <p class="mt-2 text-gray-600">Cargando observaciones...</p>
+              <p class="mt-2 text-gray-600 dark:text-gray-400">
+                {{
+                  initialLoading
+                    ? "Cargando observaciones por primera vez..."
+                    : "Cargando observaciones..."
+                }}
+              </p>
             </div>
 
             <div
               v-else-if="filteredObservations.length === 0"
-              class="text-center py-8 text-gray-500"
+              class="text-center py-8 text-gray-500 dark:text-gray-400"
             >
               <div class="text-4xl mb-4">📝</div>
               <p class="text-lg font-medium">No hay observaciones para mostrar</p>
               <p class="text-sm">Crea la primera observación para esta clase</p>
               <button
-                class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                 @click="showCreateForm = true"
               >
                 ➕ Crear observación
@@ -144,11 +196,11 @@
               <div
                 v-for="observation in paginatedObservations"
                 :key="observation.id"
-                class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 md:p-4 hover:shadow-md transition-shadow"
               >
-                <div class="flex items-start justify-between">
+                <div class="flex flex-col md:flex-row md:items-start md:justify-between">
                   <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-3">
+                    <div class="flex flex-wrap items-center gap-2 mb-3">
                       <span
                         :class="getTypeClass(observation.type)"
                         class="px-2 py-1 text-xs font-medium rounded-full"
@@ -163,27 +215,34 @@
                       </span>
 
                       <!-- Horario de la clase con iconos -->
-                      <div class="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md">
-                        <ClockIcon class="w-4 h-4 text-blue-600" />
-                        <span class="text-xs font-medium text-blue-800">
+                      <div
+                        class="flex items-center gap-1 bg-blue-50 dark:bg-blue-900 px-2 py-1 rounded-md"
+                      >
+                        <ClockIcon class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <span class="text-xs font-medium text-blue-800 dark:text-blue-200">
                           {{ getClassSchedule(observation.classId) }}
                         </span>
                       </div>
 
-                      <span class="text-sm text-gray-500">
+                      <span class="text-sm text-gray-500 dark:text-gray-400">
                         <CalendarDaysIcon class="w-4 h-4 inline mr-1" />
                         {{ formatDateTime(observation.createdAt) }}
                       </span>
-                      <span v-if="observation.requiresFollowUp" class="text-orange-500 text-sm">
+                      <span
+                        v-if="observation.requiresFollowUp"
+                        class="text-orange-500 dark:text-orange-400 text-sm"
+                      >
                         ⚠️ Requiere seguimiento
                       </span>
                     </div>
 
-                    <div class="text-gray-900 leading-relaxed mb-3">
+                    <div class="text-gray-900 dark:text-gray-100 leading-relaxed mb-3">
                       {{ observation.text }}
                     </div>
 
-                    <div class="flex items-center gap-4 text-sm text-gray-500">
+                    <div
+                      class="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500 dark:text-gray-400"
+                    >
                       <span>👤 {{ observation.authorName || observation.author }}</span>
                       <span>📝 {{ observation.text.length }} caracteres</span>
                       <span
@@ -194,16 +253,19 @@
                     </div>
                   </div>
 
-                  <div v-if="canEditObservation(observation)" class="flex gap-2 ml-4">
+                  <div
+                    v-if="canEditObservation(observation)"
+                    class="flex gap-2 mt-3 md:mt-0 md:ml-4"
+                  >
                     <button
-                      class="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                      class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900 rounded-md transition-colors"
                       title="Editar observación"
                       @click="editObservation(observation)"
                     >
                       ✏️
                     </button>
                     <button
-                      class="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                      class="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900 rounded-md transition-colors"
                       title="Eliminar observación"
                       @click="deleteObservation(observation)"
                     >
@@ -214,8 +276,11 @@
               </div>
 
               <!-- Paginación -->
-              <div v-if="totalPages > 1" class="flex items-center justify-between mt-6">
-                <div class="text-sm text-gray-700">
+              <div
+                v-if="totalPages > 1"
+                class="flex flex-col sm:flex-row items-center justify-between mt-6 gap-3"
+              >
+                <div class="text-sm text-gray-700 dark:text-gray-300 text-center sm:text-left">
                   Mostrando {{ startIndex + 1 }} a
                   {{ Math.min(endIndex, filteredObservations.length) }} de
                   {{ filteredObservations.length }} observaciones
@@ -223,17 +288,19 @@
                 <div class="flex space-x-2">
                   <button
                     :disabled="currentPage === 1"
-                    class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50"
+                    class="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
                     @click="previousPage"
                   >
                     Anterior
                   </button>
-                  <span class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded">
+                  <span
+                    class="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded"
+                  >
                     {{ currentPage }} / {{ totalPages }}
                   </span>
                   <button
                     :disabled="currentPage === totalPages"
-                    class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50"
+                    class="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
                     @click="nextPage"
                   >
                     Siguiente
@@ -250,18 +317,29 @@
       v-if="showCreateForm || editingObservation"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]"
     >
-      <div class="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[95vh] overflow-hidden">
+      <div
+        class="bg-white dark:bg-gray-900 rounded-lg max-w-4xl w-full mx-2 sm:mx-4 max-h-[95vh] overflow-hidden"
+      >
         <!-- Header del modal -->
-        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div
+          class="px-3 sm:px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+        >
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900">
+            <h3
+              class="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate pr-3"
+            >
               {{ editingObservation ? "✏️ Editar Observación" : "➕ Nueva Observación" }}
             </h3>
             <button
-              class="text-gray-400 hover:text-gray-600 transition-colors"
+              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors flex-shrink-0"
               @click="cancelFormEditing"
             >
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                class="w-5 h-5 sm:w-6 sm:h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   stroke-linecap="round"
                   stroke-linejoin="round"
@@ -294,29 +372,37 @@
       v-if="observationToDelete"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]"
     >
-      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">🗑️ Eliminar Observación</h3>
+      <div class="bg-white dark:bg-gray-900 rounded-lg p-4 md:p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+          🗑️ Eliminar Observación
+        </h3>
 
-        <p class="text-gray-700 mb-6">
+        <p class="text-gray-700 dark:text-gray-300 mb-6">
           ¿Estás seguro de que deseas eliminar esta observación? Esta acción no se puede deshacer.
         </p>
 
-        <div class="bg-gray-50 border rounded-lg p-3 mb-6">
-          <div class="text-sm text-gray-600 mb-1">{{ formatDate(observationToDelete.date) }}</div>
-          <div class="text-sm">{{ observationToDelete.text.substring(0, 100) }}...</div>
+        <div
+          class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-6"
+        >
+          <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+            {{ formatDate(observationToDelete.date) }}
+          </div>
+          <div class="text-sm dark:text-gray-300">
+            {{ observationToDelete.text.substring(0, 100) }}...
+          </div>
         </div>
 
-        <div class="flex space-x-3">
+        <div class="flex flex-col sm:flex-row gap-3">
           <button
             :disabled="deleting"
-            class="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+            class="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
             @click="confirmDelete"
           >
             <span v-if="deleting">🗑️ Eliminando...</span>
             <span v-else>🗑️ Sí, eliminar</span>
           </button>
           <button
-            class="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+            class="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
             @click="observationToDelete = null"
           >
             Cancelar
@@ -329,10 +415,11 @@
 
 <script setup lang="ts">
 import {ref, computed, watch, onMounted} from "vue"
-import {ClockIcon, CalendarDaysIcon, XMarkIcon, PlusIcon} from "@heroicons/vue/24/outline"
+import {ClockIcon, CalendarDaysIcon} from "@heroicons/vue/24/outline"
 import {useTeacherObservations} from "../../composables/useObservationManagement"
 import {useAuthStore} from "../../stores/auth"
 import {useClassesStore} from "../../modulos/Classes/store/classes"
+import {useTeacherClassCache} from "../../composables/useTeacherClassCache"
 import SmartObservationForm from "./SmartObservationForm.vue"
 import type {ObservationData} from "../../stores/observations"
 
@@ -355,16 +442,16 @@ const emit = defineEmits<{
 // Composables
 const authStore = useAuthStore()
 const classesStore = useClassesStore()
+const classCache = useTeacherClassCache()
 const {
   loading,
-  error,
   fetchMyObservations,
   createMyObservation,
   updateMyObservation,
   deleteMyObservation,
 } = useTeacherObservations()
 
-// Estado reactivo
+// Estado reactivo mejorado con flags de loading específicos
 const observations = ref<ObservationData[]>([])
 const filteredObservations = ref<ObservationData[]>([])
 const selectedPeriod = ref("today")
@@ -373,6 +460,7 @@ const currentPage = ref(1)
 const itemsPerPage = ref(10)
 const saving = ref(false)
 const deleting = ref(false)
+const initialLoading = ref(true) // Para manejar el primer estado de carga
 
 // Modales
 const showCreateForm = ref(false)
@@ -397,6 +485,26 @@ const observationForm = ref<{
 })
 
 // Computed properties
+// Busca el nombre de la clase según el ID con manejo reactivo mejorado
+const displayClassName = computed(() => {
+  // Si tenemos el prop className, usarlo directamente (más rápido)
+  if (props.className) return props.className
+
+  try {
+    // Intentar obtener la clase del store
+    const classData = classesStore.getClassById(props.classId)
+    if (classData) {
+      // Solo usar propiedades que existen en el tipo ClassData
+      return classData.name || classData.description || `Clase ID: ${props.classId}`
+    }
+  } catch (error) {
+    console.warn("Error fetching class data:", error)
+  }
+
+  // Fallback más informativo mientras se cargan los datos
+  return classesStore.loading ? "Cargando clase..." : `Clase ID: ${props.classId}`
+})
+
 const classStats = computed(() => {
   const classObservations = observations.value.filter((obs) => obs.classId === props.classId)
 
@@ -416,19 +524,27 @@ const paginatedObservations = computed(() =>
   filteredObservations.value.slice(startIndex.value, endIndex.value)
 )
 
-// Métodos
+// Métodos mejorados con mejor manejo de estado
 const loadObservations = async () => {
   try {
+    // Solo mostrar loading inicial si no hay datos cargados
+    if (observations.value.length === 0) {
+      initialLoading.value = true
+    }
+
     const allObservations = await fetchMyObservations()
     observations.value = allObservations || []
     filterObservations()
   } catch (err) {
     console.error("Error loading observations:", err)
+    // Mantener datos existentes en caso de error para evitar pérdida de estado
+  } finally {
+    initialLoading.value = false
   }
 }
 
 const loadObservationsForPeriod = () => {
-  let dateFilter = new Date()
+  let dateFilter: Date | undefined = new Date()
   const today = new Date(props.selectedDate)
 
   switch (selectedPeriod.value) {
@@ -444,14 +560,14 @@ const loadObservationsForPeriod = () => {
       dateFilter.setMonth(dateFilter.getMonth() - 1)
       break
     case "all":
-      dateFilter = null
+      dateFilter = undefined
       break
   }
 
   filterObservations(dateFilter)
 }
 
-const filterObservations = (dateFilter: Date | null = null) => {
+const filterObservations = (dateFilter?: Date) => {
   let filtered = observations.value.filter((obs) => obs.classId === props.classId)
 
   // Filtro por tipo
@@ -516,62 +632,82 @@ const confirmDelete = async () => {
   }
 }
 
-const saveObservation = async () => {
-  try {
-    saving.value = true
-    observationForm.value.classId = props.classId
-
-    if (editingObservation.value) {
-      await updateMyObservation(editingObservation.value.id, observationForm.value)
-      emit("observation-updated")
-    } else {
-      await createMyObservation(observationForm.value)
-      emit("observation-created")
-    }
-
-    await loadObservations()
-    cancelEdit()
-  } catch (err) {
-    console.error("Error saving observation:", err)
-  } finally {
-    saving.value = false
-  }
-}
-
-const cancelEdit = () => {
-  showCreateForm.value = false
-  editingObservation.value = null
-  observationForm.value = {
-    classId: props.classId,
-    date: props.selectedDate,
-    type: "general",
-    priority: "media",
-    text: "",
-    requiresFollowUp: false,
-  }
-}
-
 const closeModal = () => {
   emit("close")
 }
 
-const formatDate = (dateString: string | null) => {
-  if (!dateString) return "N/A"
-  return new Date(dateString).toLocaleDateString("es-ES")
+const isValidDate = (dateString: string | null): boolean => {
+  if (!dateString || dateString.trim() === "") return false
+
+  // Verificar que no sea solo espacios o caracteres inválidos
+  if (dateString === "Invalid Date" || dateString === "NaN") return false
+
+  const date = new Date(dateString)
+
+  // Verificar que sea una fecha válida y no esté en el futuro lejano o pasado lejano
+  const isValid = !isNaN(date.getTime())
+  const year = date.getFullYear()
+  const currentYear = new Date().getFullYear()
+
+  // Permitir fechas entre 1900 y 100 años en el futuro
+  return isValid && year >= 1900 && year <= currentYear + 100
 }
 
-const formatDateTime = (dateString: string | null) => {
-  if (!dateString) return "N/A"
-  return new Date(dateString).toLocaleString("es-ES")
+const formatDate = (dateString: string | null) => {
+  if (!dateString || !isValidDate(dateString)) return "Fecha no disponible"
+
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  } catch (error) {
+    console.error("Error formatting date:", error)
+    return "Fecha no disponible"
+  }
+}
+
+const formatDateTime = (dateOrTimestamp: any) => {
+  if (!dateOrTimestamp) return "Fecha no disponible"
+
+  try {
+    let date: Date
+
+    // Si es un timestamp de Firestore
+    if (typeof dateOrTimestamp === "object" && "toDate" in dateOrTimestamp) {
+      date = dateOrTimestamp.toDate()
+    } else {
+      // Si es una fecha normal o string
+      date = new Date(dateOrTimestamp)
+    }
+
+    // Verificar que la fecha sea válida
+    if (isNaN(date.getTime())) {
+      return "Fecha no disponible"
+    }
+
+    return date.toLocaleString("es-ES", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  } catch (error) {
+    console.error("Error formatting datetime:", error)
+    return "Fecha no disponible"
+  }
 }
 
 const getTypeClass = (type: string) => {
   const classes = {
-    general: "bg-gray-100 text-gray-800",
-    comportamiento: "bg-red-100 text-red-800",
-    academico: "bg-blue-100 text-blue-800",
-    asistencia: "bg-yellow-100 text-yellow-800",
-    evaluacion: "bg-green-100 text-green-800",
+    general: "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200",
+    comportamiento: "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200",
+    academico: "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200",
+    asistencia: "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200",
+    evaluacion: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200",
   }
   return classes[type as keyof typeof classes] || classes.general
 }
@@ -591,14 +727,21 @@ const getClassSchedule = (classId: string) => {
   const classData = classesStore.getClassById(classId)
   if (!classData) return "Sin horario"
 
-  // Formatear el horario si existe
-  if (classData.horarios && classData.horarios.length > 0) {
-    const horario = classData.horarios[0]
-    return `${horario.startTime} - ${horario.endTime}`
-  }
-
-  if (classData.startTime && classData.endTime) {
-    return `${classData.startTime} - ${classData.endTime}`
+  // Verificar si hay horario y obtener el formato correcto
+  if (classData.schedule) {
+    // Si schedule es un objeto con slots (nuevo formato)
+    if (
+      "slots" in classData.schedule &&
+      classData.schedule.slots &&
+      classData.schedule.slots.length > 0
+    ) {
+      const slot = classData.schedule.slots[0]
+      return `${slot.startTime} - ${slot.endTime}`
+    }
+    // Si schedule es un objeto con día, hora inicio y fin (formato alternativo)
+    else if ("startTime" in classData.schedule && "endTime" in classData.schedule) {
+      return `${classData.schedule.startTime} - ${classData.schedule.endTime}`
+    }
   }
 
   return "Sin horario"
@@ -620,6 +763,10 @@ const handleSmartFormSave = async (observationData: any) => {
 
     // Recargar observaciones y cerrar formulario
     await loadObservations()
+
+    // Invalidar caché de clases si la observación afecta la clase
+    await classCache.invalidateOnEvent("class-updated", authStore.user?.uid)
+
     cancelFormEditing()
   } catch (error) {
     console.error("Error al guardar observación inteligente:", error)
@@ -650,10 +797,10 @@ const cancelFormEditing = () => {
 
 const getPriorityClass = (priority: string) => {
   const classes = {
-    baja: "bg-green-100 text-green-800",
-    media: "bg-yellow-100 text-yellow-800",
-    alta: "bg-orange-100 text-orange-800",
-    critica: "bg-red-100 text-red-800",
+    baja: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200",
+    media: "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200",
+    alta: "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200",
+    critica: "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200",
   }
   return classes[priority as keyof typeof classes] || classes.media
 }
@@ -680,11 +827,16 @@ const previousPage = () => {
   }
 }
 
-// Watchers
+// Watchers mejorados para evitar estados inconsistentes
 watch(
   () => props.classId,
-  () => {
-    if (props.classId) {
+  (newClassId) => {
+    if (newClassId) {
+      // Resetear el estado al cambiar de clase
+      initialLoading.value = true
+      observations.value = []
+      filteredObservations.value = []
+      currentPage.value = 1
       loadObservations()
     }
   }
@@ -692,8 +844,8 @@ watch(
 
 watch(
   () => props.selectedDate,
-  () => {
-    observationForm.value.date = props.selectedDate
+  (newDate) => {
+    observationForm.value.date = newDate
     if (selectedPeriod.value === "today") {
       filterObservations()
     }
@@ -706,15 +858,25 @@ watch(
     if (isOpen) {
       observationForm.value.classId = props.classId
       observationForm.value.date = props.selectedDate
-      loadObservations()
+
+      // Solo cargar si no tenemos datos o si cambió la clase
+      if (observations.value.length === 0 || initialLoading.value) {
+        loadObservations()
+      }
     }
   }
 )
 
-// Lifecycle
+// Lifecycle mejorado
 onMounted(() => {
+  // Solo cargar datos si el modal está abierto y tenemos un classId válido
   if (props.isOpen && props.classId) {
+    initialLoading.value = true
     loadObservations()
   }
+
+  // Asegurar que el formulario esté inicializado correctamente
+  observationForm.value.classId = props.classId
+  observationForm.value.date = props.selectedDate
 })
 </script>

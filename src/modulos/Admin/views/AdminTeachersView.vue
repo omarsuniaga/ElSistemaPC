@@ -490,7 +490,7 @@
 import {ref, computed, onMounted, watch} from "vue"
 import {useRouter} from "vue-router"
 import {useRBACStore} from "../../../stores/rbacStore"
-import {useAdminTeachersStore} from "../store/teachers"
+import {useTeachersStore} from "@/stores/teachersUnified"
 import {
   HomeIcon,
   PlusIcon,
@@ -518,7 +518,7 @@ import ConfirmationModal from "@/components/ConfirmationModal.vue"
 // Stores
 const router = useRouter()
 const rbacStore = useRBACStore()
-const teachersStore = useAdminTeachersStore()
+const teachersStore = useTeachersStore()
 
 // State
 const searchQuery = ref("")

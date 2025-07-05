@@ -5,6 +5,7 @@
 ### 1. Attendance Module - Justification Modal Refactor
 
 **What was accomplished:**
+
 - ✅ **Type Safety**: Completely removed all `any` types from the Attendance module
 - ✅ **RBAC Integration**: Added proper role-based access control checks throughout the module
 - ✅ **Justification Modal Workflow**: Fixed the complete workflow for justified absences
@@ -20,6 +21,7 @@
 5. **attendance.ts (types)**: Comprehensive type definitions for all attendance entities
 
 **Current Workflow:**
+
 1. User clicks "Justificado" button in attendance row
 2. Modal opens with justification form
 3. User can enter text justification and upload image
@@ -27,6 +29,7 @@
 5. Modal closes and attendance is updated with justification
 
 **RBAC Permissions for Attendance:**
+
 - Maestros: Can view and manage attendance for their classes
 - Directors/Admins: Full access to all attendance features
 - All roles: Can create justifications and observations
@@ -34,6 +37,7 @@
 ### 2. Montaje Module - "Nueva Obra" Modal Fix
 
 **What was accomplished:**
+
 - ✅ **Modal Visibility**: Fixed modal show/hide functionality with proper `v-if` directive
 - ✅ **Form Validation**: Removed invalid validation rule (totalCompases > 0)
 - ✅ **Form Reset**: Added proper form clearing when modal opens/closes
@@ -54,6 +58,7 @@
    - Form submission calls `handleWorkSubmit` correctly
 
 **Current Workflow:**
+
 1. User clicks "Nueva Obra" button
 2. Modal opens with empty form
 3. User fills form with obra details
@@ -61,6 +66,7 @@
 5. Modal closes and obra list refreshes
 
 **RBAC Analysis for Montaje:**
+
 - **Maestros**: Have permissions for `montaje_maestro_view`, `montaje_obras_read`, `montaje_compases_manage`, `montaje_observaciones_create`, `montaje_evaluaciones_create`
 - **Directors**: Have additional permissions including `montaje_obras_manage`, `montaje_repertorio_manage`
 - **Current State**: No explicit RBAC check prevents Maestros from creating obras at the code level
@@ -68,12 +74,13 @@
 ## 🔍 RBAC FINDINGS
 
 ### Maestro Permissions in Montaje:
+
 ```typescript
 'Maestro': {
   permissions: [
     'montaje_maestro_view',
     'montaje_obras_read',
-    'montaje_compases_manage', 
+    'montaje_compases_manage',
     'montaje_observaciones_create',
     'montaje_evaluaciones_create'
   ]
@@ -81,6 +88,7 @@
 ```
 
 ### Director Permissions in Montaje:
+
 ```typescript
 'Director': {
   permissions: [
@@ -95,6 +103,7 @@
 ```
 
 **Key Finding**: Maestros don't have `montaje_obras_manage` permission, but there's no explicit check in the code that prevents them from creating works. This suggests either:
+
 1. Business logic allows Maestros to create obras, or
 2. An RBAC check should be added to restrict this functionality
 
@@ -103,6 +112,7 @@
 ### Files Modified:
 
 **Attendance Module:**
+
 - `src/modulos/Attendance/store/attendance.ts` - Type safety and RBAC integration
 - `src/modulos/Attendance/service/attendance.ts` - File upload and justification logic
 - `src/modulos/Attendance/composables/useAttendanceActions.ts` - Type-safe actions
@@ -111,12 +121,14 @@
 - `src/modulos/Attendance/types/attendance.ts` - Comprehensive type definitions
 
 **Montaje Module:**
+
 - `src/modulos/Montaje/components/WorkFormModal.vue` - Modal visibility and form fixes
 - `src/modulos/Montaje/views/MontajeView.vue` - Modal integration
 - `src/modulos/Montaje/composables/useMontaje.ts` - Work creation logic
 - `src/modulos/Montaje/service/montajeService.ts` - Backend service
 
 ### Development Server Status:
+
 - ✅ Development server is running at `http://localhost:5173`
 - ⚠️ Build has dependency issues (unrelated to our changes)
 - ✅ TypeScript compilation works in development mode
@@ -125,6 +137,7 @@
 ## 🎯 TESTING RECOMMENDATIONS
 
 ### For Attendance Module:
+
 1. Test justification modal opening from attendance table
 2. Verify file upload functionality works
 3. Test form validation and submission
@@ -132,6 +145,7 @@
 5. Verify justification appears in attendance records
 
 ### For Montaje Module:
+
 1. Test "Nueva Obra" button opens modal correctly
 2. Verify form can be filled and submitted
 3. Confirm modal closes after successful creation
@@ -139,6 +153,7 @@
 5. **IMPORTANT**: Test with different user roles (Maestro vs Director) to confirm business logic
 
 ### RBAC Testing:
+
 1. Login as Maestro user and test obra creation
 2. Login as Director user and compare functionality
 3. Verify if business logic should restrict Maestro users
@@ -147,7 +162,9 @@
 ## 🔧 POTENTIAL NEXT STEPS
 
 ### If Maestros Should NOT Create Obras:
+
 Add RBAC check in `WorkFormModal.vue` or `MontajeView.vue`:
+
 ```vue
 <button
   v-if="hasPermission('montaje_obras_manage')"
@@ -159,6 +176,7 @@ Add RBAC check in `WorkFormModal.vue` or `MontajeView.vue`:
 ```
 
 ### If Maestros SHOULD Create Obras:
+
 Add `montaje_obras_create` permission to Maestro role in RBAC configuration.
 
 ## ✅ SUMMARY

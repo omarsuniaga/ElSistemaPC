@@ -11,6 +11,7 @@
 ## 📊 **ANÁLISIS DE LA IMPLEMENTACIÓN ACTUAL**
 
 ### ✅ **1. Conteo Automático Semanal**
+
 **Archivo**: `src/services/attendanceNotifications.ts`  
 **Función**: `countWeeklyAbsences()`
 
@@ -27,42 +28,46 @@ const countWeeklyAbsences = async (studentId: string, currentDate: string): Prom
 ### ✅ **2. Niveles de Escalación Implementados**
 
 #### **Nivel 1: 1 Inasistencia - Tono Suave** 🟢
+
 ```
-"Estimado representante, notamos la ausencia del estudiante {studentName} a su clase de hoy ({date}). 
-Si hay alguna eventualidad, por favor comuníquela a la administración. Su participación es importante 
+"Estimado representante, notamos la ausencia del estudiante {studentName} a su clase de hoy ({date}).
+Si hay alguna eventualidad, por favor comuníquela a la administración. Su participación es importante
 para su desarrollo musical. ¡Le esperamos en su próxima clase! 🎵"
 ```
 
 #### **Nivel 2: 2 Inasistencias - Tono Reclamativo** 🟡
+
 ```
-"Estimado representante, hemos registrado la SEGUNDA ausencia injustificada del estudiante {studentName} 
-esta semana. Le recordamos que la asistencia regular y la disciplina son fundamentales para el progreso 
-musical y el aprovechamiento de las clases. Es importante que se comunique con la administración para 
+"Estimado representante, hemos registrado la SEGUNDA ausencia injustificada del estudiante {studentName}
+esta semana. Le recordamos que la asistencia regular y la disciplina son fundamentales para el progreso
+musical y el aprovechamiento de las clases. Es importante que se comunique con la administración para
 informar sobre cualquier situación. La constancia es clave en el aprendizaje musical. 📚🎵"
 ```
 
 #### **Nivel 3: 3 Inasistencias - Solicitud de Explicación** 🟠
+
 ```
-"IMPORTANTE: El estudiante {studentName} ha registrado su TERCERA ausencia injustificada esta semana. 
-Esta situación es preocupante y afecta significativamente su progreso académico. SOLICITAMOS que el 
-representante se comunique con la dirección de la academia EN LAS PRÓXIMAS 24 HORAS para proporcionar 
-una explicación sobre las razones de estas inasistencias. Es necesario evaluar la continuidad en el 
+"IMPORTANTE: El estudiante {studentName} ha registrado su TERCERA ausencia injustificada esta semana.
+Esta situación es preocupante y afecta significativamente su progreso académico. SOLICITAMOS que el
+representante se comunique con la dirección de la academia EN LAS PRÓXIMAS 24 HORAS para proporcionar
+una explicación sobre las razones de estas inasistencias. Es necesario evaluar la continuidad en el
 programa. ⚠️📞"
 ```
 
 #### **Nivel 4: 4+ Inasistencias - Caso Extremo** 🔴
+
 ```
 "🚨 CASO EXTREMO - CITACIÓN OBLIGATORIA 🚨
 
-El estudiante {studentName} ha registrado CUATRO O MÁS ausencias injustificadas esta semana. 
+El estudiante {studentName} ha registrado CUATRO O MÁS ausencias injustificadas esta semana.
 Esta es una situación CRÍTICA que requiere atención INMEDIATA.
 
-SE REQUIERE la presencia OBLIGATORIA del representante en las oficinas de la sede para una 
+SE REQUIERE la presencia OBLIGATORIA del representante en las oficinas de la sede para una
 reunión con la dirección académica.
 
 Temas a tratar:
 • Explicación detallada de las ausencias
-• Evaluación de continuidad en el programa  
+• Evaluación de continuidad en el programa
 • Posibles medidas disciplinarias
 • Plan de recuperación académica
 
@@ -74,10 +79,10 @@ Por favor, contactar URGENTEMENTE para agendar cita. La situación académica de
 ```typescript
 // ✅ IMPLEMENTADO: Función que determina el nivel según cantidad de ausencias
 const getEscalationLevel = (weeklyAbsences: number): number => {
-  if (weeklyAbsences === 1) return 1  // Tono suave
-  if (weeklyAbsences === 2) return 2  // Tono reclamativo  
-  if (weeklyAbsences === 3) return 3  // Solicitud de explicación
-  if (weeklyAbsences >= 4) return 4   // Caso extremo - citación
+  if (weeklyAbsences === 1) return 1 // Tono suave
+  if (weeklyAbsences === 2) return 2 // Tono reclamativo
+  if (weeklyAbsences === 3) return 3 // Solicitud de explicación
+  if (weeklyAbsences >= 4) return 4 // Caso extremo - citación
   return 1
 }
 ```
@@ -89,14 +94,14 @@ const getEscalationLevel = (weeklyAbsences: number): number => {
 ```typescript
 // ✅ Para cada estudiante ausente:
 // 1. Cuenta ausencias semanales automáticamente
-// 2. Determina nivel de escalación  
+// 2. Determina nivel de escalación
 // 3. Selecciona mensaje apropiado
 // 4. Envía via WhatsApp con tono adaptativo
 // 5. Registra en historial con metadatos
 
 const weeklyAbsences = await countWeeklyAbsences(studentId)
 const escalationLevel = getEscalationLevel(weeklyAbsences)
-const template = MESSAGE_TEMPLATES.find(t => t.type === `inasistencia_nivel_${escalationLevel}`)
+const template = MESSAGE_TEMPLATES.find((t) => t.type === `inasistencia_nivel_${escalationLevel}`)
 ```
 
 ---
@@ -104,14 +109,17 @@ const template = MESSAGE_TEMPLATES.find(t => t.type === `inasistencia_nivel_${es
 ## 🔧 **HERRAMIENTAS DE TESTING IMPLEMENTADAS**
 
 ### ✅ **1. Demo de Notificaciones Generales**
+
 **URL**: `/admin/attendance-notifications-demo`  
 **Propósito**: Simular reportes de asistencia y ver notificaciones en tiempo real
 
 ### ✅ **2. Probador Específico de Escalación**
+
 **URL**: `/admin/escalation-tester`  
 **Propósito**: Probar específicamente los 4 niveles de escalación
 
 **Características del Probador**:
+
 - ✅ Selección de estudiantes de prueba
 - ✅ Simulación de ausencias por día de la semana
 - ✅ Vista previa de mensajes según nivel
@@ -130,18 +138,20 @@ const template = MESSAGE_TEMPLATES.find(t => t.type === `inasistencia_nivel_${es
 2. **🔍 Detección Automática** → `attendanceNotificationTrigger.ts` detecta nuevo documento
 
 3. **📊 Análisis por Estudiante**:
+
    ```
    Para cada estudiante ausente:
    ├── Consultar ausencias desde inicio de semana
-   ├── Contar solo ausencias injustificadas  
+   ├── Contar solo ausencias injustificadas
    ├── Determinar nivel de escalación (1-4)
    └── Seleccionar mensaje adaptativo
    ```
 
 4. **📱 Envío Inteligente**:
+
    ```
    1 ausencia → Mensaje suave y comprensivo
-   2 ausencias → Mensaje sobre disciplina y responsabilidad  
+   2 ausencias → Mensaje sobre disciplina y responsabilidad
    3 ausencias → Solicitud formal de explicación en 24h
    4+ ausencias → Citación obligatoria con medidas disciplinarias
    ```
@@ -153,23 +163,27 @@ const template = MESSAGE_TEMPLATES.find(t => t.type === `inasistencia_nivel_${es
 ## 🎯 **CASOS DE USO REALES**
 
 ### **Escenario 1: Estudiante con Primera Ausencia**
+
 - ✅ Sistema detecta: 1 ausencia esta semana
 - ✅ Nivel aplicado: 1 (Tono suave)
 - ✅ Mensaje: Comprensivo y alentador con emoticones musicales
 
-### **Escenario 2: Estudiante Reincidente**  
+### **Escenario 2: Estudiante Reincidente**
+
 - ✅ Sistema detecta: 2 ausencias esta semana
 - ✅ Nivel aplicado: 2 (Tono reclamativo)
 - ✅ Mensaje: Enfatiza disciplina y constancia musical
 
 ### **Escenario 3: Situación Preocupante**
-- ✅ Sistema detecta: 3 ausencias esta semana  
+
+- ✅ Sistema detecta: 3 ausencias esta semana
 - ✅ Nivel aplicado: 3 (Solicitud de explicación)
 - ✅ Mensaje: Formal con deadline de 24 horas
 
 ### **Escenario 4: Caso Crítico**
+
 - ✅ Sistema detecta: 4+ ausencias esta semana
-- ✅ Nivel aplicado: 4 (Caso extremo)  
+- ✅ Nivel aplicado: 4 (Caso extremo)
 - ✅ Mensaje: Citación obligatoria con alertas visuales
 
 ---
@@ -177,21 +191,25 @@ const template = MESSAGE_TEMPLATES.find(t => t.type === `inasistencia_nivel_${es
 ## 🔒 **CARACTERÍSTICAS TÉCNICAS VERIFICADAS**
 
 ### ✅ **Precisión del Conteo**
+
 - Cuenta desde lunes (inicio de semana académica)
 - Distingue ausencias justificadas vs injustificadas
 - Actualización en tiempo real con cada reporte
 
 ### ✅ **Personalización de Mensajes**
+
 - Reemplazo automático de `{studentName}` con nombre completo
 - Fecha actual en formato español
 - Emojis y formato apropiado por nivel
 
 ### ✅ **Envío Multi-Canal**
+
 - Envía a tlf_madre Y tlf_padre si están disponibles
 - Manejo de errores por número inválido
 - Retry automático configurado
 
 ### ✅ **Trazabilidad Completa**
+
 - Registro de cada mensaje enviado
 - Metadatos: nivel de escalación, conteo semanal, timestamp
 - Historial consultable por estudiante y período
@@ -205,7 +223,7 @@ const template = MESSAGE_TEMPLATES.find(t => t.type === `inasistencia_nivel_${es
 El sistema de escalación inteligente por inasistencias está **100% funcional** con **exactamente** las características solicitadas:
 
 1. **✅ Conteo automático semanal** → Funcional y preciso
-2. **✅ 4 niveles de escalación** → Todos implementados con tonos apropiados  
+2. **✅ 4 niveles de escalación** → Todos implementados con tonos apropiados
 3. **✅ Mensajes adaptativos** → Personalización automática según ausencias
 4. **✅ Integración WhatsApp** → Envío real con API configurada
 5. **✅ Herramientas de testing** → Demos interactivos disponibles
@@ -217,7 +235,7 @@ El sistema puede utilizarse inmediatamente en el entorno real de la Academia de 
 ### 📞 **Para Usar el Sistema**:
 
 1. **Acceso Administrativo**: `/admin/asistencia-diaria`
-2. **Demo Interactivo**: `/admin/attendance-notifications-demo`  
+2. **Demo Interactivo**: `/admin/attendance-notifications-demo`
 3. **Probador de Escalación**: `/admin/escalation-tester`
 
 ---

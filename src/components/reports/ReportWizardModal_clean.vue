@@ -1,7 +1,9 @@
 <!-- Asistente Inteligente para Creación de Reportes -->
 <template>
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden"
+    >
       <!-- Header del modal -->
       <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4">
         <div class="flex items-center justify-between">
@@ -35,7 +37,9 @@
       </div>
 
       <!-- Progreso del asistente -->
-      <div class="px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+      <div
+        class="px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600"
+      >
         <div class="flex items-center justify-between text-sm">
           <div class="flex space-x-4">
             <div
@@ -61,7 +65,9 @@
               <span class="font-medium">{{ step.title }}</span>
             </div>
           </div>
-          <div class="text-gray-500 dark:text-gray-400">Paso {{ currentStep + 1 }} de {{ steps.length }}</div>
+          <div class="text-gray-500 dark:text-gray-400">
+            Paso {{ currentStep + 1 }} de {{ steps.length }}
+          </div>
         </div>
       </div>
 
@@ -190,7 +196,11 @@
                   size="4"
                 >
                   <option value="">Todos los estudiantes</option>
-                  <option v-for="student in availableStudents" :key="student.id" :value="student.id">
+                  <option
+                    v-for="student in availableStudents"
+                    :key="student.id"
+                    :value="student.id"
+                  >
                     {{ student.name }}
                   </option>
                 </select>
@@ -225,7 +235,9 @@
                 >
                   <div class="text-center">
                     <div class="text-2xl mb-2">{{ outputFormat.icon }}</div>
-                    <div class="font-medium text-gray-900 dark:text-white">{{ outputFormat.name }}</div>
+                    <div class="font-medium text-gray-900 dark:text-white">
+                      {{ outputFormat.name }}
+                    </div>
                     <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
                       {{ outputFormat.description }}
                     </div>
@@ -275,13 +287,17 @@
         <!-- Paso 4: Revisión y Generación -->
         <div v-if="currentStep === 3" class="space-y-6">
           <div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">📋 Revisión Final</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              📋 Revisión Final
+            </h3>
 
             <!-- Resumen de configuración -->
             <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-4">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h4 class="font-medium text-gray-900 dark:text-white mb-2">Configuración Básica</h4>
+                  <h4 class="font-medium text-gray-900 dark:text-white mb-2">
+                    Configuración Básica
+                  </h4>
                   <div class="space-y-1 text-sm text-gray-600 dark:text-gray-400">
                     <div><strong>Tipo:</strong> {{ getSelectedReportType()?.name }}</div>
                     <div><strong>Formato:</strong> {{ getSelectedFormat()?.name }}</div>
@@ -294,7 +310,9 @@
                 <div>
                   <h4 class="font-medium text-gray-900 dark:text-white mb-2">Rango de Datos</h4>
                   <div class="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                    <div><strong>Desde:</strong> {{ formatDate(reportConfig.dateRange.start) }}</div>
+                    <div>
+                      <strong>Desde:</strong> {{ formatDate(reportConfig.dateRange.start) }}
+                    </div>
                     <div><strong>Hasta:</strong> {{ formatDate(reportConfig.dateRange.end) }}</div>
                     <div><strong>Días:</strong> {{ calculateDayRange() }} días</div>
                   </div>
@@ -307,8 +325,8 @@
                 <div class="flex flex-wrap gap-2">
                   <span
                     v-for="(enabled, key) in reportConfig.content"
-                    :key="key"
                     v-show="enabled"
+                    :key="key"
                     class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded"
                   >
                     {{ getContentOptionName(key) }}
@@ -321,11 +339,15 @@
                 <h4 class="font-medium text-gray-900 dark:text-white mb-2">Estimaciones</h4>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div class="text-center p-3 bg-white dark:bg-gray-800 rounded">
-                    <div class="font-bold text-lg text-blue-600 dark:text-blue-400">{{ estimatedPages }}</div>
+                    <div class="font-bold text-lg text-blue-600 dark:text-blue-400">
+                      {{ estimatedPages }}
+                    </div>
                     <div class="text-gray-600 dark:text-gray-400">Páginas aprox.</div>
                   </div>
                   <div class="text-center p-3 bg-white dark:bg-gray-800 rounded">
-                    <div class="font-bold text-lg text-green-600 dark:text-green-400">{{ estimatedTime }}</div>
+                    <div class="font-bold text-lg text-green-600 dark:text-green-400">
+                      {{ estimatedTime }}
+                    </div>
                     <div class="text-gray-600 dark:text-gray-400">Tiempo de generación</div>
                   </div>
                   <div class="text-center p-3 bg-white dark:bg-gray-800 rounded">
@@ -342,7 +364,9 @@
       </div>
 
       <!-- Footer con navegación -->
-      <div class="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-t border-gray-200 dark:border-gray-600">
+      <div
+        class="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-t border-gray-200 dark:border-gray-600"
+      >
         <div class="flex items-center justify-between">
           <button
             v-if="currentStep > 0"
@@ -351,7 +375,7 @@
           >
             ← Anterior
           </button>
-          <div v-else></div>
+          <div v-else />
 
           <div class="flex space-x-3">
             <button
@@ -384,9 +408,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue"
-import { format, subDays, subWeeks, subMonths, startOfWeek, endOfWeek } from "date-fns"
-import { es } from "date-fns/locale"
+import {ref, computed, onMounted} from "vue"
+import {format, subDays, subWeeks, subMonths, startOfWeek, endOfWeek} from "date-fns"
+import {es} from "date-fns/locale"
 
 // Emits
 const emit = defineEmits<{
@@ -423,10 +447,10 @@ const reportConfig = ref({
 
 // Datos de configuración
 const steps = [
-  { id: "type", title: "Tipo" },
-  { id: "data", title: "Datos" },
-  { id: "customize", title: "Personalizar" },
-  { id: "review", title: "Revisar" },
+  {id: "type", title: "Tipo"},
+  {id: "data", title: "Datos"},
+  {id: "customize", title: "Personalizar"},
+  {id: "review", title: "Revisar"},
 ]
 
 const reportTypes = [
@@ -586,17 +610,17 @@ const datePresets = [
 
 // Datos simulados para filtros
 const availableClasses = ref([
-  { id: "1", name: "Violín Básico", teacher: "Prof. María González" },
-  { id: "2", name: "Piano Intermedio", teacher: "Prof. Carlos Rodríguez" },
-  { id: "3", name: "Guitarra Avanzada", teacher: "Prof. Ana Martínez" },
-  { id: "4", name: "Coro Juvenil", teacher: "Prof. Luis Pérez" },
+  {id: "1", name: "Violín Básico", teacher: "Prof. María González"},
+  {id: "2", name: "Piano Intermedio", teacher: "Prof. Carlos Rodríguez"},
+  {id: "3", name: "Guitarra Avanzada", teacher: "Prof. Ana Martínez"},
+  {id: "4", name: "Coro Juvenil", teacher: "Prof. Luis Pérez"},
 ])
 
 const availableStudents = ref([
-  { id: "1", name: "María García" },
-  { id: "2", name: "Juan Pérez" },
-  { id: "3", name: "Ana López" },
-  { id: "4", name: "Carlos Martín" },
+  {id: "1", name: "María García"},
+  {id: "2", name: "Juan Pérez"},
+  {id: "3", name: "Ana López"},
+  {id: "4", name: "Carlos Martín"},
 ])
 
 // Computed properties
@@ -680,7 +704,7 @@ const getContentOptionName = (key: string): string => {
 
 const formatDate = (dateString: string): string => {
   if (!dateString) return "No definida"
-  return format(new Date(dateString), "dd/MM/yyyy", { locale: es })
+  return format(new Date(dateString), "dd/MM/yyyy", {locale: es})
 }
 
 const calculateDayRange = (): number => {
@@ -692,14 +716,14 @@ const calculateDayRange = (): number => {
 
 const generateReport = (): void => {
   if (canGenerate()) {
-    emit("generate", { ...reportConfig.value })
+    emit("generate", {...reportConfig.value})
   }
 }
 
 // Lifecycle
 onMounted(() => {
   // Configurar título por defecto basado en fecha
-  const today = format(new Date(), "MMMM yyyy", { locale: es })
+  const today = format(new Date(), "MMMM yyyy", {locale: es})
   reportConfig.value.title = `Reporte de Asistencia - ${today}`
 })
 </script>

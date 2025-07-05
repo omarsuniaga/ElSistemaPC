@@ -59,15 +59,15 @@ class ErrorManager {
       "RATE_LIMITED",
       "TEMPORARY_UNAVAILABLE",
       "CONNECTION_RESET",
-      "SERVICE_UNAVAILABLE"
-    ]
+      "SERVICE_UNAVAILABLE",
+    ],
   }
 
   /**
    * Determina si un error es reintentable
    */
   private isRetryableError(error: string): boolean {
-    return this.retryConfig.retryableErrors.some(retryableError => 
+    return this.retryConfig.retryableErrors.some((retryableError) =>
       error.toUpperCase().includes(retryableError)
     )
   }
@@ -76,7 +76,8 @@ class ErrorManager {
    * Calcula el delay para el siguiente intento usando backoff exponencial
    */
   private calculateDelay(attempt: number): number {
-    const delay = this.retryConfig.baseDelay * Math.pow(this.retryConfig.backoffMultiplier, attempt - 1)
+    const delay =
+      this.retryConfig.baseDelay * Math.pow(this.retryConfig.backoffMultiplier, attempt - 1)
     return Math.min(delay, this.retryConfig.maxDelay)
   }
 
@@ -88,7 +89,7 @@ class ErrorManager {
       timestamp: Date.now(),
       error,
       context,
-      resolved: false
+      resolved: false,
     })
 
     // Mantener solo los últimos 1000 errores
@@ -104,10 +105,10 @@ class ErrorManager {
    */
   markErrorResolved(errorContext: string): void {
     const recentErrors = this.errorHistory
-      .filter(e => e.context === errorContext && !e.resolved)
+      .filter((e) => e.context === errorContext && !e.resolved)
       .slice(-5) // Solo los 5 más recientes
 
-    recentErrors.forEach(error => {
+    recentErrors.forEach((error) => {
       error.resolved = true
     })
 
@@ -121,8 +122,8 @@ class ErrorManager {
     operation: () => Promise<T>,
     context: string,
     customConfig?: Partial<RetryConfig>
-  ): Promise<RetryResult & { result?: T }> {
-    const config = { ...this.retryConfig, ...customConfig }
+  ): Promise<RetryResult & {result?: T}> {
+    const config = {...this.retryConfig, ...customConfig}
     const attempts: AttemptResult[] = []
     let lastError: string | undefined
 
@@ -141,7 +142,7 @@ class ErrorManager {
           success: true,
           attempt,
           timestamp: startTime,
-          duration
+          duration,
         })
 
         // Marcar errores previos como resueltos
@@ -156,9 +157,8 @@ class ErrorManager {
           totalAttempts: attempt,
           totalDuration: Date.now() - attempts[0].timestamp,
           attempts,
-          result
+          result,
         }
-
       } catch (error) {
         const duration = Date.now() - startTime
         const errorMessage = error instanceof Error ? error.message : String(error)
@@ -169,22 +169,24 @@ class ErrorManager {
           attempt,
           timestamp: startTime,
           error: errorMessage,
-          duration
+          duration,
         })
 
         this.logError(errorMessage, context)
 
         // Si es el último intento o el error no es reintentable, terminar
         if (attempt === config.maxAttempts || !this.isRetryableError(errorMessage)) {
-          console.error(`❌ Error Manager - Operación falló definitivamente: ${context} - ${errorMessage}`)
+          console.error(
+            `❌ Error Manager - Operación falló definitivamente: ${context} - ${errorMessage}`
+          )
           break
         }
 
         // Calcular delay y esperar antes del siguiente intento
         const delay = this.calculateDelay(attempt)
         console.log(`⏳ Error Manager - Esperando ${delay}ms antes del siguiente intento...`)
-        
-        await new Promise(resolve => setTimeout(resolve, delay))
+
+        await new Promise((resolve) => setTimeout(resolve, delay))
       }
     }
 
@@ -193,7 +195,7 @@ class ErrorManager {
       totalAttempts: attempts.length,
       totalDuration: Date.now() - attempts[0].timestamp,
       attempts,
-      finalError: lastError
+      finalError: lastError,
     }
   }
 
@@ -204,30 +206,30 @@ class ErrorManager {
     const now = Date.now()
     const last24Hours = now - 24 * 60 * 60 * 1000
 
-    const recentErrors = this.errorHistory.filter(e => e.timestamp > last24Hours)
+    const recentErrors = this.errorHistory.filter((e) => e.timestamp > last24Hours)
     const errorsByType: Record<string, number> = {}
 
-    recentErrors.forEach(error => {
+    recentErrors.forEach((error) => {
       const errorType = this.categorizeError(error.error)
       errorsByType[errorType] = (errorsByType[errorType] || 0) + 1
     })
 
-    const retryAttempts = recentErrors.filter(e => e.context.includes("Intento"))
-    const resolvedErrors = recentErrors.filter(e => e.resolved)
+    const retryAttempts = recentErrors.filter((e) => e.context.includes("Intento"))
+    const resolvedErrors = recentErrors.filter((e) => e.resolved)
 
     return {
       totalErrors: recentErrors.length,
       errorsByType,
-      recentErrors: recentErrors.slice(-10).map(e => ({
+      recentErrors: recentErrors.slice(-10).map((e) => ({
         timestamp: e.timestamp,
         error: e.error,
-        context: e.context
+        context: e.context,
       })),
       retryStats: {
         totalRetries: retryAttempts.length,
         successAfterRetry: resolvedErrors.length,
-        permanentFailures: recentErrors.filter(e => !e.resolved).length
-      }
+        permanentFailures: recentErrors.filter((e) => !e.resolved).length,
+      },
     }
   }
 
@@ -266,7 +268,7 @@ class ErrorManager {
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
     const initialLength = this.errorHistory.length
 
-    this.errorHistory = this.errorHistory.filter(error => error.timestamp > oneWeekAgo)
+    this.errorHistory = this.errorHistory.filter((error) => error.timestamp > oneWeekAgo)
 
     const removedCount = initialLength - this.errorHistory.length
     if (removedCount > 0) {
@@ -296,9 +298,10 @@ class ErrorManager {
     const errorRate = totalOperations > 0 ? (stats.totalErrors / totalOperations) * 100 : 0
 
     // Tasa de éxito de reintentos
-    const retrySuccessRate = stats.retryStats.totalRetries > 0 
-      ? (stats.retryStats.successAfterRetry / stats.retryStats.totalRetries) * 100 
-      : 0
+    const retrySuccessRate =
+      stats.retryStats.totalRetries > 0
+        ? (stats.retryStats.successAfterRetry / stats.retryStats.totalRetries) * 100
+        : 0
 
     // Errores críticos
     const criticalErrors = Object.entries(stats.errorsByType)
@@ -333,9 +336,9 @@ class ErrorManager {
         errorRate,
         recentFailures: stats.retryStats.permanentFailures,
         retrySuccessRate,
-        criticalErrors
+        criticalErrors,
       },
-      recommendations
+      recommendations,
     }
   }
 }
@@ -353,21 +356,18 @@ export const executeWithErrorHandling = async <T>(
     maxAttempts?: number
     customRetryLogic?: (error: Error, attempt: number) => boolean
   }
-): Promise<{ success: boolean; result?: T; error?: string; attempts: number }> => {
+): Promise<{success: boolean; result?: T; error?: string; attempts: number}> => {
   try {
-    const result = await globalErrorManager.executeWithRetry(
-      operation,
-      context,
-      { maxAttempts: options?.maxAttempts }
-    )
+    const result = await globalErrorManager.executeWithRetry(operation, context, {
+      maxAttempts: options?.maxAttempts,
+    })
 
     return {
       success: result.success,
       result: result.result,
       error: result.finalError,
-      attempts: result.totalAttempts
+      attempts: result.totalAttempts,
     }
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     globalErrorManager.logError(errorMessage, context)
@@ -375,7 +375,7 @@ export const executeWithErrorHandling = async <T>(
     return {
       success: false,
       error: errorMessage,
-      attempts: 1
+      attempts: 1,
     }
   }
 }
@@ -414,5 +414,5 @@ export default {
   getSystemHealthReport,
   cleanErrorHistory,
   logError,
-  ErrorManager
+  ErrorManager,
 }

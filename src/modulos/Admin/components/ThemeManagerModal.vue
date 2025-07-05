@@ -1,13 +1,19 @@
-inde<template>
+inde
+<template>
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+    >
       <div class="p-6 border-b border-gray-200 dark:border-gray-700">
         <div class="flex items-center justify-between">
           <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
             <SwatchIcon class="w-6 h-6 mr-2 text-purple-500" />
             Gestión de Temas y Colores
           </h2>
-          <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          <button
+            @click="$emit('close')"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
             <XMarkIcon class="w-6 h-6" />
           </button>
         </div>
@@ -15,7 +21,7 @@ inde<template>
           Configurar temas del sistema y paleta de colores global
         </p>
       </div>
-      
+
       <div class="p-6 space-y-8">
         <!-- Theme Mode Selection -->
         <div>
@@ -28,7 +34,7 @@ inde<template>
               v-for="mode in themeModes"
               :key="mode.value"
               class="relative flex cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-4 shadow-sm focus:outline-none"
-              :class="{ 'ring-2 ring-purple-500 border-purple-500': currentTheme === mode.value }"
+              :class="{'ring-2 ring-purple-500 border-purple-500': currentTheme === mode.value}"
             >
               <input
                 type="radio"
@@ -58,7 +64,7 @@ inde<template>
             <SwatchIcon class="w-5 h-5 mr-2 text-blue-500" />
             Paleta de Colores Personalizada
           </h3>
-          
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Primary Colors -->
             <div>
@@ -70,9 +76,9 @@ inde<template>
                   class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-lg"
                 >
                   <div class="flex items-center space-x-3">
-                    <div 
+                    <div
                       class="w-8 h-8 rounded-full border-2 border-gray-300 dark:border-gray-600"
-                      :style="{ backgroundColor: color.value }"
+                      :style="{backgroundColor: color.value}"
                     ></div>
                     <div>
                       <div class="text-sm font-medium text-gray-900 dark:text-white">
@@ -103,9 +109,9 @@ inde<template>
                   class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-lg"
                 >
                   <div class="flex items-center space-x-3">
-                    <div 
+                    <div
                       class="w-8 h-8 rounded-full border-2 border-gray-300 dark:border-gray-600"
-                      :style="{ backgroundColor: color.value }"
+                      :style="{backgroundColor: color.value}"
                     ></div>
                     <div>
                       <div class="text-sm font-medium text-gray-900 dark:text-white">
@@ -134,21 +140,27 @@ inde<template>
             <EyeIcon class="w-5 h-5 mr-2 text-green-500" />
             Vista Previa
           </h3>
-          
+
           <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-4">
             <!-- Button Preview -->
             <div class="flex items-center space-x-3">
-              <button class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">
+              <button
+                class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+              >
                 Primario
               </button>
-              <button class="px-4 py-2 bg-secondary-600 hover:bg-secondary-700 text-white rounded-lg transition-colors">
+              <button
+                class="px-4 py-2 bg-secondary-600 hover:bg-secondary-700 text-white rounded-lg transition-colors"
+              >
                 Secundario
               </button>
-              <button class="px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg transition-colors">
+              <button
+                class="px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg transition-colors"
+              >
                 Acento
               </button>
             </div>
-            
+
             <!-- Alert Preview -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div class="p-3 bg-success-100 border border-success-200 text-success-800 rounded-lg">
@@ -173,7 +185,7 @@ inde<template>
             <PaintBrushIcon class="w-5 h-5 mr-2 text-orange-500" />
             Temas Predefinidos
           </h3>
-          
+
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <button
               v-for="preset in presetThemes"
@@ -187,7 +199,7 @@ inde<template>
                     v-for="color in preset.colors"
                     :key="color"
                     class="w-4 h-4 rounded-full"
-                    :style="{ backgroundColor: color }"
+                    :style="{backgroundColor: color}"
                   ></div>
                 </div>
                 <span class="font-medium text-gray-900 dark:text-white">{{ preset.name }}</span>
@@ -198,7 +210,9 @@ inde<template>
         </div>
 
         <!-- Action Buttons -->
-        <div class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+        <div
+          class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700"
+        >
           <div class="flex items-center space-x-3">
             <button
               @click="resetToDefault"
@@ -213,7 +227,7 @@ inde<template>
               Exportar
             </button>
           </div>
-          
+
           <div class="flex items-center space-x-3">
             <button
               @click="$emit('close')"
@@ -236,8 +250,8 @@ inde<template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { 
-  XMarkIcon, 
+import {
+  XMarkIcon,
   SwatchIcon,
   SunIcon,
   MoonIcon,
@@ -334,15 +348,15 @@ const updateColor = (colorKey: string, newValue: string) => {
   if (primaryColor) {
     primaryColor.value = newValue
   }
-  
+
   const systemColor = systemColors.value.find(c => c.key === colorKey)
   if (systemColor) {
     systemColor.value = newValue
   }
-  
+
   // Apply the color to CSS custom properties
   document.documentElement.style.setProperty(`--color-${colorKey}`, newValue)
-  
+
   // Generate variations (lighter/darker shades)
   const variations = generateColorVariations(newValue)
   variations.forEach((variation, index) => {
@@ -358,16 +372,16 @@ const generateColorVariations = (baseColor: string): string[] => {
   const r = parseInt(baseColor.slice(1, 3), 16)
   const g = parseInt(baseColor.slice(3, 5), 16)
   const b = parseInt(baseColor.slice(5, 7), 16)
-  
+
   for (let i = 1; i <= 9; i++) {
     const factor = i <= 5 ? 1 + (i * 0.1) : 1 - ((i - 5) * 0.15)
     const newR = Math.min(255, Math.max(0, Math.round(r * factor)))
     const newG = Math.min(255, Math.max(0, Math.round(g * factor)))
     const newB = Math.min(255, Math.max(0, Math.round(b * factor)))
-    
+
     variations.push(`#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`)
   }
-  
+
   return variations
 }
 
@@ -386,14 +400,14 @@ const resetToDefault = () => {
     { key: 'secondary', label: 'Secundario', value: '#6b7280' },
     { key: 'accent', label: 'Acento', value: '#8b5cf6' }
   ]
-  
+
   systemColors.value = [
     { key: 'success', label: 'Éxito', value: '#10b981' },
     { key: 'warning', label: 'Advertencia', value: '#f59e0b' },
     { key: 'error', label: 'Error', value: '#ef4444' },
     { key: 'info', label: 'Información', value: '#3b82f6' }
   ]
-  
+
   // Apply default colors
   [...primaryColors.value, ...systemColors.value].forEach(color => {
     updateColor(color.key, color.value)
@@ -408,7 +422,7 @@ const exportTheme = () => {
       ...Object.fromEntries(systemColors.value.map(c => [c.key, c.value]))
     }
   }
-  
+
   const blob = new Blob([JSON.stringify(themeConfig, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -426,10 +440,10 @@ const saveTheme = () => {
       ...Object.fromEntries(systemColors.value.map(c => [c.key, c.value]))
     }
   }
-  
+
   // Save to localStorage
   localStorage.setItem('music-academy-custom-theme', JSON.stringify(themeConfig))
-  
+
   emit('updated', themeConfig)
   emit('close')
 }

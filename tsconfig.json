@@ -25,9 +25,9 @@
     "src/**/*.vue",
     "tests/**/*.ts",
     "vite.config.ts",
-    "src/modulos/Admin/composables/**/*.ts", 
+    "src/modulos/Admin/composables/**/*.ts",
     "src/modulos/Admin/services/**/*.ts",
     "src/modulos/Admin/components/pdf/**/*.vue"
   ],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "references": [{"path": "./tsconfig.node.json"}]
 }

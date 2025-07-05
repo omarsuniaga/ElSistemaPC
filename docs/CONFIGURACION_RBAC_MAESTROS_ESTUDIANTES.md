@@ -1,7 +1,9 @@
 # Script para Actualizar Configuración RBAC - Acceso de Maestros
 
 ## Problema Identificado
+
 Los maestros están siendo bloqueados por el sistema RBAC al intentar acceder a:
+
 - `/students` (Listado de estudiantes)
 - `/dashboard` (Dashboard principal)
 
@@ -20,21 +22,21 @@ Se agregaron las siguientes rutas en la configuración RBAC para maestros:
   roles: ['Maestro', 'Maestro Avanzado']
 },
 {
-  id: 'teacher-dashboard-maestro', 
+  id: 'teacher-dashboard-maestro',
   name: 'Dashboard Maestro',
   path: '/teacher',
   roles: ['Maestro', 'Maestro Avanzado']
 },
 {
   id: 'estudiantes-maestro',
-  name: 'Estudiantes', 
+  name: 'Estudiantes',
   path: '/students',
   roles: ['Maestro', 'Maestro Avanzado']
 },
 {
   id: 'asistencia-maestro',
   name: 'Asistencia',
-  path: '/asistencia', 
+  path: '/asistencia',
   roles: ['Maestro', 'Maestro Avanzado']
 },
 {
@@ -50,10 +52,12 @@ Se agregaron las siguientes rutas en la configuración RBAC para maestros:
 Si necesitas hacer esto desde la interfaz de superusuario:
 
 #### A) Acceder al Panel de Superusuario:
+
 1. Inicia sesión con una cuenta de **Superusuario**
 2. Ve a `/superusuario/dashboard`
 
 #### B) Configurar Navegación:
+
 1. Ve a **"Config. Navegación"** (`/superusuario/navigation`)
 2. Busca los items de navegación para rol **"Maestro"**
 3. Asegúrate de que estos elementos estén **activos**:
@@ -64,6 +68,7 @@ Si necesitas hacer esto desde la interfaz de superusuario:
    - Asistencia Maestro (`/teacher/attendance`)
 
 #### C) Verificar Permisos:
+
 1. Ve a **"Gestión RBAC"** (`/superusuario/rbac`)
 2. Edita el rol **"Maestro"**
 3. Asegúrate de que tenga estos permisos:
@@ -79,8 +84,8 @@ Si necesitas forzar la actualización desde código:
 
 ```javascript
 // En la consola del navegador (F12)
-localStorage.removeItem('rbac-config')
-localStorage.removeItem('navigation-config')
+localStorage.removeItem("rbac-config")
+localStorage.removeItem("navigation-config")
 window.location.reload()
 ```
 
@@ -106,7 +111,8 @@ Después de la configuración:
 ✅ `/students` - Listado de estudiantes  
 ✅ `/students/:id` - Perfil de estudiante  
 ✅ `/asistencia` - Sistema de asistencia  
-✅ `/teacher/attendance` - Asistencia específica de maestros  
+✅ `/teacher/attendance` - Asistencia específica de maestros
 
 ## Estado
+
 ✅ **COMPLETADO** - Configuración RBAC actualizada para maestros

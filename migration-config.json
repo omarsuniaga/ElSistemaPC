@@ -22,7 +22,7 @@
     "overwriteEmpty": true,
     "updateFields": [
       "inscripcion",
-      "nacimiento", 
+      "nacimiento",
       "telefono",
       "edad",
       "instrumento",

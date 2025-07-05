@@ -16,6 +16,9 @@
       </div>
     </div>
 
+    <!-- Indicador de estado de sincronización PWA -->
+    <SyncStatusIndicator v-if="showSyncIndicator" class="fixed top-4 right-4 z-40" />
+
     <!-- Main app content -->
     <template v-else>
       <HeaderApp />
@@ -40,6 +43,7 @@ import {RouterView} from "vue-router"
 import {setupPersistence} from "./firebase"
 import {useAuthStore} from "./stores/auth"
 import {useThemeSetup} from "./composables/useTheme"
+import {usePWA} from "./composables/pwa/usePWA"
 
 // Async components for better performance
 const FooterNavigation = defineAsyncComponent(() => import("./components/FooterNavigation.vue"))
@@ -47,15 +51,20 @@ const HeaderApp = defineAsyncComponent(() => import("./components/HeaderApp.vue"
 const TeacherInvitationManager = defineAsyncComponent(
   () => import("./modulos/Teachers/components/TeacherInvitationManager.vue")
 )
+const SyncStatusIndicator = defineAsyncComponent(
+  () => import("./components/sync/SyncStatusIndicator.vue")
+)
 
 // Configurar tema para toda la aplicación
-const {isDarkMode} = useThemeSetup()
+useThemeSetup()
+
+// PWA setup
+const pwa = usePWA()
+const {isOnline, hasActiveNotifications, pendingOperations} = pwa
 
 const authStore = useAuthStore()
 const user = authStore.user
 const isLoggedIn = authStore.isLoggedIn
-const isLoading = authStore.isLoading
-const isDev = import.meta.env.DEV
 
 // Mostrar gestor de invitaciones solo para maestros autenticados
 const shouldShowInvitationManager = computed(() => {
@@ -66,14 +75,19 @@ const shouldShowInvitationManager = computed(() => {
   )
 })
 
-// Configurar Firebase solo después de que el componente esté montado
+// Mostrar indicador de sincronización cuando sea necesario
+const showSyncIndicator = computed(() => {
+  return !isOnline.value || pendingOperations.value > 0 || hasActiveNotifications.value
+})
+
+// Configurar Firebase y PWA después de que el componente esté montado
 onMounted(async () => {
   // Configurar persistencia después de que todo esté inicializado
   try {
     await setupPersistence()
-    console.log("Bienvenidos al Sistema Punta Cana, Debes Logearte para continuar")
+    console.log("✅ Persistencia Firebase configurada")
   } catch (error) {
-    console.warn("No se pudo habilitar la persistencia:", error)
+    console.warn("⚠️ No se pudo habilitar la persistencia:", error)
   }
 
   // Inicializar autenticación para evitar el flash de login
@@ -82,6 +96,14 @@ onMounted(async () => {
     console.log("🔐 Autenticación inicializada correctamente")
   } catch (error) {
     console.warn("🔐 Error al inicializar autenticación:", error)
+  }
+
+  // Inicializar PWA después de la autenticación
+  try {
+    await pwa.initializePWA()
+    console.log("🚀 PWA inicializada correctamente")
+  } catch (error) {
+    console.warn("🚀 Error al inicializar PWA:", error)
   }
 })
 </script>

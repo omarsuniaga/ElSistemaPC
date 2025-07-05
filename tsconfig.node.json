@@ -12,8 +12,5 @@
     "types": ["node", "vite/client"],
     "esModuleInterop": true
   },
-  "include": [
-    "src/utils/cli/**/*",
-    "vite.config.ts"
-  ]
+  "include": ["src/utils/cli/**/*", "vite.config.ts"]
 }

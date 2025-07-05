@@ -110,9 +110,7 @@
           </h3>
           <div class="max-w-sm mx-auto">
             <!-- Header del chat -->
-            <div
-              class="bg-green-600 text-white p-3 rounded-t-lg flex items-center space-x-3"
-            >
+            <div class="bg-green-600 text-white p-3 rounded-t-lg flex items-center space-x-3">
               <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
                 <span class="text-green-600 font-bold text-sm">A</span>
               </div>
@@ -139,9 +137,7 @@
             <div
               class="bg-white dark:bg-gray-700 p-3 rounded-b-lg border-t border-gray-200 dark:border-gray-600"
             >
-              <div
-                class="flex items-center space-x-2 opacity-50 pointer-events-none"
-              >
+              <div class="flex items-center space-x-2 opacity-50 pointer-events-none">
                 <div
                   class="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-600 rounded-full text-sm text-gray-500"
                 >
@@ -163,33 +159,25 @@
             📊 Análisis del Mensaje
           </h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div
-              class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center"
-            >
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
               <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
                 {{ renderedMessage.length }}
               </div>
               <div class="text-xs text-gray-500 dark:text-gray-400">Caracteres</div>
             </div>
-            <div
-              class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center"
-            >
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
               <div class="text-2xl font-bold text-green-600 dark:text-green-400">
                 {{ wordCount }}
               </div>
               <div class="text-xs text-gray-500 dark:text-gray-400">Palabras</div>
             </div>
-            <div
-              class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center"
-            >
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
               <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">
                 {{ lineCount }}
               </div>
               <div class="text-xs text-gray-500 dark:text-gray-400">Líneas</div>
             </div>
-            <div
-              class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center"
-            >
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
               <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">
                 {{ detectedVariables.length }}
               </div>
@@ -239,9 +227,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue"
-import { templateRenderer } from "../../services/templates/templateRenderer"
-import type { MessageTemplate } from "../../services/templates/templateManager"
+import {ref, computed} from "vue"
+import {templateRenderer} from "../../services/templates/templateRenderer"
+import type {MessageTemplate} from "../../services/templates/templateManager"
 
 // Props
 interface Props {
@@ -262,7 +250,7 @@ const variableValues = ref<Record<string, string>>({})
 const currentTime = computed(() => {
   return new Date().toLocaleTimeString("es-ES", {
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
   })
 })
 
@@ -347,7 +335,7 @@ const initializeVariableValues = (): void => {
   values["{date}"] = new Date().toLocaleDateString("es-ES")
   values["{time}"] = new Date().toLocaleTimeString("es-ES", {
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
   })
   values["{academyName}"] = "Academia Musical El Sistema"
   values["{teacherName}"] = "Prof. Carlos Rodríguez"

@@ -7,21 +7,25 @@ Se ha implementado un sistema integral de roles y permisos granular para la apli
 ## 🎯 Componentes Implementados
 
 ### 1. Sistema de Permisos Base
+
 - **Archivo**: `src/modulos/Auth/types/permissions.ts`
 - **Funcionalidad**: Enums, interfaces y matrices de permisos para todos los roles
 - **Roles soportados**: Maestro, Director, Administrador, Superusuario, Colaborador, Monitor
 
 ### 2. Composable de Permisos
-- **Archivo**: `src/modulos/Auth/composables/usePermissions.ts`  
+
+- **Archivo**: `src/modulos/Auth/composables/usePermissions.ts`
 - **Funcionalidad**: Lógica reactiva para verificación de permisos en tiempo real
 - **Features**: Validación contextual, helpers por rol, gestión de módulos
 
 ### 3. Componente de Guardia UI
+
 - **Archivo**: `src/modulos/Auth/components/PermissionGuard.vue`
 - **Funcionalidad**: Protección declarativa de elementos UI basada en permisos
 - **Uso**: `<PermissionGuard :resource="..." :action="...">contenido</PermissionGuard>`
 
 ### 4. Servicio de Firestore
+
 - **Archivo**: `src/modulos/Auth/services/permissionsService.ts`
 - **Funcionalidad**: CRUD de permisos dinámicos en Firestore
 - **Features**: Validación avanzada, configuración dinámica, cache
@@ -29,6 +33,7 @@ Se ha implementado un sistema integral de roles y permisos granular para la apli
 ### 5. Módulo Superusuario Completo
 
 #### Estructura de Archivos
+
 ```
 src/modulos/Superusuario/
 ├── types/index.ts              # Tipos específicos
@@ -41,6 +46,7 @@ src/modulos/Superusuario/
 ```
 
 #### Funcionalidades del Superusuario
+
 - **Dashboard de administración**: Métricas del sistema, estado de la plataforma
 - **Gestión de usuarios**: CRUD completo de usuarios y roles
 - **Configuración de roles**: Edición dinámica de permisos por rol
@@ -50,16 +56,19 @@ src/modulos/Superusuario/
 - **Respaldo y restauración**: Gestión de datos
 
 ### 6. Integración con Router
+
 - **Archivo**: `src/router/index.ts`
 - **Rutas agregadas**: `/superusuario/*` con protección por rol
 - **Redirección automática**: Usuarios Superusuario van a `/superusuario/dashboard`
 
 ### 7. Integración con Navegación
+
 - **Archivo**: `src/components/Navigation.vue`
 - **Menú específico**: Items de navegación para Superusuario
 - **Iconos**: Heroicons para todas las funciones administrativas
 
 ### 8. Store de Autenticación Actualizado
+
 - **Archivo**: `src/stores/auth.ts`
 - **Getter agregado**: `isSuperusuario` para verificación de rol
 - **Módulos**: Acceso a funciones específicas de Superusuario
@@ -67,29 +76,36 @@ src/modulos/Superusuario/
 ## 🧪 Scripts de Utilidad
 
 ### Setup de Firestore
+
 ```bash
 npm run setup-permissions
 ```
+
 Inicializa la configuración de permisos en Firestore
 
 ### Validación del Sistema
+
 ```bash
 npm run validate-permissions
 ```
+
 Verifica la integridad de los permisos configurados
 
 ### Prueba Estática
+
 ```bash
 npm run test-permissions
 ```
+
 Ejecuta pruebas del sistema de permisos (confirmado funcionando)
 
 ## 🔐 Matriz de Permisos
 
 ### Maestro
+
 - ✅ Registrar asistencia de sus clases
 - ✅ Agregar observaciones de estudiantes
-- ✅ Editar montaje asignado  
+- ✅ Editar montaje asignado
 - ✅ Actualizar estado de compases
 - ✅ Gestionar estudiantes de sus clases
 - ✅ Evaluar estudiantes
@@ -99,6 +115,7 @@ Ejecuta pruebas del sistema de permisos (confirmado funcionando)
 - ❌ Ver información confidencial
 
 ### Director
+
 - ✅ **Todo lo del Maestro** +
 - ✅ Gestionar repertorios y obras
 - ✅ Supervisar a todos los maestros
@@ -112,6 +129,7 @@ Ejecuta pruebas del sistema de permisos (confirmado funcionando)
 - ✅ Crear colaboradores temporales
 
 ### Superusuario
+
 - ✅ **Acceso completo a toda la plataforma** +
 - ✅ Configuración del sistema
 - ✅ Gestión de roles y permisos
@@ -125,16 +143,15 @@ Ejecuta pruebas del sistema de permisos (confirmado funcionando)
 ## 🚀 Uso en la Aplicación
 
 ### Verificación de Permisos en Componentes
+
 ```vue
 <template>
-  <PermissionGuard 
-    :resource="ResourceType.DAILY_ATTENDANCE" 
+  <PermissionGuard
+    :resource="ResourceType.DAILY_ATTENDANCE"
     :action="PermissionAction.CREATE"
     scope="class"
   >
-    <button @click="registrarAsistencia">
-      📋 Registrar Asistencia
-    </button>
+    <button @click="registrarAsistencia">📋 Registrar Asistencia</button>
     <template #fallback>
       <p>No tienes permisos para registrar asistencia</p>
     </template>
@@ -143,10 +160,11 @@ Ejecuta pruebas del sistema de permisos (confirmado funcionando)
 ```
 
 ### Verificación Programática
-```typescript
-import { usePermissions } from '@/modulos/Auth/composables/usePermissions'
 
-const { hasPermission, canTeacher, is } = usePermissions()
+```typescript
+import {usePermissions} from "@/modulos/Auth/composables/usePermissions"
+
+const {hasPermission, canTeacher, is} = usePermissions()
 
 // Verificación directa
 if (hasPermission(ResourceType.REPORTS, PermissionAction.CREATE)) {
@@ -165,16 +183,17 @@ if (is.superusuario.value) {
 ```
 
 ### En Stores/Actions
+
 ```typescript
-import { PermissionsService } from '@/modulos/Auth/services/permissionsService'
+import {PermissionsService} from "@/modulos/Auth/services/permissionsService"
 
 // Validación dinámica desde Firestore
 const validation = await PermissionsService.validateUserAction(
   userId,
   userRole,
-  'puedeEditarAsistencia',
-  'estudiante',
-  { studentClassId, userClassIds }
+  "puedeEditarAsistencia",
+  "estudiante",
+  {studentClassId, userClassIds}
 )
 
 if (!validation.allowed) {
@@ -185,6 +204,7 @@ if (!validation.allowed) {
 ## 🔧 Estado de Implementación
 
 ### ✅ Completado
+
 - [x] Sistema de permisos granular base
 - [x] Composable reactivo de permisos
 - [x] Componente de guardia UI
@@ -197,6 +217,7 @@ if (!validation.allowed) {
 - [x] Corrección de errores de compilación
 
 ### 📝 Pendiente para Integración Completa
+
 - [ ] Migrar verificaciones existentes en la app al nuevo sistema
 - [ ] Integrar PermissionGuard en más componentes
 - [ ] Configurar permisos iniciales en Firestore

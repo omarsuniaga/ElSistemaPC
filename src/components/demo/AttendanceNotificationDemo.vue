@@ -2,7 +2,10 @@
   <div class="notification-demo">
     <div class="demo-header">
       <h2>🔔 Demo Sistema de Notificaciones de Asistencia</h2>
-      <p>Esta página simula reportes de asistencia para demostrar el sistema de notificaciones en tiempo real</p>
+      <p>
+        Esta página simula reportes de asistencia para demostrar el sistema de notificaciones en
+        tiempo real
+      </p>
     </div>
 
     <div class="demo-controls">
@@ -39,13 +42,17 @@
         </div>
 
         <div class="form-actions">
-          <button 
+          <button
             :disabled="!selectedTeacher || !selectedClass || creating"
             class="btn-simulate"
             @click="simulateAttendanceReport"
           >
-            <component :is="creating ? 'div' : PlusCircleIcon" class="w-5 h-5" :class="creating ? 'animate-spin' : ''" />
-            {{ creating ? 'Creando...' : 'Simular Reporte' }}
+            <component
+              :is="creating ? 'div' : PlusCircleIcon"
+              class="w-5 h-5"
+              :class="creating ? 'animate-spin' : ''"
+            />
+            {{ creating ? "Creando..." : "Simular Reporte" }}
           </button>
 
           <button :disabled="creating" class="btn-multiple" @click="simulateMultipleReports">
@@ -58,17 +65,20 @@
       <div class="control-section">
         <h3>🔍 Estado del Sistema</h3>
         <div class="system-status">
-          <div class="status-item" :class="{ active: systemStatus.isActive }">
-            <component :is="systemStatus.isActive ? CheckCircleIcon : XCircleIcon" class="w-5 h-5" />
-            <span>Sistema: {{ systemStatus.isActive ? 'Activo' : 'Inactivo' }}</span>
+          <div class="status-item" :class="{active: systemStatus.isActive}">
+            <component
+              :is="systemStatus.isActive ? CheckCircleIcon : XCircleIcon"
+              class="w-5 h-5"
+            />
+            <span>Sistema: {{ systemStatus.isActive ? "Activo" : "Inactivo" }}</span>
           </div>
           <div class="status-item">
             <Icon name="clock" />
             <span>Activo por: {{ formatUptime(systemStatus.uptime) }}</span>
           </div>
-          <div class="status-item" :class="{ error: systemStatus.lastError }">
+          <div class="status-item" :class="{error: systemStatus.lastError}">
             <Icon :name="systemStatus.lastError ? 'alert-triangle' : 'check'" />
-            <span>{{ systemStatus.lastError || 'Sin errores' }}</span>
+            <span>{{ systemStatus.lastError || "Sin errores" }}</span>
           </div>
         </div>
 
@@ -88,17 +98,11 @@
     <div class="demo-logs">
       <h3>📝 Log de Actividad</h3>
       <div class="log-container">
-        <div 
-          v-for="(log, index) in activityLog" 
-          :key="index" 
-          :class="['log-entry', log.type]"
-        >
+        <div v-for="(log, index) in activityLog" :key="index" :class="['log-entry', log.type]">
           <span class="log-time">{{ formatTime(log.timestamp) }}</span>
           <span class="log-message">{{ log.message }}</span>
         </div>
-        <div v-if="activityLog.length === 0" class="log-empty">
-          No hay actividad registrada
-        </div>
+        <div v-if="activityLog.length === 0" class="log-empty">No hay actividad registrada</div>
       </div>
       <button class="btn-clear" @click="clearLogs">
         <Icon name="trash-2" />
@@ -119,9 +123,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, onUnmounted } from 'vue'
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
-import { db } from '../../firebase'
+import {defineComponent, ref, onMounted, onUnmounted} from "vue"
+import {addDoc, collection, serverTimestamp} from "firebase/firestore"
+import {db} from "../../firebase"
 import {
   PlayIcon,
   StopIcon,
@@ -134,9 +138,9 @@ import {
   BoltIcon,
   CheckIcon,
   ArrowPathIcon,
-  TrashIcon
-} from '@heroicons/vue/24/outline'
-import notificationSystem from '../../services/attendanceNotificationManager'
+  TrashIcon,
+} from "@heroicons/vue/24/outline"
+import notificationSystem from "../../services/attendanceNotificationManager"
 
 interface MockTeacher {
   id: string
@@ -153,11 +157,11 @@ interface MockClass {
 interface LogEntry {
   timestamp: Date
   message: string
-  type: 'info' | 'success' | 'warning' | 'error'
+  type: "info" | "success" | "warning" | "error"
 }
 
 export default defineComponent({
-  name: 'AttendanceNotificationDemo',
+  name: "AttendanceNotificationDemo",
   components: {
     PlayIcon,
     StopIcon,
@@ -170,99 +174,99 @@ export default defineComponent({
     BoltIcon,
     CheckIcon,
     ArrowPathIcon,
-    TrashIcon
+    TrashIcon,
   },
   setup() {
     const selectedTeacher = ref<MockTeacher | null>(null)
     const selectedClass = ref<MockClass | null>(null)
-    const reportType = ref('normal')
+    const reportType = ref("normal")
     const creating = ref(false)
     const activityLog = ref<LogEntry[]>([])
     const systemStatus = ref({
       isActive: false,
       uptime: 0,
-      lastError: null as string | null
+      lastError: null as string | null,
     })
 
     // Datos de prueba
     const mockTeachers: MockTeacher[] = [
-      { id: 'teacher1', name: 'Ana García', uid: 'teacher1' },
-      { id: 'teacher2', name: 'Carlos Rodríguez', uid: 'teacher2' },
-      { id: 'teacher3', name: 'María López', uid: 'teacher3' },
-      { id: 'teacher4', name: 'José Martínez', uid: 'teacher4' }
+      {id: "teacher1", name: "Ana García", uid: "teacher1"},
+      {id: "teacher2", name: "Carlos Rodríguez", uid: "teacher2"},
+      {id: "teacher3", name: "María López", uid: "teacher3"},
+      {id: "teacher4", name: "José Martínez", uid: "teacher4"},
     ]
 
     const mockClasses: MockClass[] = [
-      { 
-        id: 'class1', 
-        name: 'Piano Básico A', 
-        studentIds: ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8'] 
+      {
+        id: "class1",
+        name: "Piano Básico A",
+        studentIds: ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"],
       },
-      { 
-        id: 'class2', 
-        name: 'Guitarra Intermedio', 
-        studentIds: ['s9', 's10', 's11', 's12', 's13', 's14'] 
+      {
+        id: "class2",
+        name: "Guitarra Intermedio",
+        studentIds: ["s9", "s10", "s11", "s12", "s13", "s14"],
       },
-      { 
-        id: 'class3', 
-        name: 'Violín Avanzado', 
-        studentIds: ['s15', 's16', 's17', 's18', 's19'] 
+      {
+        id: "class3",
+        name: "Violín Avanzado",
+        studentIds: ["s15", "s16", "s17", "s18", "s19"],
       },
-      { 
-        id: 'class4', 
-        name: 'Coro Infantil', 
-        studentIds: ['s20', 's21', 's22', 's23', 's24', 's25', 's26', 's27', 's28', 's29'] 
-      }
+      {
+        id: "class4",
+        name: "Coro Infantil",
+        studentIds: ["s20", "s21", "s22", "s23", "s24", "s25", "s26", "s27", "s28", "s29"],
+      },
     ]
 
     /**
      * Genera datos de asistencia basados en el tipo de reporte
      */
     const generateAttendanceData = (type: string, totalStudents: number) => {
-      const studentIds = Array.from({ length: totalStudents }, (_, i) => `student_${i + 1}`)
-      
+      const studentIds = Array.from({length: totalStudents}, (_, i) => `student_${i + 1}`)
+
       switch (type) {
-        case 'normal':
+        case "normal":
           return {
             presentes: studentIds.slice(0, Math.floor(totalStudents * 0.9)),
             ausentes: studentIds.slice(Math.floor(totalStudents * 0.9)),
             tarde: [],
-            justificacion: []
+            justificacion: [],
           }
-        
-        case 'some_absences':
+
+        case "some_absences":
           const presentCount = Math.floor(totalStudents * 0.7)
           return {
             presentes: studentIds.slice(0, presentCount),
             ausentes: studentIds.slice(presentCount, presentCount + 2),
             tarde: studentIds.slice(presentCount + 2),
-            justificacion: []
+            justificacion: [],
           }
-        
-        case 'many_absences':
+
+        case "many_absences":
           const manyPresentCount = Math.floor(totalStudents * 0.5)
           return {
             presentes: studentIds.slice(0, manyPresentCount),
             ausentes: studentIds.slice(manyPresentCount),
             tarde: [],
-            justificacion: []
+            justificacion: [],
           }
-        
-        case 'late_students':
+
+        case "late_students":
           const lateCount = Math.floor(totalStudents * 0.4)
           return {
             presentes: studentIds.slice(0, totalStudents - lateCount),
             ausentes: [],
             tarde: studentIds.slice(totalStudents - lateCount),
-            justificacion: []
+            justificacion: [],
           }
-        
+
         default:
           return {
             presentes: studentIds,
             ausentes: [],
             tarde: [],
-            justificacion: []
+            justificacion: [],
           }
       }
     }
@@ -277,7 +281,7 @@ export default defineComponent({
         creating.value = true
 
         const attendanceData = generateAttendanceData(
-          reportType.value, 
+          reportType.value,
           selectedClass.value.studentIds.length
         )
 
@@ -285,26 +289,34 @@ export default defineComponent({
         const attendanceDoc = {
           teacherId: selectedTeacher.value.uid,
           classId: selectedClass.value.id,
-          fecha: new Date().toISOString().split('T')[0],
+          fecha: new Date().toISOString().split("T")[0],
           data: attendanceData,
           createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
+          updatedAt: serverTimestamp(),
         }
 
-        await addDoc(collection(db, 'ASISTENCIAS'), attendanceDoc)
+        await addDoc(collection(db, "ASISTENCIAS"), attendanceDoc)
 
         // Log de actividad
-        addLog(`✅ Reporte creado para ${selectedClass.value.name} por ${selectedTeacher.value.name}`, 'success')
-        addLog(`📊 Stats: ${attendanceData.presentes.length} presentes, ${attendanceData.ausentes.length} ausentes, ${attendanceData.tarde.length} tarde`, 'info')
+        addLog(
+          `✅ Reporte creado para ${selectedClass.value.name} por ${selectedTeacher.value.name}`,
+          "success"
+        )
+        addLog(
+          `📊 Stats: ${attendanceData.presentes.length} presentes, ${attendanceData.ausentes.length} ausentes, ${attendanceData.tarde.length} tarde`,
+          "info"
+        )
 
         // Limpiar selección
         selectedTeacher.value = null
         selectedClass.value = null
-        reportType.value = 'normal'
-
+        reportType.value = "normal"
       } catch (error) {
-        console.error('Error simulando reporte:', error)
-        addLog(`❌ Error creando reporte: ${error instanceof Error ? error.message : 'Error desconocido'}`, 'error')
+        console.error("Error simulando reporte:", error)
+        addLog(
+          `❌ Error creando reporte: ${error instanceof Error ? error.message : "Error desconocido"}`,
+          "error"
+        )
       } finally {
         creating.value = false
       }
@@ -314,9 +326,9 @@ export default defineComponent({
      * Simula múltiples reportes aleatorios
      */
     const simulateMultipleReports = async () => {
-      const reportTypes = ['normal', 'some_absences', 'many_absences', 'late_students']
-      
-      addLog('🔄 Iniciando simulación de múltiples reportes...', 'info')
+      const reportTypes = ["normal", "some_absences", "many_absences", "late_students"]
+
+      addLog("🔄 Iniciando simulación de múltiples reportes...", "info")
 
       for (let i = 0; i < 3; i++) {
         const randomTeacher = mockTeachers[Math.floor(Math.random() * mockTeachers.length)]
@@ -328,12 +340,12 @@ export default defineComponent({
         reportType.value = randomType
 
         await simulateAttendanceReport()
-        
+
         // Esperar un poco entre reportes
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise((resolve) => setTimeout(resolve, 1000))
       }
 
-      addLog('✅ Simulación de múltiples reportes completada', 'success')
+      addLog("✅ Simulación de múltiples reportes completada", "success")
     }
 
     /**
@@ -345,11 +357,11 @@ export default defineComponent({
         systemStatus.value = {
           isActive: status.isActive,
           uptime: status.uptime,
-          lastError: status.lastError
+          lastError: status.lastError,
         }
-        addLog('🔄 Estado del sistema actualizado', 'info')
+        addLog("🔄 Estado del sistema actualizado", "info")
       } catch (error) {
-        addLog(`❌ Error actualizando estado: ${error}`, 'error')
+        addLog(`❌ Error actualizando estado: ${error}`, "error")
       }
     }
 
@@ -358,23 +370,23 @@ export default defineComponent({
      */
     const restartSystem = async () => {
       try {
-        addLog('🔄 Reiniciando sistema de notificaciones...', 'warning')
+        addLog("🔄 Reiniciando sistema de notificaciones...", "warning")
         await notificationSystem.restart()
         await refreshSystemStatus()
-        addLog('✅ Sistema reiniciado correctamente', 'success')
+        addLog("✅ Sistema reiniciado correctamente", "success")
       } catch (error) {
-        addLog(`❌ Error reiniciando sistema: ${error}`, 'error')
+        addLog(`❌ Error reiniciando sistema: ${error}`, "error")
       }
     }
 
     /**
      * Agrega una entrada al log
      */
-    const addLog = (message: string, type: LogEntry['type'] = 'info') => {
+    const addLog = (message: string, type: LogEntry["type"] = "info") => {
       activityLog.value.unshift({
         timestamp: new Date(),
         message,
-        type
+        type,
       })
 
       // Mantener solo los últimos 50 logs
@@ -403,10 +415,10 @@ export default defineComponent({
      * Formatea la hora
      */
     const formatTime = (date: Date): string => {
-      return date.toLocaleTimeString('es-ES', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
+      return date.toLocaleTimeString("es-ES", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
       })
     }
 
@@ -416,7 +428,7 @@ export default defineComponent({
     onMounted(() => {
       refreshSystemStatus()
       statusInterval = setInterval(refreshSystemStatus, 5000)
-      addLog('🚀 Demo de notificaciones de asistencia iniciado', 'info')
+      addLog("🚀 Demo de notificaciones de asistencia iniciado", "info")
     })
 
     onUnmounted(() => {
@@ -440,9 +452,9 @@ export default defineComponent({
       restartSystem,
       clearLogs,
       formatUptime,
-      formatTime
+      formatTime,
     }
-  }
+  },
 })
 </script>
 
@@ -652,7 +664,7 @@ export default defineComponent({
   padding: 1rem;
   height: 300px;
   overflow-y: auto;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-size: 0.875rem;
 }
 
@@ -728,19 +740,23 @@ export default defineComponent({
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 768px) {
   .notification-demo {
     padding: 1rem;
   }
-  
+
   .demo-controls {
     grid-template-columns: 1fr;
   }
-  
+
   .form-actions,
   .system-actions {
     flex-direction: column;

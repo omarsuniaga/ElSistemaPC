@@ -5,16 +5,19 @@ Este directorio contiene scripts para resolver automáticamente los conflictos d
 ## 🚀 Uso Rápido
 
 ### **Opción 1: Script PowerShell (Recomendado para Windows)**
+
 ```powershell
 npm run fix-imports:windows
 ```
 
 ### **Opción 2: Corrección rápida**
+
 ```bash
 npm run fix-imports
 ```
 
 ### **Opción 3: Análisis completo**
+
 ```bash
 npm run fix-imports:advanced
 ```
@@ -22,9 +25,11 @@ npm run fix-imports:advanced
 ## 📋 Scripts Disponibles
 
 ### 1. **quick-import-fix.js** ⚡
+
 **Comando:** `npm run fix-imports`
 
 **¿Qué hace?**
+
 - Identifica conflictos comunes de imports
 - Aplica correcciones rápidas basadas en patrones conocidos
 - Enfoque en los módulos más problemáticos (Firebase, stores internos)
@@ -32,9 +37,11 @@ npm run fix-imports:advanced
 **Ideal para:** Corrección rápida de problemas conocidos
 
 ### 2. **advanced-import-resolver.js** 🧠
+
 **Comando:** `npm run fix-imports:advanced`
 
 **¿Qué hace?**
+
 - Análisis profundo de toda la aplicación
 - Estrategias inteligentes por tipo de archivo
 - Reporte detallado de conflictos y recomendaciones
@@ -42,9 +49,11 @@ npm run fix-imports:advanced
 **Ideal para:** Análisis completo y planificación de correcciones
 
 ### 3. **fix-import-conflicts.js** 🔧
+
 **Comando:** `npm run fix-imports:full`
 
 **¿Qué hace?**
+
 - Análisis exhaustivo con AST parsing
 - Correcciones más precisas y detalladas
 - Manejo de casos complejos
@@ -52,9 +61,11 @@ npm run fix-imports:advanced
 **Ideal para:** Correcciones completas y casos especiales
 
 ### 4. **fix-imports.ps1** 🪟
+
 **Comando:** `npm run fix-imports:windows`
 
 **¿Qué hace?**
+
 - Interfaz interactiva en PowerShell
 - Opciones múltiples de corrección
 - Verificación automática de dependencias
@@ -65,21 +76,25 @@ npm run fix-imports:advanced
 ## 🎯 Estrategias Implementadas
 
 ### **Firebase**
+
 - `firebase/app`, `firebase/auth`: **Siempre estático**
 - `firebase/firestore`: **Inteligente**
   - Estático en componentes y vistas
   - Dinámico en stores y servicios
 
 ### **Vue Ecosystem**
+
 - `vue`, `vue-router`, `pinia`: **Siempre estático**
 - `@heroicons/vue`: **Estático**
 
 ### **Stores y Services Internos**
+
 - En `/store/`: **Dinámico** (carga bajo demanda)
 - En `/service/`: **Dinámico** (optimización de bundle)
 - En `/components/`: **Estático** (necesario inmediatamente)
 
 ### **Librerías Pesadas**
+
 - `jspdf`, `chart.js`: **Dinámico** (carga cuando se necesiten)
 
 ## 📊 Verificar Mejoras
@@ -91,12 +106,14 @@ npm run build
 ```
 
 **Antes:**
+
 ```
 dist/assets/index.Qmf42ntj.js    1,259.34 kB │ gzip: 352.76 kB
 (!) Some chunks are larger than 500 kB
 ```
 
 **Después:**
+
 ```
 dist/assets/vendor-vue.abc123.js      200.34 kB │ gzip: 65.12 kB
 dist/assets/vendor-firebase.def456.js 180.45 kB │ gzip: 55.23 kB
@@ -114,6 +131,7 @@ dist/assets/index.jkl012.js           350.12 kB │ gzip: 95.67 kB
 ## ⚠️ Archivos de Backup
 
 Los scripts crean automáticamente archivos `.backup` antes de hacer cambios:
+
 - `archivo.vue.backup` - Backup del archivo original
 - `archivo.vue.backup.timestamp` - Backup con timestamp
 
@@ -134,6 +152,7 @@ Los scripts crean automáticamente archivos `.backup` antes de hacer cambios:
 ## 📝 Logs y Debug
 
 Los scripts generan logs detallados:
+
 - ✅ Archivos procesados exitosamente
 - ⚠️ Advertencias sobre archivos problemáticos
 - 🔧 Correcciones aplicadas

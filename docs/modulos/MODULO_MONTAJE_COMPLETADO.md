@@ -54,6 +54,7 @@ src/modulos/Montaje/
 ## Funcionalidades Implementadas
 
 ### 🎵 Gestión de Obras
+
 - **CRUD completo** de obras musicales
 - **Estados de obra**: Borrador, En Revisión, En Montaje, Pausada, Completada, Cancelada
 - **Metadatos detallados**: compositor, duración, nivel de dificultad, instrumentos
@@ -61,6 +62,7 @@ src/modulos/Montaje/
 - **Evaluaciones por obra** con sistema de puntuación
 
 ### 📋 Gestión de Repertorio
+
 - **Organización por colecciones** temáticas
 - **Tipos de repertorio**: Sinfónica, Cámara, Coral, Banda, Solista, Conjunto
 - **Niveles de dificultad** (1-5 estrellas)
@@ -68,6 +70,7 @@ src/modulos/Montaje/
 - **Metadatos personalizables**
 
 ### 📅 Planes de Montaje
+
 - **Planificación temporal** con fechas de inicio y objetivo
 - **Asignación de recursos** (instructores, aulas, instrumentos)
 - **Seguimiento de progreso** por fases
@@ -75,6 +78,7 @@ src/modulos/Montaje/
 - **Sistema de observaciones** y notas
 
 ### 📊 Analytics y KPIs
+
 - **Dashboard de métricas** institucionales
 - **KPIs principales**: obras activas, progreso promedio, evaluaciones, tiempos
 - **Gráficos interactivos**: progreso temporal, distribución por estado, evaluaciones
@@ -82,6 +86,7 @@ src/modulos/Montaje/
 - **Sistema de alertas** y recomendaciones
 
 ### 🤝 Colaboración
+
 - **Centro de mensajes** entre instructores
 - **Tipos de mensaje**: Mensaje, Comentario, Observación, Sugerencia
 - **Sistema de prioridades**: Baja, Media, Alta, Urgente
@@ -89,6 +94,7 @@ src/modulos/Montaje/
 - **Notificaciones automáticas**
 
 ### 📈 Historial y Versiones
+
 - **Tracking completo** de cambios
 - **Versionado automático** de entidades
 - **Historial de modificaciones** con usuario y timestamp
@@ -96,6 +102,7 @@ src/modulos/Montaje/
 - **Restauración de versiones** anteriores
 
 ### 🔔 Sistema de Notificaciones
+
 - **Notificaciones automáticas** del sistema
 - **Estados**: No leída, Leída
 - **Tipos**: Sistema, Recordatorio, Alerta, Evaluación
@@ -104,6 +111,7 @@ src/modulos/Montaje/
 ## Características Técnicas
 
 ### 🏗️ Arquitectura
+
 - **Clean Architecture** con separación clara de capas
 - **Clean Code** con nombres descriptivos y funciones puras
 - **Vue 3 Composition API** para reactividad moderna
@@ -111,12 +119,14 @@ src/modulos/Montaje/
 - **TypeScript** para tipado estático
 
 ### 🔥 Firebase Integration
+
 - **Firestore** para persistencia de datos
 - **Consultas optimizadas** con índices apropiados
 - **Seguridad de datos** con reglas de Firestore
 - **Escalabilidad** horizontal automática
 
 ### 🎨 UI/UX
+
 - **Tailwind CSS** para diseño responsivo
 - **Componentes reutilizables** con props tipados
 - **Modales y formularios** accesibles
@@ -124,6 +134,7 @@ src/modulos/Montaje/
 - **Diseño coherente** con el sistema existente
 
 ### 📱 Responsive Design
+
 - **Grid layouts** adaptativos
 - **Navegación móvil** optimizada
 - **Componentes táctiles** para móviles
@@ -132,11 +143,13 @@ src/modulos/Montaje/
 ## Integraciones
 
 ### 🔐 Sistema de Autenticación
+
 - **Roles compatibles**: PROFESOR, DIRECTOR, ADMINISTRADOR
 - **Permisos granulares** por funcionalidad
 - **Contexto de usuario** en todas las operaciones
 
 ### 📚 Módulos Existentes
+
 - **Clases**: integración con clases existentes
 - **Estudiantes**: seguimiento de participación
 - **Profesores**: asignación y evaluación
@@ -145,11 +158,13 @@ src/modulos/Montaje/
 ## Exportación y Reportes
 
 ### 📄 Formatos Soportados
+
 - **CSV** para análisis de datos
 - **JSON** para backup y migración
 - **PDF** para reportes institucionales (preparado)
 
 ### 📊 Tipos de Reporte
+
 - **Progreso de obras** individual y grupal
 - **Evaluaciones consolidadas** por instructor
 - **Métricas temporales** de rendimiento
@@ -174,6 +189,7 @@ Las rutas del módulo están integradas en el router principal:
 ## Estados de Implementación
 
 ### ✅ Completado
+
 - [x] Tipos TypeScript completos
 - [x] Servicios Firebase (montaje y repertorio)
 - [x] Stores Pinia con estado reactivo
@@ -185,6 +201,7 @@ Las rutas del módulo están integradas en el router principal:
 - [x] Integración con autenticación existente
 
 ### 🎯 Próximas Mejoras
+
 - [ ] Implementación de tests unitarios
 - [ ] Generación automática de PDFs
 - [ ] Integración con sistema de archivos
@@ -195,6 +212,7 @@ Las rutas del módulo están integradas en el router principal:
 ## Uso del Módulo
 
 ### Para Profesores
+
 1. **Crear obras** y definir frases musicales
 2. **Planificar montajes** con fechas y recursos
 3. **Evaluar progreso** de estudiantes y obras
@@ -202,6 +220,7 @@ Las rutas del módulo están integradas en el router principal:
 5. **Seguir** el historial de cambios
 
 ### Para Directores
+
 1. **Supervisar** el progreso institucional
 2. **Analizar métricas** y KPIs
 3. **Aprobar planes** de montaje
@@ -209,6 +228,7 @@ Las rutas del módulo están integradas en el router principal:
 5. **Generar reportes** ejecutivos
 
 ### Para Administradores
+
 1. **Configurar** permisos y accesos
 2. **Mantener** el sistema de datos
 3. **Exportar** información para análisis

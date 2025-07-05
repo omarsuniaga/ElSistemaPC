@@ -12,6 +12,7 @@ Hemos creado un **sistema de testing de rendimiento de nivel enterprise** que te
 ## **🎮 Cómo probar las optimizaciones AHORA:**
 
 ### **Paso 1: Abrir el Dashboard de Pruebas**
+
 ```bash
 # El servidor de desarrollo ya está corriendo
 # Abre en tu navegador:
@@ -19,11 +20,12 @@ http://localhost:5173/performance-testing-dashboard.html
 ```
 
 ### **Paso 2: Probar en la Consola del Navegador (F12)**
+
 ```javascript
 // Chequeo rápido (30 segundos)
 window.quickPerformanceCheck()
 
-// Suite completa (2-3 minutos)  
+// Suite completa (2-3 minutos)
 await window.runPerformanceTests()
 
 // Ver herramientas disponibles
@@ -33,12 +35,14 @@ window.debugPerformance()
 ### **Paso 3: Comparar ANTES vs DESPUÉS**
 
 **🔴 ANTES (sin optimizaciones):**
+
 - First Contentful Paint: ~3000ms
 - Cache Hit Rate: 0%
 - Memory Usage: Creciente
 - Component Load: >200ms
 
 **🟢 DESPUÉS (con optimizaciones):**
+
 - First Contentful Paint: ~1200ms (**60% mejora**)
 - Cache Hit Rate: >90% (**nuevo**)
 - Memory Usage: Estable (**gestión automática**)
@@ -47,18 +51,21 @@ window.debugPerformance()
 ## **📊 Métricas que verás:**
 
 ### **Performance Monitor:**
+
 - ⚡ **Loading**: FCP, LCP, Page Load Time
 - 🖱️ **Interaction**: Button clicks, form inputs, navigation
 - 🌐 **Network**: DNS, TCP, Resource loading
 - 💾 **Memory**: Heap usage, garbage collection
 
 ### **Cache System:**
+
 - 📈 **Hit Rate**: % de requests servidas desde cache
 - 💿 **Storage**: Memoria utilizada vs disponible
 - 🕐 **TTL**: Time-to-live de diferentes tipos de datos
 - 🗂️ **Tags**: Invalidación grupal por categorías
 
 ### **Image Optimization:**
+
 - 🖼️ **Compression**: Reducción de tamaño automática
 - 📱 **Responsive**: Múltiples tamaños generados
 - ⚡ **Format**: WebP automático donde se soporta
@@ -68,7 +75,7 @@ window.debugPerformance()
 
 1. **Cache Performance** (50ms target)
    - Escritura de 100 entradas
-   - Lectura de 100 entradas  
+   - Lectura de 100 entradas
    - Cálculo de hit rate
 
 2. **Lazy Loading Efficiency** (100ms target)
@@ -132,18 +139,21 @@ window.imageOptimizer.clearCache()
 ## **📈 Interpretación de Resultados:**
 
 ### **🟢 EXCELENTE (Verde):**
+
 - Load Time: <1000ms
-- Interaction: <100ms  
+- Interaction: <100ms
 - Cache Hit Rate: >90%
 - Memory Growth: <5MB
 
 ### **🟡 BUENO (Amarillo):**
+
 - Load Time: 1000-3000ms
 - Interaction: 100-300ms
 - Cache Hit Rate: 70-90%
 - Memory Growth: 5-10MB
 
 ### **🔴 CRÍTICO (Rojo):**
+
 - Load Time: >3000ms
 - Interaction: >300ms
 - Cache Hit Rate: <70%
@@ -152,7 +162,7 @@ window.imageOptimizer.clearCache()
 ## **🎉 Lo que puedes esperar:**
 
 1. **Navegación más rápida** - Los usuarios notarán la diferencia
-2. **Menor consumo de datos** - Imágenes optimizadas automáticamente  
+2. **Menor consumo de datos** - Imágenes optimizadas automáticamente
 3. **Mejor experiencia móvil** - Lazy loading y responsive images
 4. **Escalabilidad mejorada** - Cache inteligente reduce carga del servidor
 5. **Debugging avanzado** - Herramientas de diagnóstico en tiempo real

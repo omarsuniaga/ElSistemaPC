@@ -5,6 +5,7 @@
 ### 1. Módulo de Asistencia - Refactorización del Modal de Justificación
 
 **Lo que se logró:**
+
 - ✅ **Seguridad de Tipos**: Se eliminaron completamente todos los tipos `any` del módulo de Asistencia
 - ✅ **Integración RBAC**: Se añadieron verificaciones de control de acceso basado en roles en todo el módulo
 - ✅ **Flujo del Modal de Justificación**: Se reparó el flujo completo para ausencias justificadas
@@ -20,6 +21,7 @@
 5. **attendance.ts (tipos)**: Definiciones de tipos comprensivas para todas las entidades de asistencia
 
 **Flujo Actual:**
+
 1. Usuario hace clic en botón "Justificado" en fila de asistencia
 2. Modal se abre con formulario de justificación
 3. Usuario puede ingresar justificación de texto y subir imagen
@@ -27,6 +29,7 @@
 5. Modal se cierra y asistencia se actualiza con justificación
 
 **Permisos RBAC para Asistencia:**
+
 - Maestros: Pueden ver y gestionar asistencia de sus clases
 - Directores/Admins: Acceso completo a todas las funciones de asistencia
 - Todos los roles: Pueden crear justificaciones y observaciones
@@ -34,6 +37,7 @@
 ### 2. Módulo de Montaje - Reparación del Modal "Nueva Obra"
 
 **Lo que se logró:**
+
 - ✅ **Visibilidad del Modal**: Se reparó la funcionalidad mostrar/ocultar modal con directiva `v-if` apropiada
 - ✅ **Validación de Formulario**: Se removió regla de validación inválida (totalCompases > 0)
 - ✅ **Reinicio de Formulario**: Se añadió limpieza adecuada del formulario cuando el modal se abre/cierra
@@ -54,6 +58,7 @@
    - Envío de formulario llama `handleWorkSubmit` correctamente
 
 **Flujo Actual:**
+
 1. Usuario hace clic en botón "Nueva Obra"
 2. Modal se abre con formulario vacío
 3. Usuario llena formulario con detalles de obra
@@ -61,6 +66,7 @@
 5. Modal se cierra y lista de obras se actualiza
 
 **Análisis RBAC para Montaje:**
+
 - **Maestros**: Tienen permisos para `montaje_maestro_view`, `montaje_obras_read`, `montaje_compases_manage`, `montaje_observaciones_create`, `montaje_evaluaciones_create`
 - **Directores**: Tienen permisos adicionales incluyendo `montaje_obras_manage`, `montaje_repertorio_manage`
 - **Estado Actual**: No hay verificación RBAC explícita que impida a Maestros crear obras a nivel de código
@@ -68,12 +74,13 @@
 ## 🔍 HALLAZGOS RBAC
 
 ### Permisos de Maestro en Montaje:
+
 ```typescript
 'Maestro': {
   permissions: [
     'montaje_maestro_view',
     'montaje_obras_read',
-    'montaje_compases_manage', 
+    'montaje_compases_manage',
     'montaje_observaciones_create',
     'montaje_evaluaciones_create'
   ]
@@ -81,6 +88,7 @@
 ```
 
 ### Permisos de Director en Montaje:
+
 ```typescript
 'Director': {
   permissions: [
@@ -95,6 +103,7 @@
 ```
 
 **Hallazgo Clave**: Los Maestros no tienen permiso `montaje_obras_manage`, pero no hay verificación explícita en el código que les impida crear obras. Esto sugiere que:
+
 1. La lógica de negocio permite a Maestros crear obras, o
 2. Se debería añadir una verificación RBAC para restringir esta funcionalidad
 
@@ -103,6 +112,7 @@
 ### Archivos Modificados:
 
 **Módulo de Asistencia:**
+
 - `src/modulos/Attendance/store/attendance.ts` - Seguridad de tipos e integración RBAC
 - `src/modulos/Attendance/service/attendance.ts` - Subida de archivos y lógica de justificación
 - `src/modulos/Attendance/composables/useAttendanceActions.ts` - Acciones con tipos seguros
@@ -111,12 +121,14 @@
 - `src/modulos/Attendance/types/attendance.ts` - Definiciones de tipos comprensivas
 
 **Módulo de Montaje:**
+
 - `src/modulos/Montaje/components/WorkFormModal.vue` - Visibilidad del modal y correcciones de formulario
 - `src/modulos/Montaje/views/MontajeView.vue` - Integración del modal
 - `src/modulos/Montaje/composables/useMontaje.ts` - Lógica de creación de obras
 - `src/modulos/Montaje/service/montajeService.ts` - Servicio backend
 
 ### Estado del Servidor de Desarrollo:
+
 - ✅ Servidor de desarrollo ejecutándose en `http://localhost:5173`
 - ⚠️ Build tiene problemas de dependencias (no relacionados con nuestros cambios)
 - ✅ Compilación TypeScript funciona en modo desarrollo
@@ -125,6 +137,7 @@
 ## 🎯 RECOMENDACIONES DE PRUEBAS
 
 ### Para Módulo de Asistencia:
+
 1. Probar apertura del modal de justificación desde tabla de asistencia
 2. Verificar que funcionalidad de subida de archivos funciona
 3. Probar validación y envío de formulario
@@ -132,6 +145,7 @@
 5. Verificar que justificación aparece en registros de asistencia
 
 ### Para Módulo de Montaje:
+
 1. Probar que botón "Nueva Obra" abre modal correctamente
 2. Verificar que formulario puede llenarse y enviarse
 3. Confirmar que modal se cierra después de creación exitosa
@@ -139,6 +153,7 @@
 5. **IMPORTANTE**: Probar con diferentes roles de usuario (Maestro vs Director) para confirmar lógica de negocio
 
 ### Pruebas RBAC:
+
 1. Iniciar sesión como usuario Maestro y probar creación de obra
 2. Iniciar sesión como usuario Director y comparar funcionalidad
 3. Verificar si lógica de negocio debería restringir usuarios Maestro
@@ -147,7 +162,9 @@
 ## 🔧 POSIBLES PRÓXIMOS PASOS
 
 ### Si Maestros NO Deberían Crear Obras:
+
 Añadir verificación RBAC en `WorkFormModal.vue` o `MontajeView.vue`:
+
 ```vue
 <button
   v-if="hasPermission('montaje_obras_manage')"
@@ -159,6 +176,7 @@ Añadir verificación RBAC en `WorkFormModal.vue` o `MontajeView.vue`:
 ```
 
 ### Si Maestros SÍ Deberían Crear Obras:
+
 Añadir permiso `montaje_obras_create` al rol Maestro en configuración RBAC.
 
 ## ✅ RESUMEN FINAL

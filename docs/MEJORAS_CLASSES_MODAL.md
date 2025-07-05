@@ -16,10 +16,12 @@ Se ha mejorado el componente `ClassesModal.vue` y la función `fetchClassesForDa
 ### 1. Mejoras en `AttendanceView.vue` - Función `fetchClassesForDate`
 
 #### Antes:
+
 - Solo mostraba clases programadas para el día de la semana
 - No incluía clases extra o de recuperación
 
 #### Después:
+
 - **Obtiene clases programadas** usando `classesStore.getClassesByDayAndTeacherId()`
 - **Obtiene clases con asistencia registrada** filtrando `attendanceStore.attendanceDocuments`
 - **Combina ambas listas** sin duplicar usando un Map
@@ -46,12 +48,14 @@ Se ha mejorado el componente `ClassesModal.vue` y la función `fetchClassesForDa
    - Indicador especial "Clase extra o de recuperación"
 
 #### Nuevas Computed Properties:
+
 - `scheduledClasses`: Filtra clases programadas
 - `extraClasses`: Filtra clases extra/recuperación
 
 ## 📊 Estructura de Datos
 
 ### Propiedades Añadidas a las Clases:
+
 ```typescript
 {
   // Propiedades existentes...
@@ -68,11 +72,13 @@ Se ha mejorado el componente `ClassesModal.vue` y la función `fetchClassesForDa
 ## 🎨 Mejoras Visuales
 
 ### Clases Programadas:
+
 - **Color**: Azul para pendientes, verde para registradas
 - **Icono**: Calendario
 - **Badge**: "Programada" / "Registrado"
 
 ### Clases Extra:
+
 - **Color**: Fondo naranja distintivo
 - **Icono**: Plus (+)
 - **Badge**: "Registrado" (siempre verde)

@@ -1,7 +1,7 @@
 // Sistema de Gestión de Plantillas Dinámicas
 // Permite crear, editar y gestionar plantillas de mensajes personalizables
 
-import { db } from "../../firebase"
+import {db} from "../../firebase"
 import {
   collection,
   doc,
@@ -13,7 +13,7 @@ import {
   query,
   orderBy,
   serverTimestamp,
-  where
+  where,
 } from "firebase/firestore"
 
 // Interfaces
@@ -73,28 +73,28 @@ export const GLOBAL_VARIABLES: MessageVariable[] = [
     label: "Nombre del Estudiante",
     description: "Nombre completo del estudiante",
     type: "student",
-    required: true
+    required: true,
   },
   {
     key: "studentFirstName",
     label: "Primer Nombre",
     description: "Solo el primer nombre del estudiante",
     type: "student",
-    required: false
+    required: false,
   },
   {
     key: "className",
     label: "Nombre de la Clase",
     description: "Nombre de la clase o materia",
     type: "class",
-    required: false
+    required: false,
   },
   {
     key: "teacherName",
     label: "Nombre del Maestro",
     description: "Nombre del profesor de la clase",
     type: "class",
-    required: false
+    required: false,
   },
   {
     key: "date",
@@ -102,7 +102,7 @@ export const GLOBAL_VARIABLES: MessageVariable[] = [
     description: "Fecha actual en formato dd/mm/yyyy",
     type: "date",
     required: false,
-    defaultValue: new Date().toLocaleDateString("es-ES")
+    defaultValue: new Date().toLocaleDateString("es-ES"),
   },
   {
     key: "time",
@@ -110,7 +110,7 @@ export const GLOBAL_VARIABLES: MessageVariable[] = [
     description: "Hora actual en formato HH:mm",
     type: "time",
     required: false,
-    defaultValue: new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })
+    defaultValue: new Date().toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit"}),
   },
   {
     key: "dayOfWeek",
@@ -118,7 +118,7 @@ export const GLOBAL_VARIABLES: MessageVariable[] = [
     description: "Día actual de la semana",
     type: "date",
     required: false,
-    defaultValue: new Date().toLocaleDateString("es-ES", { weekday: "long" })
+    defaultValue: new Date().toLocaleDateString("es-ES", {weekday: "long"}),
   },
   {
     key: "academyName",
@@ -126,7 +126,7 @@ export const GLOBAL_VARIABLES: MessageVariable[] = [
     description: "Nombre oficial de la institución",
     type: "text",
     required: false,
-    defaultValue: "Academia Musical El Sistema"
+    defaultValue: "Academia Musical El Sistema",
   },
   {
     key: "contactPhone",
@@ -134,29 +134,29 @@ export const GLOBAL_VARIABLES: MessageVariable[] = [
     description: "Número de teléfono de la academia",
     type: "text",
     required: false,
-    defaultValue: "+58 (XXX) XXX-XXXX"
+    defaultValue: "+58 (XXX) XXX-XXXX",
   },
   {
     key: "nextClassDate",
     label: "Próxima Clase",
     description: "Fecha de la próxima clase",
     type: "date",
-    required: false
+    required: false,
   },
   {
     key: "absenceCount",
     label: "Número de Ausencias",
     description: "Cantidad de ausencias en el período",
     type: "number",
-    required: false
+    required: false,
   },
   {
     key: "escalationLevel",
     label: "Nivel de Escalación",
     description: "Nivel de severidad del mensaje (1-4)",
     type: "number",
-    required: false
-  }
+    required: false,
+  },
 ]
 
 /**
@@ -176,12 +176,12 @@ Agradecemos su colaboración para asegurar la puntualidad en futuras clases, ya 
 
 Saludos cordiales,
 {academyName}`,
-    variables: ["studentName", "className", "date", "time", "academyName"].map(key => 
-      GLOBAL_VARIABLES.find(v => v.key === key)!
+    variables: ["studentName", "className", "date", "time", "academyName"].map(
+      (key) => GLOBAL_VARIABLES.find((v) => v.key === key)!
     ),
     isActive: true,
     isSystem: true,
-    usage: { totalSent: 0, successRate: 0 }
+    usage: {totalSent: 0, successRate: 0},
   },
   {
     name: "Ausencia Justificada - Recordatorio",
@@ -198,12 +198,12 @@ Lamentamos que no pudiera acompañarnos en esta ocasión. Le recordamos que su p
 
 Atentamente,
 {academyName}`,
-    variables: ["studentName", "className", "date", "nextClassDate", "academyName"].map(key => 
-      GLOBAL_VARIABLES.find(v => v.key === key)!
+    variables: ["studentName", "className", "date", "nextClassDate", "academyName"].map(
+      (key) => GLOBAL_VARIABLES.find((v) => v.key === key)!
     ),
     isActive: true,
     isSystem: true,
-    usage: { totalSent: 0, successRate: 0 }
+    usage: {totalSent: 0, successRate: 0},
   },
   {
     name: "Inasistencia Nivel 1 - Primera Ausencia",
@@ -222,12 +222,17 @@ La participación regular es importante para el desarrollo musical de {studentFi
 Cordialmente,
 {academyName}
 📞 {contactPhone}`,
-    variables: ["studentName", "studentFirstName", "className", "date", "academyName", "contactPhone"].map(key => 
-      GLOBAL_VARIABLES.find(v => v.key === key)!
-    ),
+    variables: [
+      "studentName",
+      "studentFirstName",
+      "className",
+      "date",
+      "academyName",
+      "contactPhone",
+    ].map((key) => GLOBAL_VARIABLES.find((v) => v.key === key)!),
     isActive: true,
     isSystem: true,
-    usage: { totalSent: 0, successRate: 0 }
+    usage: {totalSent: 0, successRate: 0},
   },
   {
     name: "Inasistencia Nivel 2 - Segunda Ausencia",
@@ -248,12 +253,12 @@ La constancia es clave en el aprendizaje musical. 📚🎵
 Esperamos su pronta comunicación,
 {academyName}
 📞 {contactPhone}`,
-    variables: ["studentName", "absenceCount", "academyName", "contactPhone"].map(key => 
-      GLOBAL_VARIABLES.find(v => v.key === key)!
+    variables: ["studentName", "absenceCount", "academyName", "contactPhone"].map(
+      (key) => GLOBAL_VARIABLES.find((v) => v.key === key)!
     ),
     isActive: true,
     isSystem: true,
-    usage: { totalSent: 0, successRate: 0 }
+    usage: {totalSent: 0, successRate: 0},
   },
   {
     name: "Inasistencia Nivel 3 - Solicitud de Explicación",
@@ -278,12 +283,12 @@ Es necesario evaluar la continuidad en el programa.
 🕐 Horario: Lunes a Viernes 8:00 AM - 5:00 PM
 
 {academyName} - Dirección Académica`,
-    variables: ["studentName", "absenceCount", "contactPhone", "academyName"].map(key => 
-      GLOBAL_VARIABLES.find(v => v.key === key)!
+    variables: ["studentName", "absenceCount", "contactPhone", "academyName"].map(
+      (key) => GLOBAL_VARIABLES.find((v) => v.key === key)!
     ),
     isActive: true,
     isSystem: true,
-    usage: { totalSent: 0, successRate: 0 }
+    usage: {totalSent: 0, successRate: 0},
   },
   {
     name: "Inasistencia Nivel 4 - Citación Obligatoria",
@@ -313,13 +318,13 @@ La situación académica del estudiante está en RIESGO.
 ⏰ Horario: Lunes a Viernes 8:00 AM - 5:00 PM
 
 Esta comunicación requiere respuesta inmediata.`,
-    variables: ["studentName", "absenceCount", "academyName", "contactPhone"].map(key => 
-      GLOBAL_VARIABLES.find(v => v.key === key)!
+    variables: ["studentName", "absenceCount", "academyName", "contactPhone"].map(
+      (key) => GLOBAL_VARIABLES.find((v) => v.key === key)!
     ),
     isActive: true,
     isSystem: true,
-    usage: { totalSent: 0, successRate: 0 }
-  }
+    usage: {totalSent: 0, successRate: 0},
+  },
 ]
 
 /**
@@ -344,7 +349,7 @@ export class TemplateManager {
       const snapshot = await getDocs(templatesQuery)
       const templates: MessageTemplate[] = []
 
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         const data = doc.data()
         templates.push({
           id: doc.id,
@@ -354,13 +359,13 @@ export class TemplateManager {
           usage: {
             totalSent: data.usage?.totalSent || 0,
             lastUsed: data.usage?.lastUsed?.toDate(),
-            successRate: data.usage?.successRate || 0
-          }
+            successRate: data.usage?.successRate || 0,
+          },
         } as MessageTemplate)
       })
 
       // Actualizar cache
-      templates.forEach(template => {
+      templates.forEach((template) => {
         if (template.id) {
           this.cache.set(template.id, template)
         }
@@ -368,7 +373,6 @@ export class TemplateManager {
 
       console.log(`📄 Template Manager - Cargadas ${templates.length} plantillas`)
       return templates
-
     } catch (error) {
       console.error("Error obteniendo plantillas:", error)
       return []
@@ -391,18 +395,17 @@ export class TemplateManager {
       const snapshot = await getDocs(templatesQuery)
       const templates: MessageTemplate[] = []
 
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         const data = doc.data()
         templates.push({
           id: doc.id,
           ...data,
           createdAt: data.createdAt?.toDate(),
-          updatedAt: data.updatedAt?.toDate()
+          updatedAt: data.updatedAt?.toDate(),
         } as MessageTemplate)
       })
 
       return templates
-
     } catch (error) {
       console.error(`Error obteniendo plantillas de categoría ${category}:`, error)
       return []
@@ -428,7 +431,7 @@ export class TemplateManager {
           id: docSnap.id,
           ...data,
           createdAt: data.createdAt?.toDate(),
-          updatedAt: data.updatedAt?.toDate()
+          updatedAt: data.updatedAt?.toDate(),
         } as MessageTemplate
 
         // Actualizar cache
@@ -437,7 +440,6 @@ export class TemplateManager {
       }
 
       return null
-
     } catch (error) {
       console.error(`Error obteniendo plantilla ${templateId}:`, error)
       return null
@@ -447,7 +449,9 @@ export class TemplateManager {
   /**
    * Crea una nueva plantilla
    */
-  async createTemplate(template: Omit<MessageTemplate, "id" | "createdAt" | "updatedAt">): Promise<string | null> {
+  async createTemplate(
+    template: Omit<MessageTemplate, "id" | "createdAt" | "updatedAt">
+  ): Promise<string | null> {
     try {
       const docRef = await addDoc(collection(db, TEMPLATES_COLLECTION), {
         ...template,
@@ -455,13 +459,12 @@ export class TemplateManager {
         updatedAt: serverTimestamp(),
         usage: {
           totalSent: 0,
-          successRate: 0
-        }
+          successRate: 0,
+        },
       })
 
       console.log(`✅ Template Manager - Plantilla creada: ${docRef.id}`)
       return docRef.id
-
     } catch (error) {
       console.error("Error creando plantilla:", error)
       return null
@@ -474,7 +477,7 @@ export class TemplateManager {
   async updateTemplate(templateId: string, updates: Partial<MessageTemplate>): Promise<boolean> {
     try {
       const docRef = doc(db, TEMPLATES_COLLECTION, templateId)
-      
+
       // No permitir actualizar plantillas del sistema
       const existing = await this.getTemplate(templateId)
       if (existing?.isSystem) {
@@ -484,7 +487,7 @@ export class TemplateManager {
 
       await updateDoc(docRef, {
         ...updates,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       })
 
       // Limpiar cache
@@ -492,7 +495,6 @@ export class TemplateManager {
 
       console.log(`✅ Template Manager - Plantilla actualizada: ${templateId}`)
       return true
-
     } catch (error) {
       console.error(`Error actualizando plantilla ${templateId}:`, error)
       return false
@@ -518,7 +520,6 @@ export class TemplateManager {
 
       console.log(`✅ Template Manager - Plantilla eliminada: ${templateId}`)
       return true
-
     } catch (error) {
       console.error(`Error eliminando plantilla ${templateId}:`, error)
       return false
@@ -541,12 +542,11 @@ export class TemplateManager {
         isSystem: false, // Las copias nunca son del sistema
         usage: {
           totalSent: 0,
-          successRate: 0
-        }
+          successRate: 0,
+        },
       }
 
       return await this.createTemplate(duplicate)
-
     } catch (error) {
       console.error(`Error duplicando plantilla ${templateId}:`, error)
       return null
@@ -559,7 +559,7 @@ export class TemplateManager {
   async initializeDefaultTemplates(): Promise<void> {
     try {
       const existing = await this.getAllTemplates()
-      
+
       if (existing.length === 0) {
         console.log("📥 Template Manager - Inicializando plantillas por defecto...")
 
@@ -567,11 +567,12 @@ export class TemplateManager {
           await this.createTemplate(template)
         }
 
-        console.log(`✅ Template Manager - ${DEFAULT_TEMPLATES.length} plantillas por defecto creadas`)
+        console.log(
+          `✅ Template Manager - ${DEFAULT_TEMPLATES.length} plantillas por defecto creadas`
+        )
       } else {
         console.log(`📄 Template Manager - ${existing.length} plantillas existentes encontradas`)
       }
-
     } catch (error) {
       console.error("Error inicializando plantillas por defecto:", error)
     }
@@ -588,13 +589,14 @@ export class TemplateManager {
       const newStats = {
         totalSent: template.usage.totalSent + 1,
         lastUsed: new Date(),
-        successRate: sent 
-          ? ((template.usage.successRate * template.usage.totalSent) + 1) / (template.usage.totalSent + 1)
-          : (template.usage.successRate * template.usage.totalSent) / (template.usage.totalSent + 1)
+        successRate: sent
+          ? (template.usage.successRate * template.usage.totalSent + 1) /
+            (template.usage.totalSent + 1)
+          : (template.usage.successRate * template.usage.totalSent) /
+            (template.usage.totalSent + 1),
       }
 
-      await this.updateTemplate(templateId, { usage: newStats })
-
+      await this.updateTemplate(templateId, {usage: newStats})
     } catch (error) {
       console.error(`Error actualizando estadísticas de plantilla ${templateId}:`, error)
     }
@@ -607,5 +609,5 @@ export const templateManager = new TemplateManager()
 export default {
   templateManager,
   GLOBAL_VARIABLES,
-  DEFAULT_TEMPLATES
+  DEFAULT_TEMPLATES,
 }

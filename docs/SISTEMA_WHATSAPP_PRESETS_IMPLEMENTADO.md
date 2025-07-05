@@ -9,10 +9,11 @@
 ## ✅ **FUNCIONALIDADES IMPLEMENTADAS:**
 
 ### **1. Composable `useWhatsAppPresets.ts`**
+
 - ✅ **Gestión de presets** desde Firestore
 - ✅ **Presets por defecto** del sistema:
   - 🟡 **Llamado de Atención** (primera advertencia)
-  - 🟠 **Amonestación Formal** (segunda advertencia)  
+  - 🟠 **Amonestación Formal** (segunda advertencia)
   - 🎵 **Recordatorio de Instrumento** (entrega de instrumento)
   - 🔴 **Suspensión Temporal** (castigo temporal)
   - ⚫ **Suspensión Permanente** (expulsión)
@@ -20,6 +21,7 @@
 - ✅ **Funciones de gestión**: crear, actualizar, eliminar presets
 
 ### **2. Componente `WhatsAppMessageModal.vue`**
+
 - ✅ **Selector de presets** con categorías visuales
 - ✅ **Vista previa** del mensaje procesado con datos del estudiante
 - ✅ **Botones de copia**:
@@ -30,6 +32,7 @@
 - ✅ **Interfaz responsiva** con modo oscuro
 
 ### **3. Integración en `TopAbsenteesByRange.vue`**
+
 - ✅ **Botones diferenciados**:
   - 📱 **WhatsApp** (verde): Abre modal de mensajes predefinidos
   - 📄 **PDF** (naranja/gris): Genera documento PDF
@@ -38,6 +41,7 @@
 - ✅ **Datos automáticos** del estudiante y representante
 
 ### **4. Colección Firestore `WHATSAPP_PRESETS`**
+
 ```javascript
 {
   id: "preset_id",
@@ -59,14 +63,16 @@
 ## 🎯 **FLUJO DE USUARIO:**
 
 ### **Para Amonestaciones (4 ausencias):**
+
 1. Usuario ve botón **📱 WhatsApp** amarillo
-2. Usuario ve botón **📄 PDF** naranja  
+2. Usuario ve botón **📄 PDF** naranja
 3. **Click en WhatsApp** → Abre modal con presets
 4. **Selecciona preset** → Ve vista previa del mensaje
 5. **Copia teléfono/mensaje** → Pega en WhatsApp oficial
 6. **Click en PDF** → Descarga documento de amonestación
 
 ### **Para Retiros (5 ausencias):**
+
 1. Usuario ve botón **📱 WhatsApp** rojo
 2. Usuario ve botón **📄 PDF** gris
 3. **Click en WhatsApp** → Abre modal con presets
@@ -79,6 +85,7 @@
 ## 📝 **PRESETS PREDEFINIDOS:**
 
 ### **🟡 Llamado de Atención**
+
 ```
 🔔 *LLAMADO DE ATENCIÓN*
 
@@ -98,6 +105,7 @@ Esperamos su comprensión y colaboración.
 ```
 
 ### **🟠 Amonestación Formal**
+
 ```
 ⚠️ *AMONESTACIÓN FORMAL*
 
@@ -119,6 +127,7 @@ Solicitamos su inmediata atención a este asunto.
 ```
 
 ### **🎵 Recordatorio de Instrumento**
+
 ```
 🎵 *RECORDATORIO - INSTRUMENTO MUSICAL*
 
@@ -166,7 +175,7 @@ Gracias por su atención.
 ## 🚀 **BENEFICIOS:**
 
 - ⚡ **Comunicación rápida** con representantes
-- 📝 **Mensajes profesionales** y consistentes  
+- 📝 **Mensajes profesionales** y consistentes
 - 🏛️ **Cumplimiento normativo** con documentación
 - 📊 **Trazabilidad** de comunicaciones
 - 🎨 **Interfaz intuitiva** para maestros

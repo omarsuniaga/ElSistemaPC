@@ -223,43 +223,54 @@ const createAttendanceNotification = async (attendanceDoc: any): Promise<void> =
 const watchForNewAttendance = (): (() => void) => {
   console.log("🔍 Iniciando observador de nuevos reportes de asistencia...")
 
-  // Obtener timestamp actual para solo detectar documentos nuevos
-  const startTime = Timestamp.now()
-
-  const attendanceQuery = query(
-    collection(db, ATTENDANCE_COLLECTION),
-    where("createdAt", ">=", startTime),
-    orderBy("createdAt", "desc")
-  )
-
-  // Listener en tiempo real
-  const unsubscribe = onSnapshot(
-    attendanceQuery,
-    (snapshot) => {
-      snapshot.docChanges().forEach(async (change) => {
-        if (change.type === "added") {
-          console.log("📋 Nuevo reporte de asistencia detectado:", change.doc.id)
-
-          // Crear notificación de forma asíncrona
-          try {
-            await createAttendanceNotification(change.doc)
-          } catch (error) {
-            console.error("Error procesando nuevo reporte:", error)
-          }
-        }
-      })
-    },
-    (error) => {
-      console.error("❌ Error en observador de asistencia:", error)
+  try {
+    // Verificar que Firebase esté inicializado
+    if (!db) {
+      console.error("❌ Firebase no está inicializado")
+      return () => {}
     }
-  )
 
-  console.log("✅ Observador de asistencia activo")
+    // Obtener timestamp actual para solo detectar documentos nuevos
+    const startTime = Timestamp.now()
 
-  // Retornar función de cleanup
-  return () => {
-    console.log("🛑 Deteniendo observador de asistencia")
-    unsubscribe()
+    const attendanceQuery = query(
+      collection(db, ATTENDANCE_COLLECTION),
+      where("createdAt", ">=", startTime),
+      orderBy("createdAt", "desc")
+    )
+
+    // Listener en tiempo real
+    const unsubscribe = onSnapshot(
+      attendanceQuery,
+      (snapshot) => {
+        snapshot.docChanges().forEach(async (change) => {
+          if (change.type === "added") {
+            console.log("📋 Nuevo reporte de asistencia detectado:", change.doc.id)
+
+            // Crear notificación de forma asíncrona
+            try {
+              await createAttendanceNotification(change.doc)
+            } catch (error) {
+              console.error("Error procesando nuevo reporte:", error)
+            }
+          }
+        })
+      },
+      (error) => {
+        console.error("❌ Error en observador de asistencia:", error)
+      }
+    )
+
+    console.log("✅ Observador de asistencia activo")
+
+    // Retornar función de cleanup
+    return () => {
+      console.log("🛑 Deteniendo observador de asistencia")
+      unsubscribe()
+    }
+  } catch (error) {
+    console.error("❌ Error inicializando observador de asistencia:", error)
+    return () => {}
   }
 }
 

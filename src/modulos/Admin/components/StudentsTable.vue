@@ -242,6 +242,13 @@
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <div class="flex items-center justify-end space-x-2">
                 <button
+                  class="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 transition-colors p-1"
+                  title="Ver historial de comunicación"
+                  @click="handleShowHistory(student)"
+                >
+                  <ChatBubbleLeftRightIcon class="w-4 h-4" />
+                </button>
+                <button
                   v-if="permissions.canView"
                   class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 transition-colors p-1"
                   title="Ver detalles"
@@ -283,9 +290,15 @@
       </p>
     </div>
   </div>
+  <ConversationHistoryModal
+    :student-id="selectedStudentId"
+    :visible="isHistoryModalVisible"
+    @close="isHistoryModalVisible = false"
+  />
 </template>
 
 <script setup lang="ts">
+import {ref} from "vue"
 // Define component name
 defineOptions({
   name: "StudentsTable",
@@ -302,8 +315,10 @@ import {
   PencilIcon,
   TrashIcon,
   UserGroupIcon,
+  ChatBubbleLeftRightIcon,
 } from "@heroicons/vue/24/outline"
 import {Student} from "../store/adminStudents"
+import ConversationHistoryModal from "../../../components/SuperAdmin/ConversationHistoryModal.vue"
 
 // Props
 interface Props {
@@ -332,6 +347,10 @@ interface Emits {
 }
 
 const emit = defineEmits<Emits>()
+
+// State for Modal
+const isHistoryModalVisible = ref(false)
+const selectedStudentId = ref("")
 
 // Colors and styling
 const statusColors = {
@@ -427,6 +446,11 @@ const handleDelete = (student: Student) => {
 
 const handleToggleStatus = (student: Student) => {
   emit("toggle-status", student)
+}
+
+const handleShowHistory = (student: Student) => {
+  selectedStudentId.value = student.id
+  isHistoryModalVisible.value = true
 }
 </script>
 

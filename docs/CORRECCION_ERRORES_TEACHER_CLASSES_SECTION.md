@@ -7,13 +7,14 @@ El componente `TeacherClassesSection.vue` tenía líneas de código que intentab
 ```vue
 <!-- Código problemático que se eliminó -->
 <TodaysClassesSection
-    :classes="todaysClasses"
-    @take-attendance="handleTakeAttendance"
-    @view-class="handleViewClass"
+  :classes="todaysClasses"
+  @take-attendance="handleTakeAttendance"
+  @view-class="handleViewClass"
 />
 ```
 
 **Errores de consola:**
+
 - `Property "todaysClasses" was accessed during render but is not defined on instance`
 - `Property "handleTakeAttendance" was accessed during render but is not defined on instance`
 - `Property "handleViewClass" was accessed during render but is not defined on instance`
@@ -21,6 +22,7 @@ El componente `TeacherClassesSection.vue` tenía líneas de código que intentab
 ## Solución Implementada
 
 ### 1. Eliminación del Código Problemático
+
 - ❌ **Removido**: Uso incorrecto de `TodaysClassesSection` dentro de `TeacherClassesSection`
 - ❌ **Removido**: Import innecesario de `TodaysClassesSection`
 - ❌ **Removido**: Referencias a propiedades no definidas
@@ -28,6 +30,7 @@ El componente `TeacherClassesSection.vue` tenía líneas de código que intentab
 ### 2. Separación Correcta de Responsabilidades
 
 #### TeacherDashboardPage.vue
+
 ```vue
 <!-- Overview tab - incluye TodaysClassesSection independiente -->
 <div v-if="activeTab === 'overview'">
@@ -47,11 +50,13 @@ El componente `TeacherClassesSection.vue` tenía líneas de código que intentab
 ```
 
 #### TodaysClassesSection.vue
+
 - ✅ **Independiente**: Maneja su propia lógica de datos
 - ✅ **Auto-contenido**: Obtiene las clases desde stores internamente
 - ✅ **Sin dependencias**: No requiere props del padre
 
-#### TeacherClassesSection.vue  
+#### TeacherClassesSection.vue
+
 - ✅ **Enfocado**: Solo maneja la vista de "Mis Clases"
 - ✅ **Limpio**: Sin referencias a otros componentes de sección
 - ✅ **Funcional**: Emite eventos correctamente al padre
@@ -63,7 +68,7 @@ TeacherDashboardPage (Orchestrador)
 ├── Tab: Overview
 │   ├── DashboardMetricsSection
 │   └── TodaysClassesSection (independiente)
-├── Tab: Classes  
+├── Tab: Classes
 │   └── TeacherClassesSection (recibe props, emite eventos)
 ├── Tab: Notifications
 │   └── NotificationsSection (independiente)
@@ -81,6 +86,7 @@ TeacherDashboardPage (Orchestrador)
 ## Verificación
 
 Los siguientes errores han sido solucionados:
+
 - ✅ `Property "todaysClasses" was accessed during render but is not defined`
 - ✅ `Property "handleTakeAttendance" was accessed during render but is not defined`
 - ✅ `Property "handleViewClass" was accessed during render but is not defined`

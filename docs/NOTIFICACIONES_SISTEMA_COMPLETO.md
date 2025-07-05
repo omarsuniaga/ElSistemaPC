@@ -7,23 +7,27 @@ Se ha implementado un sistema completo de notificaciones para maestros que permi
 ## Funcionalidades Implementadas
 
 ### 1. Tab de Notificaciones en el Menú de Maestros
+
 - ✅ Nueva pestaña "Notificaciones" con icono de campana
 - ✅ Badge de notificaciones no leídas en el menú
 - ✅ Ruta `/teacher/notifications` agregada al router
 
 ### 2. Sistema de Notificaciones en Firestore
+
 - ✅ Colección `GENERAL_NOTIFICATIONS` creada
 - ✅ Servicio de notificaciones (`generalNotifications.ts`)
 - ✅ Reglas de seguridad de Firestore actualizadas
 - ✅ Índices de Firestore optimizados
 
 ### 3. Interfaz de Usuario
+
 - ✅ Página de notificaciones con filtros (Sin leer, Nuevos Estudiantes, Anuncios)
 - ✅ Tarjetas de notificación con acciones (Marcar como leído, Asignar a clase, Omitir)
 - ✅ Modal para asignar estudiantes a clases
 - ✅ Estados de carga, error y vacío
 
 ### 4. Flujo de Trabajo Completo
+
 1. **Administrador registra estudiante** → Notificación enviada a todos los maestros
 2. **Maestro ve notificación** → Puede marcar como leída, omitir, o asignar a clase
 3. **Asignación a clase** → Modal muestra las clases del maestro para selección
@@ -32,18 +36,21 @@ Se ha implementado un sistema completo de notificaciones para maestros que permi
 ## Archivos Implementados/Modificados
 
 ### Servicios y Lógica de Negocio
+
 - `src/modulos/Teachers/services/generalNotifications.ts` - Servicio de notificaciones
 - `src/modulos/Teachers/composables/useGeneralNotifications.ts` - Composable reactivo
 - `src/modulos/Students/service/students.ts` - Modificado para enviar notificaciones
 - `src/modulos/Classes/service/classes.ts` - Función para asignar estudiante a clase
 
 ### Componentes de UI
+
 - `src/modulos/Teachers/views/TeacherNotifications.vue` - Página principal
 - `src/modulos/Teachers/components/NotificationCard.vue` - Tarjeta de notificación
 - `src/modulos/Teachers/components/AssignStudentToClassModal.vue` - Modal de asignación
 - `src/components/FooterNavigation.vue` - Modificado para mostrar badge
 
 ### Configuración
+
 - `src/modulos/Teachers/constants/menuItems.ts` - Menu con nueva pestaña
 - `src/router/index.ts` - Nueva ruta agregada
 - `firestore.rules` - Reglas de seguridad actualizadas
@@ -52,19 +59,23 @@ Se ha implementado un sistema completo de notificaciones para maestros que permi
 ## Tipos de Notificaciones Soportadas
 
 ### 1. Registro de Estudiante (`student-registration`)
+
 - Se envía cuando un admin registra un nuevo estudiante
 - Contiene datos del estudiante para asignación rápida
 - Permite asignar directamente a una clase
 
 ### 2. Anuncios Generales (`general-announcement`)
+
 - Para comunicaciones generales de la administración
 - Información importante para todos los maestros
 
 ### 3. Actualizaciones de Clase (`class-update`)
+
 - Para cambios en clases específicas
 - Modificaciones de horarios, cancelaciones, etc.
 
 ### 4. Actualizaciones del Sistema (`system-update`)
+
 - Para cambios técnicos o mantenimiento
 - Nuevas funcionalidades disponibles
 
@@ -78,25 +89,30 @@ Se ha implementado un sistema completo de notificaciones para maestros que permi
 ## Funciones Principales
 
 ### Crear Notificación de Registro de Estudiante
+
 ```javascript
 await createStudentRegistrationNotification({
-  teacherId: 'teacher-id',
-  studentId: 'student-id', 
-  studentName: 'Juan Pérez',
-  studentData: { /* datos completos */ },
-  fromUserId: 'admin-id',
-  fromUserName: 'Administrador'
+  teacherId: "teacher-id",
+  studentId: "student-id",
+  studentName: "Juan Pérez",
+  studentData: {
+    /* datos completos */
+  },
+  fromUserId: "admin-id",
+  fromUserName: "Administrador",
 })
 ```
 
 ### Asignar Estudiante a Clase
+
 ```javascript
 await addStudentToClass(classId, studentId)
 ```
 
 ### Escuchar Notificaciones en Tiempo Real
+
 ```javascript
-const { notifications, unreadCount } = useGeneralNotifications()
+const {notifications, unreadCount} = useGeneralNotifications()
 ```
 
 ## Flujo de Datos

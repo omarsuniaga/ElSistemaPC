@@ -120,7 +120,7 @@
 
 1. **Stores Utilizados**
    - useAdminStudentsStore: Gestión de estudiantes
-   - useAdminTeachersStore: Gestión de maestros  
+   - useAdminTeachersStore: Gestión de maestros
    - useClassesStore: Gestión de clases
 
 2. **Métodos de Carga**

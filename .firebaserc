@@ -1,7 +1,8 @@
 {
   "projects": {
     "default": "orquestapuntacana",
-    "elSistemaPC": "orquestapuntacana"
+    "elSistemaPC": "orquestapuntacana",
+    "ElSistemaPC": "orquestapuntacana"
   },
   "targets": {},
   "etags": {}

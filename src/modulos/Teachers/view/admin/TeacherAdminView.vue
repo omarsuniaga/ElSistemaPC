@@ -475,7 +475,7 @@
 <script setup lang="ts">
 import {ref, computed, onMounted, watch} from "vue"
 import {useRouter} from "vue-router"
-import {useTeachersStore} from "../../store/teachers"
+import {useTeachersStore} from "@/stores/teachersUnified"
 import {useClassesStore} from "../../../Classes/store/classes"
 import {useStudentsStore} from "../../../Students/store/students" // Added missing import
 import {useInstrumentsStore} from "@/stores/instruments"

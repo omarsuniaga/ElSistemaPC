@@ -57,6 +57,7 @@
     "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
     "@headlessui/vue": "^1.7.23",
     "@heroicons/vue": "^2.1.1",
+    "@types/chart.js": "^2.9.41",
     "@vuepic/vue-datepicker": "^7.4.0",
     "@vueuse/components": "^10.7.2",
     "@vueuse/core": "^10.11.1",
@@ -65,7 +66,7 @@
     "@whiskeysockets/baileys": "^6.7.18",
     "abcjs": "^6.3.0",
     "axios": "^1.6.7",
-    "chart.js": "^4.4.8",
+    "chart.js": "^4.5.0",
     "cors": "^2.8.5",
     "date-fns": "^3.3.1",
     "dompurify": "^3.2.4",
@@ -74,7 +75,7 @@
     "firebase": "^11.9.1",
     "firebase-admin": "^13.2.0",
     "html2pdf.js": "^0.10.3",
-    "idb": "^8.0.2",
+    "idb": "^8.0.3",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "lodash-es": "^4.17.21",
@@ -95,9 +96,9 @@
     "vue-virtual-scroller": "^2.0.0-beta.8",
     "vue3-perfect-scrollbar": "^2.0.0",
     "vuedraggable": "^4.1.0",
-    "workbox-window": "^7.0.0",
     "xlsx": "^0.18.5",
-    "yup": "^1.6.1"
+    "yup": "^1.6.1",
+    "zod": "^3.25.71"
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.12",
@@ -131,6 +132,13 @@
     "vite-plugin-pwa": "^0.21.2",
     "vite-plugin-vuetify": "^2.1.1",
     "vitest": "^3.0.9",
-    "vue-tsc": "^2.2.8"
+    "vue-tsc": "^2.2.8",
+    "workbox-background-sync": "^7.3.0",
+    "workbox-cacheable-response": "^7.3.0",
+    "workbox-expiration": "^7.3.0",
+    "workbox-precaching": "^7.3.0",
+    "workbox-routing": "^7.3.0",
+    "workbox-strategies": "^7.3.0",
+    "workbox-window": "^7.3.0"
   }
 }

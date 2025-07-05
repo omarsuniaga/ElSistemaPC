@@ -123,7 +123,7 @@ const availableColumns = computed(() => {
     ],
     // ... más tipos de informes
   }
-  
+
   return columns[selectedReport.value] || []
 })
 
@@ -135,7 +135,7 @@ watch(selectedReport, (newValue) => {
     customColumns.value = availableColumns.value
       .filter(col => col.selected)
       .map(col => col.id)
-    
+
     isConfiguring.value = true
     showAdvancedOptions.value = false
   }
@@ -182,12 +182,12 @@ const generatePreview = async () => {
 const generateReport = async () => {
   isGenerating.value = true
   error.value = ''
-  
+
   try {
     // Determinar qué datos incluir según el tipo de informe
     let reportData: any[] = []
     let title = customTitle.value || `Informe de ${availableReports.find(r => r.id === selectedReport.value)?.name}`
-    
+
     switch (selectedReport.value) {
       case 'students':
         reportData = await getStudentsReportData()
@@ -205,7 +205,7 @@ const generateReport = async () => {
       default:
         throw new Error('Tipo de informe no válido')
     }
-    
+
     // Filtrar columnas si es necesario
     if (customColumns.value.length > 0) {
       reportData = reportData.map(item => {
@@ -218,14 +218,14 @@ const generateReport = async () => {
         return filteredItem
       })
     }
-    
+
     // Generación del informe según el formato
     if (selectedFormat.value === 'pdf') {
       await generatePDFReport(reportData, title)
     } else {
       await generateExcelReport(reportData, title)
     }
-    
+
     reportGenerated.value = true
   } catch (err: any) {
     console.error('Error al generar el informe:', err)
@@ -240,22 +240,22 @@ const getStudentsReportData = async () => {
   if (studentsStore.students.length === 0) {
     await studentsStore.fetchStudents()
   }
-  
+
   let students = [...studentsStore.students]
-  
+
   // Aplicar filtros si están seleccionados
   if (selectedInstruments.value.length > 0) {
-    students = students.filter(student => 
+    students = students.filter(student =>
       selectedInstruments.value.includes(student.instrumento)
     )
   }
-  
+
   if (selectedGroups.value.length > 0) {
-    students = students.filter(student => 
+    students = students.filter(student =>
       student.grupo.some(g => selectedGroups.value.includes(g))
     )
   }
-  
+
   // Mapear a formato de informe
   return students.map(student => ({
     nombre: student.nombre,
@@ -313,7 +313,7 @@ const generatePDFReport = async (data: any[], title: string) => {
   const reportColumns = Object.keys(data[0]).map(key => ({
     header: key.charAt(0).toUpperCase() + key.slice(1),
     dataKey: key
-  })); 
+  }));
 
   const pdfOptions = {
     title: title,
@@ -369,16 +369,16 @@ const generateExcelReport = async (data: any[], title: string) => {
   workbook.lastModifiedBy = 'Music Academy App';
   workbook.created = new Date();
   workbook.modified = new Date();
-  
+
   // Crear una hoja de trabajo
   const worksheet = workbook.addWorksheet(title.substring(0, 30));
-  
+
   // Solo si hay datos
   if (data.length > 0) {
     // Añadir encabezados
     const headers = Object.keys(data[0]);
     worksheet.addRow(headers);
-    
+
     // Dar formato a los encabezados
     const headerRow = worksheet.getRow(1);
     headerRow.font = { bold: true };
@@ -387,7 +387,7 @@ const generateExcelReport = async (data: any[], title: string) => {
       pattern: 'solid',
       fgColor: { argb: 'FF2980B9' } // Azul
     };
-    
+
     // Añadir datos
     data.forEach(item => {
       const row = [];
@@ -396,7 +396,7 @@ const generateExcelReport = async (data: any[], title: string) => {
       });
       worksheet.addRow(row);
     });
-    
+
     // Dar formato a columnas
     worksheet.columns.forEach(column => {
       let maxLength = 10;
@@ -407,24 +407,24 @@ const generateExcelReport = async (data: any[], title: string) => {
       column.width = Math.min(maxLength + 2, 30); // Limitar ancho máximo a 30
     });
   }
-  
+
   // Guardar el archivo
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
-  
+
   // Crear enlace de descarga
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = `${title.toLowerCase().replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
-  
+
   // Si no estamos en vista previa, descargar automáticamente
   if (!showPreview.value) {
     anchor.click();
   } else {
     reportUrl.value = url;
   }
-  
+
   // Liberar recursos
   setTimeout(() => {
     URL.revokeObjectURL(url);
@@ -576,11 +576,7 @@ const getProgressReportData = async () => {
   <div class="space-y-6">
     <!-- Report Selection -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div
-        v-for="(category, key) in reportCategories"
-        :key="key"
-        class="card"
-      >
+      <div v-for="(category, key) in reportCategories" :key="key" class="card">
         <h3 class="text-lg font-semibold mb-4">{{ category.name }}</h3>
         <div class="space-y-2">
           <button
@@ -588,9 +584,11 @@ const getProgressReportData = async () => {
             :key="report.id"
             @click="selectedReport = report.id"
             class="w-full p-3 rounded-lg text-left transition-colors"
-            :class="selectedReport === report.id
-              ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-              : 'hover:bg-gray-50 dark:hover:bg-gray-800'"
+            :class="
+              selectedReport === report.id
+                ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+            "
           >
             <p class="font-medium">{{ report.name }}</p>
             <p class="text-sm text-gray-600 dark:text-gray-400">
@@ -607,29 +605,17 @@ const getProgressReportData = async () => {
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label class="block text-sm font-medium mb-1">Fecha Inicio</label>
-          <input
-            v-model="filters.startDate"
-            type="date"
-            class="input"
-          />
+          <input v-model="filters.startDate" type="date" class="input" />
         </div>
         <div>
           <label class="block text-sm font-medium mb-1">Fecha Fin</label>
-          <input
-            v-model="filters.endDate"
-            type="date"
-            class="input"
-          />
+          <input v-model="filters.endDate" type="date" class="input" />
         </div>
         <div>
           <label class="block text-sm font-medium mb-1">Clase</label>
           <select v-model="filters.class" class="input">
             <option value="">Todas las clases</option>
-            <option
-              v-for="class_ in classesStore.classes"
-              :key="class_.id"
-              :value="class_.name"
-            >
+            <option v-for="class_ in classesStore.classes" :key="class_.id" :value="class_.name">
               {{ class_.name }}
             </option>
           </select>
@@ -638,11 +624,7 @@ const getProgressReportData = async () => {
           <label class="block text-sm font-medium mb-1">Maestro</label>
           <select v-model="filters.teacher" class="input">
             <option value="">Todos los maestros</option>
-            <option
-              v-for="teacher in teachersStore.teachers"
-              :key="teacher.id"
-              :value="teacher.id"
-            >
+            <option v-for="teacher in teachersStore.teachers" :key="teacher.id" :value="teacher.id">
               {{ teacher.name }}
             </option>
           </select>
@@ -651,11 +633,7 @@ const getProgressReportData = async () => {
           <label class="block text-sm font-medium mb-1">Alumno</label>
           <select v-model="filters.student" class="input">
             <option value="">Todos los alumnos</option>
-            <option
-              v-for="student in studentsStore.students"
-              :key="student.id"
-              :value="student.id"
-            >
+            <option v-for="student in studentsStore.students" :key="student.id" :value="student.id">
               {{ student.nombre }} {{ student.apellido }}
             </option>
           </select>
@@ -677,18 +655,14 @@ const getProgressReportData = async () => {
           @click="showPreview = !showPreview"
           class="btn bg-blue-600 text-white hover:bg-blue-700"
         >
-          {{ showPreview ? 'Ocultar Vista Previa' : 'Vista Previa' }}
+          {{ showPreview ? "Ocultar Vista Previa" : "Vista Previa" }}
         </button>
         <select v-model="selectedFormat" class="input w-32">
           <option value="pdf">PDF</option>
           <option value="excel">Excel</option>
         </select>
-        <button
-          @click="exportReport"
-          class="btn btn-primary"
-          :disabled="isGenerating"
-        >
-          {{ isGenerating ? 'Generando...' : 'Generar Informe' }}
+        <button @click="exportReport" class="btn btn-primary" :disabled="isGenerating">
+          {{ isGenerating ? "Generando..." : "Generar Informe" }}
         </button>
       </div>
     </div>
@@ -708,13 +682,13 @@ const getProgressReportData = async () => {
           <div class="p-4 bg-green-50 dark:bg-green-900/30 rounded-lg">
             <p class="text-sm text-green-600 dark:text-green-400">Presentes</p>
             <p class="text-2xl font-bold text-green-600 dark:text-green-400">
-              {{ Math.round(reportData.summary.present/reportData.summary.total*100) }}%
+              {{ Math.round((reportData.summary.present / reportData.summary.total) * 100) }}%
             </p>
           </div>
           <div class="p-4 bg-red-50 dark:bg-red-900/30 rounded-lg">
             <p class="text-sm text-red-600 dark:text-red-400">Ausentes</p>
             <p class="text-2xl font-bold text-red-600 dark:text-red-400">
-              {{ Math.round(reportData.summary.absent/reportData.summary.total*100) }}%
+              {{ Math.round((reportData.summary.absent / reportData.summary.total) * 100) }}%
             </p>
           </div>
           <div class="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
@@ -743,11 +717,9 @@ const getProgressReportData = async () => {
                 </div>
                 <div class="text-right">
                   <p class="text-2xl font-bold">
-                    {{ Math.round((stats.present + stats.justified) / stats.total * 100) }}%
+                    {{ Math.round(((stats.present + stats.justified) / stats.total) * 100) }}%
                   </p>
-                  <p class="text-sm text-gray-600 dark:text-gray-400">
-                    asistencia
-                  </p>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">asistencia</p>
                 </div>
               </div>
 
@@ -756,7 +728,7 @@ const getProgressReportData = async () => {
                   <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
                       class="h-full bg-green-500 rounded-full"
-                      :style="{ width: `${(stats.present / stats.total) * 100}%` }"
+                      :style="{width: `${(stats.present / stats.total) * 100}%`}"
                     ></div>
                   </div>
                   <span class="text-sm">{{ stats.present }} presentes</span>
@@ -765,7 +737,7 @@ const getProgressReportData = async () => {
                   <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
                       class="h-full bg-red-500 rounded-full"
-                      :style="{ width: `${(stats.absent / stats.total) * 100}%` }"
+                      :style="{width: `${(stats.absent / stats.total) * 100}%`}"
                     ></div>
                   </div>
                   <span class="text-sm">{{ stats.absent }} ausentes</span>
@@ -774,7 +746,7 @@ const getProgressReportData = async () => {
                   <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
                       class="h-full bg-yellow-500 rounded-full"
-                      :style="{ width: `${(stats.delayed / stats.total) * 100}%` }"
+                      :style="{width: `${(stats.delayed / stats.total) * 100}%`}"
                     ></div>
                   </div>
                   <span class="text-sm">{{ stats.delayed }} demorados</span>
@@ -783,7 +755,7 @@ const getProgressReportData = async () => {
                   <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
                       class="h-full bg-blue-500 rounded-full"
-                      :style="{ width: `${(stats.justified / stats.total) * 100}%` }"
+                      :style="{width: `${(stats.justified / stats.total) * 100}%`}"
                     ></div>
                   </div>
                   <span class="text-sm">{{ stats.justified }} justificados</span>
@@ -820,10 +792,14 @@ const getProgressReportData = async () => {
                     <span
                       class="px-2 py-1 text-sm rounded-full"
                       :class="{
-                        'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200': record.status === 'Presente',
-                        'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200': record.status === 'Ausente',
-                        'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200': record.status === 'Demorado',
-                        'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200': record.status === 'Justificado'
+                        'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200':
+                          record.status === 'Presente',
+                        'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200':
+                          record.status === 'Ausente',
+                        'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200':
+                          record.status === 'Demorado',
+                        'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200':
+                          record.status === 'Justificado',
                       }"
                     >
                       {{ record.status }}
@@ -839,11 +815,7 @@ const getProgressReportData = async () => {
 
       <!-- Teacher Attendance Report -->
       <div v-else-if="selectedReport === 'attendance-teacher'" class="space-y-6">
-        <div
-          v-for="teacher in reportData.teachers"
-          :key="teacher.teacherId"
-          class="card"
-        >
+        <div v-for="teacher in reportData.teachers" :key="teacher.teacherId" class="card">
           <div class="flex justify-between items-start mb-4">
             <div>
               <h4 class="text-lg font-semibold">{{ teacher.teacherName }}</h4>
@@ -855,9 +827,7 @@ const getProgressReportData = async () => {
               <p class="text-2xl font-bold text-primary-600">
                 {{ Math.round(teacher.averageAttendance) }}%
               </p>
-              <p class="text-sm text-gray-600 dark:text-gray-400">
-                asistencia promedio
-              </p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">asistencia promedio</p>
             </div>
           </div>
 
@@ -875,9 +845,7 @@ const getProgressReportData = async () => {
                   </p>
                 </div>
                 <div class="text-right">
-                  <p class="font-bold">
-                    {{ Math.round(class_.attendanceRate) }}%
-                  </p>
+                  <p class="font-bold">{{ Math.round(class_.attendanceRate) }}%</p>
                   <p class="text-sm text-gray-600 dark:text-gray-400">
                     {{ class_.present }} presentes
                   </p>
@@ -890,11 +858,7 @@ const getProgressReportData = async () => {
 
       <!-- Student Attendance Report -->
       <div v-else-if="selectedReport === 'attendance-student'" class="space-y-6">
-        <div
-          v-for="student in reportData.students"
-          :key="student.studentId"
-          class="card"
-        >
+        <div v-for="student in reportData.students" :key="student.studentId" class="card">
           <div class="flex justify-between items-start mb-4">
             <div>
               <h4 class="text-lg font-semibold">{{ student.studentName }}</h4>
@@ -903,18 +867,17 @@ const getProgressReportData = async () => {
               </p>
             </div>
             <div class="text-right">
-              <p class="text-2xl font-bold"
+              <p
+                class="text-2xl font-bold"
                 :class="{
                   'text-green-600': student.attendanceRate >= 90,
                   'text-yellow-600': student.attendanceRate >= 75 && student.attendanceRate < 90,
-                  'text-red-600': student.attendanceRate < 75
+                  'text-red-600': student.attendanceRate < 75,
                 }"
               >
                 {{ Math.round(student.attendanceRate) }}%
               </p>
-              <p class="text-sm text-gray-600 dark:text-gray-400">
-                asistencia
-              </p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">asistencia</p>
             </div>
           </div>
 
@@ -949,10 +912,14 @@ const getProgressReportData = async () => {
               <span
                 class="px-2 py-1 text-sm rounded-full"
                 :class="{
-                  'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200': record.status === 'Presente',
-                  'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200': record.status === 'Ausente',
-                  'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200': record.status === 'Demorado',
-                  'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200': record.status === 'Justificado'
+                  'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200':
+                    record.status === 'Presente',
+                  'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200':
+                    record.status === 'Ausente',
+                  'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200':
+                    record.status === 'Demorado',
+                  'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200':
+                    record.status === 'Justificado',
                 }"
               >
                 {{ record.status }}
@@ -964,11 +931,7 @@ const getProgressReportData = async () => {
 
       <!-- Teachers Metrics Report -->
       <div v-else-if="selectedReport === 'teachers-metrics'" class="space-y-6">
-        <div
-          v-for="teacher in reportData.teachers"
-          :key="teacher.teacherId"
-          class="card"
-        >
+        <div v-for="teacher in reportData.teachers" :key="teacher.teacherId" class="card">
           <div class="flex justify-between items-start mb-4">
             <div>
               <h4 class="text-lg font-semibold">{{ teacher.teacherName }}</h4>
@@ -986,9 +949,7 @@ const getProgressReportData = async () => {
               <p class="text-2xl font-bold text-primary-600">
                 {{ Math.round(teacher.attendanceRate) }}%
               </p>
-              <p class="text-sm text-gray-600 dark:text-gray-400">
-                asistencia promedio
-              </p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">asistencia promedio</p>
             </div>
           </div>
 
@@ -1019,9 +980,7 @@ const getProgressReportData = async () => {
               >
                 <p class="font-medium">{{ exp.institution }}</p>
                 <p class="text-sm text-gray-600">{{ exp.role }}</p>
-                <p class="text-sm text-gray-600">
-                  {{ exp.startDate }} - {{ exp.endDate }}
-                </p>
+                <p class="text-sm text-gray-600">{{ exp.startDate }} - {{ exp.endDate }}</p>
               </div>
             </div>
           </div>
@@ -1036,9 +995,7 @@ const getProgressReportData = async () => {
                 class="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"
               >
                 <p class="font-medium">{{ cert.title }}</p>
-                <p class="text-sm text-gray-600">
-                  {{ cert.institution }} - {{ cert.year }}
-                </p>
+                <p class="text-sm text-gray-600">{{ cert.institution }} - {{ cert.year }}</p>
               </div>
             </div>
           </div>
@@ -1074,8 +1031,9 @@ const getProgressReportData = async () => {
                     class="px-2 py-1 text-sm rounded-full"
                     :class="{
                       'bg-green-100 text-green-800': student.attendanceRate >= 90,
-                      'bg-yellow-100 text-yellow-800': student.attendanceRate >= 75 && student.attendanceRate < 90,
-                      'bg-red-100 text-red-800': student.attendanceRate < 75
+                      'bg-yellow-100 text-yellow-800':
+                        student.attendanceRate >= 75 && student.attendanceRate < 90,
+                      'bg-red-100 text-red-800': student.attendanceRate < 75,
                     }"
                   >
                     {{ Math.round(student.attendanceRate) }}%
@@ -1090,11 +1048,7 @@ const getProgressReportData = async () => {
 
       <!-- Classes Enrollment Report -->
       <div v-else-if="selectedReport === 'classes-enrollment'" class="space-y-6">
-        <div
-          v-for="class_ in reportData.classes"
-          :key="class_.className"
-          class="card"
-        >
+        <div v-for="class_ in reportData.classes" :key="class_.className" class="card">
           <div class="flex justify-between items-start mb-4">
             <div>
               <h4 class="text-lg font-semibold">{{ class_.className }}</h4>
@@ -1137,7 +1091,7 @@ const getProgressReportData = async () => {
                   <p class="text-sm text-gray-600">{{ student.instrument }}</p>
                 </div>
                 <p class="text-sm text-gray-600">
-                  Inscrito: {{ format(parseISO(student.enrollmentDate), 'PP', { locale: es }) }}
+                  Inscrito: {{ format(parseISO(student.enrollmentDate), "PP", {locale: es}) }}
                 </p>
               </div>
             </div>
@@ -1147,19 +1101,19 @@ const getProgressReportData = async () => {
 
       <!-- Academic Content Report -->
       <div v-else-if="selectedReport === 'academic-content'" class="space-y-6">
-        <div
-          v-for="content in reportData.contents"
-          :key="content.title"
-          class="card"
-        >
+        <div v-for="content in reportData.contents" :key="content.title" class="card">
           <div class="flex justify-between items-start mb-4">
             <div>
               <h4 class="text-lg font-semibold">{{ content.title }}</h4>
               <div class="flex gap-2 mt-1">
-                <span class="px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
+                <span
+                  class="px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full"
+                >
                   {{ content.class }}
                 </span>
-                <span class="px-2 py-1 text-sm bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-full">
+                <span
+                  class="px-2 py-1 text-sm bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-full"
+                >
                   {{ content.level }}
                 </span>
               </div>
@@ -1246,7 +1200,9 @@ const getProgressReportData = async () => {
                 <td class="px-4 py-2">{{ indicator.indicator }}</td>
                 <td class="px-4 py-2">{{ indicator.description }}</td>
                 <td class="px-4 py-2">
-                  <span class="px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
+                  <span
+                    class="px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full"
+                  >
                     {{ indicator.weight }}%
                   </span>
                 </td>
@@ -1265,10 +1221,14 @@ const getProgressReportData = async () => {
           <div class="mb-6">
             <h4 class="text-lg font-semibold">{{ reportData.student.name }}</h4>
             <div class="flex gap-2 mt-1">
-              <span class="px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
+              <span
+                class="px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full"
+              >
                 {{ reportData.student.instrument }}
               </span>
-              <span class="px-2 py-1 text-sm bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-full">
+              <span
+                class="px-2 py-1 text-sm bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-full"
+              >
                 {{ reportData.student.level }}
               </span>
             </div>
@@ -1276,7 +1236,15 @@ const getProgressReportData = async () => {
 
           <div class="grid grid-cols-7 gap-4">
             <div
-              v-for="day in ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']"
+              v-for="day in [
+                'Lunes',
+                'Martes',
+                'Miércoles',
+                'Jueves',
+                'Viernes',
+                'Sábado',
+                'Domingo',
+              ]"
               :key="day"
               class="space-y-2"
             >
@@ -1284,7 +1252,7 @@ const getProgressReportData = async () => {
                 {{ day }}
               </h5>
               <div
-                v-for="class_ in reportData.schedule.filter(s => s.day === day)"
+                v-for="class_ in reportData.schedule.filter((s) => s.day === day)"
                 :key="class_.className"
                 class="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm"
               >
@@ -1319,7 +1287,15 @@ const getProgressReportData = async () => {
 
           <div class="grid grid-cols-7 gap-4">
             <div
-              v-for="day in ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']"
+              v-for="day in [
+                'Lunes',
+                'Martes',
+                'Miércoles',
+                'Jueves',
+                'Viernes',
+                'Sábado',
+                'Domingo',
+              ]"
               :key="day"
               class="space-y-2"
             >
@@ -1327,9 +1303,9 @@ const getProgressReportData = async () => {
                 {{ day }}
               </h5>
               <div
-                v-for="class_ in reportData.schedule.filter(s => s.day === day)"
+                v-for="class_ in reportData.schedule.filter((s) => s.day === day)"
                 :key="class_.className"
-                class="p-2  bg-gray-50 dark:bg-gray-800 rounded-lg text-sm"
+                class="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm"
               >
                 <p class="font-medium">{{ class_.className }}</p>
                 <p class="text-gray-600">{{ class_.time }}</p>

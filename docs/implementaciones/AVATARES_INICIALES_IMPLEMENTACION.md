@@ -22,6 +22,7 @@ Se ha reemplazado el sistema de imágenes de avatares con un sistema de iniciale
 ## 🎨 Componente Creado
 
 ### `StudentAvatar.vue`
+
 ```vue
 <StudentAvatar
   :first-name="student.nombre"
@@ -33,6 +34,7 @@ Se ha reemplazado el sistema de imágenes de avatares con un sistema de iniciale
 ```
 
 **Características:**
+
 - Genera iniciales automáticamente (Primer nombre + Apellido)
 - 5 tamaños disponibles: `xs`, `sm`, `md`, `lg`, `xl`
 - 10 colores únicos basados en hash del nombre
@@ -42,6 +44,7 @@ Se ha reemplazado el sistema de imágenes de avatares con un sistema de iniciale
 ## 📁 Archivos Actualizados
 
 ### Componentes Principales:
+
 1. **`src/modulos/Students/components/StudentAvatar.vue`** - ⭐ Componente principal creado
 2. **`src/modulos/Students/components/StudentsPanel.vue`** - Lista de estudiantes
 3. **`src/modulos/Students/components/StudentDrawer.vue`** - Panel lateral de estudiante
@@ -50,6 +53,7 @@ Se ha reemplazado el sistema de imágenes de avatares con un sistema de iniciale
 6. **`src/modulos/Students/components/EvaluationCard.vue`** - Tarjetas de evaluación
 
 ### Componentes de Clases:
+
 7. **`src/components/teachers/TeacherClasses.vue`** - Lista de estudiantes en clases
 8. **`src/modulos/Classes/components/ClassesDrawer.vue`** - Panel de clases
 9. **`src/modulos/Classes/components/ClassScheduleList.vue`** - Lista de horarios
@@ -57,16 +61,19 @@ Se ha reemplazado el sistema de imágenes de avatares con un sistema de iniciale
 ## 🎯 Beneficios Obtenidos
 
 ### Rendimiento
+
 - **Eliminación de errores 404** - No más imágenes faltantes
 - **Carga instantánea** - Sin latencia de red
 - **Menor uso de ancho de banda** - No descarga imágenes
 
 ### Experiencia de Usuario
+
 - **Identificación visual rápida** - Iniciales únicas y colores consistentes
 - **Interfaz más limpia** - Estilo uniforme en toda la aplicación
 - **Mejor accesibilidad** - Texto alternativo apropiado
 
 ### Desarrollo
+
 - **Mantenimiento reducido** - No hay que gestionar imágenes
 - **Código más simple** - Lógica centralizada en un componente
 - **Escalabilidad** - Funciona automáticamente para nuevos estudiantes
@@ -77,22 +84,29 @@ Los avatares utilizan un sistema de hash que asigna colores de forma determinist
 
 ```typescript
 const colors = [
-  'bg-blue-500', 'bg-green-500', 'bg-purple-500', 
-  'bg-pink-500', 'bg-yellow-500', 'bg-indigo-500',
-  'bg-red-500', 'bg-teal-500', 'bg-orange-500', 'bg-cyan-500'
-];
+  "bg-blue-500",
+  "bg-green-500",
+  "bg-purple-500",
+  "bg-pink-500",
+  "bg-yellow-500",
+  "bg-indigo-500",
+  "bg-red-500",
+  "bg-teal-500",
+  "bg-orange-500",
+  "bg-cyan-500",
+]
 ```
 
 ## 📱 Tamaños Disponibles
 
 ```typescript
 const sizeClasses = {
-  xs: 'w-6 h-6 text-xs',      // Para listas pequeñas
-  sm: 'w-8 h-8 text-xs',      // Para widgets compactos
-  md: 'w-10 h-10 text-sm',    // Tamaño estándar
-  lg: 'w-16 h-16 text-lg',    // Para tarjetas de perfil
-  xl: 'w-24 h-24 text-xl',    // Para vistas de perfil principales
-};
+  xs: "w-6 h-6 text-xs", // Para listas pequeñas
+  sm: "w-8 h-8 text-xs", // Para widgets compactos
+  md: "w-10 h-10 text-sm", // Tamaño estándar
+  lg: "w-16 h-16 text-lg", // Para tarjetas de perfil
+  xl: "w-24 h-24 text-xl", // Para vistas de perfil principales
+}
 ```
 
 ## 🧪 Archivo de Prueba
@@ -125,6 +139,7 @@ Estos pueden actualizarse gradualmente siguiendo el mismo patrón implementado.
 ## ✨ Resultado Final
 
 El sistema de avatares ahora:
+
 - ✅ **No genera errores 404**
 - ✅ **Carga instantáneamente**
 - ✅ **Proporciona identificación visual clara**

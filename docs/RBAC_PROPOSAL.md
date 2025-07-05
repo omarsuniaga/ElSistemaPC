@@ -14,6 +14,7 @@ El sistema actual tiene roles hardcodeados en las rutas (`allowedRoles: ['Direct
 ### 🏗️ Arquitectura del Sistema
 
 #### 1. **Servicio RBAC Central** (`rbacService.ts`)
+
 ```typescript
 // Gestiona roles, permisos, módulos y asignaciones
 class RBACService {
@@ -25,6 +26,7 @@ class RBACService {
 ```
 
 #### 2. **Composable de RBAC** (`useRBAC.ts`)
+
 ```typescript
 // Proporciona reactividad y métodos para componentes Vue
 export function useRBAC() {
@@ -35,9 +37,10 @@ export function useRBAC() {
 ```
 
 #### 3. **Componente de Protección Dinámico** (`DynamicPermissionGuard.vue`)
+
 ```vue
 <!-- Reemplaza al PermissionGuard estático -->
-<DynamicPermissionGuard 
+<DynamicPermissionGuard
   :permissions="['users:write']"
   :roles="['admin']"
   :moduleId="'users'"
@@ -48,6 +51,7 @@ export function useRBAC() {
 ```
 
 #### 4. **Guard de Router Dinámico** (`rbacGuard.ts`)
+
 ```typescript
 // Verifica acceso a rutas de forma dinámica
 export async function rbacGuard(to, from, next) {
@@ -139,16 +143,16 @@ export async function rbacGuard(to, from, next) {
     <DynamicPermissionGuard moduleId="students">
       <StudentsModule />
     </DynamicPermissionGuard>
-    
+
     <!-- Control granular por componente -->
-    <DynamicPermissionGuard 
+    <DynamicPermissionGuard
       :permissions="['students:write']"
       componentId="student-form"
       moduleId="students"
     >
       <StudentForm />
     </DynamicPermissionGuard>
-    
+
     <!-- Control por roles específicos -->
     <DynamicPermissionGuard :roles="['admin', 'director']">
       <AdminPanel />
@@ -161,10 +165,14 @@ export async function rbacGuard(to, from, next) {
 
 ```typescript
 // En lugar de:
-meta: { allowedRoles: ['Director', 'Admin'] }
+meta: {
+  allowedRoles: ["Director", "Admin"]
+}
 
 // Usamos:
-meta: { requiresRBAC: true }
+meta: {
+  requiresRBAC: true
+}
 
 // Y el guard verifica dinámicamente:
 beforeEnter: rbacGuard
@@ -173,21 +181,25 @@ beforeEnter: rbacGuard
 ### 🚀 Ventajas del Sistema RBAC
 
 #### **1. Flexibilidad Total**
+
 - Roles y permisos se configuran desde la interfaz
 - No requiere modificar código para cambios
 - Permisos granulares por componente
 
 #### **2. Escalabilidad**
+
 - Fácil agregar nuevos módulos
 - Roles ilimitados
 - Permisos específicos por función
 
 #### **3. Seguridad Mejorada**
+
 - Control fino de acceso
 - Auditoría completa
 - Principio de menor privilegio
 
 #### **4. Mantenimiento Simplificado**
+
 - Configuración centralizada
 - Interface visual para gestión
 - Cambios en tiempo real
@@ -195,23 +207,27 @@ beforeEnter: rbacGuard
 ### 📋 Plan de Implementación
 
 #### **Fase 1: Fundamentos** ✅
+
 - [x] Crear servicio RBAC
 - [x] Implementar composable useRBAC
 - [x] Crear DynamicPermissionGuard
 - [x] Desarrollar RBACManagement view
 
 #### **Fase 2: Integración**
+
 - [ ] Implementar guards dinámicos en router
 - [ ] Migrar rutas existentes
 - [ ] Crear datos iniciales en Firestore
 
 #### **Fase 3: Migración de Módulos**
+
 - [ ] Migrar módulo Students
-- [ ] Migrar módulo Teachers  
+- [ ] Migrar módulo Teachers
 - [ ] Migrar módulo Instruments
 - [ ] Migrar módulo Montaje
 
 #### **Fase 4: Funcionalidades Avanzadas**
+
 - [ ] Crear modales de gestión
 - [ ] Implementar auditoría
 - [ ] Agregar importación/exportación de configuraciones
@@ -220,6 +236,7 @@ beforeEnter: rbacGuard
 ### 🎯 Resultado Final
 
 **El SuperUsuario podrá:**
+
 - ✅ Crear roles personalizados
 - ✅ Definir permisos granulares
 - ✅ Controlar acceso por módulo/componente
@@ -227,6 +244,7 @@ beforeEnter: rbacGuard
 - ✅ Ver toda la actividad en tiempo real
 
 **Los usuarios verán:**
+
 - ✅ Solo los módulos permitidos
 - ✅ Solo los componentes autorizados
 - ✅ Interfaces adaptadas a sus permisos

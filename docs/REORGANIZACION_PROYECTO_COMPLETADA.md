@@ -5,6 +5,7 @@
 ### 📁 Nueva Estructura de Carpetas
 
 #### 1. **src/utils/** - Reorganizado por funcionalidad
+
 - `src/utils/pdf/` - Módulo PDF completo
   - `pdf-export.ts` - Funciones principales de exportación
   - `service.ts` - Servicio base de PDF
@@ -18,6 +19,7 @@
 #### 2. **src/components/** - Reorganizado por propósito
 
 ##### 🎨 **UI Components** (`src/components/ui/`)
+
 - `ConfirmationModal.vue` - Modal de confirmación
 - `ConfirmModal.vue` - Modal de confirmación alternativo
 - `SpinnerIcon.vue` - Icono de carga
@@ -25,6 +27,7 @@
 - `Toast.vue` - Notificaciones toast
 
 ##### 🏗️ **Layout Components** (`src/components/layout/`)
+
 - `HeaderApp.vue` - Encabezado principal
 - `FooterNavigation.vue` - Navegación del pie
 - `Navigation.vue` - Navegación principal
@@ -33,38 +36,45 @@
 ##### ⚡ **Feature Components** (`src/components/features/`)
 
 ###### 📊 **Attendance** (`src/components/features/attendance/`)
+
 - `AttendanceExportModal.vue` - Modal de exportación
 - `AttendanceWeeklyTable.vue` - Tabla semanal
 - `TeacherAttendanceSelector.vue` - Selector de profesor
 
 ###### 🎓 **Classes** (`src/components/features/classes/`)
+
 - `ClassesList.vue` - Lista de clases
 - `ClassObservationsModal.vue` - Modal de observaciones
 - `EmergencyClassRequests.vue` - Solicitudes de emergencia
 - `EmergentClassesIndicator.vue` - Indicador de clases emergentes
 
 ###### 👥 **Students** (`src/components/features/students/`)
+
 - `StudentListModal.vue` - Modal de lista
 - `StudentProgress.vue` - Progreso individual
 - `StudentProgression.vue` - Progresión general
 
 ###### 🔔 **Notifications** (`src/components/features/notifications/`)
+
 - `NotificationSystem.vue` - Sistema principal
 - `MusicAcademyUpdateNotifier.vue` - Notificador de actualizaciones
 
 ###### 📈 **Analytics** (`src/components/features/analytics/`)
+
 - `BarChart.vue` - Gráfico de barras
 - `ChartContainer.vue` - Contenedor de gráficos
 - `Statistics.vue` - Estadísticas generales
 - `StatsCard.vue` - Tarjeta de estadísticas
 
 #### 3. **src/config/** - Configuraciones centralizadas
+
 - `chartConfig.ts` - Configuración de gráficos
 - `debugConfig.ts` - Configuración de debug
 
 ### 🔧 Actualizaciones de Importaciones
 
 #### Archivos Actualizados:
+
 1. **AttendanceList.vue** - Ruta PDF actualizada
 2. **AttendanceView.vue** - Ruta PDF actualizada
 3. **AttendanceView.fixed.vue** - Ruta PDF actualizada
@@ -74,6 +84,7 @@
 ### 📋 Beneficios de la Nueva Estructura
 
 #### ✅ **Ventajas Inmediatas:**
+
 - **Mejor organización** - Cada componente tiene su lugar lógico
 - **Facilidad de mantenimiento** - Búsqueda y edición más eficiente
 - **Escalabilidad** - Estructura preparada para crecimiento
@@ -81,6 +92,7 @@
 - **Reutilización** - Componentes UI fácilmente reutilizables
 
 #### 🔗 **Compatibilidad Mantenida:**
+
 - Todas las importaciones actualizadas correctamente
 - Funcionalidad existente preservada
 - Conexiones entre módulos intactas
@@ -123,6 +135,7 @@ src/
 5. **Configurar linting** para mantener organización
 
 ### ✅ Estado Actual
+
 - **Reorganización completada**: ~60%
 - **Funcionalidad preservada**: 100%
 - **Importaciones actualizadas**: 100%

@@ -3,11 +3,13 @@
 ## � Proceso completo y seguro (RECOMENDADO)
 
 ### Opción 1: Proceso automático seguro
+
 ```bash
 npm run migrate:safe-process
 ```
 
 Este comando ejecuta automáticamente:
+
 1. ✅ **Backup** de la colección ALUMNOS
 2. ✅ **Verificación** del archivo CSV
 3. ✅ **Análisis** de coincidencias
@@ -17,33 +19,37 @@ Este comando ejecuta automáticamente:
 ### Opción 2: Proceso manual paso a paso
 
 #### 1. **Crear backup (OBLIGATORIO)**
+
 ```bash
 npm run backup:alumnos
 ```
 
 #### 2. **Análisis detallado**
+
 ```bash
 npm run migrate:analyze-csv
 ```
 
 #### 3. **Migración real** (solo después del análisis)
+
 ```bash
 npm run migrate:students-csv
 ```
 
 ## 📋 Comandos disponibles
 
-| Comando | Descripción | Seguridad |
-|---------|-------------|-----------|
-| `npm run migrate:safe-process` | Proceso completo seguro | ✅ Solo análisis |
-| `npm run backup:alumnos` | Crear backup de ALUMNOS | ✅ Solo lectura |
-| `npm run backup:list` | Listar backups disponibles | ✅ Solo lectura |
-| `npm run migrate:analyze-csv` | Análisis detallado CSV vs Firestore | ✅ Solo lectura |
-| `npm run migrate:students-csv` | Migración real de datos | ⚠️ Modifica datos |
+| Comando                        | Descripción                         | Seguridad         |
+| ------------------------------ | ----------------------------------- | ----------------- |
+| `npm run migrate:safe-process` | Proceso completo seguro             | ✅ Solo análisis  |
+| `npm run backup:alumnos`       | Crear backup de ALUMNOS             | ✅ Solo lectura   |
+| `npm run backup:list`          | Listar backups disponibles          | ✅ Solo lectura   |
+| `npm run migrate:analyze-csv`  | Análisis detallado CSV vs Firestore | ✅ Solo lectura   |
+| `npm run migrate:students-csv` | Migración real de datos             | ⚠️ Modifica datos |
 
 ## 🔧 Configuración requerida
 
 ### Variables de entorno
+
 Asegúrate de tener estas variables en tu `.env`:
 
 ```
@@ -56,24 +62,25 @@ VITE_APP_APP_ID=tu_app_id
 ```
 
 ### Archivo CSV
+
 - ✅ El archivo CSV debe estar en la raíz del proyecto
 - ✅ Nombre: `INTEGRANTES EL SISTEMA PUNTA CANA - Hoja 3.csv`
 
 ## 📊 Mapeo de campos
 
-| CSV | Firestore | Acción |
-|-----|-----------|--------|
-| `Nombre` | `nombre` | Actualizar nombre completo |
-| `inscripcion` | `createdAt` | Actualizar fecha de inscripción |
-| `nac` | `nac` | Actualizar fecha de nacimiento |
-| `instrumento` | `instrumento` | Actualizar instrumento |
-| `edad` | `edad` | Actualizar edad |
-| `tlf` | `tlf` | Actualizar teléfono |
-| `Preparatoria` | `grupos[]` | Agregar a grupos si TRUE |
-| `Teoria Musical` | `grupos[]` | Agregar a grupos si TRUE |
-| `Coro` | `grupos[]` | Agregar a grupos si TRUE |
-| `Orquesta` | `grupos[]` | Agregar a grupos si TRUE |
-| `InstrumentoID` | `instrumentoId` | Agregar ID de instrumento |
+| CSV              | Firestore       | Acción                          |
+| ---------------- | --------------- | ------------------------------- |
+| `Nombre`         | `nombre`        | Actualizar nombre completo      |
+| `inscripcion`    | `createdAt`     | Actualizar fecha de inscripción |
+| `nac`            | `nac`           | Actualizar fecha de nacimiento  |
+| `instrumento`    | `instrumento`   | Actualizar instrumento          |
+| `edad`           | `edad`          | Actualizar edad                 |
+| `tlf`            | `tlf`           | Actualizar teléfono             |
+| `Preparatoria`   | `grupos[]`      | Agregar a grupos si TRUE        |
+| `Teoria Musical` | `grupos[]`      | Agregar a grupos si TRUE        |
+| `Coro`           | `grupos[]`      | Agregar a grupos si TRUE        |
+| `Orquesta`       | `grupos[]`      | Agregar a grupos si TRUE        |
+| `InstrumentoID`  | `instrumentoId` | Agregar ID de instrumento       |
 
 ## 🔍 Lógica de búsqueda
 

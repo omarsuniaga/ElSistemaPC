@@ -1,19 +1,28 @@
 <!-- Modal Editor de Plantillas -->
 <template>
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden"
+    >
       <!-- Header -->
-      <div class="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-b border-gray-200 dark:border-gray-600">
+      <div
+        class="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-b border-gray-200 dark:border-gray-600"
+      >
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
-            {{ isEditing ? '✏️ Editar Plantilla' : '➕ Nueva Plantilla' }}
+            {{ isEditing ? "✏️ Editar Plantilla" : "➕ Nueva Plantilla" }}
           </h2>
           <button
             class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
             @click="$emit('close')"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -23,7 +32,7 @@
       <div class="flex h-[calc(90vh-8rem)]">
         <!-- Panel izquierdo - Editor -->
         <div class="flex-1 p-6 overflow-y-auto border-r border-gray-200 dark:border-gray-600">
-          <form @submit.prevent="handleSave" class="space-y-6">
+          <form class="space-y-6" @submit.prevent="handleSave">
             <!-- Información básica -->
             <div>
               <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
@@ -59,7 +68,7 @@
                   </select>
                 </div>
               </div>
-              
+
               <div class="mt-4">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Descripción
@@ -112,7 +121,10 @@
                     type="checkbox"
                     class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
-                  <label for="allowEditVariables" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                  <label
+                    for="allowEditVariables"
+                    class="ml-2 text-sm text-gray-700 dark:text-gray-300"
+                  >
                     Variables editables
                   </label>
                 </div>
@@ -220,7 +232,7 @@
                 :disabled="saving"
                 class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                {{ saving ? '💾 Guardando...' : (isEditing ? '💾 Actualizar' : '💾 Crear') }}
+                {{ saving ? "💾 Guardando..." : isEditing ? "💾 Actualizar" : "💾 Crear" }}
               </button>
               <button
                 type="button"
@@ -235,26 +247,28 @@
 
         <!-- Panel derecho - Preview -->
         <div class="w-96 p-6 bg-gray-50 dark:bg-gray-700 overflow-y-auto">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            👁️ Vista Previa
-          </h3>
-          
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">👁️ Vista Previa</h3>
+
           <!-- Simulador de teléfono -->
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-200 dark:border-gray-600">
+          <div
+            class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-200 dark:border-gray-600"
+          >
             <div class="bg-green-500 text-white p-3 rounded-lg">
               <div class="text-xs opacity-75 mb-1">WhatsApp Business</div>
               <div class="text-sm leading-relaxed">
                 {{ previewContent }}
               </div>
               <div class="text-xs opacity-75 mt-2 text-right">
-                {{ new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) }}
+                {{ new Date().toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit"}) }}
               </div>
             </div>
           </div>
 
           <!-- Estadísticas del mensaje -->
           <div class="mt-6 space-y-3">
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+            <div
+              class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600"
+            >
               <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 📊 Estadísticas
               </div>
@@ -269,13 +283,16 @@
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-500 dark:text-gray-400">Líneas:</span>
-                  <span class="font-medium">{{ formData.content.split('\n').length }}</span>
+                  <span class="font-medium">{{ formData.content.split("\n").length }}</span>
                 </div>
               </div>
             </div>
 
             <!-- Variables detectadas -->
-            <div v-if="detectedVariables.length > 0" class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+            <div
+              v-if="detectedVariables.length > 0"
+              class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600"
+            >
               <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 🏷️ Variables Detectadas
               </div>
@@ -297,8 +314,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { templateManager, type MessageTemplate, type TemplateVariable } from '../../services/templates/templateManager'
+import {ref, computed, watch} from "vue"
+import {
+  templateManager,
+  type MessageTemplate,
+  type TemplateVariable,
+} from "../../services/templates/templateManager"
 
 // Props
 interface Props {
@@ -308,7 +329,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   template: null,
-  isEditing: false
+  isEditing: false,
 })
 
 // Emits
@@ -322,10 +343,10 @@ const saving = ref(false)
 
 // Datos del formulario
 const formData = ref<Partial<MessageTemplate>>({
-  name: '',
-  description: '',
-  content: '',
-  category: 'general',
+  name: "",
+  description: "",
+  content: "",
+  category: "general",
   escalationLevel: null,
   isActive: true,
   allowEditVariables: true,
@@ -333,63 +354,68 @@ const formData = ref<Partial<MessageTemplate>>({
   usage: {
     totalSent: 0,
     successRate: 0,
-    lastUsed: null
-  }
+    lastUsed: null,
+  },
 })
 
 // Variables globales disponibles
 const availableVariables = ref([
-  { key: '{studentName}', description: 'Nombre del estudiante' },
-  { key: '{className}', description: 'Nombre de la clase' },
-  { key: '{date}', description: 'Fecha actual' },
-  { key: '{time}', description: 'Hora actual' },
-  { key: '{academyName}', description: 'Nombre de la academia' },
-  { key: '{teacherName}', description: 'Nombre del profesor' },
-  { key: '{parentName}', description: 'Nombre del representante' },
-  { key: '{phoneNumber}', description: 'Número de teléfono' }
+  {key: "{studentName}", description: "Nombre del estudiante"},
+  {key: "{className}", description: "Nombre de la clase"},
+  {key: "{date}", description: "Fecha actual"},
+  {key: "{time}", description: "Hora actual"},
+  {key: "{academyName}", description: "Nombre de la academia"},
+  {key: "{teacherName}", description: "Nombre del profesor"},
+  {key: "{parentName}", description: "Nombre del representante"},
+  {key: "{phoneNumber}", description: "Número de teléfono"},
 ])
 
 // Computed
 const detectedVariables = computed(() => {
-  const content = formData.value.content || ''
+  const content = formData.value.content || ""
   const matches = content.match(/\{[^}]+\}/g)
   return matches ? [...new Set(matches)] : []
 })
 
 const previewContent = computed(() => {
-  let content = formData.value.content || ''
-  
+  let content = formData.value.content || ""
+
   // Reemplazar variables con valores de ejemplo
-  content = content.replace(/\{studentName\}/g, 'María González')
-  content = content.replace(/\{className\}/g, 'Violín Intermedio')
-  content = content.replace(/\{date\}/g, new Date().toLocaleDateString('es-ES'))
-  content = content.replace(/\{time\}/g, new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }))
-  content = content.replace(/\{academyName\}/g, 'Academia Musical El Sistema')
-  content = content.replace(/\{teacherName\}/g, 'Prof. Carlos Rodríguez')
-  content = content.replace(/\{parentName\}/g, 'Ana María González')
-  content = content.replace(/\{phoneNumber\}/g, '+58 414-123-4567')
-  
+  content = content.replace(/\{studentName\}/g, "María González")
+  content = content.replace(/\{className\}/g, "Violín Intermedio")
+  content = content.replace(/\{date\}/g, new Date().toLocaleDateString("es-ES"))
+  content = content.replace(
+    /\{time\}/g,
+    new Date().toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit"})
+  )
+  content = content.replace(/\{academyName\}/g, "Academia Musical El Sistema")
+  content = content.replace(/\{teacherName\}/g, "Prof. Carlos Rodríguez")
+  content = content.replace(/\{parentName\}/g, "Ana María González")
+  content = content.replace(/\{phoneNumber\}/g, "+58 414-123-4567")
+
   // Reemplazar variables personalizadas con sus valores por defecto
   if (formData.value.variables) {
     formData.value.variables.forEach((variable: TemplateVariable) => {
-      const regex = new RegExp(`\\{${variable.key}\\}`, 'g')
+      const regex = new RegExp(`\\{${variable.key}\\}`, "g")
       content = content.replace(regex, variable.defaultValue || `[${variable.key}]`)
     })
   }
-  
-  return content || 'Escribe tu mensaje aquí...'
+
+  return content || "Escribe tu mensaje aquí..."
 })
 
 // Métodos
 const insertVariable = (variableKey: string): void => {
-  const textarea = document.querySelector('textarea[v-model="formData.content"]') as HTMLTextAreaElement
+  const textarea = document.querySelector(
+    'textarea[v-model="formData.content"]'
+  ) as HTMLTextAreaElement
   if (textarea) {
     const start = textarea.selectionStart
     const end = textarea.selectionEnd
-    const content = formData.value.content || ''
-    
+    const content = formData.value.content || ""
+
     formData.value.content = content.substring(0, start) + variableKey + content.substring(end)
-    
+
     // Restaurar el foco y la posición del cursor
     setTimeout(() => {
       textarea.focus()
@@ -403,9 +429,9 @@ const addVariable = (): void => {
     formData.value.variables = []
   }
   formData.value.variables.push({
-    key: '',
-    description: '',
-    defaultValue: ''
+    key: "",
+    description: "",
+    defaultValue: "",
   })
 }
 
@@ -417,11 +443,11 @@ const removeVariable = (index: number): void => {
 
 const handleSave = async (): Promise<void> => {
   saving.value = true
-  
+
   try {
     // Validar campos requeridos
     if (!formData.value.name || !formData.value.content) {
-      alert('❌ Por favor completa todos los campos requeridos')
+      alert("❌ Por favor completa todos los campos requeridos")
       return
     }
 
@@ -431,7 +457,7 @@ const handleSave = async (): Promise<void> => {
       id: props.isEditing ? props.template?.id : undefined,
       isSystem: false,
       createdAt: props.isEditing ? props.template?.createdAt : new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     } as MessageTemplate
 
     // Guardar plantilla
@@ -444,23 +470,27 @@ const handleSave = async (): Promise<void> => {
     }
 
     if (success) {
-      alert('✅ Plantilla guardada exitosamente')
-      emit('save')
+      alert("✅ Plantilla guardada exitosamente")
+      emit("save")
     } else {
-      alert('❌ Error guardando la plantilla')
+      alert("❌ Error guardando la plantilla")
     }
   } catch (error) {
-    console.error('Error guardando plantilla:', error)
-    alert('❌ Error guardando la plantilla')
+    console.error("Error guardando plantilla:", error)
+    alert("❌ Error guardando la plantilla")
   } finally {
     saving.value = false
   }
 }
 
 // Watchers
-watch(() => props.template, (newTemplate) => {
-  if (newTemplate) {
-    formData.value = { ...newTemplate }
-  }
-}, { immediate: true })
+watch(
+  () => props.template,
+  (newTemplate) => {
+    if (newTemplate) {
+      formData.value = {...newTemplate}
+    }
+  },
+  {immediate: true}
+)
 </script>

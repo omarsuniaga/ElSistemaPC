@@ -5,6 +5,7 @@
 ### 🎨 Mejoras Estéticas y Visuales
 
 #### TeacherClassesCard.vue
+
 1. **Contenedor Principal Modernizado**
    - Gradientes suaves con backdrop-blur
    - Sombras dinámicas con efectos hover
@@ -42,6 +43,7 @@
    - Scroll custom con mejor UX
 
 #### TeacherClassesSection.vue
+
 1. **Header Mejorado**
    - Gradientes en tipografía
    - Descripción contextual
@@ -142,7 +144,8 @@
 ---
 
 **Estado**: ✅ Completado
-**Archivos Modificados**: 
+**Archivos Modificados**:
+
 - `src/modulos/Teachers/components/TeacherClassesCard.vue`
 - `src/modulos/Teachers/components/TeacherClassesSection.vue`
 

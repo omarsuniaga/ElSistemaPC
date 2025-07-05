@@ -1,9 +1,12 @@
 // Servicio de Notificaciones Mejorado con Validación, Rate Limiting y Manejo de Errores
 // Integra todos los servicios de validación para un sistema robusto
 
-import { validateStudentsForBulkNotification, validateNotificationRequest } from "./attendanceValidator"
-import { sendBatchWithRateLimit } from "./rateLimitManager"
-import { executeWithErrorHandling, getSystemHealthReport } from "./errorManager"
+import {
+  validateStudentsForBulkNotification,
+  validateNotificationRequest,
+} from "./attendanceValidator"
+import {sendBatchWithRateLimit} from "./rateLimitManager"
+import {executeWithErrorHandling, getSystemHealthReport} from "./errorManager"
 
 // Interfaces mejoradas
 interface EnhancedNotificationResult {
@@ -66,11 +69,11 @@ export class EnhancedNotificationService {
     maxRetryAttempts: 3,
     dryRun: false,
     batchSize: 10,
-    onProgress: () => {}
+    onProgress: () => {},
   }
 
   constructor(options?: Partial<NotificationOptions>) {
-    this.options = { ...this.options, ...options }
+    this.options = {...this.options, ...options}
   }
 
   /**
@@ -86,8 +89,10 @@ export class EnhancedNotificationService {
     escalationLevels?: Record<string, number> // studentId -> level
   }): Promise<EnhancedNotificationResult> {
     const startTime = Date.now()
-    
-    console.log(`🚀 Enhanced Notifications - Iniciando proceso mejorado para ${request.studentIds.length} estudiantes`)
+
+    console.log(
+      `🚀 Enhanced Notifications - Iniciando proceso mejorado para ${request.studentIds.length} estudiantes`
+    )
 
     // Inicializar resultado
     const result: EnhancedNotificationResult = {
@@ -97,30 +102,35 @@ export class EnhancedNotificationService {
         successful: 0,
         failed: 0,
         rateLimited: 0,
-        invalid: 0
+        invalid: 0,
       },
       validation: {
         validStudents: 0,
         invalidStudents: 0,
-        recommendations: []
+        recommendations: [],
       },
       performance: {
         totalDuration: 0,
         averageTimePerMessage: 0,
-        retryAttempts: 0
+        retryAttempts: 0,
       },
       healthStatus: {
         systemStatus: "HEALTHY",
         canContinue: true,
-        warnings: []
+        warnings: [],
       },
-      detailedResults: []
+      detailedResults: [],
     }
 
     try {
       // Fase 1: Verificar salud del sistema
-      this.updateProgress("validation", 0, request.studentIds.length, "Verificando salud del sistema")
-      
+      this.updateProgress(
+        "validation",
+        0,
+        request.studentIds.length,
+        "Verificando salud del sistema"
+      )
+
       const healthReport = getSystemHealthReport()
       result.healthStatus.systemStatus = healthReport.status
       result.healthStatus.warnings = healthReport.recommendations
@@ -131,15 +141,21 @@ export class EnhancedNotificationService {
       }
 
       // Fase 2: Validación completa
-      this.updateProgress("validation", 0, request.studentIds.length, "Validando datos de estudiantes")
+      this.updateProgress(
+        "validation",
+        0,
+        request.studentIds.length,
+        "Validando datos de estudiantes"
+      )
 
       const validationResult = await executeWithErrorHandling(
-        () => validateNotificationRequest({
-          studentIds: request.studentIds,
-          messageType: request.messageType,
-          customMessage: request.customMessage,
-          getStudentData: request.getStudentData
-        }),
+        () =>
+          validateNotificationRequest({
+            studentIds: request.studentIds,
+            messageType: request.messageType,
+            customMessage: request.customMessage,
+            getStudentData: request.getStudentData,
+          }),
         "Validación de notificación"
       )
 
@@ -154,13 +170,13 @@ export class EnhancedNotificationService {
       result.summary.invalid = validation.studentValidation.invalid.length
 
       // Agregar estudiantes inválidos al resultado detallado
-      validation.studentValidation.invalid.forEach(student => {
+      validation.studentValidation.invalid.forEach((student) => {
         result.detailedResults.push({
           studentId: student.id,
           studentName: student.name,
           phoneNumbers: student.phoneNumbers,
           success: false,
-          error: student.errors.join(", ")
+          error: student.errors.join(", "),
         })
       })
 
@@ -182,14 +198,14 @@ export class EnhancedNotificationService {
       for (const student of validation.studentValidation.valid) {
         const escalationLevel = request.escalationLevels?.[student.id]
         const messageTemplate = request.getMessageTemplate(request.messageType, escalationLevel)
-        
+
         for (const phoneNumber of student.phoneNumbers) {
           messages.push({
             phoneNumber,
             message: messageTemplate.replace(/{studentName}/g, student.name),
             messageType: request.messageType,
             studentId: student.id,
-            studentName: student.name
+            studentName: student.name,
           })
         }
       }
@@ -209,28 +225,36 @@ export class EnhancedNotificationService {
         messages,
         request.sendWhatsAppMessage,
         (completed, total, current) => {
-          this.updateProgress("sending", 50 + (completed / total) * 45, request.studentIds.length, current)
+          this.updateProgress(
+            "sending",
+            50 + (completed / total) * 45,
+            request.studentIds.length,
+            current
+          )
         }
       )
 
       // Procesar resultados
-      const studentResults = new Map<string, {
-        studentId: string
-        studentName: string
-        phoneNumbers: string[]
-        success: boolean
-        error?: string
-        escalationLevel?: number
-      }>()
+      const studentResults = new Map<
+        string,
+        {
+          studentId: string
+          studentName: string
+          phoneNumbers: string[]
+          success: boolean
+          error?: string
+          escalationLevel?: number
+        }
+      >()
 
       // Inicializar todos los estudiantes válidos
-      validation.studentValidation.valid.forEach(student => {
+      validation.studentValidation.valid.forEach((student) => {
         studentResults.set(student.id, {
           studentId: student.id,
           studentName: student.name,
           phoneNumbers: student.phoneNumbers,
           success: true, // Asumimos éxito inicialmente
-          escalationLevel: request.escalationLevels?.[student.id]
+          escalationLevel: request.escalationLevels?.[student.id],
         })
       })
 
@@ -238,7 +262,7 @@ export class EnhancedNotificationService {
       batchResult.results.forEach((msgResult, index) => {
         const message = messages[index]
         const studentResult = studentResults.get(message.studentId)
-        
+
         if (studentResult) {
           if (!msgResult.success) {
             studentResult.success = false
@@ -260,10 +284,11 @@ export class EnhancedNotificationService {
       result.performance.totalDuration = Date.now() - startTime
       result.performance.averageTimePerMessage = result.performance.totalDuration / messages.length
 
-      console.log(`✅ Enhanced Notifications - Proceso completado: ${result.summary.successful} éxitos, ${result.summary.failed} fallos`)
+      console.log(
+        `✅ Enhanced Notifications - Proceso completado: ${result.summary.successful} éxitos, ${result.summary.failed} fallos`
+      )
 
       return result
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.error("❌ Enhanced Notifications - Error en proceso:", errorMessage)
@@ -289,7 +314,7 @@ export class EnhancedNotificationService {
       completed: Math.floor((percentage / 100) * total),
       total,
       currentStudent: currentOperation,
-      phase
+      phase,
     })
   }
 
@@ -312,7 +337,7 @@ export class EnhancedNotificationService {
    * Configurar opciones del servicio
    */
   configure(options: Partial<NotificationOptions>): void {
-    this.options = { ...this.options, ...options }
+    this.options = {...this.options, ...options}
   }
 }
 
@@ -339,5 +364,5 @@ export const sendNotificationsWithValidation = (
 export default {
   EnhancedNotificationService,
   enhancedNotificationService,
-  sendNotificationsWithValidation
+  sendNotificationsWithValidation,
 }

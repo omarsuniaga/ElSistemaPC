@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📅 Demo - Calendario con Indicadores por Maestro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .teacher-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            position: absolute;
+            top: 4px;
+            right: 4px;
+        }
+        
+        .registered-class {
+            background: #10b981;
+        }
+        
+        .pending-class {
+            background: #f59e0b;
+        }
+        
+        .calendar-day {
+            position: relative;
+            transition: all 0.2s ease;
+            min-height: 40px;
+        }
+
+        .calendar-day:hover {
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        .has-teacher-activity {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            border: 2px solid #16a34a;
+        }
+
+        .activity-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            font-size: 10px;
+            line-height: 18px;
+            text-align: center;
+            background: #16a34a;
+            color: white;
+            font-weight: bold;
+        }
+
+        .teacher-selector {
+            transition: all 0.3s ease;
+        }
+
+        .teacher-selector.active {
+            background: #3b82f6;
+            color: white;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div class="max-w-5xl mx-auto p-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                👨‍🏫 Calendario por Maestro - Indicadores Específicos
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                Los indicadores muestran SOLO las fechas donde el maestro activo ha registrado asistencia
+            </p>
+        </div>
+
+        <!-- Estado de la implementación -->
+        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-green-600 dark:text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <div>
+                    <h3 class="font-medium text-green-900 dark:text-green-100">✅ Sistema Específico por Maestro Implementado</h3>
+                    <p class="text-sm text-green-700 dark:text-green-300 mt-1">
+                        El calendario filtra automáticamente por teacherId y muestra solo los registros del maestro con sesión activa
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selector de Maestro Simulado -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">👥 Maestros del Sistema</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="teacher-selector p-4 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer active" onclick="selectTeacher('teacher1')">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span class="text-blue-600 font-bold">MA</span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">Maestro Antonio</h3>
+                            <p class="text-sm text-gray-500">Piano y Teoría Musical</p>
+                            <p class="text-xs text-green-600">Sesión Activa</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="teacher-selector p-4 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer" onclick="selectTeacher('teacher2')">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                            <span class="text-purple-600 font-bold">LG</span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">Luisa García</h3>
+                            <p class="text-sm text-gray-500">Guitarra y Canto</p>
+                            <p class="text-xs text-gray-400">Sin sesión</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="teacher-selector p-4 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer" onclick="selectTeacher('teacher3')">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                            <span class="text-orange-600 font-bold">CR</span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">Carlos Ruiz</h3>
+                            <p class="text-sm text-gray-500">Batería y Percusión</p>
+                            <p class="text-xs text-gray-400">Sin sesión</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendario -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Calendario - <span id="activeTeacher">Maestro Antonio</span></h2>
+                <div class="flex items-center space-x-4">
+                    <button onclick="previousMonth()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <span id="monthYear" class="font-medium text-gray-900 dark:text-white">Julio 2025</span>
+                    <button onclick="nextMonth()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Days of week -->
+            <div class="grid grid-cols-7 gap-2 mb-4">
+                <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">Dom</div>
+                <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">Lun</div>
+                <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">Mar</div>
+                <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">Mié</div>
+                <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">Jue</div>
+                <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">Vie</div>
+                <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">Sáb</div>
+            </div>
+
+            <!-- Calendar grid -->
+            <div class="grid grid-cols-7 gap-2" id="calendar-days">
+                <!-- Days will be generated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Detalles de fecha seleccionada -->
+        <div id="dateDetails" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 hidden">
+            <h3 class="font-medium text-blue-900 dark:text-blue-100 mb-3">📅 Detalles de la fecha seleccionada</h3>
+            <div id="dateDetailsContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Explicación técnica -->
+        <div class="bg-gray-900 rounded-lg p-6 mt-6">
+            <h2 class="text-white font-semibold mb-4">💻 Implementación Técnica</h2>
+            <pre class="text-green-400 text-sm overflow-x-auto"><code>// 🎯 Filtrado específico por maestro en el composable
+const calendarActivityData = computed(() => {
+  const teacherId = authStore.user?.uid
+  if (!teacherId) return {}
+  
+  const teacherActivities: Record&lt;string, {type: string; count: number}&gt; = {}
+  
+  // Solo incluir documentos del maestro actual
+  attendanceStore.attendanceDocuments.forEach((doc) => {
+    if (doc.teacherId === teacherId && doc.fecha) {
+      teacherActivities[doc.fecha] = {
+        type: "attendance",
+        count: (teacherActivities[doc.fecha]?.count || 0) + 1
+      }
+    }
+  })
+  
+  return teacherActivities
+})
+
+// 🔍 Verificación específica en el calendario
+const hasAttendanceRecords = (date: Date): boolean => {
+  const dateStr = format(date, "yyyy-MM-dd")
+  const teacherId = authStore?.user?.uid
+  if (!teacherId) return false
+  
+  // Verificar si ESTE maestro específico tiene registros en esta fecha
+  return attendanceStore.attendanceDocuments.some(doc => 
+    doc.fecha === dateStr && doc.teacherId === teacherId
+  )
+}</code></pre>
+        </div>
+    </div>
+
+    <script>
+        // Estado actual
+        let currentTeacher = 'teacher1';
+        let currentMonth = new Date();
+        
+        // Datos simulados por maestro
+        const teacherData = {
+            teacher1: {
+                name: 'Maestro Antonio',
+                classes: {
+                    '2025-07-08': { registered: ['Piano Básico'], pending: ['Teoría Musical'] },
+                    '2025-07-12': { registered: ['Piano Intermedio', 'Piano Básico'], pending: [] },
+                    '2025-07-15': { registered: ['Teoría Musical'], pending: ['Piano Avanzado'] },
+                    '2025-07-19': { registered: ['Piano Básico'], pending: [] },
+                    '2025-07-22': { registered: ['Piano Intermedio'], pending: ['Teoría Musical'] }
+                }
+            },
+            teacher2: {
+                name: 'Luisa García',
+                classes: {
+                    '2025-07-09': { registered: ['Guitarra Básica'], pending: [] },
+                    '2025-07-16': { registered: ['Canto Popular'], pending: ['Guitarra Avanzada'] },
+                    '2025-07-23': { registered: ['Guitarra Básica', 'Canto Popular'], pending: [] }
+                }
+            },
+            teacher3: {
+                name: 'Carlos Ruiz',
+                classes: {
+                    '2025-07-10': { registered: ['Batería Básica'], pending: [] },
+                    '2025-07-17': { registered: ['Percusión Latina'], pending: [] },
+                    '2025-07-24': { registered: ['Batería Avanzada'], pending: ['Percusión Básica'] },
+                    '2025-07-31': { registered: ['Batería Básica'], pending: [] }
+                }
+            }
+        };
+
+        function selectTeacher(teacherId) {
+            currentTeacher = teacherId;
+            
+            // Update UI
+            document.querySelectorAll('.teacher-selector').forEach(el => {
+                el.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            document.getElementById('activeTeacher').textContent = teacherData[teacherId].name;
+            
+            // Regenerate calendar
+            generateCalendar();
+        }
+
+        function generateCalendar() {
+            const calendarDays = document.getElementById('calendar-days');
+            calendarDays.innerHTML = '';
+            
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            
+            // Get first day of month and days in month
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+            
+            // Update month/year display
+            const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                               'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            document.getElementById('monthYear').textContent = `${monthNames[month]} ${year}`;
+            
+            // Add empty cells for days before month starts
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'h-10 w-10';
+                calendarDays.appendChild(dayCell);
+            }
+            
+            // Get teacher's activity data
+            const teacherClasses = teacherData[currentTeacher].classes;
+            
+            // Add days of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'calendar-day h-10 w-10 flex items-center justify-center text-sm rounded-md cursor-pointer border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700';
+                
+                // Format date for lookup
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayActivity = teacherClasses[dateStr];
+                
+                // Add day number
+                const dayNumber = document.createElement('span');
+                dayNumber.textContent = day;
+                dayCell.appendChild(dayNumber);
+                
+                // Highlight today
+                const today = new Date();
+                if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                    dayCell.classList.add('bg-blue-100', 'text-blue-700', 'font-bold');
+                }
+                
+                // Add teacher activity indicators
+                if (dayActivity && dayActivity.registered.length > 0) {
+                    dayCell.classList.add('has-teacher-activity');
+                    
+                    // Add activity badge
+                    const badge = document.createElement('div');
+                    badge.className = 'activity-badge';
+                    badge.textContent = dayActivity.registered.length;
+                    badge.title = `${dayActivity.registered.length} clases registradas`;
+                    dayCell.appendChild(badge);
+                }
+                
+                // Add click handler
+                dayCell.addEventListener('click', () => {
+                    // Remove previous selection
+                    document.querySelectorAll('.calendar-day').forEach(cell => {
+                        cell.classList.remove('ring-2', 'ring-blue-500');
+                    });
+                    
+                    // Add selection
+                    dayCell.classList.add('ring-2', 'ring-blue-500');
+                    
+                    // Show details
+                    showDateDetails(dateStr, dayActivity);
+                });
+                
+                calendarDays.appendChild(dayCell);
+            }
+        }
+
+        function showDateDetails(dateStr, activity) {
+            const detailsDiv = document.getElementById('dateDetails');
+            const contentDiv = document.getElementById('dateDetailsContent');
+            
+            if (activity) {
+                contentDiv.innerHTML = `
+                    <div class="space-y-3">
+                        <p class="font-medium">📅 ${dateStr} - ${teacherData[currentTeacher].name}</p>
+                        
+                        ${activity.registered.length > 0 ? `
+                        <div>
+                            <h4 class="font-medium text-green-700 dark:text-green-300 mb-1">✅ Clases Registradas:</h4>
+                            <ul class="list-disc list-inside text-sm space-y-1">
+                                ${activity.registered.map(cls => `<li class="text-green-600 dark:text-green-400">${cls}</li>`).join('')}
+                            </ul>
+                        </div>
+                        ` : ''}
+                        
+                        ${activity.pending.length > 0 ? `
+                        <div>
+                            <h4 class="font-medium text-yellow-700 dark:text-yellow-300 mb-1">⏳ Clases Pendientes:</h4>
+                            <ul class="list-disc list-inside text-sm space-y-1">
+                                ${activity.pending.map(cls => `<li class="text-yellow-600 dark:text-yellow-400">${cls}</li>`).join('')}
+                            </ul>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            } else {
+                contentDiv.innerHTML = `
+                    <p class="text-gray-600 dark:text-gray-400">
+                        📅 ${dateStr} - ${teacherData[currentTeacher].name}<br>
+                        No hay clases registradas para esta fecha.
+                    </p>
+                `;
+            }
+            
+            detailsDiv.classList.remove('hidden');
+        }
+
+        function previousMonth() {
+            currentMonth.setMonth(currentMonth.getMonth() - 1);
+            generateCalendar();
+        }
+
+        function nextMonth() {
+            currentMonth.setMonth(currentMonth.getMonth() + 1);
+            generateCalendar();
+        }
+
+        // Initialize calendar
+        document.addEventListener('DOMContentLoaded', generateCalendar);
+        
+        // Simulate real-time updates when teacher registers attendance
+        setInterval(() => {
+            if (Math.random() > 0.9) {
+                // Simulate a new registration
+                const today = new Date();
+                const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                
+                // Flash effect on calendar
+                const todayCell = Array.from(document.querySelectorAll('.calendar-day')).find(cell => {
+                    const dayNum = parseInt(cell.querySelector('span').textContent);
+                    return dayNum === today.getDate();
+                });
+                
+                if (todayCell) {
+                    todayCell.style.boxShadow = '0 0 15px #10b981';
+                    setTimeout(() => {
+                        todayCell.style.boxShadow = '';
+                    }, 1000);
+                }
+                
+                console.log(`📝 Simulando registro de asistencia para ${teacherData[currentTeacher].name} en ${dateStr}`);
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

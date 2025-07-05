@@ -5,6 +5,7 @@
 Los siguientes usuarios de prueba han sido creados para testear el sistema de roles y permisos:
 
 ### 🦸 Superusuario
+
 - **Email:** `superusuario@test.com`
 - **Contraseña:** `Test123456!`
 - **Rol:** Superusuario
@@ -12,10 +13,11 @@ Los siguientes usuarios de prueba han sido creados para testear el sistema de ro
 - **Dashboard:** `/superusuario/dashboard`
 
 ### 👨‍💼 Director Académico
+
 - **Email:** `director@test.com`
 - **Contraseña:** `Test123456!`
 - **Rol:** Director
-- **Permisos:** 
+- **Permisos:**
   - Gestión de maestros
   - Gestión de estudiantes
   - Ver reportes
@@ -23,6 +25,7 @@ Los siguientes usuarios de prueba han sido creados para testear el sistema de ro
 - **Dashboard:** `/dashboard`
 
 ### 🔧 Administrador
+
 - **Email:** `admin@test.com`
 - **Contraseña:** `Test123456!`
 - **Rol:** Admin
@@ -34,6 +37,7 @@ Los siguientes usuarios de prueba han sido creados para testear el sistema de ro
 - **Dashboard:** `/dashboard`
 
 ### 🎵 Maestro
+
 - **Email:** `maestro@test.com`
 - **Contraseña:** `Test123456!`
 - **Rol:** Maestro

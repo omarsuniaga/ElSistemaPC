@@ -32,57 +32,113 @@
 
       <!-- Dashboard de métricas rápidas -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+        >
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900">
-              <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg
+                class="w-8 h-8 text-blue-600 dark:text-blue-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
               </svg>
             </div>
             <div class="ml-4">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ totalReportsGenerated }}</h3>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                {{ totalReportsGenerated }}
+              </h3>
               <p class="text-sm text-gray-600 dark:text-gray-400">Reportes Generados</p>
             </div>
           </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+        >
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-green-100 dark:bg-green-900">
-              <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              <svg
+                class="w-8 h-8 text-green-600 dark:text-green-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                />
               </svg>
             </div>
             <div class="ml-4">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ averageAttendanceRate }}%</h3>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                {{ averageAttendanceRate }}%
+              </h3>
               <p class="text-sm text-gray-600 dark:text-gray-400">Asistencia Promedio</p>
             </div>
           </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+        >
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 dark:bg-yellow-900">
-              <svg class="w-8 h-8 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              <svg
+                class="w-8 h-8 text-yellow-600 dark:text-yellow-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
               </svg>
             </div>
             <div class="ml-4">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ studentsAtRisk }}</h3>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                {{ studentsAtRisk }}
+              </h3>
               <p class="text-sm text-gray-600 dark:text-gray-400">Estudiantes en Riesgo</p>
             </div>
           </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+        >
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900">
-              <svg class="w-8 h-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              <svg
+                class="w-8 h-8 text-purple-600 dark:text-purple-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                />
               </svg>
             </div>
             <div class="ml-4">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ totalExports }}</h3>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                {{ totalExports }}
+              </h3>
               <p class="text-sm text-gray-600 dark:text-gray-400">Exportaciones</p>
             </div>
           </div>
@@ -91,11 +147,13 @@
 
       <!-- Panel de Analytics -->
       <div v-if="showAnalyticsPanel" class="mb-8">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+        >
           <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
             📈 Análisis Predictivo en Tiempo Real
           </h2>
-          
+
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Patrones detectados -->
             <div>
@@ -119,8 +177,12 @@
                   <div class="mt-3">
                     <span class="text-xs font-medium">Recomendaciones:</span>
                     <ul class="text-xs mt-1 space-y-1">
-                      <li v-for="rec in pattern.recommendations.slice(0, 2)" :key="rec" class="flex items-center">
-                        <span class="w-1 h-1 bg-current rounded-full mr-2"></span>
+                      <li
+                        v-for="rec in pattern.recommendations.slice(0, 2)"
+                        :key="rec"
+                        class="flex items-center"
+                      >
+                        <span class="w-1 h-1 bg-current rounded-full mr-2" />
                         {{ rec }}
                       </li>
                     </ul>
@@ -142,13 +204,19 @@
                 >
                   <div class="flex items-center justify-between">
                     <h4 class="font-medium text-gray-900 dark:text-white">{{ insight.title }}</h4>
-                    <span class="text-xs px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200">
+                    <span
+                      class="text-xs px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200"
+                    >
                       {{ Math.round(insight.probability * 100) }}% probabilidad
                     </span>
                   </div>
-                  <p class="text-sm mt-2 text-gray-700 dark:text-gray-300">{{ insight.description }}</p>
+                  <p class="text-sm mt-2 text-gray-700 dark:text-gray-300">
+                    {{ insight.description }}
+                  </p>
                   <div class="mt-3">
-                    <span class="text-xs font-medium text-gray-900 dark:text-white">Acciones preventivas:</span>
+                    <span class="text-xs font-medium text-gray-900 dark:text-white"
+                      >Acciones preventivas:</span
+                    >
                     <div class="flex flex-wrap gap-1 mt-1">
                       <span
                         v-for="action in insight.preventiveActions.slice(0, 3)"
@@ -169,11 +237,23 @@
       <!-- Tipos de reportes disponibles -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <!-- Reporte de Asistencia -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+        >
           <div class="flex items-center mb-4">
             <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900">
-              <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              <svg
+                class="w-6 h-6 text-blue-600 dark:text-blue-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                />
               </svg>
             </div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white ml-3">
@@ -186,15 +266,15 @@
           <div class="space-y-2">
             <button
               class="w-full bg-blue-50 hover:bg-blue-100 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-              @click="generateAttendanceReport('pdf')"
               :disabled="generatingReport"
+              @click="generateAttendanceReport('pdf')"
             >
               📄 Generar PDF
             </button>
             <button
               class="w-full bg-green-50 hover:bg-green-100 dark:bg-green-900 dark:hover:bg-green-800 text-green-700 dark:text-green-300 px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-              @click="generateAttendanceReport('excel')"
               :disabled="generatingReport"
+              @click="generateAttendanceReport('excel')"
             >
               📊 Exportar Excel
             </button>
@@ -202,11 +282,23 @@
         </div>
 
         <!-- Reporte de Estudiantes en Riesgo -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+        >
           <div class="flex items-center mb-4">
             <div class="p-3 rounded-full bg-red-100 dark:bg-red-900">
-              <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              <svg
+                class="w-6 h-6 text-red-600 dark:text-red-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
               </svg>
             </div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white ml-3">
@@ -219,15 +311,15 @@
           <div class="space-y-2">
             <button
               class="w-full bg-red-50 hover:bg-red-100 dark:bg-red-900 dark:hover:bg-red-800 text-red-700 dark:text-red-300 px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-              @click="generateRiskReport('pdf')"
               :disabled="generatingReport"
+              @click="generateRiskReport('pdf')"
             >
               🚨 Generar PDF
             </button>
             <button
               class="w-full bg-orange-50 hover:bg-orange-100 dark:bg-orange-900 dark:hover:bg-orange-800 text-orange-700 dark:text-orange-300 px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-              @click="generateRiskReport('excel')"
               :disabled="generatingReport"
+              @click="generateRiskReport('excel')"
             >
               📋 Plan de Acción
             </button>
@@ -235,11 +327,23 @@
         </div>
 
         <!-- Reporte de Rendimiento por Clase -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+        >
           <div class="flex items-center mb-4">
             <div class="p-3 rounded-full bg-green-100 dark:bg-green-900">
-              <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              <svg
+                class="w-6 h-6 text-green-600 dark:text-green-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                />
               </svg>
             </div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white ml-3">
@@ -252,15 +356,15 @@
           <div class="space-y-2">
             <button
               class="w-full bg-green-50 hover:bg-green-100 dark:bg-green-900 dark:hover:bg-green-800 text-green-700 dark:text-green-300 px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-              @click="generateClassReport('pdf')"
               :disabled="generatingReport"
+              @click="generateClassReport('pdf')"
             >
               📈 Generar PDF
             </button>
             <button
               class="w-full bg-blue-50 hover:bg-blue-100 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-              @click="generateClassReport('excel')"
               :disabled="generatingReport"
+              @click="generateClassReport('excel')"
             >
               📊 Dashboard BI
             </button>
@@ -269,11 +373,11 @@
       </div>
 
       <!-- Historial de reportes recientes -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div
+        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+      >
         <div class="flex items-center justify-between mb-6">
-          <h2 class="text-xl font-bold text-gray-900 dark:text-white">
-            📚 Historial de Reportes
-          </h2>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">📚 Historial de Reportes</h2>
           <button
             class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
             @click="loadReportHistory"
@@ -286,11 +390,19 @@
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-gray-200 dark:border-gray-700">
-                <th class="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nombre</th>
+                <th class="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">
+                  Nombre
+                </th>
                 <th class="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Tipo</th>
-                <th class="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Generado</th>
-                <th class="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Estado</th>
-                <th class="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Acciones</th>
+                <th class="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">
+                  Generado
+                </th>
+                <th class="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">
+                  Estado
+                </th>
+                <th class="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">
+                  Acciones
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -304,7 +416,9 @@
                     <span class="text-2xl mr-3">{{ getReportIcon(report.type) }}</span>
                     <div>
                       <div class="font-medium text-gray-900 dark:text-white">{{ report.name }}</div>
-                      <div class="text-xs text-gray-500 dark:text-gray-400">{{ report.description }}</div>
+                      <div class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ report.description }}
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -371,7 +485,9 @@
     >
       <div class="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-sm w-full mx-4">
         <div class="flex items-center justify-center mb-4">
-          <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+          <div
+            class="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"
+          />
         </div>
         <h3 class="text-lg font-medium text-gray-900 dark:text-white text-center mb-2">
           Generando Reporte
@@ -382,8 +498,8 @@
         <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-4">
           <div
             class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-            :style="{ width: `${generationProgress}%` }"
-          ></div>
+            :style="{width: `${generationProgress}%`}"
+          />
         </div>
       </div>
     </div>
@@ -391,12 +507,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue"
-import { format as formatDate } from "date-fns"
-import { es } from "date-fns/locale"
-import { reportGenerator } from "../../services/reports/reportGenerator"
-import { excelExporter } from "../../services/reports/excelExporter"
-import { analyticsEngine } from "../../services/reports/analyticsEngine"
+import {ref, computed, onMounted} from "vue"
+import {format as formatDate} from "date-fns"
+import {es} from "date-fns/locale"
+import {reportGenerator} from "../../services/reports/reportGenerator"
+import {excelExporter} from "../../services/reports/excelExporter"
+import {analyticsEngine} from "../../services/reports/analyticsEngine"
 import dailyAttendanceService from "../../services/dailyAttendanceService"
 import ReportWizardModal from "./ReportWizardModal.vue"
 
@@ -448,7 +564,9 @@ const recentReports = ref<ReportItem[]>([])
 
 // Computed
 const reportHistory = computed(() => {
-  return recentReports.value.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  return recentReports.value.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  )
 })
 
 // Métodos principales
@@ -459,7 +577,9 @@ const generateAttendanceReport = async (format: "pdf" | "excel"): Promise<void> 
 
   try {
     // Obtener datos de asistencia
-    const attendanceReport = await dailyAttendanceService.getDailyAttendanceReport(new Date().toISOString().split("T")[0])
+    const attendanceReport = await dailyAttendanceService.getDailyAttendanceReport(
+      new Date().toISOString().split("T")[0]
+    )
     const attendanceData = attendanceReport.records || []
     generationProgress.value = 30
     generationStatus.value = "Procesando estadísticas..."
@@ -474,16 +594,16 @@ const generateAttendanceReport = async (format: "pdf" | "excel"): Promise<void> 
           generatedBy: "Sistema de Reportes",
           generatedAt: new Date(),
           academyName: "Academia Musical El Sistema Punta Cana",
-          academyLogo: undefined
+          academyLogo: undefined,
         },
         {
           includeCharts: true,
           includeStatistics: true,
           includeTrends: true,
-          groupBy: "student"
+          groupBy: "student",
         }
       )
-      
+
       generationProgress.value = 90
       generationStatus.value = "Finalizando..."
 
@@ -496,7 +616,6 @@ const generateAttendanceReport = async (format: "pdf" | "excel"): Promise<void> 
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-
     } else if (format === "excel") {
       generationStatus.value = "Generando Excel con múltiples hojas..."
       generationProgress.value = 60
@@ -507,7 +626,7 @@ const generateAttendanceReport = async (format: "pdf" | "excel"): Promise<void> 
         {
           filename: `reporte-asistencia-${formatDate(new Date(), "yyyy-MM-dd")}.xlsx`,
           includeCharts: true,
-          includePivot: true
+          includePivot: true,
         }
       )
 
@@ -535,11 +654,10 @@ const generateAttendanceReport = async (format: "pdf" | "excel"): Promise<void> 
       name: `Reporte de Asistencia ${formatDate(new Date(), "dd/MM/yyyy")}`,
       description: `Reporte completo de asistencia en formato ${format.toUpperCase()}`,
       type: "attendance",
-      format: format,
+      format,
       status: "completed",
-      createdAt: new Date()
+      createdAt: new Date(),
     })
-
   } catch (error) {
     console.error("Error generando reporte:", error)
     alert("❌ Error generando el reporte. Por favor intenta nuevamente.")
@@ -558,36 +676,33 @@ const generateRiskReport = async (format: "pdf" | "excel"): Promise<void> => {
 
   try {
     // Obtener datos y calcular riesgo
-    const attendanceReport = await dailyAttendanceService.getDailyAttendanceReport(new Date().toISOString().split("T")[0])
+    const attendanceReport = await dailyAttendanceService.getDailyAttendanceReport(
+      new Date().toISOString().split("T")[0]
+    )
     const attendanceData = attendanceReport.records || []
     const riskStudents = await calculateStudentsAtRisk(attendanceData)
-    
+
     generationProgress.value = 50
     generationStatus.value = `Generando reporte para ${riskStudents.length} estudiantes en riesgo...`
 
     if (format === "pdf") {
-      const pdfBlob = await reportGenerator.generateRiskStudentsReport(
-        riskStudents,
-        {
-          generatedBy: "Sistema de Reportes",
-          generatedAt: new Date(),
-          academyName: "Academia Musical El Sistema Punta Cana"
-        }
-      )
-      
+      const pdfBlob = await reportGenerator.generateRiskStudentsReport(riskStudents, {
+        generatedBy: "Sistema de Reportes",
+        generatedAt: new Date(),
+        academyName: "Academia Musical El Sistema Punta Cana",
+      })
+
       downloadFile(pdfBlob, `estudiantes-riesgo-${formatDate(new Date(), "yyyy-MM-dd")}.pdf`)
     } else {
-      const excelBlob = await excelExporter.exportRiskStudentsReport(
-        riskStudents,
-        { filename: `estudiantes-riesgo-${formatDate(new Date(), "yyyy-MM-dd")}.xlsx` }
-      )
-      
+      const excelBlob = await excelExporter.exportRiskStudentsReport(riskStudents, {
+        filename: `estudiantes-riesgo-${formatDate(new Date(), "yyyy-MM-dd")}.xlsx`,
+      })
+
       downloadFile(excelBlob, `estudiantes-riesgo-${formatDate(new Date(), "yyyy-MM-dd")}.xlsx`)
     }
 
     generationProgress.value = 100
     totalReportsGenerated.value++
-
   } catch (error) {
     console.error("Error generando reporte de riesgo:", error)
     alert("❌ Error generando el reporte de estudiantes en riesgo.")
@@ -602,11 +717,11 @@ const generateRiskReport = async (format: "pdf" | "excel"): Promise<void> => {
 const generateClassReport = async (format: "pdf" | "excel"): Promise<void> => {
   generatingReport.value = true
   generationStatus.value = "Analizando rendimiento por clase..."
-  
+
   try {
     // TODO: Implementar reporte de clases
-    await new Promise(resolve => setTimeout(resolve, 2000)) // Simulación
-    
+    await new Promise((resolve) => setTimeout(resolve, 2000)) // Simulación
+
     alert("✅ Reporte de rendimiento por clase generado exitosamente")
     totalReportsGenerated.value++
   } catch (error) {
@@ -632,7 +747,7 @@ const downloadFile = (blob: Blob, filename: string): void => {
 const calculateStudentsAtRisk = async (attendanceData: any[]): Promise<any[]> => {
   // Calcular estudiantes en riesgo basado en patrones de asistencia
   const studentStats: any = {}
-  
+
   attendanceData.forEach((record: any) => {
     if (!studentStats[record.studentId]) {
       studentStats[record.studentId] = {
@@ -643,13 +758,13 @@ const calculateStudentsAtRisk = async (attendanceData: any[]): Promise<any[]> =>
         attendedClasses: 0,
         absentClasses: 0,
         lateArrivals: 0,
-        justifiedAbsences: 0
+        justifiedAbsences: 0,
       }
     }
-    
+
     const stats = studentStats[record.studentId]
     stats.totalClasses++
-    
+
     switch (record.status) {
       case "presente":
         stats.attendedClasses++
@@ -666,44 +781,51 @@ const calculateStudentsAtRisk = async (attendanceData: any[]): Promise<any[]> =>
         break
     }
   })
-  
+
   // Calcular métricas de riesgo
-  const riskStudents = Object.values(studentStats).map((student: any) => {
-    const attendanceRate = (student.attendedClasses / student.totalClasses) || 0
-    const punctualityRate = student.attendedClasses > 0 
-      ? ((student.attendedClasses - student.lateArrivals) / student.attendedClasses) 
-      : 1
-    
-    let riskLevel = "bajo"
-    if (attendanceRate < 0.7 || student.absentClasses >= 3) riskLevel = "crítico"
-    else if (attendanceRate < 0.8 || student.absentClasses >= 2) riskLevel = "alto"
-    else if (attendanceRate < 0.9 || student.lateArrivals >= 3) riskLevel = "medio"
-    
-    return {
-      ...student,
-      attendanceRate,
-      punctualityRate,
-      riskLevel,
-      trend: "estable" // TODO: Calcular tendencia real
-    }
-  }).filter(student => student.riskLevel === "alto" || student.riskLevel === "crítico")
-  
+  const riskStudents = Object.values(studentStats)
+    .map((student: any) => {
+      const attendanceRate = student.attendedClasses / student.totalClasses || 0
+      const punctualityRate =
+        student.attendedClasses > 0
+          ? (student.attendedClasses - student.lateArrivals) / student.attendedClasses
+          : 1
+
+      let riskLevel = "bajo"
+      if (attendanceRate < 0.7 || student.absentClasses >= 3) riskLevel = "crítico"
+      else if (attendanceRate < 0.8 || student.absentClasses >= 2) riskLevel = "alto"
+      else if (attendanceRate < 0.9 || student.lateArrivals >= 3) riskLevel = "medio"
+
+      return {
+        ...student,
+        attendanceRate,
+        punctualityRate,
+        riskLevel,
+        trend: "estable", // TODO: Calcular tendencia real
+      }
+    })
+    .filter((student) => student.riskLevel === "alto" || student.riskLevel === "crítico")
+
   return riskStudents
 }
 
 const loadDashboardMetrics = async (): Promise<void> => {
   try {
-    const attendanceReport = await dailyAttendanceService.getDailyAttendanceReport(new Date().toISOString().split("T")[0])
+    const attendanceReport = await dailyAttendanceService.getDailyAttendanceReport(
+      new Date().toISOString().split("T")[0]
+    )
     const attendanceData = attendanceReport.records || []
-    
+
     // Calcular métricas
     const totalRecords = attendanceData.length
-    const presentCount = attendanceData.filter(r => r.status === "Presente" || r.status === "Tardanza").length
+    const presentCount = attendanceData.filter(
+      (r) => r.status === "Presente" || r.status === "Tardanza"
+    ).length
     averageAttendanceRate.value = Math.round((presentCount / totalRecords) * 100)
-    
+
     const riskStudents = await calculateStudentsAtRisk(attendanceData)
     studentsAtRisk.value = riskStudents.length
-    
+
     // Cargar analytics
     await loadAnalyticsData(attendanceData)
   } catch (error) {
@@ -715,11 +837,11 @@ const loadAnalyticsData = async (attendanceData: any[]): Promise<void> => {
   try {
     // Inicializar motor de analytics
     analyticsEngine.initializeWithData(attendanceData)
-    
+
     // Obtener patrones y insights
     const patterns = analyticsEngine.getPatterns()
     const insights = analyticsEngine.getPredictiveInsights()
-    
+
     // Transformar para la UI
     detectedPatterns.value = patterns.slice(0, 5).map((pattern, index) => ({
       id: index,
@@ -727,15 +849,15 @@ const loadAnalyticsData = async (attendanceData: any[]): Promise<void> => {
       description: pattern.description,
       severity: pattern.severity,
       confidence: Math.round(pattern.confidence * 100),
-      recommendations: pattern.recommendations
+      recommendations: pattern.recommendations,
     }))
-    
+
     predictiveInsights.value = insights.slice(0, 3).map((insight, index) => ({
       id: index,
       title: `Riesgo de ${insight.type.replace("_", " ")}`,
       description: `${insight.targetStudents.length} estudiantes identificados con riesgo en ${insight.timeframe}`,
       probability: insight.probability,
-      preventiveActions: insight.preventiveActions
+      preventiveActions: insight.preventiveActions,
     }))
   } catch (error) {
     console.error("Error cargando analytics:", error)
@@ -763,53 +885,75 @@ const getPatternSeverityClass = (severity: string): string => {
 
 const getReportIcon = (type: string): string => {
   switch (type) {
-    case "attendance": return "📊"
-    case "risk": return "⚠️"
-    case "class": return "📚"
-    case "notification": return "📱"
-    default: return "📄"
+    case "attendance":
+      return "📊"
+    case "risk":
+      return "⚠️"
+    case "class":
+      return "📚"
+    case "notification":
+      return "📱"
+    default:
+      return "📄"
   }
 }
 
 const getReportTypeClass = (type: string): string => {
   switch (type) {
-    case "attendance": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-    case "risk": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-    case "class": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-    default: return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+    case "attendance":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+    case "risk":
+      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+    case "class":
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+    default:
+      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
   }
 }
 
 const getReportTypeLabel = (type: string): string => {
   switch (type) {
-    case "attendance": return "Asistencia"
-    case "risk": return "Riesgo"
-    case "class": return "Clase"
-    case "notification": return "Notificación"
-    default: return "Otro"
+    case "attendance":
+      return "Asistencia"
+    case "risk":
+      return "Riesgo"
+    case "class":
+      return "Clase"
+    case "notification":
+      return "Notificación"
+    default:
+      return "Otro"
   }
 }
 
 const getStatusClass = (status: string): string => {
   switch (status) {
-    case "completed": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-    case "generating": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-    case "failed": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-    default: return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+    case "completed":
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+    case "generating":
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+    case "failed":
+      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+    default:
+      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
   }
 }
 
 const getStatusLabel = (status: string): string => {
   switch (status) {
-    case "completed": return "Completado"
-    case "generating": return "Generando"
-    case "failed": return "Error"
-    default: return "Desconocido"
+    case "completed":
+      return "Completado"
+    case "generating":
+      return "Generando"
+    case "failed":
+      return "Error"
+    default:
+      return "Desconocido"
   }
 }
 
 const formatDisplayDate = (date: Date): string => {
-  return formatDate(new Date(date), "dd/MM/yyyy HH:mm", { locale: es })
+  return formatDate(new Date(date), "dd/MM/yyyy HH:mm", {locale: es})
 }
 
 // Event handlers

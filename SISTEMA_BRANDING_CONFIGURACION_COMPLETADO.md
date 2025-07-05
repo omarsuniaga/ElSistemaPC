@@ -7,6 +7,7 @@ El sistema de configuración de marca permite a los superusuarios personalizar c
 ## Características Principales
 
 ### ✅ **Configuración Completa de Marca**
+
 - **Información Básica**: Nombre, descripción, eslogan, mensaje de bienvenida
 - **Logo y Favicon**: Subida de archivos con soporte para múltiples formatos
 - **Colores de Marca**: Paleta personalizable con vista previa en tiempo real
@@ -15,17 +16,20 @@ El sistema de configuración de marca permite a los superusuarios personalizar c
 - **CSS Personalizado**: Estilos adicionales para personalización avanzada
 
 ### ✅ **Vista Previa en Tiempo Real**
+
 - Mockup interactivo que muestra los cambios instantáneamente
 - Aplicación automática de colores y estilos
 - Previsualización de logo y textos
 
 ### ✅ **Gestión Avanzada**
+
 - Importar/exportar configuraciones en formato JSON
 - Paletas de colores predefinidas
 - Reset a configuración por defecto
 - Validación de archivos y datos
 
 ### ✅ **Integración Global**
+
 - Plugin de Vue para inicialización automática
 - Composable para uso en cualquier componente
 - Aplicación automática en headers y footers
@@ -54,26 +58,24 @@ src/
 ## Uso del Sistema
 
 ### 1. **Acceso para Superusuarios**
+
 ```
 /superusuario/branding
 ```
+
 Solo usuarios con rol "Superusuario" pueden acceder.
 
 ### 2. **Uso en Componentes**
+
 ```vue
 <script setup>
-import { useBranding } from '@/composables/useBranding'
+import {useBranding} from "@/composables/useBranding"
 
-const { 
-  appTitle, 
-  appLogo, 
-  brandColors, 
-  applyBranding 
-} = useBranding()
+const {appTitle, appLogo, brandColors, applyBranding} = useBranding()
 </script>
 
 <template>
-  <div :style="{ color: brandColors.primary }">
+  <div :style="{color: brandColors.primary}">
     <h1>{{ appTitle }}</h1>
     <img :src="appLogo.url" :alt="appLogo.alt" />
   </div>
@@ -81,33 +83,27 @@ const {
 ```
 
 ### 3. **Header y Footer Dinámicos**
+
 ```vue
 <template>
-  <DynamicHeader 
-    title="Mi Página"
-    :show-logo="true"
-    :show-tagline="true"
-  >
+  <DynamicHeader title="Mi Página" :show-logo="true" :show-tagline="true">
     <template #actions>
       <!-- Acciones personalizadas -->
     </template>
   </DynamicHeader>
-  
+
   <main>
     <!-- Contenido -->
   </main>
-  
-  <DynamicFooter 
-    :show-contact="true"
-    :show-social="true"
-    :quick-links="quickLinks"
-  />
+
+  <DynamicFooter :show-contact="true" :show-social="true" :quick-links="quickLinks" />
 </template>
 ```
 
 ## Configuración Inicial
 
 ### 1. **Estructura de Datos**
+
 ```typescript
 interface BrandingConfig {
   appName: string
@@ -150,11 +146,12 @@ interface BrandingConfig {
 ```
 
 ### 2. **Valores por Defecto**
+
 ```typescript
 const defaultConfig: BrandingConfig = {
-  appName: 'Music Academy Manager',
-  tagline: 'Transformando la educación musical',
-  appDescription: 'Sistema integral de gestión para academias musicales...',
+  appName: "Music Academy Manager",
+  tagline: "Transformando la educación musical",
+  appDescription: "Sistema integral de gestión para academias musicales...",
   // ... resto de configuración
 }
 ```
@@ -162,12 +159,14 @@ const defaultConfig: BrandingConfig = {
 ## Características Técnicas
 
 ### 🔧 **Store de Pinia**
+
 - Estado reactivo global
 - Persistencia automática en Firestore
 - Métodos para CRUD completo
 - Validación de datos
 
 ### 🎨 **Variables CSS Dinámicas**
+
 ```css
 :root {
   --brand-primary: #1976d2;
@@ -178,11 +177,13 @@ const defaultConfig: BrandingConfig = {
 ```
 
 ### 📱 **Integración PWA**
+
 - Actualización automática del manifest
 - Configuración de theme-color
 - Meta tags dinámicas
 
 ### 🖼️ **Gestión de Archivos**
+
 - Subida a Firebase Storage
 - Optimización automática
 - Validación de tamaño y formato
@@ -191,6 +192,7 @@ const defaultConfig: BrandingConfig = {
 ## API del Store
 
 ### Métodos Principales
+
 ```typescript
 // Cargar configuración
 await loadBrandingConfig()
@@ -215,11 +217,12 @@ previewChanges(tempConfig)
 ```
 
 ### Computed Properties
+
 ```typescript
 // CSS variables reactivas
 const cssVariables = computed(() => ({
-  '--brand-primary': config.value.colors.primary,
-  '--brand-secondary': config.value.colors.secondary,
+  "--brand-primary": config.value.colors.primary,
+  "--brand-secondary": config.value.colors.secondary,
   // ...
 }))
 
@@ -232,17 +235,20 @@ const isConfigLoaded = ref(false)
 ## Validaciones y Seguridad
 
 ### ✅ **Validaciones de Archivos**
+
 - Tamaño máximo: 5MB
 - Formatos permitidos: JPG, PNG, SVG, WebP
 - Validación de MIME type
 
 ### ✅ **Validaciones de Datos**
+
 - URLs válidas
 - Colores en formato hexadecimal
 - Longitud mínima/máxima de textos
 - Sanitización de CSS personalizado
 
 ### ✅ **Seguridad**
+
 - Solo superusuarios pueden modificar
 - Validación en Firebase Rules
 - Escape de contenido HTML
@@ -251,18 +257,20 @@ const isConfigLoaded = ref(false)
 ## Ejemplos de Uso
 
 ### Aplicar Branding al Cargar Página
+
 ```typescript
-import { useBranding } from '@/composables/useBranding'
+import {useBranding} from "@/composables/useBranding"
 
 export default {
   async mounted() {
-    const { applyBranding } = useBranding()
-    await applyBranding('Título de la Página')
-  }
+    const {applyBranding} = useBranding()
+    await applyBranding("Título de la Página")
+  },
 }
 ```
 
 ### Usar Colores Dinámicos
+
 ```vue
 <template>
   <div class="custom-component" :style="componentStyles">
@@ -271,38 +279,36 @@ export default {
 </template>
 
 <script setup>
-const { brandColors, getCSSVariables } = useBranding()
+const {brandColors, getCSSVariables} = useBranding()
 
 const componentStyles = computed(() => ({
   backgroundColor: brandColors.value.primary,
   color: brandColors.value.background,
-  ...getCSSVariables()
+  ...getCSSVariables(),
 }))
 </script>
 ```
 
 ### Mostrar Información de Contacto
+
 ```vue
 <template>
   <div class="contact-info">
     <h3>Contáctanos</h3>
-    <p v-if="contactInfo.phone">
-      📞 {{ contactInfo.phone }}
-    </p>
-    <p v-if="contactInfo.email">
-      ✉️ {{ contactInfo.email }}
-    </p>
+    <p v-if="contactInfo.phone">📞 {{ contactInfo.phone }}</p>
+    <p v-if="contactInfo.email">✉️ {{ contactInfo.email }}</p>
   </div>
 </template>
 
 <script setup>
-const { contactInfo } = useBranding()
+const {contactInfo} = useBranding()
 </script>
 ```
 
 ## Paletas de Colores Predefinidas
 
 ### 🎨 **Paletas Disponibles**
+
 1. **Azul Profesional**: #1976d2, #424242, #82b1ff, #fafafa
 2. **Verde Natura**: #388e3c, #2e7d32, #81c784, #f1f8e9
 3. **Púrpura Elegante**: #7b1fa2, #4a148c, #ba68c8, #f3e5f5
@@ -314,32 +320,37 @@ const { contactInfo } = useBranding()
 ### ❗ **Problemas Comunes**
 
 **1. Logo no se muestra**
+
 - Verificar que la URL sea válida
 - Comprobar permisos de Firebase Storage
 - Validar formato de imagen
 
 **2. Colores no se aplican**
+
 - Verificar formato hexadecimal
 - Comprobar que el CSS esté cargando
 - Revisar especificidad de CSS
 
 **3. Configuración no se guarda**
+
 - Verificar permisos de usuario (Superusuario)
 - Comprobar conexión a Firestore
 - Revisar reglas de Firebase
 
 ### 🔧 **Debug**
+
 ```javascript
 // En consola del navegador
 window.debugBranding = () => {
-  console.log('Branding Config:', useBrandingStore().config)
-  console.log('CSS Variables:', useBrandingStore().cssVariables)
+  console.log("Branding Config:", useBrandingStore().config)
+  console.log("CSS Variables:", useBrandingStore().cssVariables)
 }
 ```
 
 ## Roadmap Futuro
 
 ### 🚀 **Próximas Características**
+
 - [ ] Editor visual de temas
 - [ ] Modo oscuro automático
 - [ ] Plantillas predefinidas

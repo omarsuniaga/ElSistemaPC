@@ -1,5 +1,5 @@
 // src/utils/safeAccess.ts
-import {debug, warn, error} from "./debug"
+import {warn, error} from "./debug"
 
 /**
  * Utilidades para acceso seguro a propiedades de objetos
@@ -8,18 +8,39 @@ import {debug, warn, error} from "./debug"
 /**
  * Accede de forma segura a una propiedad anidada de un objeto
  * @param obj - El objeto a acceder
- * @param path - El path de la propiedad (ej: 'user.profile.name')
+ * @param path - El path de la propiedad (ej: 'user.profile.name') o índice numérico
  * @param defaultValue - Valor por defecto si no existe
  */
-export function safeGet<T = any>(obj: any, path: string, defaultValue: T = undefined as T): T {
+export function safeGet<T = any>(
+  obj: any,
+  path: string | number,
+  defaultValue: T = undefined as T
+): T {
   try {
+    // Si el objeto es null o undefined, devolver valor por defecto
+    if (obj == null) {
+      return defaultValue
+    }
+
+    // Si es un índice numérico, acceso directo para arrays/objetos
+    if (typeof path === "number") {
+      return obj[path] !== undefined ? obj[path] : defaultValue
+    }
+
+    // Si es un path simple (sin puntos), acceso directo
+    if (!path.includes(".")) {
+      return obj[path] !== undefined ? obj[path] : defaultValue
+    }
+
+    // Para paths anidados
     return (
       path.split(".").reduce((current, key) => {
         return current?.[key]
       }, obj) ?? defaultValue
     )
-  } catch (error) {
-    warn("SafeAccess: Error accessing path", {path, error})
+  } catch (err) {
+    // Log error for debugging
+    warn("SafeAccess: Error accessing path", {path, error: err})
     return defaultValue
   }
 }
@@ -58,8 +79,8 @@ export function safeArrayLength(arr: any, defaultLength: number = 0): number {
 export function safeExecute<T>(fn: () => T, defaultValue: T, errorMessage?: string): T {
   try {
     return fn()
-  } catch (error) {
-    error(errorMessage || "SafeAccess: Error executing function", error)
+  } catch (err) {
+    error(errorMessage || "SafeAccess: Error executing function", err)
     return defaultValue
   }
 }
@@ -82,8 +103,8 @@ export function safeFilter<T>(
 
   try {
     return arr.filter(filterFn)
-  } catch (error) {
-    error("SafeAccess: Error filtering array", error)
+  } catch (err) {
+    error("SafeAccess: Error filtering array", err)
     return defaultArray
   }
 }
@@ -106,8 +127,8 @@ export function safeMap<T, R>(
 
   try {
     return arr.map(mapFn)
-  } catch (error) {
-    error("SafeAccess: Error mapping array", error)
+  } catch (err) {
+    error("SafeAccess: Error mapping array", err)
     return defaultArray
   }
 }
@@ -130,8 +151,8 @@ export function safeFind<T>(
 
   try {
     return arr.find(findFn) ?? defaultValue
-  } catch (error) {
-    error("SafeAccess: Error finding in array", error)
+  } catch (err) {
+    error("SafeAccess: Error finding in array", err)
     return defaultValue
   }
 }
@@ -160,8 +181,8 @@ export function safeMath(operation: () => number, defaultValue: number = 0): num
   try {
     const result = operation()
     return isNaN(result) || !isFinite(result) ? defaultValue : result
-  } catch (error) {
-    error("SafeAccess: Error in mathematical operation", error)
+  } catch (err) {
+    error("SafeAccess: Error in mathematical operation", err)
     return defaultValue
   }
 }

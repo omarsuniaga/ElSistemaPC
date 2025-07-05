@@ -5,11 +5,13 @@
 ### 1. Componente TodaysClassesSection Independiente
 
 **Antes:**
+
 - Dependía de props del componente padre
 - Requería que el padre calculara `todaysClasses`
 - Emitía eventos que el padre debía manejar
 
 **Después:**
+
 - ✅ **Completamente independiente y auto-contenido**
 - ✅ **Maneja su propio estado de carga (`loading`)**
 - ✅ **Obtiene datos desde stores internamente**
@@ -23,20 +25,23 @@
 **Cambios realizados:**
 
 #### Imports Limpiados
+
 ```typescript
 // Eliminado: NotificationListSection (no se usaba)
 // Actualizado: Comentarios para reflejar la independencia de los componentes
-import TodaysClassesSection from '../components/TodaysClassesSection.vue'; // Self-contained
-import NotificationsSection from '../components/NotificationsSection.vue'; // Self-contained
+import TodaysClassesSection from "../components/TodaysClassesSection.vue" // Self-contained
+import NotificationsSection from "../components/NotificationsSection.vue" // Self-contained
 ```
 
 #### Lógica Removida
+
 - ❌ **Removed:** Computed `todaysClasses` (ahora manejado por TodaysClassesSection)
 - ❌ **Removed:** Lógica de mapeo de días en métricas (ya no necesaria)
 - ✅ **Simplified:** Métricas del dashboard (eliminó dependencia de todaysClasses)
 - ✅ **Cleaned:** Funciones helper reorganizadas y simplificadas
 
 #### Métricas Actualizadas
+
 ```typescript
 // Antes: Usaba todaysClasses.value.length
 // Después: Usa classes.filter(c => c.status !== 'inactive').length
@@ -49,6 +54,7 @@ import NotificationsSection from '../components/NotificationsSection.vue'; // Se
 ```
 
 #### Template Simplificado
+
 ```vue
 <!-- Antes: Pasaba props y manejaba eventos -->
 <TodaysClassesSection
@@ -64,11 +70,11 @@ import NotificationsSection from '../components/NotificationsSection.vue'; // Se
 ### 3. Arquitectura Mejorada
 
 #### Separación de Responsabilidades
-- **TeacherDashboardPage**: 
+
+- **TeacherDashboardPage**:
   - Orquesta tabs y navegación
   - Maneja modales de creación/edición
   - Controla el flujo general del dashboard
-  
 - **TodaysClassesSection**:
   - Obtiene datos del maestro actual
   - Calcula clases para el día actual
@@ -105,6 +111,7 @@ src/modulos/Teachers/
 ### 5. Flujo de Datos
 
 #### Antes (Acoplado)
+
 ```
 TeacherDashboardPage
 ├── Obtiene datos de stores
@@ -114,6 +121,7 @@ TeacherDashboardPage
 ```
 
 #### Después (Desacoplado)
+
 ```
 TeacherDashboardPage
 ├── Maneja tabs y modales
@@ -147,6 +155,7 @@ npm run type-check
 ## Conclusión
 
 La recodificación ha logrado:
+
 - ✅ **Componentes completamente independientes**
 - ✅ **Código más limpio y mantenible**
 - ✅ **Mejor separación de responsabilidades**

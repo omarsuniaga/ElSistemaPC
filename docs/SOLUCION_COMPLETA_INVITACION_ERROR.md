@@ -3,6 +3,7 @@
 ## 🔍 Problema Identificado
 
 **Error específico:**
+
 ```
 La clase con ID weYLW7FRK6eYsewQ45hy no existe en el sistema
 Notification ID: xD1SZzY8yvRCplmtnj01
@@ -15,30 +16,33 @@ Notification ID: xD1SZzY8yvRCplmtnj01
 ### 1. **Manejo Elegante de Clases Inexistentes**
 
 #### En `teacherNotifications.ts`:
+
 ```typescript
 // Antes: Error inmediato
-throw new Error(`La clase con ID ${notification.classId} no existe en el sistema`);
+throw new Error(`La clase con ID ${notification.classId} no existe en el sistema`)
 
 // Después: Marcado como inválida + logs detallados
 await updateDoc(notificationRef, {
-  status: 'invalid',
-  invalidReason: 'Class not found',
-  invalidAt: Timestamp.now()
-});
+  status: "invalid",
+  invalidReason: "Class not found",
+  invalidAt: Timestamp.now(),
+})
 ```
 
 ### 2. **Filtrado Automático de Notificaciones Inválidas**
 
 #### En `useTeacherNotifications.ts`:
+
 ```typescript
 const cleanInvalidNotifications = () => {
   // Filtrar notificaciones con status 'invalid'
-  notifications.value = notifications.value.filter(n => n.status !== 'invalid');
-  pendingInvitations.value = pendingInvitations.value.filter(n => n.status !== 'invalid');
-};
+  notifications.value = notifications.value.filter((n) => n.status !== "invalid")
+  pendingInvitations.value = pendingInvitations.value.filter((n) => n.status !== "invalid")
+}
 ```
 
 ### 3. **Logs Detallados para Debugging**
+
 - Lista todas las clases disponibles cuando hay error
 - Muestra información completa de la notificación problemática
 - Rastrea el proceso completo de validación
@@ -50,7 +54,9 @@ const cleanInvalidNotifications = () => {
 1. **Abrir consola del navegador** (F12)
 2. **Cargar el script:**
    ```javascript
-   fetch('/clean-problematic-notification.js').then(r => r.text()).then(eval);
+   fetch("/clean-problematic-notification.js")
+     .then((r) => r.text())
+     .then(eval)
    ```
 3. **Ejecutar:**
    ```javascript
@@ -72,6 +78,7 @@ window.checkNotificationStatus()
 ## 📊 Lo Que Sucederá
 
 ### **Antes de la Solución:**
+
 ```
 ❌ Error: "Clase no encontrada"
 ❌ La aplicación falla al aceptar invitación
@@ -80,6 +87,7 @@ window.checkNotificationStatus()
 ```
 
 ### **Después de la Solución:**
+
 ```
 ✅ Notificación marcada como 'invalid' (no se elimina datos)
 ✅ Filtrado automático en la UI
@@ -106,19 +114,22 @@ window.checkNotificationStatus()
 ## 🛡️ Prevención Futura
 
 ### **1. Validación al Crear Invitaciones**
+
 ```typescript
 // Verificar clase antes de crear invitación
-const classExists = await verifyClassExists(classId);
+const classExists = await verifyClassExists(classId)
 if (!classExists) {
-  throw new Error('No se puede crear invitación: la clase no existe');
+  throw new Error("No se puede crear invitación: la clase no existe")
 }
 ```
 
 ### **2. Limpieza Periódica**
+
 - Función automática para limpiar notificaciones inválidas
 - Verificación de integridad de datos
 
 ### **3. UI Más Robusta**
+
 - Manejo de errores en componentes
 - Mensajes informativos para el usuario
 - Fallbacks cuando hay datos inconsistentes
@@ -126,15 +137,19 @@ if (!classExists) {
 ## 🚀 Comandos de Ejecución
 
 ### **Solución Rápida (Recomendada):**
+
 ```javascript
 // En la consola del navegador
-fetch('/clean-problematic-notification.js').then(r => r.text()).then(eval);
-window.deleteProblematicNotification();
+fetch("/clean-problematic-notification.js")
+  .then((r) => r.text())
+  .then(eval)
+window.deleteProblematicNotification()
 ```
 
 ### **Verificación:**
+
 ```javascript
-window.checkNotificationStatus();
+window.checkNotificationStatus()
 ```
 
 ## ✅ Resultado Esperado

@@ -625,14 +625,25 @@ const filteredStudents = computed(() => {
   if (!studentSearchTerm.value.trim()) return students.value
 
   const searchTerm = studentSearchTerm.value.toLowerCase()
-  return students.value.filter(
-    (student) =>
-      student.nombre?.toLowerCase().includes(searchTerm) ||
-      student.apellido?.toLowerCase().includes(searchTerm) ||
-      student.instrumento?.toLowerCase().includes(searchTerm) ||
-      student.nivel?.toLowerCase().includes(searchTerm) ||
-      student.codigo_estudiante?.toString().includes(searchTerm)
-  )
+  return students.value.filter((student) => {
+    // Helper function to safely check string fields
+    const safeStringIncludes = (value: any) => {
+      return value && typeof value === "string" && value.toLowerCase().includes(searchTerm)
+    }
+
+    // Helper function to safely check numeric fields
+    const safeNumberIncludes = (value: any) => {
+      return value && value.toString().includes(searchTerm)
+    }
+
+    return (
+      safeStringIncludes(student.nombre) ||
+      safeStringIncludes(student.apellido) ||
+      safeStringIncludes(student.instrumento) ||
+      safeStringIncludes(student.nivel) ||
+      safeNumberIncludes(student.codigo_estudiante)
+    )
+  })
 })
 
 // Methods
@@ -642,7 +653,16 @@ const loadData = async () => {
     await Promise.all([teachersStore.fetchTeachers(), studentsStore.fetchStudents()])
 
     teachers.value = teachersStore.teachers || []
-    students.value = studentsStore.students || []
+
+    // Normalize student data to ensure all properties are correct types
+    students.value = (studentsStore.students || []).map((student) => ({
+      ...student,
+      nombre: student.nombre ? String(student.nombre) : "",
+      apellido: student.apellido ? String(student.apellido) : "",
+      instrumento: student.instrumento ? String(student.instrumento) : "",
+      nivel: student.nivel ? String(student.nivel) : "",
+      codigo_estudiante: student.codigo_estudiante || "",
+    }))
   } catch (error) {
     console.error("Error loading data:", error)
     showNotification("Error al cargar datos", "error")

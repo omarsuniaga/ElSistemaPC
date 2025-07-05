@@ -1,6 +1,21 @@
 // Versiones de caché
 const APP_VERSION = "1.1.0"
 const BUILD_DATE = "2023-10-18"
+
+// Detectar si estamos en desarrollo
+const isDevelopment =
+  self.location.hostname === "localhost" || self.location.hostname === "127.0.0.1"
+
+// Función para determinar si una URL debe ser cacheada en desarrollo
+function shouldCacheInDevelopment(url) {
+  if (!isDevelopment) return true
+
+  // No cachear archivos TypeScript, Vue, o módulos en desarrollo
+  const devPatterns = [/\.ts$/, /\.vue$/, /\/src\//, /@vite/, /@fs/, /node_modules/]
+
+  return !devPatterns.some((pattern) => pattern.test(url))
+}
+
 const CACHE_NAMES = {
   static: `static-cache-v${APP_VERSION}`,
   dynamic: `dynamic-cache-v${APP_VERSION}`,
@@ -450,20 +465,43 @@ self.addEventListener("fetch", (event) => {
     default:
       event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
-          const fetchPromise = fetch(event.request).then((networkResponse) => {
-            if (cacheName && networkResponse.status === 200) {
-              const responseToCache = networkResponse.clone()
-              caches.open(cacheName).then((cache) => {
-                cache.put(event.request, responseToCache)
+          const fetchPromise = fetch(event.request)
+            .then((networkResponse) => {
+              // En desarrollo, no cachear recursos .ts ni otros archivos de desarrollo
+              if (
+                cacheName &&
+                networkResponse.status === 200 &&
+                shouldCacheInDevelopment(event.request.url)
+              ) {
+                const responseToCache = networkResponse.clone()
+                caches
+                  .open(cacheName)
+                  .then((cache) => {
+                    cache.put(event.request, responseToCache).catch((error) => {
+                      if (!isDevelopment) {
+                        console.warn("[SW] Cache put failed for:", event.request.url, error)
+                      }
+                    })
 
-                // Mantener el tamaño del caché bajo control
-                if (CACHE_LIMITS[cacheName]) {
-                  trimCache(cacheName, CACHE_LIMITS[cacheName])
-                }
-              })
-            }
-            return networkResponse
-          })
+                    // Mantener el tamaño del caché bajo control
+                    if (CACHE_LIMITS[cacheName]) {
+                      trimCache(cacheName, CACHE_LIMITS[cacheName])
+                    }
+                  })
+                  .catch((error) => {
+                    if (!isDevelopment) {
+                      console.warn("[SW] Cache open failed:", error)
+                    }
+                  })
+              }
+              return networkResponse
+            })
+            .catch((error) => {
+              if (!isDevelopment) {
+                console.warn("[SW] Network fetch failed for:", event.request.url, error)
+              }
+              throw error
+            })
 
           return cachedResponse || fetchPromise
         })

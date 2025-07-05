@@ -107,7 +107,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/teacher/attendance/calendar",
     name: "TeacherAttendanceCalendar",
-    component: () => import("../views/AttendanceView.vue"),
+    component: () => import("../modulos/Attendance/views/TeacherAttendanceDashboard.vue"),
     props: {mode: "calendar"},
     meta: {
       requiresAuth: true,
@@ -119,7 +119,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/teacher/attendance/:date?/:classId?",
     name: "TeacherAttendanceDetail",
-    component: () => import("../views/AttendanceView.vue"),
+    component: () => import("../modulos/Attendance/views/AttendanceFormView.vue"),
     props: true,
     meta: {
       requiresAuth: true,
@@ -318,7 +318,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/analytics",
     name: "Analytics",
-    component: () => import("../modulos/Analytics/view/AnalyticsDashboard.vue"),
+    component: () => import("../analytics/components/AnalyticsDashboard.vue"),
     meta: {
       requiresAuth: true,
       requiresRBAC: true,

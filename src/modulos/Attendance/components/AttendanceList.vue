@@ -1844,6 +1844,7 @@ const sortedStudents = computed(() => {
             {{ effectiveStudents.length }} estudiantes
           </div>
         </div>
+        <!-- que hace este componente?  -->
 
         <AttendanceSummary
           :attendance-records="effectiveAttendanceRecords"

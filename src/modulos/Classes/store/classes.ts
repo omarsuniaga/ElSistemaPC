@@ -184,6 +184,13 @@ export const useClassesStore = defineStore("classes", {
           classData.teachers.some((teacher: any) => teacher.teacherId === teacherId))
       )
     },
+
+    /**
+     * Obtiene el número de clases activas.
+     */
+    activeClasses: (state) => {
+      return state.classes.filter((c) => c.isActive).length
+    },
   },
   // Actions para manejar la lógica de negocio y la comunicación con Firestore
 
@@ -471,6 +478,13 @@ export const useClassesStore = defineStore("classes", {
         console.error(`[ClassStore] Error al obtener clase ${classId}:`, error)
         return null
       }
+    },
+
+    /**
+     * Alias para fetchClassById para compatibilidad con código existente
+     */
+    async getClass(classId: string): Promise<ClassData | null> {
+      return await this.fetchClassById(classId)
     },
 
     /* ===== FUNCIONES AUXILIARES ===== */

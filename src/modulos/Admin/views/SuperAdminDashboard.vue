@@ -403,7 +403,6 @@
               />
             </div>
           </div>
-        
 
           <!-- Actividad Reciente -->
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
@@ -425,7 +424,6 @@
             </div>
             <RecentActivityFeed :activities="recentActivities" />
           </div>
-
         </div>
 
         <!-- Right Column - Quick Access & Alerts -->

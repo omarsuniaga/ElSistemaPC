@@ -35,6 +35,7 @@ src/modulos/Admin/
 ### 1. Dashboard Principal (AdminDashboard.vue)
 
 **Características:**
+
 - Vista panorámica del estado de la academia
 - Estadísticas en tiempo real
 - Acciones rápidas para tareas comunes
@@ -42,6 +43,7 @@ src/modulos/Admin/
 - Sistema de notificaciones
 
 **Secciones:**
+
 - **Header con Estadísticas**: Estudiantes, Maestros, Clases totales
 - **Acciones Rápidas**: Crear estudiante, clase, asignar maestro, gestionar horarios
 - **Gestión de Recursos**: Tarjetas para gestionar estudiantes, maestros, clases, horarios
@@ -53,30 +55,35 @@ src/modulos/Admin/
 ### 2. Componentes Principales
 
 #### QuickActionCard.vue
+
 - Tarjetas interactivas para acciones frecuentes
 - Integración con sistema RBAC
 - Animaciones y efectos hover
 - Estados de loading y disabled
 
 #### ManagementCard.vue
+
 - Gestión de recursos principales
 - Navegación a vistas específicas
 - Estadísticas en vivo
 - Acciones rápidas contextuales
 
 #### ReportCard.vue
+
 - Visualización de métricas clave
 - Indicadores de tendencia
 - Navegación a reportes detallados
 - Actualizaciones en tiempo real
 
 #### SystemStatusWidget.vue
+
 - Monitoreo de salud del sistema
 - Métricas de rendimiento
 - Alertas y notificaciones
 - Historial de respaldos
 
 #### PendingApprovalsList.vue
+
 - Lista de solicitudes pendientes
 - Filtros por tipo y prioridad
 - Acciones de aprobar/rechazar
@@ -85,14 +92,18 @@ src/modulos/Admin/
 ### 3. Modales Especializados
 
 #### CreateClassModal.vue
+
 **Proceso de 4 pasos:**
+
 1. **Información Básica**: Nombre, descripción, categoría, nivel, capacidad
 2. **Configuración de Horario**: Tipo (recurrente/taller/privada), días, horarios
 3. **Recursos y Requisitos**: Aula, materiales, prerrequisitos, costos
 4. **Revisión y Confirmación**: Validación final antes de crear
 
 #### AssignTeacherModal.vue
+
 **Proceso de 3 pasos:**
+
 1. **Seleccionar Clase**: Búsqueda y filtros, vista de clases disponibles
 2. **Seleccionar Maestro**: Filtros por especialidad, disponibilidad, experiencia
 3. **Configuración**: Tipo de asignación, fechas, notificaciones
@@ -103,17 +114,18 @@ src/modulos/Admin/
 
 ```typescript
 // Ejemplos de permisos verificados
-canCreateClass: 'classes.create'
-canAssignTeacher: 'teachers.assign'
-canViewReports: 'reports.view'
-canManageUsers: 'users.manage'
-canApproveRequests: 'requests.approve'
-canViewSystemStatus: 'system.view_status'
+canCreateClass: "classes.create"
+canAssignTeacher: "teachers.assign"
+canViewReports: "reports.view"
+canManageUsers: "users.manage"
+canApproveRequests: "requests.approve"
+canViewSystemStatus: "system.view_status"
 ```
 
 ### Control de Acceso
 
 Cada componente verifica permisos antes de mostrar:
+
 - Acciones rápidas
 - Tarjetas de gestión
 - Opciones de menú
@@ -137,18 +149,18 @@ interface DashboardStats {
 
 interface Activity {
   id: string
-  type: 'create' | 'update' | 'delete' | 'login' | 'assignment'
+  type: "create" | "update" | "delete" | "login" | "assignment"
   entity: string
   description: string
   user: string
   timestamp: Date
-  priority?: 'low' | 'medium' | 'high'
+  priority?: "low" | "medium" | "high"
 }
 
 interface SystemStatus {
-  database: 'online' | 'offline' | 'warning'
-  storage: 'online' | 'offline' | 'warning'
-  auth: 'online' | 'offline' | 'warning'
+  database: "online" | "offline" | "warning"
+  storage: "online" | "offline" | "warning"
+  auth: "online" | "offline" | "warning"
   lastBackup: Date
   systemLoad: number
   activeConnections: number
@@ -156,12 +168,12 @@ interface SystemStatus {
 
 interface PendingApproval {
   id: string
-  type: 'teacher_registration' | 'schedule_change' | 'class_creation' | 'student_enrollment'
+  type: "teacher_registration" | "schedule_change" | "class_creation" | "student_enrollment"
   title: string
   description: string
   requestedBy: string
   requestedAt: Date
-  priority: 'low' | 'medium' | 'high'
+  priority: "low" | "medium" | "high"
   data: any
 }
 ```
@@ -195,37 +207,41 @@ const {
   recentActivities,
   systemStatus,
   pendingApprovals,
-  
+
   // Permisos
   canCreateClass,
   canAssignTeacher,
   canViewReports,
-  
+
   // Métodos
   loadDashboardData,
   handleApproval,
-  startAutoRefresh
+  startAutoRefresh,
 } = useAdminDashboard()
 ```
 
 ## Características Técnicas
 
 ### Responsive Design
+
 - Diseño adaptativo para móviles y tablets
 - Grid system flexible
 - Componentes que se reorganizan según el espacio
 
 ### Dark Mode
+
 - Soporte completo para modo oscuro
 - Variables CSS dinámicas
 - Transiciones suaves entre temas
 
 ### Performance
+
 - Lazy loading de componentes
 - Virtualización en listas largas
 - Optimización de re-renders
 
 ### Accesibilidad
+
 - Navegación por teclado
 - Lectores de pantalla
 - Contraste adecuado
@@ -234,24 +250,28 @@ const {
 ## Flujo de Trabajo Típico
 
 ### 1. Acceso al Dashboard
+
 1. Usuario con rol Director/Administrador accede
 2. Verificación de permisos RBAC
 3. Carga de datos del dashboard
 4. Renderizado dinámico según permisos
 
 ### 2. Crear Nueva Clase
+
 1. Click en "Nueva Clase" (si tiene permisos)
 2. Modal de 4 pasos se abre
 3. Validación en cada paso
 4. Creación y actualización del dashboard
 
 ### 3. Asignar Maestro
+
 1. Click en "Asignar Maestro"
 2. Selección de clase y maestro
 3. Configuración de asignación
 4. Notificaciones automáticas
 
 ### 4. Gestión de Aprobaciones
+
 1. Vista de solicitudes pendientes
 2. Filtros por prioridad/tipo
 3. Revisión de detalles
@@ -260,6 +280,7 @@ const {
 ## Próximas Mejoras
 
 ### Funcionalidades Pendientes
+
 - [ ] Vistas específicas para cada módulo de gestión
 - [ ] Sistema avanzado de reportes
 - [ ] Dashboard de métricas en tiempo real
@@ -268,6 +289,7 @@ const {
 - [ ] Audit log completo
 
 ### Optimizaciones
+
 - [ ] Cache inteligente
 - [ ] WebSockets para actualizaciones en tiempo real
 - [ ] Service Worker para offline support
@@ -285,11 +307,13 @@ const {
 ## Testing
 
 ### Componentes Testados
+
 - Todos los componentes principales
 - Composables y stores
 - Flujos de usuario críticos
 
 ### Tipos de Test
+
 - Unit tests para componentes
 - Integration tests para flujos
 - E2E tests para casos de uso
@@ -297,6 +321,7 @@ const {
 ## Documentación de API
 
 ### Endpoints Utilizados
+
 - `GET /api/admin/stats` - Estadísticas del dashboard
 - `GET /api/admin/activities` - Actividad reciente
 - `GET /api/admin/system-status` - Estado del sistema

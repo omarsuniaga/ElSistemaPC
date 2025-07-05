@@ -184,20 +184,24 @@ class DebugManager {
 // Export singleton instance
 export const debugManager = new DebugManager()
 
-// Convenience exports
-export const {
-  debug,
-  info,
-  warn,
-  error,
-  firebaseLog,
-  startPerformanceTimer,
-  endPerformanceTimer,
-  group,
-  groupEnd,
-  table,
-  assert,
-} = debugManager
+// Convenience exports with proper binding
+export const debug = (...args: Parameters<typeof debugManager.debug>) => debugManager.debug(...args)
+export const info = (...args: Parameters<typeof debugManager.info>) => debugManager.info(...args)
+export const warn = (...args: Parameters<typeof debugManager.warn>) => debugManager.warn(...args)
+export const error = (...args: Parameters<typeof debugManager.error>) => debugManager.error(...args)
+export const firebaseLog = (...args: Parameters<typeof debugManager.firebaseLog>) =>
+  debugManager.firebaseLog(...args)
+export const startPerformanceTimer = (
+  ...args: Parameters<typeof debugManager.startPerformanceTimer>
+) => debugManager.startPerformanceTimer(...args)
+export const endPerformanceTimer = (...args: Parameters<typeof debugManager.endPerformanceTimer>) =>
+  debugManager.endPerformanceTimer(...args)
+export const group = (...args: Parameters<typeof debugManager.group>) => debugManager.group(...args)
+export const groupEnd = (...args: Parameters<typeof debugManager.groupEnd>) =>
+  debugManager.groupEnd(...args)
+export const table = (...args: Parameters<typeof debugManager.table>) => debugManager.table(...args)
+export const assert = (...args: Parameters<typeof debugManager.assert>) =>
+  debugManager.assert(...args)
 
 // Performance decorator for methods
 export function withPerformanceTracking(label: string) {

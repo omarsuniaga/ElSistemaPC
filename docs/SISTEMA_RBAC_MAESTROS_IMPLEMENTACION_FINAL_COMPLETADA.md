@@ -136,17 +136,20 @@ cspell.json                                    ✅ ACTUALIZADO
 ## Estados de los Roles
 
 ### Maestro Regular
+
 - ✅ Puede ver estudiantes de sus clases
 - ✅ Puede acceder a `/students`
 - ✅ Puede acceder a `/dashboard`
 - ✅ Menú "Estudiantes" visible
 
 ### Maestro Avanzado
+
 - ✅ Puede ver TODOS los estudiantes de la academia
 - ✅ Todos los permisos del maestro regular
 - ✅ Acceso extendido a perfiles de estudiantes
 
 ### Director/Admin/Superusuario
+
 - ✅ Acceso completo a todas las funcionalidades
 - ✅ Gestión de configuración RBAC
 - ✅ Herramientas de diagnóstico
@@ -165,6 +168,7 @@ Para verificar que todo funciona correctamente:
 ## Próximos Pasos
 
 1. **Desplegar reglas de Firestore**:
+
    ```bash
    firebase deploy --only firestore:rules
    ```

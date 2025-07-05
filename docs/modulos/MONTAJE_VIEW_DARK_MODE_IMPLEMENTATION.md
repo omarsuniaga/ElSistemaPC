@@ -81,11 +81,13 @@ Se ha agregado soporte completo para modo oscuro/claro en la vista principal del
 ### 🎨 **Paleta de Colores Implementada**
 
 **Modo Claro:**
+
 - Fondos: `bg-white`, `bg-gray-50`
 - Textos: `text-gray-900`, `text-gray-600`, `text-gray-500`
 - Bordes: `border-gray-200`, `border-gray-300`
 
 **Modo Oscuro:**
+
 - Fondos: `dark:bg-gray-800`, `dark:bg-gray-900`
 - Textos: `dark:text-white`, `dark:text-gray-300`, `dark:text-gray-400`
 - Bordes: `dark:border-gray-700`, `dark:border-gray-600`

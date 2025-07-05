@@ -58,13 +58,11 @@
             <span>Activos: {{ activeStudents }}</span>
             <span>Nuevos este mes: {{ newThisMonth }}</span>
           </div>
-          
+
           <!-- Debug info -->
           <div class="mt-2 p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
             <p class="text-sm font-medium text-blue-800 dark:text-blue-200">Debug Info:</p>
-            <p class="text-xs text-blue-700 dark:text-blue-300">
-              - Loading: {{ isLoading }}
-            </p>
+            <p class="text-xs text-blue-700 dark:text-blue-300">- Loading: {{ isLoading }}</p>
             <p class="text-xs text-blue-700 dark:text-blue-300">
               - Students length: {{ students.length }}
             </p>
@@ -76,7 +74,9 @@
             </p>
             <div v-if="students.length > 0" class="mt-2">
               <p class="text-xs text-blue-700 dark:text-blue-300">Sample student structure:</p>
-              <pre class="text-xs text-blue-600 dark:text-blue-400 mt-1 max-h-32 overflow-y-auto">{{ JSON.stringify(students[0], null, 2) }}</pre>
+              <pre class="text-xs text-blue-600 dark:text-blue-400 mt-1 max-h-32 overflow-y-auto">{{
+                JSON.stringify(students[0], null, 2)
+              }}</pre>
             </div>
           </div>
         </div>
@@ -352,12 +352,12 @@
 
   <!-- Debug Panel (temporal) -->
   <DebugPanel v-if="showDebugPanel" @close="showDebugPanel = false" />
-  
+
   <!-- Debug Toggle Button -->
-  <button 
-    @click="showDebugPanel = !showDebugPanel"
+  <button
     class="fixed bottom-4 left-4 bg-purple-600 text-white p-3 rounded-full shadow-lg hover:bg-purple-700 z-40"
     title="Toggle Debug Panel"
+    @click="showDebugPanel = !showDebugPanel"
   >
     🔧
   </button>

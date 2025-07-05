@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Icons</title>
+</head>
+<body>
+    <canvas id="canvas" width="512" height="512"></canvas>
+    <script>
+        function createIcon(size, filename) {
+            const canvas = document.getElementById('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // Create a music-themed icon
+            ctx.fillStyle = '#1a202c';
+            ctx.fillRect(0, 0, size, size);
+            
+            // Draw musical note
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            
+            // Note head
+            const centerX = size * 0.3;
+            const centerY = size * 0.7;
+            const radius = size * 0.12;
+            ctx.ellipse(centerX, centerY, radius, radius * 0.8, Math.PI / 6, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Note stem
+            ctx.fillRect(centerX + radius * 0.7, centerY - size * 0.4, size * 0.03, size * 0.4);
+            
+            // Note flag
+            ctx.beginPath();
+            ctx.moveTo(centerX + radius * 0.7 + size * 0.03, centerY - size * 0.4);
+            ctx.quadraticCurveTo(centerX + size * 0.25, centerY - size * 0.35, centerX + size * 0.2, centerY - size * 0.25);
+            ctx.quadraticCurveTo(centerX + size * 0.25, centerY - size * 0.3, centerX + radius * 0.7 + size * 0.03, centerY - size * 0.32);
+            ctx.fill();
+            
+            // Download the image
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+        
+        // Create all required sizes
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512, 180];
+        const filenames = [
+            'icon-72x72.png', 'icon-96x96.png', 'icon-128x128.png', 
+            'icon-144x144.png', 'icon-152x152.png', 'icon-192x192.png',
+            'icon-384x384.png', 'icon-512x512.png', 'apple-touch-icon.png'
+        ];
+        
+        let currentIndex = 0;
+        
+        function generateNext() {
+            if (currentIndex < sizes.length) {
+                createIcon(sizes[currentIndex], filenames[currentIndex]);
+                currentIndex++;
+                setTimeout(generateNext, 1000); // Delay to allow download
+            }
+        }
+        
+        // Start generation
+        setTimeout(generateNext, 1000);
+    </script>
+    <p>Icons will be generated and downloaded automatically. Save them to the public/icons/ directory.</p>
+</body>
+</html>

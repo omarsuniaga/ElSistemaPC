@@ -1,21 +1,25 @@
 # Indicadores de Asistencia Implementados
 
 ## Resumen
+
 Se ha implementado la funcionalidad para mostrar indicadores de estado de asistencia en `DateClassSelector.vue` que muestran si una clase ya tiene un registro de asistencia o está pendiente.
 
 ## Cambios Realizados
 
 ### 1. Función `checkAttendanceExists` en `optimizedQueries.ts`
+
 - Agregada función para verificar existencia de registros de asistencia específicos
 - Implementa cache para mejorar rendimiento
 - Usa consultas Firestore optimizadas con límite de 1 documento
 
 ### 2. Mejoras en `useOptimizedAttendance.ts`
+
 - Agregada función `checkAttendanceExists` al composable
 - Integra verificación con cache local y consultas Firestore
 - Manejo de errores mejorado
 
 ### 3. Métodos de Cache Implementados
+
 - `getFromCache()`: Obtiene valores del cache validando TTL
 - `setCache()`: Establece valores en cache con timestamp
 - Cache TTL de 5 minutos para optimizar consultas
@@ -23,17 +27,20 @@ Se ha implementado la funcionalidad para mostrar indicadores de estado de asiste
 ### 4. Mejoras en `DateClassSelector.vue`
 
 #### Estados de Indicadores:
+
 - **"..."** (gris): Mientras se verifica el estado
 - **"Registrado"** (verde): Cuando existe registro de asistencia
 - **"Pendiente"** (amarillo): Cuando no existe registro
 
 #### Funcionalidades:
+
 - Verificación asíncrona de estado de asistencia
 - Cache local para evitar consultas repetidas
 - Indicadores de carga mientras se verifican los estados
 - Limpieza de estado al cambiar fecha
 
 #### Lógica de Verificación:
+
 1. Busca primero en el store de asistencias (cache local)
 2. Si no encuentra, consulta Firestore usando `checkAttendanceExists`
 3. Cachea el resultado para futuras consultas
@@ -44,7 +51,7 @@ Se ha implementado la funcionalidad para mostrar indicadores de estado de asiste
 1. Usuario selecciona fecha
 2. Se cargan las clases filtradas
 3. Para cada clase se inicia verificación asíncrona:
-   - Muestra indicador "..." 
+   - Muestra indicador "..."
    - Verifica en cache local del store
    - Si no está, consulta Firestore
    - Actualiza indicador a "Registrado" o "Pendiente"

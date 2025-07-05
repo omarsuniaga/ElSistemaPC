@@ -18,12 +18,14 @@ import {useModal} from "../../composables/useModal"
 import {useToast} from "../../composables/useToast"
 import {useAttendanceStore} from "../../store/attendance"
 import {useAuthStore} from "../../../../stores/auth"
+import {usePredictionStore} from "@/analytics/store/predictionStore" // 1. Importar el nuevo store
 
 // Obtener las clases del maestro
 import {useClassesStore} from "../../../Classes/store/classes"
 
 const classesStore = useClassesStore()
 const authStore = useAuthStore()
+const predictionStore = usePredictionStore() // 2. Inicializar el store
 
 const {
   selectedDate,
@@ -81,8 +83,29 @@ async function updateClassesWithRecords() {
 async function handleDateChange(date: string) {
   await setDate(date)
 
-  // Obtener las clases para la fecha seleccionada y mostrar el modal
+  // Obtener las clases para la fecha seleccionada
   await fetchClassesForDate(date)
+
+  // --- Lógica de Predicción ---
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const selected = parseISO(date)
+
+  if (selected > today) {
+    // Si la fecha es futura, generar predicciones
+    console.log(`🔮 Fecha futura seleccionada. Generando predicciones para ${date}...`)
+    // Limpiar predicciones antiguas para evitar mostrar datos incorrectos mientras carga
+    predictionStore.clearPredictions()
+    const classIds = classesForDate.value.map((c: any) => c.id)
+    if (classIds.length > 0) {
+      await predictionStore.generatePredictionsForClass(classIds, [selected])
+    }
+  } else {
+    // Si la fecha es pasada o presente, limpiar las predicciones para no mostrar datos de riesgo
+    predictionStore.clearPredictions()
+  }
+  // --- Fin Lógica de Predicción ---
+
   modalDate.value = date
   showClassesModal.value = true
 }

@@ -16,18 +16,15 @@
     "parser": "@typescript-eslint/parser",
     "sourceType": "module"
   },
-  "plugins": [
-    "vue",
-    "@typescript-eslint"
-  ],
+  "plugins": ["vue", "@typescript-eslint"],
   "rules": {
     // TypeScript rules
-    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-unused-vars": ["error", {"argsIgnorePattern": "^_"}],
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "@typescript-eslint/no-empty-function": "warn",
-    
+
     // Vue rules
     "vue/multi-word-component-names": "off",
     "vue/no-unused-components": "error",
@@ -36,29 +33,26 @@
     "vue/require-explicit-emits": "error",
     "vue/no-v-html": "warn",
     "vue/attributes-order": "error",
-    "vue/component-tags-order": ["error", {
-      "order": ["script", "template", "style"]
-    }],
-    
+    "vue/component-tags-order": [
+      "error",
+      {
+        "order": ["script", "template", "style"]
+      }
+    ],
+
     // General rules
-    "no-console": ["warn", { "allow": ["warn", "error"] }],
+    "no-console": ["warn", {"allow": ["warn", "error"]}],
     "no-debugger": "error",
     "no-unused-vars": "off", // Handled by TypeScript
     "prefer-const": "error",
     "no-var": "error",
     "object-shorthand": "error",
     "prefer-template": "error",
-    
+
     // Import rules
     "no-duplicate-imports": "error"
   },
-  "ignorePatterns": [
-    "dist",
-    "node_modules",
-    "*.d.ts",
-    "dataconnect-generated",
-    "public"
-  ],
+  "ignorePatterns": ["dist", "node_modules", "*.d.ts", "dataconnect-generated", "public"],
   "overrides": [
     {
       "files": ["src/**/*.vue"],

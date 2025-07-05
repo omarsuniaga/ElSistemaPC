@@ -9,9 +9,11 @@ Eliminar dependencias de Vuetify y crear componentes nativos, modernos y totalme
 ## 📦 Componentes Creados
 
 ### 1. `MetricCard.vue`
+
 **Propósito**: Mostrar métricas con iconos, valores y tendencias.
 
 **Props**:
+
 - `icon`: Componente de icono
 - `value`: Valor a mostrar (string | number)
 - `label`: Etiqueta descriptiva
@@ -19,20 +21,23 @@ Eliminar dependencias de Vuetify y crear componentes nativos, modernos y totalme
 - `trend`: Objeto con información de tendencia (opcional)
 
 **Ejemplo**:
+
 ```vue
 <MetricCard
   :icon="UsersIcon"
   :value="319"
   label="Estudiantes Activos"
   color="blue"
-  :trend="{ direction: 'up', percentage: 12, period: 'vs mes anterior' }"
+  :trend="{direction: 'up', percentage: 12, period: 'vs mes anterior'}"
 />
 ```
 
 ### 2. `ActionButton.vue`
+
 **Propósito**: Botón de acción reutilizable con diferentes variantes y tamaños.
 
 **Props**:
+
 - `icon`: Icono del botón (opcional)
 - `label`: Texto del botón (opcional)
 - `variant`: Estilo ('primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'ghost')
@@ -40,54 +45,57 @@ Eliminar dependencias de Vuetify y crear componentes nativos, modernos y totalme
 - `disabled`: Estado deshabilitado
 
 **Ejemplo**:
+
 ```vue
-<ActionButton
-  :icon="PlusIcon"
-  label="Crear Nuevo"
-  variant="success"
-  size="md"
-  @click="createNew"
-/>
+<ActionButton :icon="PlusIcon" label="Crear Nuevo" variant="success" size="md" @click="createNew" />
 ```
 
 ### 3. `StudentsList.vue`
+
 **Propósito**: Lista estilizada de estudiantes con avatares, información y estados.
 
 **Props**:
+
 - `students`: Array de objetos estudiante
 - `title`: Título de la sección
 - `showClass`: Mostrar información de clase
 - `showStatus`: Mostrar estado activo/inactivo
 
 **Características**:
+
 - Avatares automáticos generados si no existe imagen
 - Indicadores visuales de estado
 - Manejo de errores de imagen
 - Responsive design
 
 ### 4. `QuickActionsCard.vue`
+
 **Propósito**: Tarjeta con acciones rápidas agrupadas por categoría.
 
 **Props**:
+
 - `title`: Título de la tarjeta
 - `actions`: Array de acciones con id, label, icon y color
 
 **Ejemplo**:
+
 ```vue
 <QuickActionsCard
   title="Importar/Exportar"
   :actions="[
-    { id: 'import', label: 'Importar Estudiantes', icon: 'DocumentArrowUpIcon', color: 'green' },
-    { id: 'export', label: 'Exportar Datos', icon: 'DocumentArrowDownIcon', color: 'blue' }
+    {id: 'import', label: 'Importar Estudiantes', icon: 'DocumentArrowUpIcon', color: 'green'},
+    {id: 'export', label: 'Exportar Datos', icon: 'DocumentArrowDownIcon', color: 'blue'},
   ]"
   @action-click="handleAction"
 />
 ```
 
 ### 5. `ManagementSuperCard.vue` (Mejorado)
+
 **Propósito**: Tarjeta de gestión con métricas, acciones y navegación.
 
 **Mejoras Implementadas**:
+
 - ✅ Clases estáticas en lugar de dinámicas para mejor rendimiento
 - ✅ Mejor sistema de colores predefinidos
 - ✅ Iconos y animaciones mejoradas
@@ -95,9 +103,11 @@ Eliminar dependencias de Vuetify y crear componentes nativos, modernos y totalme
 - ✅ Accesibilidad mejorada
 
 ### 6. `ModernManagementCard.vue` (Nuevo)
+
 **Propósito**: Versión moderna y completa de la tarjeta de gestión con características avanzadas.
 
 **Características Únicas**:
+
 - 🎨 Diseño moderno con gradientes y sombras
 - 📊 Indicador de progreso circular (opcional)
 - 📈 Indicadores de tendencia visual
@@ -107,6 +117,7 @@ Eliminar dependencias de Vuetify y crear componentes nativos, modernos y totalme
 - 🌙 Soporte completo para modo oscuro
 
 **Ejemplo Completo**:
+
 ```vue
 <ModernManagementCard
   title="Estudiantes"
@@ -120,9 +131,9 @@ Eliminar dependencias de Vuetify y crear componentes nativos, modernos y totalme
   :progress="85"
   trend="up"
   :actions="[
-    { id: 'create', label: 'Nuevo', icon: 'PlusIcon', variant: 'success' },
-    { id: 'import', label: 'Importar', icon: 'DocumentArrowUpIcon', variant: 'secondary' },
-    { id: 'export', label: 'Exportar', icon: 'DocumentArrowDownIcon', variant: 'secondary' }
+    {id: 'create', label: 'Nuevo', icon: 'PlusIcon', variant: 'success'},
+    {id: 'import', label: 'Importar', icon: 'DocumentArrowUpIcon', variant: 'secondary'},
+    {id: 'export', label: 'Exportar', icon: 'DocumentArrowDownIcon', variant: 'secondary'},
   ]"
   @action="handleAction"
 >
@@ -140,10 +151,11 @@ Eliminar dependencias de Vuetify y crear componentes nativos, modernos y totalme
 Todos los componentes usan un sistema de colores consistente:
 
 ```typescript
-type ColorVariant = 'blue' | 'green' | 'purple' | 'yellow' | 'red' | 'indigo' | 'pink' | 'gray'
+type ColorVariant = "blue" | "green" | "purple" | "yellow" | "red" | "indigo" | "pink" | "gray"
 ```
 
 Cada color incluye:
+
 - Fondos claros y oscuros
 - Variantes para texto
 - Bordes y anillos
@@ -157,6 +169,7 @@ Todos los componentes tienen soporte completo para modo oscuro usando las clases
 ## 📱 Responsive Design
 
 Los componentes están diseñados mobile-first con breakpoints:
+
 - `sm:` 640px+
 - `md:` 768px+
 - `lg:` 1024px+
@@ -165,6 +178,7 @@ Los componentes están diseñados mobile-first con breakpoints:
 ## 🔧 Configuración TypeScript
 
 Todos los componentes usan TypeScript con:
+
 - Interfaces tipadas para props
 - Emisión de eventos tipada
 - Computed properties tipadas
@@ -184,20 +198,22 @@ Todos los componentes usan TypeScript con:
 Para migrar de componentes existentes:
 
 ### Antes (con clases dinámicas problemáticas):
+
 ```vue
-<div :class="`bg-${color}-100 text-${color}-600`">
+<div :class="`bg-${color}-100 text-${color}-600`"></div>
 ```
 
 ### Después (con sistema estático):
+
 ```vue
-<div :class="colorClasses.background">
+<div :class="colorClasses.background"></div>
 ```
 
 ```typescript
 const colorClasses = computed(() => {
   const colorMap = {
-    blue: { background: 'bg-blue-100 text-blue-600' },
-    green: { background: 'bg-green-100 text-green-600' }
+    blue: {background: "bg-blue-100 text-blue-600"},
+    green: {background: "bg-green-100 text-green-600"},
     // ...
   }
   return colorMap[props.color]
@@ -217,6 +233,7 @@ const colorClasses = computed(() => {
 ## 🤝 Contribución
 
 Para añadir nuevos componentes:
+
 1. Seguir el patrón TypeScript + Composition API
 2. Usar sistema de colores consistente
 3. Implementar soporte para modo oscuro
@@ -226,11 +243,13 @@ Para añadir nuevos componentes:
 ## Componentes de Clases Refactorizados
 
 ### ClassList.vue (Refactorizado)
+
 **Ubicación:** `src/modulos/Classes/components/ClassList.vue`
 
 Componente refactorizado que reemplaza la funcionalidad de Vuetify con una implementación nativa moderna:
 
 **Características:**
+
 - ✅ Búsqueda en tiempo real sin dependencias externas
 - ✅ Vista de tabla responsive para desktop
 - ✅ Vista de tarjetas para móvil
@@ -241,25 +260,28 @@ Componente refactorizado que reemplaza la funcionalidad de Vuetify con una imple
 - ✅ TypeScript completamente tipado
 
 **Props:**
+
 ```typescript
 interface Props {
-  classes: ClassData[];
-  loading?: boolean;
+  classes: ClassData[]
+  loading?: boolean
 }
 ```
 
 **Eventos:**
+
 ```typescript
 interface Emits {
-  (e: 'edit', classItem: ClassData): void;
-  (e: 'delete', classItem: ClassData): void;
-  (e: 'view-schedule', classItem: ClassData): void;
+  (e: "edit", classItem: ClassData): void
+  (e: "delete", classItem: ClassData): void
+  (e: "view-schedule", classItem: ClassData): void
 }
 ```
 
 **Uso:**
+
 ```vue
-<ClassList 
+<ClassList
   :classes="classes"
   :loading="loading"
   @edit="handleEdit"
@@ -269,17 +291,20 @@ interface Emits {
 ```
 
 **Funcionalidades:**
+
 - Búsqueda por nombre, nivel, instrumento y profesor
 - Visualización optimizada para diferentes tamaños de pantalla
 - Gestión completa de estados (loading, empty, error)
 - Integración con store de profesores para nombres
 
 ### ClassAssignmentManager.vue (Nuevo)
+
 **Ubicación:** `src/modulos/Classes/components/ClassAssignmentManager.vue`
 
 Componente completamente nuevo para gestionar asignaciones de clases:
 
 **Características:**
+
 - ✅ Dashboard de estadísticas de asignaciones
 - ✅ Interfaz expandible por clase
 - ✅ Asignación de profesores con dropdown
@@ -290,23 +315,26 @@ Componente completamente nuevo para gestionar asignaciones de clases:
 - ✅ Completamente responsive
 
 **Props:**
+
 ```typescript
 interface Props {
-  classes: ClassData[];
+  classes: ClassData[]
 }
 ```
 
 **Eventos:**
+
 ```typescript
 interface Emits {
-  (e: 'update-class', classId: string, updates: Partial<ClassData>): void;
-  (e: 'save-assignments', classId: string): void;
+  (e: "update-class", classId: string, updates: Partial<ClassData>): void
+  (e: "save-assignments", classId: string): void
 }
 ```
 
 **Uso:**
+
 ```vue
-<ClassAssignmentManager 
+<ClassAssignmentManager
   :classes="classes"
   @update-class="handleUpdateClass"
   @save-assignments="handleSaveAssignments"
@@ -314,6 +342,7 @@ interface Emits {
 ```
 
 **Funcionalidades de Gestión:**
+
 1. **Asignación de Profesores:**
    - Dropdown con profesores disponibles
    - Filtrado automático por especialidad
@@ -339,6 +368,7 @@ interface Emits {
 El componente está diseñado para que cuando se asigne un profesor (teacherId) a una clase, esta aparezca automáticamente en la sesión personal del profesor correspondiente.
 
 **Estados Visuales:**
+
 - 🟢 Verde: Asignación completada
 - 🔴 Rojo: Falta asignación
 - 🟡 Amarillo: Asignación parcial

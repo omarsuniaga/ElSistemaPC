@@ -41,21 +41,88 @@ export default defineConfig(({mode}) => {
           },
         },
       }),
-      vuetify({
-        autoImport: true,
-        styles: {
-          configFile: "src/styles/vuetify/settings.scss",
-        },
-      }),
       VitePWA({
-        registerType: "prompt",
-        injectRegister: false, // Usaremos nuestro registro personalizado
-        strategies: "injectManifest",
-        srcDir: "public",
-        filename: "sw.js",
-        includeAssets: ["favicon.ico", "apple-touch-icon.png", "offline.html", "manifest.json"],
+        registerType: "autoUpdate",
+        injectRegister: "auto",
+        strategies: "generateSW",
+        manifest: {
+          name: "Academia Musical PC",
+          short_name: "AcademiaPC",
+          description: "Sistema de gestión integral para academia musical",
+          theme_color: "#3b82f6",
+          background_color: "#ffffff",
+          display: "standalone",
+          orientation: "portrait",
+          scope: "/",
+          start_url: "/",
+          icons: [
+            {
+              src: "pwa-192x192.png",
+              sizes: "192x192",
+              type: "image/png",
+            },
+            {
+              src: "pwa-512x512.png",
+              sizes: "512x512",
+              type: "image/png",
+            },
+            {
+              src: "pwa-512x512.png",
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "any maskable",
+            },
+          ],
+        },
+        workbox: {
+          globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/firestore\.googleapis\.com/,
+              handler: "StaleWhileRevalidate",
+              options: {
+                cacheName: "firebase-firestore",
+                expiration: {
+                  maxEntries: 100,
+                  maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+                },
+                cacheKeyWillBeUsed: async ({request}) => {
+                  return request.url + "?v=" + Date.now()
+                },
+              },
+            },
+            {
+              urlPattern: /^https:\/\/identitytoolkit\.googleapis\.com/,
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "firebase-auth",
+                networkTimeoutSeconds: 5,
+              },
+            },
+            {
+              urlPattern: ({request}) => request.destination === "document",
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "pages",
+                networkTimeoutSeconds: 5,
+              },
+            },
+            {
+              urlPattern: ({request}) => request.destination === "image",
+              handler: "CacheFirst",
+              options: {
+                cacheName: "images",
+                expiration: {
+                  maxEntries: 100,
+                  maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                },
+              },
+            },
+          ],
+        },
         devOptions: {
-          enabled: false,
+          enabled: true,
+          type: "module",
         },
       }),
     ],

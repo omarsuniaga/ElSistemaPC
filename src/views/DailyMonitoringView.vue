@@ -265,9 +265,9 @@
     </section>
 
     <!-- Alumnos con Mayor Ausencia -->
-    <AbsenteesList 
-      class="mb-8" 
-      :absentees="absentStudents" 
+    <AbsenteesList
+      class="mb-8"
+      :absentees="absentStudents"
       @contact="handleContactStudent"
       @justify="handleJustifyAbsence"
       @follow-up="handleFollowUp"
@@ -947,10 +947,14 @@ const absentStudents = computed(() => {
     .map((record) => ({
       id: record.id,
       studentId: record.studentId,
-      studentName: record.student?.firstName + " " + record.student?.lastName || "Estudiante desconocido",
-      className: classes.value.find((cls) => cls.id === record.classId)?.name || "Clase desconocida",
+      studentName:
+        record.student?.firstName + " " + record.student?.lastName || "Estudiante desconocido",
+      className:
+        classes.value.find((cls) => cls.id === record.classId)?.name || "Clase desconocida",
       classTime: record.classTime || "00:00",
-      teacherName: classes.value.find((cls) => cls.id === record.classId)?.teacherName || "Profesor desconocido",
+      teacherName:
+        classes.value.find((cls) => cls.id === record.classId)?.teacherName ||
+        "Profesor desconocido",
       reason: record.observations || "",
       consecutiveAbsences: 1, // Esto debería calcularse desde un análisis histórico
       lastContactDate: record.date,

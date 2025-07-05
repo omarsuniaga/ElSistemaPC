@@ -24,7 +24,7 @@ Se ha agregado soporte completo para modo oscuro/claro en la vista del maestro d
    - Modales y overlays: Soporte completo para ambos modos
 
 3. **Integración con Sistema de Tema Global**
-   - Uso del composable `useTheme()` 
+   - Uso del composable `useTheme()`
    - Preferencias guardadas en Firestore por usuario
    - Aplicación automática del tema al cargar la vista
 
@@ -48,7 +48,7 @@ Se ha agregado soporte completo para modo oscuro/claro en la vista del maestro d
 ### 🎯 **Elementos con Soporte Dark Mode**
 
 - **Header Principal**: Fondo, textos y botones
-- **Plan de Acción Semanal**: Tarjetas y contenido  
+- **Plan de Acción Semanal**: Tarjetas y contenido
 - **Filtros y Búsqueda**: Inputs y selects
 - **Tarjetas de Obras**: Fondo, bordes, textos y botones
 - **Barras de Progreso**: Colores adaptativos
@@ -73,8 +73,9 @@ Se ha agregado soporte completo para modo oscuro/claro en la vista del maestro d
 ### 📱 **Responsividad Mantenida**
 
 Todos los cambios mantienen la responsividad existente y agregan soporte para modo oscuro en:
+
 - Dispositivos móviles
-- Tabletas  
+- Tabletas
 - Pantallas de escritorio
 
 ### ✅ **Estado Final**

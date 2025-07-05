@@ -2,7 +2,12 @@
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
     <div class="flex items-center justify-between mb-6">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-        <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          class="w-5 h-5 mr-2 text-red-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -28,7 +33,12 @@
 
     <!-- Lista de ausentes -->
     <div v-if="absentees.length === 0" class="text-center py-8">
-      <svg class="w-16 h-16 mx-auto text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg
+        class="w-16 h-16 mx-auto text-green-500 mb-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
         <path
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -36,9 +46,7 @@
           d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
         />
       </svg>
-      <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
-        ¡Excelente!
-      </h4>
+      <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-2">¡Excelente!</h4>
       <p class="text-gray-600 dark:text-gray-400">
         No hay estudiantes ausentes registrados para hoy.
       </p>
@@ -54,7 +62,9 @@
           <div class="flex-1">
             <div class="flex items-center space-x-3">
               <div class="flex-shrink-0">
-                <div class="w-10 h-10 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
+                <div
+                  class="w-10 h-10 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center"
+                >
                   <span class="text-red-600 dark:text-red-400 font-medium text-sm">
                     {{ getInitials(absentee.studentName) }}
                   </span>
@@ -64,7 +74,9 @@
                 <h4 class="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {{ absentee.studentName }}
                 </h4>
-                <div class="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <div
+                  class="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400 mt-1"
+                >
                   <span class="flex items-center">
                     <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
@@ -103,13 +115,19 @@
             </div>
 
             <!-- Información adicional -->
-            <div v-if="absentee.reason" class="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-xs">
+            <div
+              v-if="absentee.reason"
+              class="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-xs"
+            >
               <span class="font-medium text-yellow-800 dark:text-yellow-200">Motivo:</span>
               <span class="text-yellow-700 dark:text-yellow-300 ml-1">{{ absentee.reason }}</span>
             </div>
 
             <!-- Historial de ausencias -->
-            <div v-if="absentee.consecutiveAbsences > 1" class="mt-2 text-xs text-red-600 dark:text-red-400">
+            <div
+              v-if="absentee.consecutiveAbsences > 1"
+              class="mt-2 text-xs text-red-600 dark:text-red-400"
+            >
               ⚠️ {{ absentee.consecutiveAbsences }} ausencias consecutivas
             </div>
           </div>
@@ -170,15 +188,19 @@
         <div class="text-red-900 dark:text-red-100 text-lg font-bold">{{ absentees.length }}</div>
       </div>
       <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3">
-        <div class="text-orange-800 dark:text-orange-200 text-sm font-medium">Ausencias Consecutivas</div>
+        <div class="text-orange-800 dark:text-orange-200 text-sm font-medium">
+          Ausencias Consecutivas
+        </div>
         <div class="text-orange-900 dark:text-orange-100 text-lg font-bold">
-          {{ absentees.filter(a => a.consecutiveAbsences > 1).length }}
+          {{ absentees.filter((a) => a.consecutiveAbsences > 1).length }}
         </div>
       </div>
       <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">
-        <div class="text-yellow-800 dark:text-yellow-200 text-sm font-medium">Requieren Seguimiento</div>
+        <div class="text-yellow-800 dark:text-yellow-200 text-sm font-medium">
+          Requieren Seguimiento
+        </div>
         <div class="text-yellow-900 dark:text-yellow-100 text-lg font-bold">
-          {{ absentees.filter(a => a.consecutiveAbsences >= 3).length }}
+          {{ absentees.filter((a) => a.consecutiveAbsences >= 3).length }}
         </div>
       </div>
     </div>
@@ -186,9 +208,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue"
-import { format } from "date-fns"
-import { es } from "date-fns/locale"
+import {computed} from "vue"
+import {format} from "date-fns"
+import {es} from "date-fns/locale"
 
 // Props
 interface Absentee {
@@ -249,7 +271,7 @@ const formatTime = (time: string): string => {
     const [hours, minutes] = time.split(":")
     const date = new Date()
     date.setHours(parseInt(hours), parseInt(minutes), 0, 0)
-    return format(date, "HH:mm", { locale: es })
+    return format(date, "HH:mm", {locale: es})
   } catch {
     return time
   }

@@ -5,6 +5,7 @@ Esta carpeta contiene todos los archivos de prueba, debug, migración y utilidad
 ## Estructura de Archivos
 
 ### 🧪 Archivos de Prueba HTML
+
 - `test-avatar.html` - Pruebas de sistema de avatares
 - `test-invitations.html` - Pruebas de sistema de invitaciones
 - `test-notifications-fixed.html` - Pruebas de notificaciones corregidas
@@ -15,12 +16,14 @@ Esta carpeta contiene todos los archivos de prueba, debug, migración y utilidad
 - `demo-pdf-generator.html` - Demo del generador de PDFs
 
 ### 🔧 Scripts de Debug y Utilidades
+
 - `debug-notifications.js` - Debug del sistema de notificaciones
 - `debug-notifications-browser.js` - Debug de notificaciones en navegador
 - `debug-rbac.js` - Debug del sistema de roles y permisos
 - `fix-rbac-browser.js` - Corrección de RBAC en navegador
 
 ### 📊 Scripts de Observaciones
+
 - `analyze-observations.js` - Análisis de observaciones
 - `firebase-observation-analyzer.js` - Analizador de observaciones en Firebase
 - `firebase-observation-migrator.js` - Migrador de observaciones en Firebase
@@ -33,6 +36,7 @@ Esta carpeta contiene todos los archivos de prueba, debug, migración y utilidad
 - `test-unified-observations-system.js` - Pruebas del sistema unificado de observaciones
 
 ### 🔔 Scripts de Notificaciones
+
 - `clean-problematic-notification.js` - Limpieza de notificaciones problemáticas
 - `cleanup-invalid-notifications.js` - Limpieza de notificaciones inválidas
 - `repair-notifications.js` - Reparación de notificaciones
@@ -41,6 +45,7 @@ Esta carpeta contiene todos los archivos de prueba, debug, migración y utilidad
 - `test-notification-system.js` - Pruebas del sistema de notificaciones
 
 ### 🛠️ Utilidades y Scripts de Sistema
+
 - `find-duplicate.ps1` - Script PowerShell para encontrar duplicados
 - `install-migration-deps.sh` - Script de instalación de dependencias de migración
 
@@ -54,12 +59,14 @@ Esta carpeta contiene todos los archivos de prueba, debug, migración y utilidad
 ## Uso
 
 Para ejecutar las pruebas HTML:
+
 ```bash
 # Abrir en navegador
 start test-[nombre-del-archivo].html
 ```
 
 Para ejecutar scripts de Node.js:
+
 ```bash
 node [nombre-del-archivo].js
 ```
@@ -67,5 +74,6 @@ node [nombre-del-archivo].js
 Para scripts de navegador, inclúyelos en una página HTML o ejecuta en la consola del navegador.
 
 ---
+
 **Última actualización:** 17 de junio de 2025
 **Autor:** Sistema de desarrollo Music Academy App

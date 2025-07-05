@@ -3,6 +3,7 @@
 ## 🐛 Problema Identificado
 
 Al intentar hacer login con los usuarios de prueba creados, aparecía el error:
+
 ```
 Error de login: Error: No se encontró el perfil del usuario
 ```
@@ -15,25 +16,30 @@ Error de login: Error: No se encontró el perfil del usuario
 - **Sistema de autenticación:** Buscaba usuarios en colección `'USERS'` (mayúsculas)
 
 **Ubicación del problema:**
+
 - `scripts/create-test-users.mjs` línea 135: `doc(db, 'users', user.uid)`
 - `src/stores/auth.ts` línea 86: `doc(db, 'USERS', userCredential.user.uid)`
 
 ## 🛠️ Solución Implementada
 
 ### 1. Script de Corrección
+
 Creado `scripts/fix-test-users.mjs` que:
+
 - Busca todos los documentos con `isTestUser: true` en colección `'users'`
 - Copia cada documento a la colección `'USERS'`
 - Elimina el documento original de `'users'`
 
 ### 2. Actualización del Script Original
+
 Actualizado `scripts/create-test-users.mjs`:
+
 ```javascript
 // Antes
-await setDoc(doc(db, 'users', user.uid), userDoc);
+await setDoc(doc(db, "users", user.uid), userDoc)
 
-// Después  
-await setDoc(doc(db, 'USERS', user.uid), userDoc);
+// Después
+await setDoc(doc(db, "USERS", user.uid), userDoc)
 ```
 
 ## 📊 Resultado de la Corrección
@@ -73,6 +79,7 @@ Los usuarios de prueba ahora deben funcionar correctamente:
 ## 🚀 Próximos Pasos
 
 Con esta corrección, los usuarios de prueba están listos para:
+
 1. Login exitoso en la aplicación
 2. Verificación de roles y permisos
 3. Testing de funcionalidades específicas por rol

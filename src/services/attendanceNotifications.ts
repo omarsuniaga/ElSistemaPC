@@ -14,6 +14,7 @@ import {
   orderBy,
   limit,
 } from "firebase/firestore"
+import {getFunctions, httpsCallable} from "firebase/functions"
 
 // Interfaces
 interface Student {
@@ -59,8 +60,11 @@ interface NotificationHistory {
 
 // Colecciones Firebase
 const STUDENTS_COLLECTION = "ALUMNOS"
-const ATTENDANCE_COLLECTION = "ASISTENCIAS"
 const HISTORY_COLLECTION = "historial_mensajes_whatsapp"
+
+// Inicializar Firebase Functions
+const functions = getFunctions()
+const getStudentAttendanceSummary = httpsCallable(functions, "getStudentAttendanceSummary")
 
 /**
  * Plantillas de mensajes con tono adaptativo según escalación por inasistencias
@@ -104,65 +108,6 @@ const MESSAGE_TEMPLATES: MessageTemplate[] = [
 ]
 
 /**
- * Obtiene el inicio de la semana actual (lunes)
- */
-const getWeekStart = (date: Date = new Date()): string => {
-  const monday = new Date(date)
-  const day = monday.getDay()
-  const diff = monday.getDate() - day + (day === 0 ? -6 : 1) // Ajustar para que lunes sea el primer día
-  monday.setDate(diff)
-  monday.setHours(0, 0, 0, 0)
-  return monday.toISOString().split("T")[0]
-}
-
-/**
- * Cuenta las inasistencias injustificadas de un estudiante en la semana actual
- */
-const countWeeklyAbsences = async (
-  studentId: string,
-  currentDate: string = new Date().toISOString().split("T")[0]
-): Promise<number> => {
-  try {
-    const weekStart = getWeekStart(new Date(currentDate))
-
-    console.log(`🔍 Contando ausencias de ${studentId} desde ${weekStart} hasta ${currentDate}`)
-
-    // Consultar asistencias en el rango de la semana
-    const attendanceQuery = query(
-      collection(db, ATTENDANCE_COLLECTION),
-      where("fecha", ">=", weekStart),
-      where("fecha", "<=", currentDate)
-    )
-
-    const attendanceSnapshot = await getDocs(attendanceQuery)
-    let absenceCount = 0
-
-    attendanceSnapshot.forEach((doc) => {
-      const data = doc.data()
-      if (data.data && data.data.ausentes && Array.isArray(data.data.ausentes)) {
-        // Verificar si el estudiante está en ausentes pero NO justificado
-        if (data.data.ausentes.includes(studentId)) {
-          const isJustified = data.data.justificacion?.some(
-            (j: any) => j.id === studentId || j.studentId === studentId
-          )
-
-          if (!isJustified) {
-            absenceCount++
-            console.log(`📊 Ausencia injustificada encontrada en ${data.fecha}`)
-          }
-        }
-      }
-    })
-
-    console.log(`📈 Total ausencias injustificadas esta semana: ${absenceCount}`)
-    return absenceCount
-  } catch (error) {
-    console.error("Error contando ausencias semanales:", error)
-    return 0
-  }
-}
-
-/**
  * Obtiene información del estudiante desde Firebase
  */
 const getStudentData = async (studentId: string): Promise<Student | null> => {
@@ -192,11 +137,11 @@ const getStudentData = async (studentId: string): Promise<Student | null> => {
  * Nivel 3: 3 inasistencias (solicitud de explicación al representante)
  * Nivel 4: 4+ inasistencias (caso extremo - citación obligatoria)
  */
-const getEscalationLevel = (weeklyAbsences: number): number => {
-  if (weeklyAbsences === 1) return 1
-  if (weeklyAbsences === 2) return 2
-  if (weeklyAbsences === 3) return 3
-  if (weeklyAbsences >= 4) return 4
+const getEscalationLevel = (absences: number): number => {
+  if (absences === 1) return 1
+  if (absences === 2) return 2
+  if (absences === 3) return 3
+  if (absences >= 4) return 4
   return 1
 }
 
@@ -413,12 +358,15 @@ export const notifyUnexcusedAbsences = async (
         continue
       }
 
-      // Contar ausencias de la semana para determinar el nivel de escalación
-      const weeklyAbsences = await countWeeklyAbsences(studentId)
-      const escalationLevel = getEscalationLevel(weeklyAbsences)
+      // Contar ausencias usando la Firebase Function
+      const summaryResult = await getStudentAttendanceSummary({studentId})
+      const summary = summaryResult.data as {absentCount: number; lateCount: number}
+      const totalAbsences = summary.absentCount
+
+      const escalationLevel = getEscalationLevel(totalAbsences)
 
       console.log(
-        `📊 Estudiante ${student.nombre}: ${weeklyAbsences} ausencias semanales, nivel ${escalationLevel}`
+        `📊 Estudiante ${student.nombre}: ${totalAbsences} ausencias, nivel ${escalationLevel}`
       )
 
       // Obtener la plantilla apropiada según el nivel
@@ -447,7 +395,7 @@ export const notifyUnexcusedAbsences = async (
             type: `Inasistencia Nivel ${escalationLevel}`,
             messageContent: message,
             timestamp: new Date(),
-            weeklyCount: weeklyAbsences,
+            weeklyCount: totalAbsences,
             escalationLevel,
           }
 
@@ -545,5 +493,4 @@ export default {
   notifyUnexcusedAbsences,
   getStudentMessageHistory,
   getMessageStatistics,
-  countWeeklyAbsences,
 }

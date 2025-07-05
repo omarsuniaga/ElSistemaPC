@@ -7,30 +7,32 @@ El componente `GlobalViewModal.vue` ha sido completamente rediseñado para usar 
 ### ✅ FUNCIONALIDADES IMPLEMENTADAS
 
 #### 1. **Conexión con Datos Reales**
+
 - **Estudiantes**: Conectado con `useAdminStudentsStore` usando `loadStudents()`
-- **Maestros**: Conectado con `useAdminTeachersStore` usando `loadTeachers()`  
+- **Maestros**: Conectado con `useAdminTeachersStore` usando `loadTeachers()`
 - **Clases**: Conectado con `useClassesStore` usando `fetchClasses()`
 - **Asistencia**: Conectado con `useAttendanceStore` usando `fetchAttendance()`
 - **Notificaciones**: Integrado con `useRealTimeNotifications`
 
 #### 2. **Métricas Dinámicas Calculadas**
+
 ```typescript
 const systemStats = computed(() => {
   const totalStudents = studentsStore.studentStats.total || 0
   const activeStudents = studentsStore.studentStats.active || 0
   const totalTeachers = teachersStore.teachers.length || 0
-  const activeClasses = classesStore.classes.filter(c => c.status === 'active').length || 0
-  
+  const activeClasses = classesStore.classes.filter((c) => c.status === "active").length || 0
+
   // Asistencia calculada de registros reales de los últimos 7 días
   const attendanceRecords = attendanceStore.records || []
-  const recentAttendance = attendanceRecords.filter(record => {
+  const recentAttendance = attendanceRecords.filter((record) => {
     const recordDate = new Date(record.fecha)
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
     return recordDate >= sevenDaysAgo
   })
-  
-  const presentCount = recentAttendance.filter(r => r.status === 'Presente').length
+
+  const presentCount = recentAttendance.filter((r) => r.status === "Presente").length
   const totalRecords = recentAttendance.length
   const dailyAttendance = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 95
 
@@ -38,34 +40,36 @@ const systemStats = computed(() => {
     totalUsers: totalStudents + totalTeachers,
     activeClasses,
     dailyAttendance,
-    systemHealth: analytics.systemHealth.value
+    systemHealth: analytics.systemHealth.value,
   }
 })
 ```
 
 #### 3. **Actividad en Tiempo Real**
+
 - **Sistema de Analíticas**: Integrado con `useSystemAnalytics`
 - **Notificaciones**: Conversión automática de notificaciones a actividades
 - **Registros de Estudiantes**: Detección automática de nuevos registros
 - **Ordenamiento Inteligente**: Por timestamp descendente
 
 #### 4. **Sistema de Alertas Inteligentes**
+
 ```typescript
 const generateIntelligentAlerts = () => {
   const alerts: SystemAlert[] = []
-  
+
   // Alerta de asistencia baja
   if (systemStats.value.dailyAttendance < 80) {
     alerts.push({
-      id: 'attendance-low',
-      title: 'Asistencia Baja Detectada',
+      id: "attendance-low",
+      title: "Asistencia Baja Detectada",
       description: `La asistencia promedio es del ${systemStats.value.dailyAttendance}% (objetivo: 85%)`,
-      severity: 'medium',
+      severity: "medium",
       timestamp: new Date(),
-      acknowledged: false
+      acknowledged: false,
     })
   }
-  
+
   // Alertas de notificaciones pendientes
   // Alertas de rendimiento del sistema
   // Alertas de datos desactualizados
@@ -73,6 +77,7 @@ const generateIntelligentAlerts = () => {
 ```
 
 #### 5. **Estado de Módulos Mejorado**
+
 - **Autenticación**: Usuarios activos reales
 - **Estudiantes**: Estado de carga y métricas
 - **Clases**: Conteo de clases reales
@@ -81,6 +86,7 @@ const generateIntelligentAlerts = () => {
 - **Base de Datos**: Métricas agregadas
 
 #### 6. **Auto-refresh y Gestión de Estado**
+
 - **Actualización Automática**: Cada 5 minutos
 - **Indicadores Visuales**: Estados de carga y última actualización
 - **Manejo de Errores**: Retry automático y mensajes informativos
@@ -89,26 +95,30 @@ const generateIntelligentAlerts = () => {
 ### 🎨 MEJORAS DE UI/UX
 
 #### 1. **Diseño Mejorado**
+
 - **Modal Expandido**: Tamaño máximo 7xl para más información
 - **Cards Responsivas**: Hover effects y animaciones suaves
 - **Scrollbars Personalizados**: Estilo nativo mejorado
 - **Loading States**: Indicadores de progreso en tiempo real
 
 #### 2. **Información Contextual**
+
 - **Detalles en Cards**: Información adicional bajo los números principales
 - **Badges de Conteo**: Indicadores visuales en secciones
 - **Estados de Salud**: Colores semánticos según el rendimiento
 - **Timestamps**: Información de última actualización
 
 #### 3. **Alertas Categorizadas**
+
 - **Críticas**: Rojo - Requieren atención inmediata
-- **Altas**: Naranja - Importantes pero no críticas  
+- **Altas**: Naranja - Importantes pero no críticas
 - **Medias**: Amarillo - Advertencias
 - **Bajas**: Azul - Informativas
 
 ### 🔧 IMPLEMENTACIÓN TÉCNICA
 
 #### 1. **Arquitectura de Datos**
+
 ```typescript
 // Carga paralela de datos
 await Promise.all([
@@ -116,23 +126,29 @@ await Promise.all([
   teachersStore.loadTeachers(),
   classesStore.fetchClasses(),
   attendanceStore.fetchAttendance(),
-  loadSystemAlerts()
+  loadSystemAlerts(),
 ])
 ```
 
 #### 2. **Watchers Reactivos**
+
 ```typescript
 // Regenerar alertas cuando cambian los datos
-watch([
-  () => studentsStore.studentStats,
-  () => classesStore.classes.length,
-  () => attendanceStore.records.length
-], () => {
-  generateIntelligentAlerts()
-}, { deep: true })
+watch(
+  [
+    () => studentsStore.studentStats,
+    () => classesStore.classes.length,
+    () => attendanceStore.records.length,
+  ],
+  () => {
+    generateIntelligentAlerts()
+  },
+  {deep: true}
+)
 ```
 
 #### 3. **Gestión de Firebase**
+
 - **Consultas Optimizadas**: Carga eficiente de alertas
 - **Fallback Inteligente**: Generación local si Firebase falla
 - **Real-time Updates**: Suscripciones automáticas
@@ -140,12 +156,14 @@ watch([
 ### 📈 MÉTRICAS Y ANALÍTICAS
 
 #### **Datos Completamente Reales:**
+
 - ✅ **Total Usuarios**: Estudiantes + Maestros desde Firebase
 - ✅ **Clases Activas**: Filtro dinámico por estado 'active'
 - ✅ **Asistencia Semanal**: Cálculo de últimos 7 días de registros
 - ✅ **Salud del Sistema**: Métricas de rendimiento en tiempo real
 
 #### **Actividad en Tiempo Real:**
+
 - ✅ **Acciones del Sistema**: Tracked automáticamente
 - ✅ **Nuevos Registros**: Detección automática de estudiantes
 - ✅ **Notificaciones**: Conversión automática a actividades
@@ -162,6 +180,7 @@ watch([
 ### 🔍 DEBUGGING Y MONITOREO
 
 #### **Console Logs Estructurados:**
+
 ```
 ✅ Students loaded from admin store: 45
 🔄 Vista Global del Sistema actualizada
@@ -170,6 +189,7 @@ watch([
 ```
 
 #### **Error Handling:**
+
 - Retry automático en fallos de carga
 - Fallbacks para servicios no disponibles
 - Mensajes informativos para el usuario
@@ -189,7 +209,7 @@ watch([
 El `GlobalViewModal` ahora es un **dashboard profesional completo** que:
 
 - ✅ Muestra información 100% real del sistema
-- ✅ Se actualiza automáticamente cada 5 minutos  
+- ✅ Se actualiza automáticamente cada 5 minutos
 - ✅ Genera alertas inteligentes basadas en datos
 - ✅ Proporciona una vista integral del estado del sistema
 - ✅ Mantiene un rendimiento óptimo con cargas asíncronas
@@ -199,5 +219,5 @@ El `GlobalViewModal` ahora es un **dashboard profesional completo** que:
 
 ---
 
-*Implementación completada - Junio 21, 2025*
-*Todos los datos son reales y se obtienen de Firebase en tiempo real*
+_Implementación completada - Junio 21, 2025_
+_Todos los datos son reales y se obtienen de Firebase en tiempo real_

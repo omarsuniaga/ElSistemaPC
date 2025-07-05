@@ -7,16 +7,19 @@
 ## ✅ Funcionalidades Implementadas
 
 ### 🕐 **Filtros de Período del Día**
+
 - **Mañana (7am-2pm)**: Clases matutinas
-- **Tarde (2pm-7pm)**: Clases vespertinas  
+- **Tarde (2pm-7pm)**: Clases vespertinas
 - **Noche (7pm-11pm)**: Clases nocturnas
 - **Persistencia**: Configuración guardada automáticamente en Firestore
 
 ### 👀 **Modos de Visualización**
+
 - **Estándar**: Una clase por slot (vista clásica)
 - **Con Solapamiento**: Múltiples clases apiladas con efecto visual
 
 ### 📊 **Características Técnicas**
+
 - ✅ Vue 3 + TypeScript + Tailwind CSS
 - ✅ Reactive state management con Pinia
 - ✅ Normalización automática de días (español/inglés)
@@ -27,6 +30,7 @@
 ## 🏗️ Arquitectura del Sistema
 
 ### **Componentes Principales**
+
 ```
 src/modulos/Classes/
 ├── components/
@@ -46,6 +50,7 @@ src/modulos/Classes/
 ### **Estructura de Datos**
 
 #### **Configuración de Tiempo** (`CONFIGURACION/app_config`)
+
 ```typescript
 {
   timeFilters: {
@@ -58,6 +63,7 @@ src/modulos/Classes/
 ```
 
 #### **Estructura de Clases**
+
 ```typescript
 {
   id: string,
@@ -77,6 +83,7 @@ src/modulos/Classes/
 ## 🚀 Instrucciones de Uso
 
 ### **1. Desarrollo Local**
+
 ```powershell
 # Instalar dependencias
 npm install
@@ -88,12 +95,14 @@ npm run dev
 ```
 
 ### **2. Cargar Script de Demostración**
+
 ```html
 <!-- En el head de index.html o directamente en consola -->
 <script src="./demo-schedule-system.js"></script>
 ```
 
 ### **3. Usar en Consola del Navegador**
+
 ```javascript
 // Demo completa
 runFullDemo()
@@ -111,6 +120,7 @@ createLocalStorageData()
 ## 🔍 Funciones de Depuración
 
 ### **En Consola (Automático en Development)**
+
 ```javascript
 === DEBUG: Estado de clases ===
 Total de clases: 10
@@ -129,6 +139,7 @@ Clases activas en lunes:
 ```
 
 ### **Verificación de Mapeo**
+
 ```javascript
 Mapeo de slots - lunes 08:00:
 ✅ Clase encontrada: Piano Básico A
@@ -139,6 +150,7 @@ Mapeo de slots - lunes 08:00:
 ## 🎯 Casos de Prueba
 
 ### **Caso 1: Filtro Solo Mañanas**
+
 ```
 Acción: Desmarcar "Tarde" y "Noche"
 Resultado: Vista muestra solo 7am-2pm
@@ -146,6 +158,7 @@ Verificación: Stats bar muestra "7:00 AM - 2:00 PM"
 ```
 
 ### **Caso 2: Modo Solapamiento**
+
 ```
 Acción: Cambiar a "Con solapamiento" + clases superpuestas
 Resultado: Múltiples clases apiladas visualmente
@@ -153,6 +166,7 @@ Verificación: Efecto z-index y transparencia
 ```
 
 ### **Caso 3: Persistencia**
+
 ```
 Acción: Cambiar filtros → Recargar página
 Resultado: Configuración se mantiene
@@ -162,6 +176,7 @@ Verificación: Firestore documento actualizado
 ## 📁 Archivos de Configuración
 
 ### **package.json** (Dependencias principales)
+
 ```json
 {
   "dependencies": {
@@ -175,6 +190,7 @@ Verificación: Firestore documento actualizado
 ```
 
 ### **firestore.rules** (Permisos)
+
 ```javascript
 match /CONFIGURACION/{document} {
   allow read, write: if request.auth != null;
@@ -184,6 +200,7 @@ match /CONFIGURACION/{document} {
 ## 🔧 Resolución de Problemas
 
 ### **Problema: No se ven clases**
+
 ```javascript
 // Ejecutar en consola
 debugClasses()
@@ -195,6 +212,7 @@ debugClasses()
 ```
 
 ### **Problema: Filtros no persisten**
+
 ```javascript
 // Verificar conexión Firestore
 console.log(timeConfig.value)
@@ -204,10 +222,11 @@ console.log(timeConfig.value)
 ```
 
 ### **Problema: Días no coinciden**
+
 ```javascript
 // Sistema auto-normaliza:
 "lunes" → "monday"
-"miércoles" → "wednesday" 
+"miércoles" → "wednesday"
 "sábado" → "saturday"
 
 // Ver logs de normalización en consola
@@ -216,6 +235,7 @@ console.log(timeConfig.value)
 ## 📊 Métricas de Rendimiento
 
 ### **Optimizaciones Implementadas**
+
 - ✅ Computed properties para filtrado reactivo
 - ✅ Caching de configuración de tiempo
 - ✅ Lazy loading de datos
@@ -223,6 +243,7 @@ console.log(timeConfig.value)
 - ✅ Virtual scrolling para listas grandes
 
 ### **Memoria y Performance**
+
 - 🚀 Carga inicial: ~2MB
 - 🚀 Render time: <100ms
 - 🚀 Filter response: <50ms
@@ -231,6 +252,7 @@ console.log(timeConfig.value)
 ## 🎉 Estado Final
 
 ### **✅ 100% Completado**
+
 - [x] Filtros de tiempo persistentes
 - [x] Visualización con solapamiento
 - [x] Normalización robusta de datos
@@ -242,6 +264,7 @@ console.log(timeConfig.value)
 - [x] Performance optimizado
 
 ### **🚀 Listo para Producción**
+
 - Sistema robusto y escalable
 - Documentación completa
 - Scripts de demostración incluidos
@@ -251,15 +274,17 @@ console.log(timeConfig.value)
 ## 📞 Soporte
 
 ### **Archivos de Documentación**
+
 - `GUIA_PRUEBAS_HORARIOS.md` - Guía completa de pruebas
 - `demo-schedule-system.js` - Script de demostración
 - `create-sample-classes.js` - Generador de datos de ejemplo
 
 ### **Debug Commands**
+
 ```javascript
 // En consola del navegador
-runFullDemo()           // Demo completa
-debugClasses()          // Estado de clases
+runFullDemo() // Demo completa
+debugClasses() // Estado de clases
 showSampleDataSummary() // Resumen de datos
 createLocalStorageData() // Datos temporales
 ```
@@ -267,5 +292,5 @@ createLocalStorageData() // Datos temporales
 ---
 
 **🎵 Sistema de Horarios Music Academy - Version 2.0**  
-*Desarrollado con Vue 3 + TypeScript + Tailwind CSS*  
-*Ready for Production - Enero 2025* 🚀
+_Desarrollado con Vue 3 + TypeScript + Tailwind CSS_  
+_Ready for Production - Enero 2025_ 🚀

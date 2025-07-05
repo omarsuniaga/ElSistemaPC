@@ -16,7 +16,7 @@ La colección almacena documentos con la siguiente estructura:
   url_institucional: "https://firebase...",   // URL del logo institucional
   created_at: timestamp,                      // Fecha de creación
   updated_at: timestamp,                      // Última actualización
-  
+
   // Campos opcionales para futuras expansiones
   theme_color: "#3B82F6",                     // Color principal de la app
   contact_email: "info@academia.com",         // Email de contacto
@@ -35,6 +35,7 @@ La colección almacena documentos con la siguiente estructura:
 **Ubicación:** `src/modulos/Admin/store/institutionalConfig.ts`
 
 **Funciones principales:**
+
 - `loadConfig()`: Carga la configuración desde Firestore
 - `updateTitle(newTitle)`: Actualiza el título institucional
 - `uploadLogo(file)`: Sube un nuevo logo a Firebase Storage
@@ -43,6 +44,7 @@ La colección almacena documentos con la siguiente estructura:
 - `resetConfig()`: Restaura configuración por defecto
 
 **Estado reactivo:**
+
 - `institutionalTitle`: Título de la institución
 - `institutionalLogoUrl`: URL del logo institucional
 - `hasLogo`: Booleano que indica si hay logo
@@ -54,6 +56,7 @@ La colección almacena documentos con la siguiente estructura:
 **Ubicación:** `src/modulos/Admin/components/InstitutionalConfigPanel.vue`
 
 **Características:**
+
 - Interfaz visual para configurar el título institucional
 - Upload de logo con drag & drop
 - Vista previa del logo actual
@@ -64,6 +67,7 @@ La colección almacena documentos con la siguiente estructura:
 ### 3. Integración en PDFGeneratorModal
 
 **Mejoras implementadas:**
+
 - Uso automático del título institucional en PDFs
 - Uso automático del logo institucional en PDFs
 - Opción de logo temporal que sobrescribe el institucional
@@ -94,19 +98,23 @@ La colección almacena documentos con la siguiente estructura:
 ## Beneficios
 
 ### 1. Centralización
+
 - Configuración única para toda la aplicación
 - Consistencia en documentos y interfaces
 
 ### 2. Flexibilidad
+
 - Logo temporal para casos especiales
 - Configuración expandible para futuras necesidades
 
 ### 3. Facilidad de Uso
+
 - Interfaz intuitiva para administradores
 - Cambios en tiempo real
 - Validaciones automáticas
 
 ### 4. Escalabilidad
+
 - Preparado para agregar más configuraciones
 - Estructura extensible para múltiples instituciones (futuro)
 
@@ -116,7 +124,7 @@ La colección almacena documentos con la siguiente estructura:
 
 ```javascript
 // En el archivo donde uses la configuración
-import { useInstitutionalConfigStore } from '@/modulos/Admin/store/institutionalConfig'
+import {useInstitutionalConfigStore} from "@/modulos/Admin/store/institutionalConfig"
 
 const configStore = useInstitutionalConfigStore()
 await configStore.loadConfig()
@@ -134,7 +142,7 @@ const logoUrl = configStore.institutionalLogoUrl
 </template>
 
 <script setup>
-import InstitutionalConfigPanel from '@/modulos/Admin/components/InstitutionalConfigPanel.vue'
+import InstitutionalConfigPanel from "@/modulos/Admin/components/InstitutionalConfigPanel.vue"
 </script>
 ```
 
@@ -155,6 +163,7 @@ const headerTitle = computed(() => institutionalConfig.institutionalTitle)
 ## Futuras Expansiones
 
 ### Configuraciones Adicionales
+
 - Colores temáticos de la aplicación
 - Información de contacto
 - Redes sociales
@@ -162,11 +171,13 @@ const headerTitle = computed(() => institutionalConfig.institutionalTitle)
 - Formatos de documentos
 
 ### Multi-tenancy
+
 - Soporte para múltiples instituciones
 - Configuraciones por cliente/tenant
 - Aislamiento de datos
 
 ### Configuraciones Avanzadas
+
 - Plantillas de documentos personalizables
 - Configuraciones de notificaciones
 - Integraciones con servicios externos
@@ -183,8 +194,8 @@ service cloud.firestore {
     // Configuración institucional - solo administradores
     match /CONFIGURACIÓN/{configId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-                      request.auth.token.role == 'admin' || 
+      allow write: if request.auth != null &&
+                      request.auth.token.role == 'admin' ||
                       request.auth.token.role == 'superadmin';
     }
   }
@@ -201,11 +212,11 @@ service firebase.storage {
     // Logos institucionales
     match /institutional/{filename} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-                      request.auth.token.role == 'admin' || 
+      allow write: if request.auth != null &&
+                      request.auth.token.role == 'admin' ||
                       request.auth.token.role == 'superadmin';
-      allow delete: if request.auth != null && 
-                       request.auth.token.role == 'admin' || 
+      allow delete: if request.auth != null &&
+                       request.auth.token.role == 'admin' ||
                        request.auth.token.role == 'superadmin';
     }
   }
@@ -215,16 +226,19 @@ service firebase.storage {
 ## Troubleshooting
 
 ### Error: "No se puede cargar la configuración"
+
 - Verificar conexión a Firebase
 - Verificar permisos de Firestore
 - Verificar que existe la colección CONFIGURACIÓN
 
 ### Error: "No se puede subir el logo"
+
 - Verificar permisos de Storage
 - Verificar tamaño del archivo (máximo 5MB)
 - Verificar formato del archivo (solo imágenes)
 
 ### PDF sin logo institucional
+
 - Verificar que la configuración se ha cargado
 - Verificar permisos de acceso al archivo en Storage
 - Verificar que la URL del logo es válida

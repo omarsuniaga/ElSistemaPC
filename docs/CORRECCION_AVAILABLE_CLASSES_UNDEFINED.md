@@ -27,7 +27,7 @@ const availableClasses = computed(() => {
 
 ```typescript
 // Validar permisos antes de abrir el modal (con verificación segura)
-const currentClass = availableClasses.value?.find(cls => cls.id === selectedClass.value)
+const currentClass = availableClasses.value?.find((cls) => cls.id === selectedClass.value)
 ```
 
 ### 3. **Prop teacherPermissions Seguro**
@@ -36,7 +36,8 @@ const currentClass = availableClasses.value?.find(cls => cls.id === selectedClas
 **Cambio:** Agregar fallback null para evitar errores
 
 ```vue
-:teacherPermissions="availableClasses.find(cls => cls.id === selectedClass)?.teacherPermissions || null"
+:teacherPermissions="availableClasses.find(cls => cls.id === selectedClass)?.teacherPermissions ||
+null"
 ```
 
 ### 4. **Computed Properties para Permisos en AttendanceObservation**
@@ -47,16 +48,16 @@ const currentClass = availableClasses.value?.find(cls => cls.id === selectedClas
 ```typescript
 // Computed para manejar permisos de forma segura
 const teacherPermissions = computed(() => {
-  return props.teacherPermissions || null;
-});
+  return props.teacherPermissions || null
+})
 
 const canAddObservations = computed(() => {
-  return !teacherPermissions.value || teacherPermissions.value.canAddObservations !== false;
-});
+  return !teacherPermissions.value || teacherPermissions.value.canAddObservations !== false
+})
 
 const canViewObservations = computed(() => {
-  return !teacherPermissions.value || teacherPermissions.value.canViewObservations !== false;
-});
+  return !teacherPermissions.value || teacherPermissions.value.canViewObservations !== false
+})
 ```
 
 ### 5. **Actualización de Template para Usar Computed Properties**
@@ -75,27 +76,30 @@ const canViewObservations = computed(() => {
 
 ```typescript
 if (canAddObservations.value && !canViewObservations.value) {
-  activeTab.value = 'new';
+  activeTab.value = "new"
 } else if (!canAddObservations.value && canViewObservations.value) {
-  activeTab.value = 'history';
+  activeTab.value = "history"
 } else if (canAddObservations.value && canViewObservations.value) {
-  activeTab.value = 'new';
+  activeTab.value = "new"
 }
 ```
 
 ## ✅ BENEFICIOS DE LA CORRECCIÓN
 
 ### 🛡️ **Estabilidad Mejorada**
+
 - Eliminación completa del error de variable undefined
 - Manejo robusto de casos null/undefined
 - Verificación segura con optional chaining
 
 ### 🎯 **Experiencia de Usuario Consistente**
+
 - No más errores en consola para el usuario
 - Comportamiento predecible en todos los escenarios
 - Fallbacks apropiados cuando no hay permisos definidos
 
 ### 🔒 **Seguridad de Permisos Mantenida**
+
 - Validación de permisos sigue funcionando correctamente
 - Fallback seguro: si no hay permisos definidos, permite acceso (comportamiento por defecto)
 - Restricciones se aplican solo cuando hay permisos específicos configurados
@@ -103,16 +107,19 @@ if (canAddObservations.value && !canViewObservations.value) {
 ## 🧪 CASOS DE PRUEBA VERIFICADOS
 
 ### ✅ **Clase Regular (sin permisos especiales)**
+
 - availableClasses se inicializa como array vacío
 - teacherPermissions es null
 - canAddObservations y canViewObservations devuelven true (acceso por defecto)
 
 ### ✅ **Clase Compartida (con permisos definidos)**
+
 - availableClasses contiene la información de la clase
 - teacherPermissions contiene los permisos específicos
 - Tabs y botones se muestran/ocultan según permisos
 
 ### ✅ **Estado de Carga/Inicialización**
+
 - No hay errores durante la carga inicial
 - Variables reactivas se inicializan correctamente
 - No hay acceso a propiedades undefined

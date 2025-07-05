@@ -1,4 +1,4 @@
-# 🔧 Reparación del Error de Logout: Store $reset() 
+# 🔧 Reparación del Error de Logout: Store $reset()
 
 ## 📋 Problema Identificado
 
@@ -52,7 +52,7 @@ async signOut() {
     await firebaseSignOut(auth)
     this.user = null
     this.dataInitialized = false
-    
+
     // Reinicia stores con manejo individual de errores
     try {
       const studentsStore = useStudentsStore()
@@ -100,7 +100,7 @@ async signOut() {
 El método `$reset()` del store de attendance limpia:
 
 - ✅ Registros de asistencia
-- ✅ Observaciones y historial  
+- ✅ Observaciones y historial
 - ✅ Justificaciones
 - ✅ Estados de carga y error
 - ✅ Selecciones de fecha y clase

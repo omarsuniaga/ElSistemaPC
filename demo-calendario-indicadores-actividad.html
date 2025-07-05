@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📅 Demo - Calendario de Asistencia con Indicadores</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .indicator-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            right: 2px;
+        }
+        
+        .activity-badge {
+            min-width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            font-size: 10px;
+            line-height: 16px;
+            position: absolute;
+            top: -2px;
+            right: -2px;
+        }
+
+        .calendar-day {
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-day:hover {
+            transform: scale(1.1);
+        }
+
+        .has-activity {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        }
+
+        .activity-high {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+        }
+
+        .activity-medium {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div class="max-w-4xl mx-auto p-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                📅 Sistema de Calendario con Indicadores de Actividad
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400">
+                Demostración del calendario optimizado con indicadores de asistencia registrada
+            </p>
+        </div>
+
+        <!-- Estado de la integración -->
+        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-green-600 dark:text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <div>
+                    <h3 class="font-medium text-green-900 dark:text-green-100">✅ Integración Completada</h3>
+                    <p class="text-sm text-green-700 dark:text-green-300 mt-1">
+                        El calendario ahora muestra automáticamente los indicadores de actividades registradas de la sesión abierta
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Explicación técnica -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">🔧 Implementación Técnica</h2>
+            
+            <div class="space-y-4">
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-blue-600 dark:text-blue-400 font-bold text-sm">1</span>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white">Store Integration</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs">attendanceStore.dateAttendanceStatuses</code> 
+                            proporciona automáticamente los datos de actividad
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-blue-600 dark:text-blue-400 font-bold text-sm">2</span>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white">Reactive Updates</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            Los indicadores se actualizan automáticamente cuando se registra nueva asistencia
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-blue-600 dark:text-blue-400 font-bold text-sm">3</span>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white">Optimized Caching</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            Sistema de cache inteligente con TTL de 2 minutos para datos del calendario
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo Calendar -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Calendario Simulado</h2>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span>Asistencia registrada</span>
+                    </div>
+                    <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                        <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                        <span>Clases programadas</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div class="grid grid-cols-7 gap-2 mb-4">
+                <!-- Days of week -->
+                <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">Dom</div>
+                <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">Lun</div>
+                <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">Mar</div>
+                <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">Mié</div>
+                <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">Jue</div>
+                <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">Vie</div>
+                <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">Sáb</div>
+            </div>
+
+            <div class="grid grid-cols-7 gap-2" id="calendar-days">
+                <!-- Calendar days will be generated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+            <h3 class="font-medium text-blue-900 dark:text-blue-100 mb-3">📋 Leyenda de Indicadores</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-green-500 rounded-full"></div>
+                    <span class="text-blue-800 dark:text-blue-200">Asistencia completa registrada</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-yellow-500 rounded-full"></div>
+                    <span class="text-blue-800 dark:text-blue-200">Asistencia parcial</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-blue-500 rounded-full"></div>
+                    <span class="text-blue-800 dark:text-blue-200">Clases programadas</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Code Example -->
+        <div class="mt-6 bg-gray-900 rounded-lg p-4">
+            <h3 class="text-white font-medium mb-3">💻 Código de Implementación</h3>
+            <pre class="text-green-400 text-sm overflow-x-auto"><code>// 🎯 En AttendanceCalendarOptimized.vue
+const hasAttendanceRecords = (date: Date): boolean => {
+  const dateStr = format(date, "yyyy-MM-dd")
+  const dateStatuses = attendanceStore.dateAttendanceStatuses
+  return !!dateStatuses[dateStr] && dateStatuses[dateStr].count > 0
+}
+
+// 🔄 Carga automática de datos
+const loadCalendarData = async () => {
+  const startDate = format(monthStart, "yyyy-MM-dd")
+  const endDate = format(monthEnd, "yyyy-MM-dd")
+  
+  // Los indicadores se actualizan automáticamente
+  await attendanceStore.loadAttendanceDataForCalendar(startDate, endDate)
+}</code></pre>
+        </div>
+    </div>
+
+    <script>
+        // Generate demo calendar with activity indicators
+        function generateDemoCalendar() {
+            const calendarDays = document.getElementById('calendar-days');
+            const today = new Date();
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+            
+            // Get first day of month and how many days
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+            
+            // Sample activity data (simulating what comes from the store)
+            const activityData = {
+                '15': { count: 3, type: 'attendance' },
+                '16': { count: 2, type: 'attendance' },
+                '18': { count: 1, type: 'partial' },
+                '20': { count: 4, type: 'attendance' },
+                '22': { count: 2, type: 'scheduled' },
+                '25': { count: 1, type: 'partial' }
+            };
+            
+            // Add empty cells for days before month starts
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'h-10 w-10';
+                calendarDays.appendChild(dayCell);
+            }
+            
+            // Add days of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'calendar-day h-10 w-10 flex items-center justify-center text-sm rounded-md cursor-pointer border border-gray-200 dark:border-gray-600';
+                
+                const activity = activityData[day.toString()];
+                
+                if (activity) {
+                    if (activity.type === 'attendance') {
+                        dayCell.classList.add('has-activity', 'text-green-700', 'border-green-300');
+                        if (activity.count >= 3) {
+                            dayCell.classList.add('activity-high');
+                        }
+                    } else if (activity.type === 'partial') {
+                        dayCell.classList.add('activity-medium', 'text-yellow-700', 'border-yellow-300');
+                    } else if (activity.type === 'scheduled') {
+                        dayCell.classList.add('text-blue-700', 'border-blue-300', 'bg-blue-50');
+                    }
+                    
+                    // Add activity badge
+                    const badge = document.createElement('div');
+                    badge.className = 'activity-badge bg-green-500 text-white text-center';
+                    badge.textContent = activity.count;
+                    dayCell.appendChild(badge);
+                }
+                
+                // Add day number
+                const dayNumber = document.createElement('span');
+                dayNumber.textContent = day;
+                dayCell.appendChild(dayNumber);
+                
+                // Highlight today
+                if (day === today.getDate()) {
+                    dayCell.classList.add('bg-blue-100', 'text-blue-700', 'font-bold');
+                }
+                
+                // Add click handler
+                dayCell.addEventListener('click', () => {
+                    // Remove previous selection
+                    document.querySelectorAll('.calendar-day').forEach(cell => {
+                        cell.classList.remove('ring-2', 'ring-blue-500');
+                    });
+                    
+                    // Add selection to clicked day
+                    dayCell.classList.add('ring-2', 'ring-blue-500');
+                    
+                    // Show info
+                    const info = activity ? 
+                        `Día ${day}: ${activity.count} ${activity.type === 'attendance' ? 'clases con asistencia' : activity.type === 'partial' ? 'registros parciales' : 'clases programadas'}` :
+                        `Día ${day}: Sin actividad registrada`;
+                    
+                    // Update title or show notification
+                    console.log(info);
+                });
+                
+                calendarDays.appendChild(dayCell);
+            }
+        }
+        
+        // Initialize demo calendar
+        document.addEventListener('DOMContentLoaded', generateDemoCalendar);
+        
+        // Simulate real-time updates
+        setInterval(() => {
+            const randomDay = Math.floor(Math.random() * 28) + 1;
+            const dayElements = document.querySelectorAll('.calendar-day');
+            const targetDay = Array.from(dayElements).find(el => 
+                el.querySelector('span') && el.querySelector('span').textContent == randomDay
+            );
+            
+            if (targetDay && Math.random() > 0.8) {
+                targetDay.style.transform = 'scale(1.1)';
+                targetDay.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
+                
+                setTimeout(() => {
+                    targetDay.style.transform = '';
+                    targetDay.style.boxShadow = '';
+                }, 300);
+            }
+        }, 3000);
+    </script>
+</body>
+</html>

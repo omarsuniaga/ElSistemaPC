@@ -12,6 +12,7 @@
 ### 1. **Composable Funcional para RBAC** (`src/composables/useRBACManagement.ts`)
 
 ✅ **Funcionalidades implementadas:**
+
 - Gestión completa de roles y permisos en Firestore
 - Inicialización automática de datos por defecto
 - Cache para mejorar rendimiento
@@ -20,27 +21,31 @@
 - Agrupación de permisos por módulo
 
 ✅ **Roles por defecto creados:**
+
 - **Maestro**: Permisos completos para asistencia, clases, estudiantes
 - **Director**: Permisos administrativos completos
 - **Admin**: Permisos administrativos limitados
 - **Superusuario**: Acceso completo al sistema y RBAC
 
 ✅ **Permisos por defecto creados:**
+
 - Ver/Crear/Editar/Eliminar Asistencia
 - Calendario de Asistencia
 - Gestión de Clases y Estudiantes
 - Dashboards por rol
 - Gestión RBAC (solo Superusuario)
 
-### 2. **Modales Funcionales** 
+### 2. **Modales Funcionales**
 
 #### **RoleModal.vue** (`src/modulos/Superusuario/components/RoleModal.vue`)
+
 ✅ Crear y editar roles
 ✅ Asignación de permisos por módulo
 ✅ Activar/desactivar roles
 ✅ Validación de formularios
 
 #### **PermissionModal.vue** (`src/modulos/Superusuario/components/PermissionModal.vue`)
+
 ✅ Crear y editar permisos
 ✅ Clasificación por módulo y acción
 ✅ Definición de recursos
@@ -49,12 +54,14 @@
 ### 3. **Interfaz RBAC Mejorada** (`src/modulos/Superusuario/views/RBACManagement.vue`)
 
 ✅ **Gestión de Roles:**
+
 - Lista de roles con estado (Activo/Inactivo)
 - Botones funcionales para editar, activar/desactivar, eliminar
 - Contador de permisos asignados
 - Confirmación para eliminación
 
 ✅ **Gestión de Permisos:**
+
 - Lista agrupada por módulos
 - Filtros por módulo
 - Etiquetas de acción y recurso
@@ -63,16 +70,18 @@
 ### 4. **RBAC Guard Simplificado** (`src/router/guards/rbacGuard.ts`)
 
 ✅ **Permisos temporales para maestros:**
+
 ```typescript
 // ACCESO COMPLETO A ASISTENCIA para maestros
-if (moduleKey === 'attendance') return true;
+if (moduleKey === "attendance") return true
 
 // Otros permisos de maestro
-if (moduleKey === 'classes') return true;
-if (moduleKey === 'students') return true;
+if (moduleKey === "classes") return true
+if (moduleKey === "students") return true
 ```
 
 ✅ **Redirección inteligente:**
+
 - Maestros que intentan acceder a `/attendance/*` → `/teacher/attendance/*`
 - Parsing automático de parámetros de fecha y classId
 - Prevención de bucles infinitos
@@ -80,6 +89,7 @@ if (moduleKey === 'students') return true;
 ## Colecciones de Firestore Creadas
 
 ### `rbac_roles`
+
 ```typescript
 {
   name: string,
@@ -92,6 +102,7 @@ if (moduleKey === 'students') return true;
 ```
 
 ### `rbac_permissions`
+
 ```typescript
 {
   name: string,
@@ -123,6 +134,7 @@ if (moduleKey === 'students') return true;
 ### Para Maestros:
 
 ✅ **Acceso completo a asistencia**:
+
 - `/teacher/attendance/calendar` - Calendario
 - `/teacher/attendance/:date/:classId` - Toma de asistencia
 - Lista de estudiantes visible
@@ -131,6 +143,7 @@ if (moduleKey === 'students') return true;
 ## Verificación de Funcionamiento
 
 ### 1. **Probar Sistema RBAC**:
+
 ```bash
 # Como Superusuario:
 1. Ir a /superusuario/rbac
@@ -140,6 +153,7 @@ if (moduleKey === 'students') return true;
 ```
 
 ### 2. **Probar Acceso de Maestros**:
+
 ```bash
 # Como Maestro:
 1. Intentar acceder a una clase para asistencia
@@ -149,6 +163,7 @@ if (moduleKey === 'students') return true;
 ```
 
 ### 3. **Logs de Debug**:
+
 ```bash
 # En consola del navegador:
 👤 RBAC Guard: Verificando acceso para usuario con rol 'Maestro' a ruta '/teacher/attendance/...'

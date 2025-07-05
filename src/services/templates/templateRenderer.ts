@@ -1,7 +1,7 @@
 // Motor de Renderizado de Plantillas
 // Procesa variables y genera mensajes personalizados
 
-import { MessageTemplate, MessageVariable, GLOBAL_VARIABLES } from "./templateManager"
+import {MessageTemplate, MessageVariable, GLOBAL_VARIABLES} from "./templateManager"
 
 // Interfaces
 interface RenderContext {
@@ -65,7 +65,7 @@ export class TemplateRenderer {
       subject: "",
       variables: {},
       errors: [],
-      warnings: []
+      warnings: [],
     }
 
     try {
@@ -85,7 +85,7 @@ export class TemplateRenderer {
 
       // Renderizar contenido
       result.content = this.replaceVariables(template.content, variables)
-      
+
       // Renderizar subject si existe
       if (template.subject) {
         result.subject = this.replaceVariables(template.subject, variables)
@@ -93,8 +93,10 @@ export class TemplateRenderer {
 
       // Verificar que no queden variables sin resolver
       const unresolvedInContent = this.findUnresolvedVariables(result.content)
-      const unresolvedInSubject = template.subject ? this.findUnresolvedVariables(result.subject) : []
-      
+      const unresolvedInSubject = template.subject
+        ? this.findUnresolvedVariables(result.subject)
+        : []
+
       if (unresolvedInContent.length > 0 || unresolvedInSubject.length > 0) {
         result.warnings.push(
           `Variables sin resolver: ${[...unresolvedInContent, ...unresolvedInSubject].join(", ")}`
@@ -103,7 +105,6 @@ export class TemplateRenderer {
 
       result.success = true
       console.log(`✅ Template Renderer - Renderizado exitoso`)
-
     } catch (error) {
       console.error("Error renderizando plantilla:", error)
       result.errors.push(error instanceof Error ? error.message : "Error desconocido")
@@ -121,7 +122,7 @@ export class TemplateRenderer {
       errors: [],
       warnings: [],
       missingRequired: [],
-      unresolvedVariables: []
+      unresolvedVariables: [],
     }
 
     // Verificar que la plantilla tenga contenido
@@ -131,7 +132,7 @@ export class TemplateRenderer {
     }
 
     // Verificar variables requeridas
-    const requiredVariables = template.variables.filter(v => v.required)
+    const requiredVariables = template.variables.filter((v) => v.required)
     for (const variable of requiredVariables) {
       if (!this.canResolveVariable(variable.key, context)) {
         result.missingRequired.push(variable.key)
@@ -142,8 +143,8 @@ export class TemplateRenderer {
 
     // Encontrar variables en el contenido que no estén definidas
     const variablesInContent = this.extractVariables(template.content)
-    const definedVariableKeys = template.variables.map(v => v.key)
-    const globalVariableKeys = GLOBAL_VARIABLES.map(v => v.key)
+    const definedVariableKeys = template.variables.map((v) => v.key)
+    const globalVariableKeys = GLOBAL_VARIABLES.map((v) => v.key)
     const allDefinedKeys = [...definedVariableKeys, ...globalVariableKeys]
 
     for (const varName of variablesInContent) {
@@ -159,7 +160,10 @@ export class TemplateRenderer {
   /**
    * Construye el diccionario de variables desde el contexto
    */
-  private buildVariableDictionary(context: RenderContext, templateVariables: MessageVariable[]): Record<string, string> {
+  private buildVariableDictionary(
+    context: RenderContext,
+    templateVariables: MessageVariable[]
+  ): Record<string, string> {
     const variables: Record<string, string> = {}
 
     // Agregar variables globales
@@ -187,7 +191,9 @@ export class TemplateRenderer {
   private resolveGlobalVariable(variable: MessageVariable, context: RenderContext): string | null {
     switch (variable.key) {
       case "studentName":
-        return context.student ? `${context.student.nombre} ${context.student.apellido}`.trim() : null
+        return context.student
+          ? `${context.student.nombre} ${context.student.apellido}`.trim()
+          : null
 
       case "studentFirstName":
         return context.student?.nombre || null
@@ -199,18 +205,21 @@ export class TemplateRenderer {
         return context.class?.teacherName || null
 
       case "date":
-        return context.attendance?.date 
+        return context.attendance?.date
           ? new Date(context.attendance.date).toLocaleDateString("es-ES")
           : new Date().toLocaleDateString("es-ES")
 
       case "time":
-        return context.attendance?.time 
-          ? new Date(context.attendance.time).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })
-          : new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })
+        return context.attendance?.time
+          ? new Date(context.attendance.time).toLocaleTimeString("es-ES", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : new Date().toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit"})
 
       case "dayOfWeek":
         const date = context.attendance?.date ? new Date(context.attendance.date) : new Date()
-        return date.toLocaleDateString("es-ES", { weekday: "long" })
+        return date.toLocaleDateString("es-ES", {weekday: "long"})
 
       case "academyName":
         return variable.defaultValue || "Academia Musical El Sistema"
@@ -259,7 +268,7 @@ export class TemplateRenderer {
    * Verifica si una variable puede ser resuelta
    */
   private canResolveVariable(variableKey: string, context: RenderContext): boolean {
-    const globalVar = GLOBAL_VARIABLES.find(v => v.key === variableKey)
+    const globalVar = GLOBAL_VARIABLES.find((v) => v.key === variableKey)
     if (globalVar) {
       return this.resolveGlobalVariable(globalVar, context) !== null
     }
@@ -292,7 +301,7 @@ export class TemplateRenderer {
     const matches = text.match(/\{([^}]+)\}/g)
     if (!matches) return []
 
-    return matches.map(match => match.slice(1, -1)) // Remover { y }
+    return matches.map((match) => match.slice(1, -1)) // Remover { y }
   }
 
   /**
@@ -312,27 +321,27 @@ export class TemplateRenderer {
         nombre: "María",
         apellido: "González Rodríguez",
         tlf_madre: "+58424123456",
-        tlf_padre: "+58414987654"
+        tlf_padre: "+58414987654",
       },
       class: {
         id: "sample-class-id",
         name: "Violín Intermedio",
         teacherId: "sample-teacher-id",
-        teacherName: "Prof. Ana Martínez"
+        teacherName: "Prof. Ana Martínez",
       },
       attendance: {
         date: new Date().toISOString(),
         time: new Date().toISOString(),
-        status: "Ausente"
+        status: "Ausente",
       },
       escalation: {
         level: template.escalationLevel || 1,
         weeklyAbsences: 2,
-        totalAbsences: 5
+        totalAbsences: 5,
       },
       custom: {
-        customVariable: "Valor personalizado"
-      }
+        customVariable: "Valor personalizado",
+      },
     }
 
     return this.render(template, sampleContext)
@@ -347,7 +356,7 @@ export class TemplateRenderer {
       errors: [],
       warnings: [],
       missingRequired: [],
-      unresolvedVariables: []
+      unresolvedVariables: [],
     }
 
     // Verificar sintaxis de variables
@@ -356,8 +365,8 @@ export class TemplateRenderer {
     const allVariables = [...variablesInContent, ...variablesInSubject]
 
     // Verificar que todas las variables en el contenido estén definidas
-    const definedKeys = template.variables.map(v => v.key)
-    const globalKeys = GLOBAL_VARIABLES.map(v => v.key)
+    const definedKeys = template.variables.map((v) => v.key)
+    const globalKeys = GLOBAL_VARIABLES.map((v) => v.key)
     const allDefinedKeys = [...definedKeys, ...globalKeys]
 
     for (const varName of allVariables) {
@@ -368,9 +377,9 @@ export class TemplateRenderer {
     }
 
     // Verificar duplicados en variables de plantilla
-    const variableKeys = template.variables.map(v => v.key)
+    const variableKeys = template.variables.map((v) => v.key)
     const duplicates = variableKeys.filter((key, index) => variableKeys.indexOf(key) !== index)
-    
+
     if (duplicates.length > 0) {
       result.errors.push(`Variables duplicadas: ${duplicates.join(", ")}`)
       result.isValid = false
@@ -412,5 +421,5 @@ export default {
   templateRenderer,
   renderTemplate,
   generateTemplatePreview,
-  validateTemplate
+  validateTemplate,
 }

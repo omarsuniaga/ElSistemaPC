@@ -5,12 +5,14 @@
 ### 🚀 **Para probar inmediatamente:**
 
 1. **Navegar a la vista de horarios:**
+
    ```
    URL: http://localhost:3000/admin/classes
    Pestaña: "Horarios"
    ```
 
 2. **Abrir consola del navegador (F12)** y ejecutar:
+
    ```javascript
    runFullDemo()
    ```
@@ -25,11 +27,12 @@
 ## 🎮 **Funciones de Demo Disponibles**
 
 ### En la consola del navegador:
+
 ```javascript
 // Demo completa con explicaciones
 runFullDemo()
 
-// Solo mostrar filtros por período  
+// Solo mostrar filtros por período
 demoFilters()
 
 // Solo demostrar solapamiento
@@ -45,16 +48,19 @@ debugClasses()
 ## 🔧 **Características a Probar**
 
 ### ✅ **Filtros de Tiempo**
+
 - **Checkboxes**: Mañana, Tarde, Noche
 - **Comportamiento**: Vista se ajusta dinámicamente
 - **Persistencia**: Configuración se guarda automáticamente
 
-### ✅ **Modo de Solapamiento** 
+### ✅ **Modo de Solapamiento**
+
 - **Toggle**: Estándar ↔ Con solapamiento
 - **Efecto**: Clases apiladas en mismo horario
 - **Visual**: Transparencia y profundidad
 
 ### ✅ **Navegación Semanal**
+
 - **Botones**: ← Anterior / Siguiente →
 - **Indicador**: Semana actual destacada
 - **Responsive**: Adaptable en móvil
@@ -62,13 +68,15 @@ debugClasses()
 ## 📊 **Dashboard de Estado**
 
 El sistema muestra en tiempo real:
+
 - **📚 Clases visibles**: Contador dinámico
-- **🕐 Rango horario**: Tiempo filtrado activo  
+- **🕐 Rango horario**: Tiempo filtrado activo
 - **📈 Estadísticas**: Maestros, estudiantes, instrumentos
 
 ## 🎨 **Características Visuales**
 
 ### **Colores por Instrumento:**
+
 - 🎹 Piano: Azul
 - 🎸 Guitarra: Verde
 - 🎻 Violín: Púrpura
@@ -76,6 +84,7 @@ El sistema muestra en tiempo real:
 - 🎤 Voz: Amarillo
 
 ### **Responsive Design:**
+
 - 📱 Mobile: Grid adaptable
 - 💻 Desktop: Vista completa
 - 🌙 Dark mode: Compatible
@@ -83,6 +92,7 @@ El sistema muestra en tiempo real:
 ## 🛠️ **Debugging Integrado**
 
 ### **Logs Automáticos (Development):**
+
 ```
 === DEBUG: Estado de clases ===
 Total de clases: 6
@@ -98,19 +108,23 @@ Mapeo exitoso:
 ## 📁 **Archivos Clave Creados/Modificados**
 
 ### **Componentes Principales:**
+
 - `WeeklyScheduleView.vue` - Vista principal mejorada
 - `ScheduleStatsBar.vue` - Estadísticas en tiempo real
 - `AdminClassesView.vue` - Navegación con tabs
 
 ### **Servicios:**
+
 - `appConfig.ts` - Persistencia en Firestore
 - `classes.ts` - Store mejorado
 
 ### **Scripts de Demo:**
+
 - `demo-schedule-system.js` - Sistema completo de demostración
 - `create-sample-classes.js` - Generador de datos
 
 ### **Documentación:**
+
 - `GUIA_PRUEBAS_HORARIOS.md` - Manual de pruebas
 - `PROYECTO_HORARIOS_RESUMEN_FINAL.md` - Documentación técnica
 
@@ -128,8 +142,9 @@ Mapeo exitoso:
 ### 🚀 **El sistema está production-ready**
 
 **Características implementadas:**
+
 - ✅ Filtros de tiempo persistentes
-- ✅ Vista con solapamiento de clases  
+- ✅ Vista con solapamiento de clases
 - ✅ Debugging completo integrado
 - ✅ Responsive design total
 - ✅ TypeScript type safety
