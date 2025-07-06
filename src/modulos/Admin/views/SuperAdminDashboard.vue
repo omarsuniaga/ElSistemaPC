@@ -573,7 +573,7 @@ import {useClassesStore} from "../../Classes/store/classes"
 import {useAuthStore} from "../../../stores/auth"
 import {useTheme} from "../../../composables/useTheme"
 import {useRealTimeNotifications} from "../composables/useRealTimeNotifications"
-import ReporteAsistenciaDiaria from "@/views/ReporteAsistenciaDiaria.vue"
+import ReporteAsistenciaDiaria from "../../Attendance/views/ReporteAsistenciaDiaria.vue"
 
 // Setup
 const router = useRouter()

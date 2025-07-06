@@ -5,13 +5,12 @@
  */
 
 import {defineStore} from "pinia"
-import {ref, computed} from "vue"
+import {ref, computed, readonly} from "vue"
 import {
   collection,
   query,
   getDocs,
   doc,
-  getDoc,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -186,7 +185,14 @@ export const useTeachersStore = defineStore("teachers", () => {
         const rawData = {id: doc.id, ...doc.data()}
 
         // Validar datos con Zod antes de almacenar
-        return validateFirebaseData(TeacherDataSchema, rawData)
+        const validated = validateFirebaseData(TeacherDataSchema, rawData)
+        
+        // Ensure required fields have defaults
+        return {
+          ...validated,
+          status: validated.status || "activo",
+          specialties: validated.specialties || [],
+        }
       })
 
       teachers.value = validatedTeachers
@@ -328,7 +334,14 @@ export const useTeachersStore = defineStore("teachers", () => {
         const teacherDoc = querySnapshot.docs[0]
         const rawData = {id: teacherDoc.id, ...teacherDoc.data()}
 
-        return validateFirebaseData(TeacherDataSchema, rawData)
+        const validated = validateFirebaseData(TeacherDataSchema, rawData)
+        
+        // Ensure required fields have defaults
+        return {
+          ...validated,
+          status: validated.status || "activo",
+          specialties: validated.specialties || [],
+        }
       }
 
       return null

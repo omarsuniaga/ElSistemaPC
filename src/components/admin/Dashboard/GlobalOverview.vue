@@ -100,7 +100,7 @@ import {useCommunicationStore} from "../../../stores/communication"
 import {useAttendanceStore} from "../../../modulos/Attendance/store/attendance"
 import {useStudentsStore} from "../../../modulos/Students/store/students"
 import {useClassesStore} from "../../../modulos/Classes/store/classes"
-import ReporteAsistenciaDiaria from "@/views/ReporteAsistenciaDiaria.vue"
+import ReporteAsistenciaDiaria from "@/modulos/Attendance/views/ReporteAsistenciaDiaria.vue"
 
 ChartJS.register(
   CategoryScale,

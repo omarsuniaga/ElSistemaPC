@@ -86,16 +86,18 @@ app.config.warnHandler = (msg, instance, trace) => {
   }
 }
 
-// Configurar Pinia
+// 🎯 PRIORIDAD 1: Configurar Pinia PRIMERO
+console.log("🔍 [Main] Configurando Pinia...")
 const pinia = createPinia()
 pinia.use(piniaPluginPersistedstate)
 app.use(pinia)
+console.log("✅ [Main] Pinia configurado correctamente")
 
-// Configurar notificaciones globales (después de Pinia)
+// 🎯 PRIORIDAD 2: Configurar notificaciones globales (después de Pinia)
 const {showNotification} = useNotification()
 app.config.globalProperties.$notify = showNotification
 
-// Configurar Router con verificación de Firebase
+// 🎯 PRIORIDAD 3: Configurar Router DESPUÉS de Pinia
 console.log("🔍 [Main] Configurando router...")
 app.use(router)
 
@@ -121,6 +123,18 @@ app.use(createCachePlugin())
 
 // Sistema de branding personalizable
 app.use(brandingPlugin)
+
+// 🎯 PRIORIDAD 4: Inicializar branding DESPUÉS de que Pinia esté disponible
+setTimeout(() => {
+  try {
+    if (app.config.globalProperties.$initBranding) {
+      app.config.globalProperties.$initBranding()
+      console.log("✅ [Main] Branding inicializado correctamente")
+    }
+  } catch (error) {
+    console.warn("⚠️ [Main] Error inicializando branding:", error)
+  }
+}, 500)
 
 // Configurar tema global
 setupGlobalTheme()
@@ -204,8 +218,10 @@ if (import.meta.env.DEV) {
   console.log("   - window.quickTestBranding() para chequeo rápido de branding")
 }
 
-// Montar la aplicación
+// 🎯 PRIORIDAD 5: Montar la aplicación DESPUÉS de toda la configuración
+console.log("🔍 [Main] Montando aplicación...")
 app.mount("#app")
+console.log("✅ [Main] Aplicación montada correctamente")
 
 // Debug stores after mounting
 setTimeout(() => {

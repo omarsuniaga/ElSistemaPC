@@ -1,16 +1,23 @@
 // src/utils/testing/brandingTests.ts
 
-import {useBrandingStore} from "@/stores/brandingStore"
-import {useBranding} from "@/composables/useBranding"
 import {logger} from "@/utils/logging/logger"
 
 /**
  * Suite de pruebas para el sistema de configuración de marca
  */
 export class BrandingTestSuite {
-  private brandingStore = useBrandingStore()
-  private brandingComposable = useBranding()
   private testResults: Array<{test: string; status: "PASS" | "FAIL"; details?: string}> = []
+
+  // Lazy initialization to avoid early store access
+  private async getBrandingStore() {
+    const {useBrandingStore} = await import("@/stores/brandingStore")
+    return useBrandingStore()
+  }
+
+  private async getBrandingComposable() {
+    const {useBranding} = await import("@/composables/useBranding")
+    return useBranding()
+  }
 
   /**
    * Ejecuta todas las pruebas del sistema de branding
@@ -26,8 +33,8 @@ export class BrandingTestSuite {
       await this.testStoreOperations()
 
       // Pruebas de composable
-      this.testComposableProperties()
-      this.testCSSVariables()
+      await this.testComposableProperties()
+      await this.testCSSVariables()
 
       // Pruebas de DOM
       this.testDOMApplication()
@@ -51,8 +58,10 @@ export class BrandingTestSuite {
     console.log("🔍 Probando inicialización del store...")
 
     try {
+      const brandingStore = await this.getBrandingStore()
+      
       // Verificar estado inicial
-      const initialConfig = this.brandingStore.config
+      const initialConfig = brandingStore.config
 
       if (initialConfig.appName) {
         this.addResult("Store inicializado", "PASS", `App name: ${initialConfig.appName}`)
@@ -61,11 +70,11 @@ export class BrandingTestSuite {
       }
 
       // Verificar propiedades computadas
-      if (this.brandingStore.appTitle) {
+      if (brandingStore.appTitle) {
         this.addResult(
           "Computed properties funcionando",
           "PASS",
-          `Title: ${this.brandingStore.appTitle}`
+          `Title: ${brandingStore.appTitle}`
         )
       } else {
         this.addResult("Computed properties funcionando", "FAIL", "appTitle no disponible")
@@ -82,6 +91,8 @@ export class BrandingTestSuite {
     console.log("🔍 Probando operaciones del store...")
 
     try {
+      const brandingStore = await this.getBrandingStore()
+      
       // Crear configuración de prueba
       const testConfig = {
         appName: "Test Academy",
@@ -97,17 +108,17 @@ export class BrandingTestSuite {
       }
 
       // Probar preview de cambios
-      this.brandingStore.previewChanges(testConfig)
+      brandingStore.previewChanges(testConfig)
 
-      if (this.brandingStore.config.appName === "Test Academy") {
+      if (brandingStore.config.appName === "Test Academy") {
         this.addResult("Preview de cambios", "PASS", "Configuración aplicada temporalmente")
       } else {
         this.addResult("Preview de cambios", "FAIL", "Preview no funcionó")
       }
 
       // Revertir cambios si hay función disponible
-      if (window.revertBrandingPreview) {
-        window.revertBrandingPreview()
+      if ((window as any).revertBrandingPreview) {
+        ;(window as any).revertBrandingPreview()
         this.addResult("Revertir preview", "PASS", "Cambios revertidos exitosamente")
       }
     } catch (error) {
@@ -118,11 +129,12 @@ export class BrandingTestSuite {
   /**
    * Prueba las propiedades del composable
    */
-  private testComposableProperties(): void {
+  private async testComposableProperties(): Promise<void> {
     console.log("🔍 Probando composable de branding...")
 
     try {
-      const {appTitle, appDescription, appLogo, brandColors} = this.brandingComposable
+      const brandingComposable = await this.getBrandingComposable()
+      const {appTitle, appDescription, appLogo, brandColors} = brandingComposable
 
       // Verificar propiedades reactivas
       if (appTitle.value) {
@@ -160,14 +172,16 @@ export class BrandingTestSuite {
   /**
    * Prueba las variables CSS
    */
-  private testCSSVariables(): void {
+  private async testCSSVariables(): Promise<void> {
     console.log("🔍 Probando variables CSS...")
 
     try {
-      const {cssVariables, getCSSVariables} = this.brandingComposable
+      const brandingComposable = await this.getBrandingComposable()
+      const brandingStore = await this.getBrandingStore()
+      const {cssVariables, getCSSVariables} = brandingComposable
 
       // Verificar variables CSS del store
-      const storeVariables = this.brandingStore.cssVariables
+      const storeVariables = brandingStore.cssVariables
       if (Object.keys(storeVariables).length > 0) {
         this.addResult(
           "CSS Variables (Store)",
@@ -179,7 +193,7 @@ export class BrandingTestSuite {
       }
 
       // Verificar variables CSS del composable
-      const composableVariables = cssVariables.value
+      const composableVariables = cssVariables
       if (Object.keys(composableVariables).length > 0) {
         this.addResult(
           "CSS Variables (Composable)",
@@ -280,7 +294,8 @@ export class BrandingTestSuite {
 
       // Probar exportación
       try {
-        this.brandingStore.exportConfig()
+        const brandingStore = await this.getBrandingStore()
+        brandingStore.exportConfig()
         this.addResult("Export Config", "PASS", "Descarga iniciada")
       } catch (error) {
         this.addResult("Export Config", "FAIL", `Error: ${error}`)
@@ -358,10 +373,11 @@ export class BrandingTestSuite {
 
     try {
       // Verificaciones básicas
-      const hasStore = !!this.brandingStore
-      const hasConfig = !!this.brandingStore.config
-      const hasAppName = !!this.brandingStore.config.appName
-      const hasColors = !!this.brandingStore.config.colors.primary
+      const brandingStore = await this.getBrandingStore()
+      const hasStore = !!brandingStore
+      const hasConfig = !!brandingStore.config
+      const hasAppName = !!brandingStore.config.appName
+      const hasColors = !!brandingStore.config.colors.primary
 
       const passed = hasStore && hasConfig && hasAppName && hasColors
 
@@ -384,6 +400,6 @@ export const brandingTests = new BrandingTestSuite()
 
 // Funciones globales para el navegador
 if (typeof window !== "undefined") {
-  ;(window as any).testBranding = () =>
-    (brandingTests.runAllTests()(window as any).quickTestBranding = () => brandingTests.quickTest())
+  ;(window as any).testBranding = () => brandingTests.runAllTests()
+  ;(window as any).quickTestBranding = () => brandingTests.quickTest()
 }

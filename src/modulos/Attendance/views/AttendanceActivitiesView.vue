@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import {ref, computed, onMounted} from "vue"
 import {useRoute, useRouter} from "vue-router"
-import {useAttendanceStore} from "../modulos/Attendance/store/attendance"
+import {useAttendanceStore} from "../store/attendance"
 import {format, parseISO, isValid} from "date-fns"
 import {es} from "date-fns/locale"
 

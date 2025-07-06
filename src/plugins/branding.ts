@@ -1,8 +1,6 @@
 // src/plugins/branding.ts
 
 import {App} from "vue"
-import {useBrandingStore} from "@/stores/brandingStore"
-import {useBranding} from "@/composables/useBranding"
 import {logger} from "@/utils/logging/logger"
 
 /**
@@ -10,30 +8,41 @@ import {logger} from "@/utils/logging/logger"
  */
 export const brandingPlugin = {
   install(app: App) {
-    // Inicializar store de branding
-    const brandingStore = useBrandingStore()
-    const {applyBranding} = useBranding()
+    // Defer store initialization until after Pinia is available
+    app.config.globalProperties.$initBranding = () => {
+      try {
+        // Dynamic import to avoid early store initialization
+        import("@/stores/brandingStore").then(({useBrandingStore}) => {
+          import("@/composables/useBranding").then(({useBranding}) => {
+            const brandingStore = useBrandingStore()
+            const {applyBranding} = useBranding()
 
-    // Cargar configuración al iniciar la aplicación
-    brandingStore
-      .loadBrandingConfig()
-      .then(() => {
-        logger.info("BRANDING_PLUGIN", "Configuración de marca cargada")
-        applyBranding()
-      })
-      .catch((error) => {
-        logger.warn("BRANDING_PLUGIN", "Error cargando configuración inicial de marca", error)
-        // Aplicar configuración por defecto
-        applyBranding()
-      })
+            // Cargar configuración al iniciar la aplicación
+            brandingStore
+              .loadBrandingConfig()
+              .then(() => {
+                logger.info("BRANDING_PLUGIN", "Configuración de marca cargada")
+                applyBranding()
+              })
+              .catch((error) => {
+                logger.warn("BRANDING_PLUGIN", "Error cargando configuración inicial de marca", error)
+                // Aplicar configuración por defecto
+                applyBranding()
+              })
 
-    // Hacer el store disponible globalmente
-    app.config.globalProperties.$branding = brandingStore
+            // Hacer el store disponible globalmente
+            app.config.globalProperties.$branding = brandingStore
 
-    // Proporcionar el store para composables
-    app.provide("brandingStore", brandingStore)
+            // Proporcionar el store para composables
+            app.provide("brandingStore", brandingStore)
+          })
+        })
+      } catch (error) {
+        logger.error("BRANDING_PLUGIN", "Error inicializando branding", error)
+      }
+    }
 
-    logger.info("BRANDING_PLUGIN", "Plugin de branding instalado")
+    logger.info("BRANDING_PLUGIN", "Plugin de branding registrado (inicialización diferida)")
   },
 }
 

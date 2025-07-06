@@ -1,7 +1,6 @@
 // Servicio de Notificaciones de Asistencia por WhatsApp
 // Sistema inteligente con tono adaptativo según comportamiento semanal
 
-import {db, functions} from "../firebase"
 import {
   collection,
   doc,
@@ -15,6 +14,25 @@ import {
   limit,
 } from "firebase/firestore"
 import {httpsCallable} from "firebase/functions"
+
+// Lazy loading de Firebase para evitar errores de inicialización
+let firebaseDb: any = null
+let firebaseFunctions: any = null
+
+const initializeFirebaseServices = async () => {
+  if (!firebaseDb || !firebaseFunctions) {
+    try {
+      const {db, functions} = await import("../firebase")
+      firebaseDb = db
+      firebaseFunctions = functions
+      console.log("✅ [AttendanceNotifications] Firebase servicios inicializados correctamente")
+    } catch (error) {
+      console.error("❌ [AttendanceNotifications] Error inicializando Firebase:", error)
+      throw error
+    }
+  }
+  return {db: firebaseDb, functions: firebaseFunctions}
+}
 
 // Interfaces
 interface Student {
@@ -63,28 +81,85 @@ const STUDENTS_COLLECTION = "ALUMNOS"
 const HISTORY_COLLECTION = "historial_mensajes_whatsapp"
 
 // Inicializar Firebase Functions con verificación
-const initializeFirebaseFunctions = () => {
-  if (!functions) {
-    console.error("❌ [AttendanceNotifications] Firebase Functions no está inicializado")
-    throw new Error("Firebase Functions no está disponible")
+const initializeFirebaseFunctions = async () => {
+  console.log("🔍 [AttendanceNotifications] Inicializando Firebase Functions...")
+  
+  try {
+    const {functions} = await initializeFirebaseServices()
+    if (!functions) {
+      console.error("❌ [AttendanceNotifications] Firebase Functions no está inicializado")
+      throw new Error("Firebase Functions no está disponible")
+    }
+    
+    console.log("✅ [AttendanceNotifications] Firebase Functions disponible, creando callable...")
+    
+    // Verificar que Firebase App esté inicializado antes de crear el callable
+    const {getApp} = await import("firebase/app")
+    try {
+      getApp() // Verificar que la app existe
+      const callable = httpsCallable(functions, "getStudentAttendanceSummary")
+      console.log("✅ [AttendanceNotifications] Callable creado exitosamente")
+      return callable
+    } catch (appError) {
+      console.error("❌ [AttendanceNotifications] Firebase App no está inicializado:", appError)
+      throw new Error("Firebase App no está disponible para Functions")
+    }
+  } catch (error) {
+    console.error("❌ [AttendanceNotifications] Error creando Firebase Functions callable:", error)
+    throw error
   }
-  return httpsCallable(functions, "getStudentAttendanceSummary")
 }
 
 // Función de verificación que se inicializa de manera lazy
 let getStudentAttendanceSummary: any = null
 
-const ensureFunctionsInitialized = () => {
+const ensureFunctionsInitialized = async () => {
   if (!getStudentAttendanceSummary) {
     try {
-      getStudentAttendanceSummary = initializeFirebaseFunctions()
+      console.log("🔍 [AttendanceNotifications] Inicializando Functions de manera lazy...")
+      getStudentAttendanceSummary = await initializeFirebaseFunctions()
       console.log("✅ [AttendanceNotifications] Firebase Functions inicializado correctamente")
     } catch (error) {
       console.error("❌ [AttendanceNotifications] Error inicializando Functions:", error)
-      throw error
+      // En lugar de lanzar error, devolver null para que el sistema continúe
+      console.warn("⚠️ [AttendanceNotifications] Continuando sin Functions - funcionalidad limitada")
+      return null
     }
   }
   return getStudentAttendanceSummary
+}
+
+// ==================== INICIALIZACIÓN DIFERIDA ====================
+
+/**
+ * Inicializa las notificaciones de asistencia después del login
+ * Esta función se puede llamar de manera segura después de que el usuario esté autenticado
+ */
+export async function initializeAttendanceNotificationsAfterLogin(): Promise<boolean> {
+  console.log("🔍 [AttendanceNotifications] Inicializando después del login...")
+  
+  try {
+    // Pre-cargar Functions de manera asíncrona
+    const functions = await ensureFunctionsInitialized()
+    
+    if (functions) {
+      console.log("✅ [AttendanceNotifications] Sistema de notificaciones listo")
+      return true
+    } else {
+      console.warn("⚠️ [AttendanceNotifications] Sistema iniciado con funcionalidad limitada")
+      return false
+    }
+  } catch (error) {
+    console.error("❌ [AttendanceNotifications] Error en inicialización post-login:", error)
+    return false
+  }
+}
+
+/**
+ * Verifica si el sistema de notificaciones está completamente disponible
+ */
+export function isAttendanceNotificationSystemReady(): boolean {
+  return getStudentAttendanceSummary !== null
 }
 
 /**
@@ -133,6 +208,7 @@ const MESSAGE_TEMPLATES: MessageTemplate[] = [
  */
 const getStudentData = async (studentId: string): Promise<Student | null> => {
   try {
+    const {db} = await initializeFirebaseServices()
     const studentDoc = await getDoc(doc(db, STUDENTS_COLLECTION, studentId))
     if (studentDoc.exists()) {
       const data = studentDoc.data()
@@ -221,6 +297,7 @@ const sendWhatsAppMessage = async (phoneNumber: string, message: string): Promis
  */
 const saveMessageHistory = async (historyData: NotificationHistory): Promise<string | null> => {
   try {
+    const {db} = await initializeFirebaseServices()
     const docRef = await addDoc(collection(db, HISTORY_COLLECTION), {
       ...historyData,
       timestamp: serverTimestamp(),
@@ -263,7 +340,9 @@ export const notifyLateStudents = async (
       const message = personalizeMessage(template.content, student)
 
       // Enviar a ambos padres si tienen números
-      const phoneNumbers = [student.tlf_madre, student.tlf_padre].filter(Boolean)
+      const phoneNumbers = [student.tlf_madre, student.tlf_padre].filter((phone): phone is string =>
+        Boolean(phone)
+      )
 
       for (const phoneNumber of phoneNumbers) {
         const sent = await sendWhatsAppMessage(phoneNumber, message)
@@ -326,7 +405,9 @@ export const notifyJustifiedAbsences = async (
       const message = personalizeMessage(template.content, student)
 
       // Enviar a ambos padres si tienen números
-      const phoneNumbers = [student.tlf_madre, student.tlf_padre].filter(Boolean)
+      const phoneNumbers = [student.tlf_madre, student.tlf_padre].filter((phone): phone is string =>
+        Boolean(phone)
+      )
 
       for (const phoneNumber of phoneNumbers) {
         const sent = await sendWhatsAppMessage(phoneNumber, message)
@@ -382,7 +463,14 @@ export const notifyUnexcusedAbsences = async (
       // Contar ausencias usando la Firebase Function
       let totalAbsences = 0
       try {
-        const getStudentSummary = ensureFunctionsInitialized()
+        const getStudentSummary = await ensureFunctionsInitialized()
+        
+        if (!getStudentSummary) {
+          console.warn(`⚠️ Functions no disponible para ${student.nombre}, saltando...`)
+          results.failed++
+          continue
+        }
+        
         const summaryResult = await getStudentSummary({studentId})
         const summary = summaryResult.data as {absentCount: number; lateCount: number}
         totalAbsences = summary.absentCount
@@ -415,7 +503,9 @@ export const notifyUnexcusedAbsences = async (
       const message = personalizeMessage(template.content, student)
 
       // Enviar a ambos padres si tienen números
-      const phoneNumbers = [student.tlf_madre, student.tlf_padre].filter(Boolean)
+      const phoneNumbers = [student.tlf_madre, student.tlf_padre].filter((phone): phone is string =>
+        Boolean(phone)
+      )
 
       for (const phoneNumber of phoneNumbers) {
         const sent = await sendWhatsAppMessage(phoneNumber, message)
@@ -458,6 +548,7 @@ export const getStudentMessageHistory = async (
   endDate?: string
 ): Promise<NotificationHistory[]> => {
   try {
+    const {db} = await initializeFirebaseServices()
     let historyQuery = query(
       collection(db, HISTORY_COLLECTION),
       where("studentId", "==", studentId),
@@ -497,6 +588,7 @@ export const getMessageStatistics = async (
   endDate: string
 ): Promise<{type: string; count: number}[]> => {
   try {
+    const {db} = await initializeFirebaseServices()
     const statsQuery = query(
       collection(db, HISTORY_COLLECTION),
       where("timestamp", ">=", new Date(startDate)),

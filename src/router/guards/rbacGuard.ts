@@ -2,13 +2,13 @@
 
 import {NavigationGuardNext, RouteLocationNormalized} from "vue-router"
 
-import {useAuthStore} from "@/stores/auth"
-
 export async function rbacGuard(
   to: RouteLocationNormalized,
   _from: RouteLocationNormalized,
   next: NavigationGuardNext
 ) {
+  // Lazy import to avoid early store initialization
+  const {useAuthStore} = await import("@/stores/auth")
   const authStore = useAuthStore()
   const user = authStore.user
   // Si no hay usuario autenticado, redirigir al login

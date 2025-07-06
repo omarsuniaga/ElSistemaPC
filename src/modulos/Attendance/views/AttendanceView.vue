@@ -320,20 +320,20 @@
 import "@vuepic/vue-datepicker/dist/main.css"
 
 // Componentes
-import AttendanceList from "../modulos/Attendance/components/AttendanceList.vue"
-import AttendanceReportModal from "../modulos/Attendance/components/AttendanceReportModal.vue"
-import AttendanceObservation from "../modulos/Attendance/components/AttendanceObservation.vue"
-import AttendanceAnalytics from "../modulos/Attendance/components/AttendanceAnalytics.vue"
-import AttendanceTrends from "../modulos/Attendance/components/AttendanceTrends.vue"
-import AttendanceExportModal from "../modulos/Attendance/components/AttendanceExportModal.vue"
-import Calendar from "../components/Calendar.vue"
-import DateClassSelector from "../modulos/Classes/components/DateClassSelector.vue"
-import JustifiedAbsenceModal from "../components/JustifiedAbsenceModal.vue"
-import EmergencyClassModal from "../modulos/Attendance/components/EmergencyClassModal.vue"
-import ClassesModal from "../modulos/Attendance/components/ClassesModal.vue"
+import AttendanceList from "../components/AttendanceList.vue"
+import AttendanceReportModal from "../components/AttendanceReportModal.vue"
+import AttendanceObservation from "../components/AttendanceObservation.vue"
+import AttendanceAnalytics from "../components/AttendanceAnalytics.vue"
+import AttendanceTrends from "../components/AttendanceTrends.vue"
+import AttendanceExportModal from "../components/AttendanceExportModal.vue"
+import Calendar from "../../../components/Calendar.vue"
+import DateClassSelector from "../../Classes/components/DateClassSelector.vue"
+import JustifiedAbsenceModal from "../../../components/JustifiedAbsenceModal.vue"
+import EmergencyClassModal from "../components/EmergencyClassModal.vue"
+import ClassesModal from "../components/ClassesModal.vue"
 
 // ✨ Composable principal que reemplaza toda la lógica anterior
-import {useAttendanceManager} from "../composables/attendance/useAttendanceManager"
+import {useAttendanceManager} from "../../../composables/attendance/useAttendanceManager"
 import {format, parseISO} from "date-fns"
 
 // Props

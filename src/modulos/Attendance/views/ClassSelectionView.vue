@@ -18,9 +18,9 @@
 <script setup lang="ts">
 import {ref, computed} from "vue"
 import {useRouter, useRoute} from "vue-router"
-import DateClassSelector from "../modulos/Classes/components/DateClassSelector.vue"
-import {useAttendanceStore} from "../modulos/Attendance/store/attendance"
-import {getCurrentDate} from "../utils/dateUtils"
+import DateClassSelector from "../../Classes/components/DateClassSelector.vue"
+import {useAttendanceStore} from "../store/attendance"
+import {getCurrentDate} from "../../../utils/dateUtils"
 
 const router = useRouter()
 const route = useRoute()

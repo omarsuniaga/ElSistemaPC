@@ -1,8 +1,8 @@
-import {db, storage, auth} from "./config"
+import {db, storage, auth, functions} from "./config"
 import {getApp} from "firebase/app"
 
 // Re-exportar instancias de Firebase
-export {db, storage, auth}
+export {db, storage, auth, functions}
 export {default as app} from "./config"
 
 /**
@@ -14,7 +14,7 @@ export function isFirebaseReady(): boolean {
     const app = getApp()
     
     // Verificar que las instancias de servicio estén disponibles
-    if (!db || !auth || !storage) {
+    if (!db || !auth || !storage || !functions) {
       console.warn("❌ Una o más instancias de Firebase no están disponibles")
       return false
     }

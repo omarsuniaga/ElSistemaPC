@@ -1,6 +1,5 @@
 // src/router/index.ts
 import {createRouter, createWebHistory, RouteRecordRaw} from "vue-router"
-import {useAuthStore} from "../stores/auth"
 import {rbacGuard} from "./guards/rbacGuard"
 import {navigationGuard} from "../guards/navigationGuard"
 import {roleBasedRedirectGuard} from "./guards/roleBasedRedirect"
@@ -10,6 +9,8 @@ import montajeRoutes from "../modulos/Montaje/router"
 import {superusuarioRoutes} from "../modulos/Superusuario/router"
 import {performanceRoutes} from "../modulos/Performance/router"
 import adminRoutes from "../modulos/Admin/router"
+import classesRoutes from "../modulos/Classes/router"
+import {attendanceRoutes} from "../modulos/Attendance/router"
 
 const routes: Array<RouteRecordRaw> = [
   // Rutas públicas (sin requerir autenticación)
@@ -151,29 +152,6 @@ const routes: Array<RouteRecordRaw> = [
     },
   },
   {
-    path: "/teacher/class/:id",
-    name: "TeacherClassDetail",
-    component: () => import("../modulos/Teachers/view/teacher/ClassDetailView.vue"),
-    props: true,
-    meta: {
-      requiresAuth: true,
-      requiresRBAC: true,
-      moduleKey: "classes",
-      permission: "teacher_view_detail",
-    },
-  },
-  {
-    path: "/teacher/classes",
-    name: "TeacherClasses",
-    component: () => import("../modulos/Classes/components/TeacherClassesDashboard.vue"),
-    meta: {
-      requiresAuth: true,
-      requiresRBAC: true,
-      moduleKey: "classes",
-      permission: "teacher_view",
-    },
-  },
-  {
     path: "/teacher/notifications",
     name: "TeacherNotifications",
     component: () => import("../modulos/Teachers/views/TeacherNotifications.vue"),
@@ -200,9 +178,9 @@ const routes: Array<RouteRecordRaw> = [
     },
   },
   {
-    path: "/attendance/:date(\\d{8})",
+    path: "/attendance/:date(\d{8})",
     name: "AttendanceActivities",
-    component: () => import("../views/AttendanceActivitiesView.vue"),
+    component: () => import("../modulos/Attendance/views/AttendanceActivitiesView.vue"),
     meta: {
       requiresAuth: true,
       requiresRBAC: true,
@@ -211,9 +189,9 @@ const routes: Array<RouteRecordRaw> = [
     },
   },
   {
-    path: "/attendance/:date(\\d{8})/:classId",
+    path: "/attendance/:date(\d{8})/:classId",
     name: "AttendanceDetail",
-    component: () => import("../views/AttendanceView.vue"),
+    component: () => import("../modulos/Attendance/views/AttendanceView.vue"),
     props: true,
     meta: {
       requiresAuth: true,
@@ -225,7 +203,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/attendance/calendar",
     name: "AttendanceCalendar",
-    component: () => import("../views/ClassSelectionView.vue"),
+    component: () => import("../modulos/Attendance/views/ClassSelectionView.vue"),
     meta: {
       requiresAuth: true,
       requiresRBAC: true,
@@ -236,7 +214,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/attendance/informe",
     name: "AttendanceReport",
-    component: () => import("../components/TeacherInformeAttendance.vue"),
+    component: () => import("../components/reports/attendance/TeacherInformeAttendance.vue"),
     props: (route) => ({teacherId: route.query.teacherId}),
     meta: {
       requiresAuth: true,
@@ -248,7 +226,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/teacher/attendance/informe",
     name: "TeacherInformeAttendance",
-    component: () => import("../components/TeacherInformeAttendance.vue"),
+    component: () => import("../components/reports/attendance/TeacherInformeAttendance.vue"),
     meta: {
       requiresAuth: true,
       requiresRBAC: true,
@@ -306,7 +284,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/admin/asistencia-diaria",
     name: "ReporteAsistenciaDiaria",
-    component: () => import("../views/ReporteAsistenciaDiaria.vue"),
+    component: () => import("../modulos/Attendance/views/ReporteAsistenciaDiaria.vue"),
     meta: {
       requiresAuth: true,
       requiresRBAC: true,
@@ -394,54 +372,6 @@ const routes: Array<RouteRecordRaw> = [
       requiresRBAC: true,
       moduleKey: "students",
       permission: "edit",
-    },
-  },
-
-  // Rutas de clases (RBAC)
-  {
-    path: "/classes",
-    name: "Classes",
-    component: () => import("../views/ClassesView.vue"),
-    meta: {
-      requiresAuth: true,
-      requiresRBAC: true,
-      moduleKey: "classes",
-      permission: "view_all",
-    },
-  },
-  {
-    path: "/classes/:id",
-    name: "ClassDetail",
-    component: () => import("../modulos/Classes/view/ClassDetailView.vue"),
-    props: true,
-    meta: {
-      requiresAuth: true,
-      requiresRBAC: true,
-      moduleKey: "classes",
-      permission: "view_detail",
-    },
-  },
-  {
-    path: "/classes/:id/edit",
-    name: "EditClass",
-    component: () => import("../modulos/Classes/view/ClassDetailView.vue"),
-    props: true,
-    meta: {
-      requiresAuth: true,
-      requiresRBAC: true,
-      moduleKey: "classes",
-      permission: "edit",
-    },
-  },
-  {
-    path: "/student-schedule-demo",
-    name: "StudentScheduleDemo",
-    component: () => import("../modulos/Classes/components/StudentScheduleDemo.vue"),
-    meta: {
-      requiresAuth: true,
-      requiresRBAC: true,
-      moduleKey: "classes",
-      permission: "view_schedule",
     },
   },
 
@@ -557,13 +487,15 @@ const routes: Array<RouteRecordRaw> = [
     },
   },
 
-  // Incluir rutas de módulos
+  // Incluir rutas de módulos especializados
   ...instrumentsRoutes,
   ...studentRoutes,
   ...montajeRoutes,
   ...superusuarioRoutes,
   ...performanceRoutes,
+  ...attendanceRoutes,
   ...adminRoutes,
+  ...classesRoutes,
 
   // Rutas de testing y desarrollo
   {
@@ -597,6 +529,8 @@ const router = createRouter({
 
 // Guard de autenticación y RBAC
 router.beforeEach(async (to, from, next) => {
+  // Lazy import store to avoid early initialization
+  const {useAuthStore} = await import("@/stores/auth")
   const authStore = useAuthStore()
 
   console.log("🛡️ [Router] Navegando a:", to.path)

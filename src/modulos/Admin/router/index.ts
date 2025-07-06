@@ -25,7 +25,7 @@ const adminRoutes: RouteRecordRaw[] = [
   {
     path: "/admin/reporteAsistenciaDiaria",
     name: "ReporteAsistencia",
-    component: () => import("@/views/ReporteAsistenciaDiaria.vue"),
+    component: () => import("../../Attendance/views/ReporteAsistenciaDiaria.vue"),
     meta: {
       title: "Reporte de Asistencias Diarias",
       requiresAuth: true,

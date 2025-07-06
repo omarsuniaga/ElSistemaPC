@@ -1,5 +1,5 @@
 <template>
-  <div class="teachers-admin-view p-4 mb-16 lg:p-6 bg-gray-50 dark:bg-gray-900 min-h-screen mb-16">
+  <div class="teachers-admin-view p-4 lg:p-6 bg-gray-50 dark:bg-gray-900 min-h-screen mb-16">
     <!-- Dashboard Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
       <div>
@@ -312,7 +312,7 @@
                   @click="toggleTeacherStatus(teacher)"
                 >
                   <ArrowPathIcon class="mr-2 h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  {{ teacher.status === "active" ? "Desactivar" : "Activar" }} maestro
+                  {{ teacher.status === "activo" ? "Desactivar" : "Activar" }} maestro
                 </button>
               </div>
             </div>
@@ -490,7 +490,6 @@ import {
   safeStoreAccess,
   safeMath,
   isValidArray,
-  safeFind,
 } from "../../../../utils/safeAccess"
 import {
   UserIcon,
@@ -527,15 +526,15 @@ const searchQuery = ref("")
 const filterInstrument = ref("")
 const filterStatus = ref("all")
 const showTeacherForm = ref(false)
-const currentTeacher = ref(null)
+const currentTeacher = ref<any>(null)
 const showDeleteConfirm = ref(false)
-const teacherToDelete = ref(null)
+const teacherToDelete = ref<any>(null)
 const showClassesManager = ref(false)
-const selectedTeacher = ref(null)
+const selectedTeacher = ref<any>(null)
 const currentPage = ref(1)
 const pageSize = ref(6)
-const activeActionMenu = ref(null)
-const clickOutsideListener = ref(null)
+const activeActionMenu = ref<string | null>(null)
+const clickOutsideListener = ref<EventListener | null>(null)
 
 // Computed properties
 const teachers = computed(() => teachersStore.teachers)
@@ -549,25 +548,22 @@ const filteredTeachers = computed(() => {
     result = result.filter(
       (teacher) =>
         (teacher.name && teacher.name.toLowerCase().includes(query)) ||
-        (teacher.lastName && teacher.lastName.toLowerCase().includes(query)) ||
         (teacher.email && teacher.email.toLowerCase().includes(query))
     )
   }
 
   // Filter by instrument
   if (filterInstrument.value) {
-    result = result.filter((teacher) => teacher.instrumentId === filterInstrument.value)
+    result = result.filter((teacher) => teacher.specialties.includes(filterInstrument.value))
   }
 
   // Filter by status
   if (filterStatus.value !== "all") {
     result = result.filter((teacher) => {
       if (filterStatus.value === "active") {
-        return (
-          teacher.status === "active" || teacher.status === undefined || teacher.active !== false
-        )
+        return teacher.status === "activo" || teacher.status === undefined
       } else {
-        return teacher.status === "inactive" || teacher.active === false
+        return teacher.status === "inactivo"
       }
     })
   }
@@ -666,11 +662,11 @@ function getTotalClassesSafe() {
 }
 
 // Legacy function for compatibility
-function getTotalClasses() {
+function _getTotalClasses() {
   return getTotalClassesSafe()
 }
 
-function toggleActionMenu(teacherId) {
+function toggleActionMenu(teacherId: string) {
   // Close any open menu first
   if (activeActionMenu.value && activeActionMenu.value !== teacherId) {
     activeActionMenu.value = null
@@ -682,13 +678,19 @@ function toggleActionMenu(teacherId) {
   // Add click outside listener
   if (activeActionMenu.value) {
     setTimeout(() => {
-      clickOutsideListener.value = (event) => {
-        if (!event.target.closest(".action-menu-container")) {
+      clickOutsideListener.value = (event: Event) => {
+        const target = event.target as HTMLElement
+        if (!target.closest(".action-menu-container")) {
           activeActionMenu.value = null
-          document.removeEventListener("click", clickOutsideListener.value)
+          if (clickOutsideListener.value) {
+            document.removeEventListener("click", clickOutsideListener.value)
+            clickOutsideListener.value = null
+          }
         }
       }
-      document.addEventListener("click", clickOutsideListener.value)
+      if (clickOutsideListener.value) {
+        document.addEventListener("click", clickOutsideListener.value)
+      }
     }, 10)
   }
 }
@@ -733,13 +735,13 @@ function getTeacherStudentsCount(teacherId: string): number {
   }
 }
 
-function getStatusText(status) {
+function getStatusText(status: any): string {
   switch (status) {
-    case "active":
+    case "activo":
       return "Activo"
-    case "inactive":
+    case "inactivo":
       return "Inactivo"
-    case "pending":
+    case "pendiente":
       return "Pendiente"
     default:
       return status ? status : "Activo"
@@ -755,7 +757,7 @@ function getSpecialtiesArraySafe(specialties: any): string[] {
 }
 
 // Legacy function for compatibility
-function getSpecialtiesArray(specialties: any) {
+function _getSpecialtiesArray(specialties: any) {
   return getSpecialtiesArraySafe(specialties)
 }
 
@@ -771,13 +773,13 @@ function nextPage() {
   }
 }
 
-function openTeacherForm(teacher) {
+function openTeacherForm(teacher: any = null) {
   currentTeacher.value = teacher
   showTeacherForm.value = true
   activeActionMenu.value = null
 }
 
-function saveTeacher(teacherData) {
+function saveTeacher(teacherData: any) {
   try {
     if (currentTeacher.value) {
       // Update existing teacher
@@ -791,7 +793,7 @@ function saveTeacher(teacherData) {
       })
     } else {
       // Create new teacher
-      teachersStore.addTeacher(teacherData)
+      teachersStore.createTeacher(teacherData)
       toast({
         title: "Éxito",
         description: "Maestro creado correctamente",
@@ -809,7 +811,7 @@ function saveTeacher(teacherData) {
   }
 }
 
-function confirmDeleteTeacher(teacher) {
+function confirmDeleteTeacher(teacher: any) {
   teacherToDelete.value = teacher
   showDeleteConfirm.value = true
   activeActionMenu.value = null
@@ -838,12 +840,12 @@ function deleteTeacher() {
   }
 }
 
-function viewTeacherSchedule(teacherId) {
+function viewTeacherSchedule(teacherId: string) {
   router.push(`/teachers/${teacherId}/schedule`)
   activeActionMenu.value = null
 }
 
-function viewTeacherAttendance(teacherId) {
+function viewTeacherAttendance(teacherId: string) {
   // Redirigir al componente TeacherInformeAttendance con el teacherId
   router.push({
     path: "/attendance/informe",
@@ -852,7 +854,7 @@ function viewTeacherAttendance(teacherId) {
   activeActionMenu.value = null
 }
 
-function manageTeacherClasses(teacher) {
+function manageTeacherClasses(teacher: any) {
   selectedTeacher.value = teacher
   showClassesManager.value = true
   activeActionMenu.value = null
@@ -870,19 +872,18 @@ function manageTeacherClasses(teacher) {
   }
 }
 
-function toggleTeacherStatus(teacher) {
-  const newStatus = teacher.status === "active" ? "inactive" : "active"
+function toggleTeacherStatus(teacher: any) {
+  const newStatus = teacher.status === "activo" ? "inactivo" : "activo"
 
   try {
     teachersStore.updateTeacher(teacher.id, {
       ...teacher,
       status: newStatus,
-      active: newStatus === "active",
     })
 
     toast({
       title: "Estado actualizado",
-      description: `Maestro ${newStatus === "active" ? "activado" : "desactivado"} correctamente`,
+      description: `Maestro ${newStatus === "activo" ? "activado" : "desactivado"} correctamente`,
       variant: "default",
     })
   } catch (error) {
@@ -912,8 +913,9 @@ onMounted(async () => {
   }
 
   // Close action menu when clicking outside
-  document.addEventListener("click", (event) => {
-    if (activeActionMenu.value && !event.target.closest(".action-menu-container")) {
+  document.addEventListener("click", (event: Event) => {
+    const target = event.target as HTMLElement
+    if (activeActionMenu.value && !target?.closest?.(".action-menu-container")) {
       activeActionMenu.value = null
     }
   })

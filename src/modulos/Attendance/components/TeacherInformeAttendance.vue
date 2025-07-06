@@ -537,13 +537,13 @@ import {
 } from "@heroicons/vue/24/outline"
 
 // Stores
-import {useTeachersStore} from "@/modulos/Teachers/store/teachers"
-import {useClassesStore} from "@/modulos/Classes/store/classes"
-import {useStudentsStore} from "@/modulos/Students/store/students"
-import {useAttendanceStore} from "@/modulos/Attendance/store/attendance"
+import {useTeachersStore} from "../../Teachers/store/teachers";
+import {useClassesStore} from "../../Classes/store/classes";
+import {useStudentsStore} from "../../Students/store/students";
+import {useAttendanceStore} from "../store/attendance";
 
 // Firebase
-import {db} from "@/firebase"
+import {db} from "../../../firebase";
 import {collection, doc, setDoc} from "firebase/firestore"
 
 // Types
@@ -993,7 +993,7 @@ async function processAllAttendanceData(attendanceRecords: any[], teacherClasses
 // Función para cargar todas las asistencias de estudiantes SOLO cuando se expanda una clase (OBSOLETA - mantenida para compatibilidad)
 async function loadStudentAttendancesForClass(classId: string) {
   console.log(`ℹ️ loadStudentAttendancesForClass(${classId}) - FUNCIÓN OBSOLETA`)
-  console.log(`� Los datos ya están cargados en memoria. No es necesario cargar individualmente.`)
+  console.log(` Los datos ya están cargados en memoria. No es necesario cargar individualmente.`)
 
   // Esta función ya no es necesaria porque todos los datos se cargan al inicio
   // Los datos ya están disponibles en studentAttendances.value y attendancePercentages.value
@@ -1074,7 +1074,7 @@ async function showObservationsModal(classId: string, studentId?: string) {
     // Obtener observaciones de la clase
     const observations = await attendanceStore.fetchObservationsForClass(classId)
 
-    // Filtrar por rango de fechas si est� definido
+    // Filtrar por rango de fechas si est definido
     let filteredObservations = observations
     if (dateFrom.value && dateTo.value) {
       filteredObservations = observations.filter((obs) => {

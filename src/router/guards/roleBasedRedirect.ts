@@ -1,7 +1,6 @@
 // src/router/guards/roleBasedRedirect.ts
 
 import {NavigationGuardNext, RouteLocationNormalized} from "vue-router"
-import {useAuthStore} from "@/stores/auth"
 
 /**
  * Mapeo de rutas generales a rutas específicas de admin
@@ -49,6 +48,8 @@ export async function roleBasedRedirectGuard(
   from: RouteLocationNormalized,
   next: NavigationGuardNext
 ): Promise<boolean> {
+  // Lazy import to avoid early store initialization
+  const {useAuthStore} = await import("@/stores/auth")
   const authStore = useAuthStore()
   const user = authStore.user
 

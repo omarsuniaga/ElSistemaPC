@@ -1,18 +1,18 @@
 si<!-- views/ClassesView.vue -->
 <script setup lang="ts">
 import {ref, computed, onMounted, watch, onBeforeMount} from "vue"
-import {useClassesStore} from "../modulos/Classes/store/classes"
-import {useTeachersStore} from "../modulos/Teachers/store/teachers"
-import {useStudentsStore} from "../modulos/Students/store/students"
-import {useInstrumentoStore} from "../modulos/Instruments/store/instrumento"
-import type {Student} from "../modulos/Students/types/student"
-import Modal from "../components/shared/Modal.vue"
-import ConfirmModal from "../components/ConfirmModal.vue"
-import ClassFilters from "../modulos/Classes/components/ClassFilters.vue"
-import ClassForm from "../modulos/Classes/components/ClassForm.vue"
-import StudentManagement from "../modulos/Students/components/StudentManagement.vue"
-import StudentSelector from "../modulos/Students/components/StudentSelector.vue"
-import ClassesDrawer from "../modulos/Classes/components/ClassesDrawer.vue"
+import {useClassesStore} from "../store/classes"
+import {useTeachersStore} from "../../../stores/teachersUnified"
+import {useStudentsStore} from "../../Students/store/students"
+import {useInstrumentoStore} from "../../Instruments/store/instrumento"
+import type {Student} from "../../Students/types/student"
+import Modal from "../../../components/shared/Modal.vue"
+import ConfirmModal from "../../../components/ConfirmModal.vue"
+import ClassFilters from "../components/ClassFilters.vue"
+import ClassForm from "../components/ClassForm.vue"
+import StudentManagement from "../../Students/components/StudentManagement.vue"
+import StudentSelector from "../../Students/components/StudentSelector.vue"
+import ClassesDrawer from "../components/ClassesDrawer.vue"
 import {
   PlusCircleIcon,
   InformationCircleIcon,

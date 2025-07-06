@@ -251,7 +251,7 @@
           <div
             class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
           >
-            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div class="p-6 border-b border-200 dark:border-gray-700">
               <h3 class="text-lg font-medium text-gray-900 dark:text-white flex items-center">
                 <span class="text-yellow-500 mr-2">⏰</span>
                 Estudiantes con Tardanza
@@ -532,15 +532,15 @@ import {
 } from "@heroicons/vue/24/outline"
 
 // Componentes
-import WhatsAppNotificacionesModal from "@/components/WhatsAppNotificacionesModal.vue"
+import WhatsAppNotificacionesModal from "../../../components/WhatsAppNotificacionesModal.vue"
 
 // Servicios
-import {getDailyAttendanceReport} from "../services/dailyAttendanceService"
+import {getDailyAttendanceReport} from "../../../services/dailyAttendanceService";
 import {
   notifyLateStudents as sendLateNotifications,
   notifyJustifiedAbsences as sendJustifiedNotifications,
   notifyUnexcusedAbsences as sendUnexcusedNotifications,
-} from "../services/attendanceNotifications"
+} from "../../../services/attendanceNotifications"
 
 // Interfaces y tipos
 interface AttendanceRecord {

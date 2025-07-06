@@ -7,11 +7,6 @@ import {
   createUserWithEmailAndPassword,
 } from "firebase/auth"
 import {doc, getDoc, setDoc} from "firebase/firestore"
-import {useStudentsStore} from "@/modulos/Students/store/students"
-import {useTeachersStore} from "@/modulos/Teachers/store/teachers"
-import {useClassesStore} from "@/modulos/Classes/store/classes"
-import {useAttendanceStore} from "@/modulos/Attendance/store/attendance"
-import {useScheduleStore} from "@/modulos/Schedules/store/schedule"
 import {getThemePreference} from "@/modulos/Users/service/userPreferences"
 
 // Interfaz para el objeto de usuario
@@ -49,7 +44,8 @@ export const useAuthStore = defineStore("auth", {
 
   getters: {
     // Retorna true si hay un usuario autenticado
-    isLoggedIn: (state) => !!state.user, // Computed properties para roles
+    isLoggedIn: (state) => !!state.user,
+    // Computed properties para roles
     isDirector: (state) => state.user?.role === "Director",
     isTeacher: (state) => state.user?.role === "Maestro",
     isAdmin: (state) => state.user?.role === "Admin",
@@ -59,7 +55,8 @@ export const useAuthStore = defineStore("auth", {
     // Permisos para gestionar módulos
     canManageStudents: (state) => ["Director", "Maestro"].includes(state.user?.role || ""),
     canManageAttendance: (state) => ["Director", "Maestro"].includes(state.user?.role || ""),
-    canManageSchedule: (state) => ["Director", "Maestro"].includes(state.user?.role || ""), // Función para validar acceso a módulos específicos
+    canManageSchedule: (state) => ["Director", "Maestro"].includes(state.user?.role || ""),
+    // Función para validar acceso a módulos específicos
     canAccessModule: (state) => (moduleName: string) => {
       const roleModules = {
         Maestro: ["home", "attendance", "schedule", "students"],
@@ -95,7 +92,6 @@ export const useAuthStore = defineStore("auth", {
   actions: {
     /**
      * Inicia sesión autenticando al usuario y obteniendo su perfil desde Firestore.
-     * Si no existe el perfil, se crea uno (por ejemplo, para el director).
      */
     async login(email: string, password: string) {
       this.isLoading = true
@@ -106,11 +102,9 @@ export const useAuthStore = defineStore("auth", {
         const userDoc = await getDoc(userDocRef)
 
         if (!userDoc.exists()) {
-          // Si el usuario no tiene perfil en la base de datos, no se le permite el acceso
           throw new Error("No se encontró el perfil del usuario")
         } else {
           const userData = userDoc.data()
-          // Se asigna el perfil completo al estado
           this.user = {
             uid: userCredential.user.uid,
             email: userCredential.user.email,
@@ -148,14 +142,15 @@ export const useAuthStore = defineStore("auth", {
               type: "success",
             })
           }
+
           // Actualizar el último login en Firestore
           await setDoc(userDocRef, {lastLogin: new Date().toISOString()}, {merge: true})
-          
+
           // Crear notificación de login para profesores
           if (userData.role === "Maestro") {
             this.createTeacherLoginNotification(userCredential.user.uid)
           }
-          
+
           // Inicializar datos de otros módulos
           await this.initializeData()
 
@@ -179,22 +174,24 @@ export const useAuthStore = defineStore("auth", {
         }
       } catch (error: any) {
         this.error = this.parseAuthError(error)
-        throw new Error(this.error)
+        throw new Error(this.error || "Error de autenticación")
       } finally {
         this.isLoading = false
       }
-    } /**
+    },
+
+    /**
      * Cierra la sesión del usuario.
-     * Limpia el estado del usuario y reinicia los stores de otros módulos.
-     */,
+     */
     async signOut() {
       try {
         await firebaseSignOut(auth)
         this.user = null
         this.dataInitialized = false
 
-        // Reinicia otros stores con manejo de errores individual
+        // Reinicia otros stores con importaciones dinámicas
         try {
+          const {useStudentsStore} = await import("@/modulos/Students/store/students")
           const studentsStore = useStudentsStore()
           if (studentsStore.$reset) {
             studentsStore.$reset()
@@ -204,6 +201,7 @@ export const useAuthStore = defineStore("auth", {
         }
 
         try {
+          const {useClassesStore} = await import("@/modulos/Classes/store/classes")
           const classesStore = useClassesStore()
           if (classesStore.$reset) {
             classesStore.$reset()
@@ -213,6 +211,7 @@ export const useAuthStore = defineStore("auth", {
         }
 
         try {
+          const {useAttendanceStore} = await import("@/modulos/Attendance/store/attendance")
           const attendanceStore = useAttendanceStore()
           if (attendanceStore.$reset) {
             attendanceStore.$reset()
@@ -228,7 +227,6 @@ export const useAuthStore = defineStore("auth", {
 
     /**
      * Registra un nuevo usuario en Firebase y crea su perfil en Firestore.
-     * Por defecto se registra como Maestro y en estado pendiente.
      */
     async register(email: string, password: string, userData?: Record<string, any>) {
       this.isLoading = true
@@ -245,7 +243,7 @@ export const useAuthStore = defineStore("auth", {
           profileCompleted: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          isDark: false, // Tema claro por defecto
+          isDark: false,
         })
         return {
           message: "Registro exitoso. Por favor completa tu perfil para continuar.",
@@ -253,7 +251,7 @@ export const useAuthStore = defineStore("auth", {
         }
       } catch (error: any) {
         this.error = this.parseAuthError(error)
-        throw new Error(this.error)
+        throw new Error(this.error || "Error de registro")
       } finally {
         this.isLoading = false
       }
@@ -261,7 +259,6 @@ export const useAuthStore = defineStore("auth", {
 
     /**
      * Verifica la autenticación usando onAuthStateChanged.
-     * Se evita la duplicación de llamadas mediante authCheckPromise.
      */
     async checkAuth() {
       if (authCheckPromise) {
@@ -283,12 +280,9 @@ export const useAuthStore = defineStore("auth", {
                   try {
                     const themePreference = await getThemePreference(user.uid)
                     if (themePreference !== null) {
-                      // Si existe una preferencia explícita, actualizar el usuario con ella
                       this.user.isDark = themePreference
                     } else if (this.user.isDark === undefined) {
-                      // Si no hay preferencia explícita ni en el perfil, usar claro por defecto
                       this.user.isDark = false
-                      // Actualizar el perfil con el valor predeterminado
                       await setDoc(doc(db, "USERS", user.uid), {isDark: false}, {merge: true})
                     }
                   } catch (error) {
@@ -299,14 +293,13 @@ export const useAuthStore = defineStore("auth", {
                   await this.signOut()
                 }
               } else {
-                console.error("🔐 Usuario sin perfil y no es director, cerrando sesión")
+                console.error("🔐 Usuario sin perfil, cerrando sesión")
                 await this.signOut()
               }
             } catch (error) {
               console.error("🔐 Error al obtener perfil:", error)
             }
           } else {
-            console.error("🔐 Debes ser miembro de el sistema punta cana, para obtener acceso")
             this.user = null
           }
           this.isInitialized = true
@@ -322,17 +315,33 @@ export const useAuthStore = defineStore("auth", {
     },
 
     /**
-     * Inicializa datos de otros módulos (estudiantes, maestros, clases, asistencias).
-     * Se llama después de un login exitoso.
+     * Inicializa datos de otros módulos.
      */
     async initializeData() {
       if (this.dataInitialized) return
-      const studentsStore = useStudentsStore()
-      const teachersStore = useTeachersStore()
-      const classesStore = useClassesStore()
-      const attendanceStore = useAttendanceStore()
-      const scheduleStore = useScheduleStore()
+
       try {
+        // Importaciones dinámicas para evitar dependencias circulares
+        const [
+          {useStudentsStore},
+          {useTeachersStore},
+          {useClassesStore},
+          {useAttendanceStore},
+          {useScheduleStore},
+        ] = await Promise.all([
+          import("@/modulos/Students/store/students"),
+          import("@/modulos/Teachers/store/teachers"),
+          import("@/modulos/Classes/store/classes"),
+          import("@/modulos/Attendance/store/attendance"),
+          import("@/modulos/Schedules/store/schedule"),
+        ])
+
+        const studentsStore = useStudentsStore()
+        const teachersStore = useTeachersStore()
+        const classesStore = useClassesStore()
+        const attendanceStore = useAttendanceStore()
+        const scheduleStore = useScheduleStore()
+
         await Promise.all([
           studentsStore.fetchStudents(),
           teachersStore.fetchTeachers(),
@@ -340,15 +349,15 @@ export const useAuthStore = defineStore("auth", {
           attendanceStore.fetchAttendanceDocuments(),
           scheduleStore.fetchAllSchedules(),
         ])
+
         this.dataInitialized = true
       } catch (error) {
         console.error("Error initializing data:", error)
-        // No marcamos como inicializado para permitir reintentos
       }
     },
 
     /**
-     * Parsea y traduce códigos de error de Firebase en mensajes amigables.
+     * Parsea errores de Firebase.
      */
     parseAuthError(error: any): string {
       const errorCode = error.code
@@ -371,45 +380,61 @@ export const useAuthStore = defineStore("auth", {
       }
     },
 
-    // Inicializar sistema de notificaciones de asistencia
+    /**
+     * Inicializar sistema de notificaciones de asistencia.
+     */
     async initializeAttendanceNotifications() {
       try {
-        console.log(
-          "🔔 Inicializando sistema de notificaciones de asistencia para usuario administrativo..."
-        )
-
-        // Importar dinámicamente para evitar dependencias circulares
-        const {default: notificationSystem} = await import(
-          "@/services/attendanceNotificationManager"
-        )
-
-        // Esperar un poco para asegurar que Firebase esté completamente listo
+        console.log("🔔 Inicializando sistema de notificaciones de asistencia...")
+        
+        // Inicializar de manera diferida para evitar bloquear el login
         setTimeout(async () => {
           try {
-            await notificationSystem.initialize()
-
-            // Exponer en desarrollo para debugging
-            if (import.meta.env.DEV) {
-              ;(window as any).attendanceNotifications = notificationSystem
-              console.log(
-                "🔧 Sistema de notificaciones disponible en window.attendanceNotifications"
-              )
+            // Usar la nueva función de inicialización diferida
+            const {initializeAttendanceNotificationsAfterLogin} = await import(
+              "@/services/attendanceNotifications"
+            )
+            
+            const isReady = await initializeAttendanceNotificationsAfterLogin()
+            
+            if (isReady) {
+              console.log("✅ Sistema de notificaciones de asistencia completamente listo")
+            } else {
+              console.warn("⚠️ Sistema de notificaciones funcionando con limitaciones")
             }
+            
+            // También inicializar el sistema legacy si es necesario
+            try {
+              const {default: notificationSystem} = await import(
+                "@/services/attendanceNotificationManager"
+              )
+              await notificationSystem.initialize()
+              
+              if (import.meta.env.DEV) {
+                ;(window as any).attendanceNotifications = notificationSystem
+                console.log(
+                  "🔧 Sistema de notificaciones disponible en window.attendanceNotifications"
+                )
+              }
+            } catch (legacyError) {
+              console.warn("⚠️ Sistema legacy de notificaciones no disponible:", legacyError)
+            }
+            
           } catch (error) {
             console.error("❌ Error inicializando notificaciones de asistencia:", error)
           }
-        }, 2000) // Esperar 2 segundos después del login exitoso
+        }, 1500) // Reducido de 2000ms a 1500ms
       } catch (error) {
         console.error("❌ Error importando sistema de notificaciones:", error)
       }
     },
 
-    // Crear notificación de login de profesor
+    /**
+     * Crear notificación de login de profesor.
+     */
     async createTeacherLoginNotification(teacherId: string) {
       try {
-        // Importar dinámicamente para evitar dependencias circulares
         const {createTeacherLoginNotification} = await import("@/services/adminNotificationService")
-        
         await createTeacherLoginNotification(teacherId)
       } catch (error) {
         console.error("❌ Error creando notificación de login:", error)

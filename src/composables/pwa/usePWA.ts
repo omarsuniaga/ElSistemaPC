@@ -4,7 +4,6 @@
  * Fase 1 - Iniciativa 5: Coordinación Central
  */
 
-import {onMounted, onUnmounted} from "vue"
 import {useOfflineStore} from "@/services/offlineService"
 import {useSyncStore} from "@/composables/sync/useOfflineSync"
 import {useNotificationStore} from "@/composables/ui/useNotifications"
@@ -248,7 +247,7 @@ export function usePWA() {
 
   // ==================== CICLO DE VIDA ====================
 
-  onMounted(() => {
+  function setupEventListeners() {
     // Registrar event listeners
     window.addEventListener("online", handleConnectionChange)
     window.addEventListener("offline", handleConnectionChange)
@@ -258,16 +257,16 @@ export function usePWA() {
 
     // Verificar estado inicial de conexión
     handleConnectionChange()
-  })
+  }
 
-  onUnmounted(() => {
+  function cleanupEventListeners() {
     // Limpiar event listeners
     window.removeEventListener("online", handleConnectionChange)
     window.removeEventListener("offline", handleConnectionChange)
     document.removeEventListener("visibilitychange", handleVisibilityChange)
     window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt as EventListener)
     window.removeEventListener("appinstalled", handleAppInstalled)
-  })
+  }
 
   // ==================== RETURN ====================
 
@@ -284,6 +283,8 @@ export function usePWA() {
 
     // Inicialización
     initializePWA,
+    setupEventListeners,
+    cleanupEventListeners,
 
     // Eventos
     handleConnectionChange,
