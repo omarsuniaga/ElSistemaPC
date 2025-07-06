@@ -5,7 +5,9 @@
     <div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between py-6">
-          <div class="flex items-center space-x-4">
+                        <span v-else class="flex items-center justify-center">
+                    📱 Configurar Notificaciones de Seguimiento
+                  </span>                  📱 Configurar Notificaciones de Seguimiento  <div class="flex items-center space-x-4">
       
             <div>
               <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
@@ -201,9 +203,9 @@
                 <!-- Botón de NOTIFICACIÓN INTELIGENTE CON ESCALACIÓN -->
                 <div class="bg-gradient-to-r from-red-500 to-orange-500 p-4 rounded-lg mb-4">
                   <div class="text-center mb-3">
-                    <h4 class="text-white font-semibold text-sm">🧠 Notificación Inteligente</h4>
+                    <h4 class="text-white font-semibold text-sm">📱 Notificación WhatsApp</h4>
                     <p class="text-red-100 text-xs">
-                      Sistema automático de escalación por historial semanal
+                      Sistema completo con plantillas y validación
                     </p>
                   </div>
 
@@ -218,27 +220,28 @@
                     </span>
                     <span v-else class="flex items-center justify-center">
                       <span class="text-lg mr-2">📱</span>
-                      Configurar Notificaciones WhatsApp
+                      Configurar Notificaciones
                       <span class="text-xs ml-2 bg-red-100 text-red-700 px-2 py-1 rounded"
-                        >NUEVO</span
+                        >MODAL</span
                       >
                     </span>
                   </button>
                 </div>
 
-                <!-- Información del sistema de escalación -->
+                <!-- Información del sistema de notificación -->
                 <div
                   class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800"
                 >
                   <div class="flex items-start space-x-2">
-                    <span class="text-blue-500 text-sm">ℹ️</span>
+                    <span class="text-blue-500 text-sm">📱</span>
                     <div class="text-xs text-blue-700 dark:text-blue-300">
-                      <p class="font-medium mb-1">Sistema de Escalación Automática:</p>
+                      <p class="font-medium mb-1">Sistema de Notificación WhatsApp:</p>
                       <ul class="space-y-1 text-blue-600 dark:text-blue-400">
-                        <li>• 1ª ausencia semanal: Recordatorio amable</li>
-                        <li>• 2ª ausencia: Tono disciplinario</li>
-                        <li>• 3ª ausencia: Solicitud de explicación</li>
-                        <li>• 4+ ausencias: Citación obligatoria</li>
+                        <li>• Plantillas personalizables con variables</li>
+                        <li>• Selección individual de destinatarios</li>
+                        <li>• Validación automática de números</li>
+                        <li>• Control de envío con intervalos</li>
+                        <li>• Historial de mensajes enviados</li>
                       </ul>
                     </div>
                   </div>
@@ -303,14 +306,14 @@
                 <button
                   :disabled="sendingNotifications"
                   class="w-full bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 text-white px-4 py-3 rounded-lg font-medium transition-colors"
-                  @click="notifyLateStudents"
+                  @click="openWhatsAppModalForLateStudents"
                 >
                   <span v-if="sendingNotifications" class="flex items-center justify-center">
                     <ArrowPathIcon class="h-4 w-4 animate-spin mr-2" />
-                    Enviando notificaciones...
+                    Configurando...
                   </span>
                   <span v-else class="flex items-center justify-center">
-                    📱 Notificar a Padres por Tardanza
+                    📱 Configurar Notificaciones de Tardanza
                   </span>
                 </button>
               </div>
@@ -373,14 +376,14 @@
                 <button
                   :disabled="sendingNotifications"
                   class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-3 rounded-lg font-medium transition-colors"
-                  @click="notifyJustifiedAbsences"
+                  @click="openWhatsAppModalForJustifiedAbsences"
                 >
                   <span v-if="sendingNotifications" class="flex items-center justify-center">
                     <ArrowPathIcon class="h-4 w-4 animate-spin mr-2" />
-                    Enviando notificaciones...
+                    Configurando...
                   </span>
                   <span v-else class="flex items-center justify-center">
-                    📞 Notificar Próxima Actividad
+                    � Configurar Notificaciones de Seguimiento
                   </span>
                 </button>
               </div>
@@ -757,15 +760,37 @@ const openWhatsAppModal = (): void => {
   showWhatsAppModal.value = true
 }
 
-// 📱 Función para abrir el modal con datos de ausencias sin justificar
+// 📱 Funciones específicas para abrir el modal con datos pre-cargados
 const openWhatsAppModalForAbsences = (): void => {
-  console.log("📱 [Reporte Diario] Abriendo modal para ausencias sin justificar:", unjustifiedAbsences.value)
+  console.log("📱 Abriendo modal para ausencias sin justificar:", unjustifiedAbsences.value)
   
   reportDataForModal.value = {
     unjustifiedAbsences: unjustifiedAbsences.value,
     selectedDate: selectedDate.value,
   }
   modalInitialTab.value = "ausentes"
+  showWhatsAppModal.value = true
+}
+
+const openWhatsAppModalForLateStudents = (): void => {
+  console.log("📱 Abriendo modal para estudiantes tarde:", lateStudents.value)
+  
+  reportDataForModal.value = {
+    lateStudents: lateStudents.value,
+    selectedDate: selectedDate.value,
+  }
+  modalInitialTab.value = "tarde"
+  showWhatsAppModal.value = true
+}
+
+const openWhatsAppModalForJustifiedAbsences = (): void => {
+  console.log("📱 Abriendo modal para ausencias justificadas:", justifiedAbsences.value)
+  
+  reportDataForModal.value = {
+    justifiedAbsences: justifiedAbsences.value,
+    selectedDate: selectedDate.value,
+  }
+  modalInitialTab.value = "justificado"
   showWhatsAppModal.value = true
 }
 

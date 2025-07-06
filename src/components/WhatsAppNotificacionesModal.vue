@@ -360,7 +360,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue"
+import {ref, computed, onMounted, watch} from "vue"
 import { useStudentsStore } from "@/modulos/Students/store/students"
 import { useAttendanceStore } from "@/modulos/Attendance/store/attendance"
 import {
@@ -375,10 +375,21 @@ import { WhatsAppMessageValidator, logVerificationReport } from "@/utils/whatsap
 // Props
 interface Props {
   isVisible: boolean
+  // 📊 Datos del reporte diario para pre-cargar estudiantes
+  reportData?: {
+    unjustifiedAbsences?: any[]
+    lateStudents?: any[]
+    justifiedAbsences?: any[]
+    selectedDate?: string
+  }
+  // 🎯 Tipo de notificación inicial (para abrir directamente en la pestaña correcta)
+  initialTab?: "ausentes" | "tarde" | "justificado"
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isVisible: false,
+  reportData: undefined,
+  initialTab: "ausentes",
 })
 
 // Emits
@@ -932,9 +943,86 @@ const close = () => {
   activeTab.value = "ausentes"
 }
 
+// 📊 Función para cargar datos del reporte diario
+const loadReportData = () => {
+  if (!props.reportData) return
+  
+  console.log("📊 [WhatsApp Modal] Cargando datos del reporte diario:", props.reportData)
+  
+  // Convertir datos del reporte al formato esperado por el modal
+  const convertedData: any = {
+    ausentes: [],
+    tarde: [],
+    justificado: []
+  }
+  
+  // Convertir ausencias sin justificar
+  if (props.reportData.unjustifiedAbsences) {
+    convertedData.ausentes = props.reportData.unjustifiedAbsences.map((student: any) => ({
+      id: student.studentId || student.id,
+      nombre: student.name || student.studentName,
+      apellido: "",
+      clase: student.className || "",
+      instrumento: "N/A",
+      phoneNumbers: {
+        madre: "N/A", // Se obtendrá del store
+        padre: "N/A"  // Se obtendrá del store
+      },
+      absenceCount: student.absenceCount || 1
+    }))
+  }
+  
+  // Convertir estudiantes tarde
+  if (props.reportData.lateStudents) {
+    convertedData.tarde = props.reportData.lateStudents.map((student: any) => ({
+      id: student.studentId || student.id,
+      nombre: student.name || student.studentName,
+      apellido: "",
+      clase: student.className || "",
+      instrumento: "N/A",
+      phoneNumbers: {
+        madre: "N/A",
+        padre: "N/A"
+      },
+      lateTime: student.time
+    }))
+  }
+  
+  // Convertir ausencias justificadas
+  if (props.reportData.justifiedAbsences) {
+    convertedData.justificado = props.reportData.justifiedAbsences.map((student: any) => ({
+      id: student.studentId || student.id,
+      nombre: student.name || student.studentName,
+      apellido: "",
+      clase: student.className || "",
+      instrumento: "N/A",
+      phoneNumbers: {
+        madre: "N/A",
+        padre: "N/A"
+      },
+      reason: student.reason || ""
+    }))
+  }
+  
+  // Actualizar datos del modal
+  studentsData.value = convertedData
+  
+  // Cambiar a la pestaña inicial especificada
+  if (props.initialTab) {
+    activeTab.value = props.initialTab
+  }
+  
+  console.log("✅ [WhatsApp Modal] Datos del reporte cargados:", convertedData)
+}
+
 // Lifecycle
 onMounted(async () => {
   await fetchStudentsData()
+  
+  // Si hay datos del reporte, cargarlos
+  if (props.reportData) {
+    loadReportData()
+  }
   
   // Auto-select first template if available
   const templates = getTemplatesForActiveTab()
@@ -942,6 +1030,29 @@ onMounted(async () => {
     selectTemplate(templates[0].id)
   }
 })
+
+// 👀 Watcher para reaccionar cuando se abra el modal con nuevos datos
+watch(
+  () => props.isVisible,
+  (newValue) => {
+    if (newValue && props.reportData) {
+      console.log("📊 [WhatsApp Modal] Modal abierto con datos del reporte")
+      loadReportData()
+    }
+  }
+)
+
+// 📊 Watcher para cambios en los datos del reporte
+watch(
+  () => props.reportData,
+  (newData) => {
+    if (newData && props.isVisible) {
+      console.log("📊 [WhatsApp Modal] Datos del reporte actualizados")
+      loadReportData()
+    }
+  },
+  {deep: true}
+)
 </script>
 
 <style scoped>
