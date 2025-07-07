@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba Firebase</title>
+</head>
+<body>
+    <h1>Prueba de Configuración Firebase</h1>
+    <div id="status">Cargando...</div>
+    <div id="details"></div>
+
+    <script type="module">
+        async function testFirebase() {
+            const statusEl = document.getElementById('status');
+            const detailsEl = document.getElementById('details');
+            
+            try {
+                statusEl.innerHTML = "🔄 Probando importación de Firebase...";
+                
+                // Importar el módulo de configuración
+                const { app, auth, db, functions, storage } = await import('./src/firebase/config.ts');
+                
+                statusEl.innerHTML = "✅ Firebase importado correctamente";
+                
+                detailsEl.innerHTML = `
+                    <h3>Estado de los servicios:</h3>
+                    <ul>
+                        <li>App: ${app ? '✅ Inicializado' : '❌ No disponible'}</li>
+                        <li>Auth: ${auth ? '✅ Inicializado' : '❌ No disponible'}</li>
+                        <li>Firestore: ${db ? '✅ Inicializado' : '❌ No disponible'}</li>
+                        <li>Functions: ${functions ? '✅ Inicializado' : '❌ No disponible'}</li>
+                        <li>Storage: ${storage ? '✅ Inicializado' : '❌ No disponible'}</li>
+                    </ul>
+                    <h3>Configuración de App:</h3>
+                    <pre>${JSON.stringify(app.options, null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                statusEl.innerHTML = "❌ Error al cargar Firebase";
+                detailsEl.innerHTML = `
+                    <h3>Error:</h3>
+                    <pre style="color: red;">${error.message}</pre>
+                    <h3>Stack trace:</h3>
+                    <pre style="color: red; font-size: 10px;">${error.stack}</pre>
+                `;
+                console.error('Error testing Firebase:', error);
+            }
+        }
+        
+        testFirebase();
+    </script>
+</body>
+</html>

@@ -21,32 +21,9 @@ const isLoading = ref(false)
 const showPassword = ref(false)
 
 // Verificar si hay un mensaje de registro exitoso
-onMounted(async () => {
+onMounted(() => {
   if (route.query.registered === "true") {
     successMessage.value = "Registro exitoso. Por favor inicia sesión para continuar."
-  }
-
-  // Verificar si ya está autenticado (solo si no se ha inicializado aún)
-  let user = authStore.user
-
-  if (!authStore.isInitialized) {
-    user = await authStore.checkAuth()
-  }
-
-  if (user) {
-    // Verificar el estado del usuario
-    const userStatus = user.status
-    const profileCompleted = user.profileCompleted
-
-    if (userStatus === "pendiente" && !profileCompleted) {
-      router.push("/complete-profile")
-    } else if (userStatus === "pendiente" && profileCompleted) {
-      router.push("/pending-approval")
-    } else if (userStatus === "aprobado") {
-      router.push(route.query.redirect?.toString() || "/")
-    } else if (userStatus === "rechazado") {
-      router.push("/pending-approval")
-    }
   }
 })
 
@@ -66,14 +43,10 @@ const handleSubmit = async () => {
   isLoading.value = true
 
   try {
-    const result = await authStore.login(email.value, password.value)
-
-    // Redirigir según el resultado
-    if (result.redirectTo) {
-      router.push(result.redirectTo)
-    } else {
-      router.push(route.query.redirect?.toString() || "/")
-    }
+    await authStore.login(email.value, password.value)
+    // Después de un login exitoso, el router guard se encargará de la redirección.
+    // Simplemente empujamos a la raíz y el guard decidirá el destino final.
+    router.push(route.query.redirect?.toString() || "/")
   } catch (e: any) {
     error.value = e.message
     console.error("Error de login:", e)

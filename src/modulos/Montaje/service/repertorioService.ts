@@ -14,7 +14,7 @@ import {
   Timestamp,
   writeBatch,
 } from "firebase/firestore"
-import {db} from "@/firebase"
+import {db} from "../../../firebase/config"
 import type {Repertorio, MetricasProgreso} from "../types"
 
 /**

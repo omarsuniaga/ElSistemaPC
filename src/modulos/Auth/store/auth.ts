@@ -1,32 +1,10 @@
-import {defineStore} from "pinia"
-import {User} from "firebase/auth"
+// @deprecated: Este store de autenticación está obsoleto y programado para su eliminación.
+// Por favor, actualice todas las importaciones para que apunten al store centralizado.
+//
+// Importar desde: '@/stores/auth'
+//
+// throw new Error("Accediendo a un store de autenticación obsoleto. Por favor, actualice las importaciones a '@/stores/auth'.");
 
-// Definir interfaz para el estado de autenticación
-interface AuthState {
-  user: User | null
-  isAuthenticated: boolean
-}
-
-export const useAuthStore = defineStore("auth", {
-  state: (): AuthState => ({
-    user: null,
-    isAuthenticated: false,
-  }),
-
-  getters: {
-    currentUser: (state) => state.user,
-    isLoggedIn: (state) => state.isAuthenticated,
-  },
-
-  actions: {
-    setUser(user: User | null) {
-      this.user = user
-      this.isAuthenticated = !!user
-    },
-
-    clearUser() {
-      this.user = null
-      this.isAuthenticated = false
-    },
-  },
-})
+// Dejar el archivo vacío intencionalmente o con una exportación mínima para evitar errores de importación inmediatos
+// hasta que todas las referencias sean actualizadas.
+export {}

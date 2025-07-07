@@ -43,7 +43,7 @@ export async function rbacGuard(
     if (userRole?.toLowerCase() === "maestro" && to.path.startsWith("/attendance/")) {
       console.log(`🔄 RBAC Guard: Permitiendo acceso maestro a ruta de asistencia: ${to.path}`)
       // Permitir acceso directo a rutas de asistencia para maestros
-      // Ya no redirigir automáticamente, permitir que accedan
+      // TODAS las rutas de attendance son accesibles para maestros
       return next()
     } // Verificar si hay roles permitidos definidos directamente en la ruta
     if (to.meta.allowedRoles && Array.isArray(to.meta.allowedRoles)) {
@@ -90,12 +90,13 @@ export async function rbacGuard(
     const normalizedRole = userRole?.toLowerCase() || ""
 
     if (normalizedRole.includes("maestro") || normalizedRole.includes("teacher")) {
-      // Si el maestro está intentando acceder a rutas /attendance/, redirigir a /teacher/attendance/calendar
-      if (to.path.startsWith("/attendance/")) {
-        next("/teacher/attendance/calendar?redirected=true")
-      } else {
-        // Para otras rutas denegadas, redirigir al dashboard del maestro
+      // Nota: Los maestros ya tienen acceso permitido a rutas /attendance/ arriba
+      // Solo redirigir para otras rutas denegadas
+      if (!to.path.startsWith("/attendance/")) {
         next("/teacher?redirected=true")
+      } else {
+        // Esto no debería suceder ya que permitimos access arriba
+        next("/attendance/calendar?redirected=true")
       }
     } else if (normalizedRole.includes("director") || normalizedRole.includes("admin")) {
       next("/attendance/calendar?redirected=true")

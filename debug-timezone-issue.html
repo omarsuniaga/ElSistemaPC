@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐛 Debug: Problema de Zona Horaria</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .error { background: #ffeaa7; border-color: #fdcb6e; }
+        .success { background: #d1f2eb; border-color: #00b894; }
+        .code { 
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐛 Debug: Problema de Zona Horaria en Fechas</h1>
+        
+        <div class="test-section">
+            <h3>🎯 Problema Identificado</h3>
+            <p>El calendario muestra "domingo 6 de julio" cuando debería mostrar "lunes 7 de julio"</p>
+            <p><strong>Causa probable:</strong> Conversión de zona horaria UTC a local</p>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Tests de Fecha</h3>
+            <button class="btn" onclick="runDateTest()">Ejecutar Test</button>
+            <div class="code" id="testResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>✅ Solución Implementada</h3>
+            <p>Usar parseo manual de fecha para evitar problemas de zona horaria:</p>
+            <div class="code">// ❌ PROBLEMÁTICO (UTC conversion)
+const date = new Date("2025-07-07")
+
+// ✅ CORRECTO (local date)
+const [year, month, day] = "2025-07-07".split('-').map(Number)
+const date = new Date(year, month - 1, day)</div>
+        </div>
+
+        <div class="test-section" id="resultSection" style="display:none;">
+            <h3>📊 Resultado del Test</h3>
+            <div id="finalResult"></div>
+        </div>
+    </div>
+
+    <script>
+        function runDateTest() {
+            const testDateString = "2025-07-07"; // Lunes 7 de julio 2025
+            let results = "";
+
+            results += "🧪 TESTING FECHA: " + testDateString + "\\n";
+            results += "=" + "=".repeat(50) + "\\n\\n";
+
+            // Test 1: Método problemático (UTC)
+            results += "❌ MÉTODO PROBLEMÁTICO (new Date string):\\n";
+            const dateUTC = new Date(testDateString);
+            results += `Fecha creada: ${dateUTC}\\n`;
+            results += `getDay(): ${dateUTC.getDay()} (${['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][dateUTC.getDay()]})\\n`;
+            results += `toLocaleDateString(): ${dateUTC.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\\n`;
+            results += `Timezone offset: ${dateUTC.getTimezoneOffset()} minutos\\n\\n`;
+
+            // Test 2: Método correcto (manual parsing)
+            results += "✅ MÉTODO CORRECTO (manual parsing):\\n";
+            const [year, month, day] = testDateString.split('-').map(Number);
+            const dateLocal = new Date(year, month - 1, day);
+            results += `Componentes: año=${year}, mes=${month}, día=${day}\\n`;
+            results += `Fecha creada: ${dateLocal}\\n`;
+            results += `getDay(): ${dateLocal.getDay()} (${['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][dateLocal.getDay()]})\\n`;
+            results += `toLocaleDateString(): ${dateLocal.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\\n\\n`;
+
+            // Test 3: Comparación
+            results += "📊 COMPARACIÓN:\\n";
+            const isUTCCorrect = dateUTC.getDay() === 1; // Lunes = 1
+            const isLocalCorrect = dateLocal.getDay() === 1;
+            
+            results += `UTC method day: ${dateUTC.getDay()} ${isUTCCorrect ? '✅' : '❌'}\\n`;
+            results += `Local method day: ${dateLocal.getDay()} ${isLocalCorrect ? '✅' : '❌'}\\n\\n`;
+
+            // Test 4: Verificación del problema específico
+            results += "🎯 VERIFICACIÓN DEL PROBLEMA ESPECÍFICO:\\n";
+            results += `Fecha input: ${testDateString} (debería ser lunes)\\n`;
+            results += `UTC interpretation: ${dateUTC.toLocaleDateString('es-ES', { weekday: 'long' })} ${isUTCCorrect ? '✅' : '❌'}\\n`;
+            results += `Local interpretation: ${dateLocal.toLocaleDateString('es-ES', { weekday: 'long' })} ${isLocalCorrect ? '✅' : '❌'}\\n\\n`;
+
+            // Test 5: Info de zona horaria
+            results += "🌍 INFORMACIÓN DE ZONA HORARIA:\\n";
+            results += `Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}\\n`;
+            results += `UTC Offset: ${new Date().getTimezoneOffset()} minutos\\n`;
+            results += `UTC Offset horas: ${new Date().getTimezoneOffset() / 60} horas\\n\\n`;
+
+            // Conclusión
+            results += "🏁 CONCLUSIÓN:\\n";
+            if (isLocalCorrect && !isUTCCorrect) {
+                results += "✅ PROBLEMA CONFIRMADO Y SOLUCIÓN VERIFICADA\\n";
+                results += "   El parseo manual corrige el desfase de zona horaria\\n";
+            } else if (isUTCCorrect && isLocalCorrect) {
+                results += "⚠️  AMBOS MÉTODOS FUNCIONAN\\n";
+                results += "   Puede que el problema esté en otro lugar\\n";
+            } else {
+                results += "❌ PROBLEMA COMPLEJO\\n";
+                results += "   Se requiere más investigación\\n";
+            }
+
+            document.getElementById('testResults').textContent = results;
+            
+            // Mostrar resultado final
+            const resultSection = document.getElementById('resultSection');
+            const finalResult = document.getElementById('finalResult');
+            
+            resultSection.style.display = 'block';
+            if (isLocalCorrect && !isUTCCorrect) {
+                resultSection.className = 'test-section success';
+                finalResult.innerHTML = `
+                    <h4>✅ Problema Identificado y Corregido</h4>
+                    <p>El desfase de fecha era causado por la interpretación UTC del string de fecha.</p>
+                    <p><strong>Solución:</strong> Parseo manual de componentes de fecha.</p>
+                `;
+            } else {
+                resultSection.className = 'test-section error';
+                finalResult.innerHTML = `
+                    <h4>⚠️ Requiere Más Investigación</h4>
+                    <p>El problema puede estar en otra parte del código.</p>
+                `;
+            }
+        }
+
+        // Auto-run test
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(runDateTest, 1000);
+        });
+    </script>
+</body>
+</html>

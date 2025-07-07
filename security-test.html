@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis de Seguridad Firebase</title>
+    <style>
+        body { 
+            font-family: monospace; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: #00ff00; 
+        }
+        .test-section { 
+            border: 1px solid #333; 
+            margin: 10px 0; 
+            padding: 15px; 
+            background: #2a2a2a; 
+        }
+        .success { color: #00ff00; }
+        .error { color: #ff4444; }
+        .warning { color: #ffaa00; }
+        .info { color: #4488ff; }
+        pre { 
+            background: #000; 
+            padding: 10px; 
+            overflow-x: auto; 
+            border-left: 3px solid #00ff00; 
+        }
+        button {
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #666;
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        button:hover { background: #444; }
+    </style>
+</head>
+<body>
+    <h1>🔒 ANÁLISIS DE SEGURIDAD FIREBASE</h1>
+    <div id="results"></div>
+    
+    <div class="test-section">
+        <h3>🔧 Controles Manuales</h3>
+        <button onclick="testAuthStore()">Probar Auth Store</button>
+        <button onclick="testFirebaseRules()">Probar Reglas Firebase</button>
+        <button onclick="testDataAccess()">Probar Acceso a Datos</button>
+        <button onclick="clearResults()">Limpiar Resultados</button>
+    </div>
+
+    <script type="module">
+        const results = document.getElementById('results');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+            console.log(message);
+        }
+        
+        function logSection(title) {
+            const div = document.createElement('div');
+            div.className = 'test-section';
+            div.innerHTML = `<h3>${title}</h3>`;
+            results.appendChild(div);
+        }
+        
+        // Test 1: Verificar estado de autenticación
+        async function testAuthenticationState() {
+            logSection('🔐 TEST 1: Estado de Autenticación');
+            
+            try {
+                // Importar Firebase auth
+                const { auth } = await import('./src/firebase/config.ts');
+                
+                log(`📊 Firebase Auth User: ${auth.currentUser ? 'AUTENTICADO' : 'NO AUTENTICADO'}`, 
+                    auth.currentUser ? 'success' : 'info');
+                
+                if (auth.currentUser) {
+                    log(`👤 UID: ${auth.currentUser.uid}`, 'info');
+                    log(`📧 Email: ${auth.currentUser.email}`, 'info');
+                } else {
+                    log('✅ CORRECTO: No hay usuario autenticado en vista de login', 'success');
+                }
+                
+            } catch (error) {
+                log(`❌ Error accediendo a Firebase Auth: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test 2: Verificar que no se cargan datos sin autenticación
+        async function testDataLoadingBehavior() {
+            logSection('📊 TEST 2: Comportamiento de Carga de Datos');
+            
+            try {
+                // Verificar stores
+                const { useAuthStore } = await import('./src/stores/auth.ts');
+                const authStore = useAuthStore();
+                
+                log(`🔍 Auth Store isLoggedIn: ${authStore.isLoggedIn}`, 
+                    authStore.isLoggedIn ? 'warning' : 'success');
+                log(`📊 Data Initialized: ${authStore.dataInitialized}`, 
+                    authStore.dataInitialized ? 'warning' : 'success');
+                    
+                if (!authStore.isLoggedIn && !authStore.dataInitialized) {
+                    log('✅ CORRECTO: No se cargan datos sin autenticación', 'success');
+                } else if (authStore.isLoggedIn && authStore.dataInitialized) {
+                    log('✅ CORRECTO: Usuario autenticado con datos cargados', 'success');
+                } else {
+                    log('⚠️ INCONSISTENCIA: Estado mixto detectado', 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ Error verificando stores: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test 3: Intentar acceso directo a Firestore sin autenticación
+        async function testFirestoreDirectAccess() {
+            logSection('🔥 TEST 3: Acceso Directo a Firestore (Sin Auth)');
+            
+            try {
+                const { db } = await import('./src/firebase/config.ts');
+                const { collection, getDocs } = await import('firebase/firestore');
+                
+                log('🔄 Intentando acceder a colección USERS sin autenticación...', 'info');
+                
+                const startTime = Date.now();
+                try {
+                    const snapshot = await getDocs(collection(db, 'USERS'));
+                    const loadTime = Date.now() - startTime;
+                    
+                    log(`❌ PELIGRO: Acceso exitoso a Firestore sin auth (${snapshot.size} docs, ${loadTime}ms)`, 'error');
+                    log('🚨 REVISAR REGLAS DE FIRESTORE INMEDIATAMENTE', 'error');
+                    
+                } catch (firestoreError) {
+                    const loadTime = Date.now() - startTime;
+                    log(`✅ CORRECTO: Firestore bloqueó el acceso (${loadTime}ms)`, 'success');
+                    log(`🔒 Error esperado: ${firestoreError.code || firestoreError.message}`, 'info');
+                }
+                
+            } catch (error) {
+                log(`❌ Error en test de Firestore: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test 4: Verificar rutas protegidas
+        async function testRouteProtection() {
+            logSection('🛡️ TEST 4: Protección de Rutas');
+            
+            try {
+                const currentPath = window.location.pathname;
+                log(`📍 Ruta actual: ${currentPath}`, 'info');
+                
+                // Intentar navegar a ruta protegida
+                const testRoutes = ['/dashboard', '/admin', '/attendance'];
+                
+                for (const route of testRoutes) {
+                    try {
+                        // Simular navegación (sin cambiar la URL real)
+                        log(`🔄 Verificando acceso a: ${route}`, 'info');
+                        
+                        // Aquí verificaríamos las meta.requiresAuth
+                        log(`⚠️ Ruta ${route}: Requiere verificación manual`, 'warning');
+                    } catch (error) {
+                        log(`✅ Ruta ${route} correctamente protegida`, 'success');
+                    }
+                }
+                
+            } catch (error) {
+                log(`❌ Error verificando rutas: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test 5: Verificar headers de seguridad
+        async function testSecurityHeaders() {
+            logSection('🌐 TEST 5: Headers de Seguridad');
+            
+            try {
+                const response = await fetch(window.location.href);
+                const headers = response.headers;
+                
+                const securityHeaders = [
+                    'content-security-policy',
+                    'x-frame-options',
+                    'x-content-type-options',
+                    'referrer-policy'
+                ];
+                
+                securityHeaders.forEach(header => {
+                    const value = headers.get(header);
+                    if (value) {
+                        log(`✅ ${header}: ${value}`, 'success');
+                    } else {
+                        log(`⚠️ ${header}: No configurado`, 'warning');
+                    }
+                });
+                
+            } catch (error) {
+                log(`❌ Error verificando headers: ${error.message}`, 'error');
+            }
+        }
+        
+        // Funciones globales para los botones
+        window.testAuthStore = async function() {
+            logSection('🔧 MANUAL: Test Auth Store');
+            await testAuthenticationState();
+            await testDataLoadingBehavior();
+        };
+        
+        window.testFirebaseRules = async function() {
+            logSection('🔧 MANUAL: Test Firebase Rules');
+            await testFirestoreDirectAccess();
+        };
+        
+        window.testDataAccess = async function() {
+            logSection('🔧 MANUAL: Test Data Access');
+            
+            try {
+                // Intentar importar y usar stores directamente
+                const stores = [
+                    'Students/store/students',
+                    'Teachers/store/teachers', 
+                    'Classes/store/classes'
+                ];
+                
+                for (const storePath of stores) {
+                    try {
+                        log(`🔄 Probando store: ${storePath}`, 'info');
+                        const module = await import(`./src/modulos/${storePath}.ts`);
+                        log(`⚠️ Store ${storePath}: Importado (verificar si ejecuta consultas)`, 'warning');
+                    } catch (error) {
+                        log(`✅ Store ${storePath}: Error esperado - ${error.message}`, 'success');
+                    }
+                }
+                
+            } catch (error) {
+                log(`❌ Error en test de stores: ${error.message}`, 'error');
+            }
+        };
+        
+        window.clearResults = function() {
+            results.innerHTML = '';
+        };
+        
+        // Ejecutar tests automáticamente al cargar
+        async function runAllTests() {
+            log('🚀 INICIANDO ANÁLISIS DE SEGURIDAD...', 'info');
+            
+            await testAuthenticationState();
+            await testDataLoadingBehavior();
+            await testFirestoreDirectAccess();
+            await testRouteProtection();
+            await testSecurityHeaders();
+            
+            log('✅ ANÁLISIS COMPLETADO', 'success');
+            log('📋 Revisar resultados arriba para identificar problemas de seguridad', 'info');
+        }
+        
+        // Ejecutar después de que la página cargue
+        setTimeout(runAllTests, 1000);
+    </script>
+</body>
+</html>

@@ -4,7 +4,7 @@ import {createPinia} from "pinia"
 import router from "./router"
 import App from "./App.vue"
 import {useNotification} from "@/composables/useNotification"
-import {registerServiceWorker} from "./registerServiceWorker"
+import {unregisterServiceWorker} from "./utils/serviceWorker"
 import {createBrowserDebugFunction} from "./utils/testAttendanceSystem"
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate"
 
@@ -12,6 +12,22 @@ import piniaPluginPersistedstate from "pinia-plugin-persistedstate"
 console.log("🔍 [Main] Iniciando inicialización de Firebase...")
 import "./firebase/config"
 import "./firebase"
+
+// Inicializar servicios Firebase de manera diferida
+import("./services/firebaseInitializer")
+  .then(({getFirebaseInitPromise}) => {
+    getFirebaseInitPromise()
+      .then(() => {
+        console.log("✅ [Main] Firebase completamente inicializado y listo")
+      })
+      .catch((error) => {
+        console.error("❌ [Main] Error en inicialización diferida de Firebase:", error)
+      })
+  })
+  .catch((error) => {
+    console.error("❌ [Main] Error importando inicializador de Firebase:", error)
+  })
+
 console.log("✅ [Main] Firebase importado correctamente")
 
 // Sistemas de optimización avanzada
@@ -300,5 +316,7 @@ verifyRBACSetup()
 // Inicializar notificaciones después de un breve delay para permitir que el router esté listo (DESACTIVADO)
 // setTimeout(initializeAttendanceNotifications, 3000)
 
-// Registrar Service Worker para PWA
-registerServiceWorker()
+// Desregistrar Service Worker en desarrollo para evitar conflictos
+if (import.meta.env.DEV) {
+  unregisterServiceWorker()
+}

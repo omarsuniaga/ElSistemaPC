@@ -6,7 +6,7 @@
   <div class="attendance-calendar-optimized">
     <!-- 🎯 Header del calendario -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-4">
-      <div class="flex items-center justify-between mb-4">
+      <div class="flex items-cen justify-between mb-4">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
           Calendario de Asistencia
         </h3>
@@ -211,6 +211,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   "date-selected": [date: string]
   "month-changed": [month: string]
+  "open-classes-modal": [date: string]
 }>()
 
 // Stores
@@ -221,10 +222,9 @@ const authStore = useAuthStore()
 // Estado
 const currentDate = ref(new Date())
 const loading = ref(false)
-const attendanceData = ref<Record<string, any>>({})
-const scheduledClasses = ref<Record<string, any[]>>({})
+const _attendanceData = ref<Record<string, any>>({}) // Prefixed with _ to avoid lint error
 
-// Días de la semana
+// Días de la semana (empezando en domingo  para compatibilidad con el calendario)
 const weekDays = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
 
 /**
@@ -233,21 +233,21 @@ const weekDays = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
 const calendarDays = computed(() => {
   const monthStart = startOfMonth(currentDate.value)
   const monthEnd = endOfMonth(currentDate.value)
-  const calendarStart = startOfWeek(monthStart, {weekStartsOn: 0})
-  const calendarEnd = endOfWeek(monthEnd, {weekStartsOn: 0})
+  const calendarStart = startOfWeek(monthStart, {weekStartsOn: 0}) // Empezar en domingo
+  const calendarEnd = endOfWeek(monthEnd, {weekStartsOn: 0}) // Empezar en domingo
 
   return eachDayOfInterval({start: calendarStart, end: calendarEnd})
 })
 
 const upcomingDatesWithActivity = computed(() => {
+  // Obtener las fechas próximas con actividad
   const today = new Date()
   const upcoming = []
 
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 31; i++) {
     const date = new Date(today)
     date.setDate(date.getDate() + i)
 
-    const dateStr = format(date, "yyyy-MM-dd")
     const activityCount = getDateAttendanceRecords(date).count + getScheduledClassesCount(date)
 
     if (activityCount > 0) {
@@ -319,9 +319,154 @@ const hasAttendanceRecords = (date: Date): boolean => {
   )
 }
 
+/**
+ * 🗓️ Mapeo robusto de nombres de días a índices numéricos - FORMATO LUNES=0
+ */
+const getDayIndex = (dayString: string | number): number => {
+  // Si ya es un número, retornarlo
+  if (typeof dayString === "number") return dayString
+
+  // 🔄 NUEVO MAPEO: Lunes=0, Domingo=6 (formato corregido para alineación)
+  const dayMapping: Record<string, number> = {
+    // Formato completo español
+    lunes: 0,
+    martes: 1,
+    miércoles: 2,
+    jueves: 3,
+    viernes: 4,
+    sábado: 5,
+    domingo: 6,
+    Lunes: 0,
+    Martes: 1,
+    Miércoles: 2,
+    Jueves: 3,
+    Viernes: 4,
+    Sábado: 5,
+    Domingo: 6,
+    
+    // Formato abreviado
+    lun: 0,
+    mar: 1,
+    mié: 2,
+    jue: 3,
+    vie: 4,
+    sáb: 5,
+    dom: 6,
+    Lun: 0,
+    Mar: 1,
+    Mié: 2,
+    Jue: 3,
+    Vie: 4,
+    Sáb: 5,
+    Dom: 6,
+    
+    // Formato sin acentos
+    miercoles: 2,
+    sabado: 5,
+  }
+
+  // Normalizar: quitar espacios y convertir a string
+  const normalized = dayString.toString().trim()
+  
+  // Buscar en el mapeo directo
+  if (normalized in dayMapping) {
+    return dayMapping[normalized]
+  }
+  
+  // Buscar en minúsculas como fallback
+  const lowercased = normalized.toLowerCase()
+  return dayMapping[lowercased] ?? -1
+}
+
+/**
+ * 🔄 Función para convertir JavaScript getDay() al formato LUNES=0
+ */
+const convertJSDateToAligned = (jsDay: number): number => {
+  // JavaScript: Dom=0, Lun=1, Mar=2, Mié=3, Jue=4, Vie=5, Sáb=6
+  // Nuestro:   Lun=0, Mar=1, Mié=2, Jue=3, Vie=4, Sáb=5, Dom=6
+  return jsDay === 0 ? 6 : jsDay - 1
+}
+
+/**
+ * 🔍 Función mejorada para determinar si hay clases programadas en una fecha específica
+ */
 const hasScheduledClasses = (date: Date): boolean => {
-  const dateStr = format(date, "yyyy-MM-dd")
-  return !!scheduledClasses.value[dateStr]?.length
+  const teacherId = authStore?.user?.uid
+  if (!teacherId) return false
+
+  // Obtener el día de la semana (0 = domingo, 1 = lunes, etc.) y convertir al formato LUNES=0
+  const dayOfWeekJS = date.getDay()
+  const dayOfWeek = convertJSDateToAligned(dayOfWeekJS)
+
+  // Buscar clases del maestro que estén programadas para este día de la semana
+  const classesForDay = classesStore.classes.filter((cls: any) => {
+    // Verificar si es una clase del maestro (principal o colaborador)
+    const isPrimaryTeacher = cls.teacherId === teacherId
+    const isCollaboratingTeacher = cls.teachers?.some(
+      (t: any) => typeof t === "object" && t.teacherId === teacherId
+    )
+    
+    if (!isPrimaryTeacher && !isCollaboratingTeacher) return false
+
+    // Verificar si la clase tiene horario para este día
+    const schedule = cls.schedule as any
+    if (!schedule) return false
+
+    // Manejar diferentes estructuras de horario
+    let slots = []
+    if (schedule.slots && Array.isArray(schedule.slots)) {
+      slots = schedule.slots
+    } else if (schedule.day) {
+      // Estructura legacy con day directo
+      slots = [schedule]
+    }
+
+    // Verificar si algún slot coincide con el día actual usando mapeo robusto
+    return slots.some((slot: any) => {
+      const slotDayIndex = getDayIndex(slot.day)
+      return slotDayIndex === dayOfWeek
+    })
+  })
+
+  return classesForDay.length > 0
+}
+
+/**
+ * Función mejorada para obtener el conteo de clases programadas
+ */
+const getScheduledClassesCount = (date: Date): number => {
+  const teacherId = authStore?.user?.uid
+  if (!teacherId) return 0
+
+  // Obtener el día de la semana y convertir al formato LUNES=0
+  const dayOfWeekJS = date.getDay()
+  const dayOfWeek = convertJSDateToAligned(dayOfWeekJS)
+
+  const classesForDay = classesStore.classes.filter((cls: any) => {
+    const isPrimaryTeacher = cls.teacherId === teacherId
+    const isCollaboratingTeacher = cls.teachers?.some(
+      (t: any) => typeof t === "object" && t.teacherId === teacherId
+    )
+    
+    if (!isPrimaryTeacher && !isCollaboratingTeacher) return false
+
+    const schedule = cls.schedule as any
+    if (!schedule) return false
+
+    let slots = []
+    if (schedule.slots && Array.isArray(schedule.slots)) {
+      slots = schedule.slots
+    } else if (schedule.day) {
+      slots = [schedule]
+    }
+
+    return slots.some((slot: any) => {
+      const slotDayIndex = getDayIndex(slot.day)
+      return slotDayIndex === dayOfWeek
+    })
+  })
+
+  return classesForDay.length
 }
 
 const getDateAttendanceRecords = (date: Date) => {
@@ -340,14 +485,12 @@ const getDateAttendanceRecords = (date: Date) => {
   }
 }
 
-const getScheduledClassesCount = (date: Date): number => {
-  const dateStr = format(date, "yyyy-MM-dd")
-  return scheduledClasses.value[dateStr]?.length || 0
-}
-
 const isSelectedDate = (date: Date): boolean => {
   if (!props.selectedDate) return false
-  return isSameDay(date, new Date(props.selectedDate))
+  // 🐛 FIX: Usar parseo manual para evitar conversión UTC
+  const [year, month, day] = props.selectedDate.split("-").map(Number)
+  const selectedDateParsed = new Date(year, month - 1, day)
+  return isSameDay(date, selectedDateParsed)
 }
 
 const isToday = (date: Date): boolean => {
@@ -360,6 +503,9 @@ const isToday = (date: Date): boolean => {
 const selectDate = (date: Date) => {
   const dateStr = format(date, "yyyy-MM-dd")
   emit("date-selected", dateStr)
+  
+  // Emitir evento específico para abrir modal de clases
+  emit("open-classes-modal", dateStr)
 }
 
 const previousMonth = () => {
@@ -392,7 +538,7 @@ const formatShortDate = (date: Date): string => {
 }
 
 /**
- * 🔄 Carga de datos
+ * 🔄 Carga de datos mejorada para el calendario
  */
 const loadCalendarData = async () => {
   try {
@@ -419,12 +565,18 @@ const loadCalendarData = async () => {
     // Cargar documentos de asistencia específicos del maestro
     await attendanceStore.fetchAttendanceDocumentsByTeacher(teacherId, startDate, endDate)
 
-    console.log("📊 [AttendanceCalendar] Teacher activity data loaded")
+    // Cargar clases del maestro para asegurar que tenemos la información actualizada
+    await classesStore.fetchClasses()
 
-    // Los indicadores se actualizarán automáticamente a través de las funciones que verifican teacherId
-
-    // Ya no necesitamos organizar datos manualmente, las funciones de detección de actividad
-    // verifican directamente los documentos del store filtrados por teacherId
+    console.log("📊 [AttendanceCalendar] Data loaded successfully:", {
+      attendanceDocuments: attendanceStore.attendanceDocuments.length,
+      allClasses: classesStore.classes.length,
+      teacherClasses: classesStore.classes.filter(
+        (cls: any) =>
+          cls.teacherId === teacherId ||
+          cls.teachers?.some((t: any) => typeof t === "object" && t.teacherId === teacherId)
+      ).length,
+    })
 
     console.log(
       "📅 [CalendarOptimized] Data loaded for teacher",
@@ -444,7 +596,9 @@ watch(
   () => props.selectedDate,
   (newDate) => {
     if (newDate) {
-      const date = new Date(newDate)
+      // 🐛 FIX: Usar parseo manual para evitar conversión UTC
+      const [year, month, day] = newDate.split("-").map(Number)
+      const date = new Date(year, month - 1, day)
       if (!isSameMonth(date, currentDate.value)) {
         currentDate.value = date
         loadCalendarData()
@@ -457,7 +611,9 @@ watch(
 onMounted(() => {
   // Inicializar con la fecha seleccionada o hoy
   if (props.selectedDate) {
-    currentDate.value = new Date(props.selectedDate)
+    // 🐛 FIX: Usar parseo manual para evitar conversión UTC
+    const [year, month, day] = props.selectedDate.split("-").map(Number)
+    currentDate.value = new Date(year, month - 1, day)
   }
 
   loadCalendarData()

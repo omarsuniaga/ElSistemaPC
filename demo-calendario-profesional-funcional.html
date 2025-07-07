@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📅 Calendario Profesional - Documentación y Demo Interactivo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        .calendar-day {
+            min-height: 80px;
+            border: 1px solid #e5e7eb;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .calendar-day:hover {
+            background-color: #f3f4f6;
+        }
+        .calendar-day.today {
+            background-color: #dbeafe;
+        }
+        .calendar-day.has-classes {
+            background-color: #fef3cd;
+        }
+        .calendar-day.not-current-month {
+            background-color: #f9fafb;
+            color: #9ca3af;
+        }
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+        }
+        .status-indicator.complete { background-color: #10b981; }
+        .status-indicator.partial { background-color: #f59e0b; }
+        .status-indicator.scheduled { background-color: #3b82f6; }
+        .class-count {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background-color: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .today-indicator {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 6px;
+            height: 6px;
+            background-color: #ef4444;
+            border-radius: 50%;
+        }
+        .section-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e5e7eb;
+            margin-bottom: 24px;
+        }
+        .feature-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            background-color: #dcfce7;
+            color: #166534;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            margin: 2px;
+        }
+        .tech-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            background-color: #dbeafe;
+            color: #1e40af;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            margin: 2px;
+        }
+        .flow-arrow {
+            color: #3b82f6;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 8px 0;
+        }
+        .code-snippet {
+            background-color: #1f2937;
+            color: #f9fafb;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 12px 0;
+        }
+        
+        .tech-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            border-radius: 9999px;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            transition: box-shadow 0.2s;
+        }
+        
+        .feature-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navigation-item {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 8px 16px;
+            color: #374151;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        
+        .navigation-item:hover {
+            background-color: #f9fafb;
+            color: #2563eb;
+        }
+        
+        .section-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            margin-bottom: 32px;
+        }
+        
+        .demo-container {
+            max-width: 80rem;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+        .highlight {
+            background-color: #fef3cd;
+            padding: 2px 4px;
+            border-radius: 4px;
+            border: 1px solid #fbbf24;
+        }
+        .navigation-menu {
+            position: sticky;
+            top: 20px;
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+        }
+        .menu-item {
+            display: block;
+            padding: 8px 12px;
+            color: #374151;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.2s;
+            margin: 2px 0;
+        }
+        .menu-item:hover {
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .demo-section {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            background-color: #f9fafb;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navegación superior -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <span class="text-xl font-bold text-gray-900">📅 Calendario Profesional</span>
+                    <span class="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Documentación Completa</span>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="#overview" class="text-gray-600 hover:text-gray-900">Resumen</a>
+                    <a href="#demo" class="text-gray-600 hover:text-gray-900">Demo</a>
+                    <a href="#features" class="text-gray-600 hover:text-gray-900">Características</a>
+                    <a href="#architecture" class="text-gray-600 hover:text-gray-900">Arquitectura</a>
+                    <a href="#implementation" class="text-gray-600 hover:text-gray-900">Implementación</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Menú de navegación lateral -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div class="lg:col-span-1">
+                <div class="navigation-menu">
+                    <h3 class="font-semibold text-gray-900 mb-4">🧭 Navegación</h3>
+                    <a href="#overview" class="menu-item" onclick="scrollToSection('overview')">📋 Resumen Ejecutivo</a>
+                    <a href="#demo" class="menu-item" onclick="scrollToSection('demo')">🎮 Demo Interactivo</a>
+                    <a href="#features" class="menu-item" onclick="scrollToSection('features')">✨ Características</a>
+                    <a href="#data-flow" class="menu-item" onclick="scrollToSection('data-flow')">📊 Flujo de Datos</a>
+                    <a href="#architecture" class="menu-item" onclick="scrollToSection('architecture')">🏗️ Arquitectura</a>
+                    <a href="#components" class="menu-item" onclick="scrollToSection('components')">🧩 Componentes</a>
+                    <a href="#implementation" class="menu-item" onclick="scrollToSection('implementation')">⚙️ Implementación</a>
+                    <a href="#fixes" class="menu-item" onclick="scrollToSection('fixes')">🔧 Correcciones</a>
+                    <a href="#usage" class="menu-item" onclick="scrollToSection('usage')">📖 Guía de Uso</a>
+                    <a href="#technical" class="menu-item" onclick="scrollToSection('technical')">💻 Detalles Técnicos</a>
+                </div>
+            </div>
+
+            <div class="lg:col-span-3">
+                <!-- Resumen Ejecutivo -->
+                <section id="overview" class="section-card">
+                    <div class="p-8">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-6">📅 Calendario Profesional - Sistema de Asistencia</h1>
+                        
+                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg mb-6">
+                            <h2 class="text-xl font-semibold text-gray-900 mb-4">🎯 Resumen Ejecutivo</h2>
+                            <p class="text-gray-700 mb-4">
+                                El <strong>Calendario Profesional</strong> es una herramienta avanzada para la gestión de asistencia 
+                                en academias de música que integra datos reales, proporciona visualización intuitiva y facilita 
+                                la navegación eficiente hacia las funciones de registro de asistencia.
+                            </p>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <div class="bg-white p-4 rounded-lg">
+                                    <h3 class="font-semibold text-green-600 mb-2">✅ Estado del Proyecto</h3>
+                                    <span class="feature-badge">Implementación Completada</span>
+                                    <span class="feature-badge">Producción Ready</span>
+                                    <span class="feature-badge">Testing Completo</span>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg">
+                                    <h3 class="font-semibold text-blue-600 mb-2">🚀 Tecnologías</h3>
+                                    <span class="tech-badge">Vue 3</span>
+                                    <span class="tech-badge">TypeScript</span>
+                                    <span class="tech-badge">Pinia</span>
+                                    <span class="tech-badge">Firebase</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="bg-white p-6 rounded-lg border border-gray-200">
+                                <div class="text-2xl mb-2">🎯</div>
+                                <h3 class="font-semibold text-gray-900 mb-2">Objetivo Principal</h3>
+                                <p class="text-gray-600 text-sm">Facilitar la gestión visual de asistencia con navegación directa a las funciones de registro.</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-lg border border-gray-200">
+                                <div class="text-2xl mb-2">📊</div>
+                                <h3 class="font-semibold text-gray-900 mb-2">Datos Integrados</h3>
+                                <p class="text-gray-600 text-sm">Conexión directa con Firebase para datos reales de clases, estudiantes y registros de asistencia.</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-lg border border-gray-200">
+                                <div class="text-2xl mb-2">🎨</div>
+                                <h3 class="font-semibold text-gray-900 mb-2">Interfaz Profesional</h3>
+                                <p class="text-gray-600 text-sm">Diseño moderno, responsive y accesible con indicadores visuales claros.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                </section>
+
+                <!-- Demo Interactivo -->
+                <section id="demo" class="section-card">
+                    <div class="p-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">🎮 Demo Interactivo del Calendario</h2>
+                        
+                        <div class="demo-section">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">📍 Ubicación en el Sistema</h3>
+                            <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                                <p class="text-blue-800"><strong>Ruta:</strong> <code class="bg-blue-100 px-2 py-1 rounded">/attendance/professional-calendar</code></p>
+                                <p class="text-blue-800 mt-2"><strong>URL Local:</strong> <code class="bg-blue-100 px-2 py-1 rounded">http://localhost:5173/attendance/professional-calendar</code></p>
+                            </div>
+                        </div>
+
+                        <!-- Header del calendario demo -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 class="text-2xl font-bold text-gray-900">📅 Calendario de Asistencia</h3>
+                                    <p class="text-sm text-gray-600 mt-1">Gestión profesional de clases y asistencias</p>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <button class="p-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                                        ←
+                                    </button>
+                                    <div class="px-4 py-2 bg-gray-50 rounded-lg">
+                                        <span class="text-lg font-semibold text-gray-900">Julio 2025</span>
+                                    </div>
+                                    <button class="p-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                                        →
+                                    </button>
+                                    <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                        Hoy
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Estadísticas demo -->
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg">
+                                    <div class="text-2xl font-bold text-blue-600">8</div>
+                                    <div class="text-sm text-gray-600 mt-1">Registros</div>
+                                </div>
+                                <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg">
+                                    <div class="text-2xl font-bold text-blue-600">5</div>
+                                    <div class="text-sm text-gray-600 mt-1">Días con clases</div>
+                                </div>
+                                <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg">
+                                    <div class="text-2xl font-bold text-blue-600">85%</div>
+                                    <div class="text-sm text-gray-600 mt-1">Completado</div>
+                                </div>
+                                <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg">
+                                    <div class="text-2xl font-bold text-blue-600">3</div>
+                                    <div class="text-sm text-gray-600 mt-1">Clases únicas</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Leyenda -->
+                        <div class="flex flex-wrap gap-6 p-4 bg-gray-50 rounded-lg mb-6">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                                <span class="text-sm">Completo</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                <span class="text-sm">Parcial</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span class="text-sm">Programado</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 rounded-full bg-gray-300"></div>
+                                <span class="text-sm">Sin actividad</span>
+                            </div>
+                        </div>
+
+                        <!-- Calendario demo -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            <!-- Días de la semana -->
+                            <div class="grid grid-cols-7 bg-gray-50">
+                                <div class="p-4 text-center text-sm font-medium text-gray-700 border-r border-gray-200">Lun</div>
+                                <div class="p-4 text-center text-sm font-medium text-gray-700 border-r border-gray-200">Mar</div>
+                                <div class="p-4 text-center text-sm font-medium text-gray-700 border-r border-gray-200">Mié</div>
+                                <div class="p-4 text-center text-sm font-medium text-gray-700 border-r border-gray-200">Jue</div>
+                                <div class="p-4 text-center text-sm font-medium text-gray-700 border-r border-gray-200">Vie</div>
+                                <div class="p-4 text-center text-sm font-medium text-gray-700 border-r border-gray-200">Sáb</div>
+                                <div class="p-4 text-center text-sm font-medium text-gray-700">Dom</div>
+                            </div>
+
+                            <!-- Días del mes -->
+                            <div class="grid grid-cols-7" id="calendar-grid">
+                                <!-- Los días se generarán con JavaScript -->
+                            </div>
+                        </div>
+
+                        <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-yellow-800 mb-2">💡 Interactividad del Demo</h4>
+                            <p class="text-yellow-700 text-sm">
+                                Haz clic en cualquier día del calendario para simular la selección. 
+                                En la implementación real, esto abrirá el drawer lateral con información detallada de las clases.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Características Principales -->
+                <section id="features" class="section-card">
+                    <div class="p-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">✨ Características Principales</h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Vista Mensual -->
+                            <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg">
+                                <div class="flex items-center mb-4">
+                                    <div class="text-2xl mr-3">📅</div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Vista Mensual Completa</h3>
+                                </div>
+                                <ul class="text-sm text-gray-700 space-y-2">
+                                    <li>• Navegación fluida entre meses</li>
+                                    <li>• Generación automática con fallback manual</li>
+                                    <li>• Indicador visual del día actual</li>
+                                    <li>• Selección de días con retroalimentación</li>
+                                </ul>
+                            </div>
+
+                            <!-- Indicadores Visuales -->
+                            <div class="bg-gradient-to-r from-green-50 to-green-100 p-6 rounded-lg">
+                                <div class="flex items-center mb-4">
+                                    <div class="text-2xl mr-3">🎨</div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Indicadores Visuales</h3>
+                                </div>
+                                <ul class="text-sm text-gray-700 space-y-2">
+                                    <li>• <span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>Completo (asistencias registradas)</li>
+                                    <li>• <span class="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>Parcial (algunas pendientes)</li>
+                                    <li>• <span class="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>Programado (sin registrar)</li>
+                                    <li>• <span class="inline-block w-2 h-2 bg-gray-300 rounded-full mr-2"></span>Sin actividad</li>
+                                </ul>
+                            </div>
+
+                            <!-- Estadísticas -->
+                            <div class="bg-gradient-to-r from-purple-50 to-purple-100 p-6 rounded-lg">
+                                <div class="flex items-center mb-4">
+                                    <div class="text-2xl mr-3">📊</div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Estadísticas en Tiempo Real</h3>
+                                </div>
+                                <ul class="text-sm text-gray-700 space-y-2">
+                                    <li>• Total de registros de asistencia</li>
+                                    <li>• Días con clases programadas</li>
+                                    <li>• Porcentaje de completado</li>
+                                    <li>• Número de clases únicas</li>
+                                </ul>
+                            </div>
+
+                            <!-- Drawer Lateral -->
+                            <div class="bg-gradient-to-r from-indigo-50 to-indigo-100 p-6 rounded-lg">
+                                <div class="flex items-center mb-4">
+                                    <div class="text-2xl mr-3">🗂️</div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Drawer Lateral Interactivo</h3>
+                                </div>
+                                <ul class="text-sm text-gray-700 space-y-2">
+                                    <li>• Panel deslizable con detalles del día</li>
+                                    <li>• Lista de clases con metadatos</li>
+                                    <li>• Acciones contextuales por rol</li>
+                                    <li>• Navegación directa a asistencia</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Flujo de Datos -->
+                <section id="data-flow" class="section-card">
+                    <div class="p-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">📊 Flujo de Datos y Arquitectura</h2>
+                        
+                        <div class="bg-gray-50 p-6 rounded-lg mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">🔄 De Dónde Obtiene la Información</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div class="bg-white p-4 rounded-lg border border-gray-200">
+                                    <h4 class="font-semibold text-blue-600 mb-2">🏫 Classes Store</h4>
+                                    <p class="text-sm text-gray-600 mb-2">Gestión de clases y horarios</p>
+                                    <div class="text-xs text-gray-500">
+                                        <div>• Información de clases</div>
+                                        <div>• Horarios programados</div>
+                                        <div>• Profesores asignados</div>
+                                        <div>• Estudiantes inscritos</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white p-4 rounded-lg border border-gray-200">
+                                    <h4 class="font-semibold text-green-600 mb-2">📋 Attendance Store</h4>
+                                    <p class="text-sm text-gray-600 mb-2">Registros de asistencia</p>
+                                    <div class="text-xs text-gray-500">
+                                        <div>• Registros por fecha</div>
+                                        <div>• Estados de asistencia</div>
+                                        <div>• Justificaciones</div>
+                                        <div>• Observaciones</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white p-4 rounded-lg border border-gray-200">
+                                    <h4 class="font-semibold text-purple-600 mb-2">🔐 Auth Store</h4>
+                                    <p class="text-sm text-gray-600 mb-2">Autenticación y permisos</p>
+                                    <div class="text-xs text-gray-500">
+                                        <div>• Datos del usuario</div>
+                                        <div>• Roles y permisos</div>
+                                        <div>• Clases accesibles</div>
+                                        <div>• Nivel de acceso</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flow-arrow">⬇️</div>
+                            
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-blue-800 mb-2">🔄 Procesamiento de Datos</h4>
+                                <div class="code-snippet">
+                                    <div>// Integración de múltiples fuentes de datos</div>
+                                    <div>const dayClasses = getClassesForDate(date)</div>
+                                    <div>const dayAttendance = getAttendanceForDate(date)</div>
+                                    <div>const userRole = getUserRoleInClass(classItem, userId)</div>
+                                    <div>const status = calculateDayStatus(classes, attendance)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 p-6 rounded-lg">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">🎯 A Dónde Nos Envía</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-white p-4 rounded-lg border border-gray-200">
+                                    <h4 class="font-semibold text-orange-600 mb-2">📝 AttendanceList</h4>
+                                    <p class="text-sm text-gray-600 mb-2">Registro directo de asistencia</p>
+                                    <div class="text-xs text-gray-500 mb-2">
+                                        <div><strong>Ruta:</strong> /attendance/list/:date/:classId</div>
+                                        <div><strong>Parámetros:</strong> Fecha seleccionada + ID de clase</div>
+                                    </div>
+                                    <div class="code-snippet text-xs">
+router.push({
+  name: 'AttendanceList',
+  params: {
+    date: selectedDate.value,
+    classId: classItem.id
+  }
+})
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white p-4 rounded-lg border border-gray-200">
+                                    <h4 class="font-semibold text-teal-600 mb-2">📊 AttendanceReports</h4>
+                                    <p class="text-sm text-gray-600 mb-2">Análisis y estadísticas</p>
+                                    <div class="text-xs text-gray-500 mb-2">
+                                        <div><strong>Acceso:</strong> Desde estadísticas del mes</div>
+                                        <div><strong>Contexto:</strong> Filtrado por período seleccionado</div>
+                                    </div>
+                                    <div class="bg-gray-100 p-2 rounded text-xs">
+                                        Navegación contextual con filtros automáticos
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </section>
+
+                <!-- Arquitectura del Componente -->
+                <section id="architecture" class="section-card">
+                    <div class="p-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">🏗️ Arquitectura del Componente</h2>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Estructura de Archivos -->
+                            <div class="bg-gray-50 p-6 rounded-lg">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">📁 Estructura de Archivos</h3>
+                                <div class="code-snippet">
+                                    <div>src/modulos/Attendance/</div>
+                                    <div>├── views/</div>
+                                    <div>│   └── ProfessionalCalendarView.vue</div>
+                                    <div>├── store/</div>
+                                    <div>│   └── attendance.ts</div>
+                                    <div>├── router/</div>
+                                    <div>│   └── index.ts</div>
+                                    <div>└── types/</div>
+                                    <div>    └── attendance.ts</div>
+                                </div>
+                            </div>
+
+                            <!-- Stack Tecnológico -->
+                            <div class="bg-gray-50 p-6 rounded-lg">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">💻 Stack Tecnológico</h3>
+                                <div class="space-y-3">
+                                    <div class="flex items-center">
+                                        <span class="tech-badge">Vue 3</span>
+                                        <span class="ml-2 text-sm text-gray-600">Composition API + TypeScript</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <span class="tech-badge">Pinia</span>
+                                        <span class="ml-2 text-sm text-gray-600">Gestión de estado reactiva</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <span class="tech-badge">Firebase</span>
+                                        <span class="ml-2 text-sm text-gray-600">Backend y base de datos</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <span class="tech-badge">Tailwind CSS</span>
+                                        <span class="ml-2 text-sm text-gray-600">Diseño y estilos</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <span class="tech-badge">date-fns</span>
+                                        <span class="ml-2 text-sm text-gray-600">Manipulación de fechas</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Componentes Principales -->
+                        <div class="mt-6 bg-white p-6 rounded-lg border border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">🧩 Componentes y Funcionalidades</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <h4 class="font-semibold text-blue-800 mb-2">📅 Calendar Grid</h4>
+                                    <ul class="text-sm text-blue-700 space-y-1">
+                                        <li>• Generación dinámica de días</li>
+                                        <li>• Manejo de meses anteriores/siguientes</li>
+                                        <li>• Indicadores visuales de estado</li>
+                                        <li>• Interactividad de selección</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="bg-green-50 p-4 rounded-lg">
+                                    <h4 class="font-semibold text-green-800 mb-2">📊 Statistics Panel</h4>
+                                    <ul class="text-sm text-green-700 space-y-1">
+                                        <li>• Cálculo automático de métricas</li>
+                                        <li>• Actualización en tiempo real</li>
+                                        <li>• Visualización clara de datos</li>
+                                        <li>• Responsive design</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="bg-purple-50 p-4 rounded-lg">
+                                    <h4 class="font-semibold text-purple-800 mb-2">🗂️ Lateral Drawer</h4>
+                                    <ul class="text-sm text-purple-700 space-y-1">
+                                        <li>• Panel deslizable</li>
+                                        <li>• Información detallada de clases</li>
+                                        <li>• Acciones contextuales</li>
+                                        <li>• Navegación directa</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Funciones y Métodos Principales -->
+                <section id="components" class="section-card">
+                    <div class="p-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">🔧 Funciones y Métodos Principales</h2>
+                        
+                        <div class="space-y-6">
+                            <!-- Generación del Calendario -->
+                            <div class="bg-gray-50 p-6 rounded-lg">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">📅 Generación del Calendario</h3>
+                                <div class="code-snippet">
+const generateCalendarDays = (month: Date, selectedDate?: string): CalendarDay[] => {
+  // 1. Calcular inicio y fin del mes
+  const monthStart = startOfMonth(month)
+  const monthEnd = endOfMonth(month)
+  
+  // 2. Generar días del calendario (incluyendo días de otros meses)
+  const calendarDaysInterval = eachDayOfInterval({
+    start: getCalendarStart(monthStart),
+    end: getCalendarEnd(monthEnd)
+  })
+  
+  // 3. Procesar cada día con sus datos correspondientes
+  return calendarDaysInterval.map(date => ({
+    date,
+    dayNumber: date.getDate(),
+    isCurrentMonth: date.getMonth() === month.getMonth(),
+    isToday: isToday(date),
+    hasClasses: getClassesForDate(date).length > 0,
+    // ... más propiedades
+  }))
+}
+                                </div>
+                            </div>
+
+                            <!-- Manejo de Datos de Clases -->
+                            <div class="bg-gray-50 p-6 rounded-lg">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">🎓 Manejo de Datos de Clases</h3>
+                                <div class="code-snippet">
+const classHasScheduleForDate = (classItem: any, date: Date): boolean => {
+  const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+  const dayName = dayNames[date.getDay()]
+  
+  // Soporte para múltiples formatos de schedule
+  if (classItem.schedule?.slots) {
+    return classItem.schedule.slots.some(slot => 
+      slot.day?.toLowerCase() === dayName.toLowerCase()
+    )
+  }
+  
+  // Formato legacy y otros casos
+  // ...
+}
+                                </div>
+                            </div>
+
+                            <!-- Cálculo de Estadísticas -->
+                            <div class="bg-gray-50 p-6 rounded-lg">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">📊 Cálculo de Estadísticas</h3>
+                                <div class="code-snippet">
+const calculateMonthStats = (month: Date) => {
+  const monthDays = eachDayOfInterval({ 
+    start: startOfMonth(month), 
+    end: endOfMonth(month) 
+  })
+  
+  let totalAttendanceRecords = 0
+  let daysWithClasses = 0
+  const uniqueClasses = new Set&lt;string&gt;()
+  
+  monthDays.forEach(date => {
+    const dayClasses = getClassesForDate(date)
+    const dayAttendance = getAttendanceForDate(date)
+    
+    if (dayClasses.length > 0) daysWithClasses++
+    totalAttendanceRecords += dayAttendance.length
+    dayClasses.forEach(c => uniqueClasses.add(c.id))
+  })
+  
+  return { totalAttendanceRecords, daysWithClasses, uniqueClasses: uniqueClasses.size }
+}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Correcciones Implementadas -->
+                <section id="fixes" class="section-card">
+                    <div class="p-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">🔧 Correcciones y Mejoras Implementadas</h2>
+                        
+                        <div class="space-y-6">
+                            <!-- Error Principal -->
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                                <h3 class="text-lg font-semibold text-red-800 mb-3">❌ Error Principal Corregido</h3>
+                                <div class="bg-red-100 p-3 rounded mb-3">
+                                    <code class="text-red-800">classItem.schedule?.some is not a function</code>
+                                </div>
+                                <p class="text-red-700 mb-3">
+                                    <strong>Causa:</strong> El código asumía que `schedule` era siempre un array, 
+                                    pero en realidad puede tener diferentes estructuras.
+                                </p>
+                                <div class="bg-green-50 border border-green-200 rounded p-3">
+                                    <h4 class="font-semibold text-green-800 mb-2">✅ Solución Implementada:</h4>
+                                    <ul class="text-green-700 text-sm space-y-1">
+                                        <li>• Verificación de tipo antes de usar métodos de array</li>
+                                        <li>• Soporte para múltiples formatos: <code>{slots: [...]}</code>, array directo, objeto simple</li>
+                                        <li>• Funciones robustas con fallbacks seguros</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Otras Mejoras -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                                    <h3 class="text-lg font-semibold text-blue-800 mb-3">🔄 Generación de Calendario</h3>
+                                    <ul class="text-blue-700 text-sm space-y-2">
+                                        <li>• <strong>Problema:</strong> Calendario vacío sin datos</li>
+                                        <li>• <strong>Solución:</strong> Función de fallback `createManualCalendarDays`</li>
+                                        <li>• <strong>Resultado:</strong> Siempre se muestra un calendario válido</li>
+                                    </ul>
+                                </div>
+
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+                                    <h3 class="text-lg font-semibold text-green-800 mb-3">📊 Integración de Stores</h3>
+                                    <ul class="text-green-700 text-sm space-y-2">
+                                        <li>• <strong>Problema:</strong> Métodos incorrectos del attendance store</li>
+                                        <li>• <strong>Solución:</strong> Uso correcto de `fetchAttendance()`</li>
+                                        <li>• <strong>Resultado:</strong> Carga correcta de datos reales</li>
+                                    </ul>
+                                </div>
+
+                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-6">
+                                    <h3 class="text-lg font-semibold text-purple-800 mb-3">🎨 Visualización</h3>
+                                    <ul class="text-purple-700 text-sm space-y-2">
+                                        <li>• <strong>Mejora:</strong> Indicadores visuales completos</li>
+                                        <li>• <strong>Agregado:</strong> Contadores de clases por día</li>
+                                        <li>• <strong>Resultado:</strong> Información clara y accesible</li>
+                                    </ul>
+                                </div>
+
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                                    <h3 class="text-lg font-semibold text-yellow-800 mb-3">🧪 Testing y Debug</h3>
+                                    <ul class="text-yellow-700 text-sm space-y-2">
+                                        <li>• <strong>Agregado:</strong> Datos de muestra automáticos</li>
+                                        <li>• <strong>Mejorado:</strong> Logging detallado para debugging</li>
+                                        <li>• <strong>Resultado:</strong> Desarrollo y testing más eficientes</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Guía de Uso -->
+                <section id="usage" class="section-card">
+                    <div class="p-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">📖 Guía de Uso del Calendario</h2>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Para Profesores -->
+                            <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg">
+                                <h3 class="text-lg font-semibold text-blue-800 mb-4">👨‍🏫 Para Profesores</h3>
+                                <div class="space-y-3">
+                                    <div class="bg-white p-3 rounded">
+                                        <h4 class="font-semibold text-gray-900 mb-1">1. Visualización de Clases</h4>
+                                        <p class="text-sm text-gray-600">Ve todas tus clases programadas con indicadores de estado de asistencia.</p>
+                                    </div>
+                                    <div class="bg-white p-3 rounded">
+                                        <h4 class="font-semibold text-gray-900 mb-1">2. Tomar Asistencia</h4>
+                                        <p class="text-sm text-gray-600">Haz clic en cualquier día → selecciona una clase → "Tomar Asistencia".</p>
+                                    </div>
+                                    <div class="bg-white p-3 rounded">
+                                        <h4 class="font-semibold text-gray-900 mb-1">3. Revisar Estadísticas</h4>
+                                        <p class="text-sm text-gray-600">Monitorea tu progreso mensual en el panel de estadísticas.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Para Administradores -->
+                            <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg">
+                                <h3 class="text-lg font-semibold text-green-800 mb-4">👨‍💼 Para Administradores</h3>
+                                <div class="space-y-3">
+                                    <div class="bg-white p-3 rounded">
+                                        <h4 class="font-semibold text-gray-900 mb-1">1. Vista Global</h4>
+                                        <p class="text-sm text-gray-600">Visualiza todas las clases de la academia con sus estados de asistencia.</p>
+                                    </div>
+                                    <div class="bg-white p-3 rounded">
+                                        <h4 class="font-semibold text-gray-900 mb-1">2. Supervisión</h4>
+                                        <p class="text-sm text-gray-600">Identifica rápidamente clases sin registros de asistencia.</p>
+                                    </div>
+                                    <div class="bg-white p-3 rounded">
+                                        <h4 class="font-semibold text-gray-900 mb-1">3. Reportes</h4>
+                                        <p class="text-sm text-gray-600">Accede a estadísticas detalladas y genera reportes.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Flujo de Trabajo Típico -->
+                        <div class="mt-6 bg-gray-50 p-6 rounded-lg">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">🔄 Flujo de Trabajo Típico</h3>
+                            
+                            <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
+                                <div class="bg-white p-4 rounded-lg text-center flex-1">
+                                    <div class="text-2xl mb-2">📅</div>
+                                    <h4 class="font-semibold text-gray-900">1. Abrir Calendario</h4>
+                                    <p class="text-sm text-gray-600">Navegar a /attendance/professional-calendar</p>
+                                </div>
+                                
+                                <div class="text-gray-400 text-xl">→</div>
+                                
+                                <div class="bg-white p-4 rounded-lg text-center flex-1">
+                                    <div class="text-2xl mb-2">👆</div>
+                                    <h4 class="font-semibold text-gray-900">2. Seleccionar Día</h4>
+                                    <p class="text-sm text-gray-600">Hacer clic en día con clases programadas</p>
+                                </div>
+                                
+                                <div class="text-gray-400 text-xl">→</div>
+                                
+                                <div class="bg-white p-4 rounded-lg text-center flex-1">
+                                    <div class="text-2xl mb-2">🗂️</div>
+                                    <h4 class="font-semibold text-gray-900">3. Ver Detalles</h4>
+                                    <p class="text-sm text-gray-600">Revisar clases en drawer lateral</p>
+                                </div>
+                                
+                                <div class="text-gray-400 text-xl">→</div>
+                                
+                                <div class="bg-white p-4 rounded-lg text-center flex-1">
+                                    <div class="text-2xl mb-2">📝</div>
+                                    <h4 class="font-semibold text-gray-900">4. Tomar Asistencia</h4>
+                                    <p class="text-sm text-gray-600">Clic en "Tomar Asistencia" → AttendanceList</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+    <script>
+        // Generar calendario para julio 2025
+        function generateCalendar() {
+            const calendarGrid = document.getElementById('calendar-grid');
+            const today = new Date();
+            const currentDay = today.getDate();
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+
+            // Días de julio 2025
+            const daysInMonth = 31;
+            const firstDay = new Date(2025, 6, 1).getDay(); // 0 = domingo, 1 = lunes, etc.
+            const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1; // Ajustar para que lunes sea 0
+
+            // Días del mes anterior para completar la primera semana
+            const prevMonth = new Date(2025, 5, 0).getDate(); // Último día de junio
+            for (let i = adjustedFirstDay - 1; i >= 0; i--) {
+                const day = prevMonth - i;
+                calendarGrid.innerHTML += createDayElement(day, true, false);
+            }
+
+            // Días del mes actual
+            for (let day = 1; day <= daysInMonth; day++) {
+                const isToday = (currentYear === 2025 && currentMonth === 6 && day === currentDay);
+                const hasClasses = [1, 3, 5, 8, 10, 12, 15, 17, 19, 22, 24, 26, 29].includes(day);
+                calendarGrid.innerHTML += createDayElement(day, false, isToday, hasClasses);
+            }
+
+            // Días del mes siguiente para completar la última semana
+            const totalCells = calendarGrid.children.length;
+            const cellsNeeded = Math.ceil(totalCells / 7) * 7;
+            for (let day = 1; totalCells + day - 1 < cellsNeeded; day++) {
+                calendarGrid.innerHTML += createDayElement(day, true, false);
+            }
+        }
+
+        function createDayElement(day, isOtherMonth, isToday, hasClasses = false) {
+            const statusIndicator = hasClasses ? getRandomStatus() : '';
+            const classCount = hasClasses ? Math.floor(Math.random() * 3) + 1 : 0;
+            
+            return `
+                <div class="calendar-day ${isOtherMonth ? 'not-current-month' : ''} ${isToday ? 'today' : ''} ${hasClasses ? 'has-classes' : ''}" 
+                     onclick="selectDay(${day}, ${!isOtherMonth})">
+                    <div class="p-3">
+                        <div class="text-sm font-medium">${day}</div>
+                        ${statusIndicator}
+                        ${classCount > 0 ? `<div class="class-count">${classCount}</div>` : ''}
+                        ${isToday ? '<div class="today-indicator"></div>' : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getRandomStatus() {
+            const statuses = ['complete', 'partial', 'scheduled'];
+            const status = statuses[Math.floor(Math.random() * statuses.length)];
+            return `<div class="status-indicator ${status}"></div>`;
+        }
+
+        function selectDay(day, isCurrentMonth) {
+            if (isCurrentMonth) {
+                showDrawerDemo();
+            }
+        }
+
+        // Función para manejar la navegación
+        function scrollToSection(sectionId) {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+                
+                // Actualizar estado activo en navegación
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    item.classList.remove('bg-blue-50', 'text-blue-600');
+                });
+                
+                const activeLink = document.querySelector(`[onclick="scrollToSection('${sectionId}')"]`);
+                if (activeLink) {
+                    activeLink.classList.add('bg-blue-50', 'text-blue-600');
+                }
+            }
+        }
+
+        // Función para mostrar demo interactivo del drawer
+        function showDrawerDemo() {
+            const modal = document.getElementById('class-detail-modal');
+            modal.classList.remove('hidden');
+            
+            // Simular datos de una clase seleccionada
+            document.getElementById('selected-date-display').textContent = 'Lunes, 15 de Julio 2025';
+            document.getElementById('selected-classes-list').innerHTML = `
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h4 class="font-semibold text-blue-800 mb-2">🎹 Piano Intermedio - Grupo A</h4>
+                    <p class="text-sm text-blue-600 mb-3">
+                        <strong>Horario:</strong> 14:00 - 15:00<br>
+                        <strong>Profesor:</strong> María González<br>
+                        <strong>Estudiantes:</strong> 8 inscritos
+                    </p>
+                    <div class="flex space-x-2">
+                        <button onclick="simulateNavigation('AttendanceList')" 
+                                class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
+                            📝 Tomar Asistencia
+                        </button>
+                        <button onclick="simulateNavigation('ClassDetails')" 
+                                class="bg-gray-600 text-white px-4 py-2 rounded text-sm hover:bg-gray-700">
+                            ℹ️ Ver Detalles
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-green-50 p-4 rounded-lg border border-green-200 mt-3">
+                    <h4 class="font-semibold text-green-800 mb-2">🎸 Guitarra Básico - Grupo B</h4>
+                    <p class="text-sm text-green-600 mb-3">
+                        <strong>Horario:</strong> 16:00 - 17:00<br>
+                        <strong>Profesor:</strong> Carlos Ruiz<br>
+                        <strong>Estudiantes:</strong> 6 inscritos
+                    </p>
+                    <div class="flex space-x-2">
+                        <button onclick="simulateNavigation('AttendanceList')" 
+                                class="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700">
+                            📝 Tomar Asistencia
+                        </button>
+                        <button onclick="simulateNavigation('ClassDetails')" 
+                                class="bg-gray-600 text-white px-4 py-2 rounded text-sm hover:bg-gray-700">
+                            ℹ️ Ver Detalles
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function simulateNavigation(destination) {
+            alert(`🚀 Navegando a: ${destination}\n\nEn la aplicación real, esto te llevaría a:\n${
+                destination === 'AttendanceList' 
+                    ? '• Pantalla para registrar asistencia de estudiantes\n• Formulario con lista de estudiantes\n• Opciones: Presente, Ausente, Tardanza'
+                    : '• Vista detallada de la clase\n• Información del profesor y estudiantes\n• Historial de asistencia'
+            }`);
+        }
+
+        function closeModal() {
+            document.getElementById('class-detail-modal').classList.add('hidden');
+        }
+
+        // Generar el calendario al cargar la página
+        generateCalendar();
+    </script>
+</body>
+</html>

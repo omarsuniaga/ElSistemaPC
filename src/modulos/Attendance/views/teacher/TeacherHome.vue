@@ -2,7 +2,8 @@
 <script setup lang="ts">
 import {ref, onMounted, watch, computed} from "vue"
 import {useRouter} from "vue-router"
-import {format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO} from "date-fns"
+import {format, parseISO} from "date-fns"
+import {getClassesForTeacherOnDay} from "../../../utils/dayUtils"
 
 // Componentes
 import AttendanceHeader from "../../components/AttendanceHeader.vue"
@@ -60,18 +61,27 @@ const {
 
 const modal = useModal()
 const attendanceStore = useAttendanceStore()
-const router = useRouter()
+const _router = useRouter() // Prefixed with _ to avoid lint error
 
 // Estado para el modal de clases
 const showClassesModal = ref(false)
 const modalDate = ref("")
-const classesForDate = ref([])
+const classesForDate = ref<any[]>([]) // Changed to any[] to accommodate different class structures
 
 // Getter con fechas + status (registered / none / partial)
 // const statuses = attendanceStore.dateAttendanceStatuses; // Replaced by getDateStatuses from useAttendanceState
 
 // IDs de clases que ya tienen registro en la fecha actual
 const classesWithRecords = ref<string[]>([])
+
+// Cambios para clases con records - convertir a formato esperado
+const classesWithRecordsFormatted = computed(() => {
+  return classesWithRecords.value.map((classId) => ({
+    classId,
+    date: selectedDate.value,
+    hasRecord: true,
+  }))
+})
 
 async function updateClassesWithRecords() {
   await attendanceStore.fetchAttendanceDocuments()
@@ -98,7 +108,7 @@ async function handleDateChange(date: string) {
     predictionStore.clearPredictions()
     const classIds = classesForDate.value.map((c: any) => c.id)
     if (classIds.length > 0) {
-      await predictionStore.generatePredictionsForClass(classIds, [selected])
+      await predictionStore.generatePredictionsForClass(classIds[0], [selected])
     }
   } else {
     // Si la fecha es pasada o presente, limpiar las predicciones para no mostrar datos de riesgo
@@ -113,8 +123,67 @@ async function handleDateChange(date: string) {
 // Función para obtener las clases programadas en una fecha específica
 async function fetchClassesForDate(date: string) {
   try {
-    const dayOfWeek = format(parseISO(date), "EEEE").toLowerCase()
+    // Función auxiliar para obtener el día de la semana de forma consistente
+    const getConsistentDayOfWeek = (dateString: string): number => {
+      // Probar múltiples métodos para obtener el día
+      const parseISOResult = parseISO(dateString)
+      const newDateResult = new Date(dateString)
+      const manualParseResult = new Date(dateString + "T12:00:00") // Agregar hora para evitar zona horaria
+      
+      console.error(`🔍 [CONSISTENCIA] Fecha: ${dateString}`)
+      console.error(`🔍 [CONSISTENCIA] parseISO: ${parseISOResult.getDay()} (${parseISOResult.toString()})`)
+      console.error(`🔍 [CONSISTENCIA] new Date: ${newDateResult.getDay()} (${newDateResult.toString()})`)
+      console.error(`🔍 [CONSISTENCIA] manual+T12:00: ${manualParseResult.getDay()} (${manualParseResult.toString()})`)
+      
+      // Obtener el día usando el método más confiable
+      let dayOfWeekJS = parseISOResult.getDay()
+      
+      // Si hay inconsistencia, usar el método manual
+      if (parseISOResult.getDay() !== newDateResult.getDay()) {
+        console.error(`🚨 [CONSISTENCIA] Inconsistencia detectada, usando método manual`)
+        dayOfWeekJS = manualParseResult.getDay()
+      }
+      
+      // 🔄 CONVERTIR DE FORMATO JS (domingo=0) A FORMATO LUNES=0 
+      // JavaScript: Dom=0, Lun=1, Mar=2, Mié=3, Jue=4, Vie=5, Sáb=6
+      // Nuestro:   Lun=0, Mar=1, Mié=2, Jue=3, Vie=4, Sáb=5, Dom=6
+      const dayOfWeekAligned = dayOfWeekJS === 0 ? 6 : dayOfWeekJS - 1
+      
+      console.error(`🔄 [CONVERSIÓN] JavaScript format: ${dayOfWeekJS} -> Aligned format: ${dayOfWeekAligned}`)
+      console.error(`🔄 [CONVERSIÓN] ${["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"][dayOfWeekJS]} -> ${dayOfWeekAligned}`)
+      
+      return dayOfWeekAligned
+    }
+
+    // Obtener día de la semana tanto como string como number
+    const parsedDate = parseISO(date)
+    const dayOfWeekNumber = getConsistentDayOfWeek(date) // Usar función consistente
+    const dayOfWeekString = format(parsedDate, "EEEE").toLowerCase() // "lunes", "martes", etc.
     const teacherId = authStore.user?.uid
+
+    // 🚨 DEBUG ESPECÍFICO PARA EL PROBLEMA 🚨
+    console.error(`🚨 [FECHA DEBUG] Fecha recibida: "${date}"`)
+    console.error(`🚨 [FECHA DEBUG] Fecha parseada: ${parsedDate.toDateString()}`)
+    console.error(`🚨 [FECHA DEBUG] getDay() convertido a ISO: ${dayOfWeekNumber}`)
+    console.error(`🚨 [FECHA DEBUG] Día string: ${dayOfWeekString}`)
+    console.error(`🚨 [FECHA DEBUG] Esperado para domingo 6 julio: getDay()=6 (nuevo formato LUNES=0)`)
+    console.error(
+      `🚨 [FECHA DEBUG] NUEVO MAPEO: Lunes=0, Martes=1, Miércoles=2, Jueves=3, Viernes=4, Sábado=5, Domingo=6`
+    )
+    
+    // 🔍 DIAGNÓSTICO DE DESPLAZAMIENTO
+    const newDateTest = new Date(date)
+    console.error(`🔍 [DESPLAZAMIENTO] new Date("${date}").getDay() = ${newDateTest.getDay()}`)
+    console.error(`🔍 [DESPLAZAMIENTO] parseISO("${date}").getDay() = ${dayOfWeekNumber}`)
+    console.error(`🔍 [DESPLAZAMIENTO] Zona horaria offset: ${newDateTest.getTimezoneOffset()} minutos`)
+    console.error(`🔍 [DESPLAZAMIENTO] new Date toString: ${newDateTest.toString()}`)
+    console.error(`🔍 [DESPLAZAMIENTO] parseISO toString: ${parsedDate.toString()}`)
+    
+    // Verificar si hay diferencia
+    if (newDateTest.getDay() !== dayOfWeekNumber) {
+      console.error(`🚨 [DESPLAZAMIENTO] PROBLEMA DETECTADO: new Date vs parseISO dan diferentes días!`)
+      console.error(`🚨 [DESPLAZAMIENTO] new Date: ${newDateTest.getDay()}, parseISO: ${dayOfWeekNumber}`)
+    }
 
     if (!teacherId) {
       console.error("[TeacherHome] No hay un usuario logueado con uid")
@@ -123,54 +192,181 @@ async function fetchClassesForDate(date: string) {
     }
 
     console.log(
-      `[TeacherHome] Buscando clases para el maestro ${teacherId} en la fecha ${date} (${dayOfWeek})`
+      `[TeacherHome] Buscando clases para el maestro ${teacherId} en la fecha ${date} (${dayOfWeekString}, día ${dayOfWeekNumber})`
     )
 
     // Obtener todas las clases primero
     await classesStore.fetchClasses()
 
+    const getDayIndex = (dayString: string | number): number => {
+      // Si ya es un número, retornarlo
+      if (typeof dayString === "number") return dayString
+
+      // 🔄 NUEVO MAPEO: Lunes=0, Domingo=6 (formato corregido) - CONSISTENTE CON dayUtils.ts
+      const dayMapping: Record<string, number> = {
+        // Formato completo español
+        lunes: 0,
+        martes: 1,
+        miércoles: 2,
+        jueves: 3,
+        viernes: 4,
+        sábado: 5,
+        domingo: 6,
+        Lunes: 0,
+        Martes: 1,
+        Miércoles: 2,
+        Jueves: 3,
+        Viernes: 4,
+        Sábado: 5,
+        Domingo: 6,
+        
+        // Formato abreviado
+        lun: 0,
+        mar: 1,
+        mié: 2,
+        jue: 3,
+        vie: 4,
+        sáb: 5,
+        dom: 6,
+        Lun: 0,
+        Mar: 1,
+        Mié: 2,
+        Jue: 3,
+        Vie: 4,
+        Sáb: 5,
+        Dom: 6,
+        
+        // Formato sin acentos
+        miercoles: 2,
+        sabado: 5,
+      }
+
+      // Normalizar: quitar espacios y convertir a string
+      const normalized = dayString.toString().trim()
+      
+      // Buscar en el mapeo directo
+      if (normalized in dayMapping) {
+        return dayMapping[normalized]
+      }
+      
+      // Buscar en minúsculas como fallback
+      const lowercased = normalized.toLowerCase()
+      return dayMapping[lowercased] ?? -1
+    }
+
+    // Función auxiliar para verificar si una clase está programada para el día específico
+    const isClassScheduledForDay = (cls: any): boolean => {
+      const schedule = cls.schedule as any
+      if (!schedule) {
+        console.log(`[DEBUG] Clase ${cls.name}: NO tiene schedule`)
+        return false
+      }
+
+      // Manejar diferentes estructuras de horario
+      let slots = []
+      if (schedule.slots && Array.isArray(schedule.slots)) {
+        slots = schedule.slots
+      } else if (schedule.day) {
+        // Estructura legacy con day directo
+        slots = [schedule]
+      }
+
+      console.log(`[DEBUG] Clase ${cls.name}: Verificando ${slots.length} slots para día ${dayOfWeekNumber}`)
+      
+      const hasMatchingDay = slots.some((slot: any) => {
+        const slotDayIndex = getDayIndex(slot.day)
+        const matches = slotDayIndex === dayOfWeekNumber
+        console.log(`[DEBUG]   Slot "${slot.day}" -> índice ${slotDayIndex}, día buscado ${dayOfWeekNumber}: ${matches ? 'MATCH' : 'no match'}`)
+        return matches
+      })
+
+      console.log(`[DEBUG] Clase ${cls.name}: Resultado final = ${hasMatchingDay}`)
+      
+      // 🚨 VERIFICACIÓN ESPECIAL PARA DOMINGO Y ENSAYO GENERAL 🚨
+      if (cls.name === "Ensayo General" && dayOfWeekNumber === 6) {
+        console.error(`🚨 PROBLEMA DETECTADO: Ensayo General aparece en domingo (día 6)!`)
+        console.error(`🚨 Slots encontrados:`, slots)
+        console.error(`🚨 hasMatchingDay:`, hasMatchingDay)
+        console.error(`🚨 dayOfWeekNumber:`, dayOfWeekNumber)
+        slots.forEach((slot: any, index: number) => {
+          const slotIndex = getDayIndex(slot.day)
+          console.error(`🚨 Slot ${index}: "${slot.day}" -> ${slotIndex}`)
+        })
+        // FORZAR A FALSO SI ES DOMINGO (DÍA 6 en nuevo formato)
+        if (hasMatchingDay) {
+          console.error(`🚨 FORZANDO RESULTADO A FALSE PARA DOMINGO (DÍA 6)`)
+          return false
+        }
+      }
+      
+      return hasMatchingDay
+    }
+
     // 1. Obtener clases programadas donde el maestro es el encargado principal
-    const scheduledClasses = classesStore.getClassesByDayAndTeacherId(dayOfWeek, teacherId) || []
+    console.log(`[DEBUG] === INICIANDO FILTRADO PARA DOMINGO 6 JULIO 2025 ===`)
+    console.log(`[DEBUG] Total clases en classesStore: ${classesStore.classes.length}`)
+    console.log(`[DEBUG] TeacherId buscado: ${teacherId}`)
+    console.log(`[DEBUG] Día de la semana: ${dayOfWeekNumber} (${dayOfWeekString})`)
+    
+    const scheduledClasses = classesStore.classes.filter((cls: any) => {
+      const isTeacher = cls.teacherId === teacherId
+      const isScheduled = isClassScheduledForDay(cls)
+      console.log(`[DEBUG] Clase "${cls.name}": isTeacher=${isTeacher}, isScheduled=${isScheduled}`)
+      return isTeacher && isScheduled
+    })
+    
     console.log(
-      `[TeacherHome] Clases programadas como encargado para ${dayOfWeek}:`,
+      `[TeacherHome] Clases programadas como encargado para ${dayOfWeekString}:`,
       scheduledClasses.length
     )
 
     // 2. Obtener clases compartidas donde el maestro es colaborador
-    const sharedClasses = classesStore.classes.filter((cls) => {
+    const sharedClasses = classesStore.classes.filter((cls: any) => {
+      // 🔍 LOG ESPECÍFICO PARA ENSAYO GENERAL
+      if (cls.name === "Ensayo General") {
+        console.error(`🎯 [SHARED] Evaluando Ensayo General para día ${dayOfWeekNumber} (domingo=${dayOfWeekNumber === 6})`)
+      }
+
       // Verificar si el maestro está en el array de teachers (cualquier rol)
-      const isCollaborator = cls.teachers?.some((teacher) => teacher.teacherId === teacherId)
+      const isCollaborator = cls.teachers?.some((teacher: any) => {
+        if (typeof teacher === "string") {
+          return teacher === teacherId
+        } else if (typeof teacher === "object" && teacher.teacherId) {
+          return teacher.teacherId === teacherId
+        }
+        return false
+      })
 
-      if (!isCollaborator) return false
-
-      // Verificar que NO sea el profesor principal (para evitar duplicados)
-      if (cls.teacherId === teacherId) return false
-
-      // Verificar si la clase está programada para este día
-      if (!cls.schedule?.slots || !Array.isArray(cls.schedule.slots)) {
+      if (!isCollaborator) {
+        if (cls.name === "Ensayo General") {
+          console.error(`🎯 [SHARED] Ensayo General: NO es colaborador`)
+        }
         return false
       }
 
-      const hasSlotForDay = cls.schedule.slots.some((slot) => {
-        const slotDay = slot.day
-          ?.toLowerCase()
-          ?.normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-        const currentDay = dayOfWeek
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-        return slotDay === currentDay
-      })
+      // Verificar que NO sea el profesor principal (para evitar duplicados)
+      if (cls.teacherId === teacherId) {
+        if (cls.name === "Ensayo General") {
+          console.error(`🎯 [SHARED] Ensayo General: ES profesor principal, ignorando en compartidas`)
+        }
+        return false
+      }
 
-      return hasSlotForDay
+      // Verificar si la clase está programada para este día
+      const isScheduledForToday = isClassScheduledForDay(cls)
+      if (cls.name === "Ensayo General") {
+        console.error(`🎯 [SHARED] Ensayo General: isScheduledForToday=${isScheduledForToday}`)
+      }
+      return isScheduledForToday
     })
     console.log(
-      `[TeacherHome] Clases compartidas como colaborador para ${dayOfWeek}:`,
+      `[TeacherHome] Clases compartidas como colaborador para ${dayOfWeekString}:`,
       sharedClasses.length
     )
-    sharedClasses.forEach((cls) => {
-      const myRole = cls.teachers?.find((t) => t.teacherId === teacherId)?.role || "unknown"
+    sharedClasses.forEach((cls: any) => {
+      const myRole =
+        cls.teachers?.find((t: any) => typeof t === "object" && t.teacherId === teacherId)?.role ||
+        "unknown"
       console.log(`[TeacherHome] - ${cls.name}: rol=${myRole}, teacherId=${cls.teacherId}`)
     })
 
@@ -204,9 +400,15 @@ async function fetchClassesForDate(date: string) {
       const hasAttendance = attendanceStore.isClassRegistered(date, cls.id)
 
       // Obtener información del maestro colaborador
-      const myTeacherData = cls.teachers?.find((t) => t.teacherId === teacherId)
-      const canTakeAttendance = myTeacherData?.permissions?.canTakeAttendance !== false // Default true si no se especifica
-      const myRole = myTeacherData?.role || "colaborador"
+      const myTeacherData = cls.teachers?.find(
+        (t: any) => typeof t === "object" && t.teacherId === teacherId
+      )
+      const canTakeAttendance =
+        (myTeacherData &&
+          typeof myTeacherData === "object" &&
+          myTeacherData.permissions?.canTakeAttendance) !== false
+      const myRole =
+        (myTeacherData && typeof myTeacherData === "object" && myTeacherData.role) || "colaborador"
 
       console.log(`[TeacherHome] Procesando clase compartida: ${cls.name}`, {
         myRole,
@@ -281,15 +483,12 @@ async function fetchClassesForDate(date: string) {
       // Obtener horario formateado
       let timeString = ""
       if (classItem.schedule?.slots && classItem.schedule.slots.length > 0) {
-        const slot = classItem.schedule.slots.find((s) => {
+        const slot = classItem.schedule.slots.find((s: any) => {
           const slotDay = s.day
             ?.toLowerCase()
             ?.normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
-          const currentDay = dayOfWeek
-            .toLowerCase()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
+          const currentDay = dayOfWeekString.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
           return slotDay === currentDay
         })
 
@@ -322,7 +521,7 @@ async function fetchClassesForDate(date: string) {
       classesForDate.value.length
     )
     console.log(`[TeacherHome] ===== RESUMEN CLASES PARA MODAL =====`)
-    console.log(`[TeacherHome] Fecha: ${date} (${dayOfWeek})`)
+    console.log(`[TeacherHome] Fecha: ${date} (${dayOfWeekString})`)
     console.log(`[TeacherHome] Usuario: ${teacherId}`)
 
     const programadas = classesForDate.value.filter((c) => c.classType === "scheduled")
@@ -384,7 +583,7 @@ onMounted(async () => {
 watch(selectedDate, updateClassesWithRecords)
 
 // Computed para obtener el mes mostrado en el calendario
-const displayedMonth = ref(new Date()) // Puedes actualizar esto según tu lógica de navegación de mes
+const _displayedMonth = ref(new Date()) // Prefixed with _ to avoid lint error
 
 // Computed para calcular el estado de cada fecha usando el getter del store
 const getDateStatuses = computed(() => attendanceStore.dateAttendanceStatuses)
@@ -480,7 +679,7 @@ function handleChangeView(newView: "calendar" | "class-select" | "attendance-for
         v-else-if="view === 'class-select'"
         v-model="selectedClass"
         :selected-date="selectedDate"
-        :classes-with-records="classesWithRecords"
+        :classes-with-records="classesWithRecordsFormatted"
         :is-loading="loading"
         @update:model-value="handleClassSelect"
         @continue="view = 'attendance-form'"

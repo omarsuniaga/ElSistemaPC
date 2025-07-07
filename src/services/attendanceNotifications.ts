@@ -13,18 +13,26 @@ import {
   orderBy,
   limit,
 } from "firebase/firestore"
-import {httpsCallable} from "firebase/functions"
 
 // Lazy loading de Firebase para evitar errores de inicialización
+import {waitForFirebase} from "./firebaseInitializer"
+
 let firebaseDb: any = null
 let firebaseFunctions: any = null
 
 const initializeFirebaseServices = async () => {
   if (!firebaseDb || !firebaseFunctions) {
     try {
-      const {db, functions} = await import("../firebase")
-      firebaseDb = db
-      firebaseFunctions = functions
+      console.log("🔍 [AttendanceNotifications] Esperando Firebase...")
+      const firebaseState = await waitForFirebase(15000) // 15 segundos de timeout
+
+      if (!firebaseState.isReady) {
+        throw new Error("Firebase no está listo después del timeout")
+      }
+
+      firebaseDb = firebaseState.db
+      firebaseFunctions = firebaseState.functions
+
       console.log("✅ [AttendanceNotifications] Firebase servicios inicializados correctamente")
     } catch (error) {
       console.error("❌ [AttendanceNotifications] Error inicializando Firebase:", error)
@@ -95,14 +103,19 @@ const initializeFirebaseFunctions = async () => {
     
     // Verificar que Firebase App esté inicializado antes de crear el callable
     const {getApp} = await import("firebase/app")
+    
     try {
-      getApp() // Verificar que la app existe
+      const app = getApp() // Verificar que la app existe
+      console.log("✅ [AttendanceNotifications] Firebase App confirmado:", app.name)
+      
+      const {httpsCallable} = await import("firebase/functions")
       const callable = httpsCallable(functions, "getStudentAttendanceSummary")
       console.log("✅ [AttendanceNotifications] Callable creado exitosamente")
       return callable
     } catch (appError) {
       console.error("❌ [AttendanceNotifications] Firebase App no está inicializado:", appError)
-      throw new Error("Firebase App no está disponible para Functions")
+      const errorMessage = appError instanceof Error ? appError.message : String(appError)
+      throw new Error(`Firebase App no está disponible para Functions: ${errorMessage}`)
     }
   } catch (error) {
     console.error("❌ [AttendanceNotifications] Error creando Firebase Functions callable:", error)
@@ -122,7 +135,9 @@ const ensureFunctionsInitialized = async () => {
     } catch (error) {
       console.error("❌ [AttendanceNotifications] Error inicializando Functions:", error)
       // En lugar de lanzar error, devolver null para que el sistema continúe
-      console.warn("⚠️ [AttendanceNotifications] Continuando sin Functions - funcionalidad limitada")
+      console.warn(
+        "⚠️ [AttendanceNotifications] Continuando sin Functions - funcionalidad limitada"
+      )
       return null
     }
   }

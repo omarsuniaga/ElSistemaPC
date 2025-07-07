@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import {ref, watch, computed, onMounted} from "vue"
-import {format, formatISO, parseISO} from "date-fns"
+import {ref, watch, computed} from "vue"
+import {format} from "date-fns"
 import {es} from "date-fns/locale"
 import {XMarkIcon} from "@heroicons/vue/24/outline"
 import {useRouter} from "vue-router"
@@ -706,8 +706,9 @@ watch(
     if (newDate) {
       logDebug("Formateando fecha:", newDate)
 
-      // Usar parseISO para evitar problemas de zona horaria
-      const dateObj = parseISO(newDate)
+      // 🐛 FIX: Usar parseo manual para evitar conversión UTC
+      const [year, month, day] = newDate.split("-").map(Number)
+      const dateObj = new Date(year, month - 1, day)
       logDebug("Fecha parseada:", dateObj)
 
       // Format: "Lunes, 24 de junio de 2024"

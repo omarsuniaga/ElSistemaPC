@@ -3,8 +3,8 @@ import {defineStore} from "pinia"
 import {query, collection, where, getDocs, DocumentData, doc, getDoc} from "firebase/firestore"
 import {db} from "../../../firebase" // Assuming firebase.ts is in src/
 import {ATTENDANCE_COLLECTION} from "../service/attendance" // Adjusted path
-import {format} from "date-fns"
-import {useAuthStore} from "../../Auth/store/auth"
+import {format, parseISO, isValid} from "date-fns"
+import {useAuthStore} from "../../../stores/auth"
 import {useClassesStore} from "../../Classes/store/classes"
 import {ref, computed} from "vue"
 
@@ -167,9 +167,9 @@ export const useAttendanceStore = defineStore("attendance", () => {
       if (/^\d{4}-\d{2}-\d{2}$/.test(cleanDate)) {
         return cleanDate
       }
-      // Si es una fecha válida, formatearla
-      const dateObj = new Date(cleanDate)
-      if (!isNaN(dateObj.getTime())) {
+      // Si es una fecha válida, formatearla usando parseISO
+      const dateObj = parseISO(cleanDate)
+      if (isValid(dateObj)) {
         return format(dateObj, "yyyy-MM-dd")
       }
       throw new Error(`Formato de fecha inválido: "${cleanDate}"`)

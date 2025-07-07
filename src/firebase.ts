@@ -1,4 +1,4 @@
-import {initializeApp} from "firebase/app"
+import {initializeApp, getApps, getApp} from "firebase/app"
 import {getAuth, connectAuthEmulator} from "firebase/auth"
 import {
   connectFirestoreEmulator,
@@ -55,8 +55,15 @@ const firebaseConfig = {
 let app: any = null
 if (isConfigValid) {
   try {
-    app = initializeApp(firebaseConfig)
-    console.log("✅ Firebase inicializado correctamente")
+    // Verificar si ya hay una app inicializada para evitar duplicados
+    const existingApps = getApps()
+    if (existingApps.length > 0) {
+      app = getApp()
+      console.log("✅ Firebase ya está inicializado, reutilizando instancia existente")
+    } else {
+      app = initializeApp(firebaseConfig)
+      console.log("✅ Firebase inicializado correctamente")
+    }
   } catch (error) {
     console.error("❌ Error inicializando Firebase:", error)
   }

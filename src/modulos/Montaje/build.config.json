@@ -1,0 +1,28 @@
+{
+  "scripts": {
+    "build": "vite build --config vite.config.module.ts",
+    "build:watch": "vite build --config vite.config.module.ts --watch",
+    "dev": "vite --config vite.config.module.ts",
+    "preview": "vite preview --config vite.config.module.ts",
+    "type-check": "vue-tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist",
+    "package.json",
+    "README.md",
+    "types"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/montaje-module.es.js",
+      "require": "./dist/montaje-module.umd.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./style.css": "./dist/style.css",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "module": "./dist/montaje-module.es.js",
+  "main": "./dist/montaje-module.umd.js"
+}

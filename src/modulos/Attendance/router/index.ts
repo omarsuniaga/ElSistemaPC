@@ -11,7 +11,7 @@ export const attendanceRoutes: RouteRecordRaw[] = [
   {
     path: "/attendance",
     name: "AttendanceModule",
-    component: () => import("./views/AttendanceViewOptimized.vue"),
+    component: () => import("../views/AttendanceViewOptimized.vue"),
     meta: {
       title: "Gestión de Asistencia",
       requiresAuth: true,
@@ -27,21 +27,33 @@ export const attendanceRoutes: RouteRecordRaw[] = [
       {
         path: "",
         name: "AttendanceMain",
-        component: () => import("./views/AttendanceViewOptimized.vue"),
+        component: () => import("../views/AttendanceViewOptimized.vue"),
         meta: {
           title: "Panel de Asistencia",
           description: "Gestión integral de asistencia de estudiantes",
         },
       },
 
-      // Vista de calendario
+      // Vista de calendario optimizado
       {
         path: "calendar",
         name: "AttendanceCalendar",
-        component: () => import("./components/AttendanceCalendarOptimized.vue"),
+        component: () => import("../components/AttendanceCalendarOptimized.vue"),
         meta: {
           title: "Calendario de Asistencia",
           description: "Navegación por fechas y visualización de actividad",
+        },
+      },
+
+      // Vista de calendario profesional
+      {
+        path: "professional-calendar",
+        name: "ProfessionalCalendar",
+        component: () => import("../views/ProfessionalCalendarView.vue"),
+        meta: {
+          title: "Calendario Profesional",
+          description: "Calendario avanzado con datos reales e integración completa",
+          permissions: ["attendance:read"],
         },
       },
 
@@ -49,7 +61,7 @@ export const attendanceRoutes: RouteRecordRaw[] = [
       {
         path: "list/:date/:classId",
         name: "AttendanceList",
-        component: () => import("./components/AttendanceListOptimized.vue"),
+        component: () => import("../components/AttendanceListOptimized.vue"),
         props: (route) => ({
           selectedDate: route.params.date,
           selectedClass: route.params.classId,
@@ -70,7 +82,7 @@ export const attendanceRoutes: RouteRecordRaw[] = [
       {
         path: "reports",
         name: "AttendanceReports",
-        component: () => import("./views/AttendanceReportsView.vue"),
+        component: () => import("../views/AttendanceReportsView.vue"),
         meta: {
           title: "Reportes de Asistencia",
           description: "Análisis y estadísticas de asistencia",
@@ -82,7 +94,7 @@ export const attendanceRoutes: RouteRecordRaw[] = [
       {
         path: "settings",
         name: "AttendanceSettings",
-        component: () => import("./views/AttendanceSettingsView.vue"),
+        component: () => import("../views/AttendanceSettingsView.vue"),
         meta: {
           title: "Configuración de Asistencia",
           description: "Ajustes y preferencias del módulo",
@@ -123,6 +135,12 @@ export const attendanceNavigation = {
       to: "/attendance/calendar",
       description: "Navegación por fechas",
     },
+    {
+      title: "Calendario Pro",
+      icon: "SparklesIcon",
+      to: "/attendance/professional-calendar",
+      description: "Calendario profesional con datos reales",
+    },
   ],
 
   breadcrumbs: {
@@ -134,6 +152,11 @@ export const attendanceNavigation = {
       {name: "Inicio", to: "/"},
       {name: "Asistencia", to: "/attendance"},
       {name: "Calendario", to: "/attendance/calendar"},
+    ],
+    "/attendance/professional-calendar": [
+      {name: "Inicio", to: "/"},
+      {name: "Asistencia", to: "/attendance"},
+      {name: "Calendario Pro", to: "/attendance/professional-calendar"},
     ],
     "/attendance/reports": [
       {name: "Inicio", to: "/"},

@@ -1,131 +1,162 @@
 <template>
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    <!-- KPI Card: Active Students -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
-      <div class="flex items-center">
-        <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
-          <UserGroupIcon class="h-6 w-6 text-white" />
-        </div>
-        <div class="ml-4 flex-1">
+  <div class="p-4 md:p-6">
+    <div class="mb-4">
+      <h2 class="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">
+        Indicadores Clave
+      </h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Métricas principales de la academia
+      </p>
+    </div>
+    
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      <!-- KPI Card: Active Students -->
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 md:p-4 border border-gray-200 dark:border-gray-600">
+        <div class="flex flex-col space-y-2">
           <div class="flex items-center justify-between">
-            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-              Estudiantes Activos
+            <div class="flex-shrink-0 bg-blue-500 dark:bg-blue-600 rounded-md p-2">
+              <UserGroupIcon class="h-4 w-4 md:h-5 md:w-5 text-white" />
+            </div>
+            <div class="relative group">
+              <QuestionMarkCircleIcon
+                class="h-3 w-3 md:h-4 md:w-4 text-gray-400 dark:text-gray-500 cursor-pointer"
+              />
+              <div
+                class="absolute bottom-full mb-2 w-32 md:w-48 bg-gray-700 dark:bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"
+              >
+                Total de estudiantes activos
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
+              Estudiantes
             </p>
-            <div class="relative group">
-              <QuestionMarkCircleIcon
-                class="h-4 w-4 text-gray-400 dark:text-gray-500 cursor-pointer"
-              />
-              <div
-                class="absolute bottom-full mb-2 w-48 bg-gray-700 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-              >
-                Total de estudiantes con estado "Activo".
-              </div>
-            </div>
-          </div>
-          <div
-            v-if="loading"
-            class="mt-1 h-7 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
-          />
-          <p v-else class="text-2xl font-semibold text-gray-900 dark:text-white">
-            {{ kpis.activeStudents }}
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- KPI Card: Classes Today -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
-      <div class="flex items-center">
-        <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
-          <CalendarDaysIcon class="h-6 w-6 text-white" />
-        </div>
-        <div class="ml-4 flex-1">
-          <div class="flex items-center justify-between">
-            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Clases Hoy</p>
-            <div class="relative group">
-              <QuestionMarkCircleIcon
-                class="h-4 w-4 text-gray-400 dark:text-gray-500 cursor-pointer"
-              />
-              <div
-                class="absolute bottom-full mb-2 w-48 bg-gray-700 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-              >
-                Total de clases programadas para el día de hoy.
-              </div>
-            </div>
-          </div>
-          <div
-            v-if="loading"
-            class="mt-1 h-7 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
-          />
-          <p v-else class="text-2xl font-semibold text-gray-900 dark:text-white">
-            {{ kpis.classesToday }}
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- KPI Card: Daily Attendance -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
-      <div class="flex items-center">
-        <div class="flex-shrink-0 bg-yellow-500 rounded-md p-3">
-          <CheckCircleIcon class="h-6 w-6 text-white" />
-        </div>
-        <div class="ml-4 flex-1">
-          <div class="flex items-center justify-between">
-            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-              Asistencia Hoy
+            <div
+              v-if="isLoading"
+              class="mt-1 h-6 md:h-7 w-16 md:w-20 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"
+            />
+            <p v-else class="text-lg md:text-2xl font-semibold text-gray-900 dark:text-white">
+              {{ dashboardData?.students?.active || 0 }}
             </p>
-            <div class="relative group">
-              <QuestionMarkCircleIcon
-                class="h-4 w-4 text-gray-400 dark:text-gray-500 cursor-pointer"
-              />
-              <div
-                class="absolute bottom-full mb-2 w-56 bg-gray-700 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-              >
-                Porcentaje de estudiantes marcados como "Presente" del total de asistencias
-                registradas hoy.
-              </div>
-            </div>
+            <p v-if="!isLoading" class="text-xs text-gray-500 dark:text-gray-400">
+              de {{ dashboardData?.students?.total || 0 }} total
+            </p>
           </div>
-          <div
-            v-if="loading"
-            class="mt-1 h-7 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
-          />
-          <p v-else class="text-2xl font-semibold text-gray-900 dark:text-white">
-            {{ kpis.dailyAttendance }}%
-          </p>
         </div>
       </div>
-    </div>
 
-    <!-- KPI Card: Pending Notifications -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
-      <div class="flex items-center">
-        <div class="flex-shrink-0 bg-red-500 rounded-md p-3">
-          <BellAlertIcon class="h-6 w-6 text-white" />
-        </div>
-        <div class="ml-4 flex-1">
+      <!-- KPI Card: Classes Today -->
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 md:p-4 border border-gray-200 dark:border-gray-600">
+        <div class="flex flex-col space-y-2">
           <div class="flex items-center justify-between">
-            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Alertas</p>
+            <div class="flex-shrink-0 bg-green-500 dark:bg-green-600 rounded-md p-2">
+              <CalendarDaysIcon class="h-4 w-4 md:h-5 md:w-5 text-white" />
+            </div>
             <div class="relative group">
               <QuestionMarkCircleIcon
-                class="h-4 w-4 text-gray-400 dark:text-gray-500 cursor-pointer"
+                class="h-3 w-3 md:h-4 md:w-4 text-gray-400 dark:text-gray-500 cursor-pointer"
               />
               <div
-                class="absolute bottom-full mb-2 w-60 bg-gray-700 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                class="absolute bottom-full mb-2 w-32 md:w-48 bg-gray-700 dark:bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"
               >
-                Suma de estudiantes ausentes y con tardanza hoy que podrían requerir una
-                notificación.
+                Clases programadas para hoy
               </div>
             </div>
           </div>
-          <div
-            v-if="loading"
-            class="mt-1 h-7 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
-          />
-          <p v-else class="text-2xl font-semibold text-gray-900 dark:text-white">
-            {{ kpis.pendingNotifications }}
-          </p>
+          <div>
+            <p class="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
+              Clases Hoy
+            </p>
+            <div
+              v-if="isLoading"
+              class="mt-1 h-6 md:h-7 w-16 md:w-20 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"
+            />
+            <p v-else class="text-lg md:text-2xl font-semibold text-gray-900 dark:text-white">
+              {{ dashboardData?.classes?.today || 0 }}
+            </p>
+            <p v-if="!isLoading" class="text-xs text-gray-500 dark:text-gray-400">
+              {{ dashboardData?.classes?.thisWeek || 0 }} esta semana
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Card: Weekly Attendance -->
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 md:p-4 border border-gray-200 dark:border-gray-600">
+        <div class="flex flex-col space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex-shrink-0 bg-yellow-500 dark:bg-yellow-600 rounded-md p-2">
+              <CheckCircleIcon class="h-4 w-4 md:h-5 md:w-5 text-white" />
+            </div>
+            <div class="relative group">
+              <QuestionMarkCircleIcon
+                class="h-3 w-3 md:h-4 md:w-4 text-gray-400 dark:text-gray-500 cursor-pointer"
+              />
+              <div
+                class="absolute bottom-full mb-2 w-32 md:w-56 bg-gray-700 dark:bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"
+              >
+                Asistencias registradas esta semana
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
+              Asistencia
+            </p>
+            <div
+              v-if="isLoading"
+              class="mt-1 h-6 md:h-7 w-16 md:w-20 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"
+            />
+            <p v-else class="text-lg md:text-2xl font-semibold text-gray-900 dark:text-white">
+              {{ dashboardData?.attendance?.thisWeek || 0 }}
+            </p>
+            <div v-if="!isLoading" class="flex items-center space-x-1">
+              <span 
+                :class="attendanceTrend.isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+                class="text-xs font-medium"
+              >
+                {{ attendanceTrend.isPositive ? '+' : '' }}{{ attendanceTrend.value }}%
+              </span>
+              <span class="text-xs text-gray-500 dark:text-gray-400">vs anterior</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Card: Active Teachers -->
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 md:p-4 border border-gray-200 dark:border-gray-600">
+        <div class="flex flex-col space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex-shrink-0 bg-purple-500 dark:bg-purple-600 rounded-md p-2">
+              <BellAlertIcon class="h-4 w-4 md:h-5 md:w-5 text-white" />
+            </div>
+            <div class="relative group">
+              <QuestionMarkCircleIcon
+                class="h-3 w-3 md:h-4 md:w-4 text-gray-400 dark:text-gray-500 cursor-pointer"
+              />
+              <div
+                class="absolute bottom-full mb-2 w-32 md:w-48 bg-gray-700 dark:bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"
+              >
+                Maestros activos en el sistema
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
+              Maestros
+            </p>
+            <div
+              v-if="isLoading"
+              class="mt-1 h-6 md:h-7 w-16 md:w-20 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"
+            />
+            <p v-else class="text-lg md:text-2xl font-semibold text-gray-900 dark:text-white">
+              {{ dashboardData?.teachers?.active || 0 }}
+            </p>
+            <p v-if="!isLoading" class="text-xs text-gray-500 dark:text-gray-400">
+              de {{ dashboardData?.teachers?.total || 0 }} total
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -133,7 +164,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, computed} from "vue"
+import { inject, computed } from "vue"
 import {
   UserGroupIcon,
   CalendarDaysIcon,
@@ -141,147 +172,28 @@ import {
   BellAlertIcon,
   QuestionMarkCircleIcon,
 } from "@heroicons/vue/24/outline"
-import {useStudentsStore} from "../../../modulos/Students/store/students"
-import {useClassesStore} from "../../../modulos/Classes/store/classes"
-import {useAttendanceStore} from "../../../modulos/Attendance/store/attendance"
-import {format} from "date-fns"
 
-defineOptions({name: "DashboardKPIs"})
+defineOptions({ name: "DashboardKPIs" })
 
-const loading = ref(true)
-const studentsStore = useStudentsStore()
-const classesStore = useClassesStore()
-const attendanceStore = useAttendanceStore()
+// ==================== INJECTED DATA ====================
+const dashboardData = inject("dashboardData")
+const isLoading = inject("isLoading")
 
-// Función auxiliar para obtener estadísticas específicas del día
-const getTodayAttendanceStats = () => {
-  const today = new Date()
-  const todayStr = format(today, "yyyy-MM-dd")
-
-  // Obtener documentos de asistencia del día actual
-  const todayDocs = attendanceStore.attendanceDocuments.filter((doc) => doc.fecha === todayStr)
-
-  if (todayDocs.length === 0) {
-    return {
-      attendanceRate: 100,
-      pendingNotifications: 0,
-      totalClasses: 0,
-      totalStudents: 0,
-    }
+// ==================== COMPUTED PROPERTIES ====================
+const attendanceTrend = computed(() => {
+  const thisWeek = dashboardData?.value?.attendance?.thisWeek || 0
+  const lastWeek = dashboardData?.value?.attendance?.lastWeek || 0
+  
+  if (lastWeek === 0) {
+    return { value: 0, isPositive: true }
   }
-
-  let totalPresentes = 0
-  let totalAusentes = 0
-  let totalTardes = 0
-  let totalJustificados = 0
-
-  todayDocs.forEach((doc) => {
-    totalPresentes += doc.data.presentes?.length || 0
-    totalAusentes += doc.data.ausentes?.length || 0
-    totalTardes += doc.data.tarde?.length || 0
-    totalJustificados += doc.data.justificacion?.length || 0
-  })
-
-  const totalStudents = totalPresentes + totalAusentes + totalTardes
-  const attendanceRate =
-    totalStudents > 0 ? Math.round((totalPresentes / totalStudents) * 100) : 100
-  const pendingNotifications = totalAusentes + totalTardes // Excluimos justificados
-
+  
+  const difference = thisWeek - lastWeek
+  const percentage = Math.round((difference / lastWeek) * 100)
+  
   return {
-    attendanceRate,
-    pendingNotifications,
-    totalClasses: todayDocs.length,
-    totalStudents,
-    presentes: totalPresentes,
-    ausentes: totalAusentes,
-    tardes: totalTardes,
-    justificados: totalJustificados,
+    value: Math.abs(percentage),
+    isPositive: percentage >= 0
   }
-}
-
-// Computed properties para obtener datos de los stores
-const kpis = computed(() => {
-  const activeStudents = studentsStore.activeStudents.length
-
-  // Obtener clases programadas para hoy usando el store modular de clases
-  const today = new Date()
-  const dayNames = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"]
-  const dayNamesEn = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-  const dayIndex = today.getDay() // 0 = domingo, 1 = lunes, etc.
-  const todayNameEs = dayNames[dayIndex]
-  const todayNameEn = dayNamesEn[dayIndex]
-
-  // Usar el getter del store para obtener clases por día
-  const classesToday =
-    classesStore.getClassesByDay(dayIndex).length +
-    classesStore.getClassesByDay(todayNameEs).length +
-    classesStore.getClassesByDay(todayNameEn).length
-
-  // Obtener estadísticas de asistencia del día actual usando nuestra función auxiliar
-  const todayStats = getTodayAttendanceStats()
-  const dailyAttendance = todayStats.attendanceRate
-  const pendingNotifications = todayStats.pendingNotifications
-
-  return {
-    activeStudents,
-    classesToday,
-    dailyAttendance,
-    pendingNotifications,
-    // Datos adicionales para debugging
-    attendanceDetails: {
-      totalClasses: todayStats.totalClasses,
-      totalStudents: todayStats.totalStudents,
-      presentes: todayStats.presentes,
-      ausentes: todayStats.ausentes,
-      tardes: todayStats.tardes,
-      justificados: todayStats.justificados,
-    },
-  }
-})
-
-const fetchKPIs = async () => {
-  loading.value = true
-  try {
-    // Cargar datos de los stores en paralelo
-    await Promise.all([
-      studentsStore.fetchStudents(),
-      classesStore.fetchClasses(),
-      // Para la asistencia, obtener datos del día actual y generar analíticas
-      attendanceStore
-        .fetchAttendanceDocuments(
-          format(new Date(), "yyyy-MM-dd"),
-          format(new Date(), "yyyy-MM-dd")
-        )
-        .catch((err) => {
-          console.warn("No se pudo cargar asistencia del día actual:", err)
-          // No es un error crítico, continuar sin datos de asistencia
-        }),
-    ])
-
-    // Actualizar analíticas del store de attendance si hay datos
-    if (attendanceStore.attendanceDocuments.length > 0) {
-      try {
-        await attendanceStore.updateAnalytics()
-        console.log("Analíticas de asistencia actualizadas:", attendanceStore.analytics)
-      } catch (analyticsError) {
-        console.warn("Error actualizando analíticas:", analyticsError)
-      }
-    }
-
-    console.log("KPIs cargados:", {
-      estudiantes: studentsStore.activeStudents.length,
-      clasesTotal: classesStore.classes.length,
-      documentosAsistencia: attendanceStore.attendanceDocuments.length,
-      analytics: attendanceStore.analytics ? "Disponibles" : "No disponibles",
-    })
-  } catch (error) {
-    console.error("Error fetching KPIs:", error)
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(() => {
-  fetchKPIs()
 })
 </script>

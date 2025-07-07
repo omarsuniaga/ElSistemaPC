@@ -43,8 +43,10 @@ export default defineConfig(({mode}) => {
       }),
       VitePWA({
         registerType: "autoUpdate",
-        injectRegister: "auto",
-        strategies: "generateSW",
+        injectRegister: false, // Deshabilitar registro automático temporalmente
+        strategies: "injectManifest", // Usar el SW manual en lugar del generado
+        srcDir: "public",
+        filename: "sw.js",
         manifest: {
           name: "Academia Musical PC",
           short_name: "AcademiaPC",
@@ -121,7 +123,7 @@ export default defineConfig(({mode}) => {
           ],
         },
         devOptions: {
-          enabled: true,
+          enabled: false, // Deshabilitar PWA en desarrollo
           type: "module",
         },
       }),
@@ -156,9 +158,9 @@ export default defineConfig(({mode}) => {
       "process.env.VITE_USE_EMULATORS": JSON.stringify(env.VITE_USE_EMULATORS),
     },
     server: {
-      port: 3001,
+      port: 3002, // Puerto fijo para desarrollo
       host: true,
-      strictPort: true,
+      strictPort: true, // Ensure exact port is used
       cors: true,
       headers: {
         "Access-Control-Allow-Origin": "*",
@@ -170,9 +172,8 @@ export default defineConfig(({mode}) => {
         interval: 1000,
       },
       hmr: {
+        port: 3002, // Puerto HMR también fijo
         overlay: true,
-        port: 3002,
-        clientPort: 3002,
         timeout: 30000,
       },
       proxy: {

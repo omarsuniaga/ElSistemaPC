@@ -18,9 +18,9 @@ export function dayName(iso?: unknown): string {
   if (!iso.trim()) return ""
 
   try {
-    // Intentar crear una fecha válida sin usar parseISO directamente
-    const d = new Date(`${iso}T00:00:00`)
-    if (isNaN(d.getTime())) return ""
+    // Usar parseISO para evitar problemas de zona horaria
+    const d = parseISO(iso)
+    if (!isValid(d)) return ""
 
     // Si llegamos aquí, la fecha es válida
     return format(d, "EEEE", {locale: es}).toLowerCase()

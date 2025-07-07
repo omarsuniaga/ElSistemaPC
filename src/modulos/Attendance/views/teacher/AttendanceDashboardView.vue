@@ -221,14 +221,34 @@ const handleDateSelect = async (date: string) => {
   console.log('📅 [AttendanceDashboard] Date selected:', date)
   selectedDay.value = date
   await loadClassesForSelectedDay(date)
+}
+
+// Manejar apertura del modal de clases (nuevo evento específico del calendario)
+const handleOpenClassesModal = async (date: string) => {
+  console.log("📅 [AttendanceDashboard] Opening classes modal for date:", date)
+  
+  // Asegurar que tenemos los datos del día cargados
+  if (selectedDay.value !== date) {
+    selectedDay.value = date
+    await loadClassesForSelectedDay(date)
+  }
   
   // Abrir modal con las clases del día
   if (classesForSelectedDay.value.length > 0) {
     modalDate.value = date
     classesForModal.value = classesForSelectedDay.value
     showClassesModal.value = true
+    console.log(
+      "📋 [AttendanceDashboard] Classes modal opened with",
+      classesForSelectedDay.value.length,
+      "classes"
+    )
   } else {
-    console.log('📅 [AttendanceDashboard] No classes found for date:', date)
+    console.log("📅 [AttendanceDashboard] No classes found for date:", date)
+    // Aún abrir el modal para mostrar opción de crear clase emergente
+    modalDate.value = date
+    classesForModal.value = []
+    showClassesModal.value = true
   }
 }
 
@@ -497,6 +517,7 @@ defineExpose({
               :loading="loading"
               @date-select="handleDateSelect"
               @month-change="handleMonthChange"
+              @open-classes-modal="handleOpenClassesModal"
             />
           </div>
         </div>

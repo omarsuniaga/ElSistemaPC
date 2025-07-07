@@ -13,7 +13,7 @@ import {
   limit as limitToFirst,
   Timestamp,
 } from "firebase/firestore"
-import {db} from "@/firebase"
+import {db} from "../../../firebase/config"
 import {TipoInstrumento, EstadoCompass} from "../types"
 import type {
   Obra,

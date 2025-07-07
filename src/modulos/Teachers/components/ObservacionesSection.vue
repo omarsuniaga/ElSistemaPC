@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {ref, computed, onMounted, inject, type Ref} from "vue"
 import {useAttendanceStore} from "../../Attendance/store/attendance"
-import {useAuthStore} from "../../../modulos/Auth/store/auth"
 import {fetchUnifiedObservationsForClass} from "../../../composables/useUnifiedObservations"
 import {
   ChevronDownIcon,
@@ -25,7 +24,6 @@ const props = defineProps<{
 
 // Stores
 const attendanceStore = useAttendanceStore()
-const authStore = useAuthStore()
 
 // Obtener el teacherId del componente padre
 const currentTeacherId = inject<Ref<string>>("currentTeacherId")

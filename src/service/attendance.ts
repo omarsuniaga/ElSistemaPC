@@ -19,6 +19,7 @@ import {
   DocumentData,
 } from "firebase/firestore"
 import {db} from "../firebase"
+import {parseISO, format, isValid} from "date-fns"
 import type {AttendanceDocument, JustificationData} from "../modulos/Attendance/types/attendance"
 
 // Constantes
@@ -40,33 +41,26 @@ const isFirestoreId = (str: string): boolean => {
 /**
  * Normaliza fecha al formato YYYY-MM-DD
  */
-const normalizeDate = (date: string): string => {
-  if (!date || typeof date !== "string") {
+const normalizeDate = (date: string | Date): string => {
+  if (!date) {
+    throw new Error("Se proporcionó una fecha nula o indefinida para normalizar.")
+  }
+
+  // Si la fecha ya es un objeto Date, la usamos directamente
+  if (date instanceof Date) {
+    if (isNaN(date.getTime())) {
+      throw new Error(`Fecha inválida: ${date}`)
+    }
+    return format(date, "yyyy-MM-dd")
+  }
+
+  // Si es string, usar parseISO para evitar problemas de zona horaria
+  const dateObj = parseISO(date)
+  if (!isValid(dateObj)) {
     throw new Error(`Formato de fecha inválido: ${date}`)
   }
 
-  // Verificar si es un ID de Firestore y no una fecha
-  if (isFirestoreId(date)) {
-    throw new Error(`Se esperaba una fecha pero se recibió un ID: ${date}`)
-  }
-
-  // Si ya está en formato YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return date
-  }
-  // Si está en formato YYYYMMDD
-  if (/^\d{8}$/.test(date)) {
-    return `${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}`
-  }
-  // Si es una fecha válida, formatearla
-  const dateObj = new Date(date)
-  if (!isNaN(dateObj.getTime())) {
-    const year = dateObj.getFullYear()
-    const month = String(dateObj.getMonth() + 1).padStart(2, "0")
-    const day = String(dateObj.getDate()).padStart(2, "0")
-    return `${year}-${month}-${day}`
-  }
-  throw new Error(`Formato de fecha inválido: ${date}`)
+  return format(dateObj, "yyyy-MM-dd")
 }
 
 /**

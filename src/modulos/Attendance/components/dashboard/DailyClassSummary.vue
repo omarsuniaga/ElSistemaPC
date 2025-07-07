@@ -340,28 +340,41 @@ const handleBatchReview = () => {
                         d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                       />
                     </svg>
-                    <span>{{ classItem.classroom }}</span>
+                    <span>{{ classItem.classroom }} </span>
                   </div>
-                </div>
-              </div>
-
-              <!-- Botón de acción -->
-              <div class="flex items-center space-x-2">
-                <button
-                  v-if="classItem.canTakeAttendance"
-                  class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md transition-colors group-hover:bg-blue-700"
-                  @click.stop="handleClassSelect(classItem)"
-                >
-                  Tomar Asistencia
-                </button>
-                <div
-                  v-else
-                  class="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs font-medium rounded-md"
-                  title="Sin permisos para tomar asistencia"
-                >
-                  Sin permisos
-                </div>
-
+                  <!-- Botón de acción -->
+                  <div class="flex items-center space-x-1">
+                    <button
+                      v-if="classItem.canTakeAttendance"
+                      :title="'Que arrechera ' + classItem.name"
+                      class="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors group-hover:bg-blue-700 flex items-center space-x-1"
+                      @click.stop="handleClassSelect(classItem)"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span class="hidden sm:inline text-xs font-medium">Asistencia</span>
+                    </button>
+                  <div
+                    v-else
+                    class="p-2 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg flex items-center space-x-1"
+                    title="Sin permisos para tomar asistencia"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                      />
+                    </svg>
+                    <span class="hidden sm:inline text-xs font-medium">Bloqueado</span>
+                  </div>
                 <!-- Indicador de estado -->
                 <div
                   :class="[
@@ -385,6 +398,9 @@ const handleBatchReview = () => {
                   </svg>
                 </div>
               </div>
+            </div>
+          </div>
+            
             </div>
           </div>
         </div>
@@ -466,10 +482,19 @@ const handleBatchReview = () => {
               <!-- Botón de acción -->
               <div class="flex items-center space-x-2">
                 <button
-                  class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-md transition-colors group-hover:bg-green-700"
+                  :title="'Ver/editar asistencia de ' + classItem.name"
+                  class="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors group-hover:bg-green-700 flex items-center space-x-1"
                   @click.stop="handleClassSelect(classItem)"
                 >
-                  Ver/Editar
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                  <span class="hidden sm:inline text-xs font-medium">Editar</span>
                 </button>
 
                 <!-- Indicador de estado -->
@@ -531,19 +556,19 @@ const handleBatchReview = () => {
 </template>
 
 <style scoped>
-/* Animaciones suaves */
-.group-hover\:bg-blue-700:hover {
-  @apply bg-blue-700;
-}
-
-.group-hover\:bg-green-700:hover {
-  @apply bg-green-700;
-}
-
 /* Efectos de hover mejorados */
 .hover\:shadow-md:hover {
   box-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.1),
     0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Animaciones suaves para botones en grupo */
+.group:hover .group-hover\:bg-blue-700 {
+  background-color: rgb(29 78 216);
+}
+
+.group:hover .group-hover\:bg-green-700 {
+  background-color: rgb(21 128 61);
 }
 </style>

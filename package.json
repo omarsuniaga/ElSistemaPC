@@ -7,7 +7,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "vite --port 3000",
+    "dev": "vite",
     "dev:clean": "npm run clean-processes && npm run dev",
     "clean-processes": "powershell -ExecutionPolicy Bypass -File scripts/fix-websocket.ps1",
     "build": "vite build",

@@ -105,6 +105,20 @@ const routes: Array<RouteRecordRaw> = [
       permission: "teacher_view",
     },
   },
+  // 🎯 RUTA DIRECTA: Acceso rápido al nuevo calendario
+  {
+    path: "/attendance/calendar",
+    name: "AttendanceCalendarDirect",
+    component: () => import("../modulos/Attendance/views/professionalCalendarView.vue"),
+    meta: {
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: "attendance",
+      permission: "teacher_calendar",
+      allowedRoles: ["Maestro", "maestro", "teacher", "Teacher", "Admin", "Director", "Superusuario"],
+      title: "Calendario de Asistencias"
+    },
+  },
   {
     path: "/teacher/attendance/calendar",
     name: "TeacherAttendanceCalendar",
@@ -115,6 +129,21 @@ const routes: Array<RouteRecordRaw> = [
       requiresRBAC: true,
       moduleKey: "attendance",
       permission: "teacher_calendar",
+    },
+  },
+  // 🎯 NUEVA RUTA: Sistema de Calendario de Asistencias Limpio
+  {
+    path: "/teacher/attendance/new-calendar",
+    name: "NewTeacherAttendanceCalendar", 
+    component: () => import("../modulos/Attendance/views/NewTeacherAttendanceDashboard.vue"),
+    props: {mode: "new-calendar"},
+    meta: {
+      requiresAuth: true,
+      requiresRBAC: true,
+      moduleKey: "attendance",
+      permission: "teacher_calendar",
+      title: "Nuevo Calendario de Asistencias",
+      description: "Sistema de calendario limpio y optimizado"
     },
   },
   {
@@ -506,6 +535,18 @@ const routes: Array<RouteRecordRaw> = [
       requiresAuth: true,
       allowedRoles: ["Superusuario", "Admin"],
       title: "Pruebas de Branding",
+    },
+  },
+  // 🧪 RUTA DE TESTING: Nuevo Sistema de Calendario
+  {
+    path: "/testing/new-attendance-calendar",
+    name: "TestNewAttendanceCalendar",
+    component: () => import("../modulos/Attendance/views/NewTeacherAttendanceDashboard.vue"),
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ["Superusuario", "Admin", "Maestro", "maestro", "teacher", "Teacher"],
+      title: "Test: Nuevo Calendario de Asistencias",
+      description: "Pruebas del sistema limpio de calendario"
     },
   }, // Ruta inicial: redirige según el rol
   {

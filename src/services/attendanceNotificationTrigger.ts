@@ -2,7 +2,7 @@
 
 // Detecta nuevos registros de asistencia y notifica a roles administrativos
 
-import {db, isFirebaseReady} from "../firebase"
+import {waitForFirebase} from "./firebaseInitializer"
 import {
   collection,
   addDoc,
@@ -17,6 +17,33 @@ import {
   updateDoc,
   doc,
 } from "firebase/firestore"
+
+// Variables para Firebase services
+let db: any = null
+let isFirebaseReady = false
+
+// Función para inicializar Firebase services
+const initializeFirebaseServices = async () => {
+  if (!db) {
+    try {
+      console.log("🔍 [AttendanceNotificationTrigger] Esperando Firebase...")
+      const firebaseState = await waitForFirebase(15000) // 15 segundos de timeout
+
+      if (!firebaseState.isReady) {
+        throw new Error("Firebase no está listo después del timeout")
+      }
+
+      db = firebaseState.db
+      isFirebaseReady = true
+
+      console.log("✅ [AttendanceNotificationTrigger] Firebase servicios inicializados correctamente")
+    } catch (error) {
+      console.error("❌ [AttendanceNotificationTrigger] Error inicializando Firebase:", error)
+      throw error
+    }
+  }
+  return {db, isReady: isFirebaseReady}
+}
 
 // Interfaces
 interface AttendanceNotification {
@@ -56,11 +83,13 @@ const USERS_COLLECTION = "USERS"
  */
 const checkCollectionExists = async (collectionName: string): Promise<boolean> => {
   try {
-    if (!isFirebaseReady() || !db) {
+    // Inicializar Firebase si es necesario
+    const firebaseServices = await initializeFirebaseServices()
+    if (!firebaseServices.isReady || !firebaseServices.db) {
       return false
     }
 
-    const collectionRef = collection(db, collectionName)
+    const collectionRef = collection(firebaseServices.db, collectionName)
     const snapshot = await getDocs(query(collectionRef, limit(1)))
     return !snapshot.empty
   } catch (error) {
@@ -74,7 +103,9 @@ const checkCollectionExists = async (collectionName: string): Promise<boolean> =
  */
 const getTeacherInfo = async (teacherId: string): Promise<{name: string; email?: string}> => {
   try {
-    if (!isFirebaseReady() || !db) {
+    // Inicializar Firebase si es necesario
+    const firebaseServices = await initializeFirebaseServices()
+    if (!firebaseServices.isReady || !firebaseServices.db) {
       console.warn("Firebase no está listo, usando datos por defecto")
       return {name: `Maestro ${teacherId}`}
     }
@@ -86,14 +117,8 @@ const getTeacherInfo = async (teacherId: string): Promise<{name: string; email?:
       return {name: `Maestro ${teacherId}`}
     }
 
-    // Verificar db antes de crear query
-    if (!db) {
-      console.warn("❌ db instance no disponible para consulta de maestro")
-      return {name: `Maestro ${teacherId}`}
-    }
-
     const teacherQuery = query(
-      collection(db, USERS_COLLECTION),
+      collection(firebaseServices.db, USERS_COLLECTION),
       where("uid", "==", teacherId),
       limit(1)
     )
@@ -122,7 +147,9 @@ const getTeacherInfo = async (teacherId: string): Promise<{name: string; email?:
  */
 const getClassInfo = async (classId: string): Promise<{name: string; studentCount: number}> => {
   try {
-    if (!isFirebaseReady() || !db) {
+    // Inicializar Firebase si es necesario
+    const firebaseServices = await initializeFirebaseServices()
+    if (!firebaseServices.isReady || !firebaseServices.db) {
       console.warn("Firebase no está listo, usando datos por defecto")
       return {name: `Clase ${classId}`, studentCount: 0}
     }
@@ -134,14 +161,8 @@ const getClassInfo = async (classId: string): Promise<{name: string; studentCoun
       return {name: `Clase ${classId}`, studentCount: 0}
     }
 
-    // Verificar db antes de crear query
-    if (!db) {
-      console.warn("❌ db instance no disponible para consulta de clase")
-      return {name: `Clase ${classId}`, studentCount: 0}
-    }
-
     const classQuery = query(
-      collection(db, CLASSES_COLLECTION),
+      collection(firebaseServices.db, CLASSES_COLLECTION),
       where("id", "==", classId),
       limit(1)
     )
@@ -197,7 +218,9 @@ const calculateUrgency = (stats: {
  */
 const createAttendanceNotification = async (attendanceDoc: any): Promise<void> => {
   try {
-    if (!isFirebaseReady() || !db) {
+    // Inicializar Firebase si es necesario
+    const firebaseServices = await initializeFirebaseServices()
+    if (!firebaseServices.isReady || !firebaseServices.db) {
       console.error("❌ Firebase no está listo, no se puede crear notificación")
       return
     }
@@ -264,12 +287,7 @@ const createAttendanceNotification = async (attendanceDoc: any): Promise<void> =
     }
 
     // Guardar en Firebase
-    if (!db) {
-      console.error("❌ db instance no disponible para guardar notificación")
-      return
-    }
-    
-    await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
+    await addDoc(collection(firebaseServices.db, NOTIFICATIONS_COLLECTION), {
       ...notification,
       timestamp: serverTimestamp(),
     })
@@ -291,25 +309,17 @@ const createAttendanceNotification = async (attendanceDoc: any): Promise<void> =
 const watchForNewAttendance = (): (() => void) => {
   console.log("🔍 Iniciando observador de nuevos reportes de asistencia...")
 
-  // Verificar que Firebase esté inicializado inmediatamente
-  if (!isFirebaseReady() || !db) {
-    console.error(
-      "❌ Firebase no está inicializado correctamente. No se puede iniciar el observador."
-    )
-    // Retornar función de cleanup vacía
-    return () => {
-      console.log("🛑 Observador no estaba activo (Firebase no inicializado)")
-    }
-  }
-
   let cleanupFunction: (() => void) | null = null
 
   // Función asíncrona para la inicialización
   const initializeWatcher = async () => {
     try {
-      // Verificar que Firebase esté inicializado (segunda verificación)
-      if (!isFirebaseReady() || !db) {
-        console.error("❌ Firebase no está inicializado correctamente en initializeWatcher")
+      // Inicializar Firebase si es necesario
+      const firebaseServices = await initializeFirebaseServices()
+      if (!firebaseServices.isReady || !firebaseServices.db) {
+        console.error(
+          "❌ Firebase no está inicializado correctamente. No se puede iniciar el observador."
+        )
         return
       }
 
@@ -329,13 +339,7 @@ const watchForNewAttendance = (): (() => void) => {
           `⚠️ Colección de notificaciones '${NOTIFICATIONS_COLLECTION}' no existe. Creando primera notificación...`
         )
         try {
-          // Verificar db nuevamente antes de usar collection()
-          if (!db) {
-            console.error("❌ db instance perdida durante inicialización")
-            return
-          }
-          
-          await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
+          await addDoc(collection(firebaseServices.db, NOTIFICATIONS_COLLECTION), {
             type: "system_init",
             title: "🔧 Sistema de Notificaciones Iniciado",
             message: "El sistema de notificaciones de asistencia está ahora activo",
@@ -354,14 +358,8 @@ const watchForNewAttendance = (): (() => void) => {
       // Obtener timestamp actual para solo detectar documentos nuevos
       const startTime = Timestamp.now()
 
-      // Verificar db otra vez antes de crear query
-      if (!db) {
-        console.error("❌ db instance perdida antes de crear query")
-        return
-      }
-
       const attendanceQuery = query(
-        collection(db, ATTENDANCE_COLLECTION),
+        collection(firebaseServices.db, ATTENDANCE_COLLECTION),
         where("createdAt", ">=", startTime),
         orderBy("createdAt", "desc")
       )
@@ -418,12 +416,14 @@ const watchForNewAttendance = (): (() => void) => {
  */
 const markAsRead = async (notificationId: string): Promise<void> => {
   try {
-    if (!isFirebaseReady() || !db) {
+    // Inicializar Firebase si es necesario
+    const firebaseServices = await initializeFirebaseServices()
+    if (!firebaseServices.isReady || !firebaseServices.db) {
       console.error("❌ Firebase no está listo para marcar notificación como leída")
       return
     }
 
-    await updateDoc(doc(db, NOTIFICATIONS_COLLECTION, notificationId), {
+    await updateDoc(doc(firebaseServices.db, NOTIFICATIONS_COLLECTION, notificationId), {
       read: true,
       readAt: serverTimestamp(),
     })
@@ -439,13 +439,15 @@ const markAsRead = async (notificationId: string): Promise<void> => {
  */
 const getUnreadNotifications = async (): Promise<AttendanceNotification[]> => {
   try {
-    if (!isFirebaseReady() || !db) {
+    // Inicializar Firebase si es necesario
+    const firebaseServices = await initializeFirebaseServices()
+    if (!firebaseServices.isReady || !firebaseServices.db) {
       console.error("❌ Firebase no está listo para obtener notificaciones no leídas")
       return []
     }
 
     const notificationsQuery = query(
-      collection(db, NOTIFICATIONS_COLLECTION),
+      collection(firebaseServices.db, NOTIFICATIONS_COLLECTION),
       where("read", "==", false),
       where("type", "==", "new_attendance_report"),
       orderBy("timestamp", "desc"),
@@ -478,13 +480,15 @@ const getNotificationStats = async (): Promise<{
   low: number
 }> => {
   try {
-    if (!isFirebaseReady() || !db) {
+    // Inicializar Firebase si es necesario
+    const firebaseServices = await initializeFirebaseServices()
+    if (!firebaseServices.isReady || !firebaseServices.db) {
       console.error("❌ Firebase no está listo para obtener estadísticas de notificaciones")
       return {total: 0, high: 0, medium: 0, low: 0}
     }
 
     const notificationsQuery = query(
-      collection(db, NOTIFICATIONS_COLLECTION),
+      collection(firebaseServices.db, NOTIFICATIONS_COLLECTION),
       where("read", "==", false),
       where("type", "==", "new_attendance_report")
     )

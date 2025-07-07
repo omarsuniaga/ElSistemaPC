@@ -28,6 +28,20 @@
         >
           <CogIcon class="h-6 w-6 text-purple-600 dark:text-purple-400" />
         </button>
+
+        <!-- NUEVO: Botón Módulo Musical -->
+        <button
+          v-if="canAccessMontaje"
+          class="p-2 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-full relative"
+          title="Sistema Musical"
+          @click="toggleMontajeModule"
+        >
+          <span class="text-xl">🎼</span>
+          <span
+            v-if="isMontajeActive"
+            class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full"
+          />
+        </button>
         <!-- Buscador -->
         <button
           class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
@@ -259,13 +273,17 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent} from "vue"
+import {ref, computed, onMounted, onUnmounted, watch} from "vue"
 import {useRouter} from "vue-router"
 import {useAuthStore} from "../stores/auth"
 import {useTheme} from "../composables/useTheme"
 import {useStudentsStore} from "../modulos/Students/store/students"
 import {format, parseISO, isValid} from "date-fns"
 import {es} from "date-fns/locale"
+
+// AGREGAR: Importar sistema de módulos
+import { moduleManager } from "../modulos/Montaje/core/ModuleManager"
+
 import {
   MagnifyingGlassIcon,
   EllipsisVerticalIcon,
@@ -294,9 +312,18 @@ const searchResults = ref<any[]>([])
 const searchLoading = ref(false)
 const searchTimeout = ref<number | null>(null)
 
+// AGREGAR: Estado para el sistema de módulos
+const isMontajeActive = ref(false)
+
 // Estado para el modal de detalles
 const showModal = ref(false)
 const selectedStudent = ref<any>(null)
+
+// AGREGAR: Computed para verificar acceso al módulo Montaje
+const canAccessMontaje = computed(() => {
+  const user = moduleManager.getCurrentUser()
+  return user && moduleManager.hasPermissions(["montaje:access"])
+})
 
 // Funciones para menús
 const toggleMenu = () => {
@@ -478,6 +505,25 @@ const isAdminOrDirector = computed(() => {
 const goToSuperAdmin = () => {
   showMenu.value = false
   router.push("/admin")
+}
+
+// AGREGAR: Función para alternar el módulo Montaje
+const toggleMontajeModule = () => {
+  showMenu.value = false
+  try {
+    if (isMontajeActive.value) {
+      // Si ya está activo, volver al sistema principal
+      router.push("/")
+      isMontajeActive.value = false
+    } else {
+      // Activar el módulo Montaje
+      moduleManager.activateModule("montaje")
+      router.push("/montaje")
+      isMontajeActive.value = true
+    }
+  } catch (error) {
+    console.error("Error al alternar módulo Montaje:", error)
+  }
 }
 
 // Cerrar menús al hacer clic fuera

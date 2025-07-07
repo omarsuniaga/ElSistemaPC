@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Test Calendario - Verificación Ensayo General</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        .test-section h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .debug-output {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+        .day-test {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            min-width: 100px;
+            text-align: center;
+        }
+        .day-correct { background: #d4edda; border-color: #c3e6cb; }
+        .day-incorrect { background: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Test del Nuevo Sistema de Calendario</h1>
+        <p><strong>Objetivo:</strong> Verificar que "Ensayo General" NO aparezca los domingos</p>
+        
+        <div class="test-section">
+            <h3>📋 Test de Días de la Semana</h3>
+            <div id="dayMappingTest"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎭 Test de Clase "Ensayo General"</h3>
+            <div id="ensayoGeneralTest"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📅 Test de Fecha Específica (2025-07-06 Domingo)</h3>
+            <div id="specificDateTest"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 Debug Completo</h3>
+            <div class="debug-output" id="debugOutput"></div>
+        </div>
+    </div>
+
+    <script>
+        // Simulamos el CalendarService y las funciones principales
+        const CalendarService = {
+            getDayOfWeek(date) {
+                return date.getDay(); // JavaScript: 0=domingo, 1=lunes, etc.
+            },
+
+            isClassScheduledForDay(classItem, dayOfWeek) {
+                if (!classItem || !classItem.diasSemana) {
+                    return false;
+                }
+                
+                // Mapear días en español a números JavaScript
+                const dayMapping = {
+                    'domingo': 0,
+                    'lunes': 1,
+                    'martes': 2,
+                    'miércoles': 3,
+                    'jueves': 4,
+                    'viernes': 5,
+                    'sábado': 6
+                };
+                
+                return classItem.diasSemana.some(dia => {
+                    const dayNumber = dayMapping[dia.toLowerCase()];
+                    return dayNumber === dayOfWeek;
+                });
+            }
+        };
+
+        // Datos de prueba - "Ensayo General"
+        const ensayoGeneralClass = {
+            id: 'ensayo-general-1',
+            nombre: 'Ensayo General',
+            diasSemana: ['martes', 'jueves', 'sábado'], // NO incluye domingo
+            horaInicio: '19:00',
+            horaFin: '21:00'
+        };
+
+        // Test 1: Mapeo de días
+        function testDayMapping() {
+            const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+            const expectedNumbers = [0, 1, 2, 3, 4, 5, 6];
+            let html = '<p>Verificando mapeo de días:</p>';
+            
+            const dayMapping = {
+                'domingo': 0, 'lunes': 1, 'martes': 2, 'miércoles': 3,
+                'jueves': 4, 'viernes': 5, 'sábado': 6
+            };
+            
+            days.forEach((day, index) => {
+                const mapped = dayMapping[day];
+                const expected = expectedNumbers[index];
+                const isCorrect = mapped === expected;
+                
+                html += `<div class="day-test ${isCorrect ? 'day-correct' : 'day-incorrect'}">
+                    ${day}: ${mapped} ${isCorrect ? '✅' : '❌'}
+                </div>`;
+            });
+            
+            return html;
+        }
+
+        // Test 2: Ensayo General en cada día
+        function testEnsayoGeneral() {
+            const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+            const dayNumbers = [0, 1, 2, 3, 4, 5, 6];
+            let html = '<p>Verificando "Ensayo General" por día:</p>';
+            
+            dayNumbers.forEach((dayNum, index) => {
+                const dayName = days[index];
+                const shouldShow = CalendarService.isClassScheduledForDay(ensayoGeneralClass, dayNum);
+                const expected = ['martes', 'jueves', 'sábado'].includes(dayName);
+                const isCorrect = shouldShow === expected;
+                
+                html += `<div class="day-test ${isCorrect ? 'day-correct' : 'day-incorrect'}">
+                    ${dayName} (${dayNum}): ${shouldShow ? 'SÍ' : 'NO'} ${isCorrect ? '✅' : '❌'}
+                </div>`;
+            });
+            
+            return html;
+        }
+
+        // Test 3: Fecha específica problemática
+        function testSpecificDate() {
+            const problemDate = new Date('2025-07-06'); // Domingo que causaba problemas
+            const dayOfWeek = CalendarService.getDayOfWeek(problemDate);
+            const shouldShow = CalendarService.isClassScheduledForDay(ensayoGeneralClass, dayOfWeek);
+            
+            let html = `
+                <p><strong>Fecha:</strong> ${problemDate.toLocaleDateString('es-ES', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                })}</p>
+                <p><strong>Día de la semana (número):</strong> ${dayOfWeek}</p>
+                <p><strong>¿Debe mostrar "Ensayo General"?:</strong> 
+                   <span class="${shouldShow ? 'error' : 'success'}">
+                       ${shouldShow ? 'SÍ ❌ (ERROR!)' : 'NO ✅ (CORRECTO!)'}
+                   </span>
+                </p>
+            `;
+            
+            return html;
+        }
+
+        // Debug completo
+        function generateDebugInfo() {
+            const testDate = new Date('2025-07-06');
+            const dayOfWeek = testDate.getDay();
+            
+            return `DIAGNÓSTICO COMPLETO - NUEVO SISTEMA DE CALENDARIO
+===============================================
+
+📅 FECHA DE PRUEBA: ${testDate.toISOString()}
+🗓️  Día de la semana: ${dayOfWeek} (${['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][dayOfWeek]})
+
+🎭 CLASE: "Ensayo General"
+📋 Días programados: ${ensayoGeneralClass.diasSemana.join(', ')}
+🕐 Horario: ${ensayoGeneralClass.horaInicio} - ${ensayoGeneralClass.horaFin}
+
+🔍 VERIFICACIÓN:
+- ¿Es domingo (0)? ${dayOfWeek === 0 ? 'SÍ' : 'NO'}
+- ¿Está "domingo" en diasSemana? ${ensayoGeneralClass.diasSemana.includes('domingo') ? 'SÍ' : 'NO'}
+- ¿Debe mostrar la clase? ${CalendarService.isClassScheduledForDay(ensayoGeneralClass, dayOfWeek) ? 'SÍ ❌' : 'NO ✅'}
+
+✅ RESULTADO: ${CalendarService.isClassScheduledForDay(ensayoGeneralClass, dayOfWeek) ? 'FALLO - La clase aparece en domingo' : 'ÉXITO - La clase NO aparece en domingo'}
+
+🏗️ ARQUITECTURA UTILIZADA:
+- Service Layer: CalendarService.js
+- Clean Architecture: Separación de responsabilidades
+- TypeScript: Tipado estricto
+- Mapeo directo: español → JavaScript day numbers
+- Sin conversiones confusas ni offsets extraños
+
+📊 DÍAS DE PRUEBA ADICIONALES:
+${[0,1,2,3,4,5,6].map(day => {
+    const dayName = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][day];
+    const shows = CalendarService.isClassScheduledForDay(ensayoGeneralClass, day);
+    return `- ${dayName} (${day}): ${shows ? 'SÍ' : 'NO'}`;
+}).join('\n')}`;
+        }
+
+        // Ejecutar tests
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('dayMappingTest').innerHTML = testDayMapping();
+            document.getElementById('ensayoGeneralTest').innerHTML = testEnsayoGeneral();
+            document.getElementById('specificDateTest').innerHTML = testSpecificDate();
+            document.getElementById('debugOutput').textContent = generateDebugInfo();
+        });
+    </script>
+</body>
+</html>

@@ -123,14 +123,14 @@
                     v-else
                     class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-sm"
                   >
-                    {{ getInitials(student.name) }}
+                    {{ getInitials(getStudentFullName(student)) }}
                   </div>
 
                   <!-- Status indicator -->
                   <div
                     :class="[
                       'absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800',
-                      statusColors[student.status],
+                      statusColors[getStudentStatus(student)],
                     ]"
                   />
                 </div>
@@ -138,10 +138,10 @@
                 <!-- Name and Email -->
                 <div class="min-w-0 flex-1">
                   <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {{ student.name }}
+                    {{ getStudentFullName(student) }}
                   </p>
                   <p class="text-sm text-gray-500 dark:text-gray-400 truncate">
-                    {{ student.email }}
+                    {{ student.email || "Sin email" }}
                   </p>
                 </div>
               </div>
@@ -152,11 +152,11 @@
               <div class="text-sm">
                 <div class="flex items-center space-x-2 text-gray-900 dark:text-white">
                   <PhoneIcon class="w-4 h-4 text-gray-400" />
-                  <span>{{ formatPhone(student.phone) }}</span>
+                  <span>{{ formatPhone(student.tlf || student.phone) }}</span>
                 </div>
                 <div class="flex items-center space-x-2 text-gray-500 dark:text-gray-400 mt-1">
                   <UserIcon class="w-4 h-4 text-gray-400" />
-                  <span class="truncate">{{ student.parentName }}</span>
+                  <span class="truncate">{{ getParentName(student) }}</span>
                 </div>
               </div>
             </td>
@@ -165,18 +165,16 @@
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex flex-wrap gap-1">
                 <span
-                  v-for="instrument in student.instruments.slice(0, 2)"
-                  :key="instrument"
+                  v-if="student.instrumento"
                   class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
                 >
-                  {{ getInstrumentName(instrument) }}
+                  {{ getInstrumentName(student.instrumento) }}
                 </span>
                 <span
-                  v-if="student.instruments.length > 2"
+                  v-else
                   class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                  :title="student.instruments.slice(2).map(getInstrumentName).join(', ')"
                 >
-                  +{{ student.instruments.length - 2 }}
+                  Sin asignar
                 </span>
               </div>
             </td>
@@ -184,10 +182,10 @@
             <!-- Grade Column -->
             <td class="px-6 py-4 whitespace-nowrap">
               <span
-                :class="gradeColors[student.grade]"
+                :class="gradeColors[student.nivel || 'beginner']"
                 class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
               >
-                {{ getGradeName(student.grade) }}
+                {{ getGradeName(student.nivel) }}
               </span>
             </td>
 
@@ -196,33 +194,33 @@
               <div class="flex items-center">
                 <button
                   v-if="permissions.canEdit"
-                  :class="statusBadgeColors[student.status]"
+                  :class="statusBadgeColors[getStudentStatus(student)]"
                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors hover:opacity-80"
                   @click="handleToggleStatus(student)"
                 >
                   <div
-                    :class="statusColors[student.status]"
+                    :class="statusColors[getStudentStatus(student)]"
                     class="w-1.5 h-1.5 rounded-full mr-2"
                   />
-                  {{ getStatusName(student.status) }}
+                  {{ getStatusName(getStudentStatus(student)) }}
                 </button>
                 <span
                   v-else
-                  :class="statusBadgeColors[student.status]"
+                  :class="statusBadgeColors[getStudentStatus(student)]"
                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                 >
                   <div
-                    :class="statusColors[student.status]"
+                    :class="statusColors[getStudentStatus(student)]"
                     class="w-1.5 h-1.5 rounded-full mr-2"
                   />
-                  {{ getStatusName(student.status) }}
+                  {{ getStatusName(getStudentStatus(student)) }}
                 </span>
               </div>
             </td>
 
             <!-- Enrollment Date Column -->
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-              {{ formatDate(student.enrollmentDate) }}
+              {{ formatDate(student.fecInscripcion || student.createdAt) }}
             </td>
 
             <!-- Classes Column -->
@@ -230,10 +228,10 @@
               <div class="flex items-center text-sm">
                 <BookOpenIcon class="w-4 h-4 text-gray-400 mr-2" />
                 <span class="text-gray-900 dark:text-white">
-                  {{ student.classes?.length || 0 }}
+                  {{ student.clase ? 1 : 0 }}
                 </span>
                 <span class="text-gray-500 dark:text-gray-400 ml-1">
-                  clase{{ (student.classes?.length || 0) !== 1 ? "s" : "" }}
+                  clase{{ student.clase ? "" : "s" }}
                 </span>
               </div>
             </td>
@@ -332,7 +330,7 @@ interface Props {
   sortOrder?: "asc" | "desc"
 }
 
-const props = withDefaults(defineProps<Props>(), {
+const _props = withDefaults(defineProps<Props>(), {
   sortField: "name",
   sortOrder: "asc",
 })
@@ -381,16 +379,55 @@ const getInitials = (name: string): string => {
     .toUpperCase()
 }
 
-const formatPhone = (phone: string): string => {
-  return phone.replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3")
+const formatPhone = (phone: string | undefined | null): string => {
+  if (!phone) return "Sin teléfono"
+  
+  // Limpiar el teléfono de caracteres no numéricos
+  const cleanPhone = phone.toString().replace(/\D/g, "")
+  
+  // Si no tiene suficientes dígitos, devolver tal como está
+  if (cleanPhone.length < 10) return phone.toString()
+  
+  // Formatear solo si tiene 10 dígitos o más
+  if (cleanPhone.length === 10) {
+    return cleanPhone.replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3")
+  }
+  
+  // Si tiene más de 10 dígitos, tomar los últimos 10
+  const last10 = cleanPhone.slice(-10)
+  return last10.replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3")
 }
 
-const formatDate = (date: Date): string => {
-  return date.toLocaleDateString("es-ES", {
+const formatDate = (date: string | Date | undefined): string => {
+  if (!date) return "Sin fecha"
+  
+  let dateObj: Date
+  if (typeof date === "string") {
+    dateObj = new Date(date)
+  } else {
+    dateObj = date
+  }
+  
+  if (isNaN(dateObj.getTime())) return "Fecha inválida"
+  
+  return dateObj.toLocaleDateString("es-ES", {
     year: "numeric",
     month: "short",
     day: "numeric",
   })
+}
+
+const getStudentStatus = (student: Student): string => {
+  if (student.activo === true) return "active"
+  if (student.activo === false) return "inactive"
+  if (student.status) return student.status
+  return "pending"
+}
+
+const getStudentFullName = (student: Student): string => {
+  const nombre = student.nombre || ""
+  const apellido = student.apellido || ""
+  return `${nombre} ${apellido}`.trim() || "Sin nombre"
 }
 
 const getInstrumentName = (instrument: string): string => {
@@ -409,20 +446,38 @@ const getInstrumentName = (instrument: string): string => {
   return instruments[instrument] || instrument
 }
 
-const getGradeName = (grade: string): string => {
+const getParentName = (student: Student): string => {
+  if (student.padre && student.madre) {
+    return `${student.padre} / ${student.madre}`
+  }
+  if (student.padre) return student.padre
+  if (student.madre) return student.madre
+  if (student.tutor) return student.tutor
+  return "Sin contacto"
+}
+
+const getGradeName = (grade: string | undefined): string => {
+  if (!grade) return "Sin asignar"
   const grades: Record<string, string> = {
     beginner: "Principiante",
     intermediate: "Intermedio",
     advanced: "Avanzado",
+    principiante: "Principiante",
+    intermedio: "Intermedio",
+    avanzado: "Avanzado",
   }
   return grades[grade] || grade
 }
 
-const getStatusName = (status: string): string => {
+const getStatusName = (status: string | undefined): string => {
+  if (!status) return "Sin estado"
   const statuses: Record<string, string> = {
     active: "Activo",
     inactive: "Inactivo",
     pending: "Pendiente",
+    activo: "Activo",
+    inactivo: "Inactivo",
+    pendiente: "Pendiente",
   }
   return statuses[status] || status
 }

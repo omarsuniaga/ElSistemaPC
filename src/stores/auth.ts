@@ -308,9 +308,15 @@ export const useAuthStore = defineStore("auth", {
           resolve(this.user)
         })
       })
+      
+      // ✅ OPTIMIZACIÓN: Solo inicializar datos si hay usuario autenticado
       if (this.user && !this.dataInitialized) {
+        console.log("🔄 [Auth] Usuario autenticado detectado, inicializando datos...")
         await this.initializeData()
+      } else if (!this.user) {
+        console.log("🔍 [Auth] No hay usuario autenticado, saltando inicialización de datos")
       }
+      
       return authCheckPromise
     },
 
@@ -318,10 +324,22 @@ export const useAuthStore = defineStore("auth", {
      * Inicializa datos de otros módulos.
      */
     async initializeData() {
-      if (this.dataInitialized) return
+      // ✅ Verificación adicional de seguridad
+      if (this.dataInitialized) {
+        console.log("📊 [Auth] Datos ya inicializados, saltando...")
+        return
+      }
+      
+      if (!this.user || !this.isLoggedIn) {
+        console.log("🔒 [Auth] Usuario no autenticado, no se pueden cargar datos")
+        return
+      }
+
+      console.log("📊 [Auth] Iniciando carga de datos para usuario autenticado...")
 
       try {
         // Importaciones dinámicas para evitar dependencias circulares
+        console.log("📦 [Auth] Importando stores de módulos...")
         const [
           {useStudentsStore},
           {useTeachersStore},
@@ -336,12 +354,16 @@ export const useAuthStore = defineStore("auth", {
           import("@/modulos/Schedules/store/schedule"),
         ])
 
+        console.log("🔗 [Auth] Stores importados, inicializando instancias...")
         const studentsStore = useStudentsStore()
         const teachersStore = useTeachersStore()
         const classesStore = useClassesStore()
         const attendanceStore = useAttendanceStore()
         const scheduleStore = useScheduleStore()
 
+        console.log("🔄 [Auth] Cargando datos desde Firestore...")
+        const startTime = Date.now()
+        
         await Promise.all([
           studentsStore.fetchStudents(),
           teachersStore.fetchTeachers(),
@@ -350,9 +372,28 @@ export const useAuthStore = defineStore("auth", {
           scheduleStore.fetchAllSchedules(),
         ])
 
+        const loadTime = Date.now() - startTime
+        console.log(`✅ [Auth] Datos cargados exitosamente en ${loadTime}ms`)
+
         this.dataInitialized = true
       } catch (error) {
-        console.error("Error initializing data:", error)
+        console.error("❌ [Auth] Error inicializando datos:", error)
+        
+        // Información adicional sobre el error
+        if (error instanceof Error) {
+          if (error.message.includes("permission-denied")) {
+            console.error(
+              "🔒 [Auth] Error de permisos - Usuario puede no estar autenticado correctamente"
+            )
+          } else if (error.message.includes("unavailable")) {
+            console.error("🌐 [Auth] Firestore no disponible - Problemas de conectividad")
+          } else {
+            console.error("⚠️ [Auth] Error desconocido:", error.message)
+          }
+        }
+        
+        // No marcar como inicializado si hay error
+        this.dataInitialized = false
       }
     },
 
@@ -419,7 +460,6 @@ export const useAuthStore = defineStore("auth", {
             } catch (legacyError) {
               console.warn("⚠️ Sistema legacy de notificaciones no disponible:", legacyError)
             }
-            
           } catch (error) {
             console.error("❌ Error inicializando notificaciones de asistencia:", error)
           }

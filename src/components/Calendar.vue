@@ -178,7 +178,9 @@ const calendarDays = computed(() => {
       dayOfMonth: day, // Usar el día directamente de currentDate
       isCurrentMonth: month === currentMonthLocal.getMonth(),
       isToday: isToday(localDate),
-      isSelected: selectedDate.value === dateStr,
+      isSelected: selectedDate.value
+        ? isSameDay(new Date(`${selectedDate.value}T00:00:00`), localDate)
+        : false,
       isMarked: markedInfo !== undefined,
       markedInfo,
     })

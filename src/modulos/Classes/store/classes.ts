@@ -1214,7 +1214,9 @@ export const useClassesStore = defineStore("classes", {
      * Construye un objeto de horario simulado para la clase emergente
      */
     buildEmergencySchedule(emergencyClass: any): any {
-      const emergencyDate = emergencyClass.date ? new Date(emergencyClass.date) : new Date()
+      const emergencyDate = emergencyClass.date
+        ? new Date(`${emergencyClass.date}T00:00:00`)
+        : new Date()
       const dayName = emergencyDate.toLocaleDateString("es-ES", {weekday: "long"})
 
       return {
@@ -1242,7 +1244,18 @@ export const useClassesStore = defineStore("classes", {
 
       if (dateValue instanceof Date) return dateValue
 
-      if (typeof dateValue === "string" || typeof dateValue === "number") {
+      if (typeof dateValue === "string") {
+        // Si es una cadena YYYY-MM-DD, se le añade la hora para evitar problemas de UTC.
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+          const parsed = new Date(`${dateValue}T00:00:00`)
+          return isNaN(parsed.getTime()) ? new Date() : parsed
+        }
+        // Para otros formatos de string (ej. ISO con timezone)
+        const parsed = new Date(dateValue)
+        return isNaN(parsed.getTime()) ? new Date() : parsed
+      }
+
+      if (typeof dateValue === "number") {
         const parsed = new Date(dateValue)
         return isNaN(parsed.getTime()) ? new Date() : parsed
       }

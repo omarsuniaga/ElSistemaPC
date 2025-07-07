@@ -5,6 +5,7 @@
  */
 
 import {ref, computed, watch} from "vue"
+import {defineStore} from "pinia"
 
 // ==================== COMPOSABLE DE ESTADO OFFLINE ====================
 
@@ -326,8 +327,6 @@ export function useGlobalOfflineSync() {
 
 // ==================== STORE DE SINCRONIZACIÓN ====================
 
-import {defineStore} from "pinia"
-
 export const useSyncStore = defineStore("sync", () => {
   const offlineSync = useGlobalOfflineSync()
 
@@ -356,24 +355,25 @@ export const useSyncStore = defineStore("sync", () => {
   }
 })
 
-// Auto-inicializar cuando se importe - pero solo después de que Pinia esté disponible
-if (typeof window !== "undefined") {
-  document.addEventListener("visibilitychange", () => {
-    try {
-      // Verificar que tenemos un contexto Vue/Pinia válido
-      import("pinia")
-        .then(({getActivePinia}) => {
-          if (getActivePinia()) {
-            const syncStore = useSyncStore()
-            syncStore.handleAppVisibilityChange()
-          }
-        })
-        .catch(() => {
-          // Pinia no está disponible aún, silently fail
-          console.debug("🔔 Pinia no disponible para sync en evento de visibilidad")
-        })
-    } catch (error) {
-      console.debug("🔔 Error manejando cambio de visibilidad:", error)
-    }
-  })
+/**
+ * Inicializa los listeners de sincronización de manera segura.
+ * Debe ser llamado desde un contexto donde Pinia esté activo (ej. onMounted en App.vue).
+ */
+export function initializeSyncManager() {
+  if (typeof window === "undefined") {
+    return () => {}
+  }
+
+  const syncStore = useSyncStore()
+
+  const handleVisibilityChange = () => {
+    syncStore.handleAppVisibilityChange()
+  }
+
+  document.addEventListener("visibilitychange", handleVisibilityChange)
+
+  // Devuelve una función de limpieza para ser usada en onUnmounted
+  return () => {
+    document.removeEventListener("visibilitychange", handleVisibilityChange)
+  }
 }

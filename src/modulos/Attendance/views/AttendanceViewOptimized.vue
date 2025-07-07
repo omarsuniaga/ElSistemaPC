@@ -387,11 +387,20 @@
 
 <script setup lang="ts">
 import {ref, computed, onMounted} from "vue"
-import {format} from "date-fns"
+import {useRouter} from "vue-router"
+import {format, parseISO} from "date-fns"
 import {es} from "date-fns/locale"
 import AttendanceCalendarOptimized from "../components/AttendanceCalendarOptimized.vue"
 import AttendanceListOptimized from "../components/AttendanceListOptimized.vue"
-import {useAttendanceOptimizedSimple} from "../composables/useAttendanceOptimizedSimple"
+
+import { useClassesStore } from "../../Classes/store/classes"
+import { useAuthStore } from "../../../stores/auth"
+import { useAttendanceStore } from "../store/attendance"
+
+// 🎛️ Stores
+const classesStore = useClassesStore()
+const authStore = useAuthStore()
+const attendanceStore = useAttendanceStore()
 
 // 🎛️ Estado principal
 const currentView = ref<"calendar" | "class-select" | "attendance-list" | "reports">("calendar")
@@ -399,32 +408,33 @@ const selectedDate = ref("")
 const selectedClass = ref("")
 const selectedClassName = ref("")
 const loading = ref(false)
-const loadingMessage = ref("")
-const showQuickActions = ref(false)
-const showContextPanel = ref(true)
-const showDebugInfo = ref(false)
-
-// 🎉 Toast notifications
+const loadingMessage = ref("Cargando...")
 const showToast = ref(false)
 const toastMessage = ref("")
-const toastType = ref<"success" | "error" | "warning" | "info">("success")
+const toastType = ref<"success" | "error" | "info">("success")
+const showDebugInfo = ref(false)
+const showContextPanel = ref(true)
+const showQuickActions = ref(false)
 
-// 📊 Datos
-const availableClasses = ref<any[]>([])
-const todayStats = ref({
-  classes: 0,
-  averageAttendance: 85,
-  pending: 0,
-})
+interface DisplayableClass {
+  id: string
+  name: string
+  studentCount: number
+  timeSlot: string
+  hasAttendance: boolean
+}
+const availableClasses = ref<DisplayableClass[]>([])
+const todayStats = ref({ classes: 0, averageAttendance: 0, pending: 0 });
 
 // 🚀 Composable
-const {state, attendanceStore, classesStore} = useAttendanceOptimizedSimple()
+
 
 /**
  * 🎛️ Configuración de vistas
  */
 const viewOptions = [
   {key: "calendar", label: "📅 Calendario"},
+  {key: "professional-calendar", label: "🎯 Calendario Pro"},
   {key: "class-select", label: "📚 Clases"},
   {key: "attendance-list", label: "👥 Asistencia"},
   {key: "reports", label: "📊 Reportes"},
@@ -496,6 +506,14 @@ const formatSelectedDate = (): string => {
  * 🎛️ Navegación entre vistas
  */
 const setCurrentView = (view: typeof currentView.value) => {
+  // Manejar navegación al calendario profesional
+  if (view === 'professional-calendar') {
+    // Navegar directamente a la nueva vista
+    const router = useRouter()
+    router.push('/attendance/professional-calendar')
+    return
+  }
+
   currentView.value = view
 
   // Auto-navegación inteligente
@@ -545,30 +563,51 @@ const loadClassesForDate = async (date: string) => {
   try {
     loading.value = true
     loadingMessage.value = "Cargando clases..."
+    const teacherId = authStore.user?.uid
 
-    // TODO: Implementar carga real de clases
-    // Por ahora, datos de prueba
-    availableClasses.value = [
-      {
-        id: "class1",
-        name: "Piano Básico",
-        studentCount: 8,
-        timeSlot: "10:00 - 11:00",
-        hasAttendance: false,
-      },
-      {
-        id: "class2",
-        name: "Guitarra Intermedio",
-        studentCount: 6,
-        timeSlot: "14:00 - 15:00",
-        hasAttendance: true,
-      },
-    ]
+    if (!teacherId) {
+      triggerToast("No se pudo identificar al maestro. Por favor, inicie sesión de nuevo.", "error")
+      availableClasses.value = []
+      return
+    }
 
-    console.log("📚 [AttendanceView] Classes loaded for", date)
-  } catch (error) {
+    // Usar parseISO para evitar problemas de zona horaria
+    const selectedDay = parseISO(date)
+    const dayName = selectedDay.toLocaleDateString("es-ES", {weekday: "long"}).toLowerCase()
+
+    // Obtener las clases del store
+    const classesForDay = classesStore.getClassByDaysAndTeacher(teacherId, dayName)
+
+    // Mapear las clases y verificar si ya tienen asistencia registrada para esa fecha
+    const classPromises = classesForDay.map(async (classItem) => {
+      const hasAttendance = await attendanceStore.checkAttendanceExists(date, classItem.id);
+      let timeSlot = null;
+      // Safely access slots, as schedule structure can be inconsistent
+      if (classItem.schedule && Array.isArray(classItem.schedule.slots)) {
+        timeSlot = classItem.schedule.slots.find(
+          (slot: any) => slot.day.toLowerCase() === dayName
+        );
+      }
+
+      return {
+        id: classItem.id,
+        name: classItem.name || "Clase sin nombre",
+        studentCount: classItem.studentIds?.length || 0,
+        timeSlot: timeSlot ? `${timeSlot.startTime} - ${timeSlot.endTime}` : "Horario no definido",
+        hasAttendance,
+      };
+    });
+
+    availableClasses.value = await Promise.all(classPromises)
+
+    console.log(
+      `📚 [AttendanceView] ${availableClasses.value.length} clases cargadas para ${date} (${dayName})`
+    )
+  } catch (err) {
+    const error = err as Error
     console.error("❌ [AttendanceView] Error loading classes:", error)
-    showToast("Error al cargar clases", "error")
+    triggerToast(`Error al cargar clases: ${error.message}`, "error")
+    availableClasses.value = []
   } finally {
     loading.value = false
   }
@@ -595,11 +634,11 @@ const refreshClasses = () => {
 const executeQuickAction = (actionKey: string) => {
   const actions = {
     today: goToToday,
-    "mark-all-present": () => showToast("Función próximamente", "info"),
-    "export-pdf": () => showToast("Función próximamente", "info"),
-    "send-notifications": () => showToast("Función próximamente", "info"),
+    "mark-all-present": () => triggerToast("Función próximamente", "info"),
+    "export-pdf": () => triggerToast("Función próximamente", "info"),
+    "send-notifications": () => triggerToast("Función próximamente", "info"),
     "emergency-class": createEmergencyClass,
-    settings: () => showToast("Función próximamente", "info"),
+    settings: () => triggerToast("Función próximamente", "info"),
   }
 
   const action = actions[actionKey as keyof typeof actions]
@@ -609,7 +648,7 @@ const executeQuickAction = (actionKey: string) => {
 }
 
 const createEmergencyClass = () => {
-  showToast("Función de clase emergente próximamente", "info")
+  triggerToast("Función de clase emergente próximamente", "info")
 }
 
 /**
@@ -620,11 +659,11 @@ const openReportsView = () => {
 }
 
 const generateDailyReport = () => {
-  showToast("Generando reporte diario...", "info")
+  triggerToast("Generando reporte diario...", "info")
 }
 
 const generateWeeklyReport = () => {
-  showToast("Generando reporte semanal...", "info")
+  triggerToast("Generando reporte semanal...", "info")
 }
 
 /**
@@ -635,45 +674,40 @@ const handleStatusUpdated = (studentId: string, status: string) => {
 }
 
 const handleSaved = () => {
-  showToast("Asistencia guardada exitosamente", "success")
+  triggerToast("Asistencia guardada con éxito", "success")
 }
 
 const handleError = (error: string) => {
-  showToast(error, "error")
-}
+  triggerToast(error, "error");
+};
 
 /**
  * 🎉 Toast system
  */
-const showToastMessage = (message: string, type: typeof toastType.value = "success") => {
-  toastMessage.value = message
-  toastType.value = type
-  showToast.value = true
-
+const triggerToast = (message: string, type: "success" | "error" | "info" = "info") => {
+  toastMessage.value = message;
+  toastType.value = type;
+  showToast.value = true;
   setTimeout(() => {
-    showToast.value = false
-  }, 3000)
-}
-
-// Alias para facilitar uso
-const showToast = showToastMessage
+    showToast.value = false;
+  }, 3000);
+};
 
 /**
  * 🚀 Lifecycle
  */
 onMounted(() => {
-  // Cargar estadísticas del día
-  const today = new Date().toISOString().split("T")[0]
+  const today = new Date().toISOString().split("T")[0];
   loadClassesForDate(today).then(() => {
-    todayStats.value.classes = availableClasses.value.length
-    todayStats.value.pending = availableClasses.value.filter((c) => !c.hasAttendance).length
-  })
+    todayStats.value.classes = availableClasses.value.length;
+    todayStats.value.pending = availableClasses.value.filter((c) => !c.hasAttendance).length;
+  });
 
   // Debug mode en desarrollo
   if (import.meta.env.DEV) {
-    showDebugInfo.value = true
+    showDebugInfo.value = true;
   }
-})
+});
 </script>
 
 <style scoped>

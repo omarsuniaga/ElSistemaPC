@@ -1,0 +1,85 @@
+{
+  "name": "@montaje/musical-module",
+  "version": "1.0.0",
+  "description": "Módulo completo de gestión musical para orquestas, coros y conjuntos musicales",
+  "main": "dist/index.js",
+  "module": "dist/index.es.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "vite build --config vite.config.module.ts",
+    "build:watch": "vite build --config vite.config.module.ts --watch",
+    "build:types": "vue-tsc --declaration --emitDeclarationOnly",
+    "dev": "vite --config vite.config.module.ts",
+    "preview": "vite preview --config vite.config.module.ts",
+    "type-check": "vue-tsc --noEmit",
+    "prepublishOnly": "npm run build",
+    "test:build": "npm run build && node test-module.js"
+  },
+  "peerDependencies": {
+    "vue": "^3.4.0",
+    "vue-router": "^4.2.0"
+  },
+  "dependencies": {
+    "@vueuse/core": "^10.5.0",
+    "chart.js": "^4.4.0",
+    "date-fns": "^2.30.0",
+    "firebase": "^10.7.1",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2",
+    "ml-regression": "^6.0.1",
+    "simple-statistics": "^7.8.3",
+    "vue-chartjs": "^5.3.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.3",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.2",
+    "vite-plugin-dts": "^3.6.3",
+    "vue-tsc": "^2.1.4"
+  },
+  "keywords": [
+    "vue",
+    "musical",
+    "montaje",
+    "orquesta",
+    "evaluaciones",
+    "gestión",
+    "módulo",
+    "typescript"
+  ],
+  "author": "Montaje Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/montaje/musical-module.git"
+  },
+  "homepage": "https://github.com/montaje/musical-module#readme",
+  "exports": {
+    ".": {
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./components": {
+      "import": "./dist/components/index.es.js",
+      "types": "./dist/components/index.d.ts"
+    },
+    "./composables": {
+      "import": "./dist/composables/index.es.js",
+      "types": "./dist/composables/index.d.ts"
+    },
+    "./services": {
+      "import": "./dist/services/index.es.js",
+      "types": "./dist/services/index.d.ts"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts"
+    },
+    "./style.css": "./dist/style.css"
+  }
+}
