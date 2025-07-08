@@ -66,7 +66,7 @@
         <div v-if="currentSection" class="mb-4">
           <h4 class="font-medium">Sección {{ currentSection }}</h4>
         </div>
-        <div class="grid grid-cols-10 gap-2">
+        <div class="grid gap-2" :style="gridStyle">
           <div
             v-for="measure in filteredMeasures"
             :key="measure.numero"
@@ -251,6 +251,18 @@ const completedMeasures = computed(
 )
 const progressPercentage = computed(() => {
   return Math.round((completedMeasures.value / totalMeasures.value) * 100) || 0
+})
+
+// Determinar el estilo de la rejilla para mostrar exactamente los compases necesarios
+const gridStyle = computed(() => {
+  // Por defecto, agrupar en 10 columnas o según la configuración de la obra
+  // Podríamos obtener este valor de la configuración de la obra si estuviera disponible
+  const columnsPerRow = 10
+  return {
+    'grid-template-columns': `repeat(${columnsPerRow}, minmax(0, 1fr))`,
+    // Asegurar que solo se muestren tantas celdas como compases haya definidos
+    'grid-template-areas': '"."'
+  }
 })
 
 // Cambiar estado de compás

@@ -12,7 +12,7 @@
             <span
               class="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-sm font-medium rounded-full"
             >
-              {{ unreadNotifications.length }} pendientes
+              {{ montajeStore.notificacionesSinLeer.length }} pendientes
             </span>
           </div>
 
@@ -54,10 +54,10 @@
                   />
                 </svg>
                 <span
-                  v-if="unreadNotifications.length > 0"
+                  v-if="montajeStore.notificacionesSinLeer.length > 0"
                   class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center"
                 >
-                  {{ unreadNotifications.length }}
+                  {{ montajeStore.notificacionesSinLeer.length }}
                 </span>
               </button>
 
@@ -72,9 +72,9 @@
                       Notificaciones
                     </h3>
                     <button
-                      v-if="unreadNotifications.length > 0"
+                      v-if="montajeStore.notificacionesSinLeer.length > 0"
                       class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                      @click="markAllNotificationsAsRead"
+                      @click="montajeStore.markAllNotificationsAsRead"
                     >
                       Marcar todas como leídas
                     </button>
@@ -82,13 +82,13 @@
                 </div>
                 <div class="max-h-64 overflow-y-auto">
                   <div
-                    v-for="notification in notifications.slice(0, 10)"
+                    v-for="notification in montajeStore.notificaciones.slice(0, 10)"
                     :key="notification.id"
                     :class="[
                       'p-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer',
                       !notification.metadatos.leida ? 'bg-blue-50 dark:bg-blue-900/20' : '',
                     ]"
-                    @click="markNotificationAsRead(notification.id)"
+                    @click="montajeStore.marcarNotificacionLeida(notification.id)"
                   >
                     <div class="text-sm font-medium text-gray-900 dark:text-white">
                       {{ notification.titulo }}
@@ -111,7 +111,7 @@
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Statistics Cards -->
-      <StatsCards :works="worksWithProgress" />
+      <StatsCards :works="montajeStore.obras" />
 
       <!-- Tab Navigation -->
       <div class="mb-8">
@@ -121,11 +121,11 @@
             :key="tab.key"
             :class="[
               'py-2 px-1 border-b-2 font-medium text-sm transition-colors',
-              activeTab === tab.key
+              montajeStore.activeTab === tab.key
                 ? 'border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400'
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600',
             ]"
-            @click="setActiveTab(tab.key as 'obras' | 'planes' | 'evaluaciones' | 'analytics')"
+            @click="montajeStore.setActiveTab(tab.key as 'obras' | 'planes' | 'evaluaciones' | 'analytics')"
           >
             {{ tab.label }}
             <span
@@ -141,7 +141,7 @@
       <!-- Tab Content -->
       <div class="tab-content">
         <!-- Works Tab -->
-        <div v-if="activeTab === 'obras'" class="space-y-6">
+        <div v-if="montajeStore.activeTab === 'obras'" class="space-y-6">
           <!-- Works List -->
           <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
             <div class="px-4 py-5 sm:p-6">
@@ -288,7 +288,7 @@
                         <button
                           class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                           title="Eliminar obra"
-                          @click="deleteWork(work.id)"
+                          @click="montajeStore.eliminarObra(work.id)"
                         >
                           <svg
                             class="w-5 h-5"
@@ -369,21 +369,21 @@
     <!-- Modals -->
     <WorkFormModal
       :show="showWorkModal"
-      :work="selectedWork"
+      :work="montajeStore.selectedWork"
       @close="closeWorkModal"
       @submit="handleWorkSubmit"
     />
 
     <PlanModal
       :show="showPlanModal"
-      :work-id="selectedWork?.id"
+      :work-id="montajeStore.selectedWork?.id"
       @close="showPlanModal = false"
       @submit="handlePlanSubmit"
     />
 
     <EvaluationModal
       :show="showEvaluationModal"
-      :work-id="workToEvaluate?.id"
+      :work-id="montajeStore.selectedWork?.id"
       @close="closeEvaluationModal"
       @submit="handleEvaluationSubmit"
     />
@@ -393,7 +393,7 @@
 <script setup lang="ts">
 import {ref, computed, onMounted} from "vue"
 import {useRouter} from "vue-router"
-import {useMontaje} from "../composables/useMontaje"
+import {useMontajeStore} from "../store/montaje"
 import WorkFormModal from "../components/WorkFormModal.vue"
 import PlanModal from "../components/PlanModal.vue"
 import EvaluationModal from "../components/EvaluationModal.vue"
@@ -403,41 +403,21 @@ import type {CreateWorkInput, CreateEvaluationInput} from "../types"
 // Router
 const router = useRouter()
 
-// Composable
-const {
-  works,
-  notifications,
-  unreadNotifications,
-  activeTab,
-  setActiveTab,
-  createWork,
-  updateWork,
-  deleteWork,
-  createEvaluation,
-  markNotificationAsRead,
-  markAllNotificationsAsRead,
-  loadMontajeData,
-  selectWork,
-  clearSelection,
-} = useMontaje()
+// Pinia Store
+const montajeStore = useMontajeStore()
 
 // Local state
 const showWorkModal = ref(false)
 const showPlanModal = ref(false)
 const showEvaluationModal = ref(false)
 const showNotifications = ref(false)
-const selectedWork = ref<any>(null)
-const workToEvaluate = ref<any>(null)
-const searchQuery = ref("")
-const statusFilter = ref("")
-const difficultyFilter = ref("")
 
 // Computed
 const tabs = computed(() => [
   {
     key: "obras",
     label: "Obras",
-    count: works.value.length,
+    count: montajeStore.obras.length,
   },
   {
     key: "planes",
@@ -456,19 +436,19 @@ const tabs = computed(() => [
 ])
 
 const filteredWorks = computed(() => {
-  let filtered = works.value
+  let filtered = montajeStore.obras
 
-  if (searchQuery.value) {
+  if (montajeStore.searchQuery) {
     filtered = filtered.filter(
       (work) =>
-        work.title?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        work.composer?.toLowerCase().includes(searchQuery.value.toLowerCase())
+        work.title?.toLowerCase().includes(montajeStore.searchQuery.toLowerCase()) ||
+        work.composer?.toLowerCase().includes(montajeStore.searchQuery.toLowerCase())
     )
   }
 
-  if (statusFilter.value) {
+  if (montajeStore.statusFilter) {
     filtered = filtered.filter((work) => {
-      switch (statusFilter.value) {
+      switch (montajeStore.statusFilter) {
         case "active":
           return work.status === "en_montaje" || work.status === "en_estudio"
         case "completed":
@@ -483,25 +463,18 @@ const filteredWorks = computed(() => {
     })
   }
 
-  if (difficultyFilter.value) {
-    filtered = filtered.filter((work) => work.difficulty === difficultyFilter.value)
+  if (montajeStore.difficultyFilter) {
+    filtered = filtered.filter((work) => work.difficulty === montajeStore.difficultyFilter)
   }
 
   return filtered
 })
 
-const worksWithProgress = computed(() =>
-  works.value.map((work) => ({
-    ...work,
-    progress: work.progress || Math.floor(Math.random() * 100),
-  }))
-)
-
 // Methods
 const closeWorkModal = () => {
   showWorkModal.value = false
-  selectedWork.value = null
-  clearSelection()
+  montajeStore.selectWork(null)
+  montajeStore.clearSelectedWork()
 }
 
 const closeEvaluationModal = () => {
@@ -510,8 +483,7 @@ const closeEvaluationModal = () => {
 }
 
 const editWork = (work: any) => {
-  selectedWork.value = work
-  selectWork(work)
+  montajeStore.selectWork(work)
   showWorkModal.value = true
 }
 
@@ -540,13 +512,13 @@ const handleWorkSubmit = async (workData: CreateWorkInput) => {
       repertorioId: "default-repertorio",
     }
 
-    if (selectedWork.value) {
-      console.log("📝 Actualizando obra existente:", selectedWork.value.id)
-      await updateWork(selectedWork.value.id, completeWorkData)
+    if (montajeStore.selectedWork) {
+      console.log("📝 Actualizando obra existente:", montajeStore.selectedWork.id)
+      await montajeStore.actualizarObra(montajeStore.selectedWork.id, completeWorkData)
       console.log("✅ Obra actualizada exitosamente")
     } else {
       console.log("➕ Creando nueva obra")
-      const result = await createWork(completeWorkData)
+      const result = await montajeStore.crearObra(completeWorkData)
       console.log("✅ Obra creada exitosamente:", result)
     }
     closeWorkModal()
@@ -559,7 +531,7 @@ const handleWorkSubmit = async (workData: CreateWorkInput) => {
 const handlePlanSubmit = async (planData: any) => {
   try {
     console.log("Plan data:", planData)
-    // TODO: Implement plan creation
+    await montajeStore.crearPlanAccion(planData)
     showPlanModal.value = false
   } catch (error) {
     console.error("Error creating plan:", error)
@@ -569,7 +541,7 @@ const handlePlanSubmit = async (planData: any) => {
 const handleEvaluationSubmit = async (evaluationData: CreateEvaluationInput) => {
   try {
     console.log("Evaluation data:", evaluationData)
-    // TODO: Implement evaluation creation
+    await montajeStore.crearEvaluacionContinua(evaluationData)
     closeEvaluationModal()
   } catch (error) {
     console.error("Error creating evaluation:", error)
@@ -589,7 +561,7 @@ const formatDate = (date: Date) => {
 // Lifecycle
 onMounted(async () => {
   try {
-    await loadMontajeData("default-repertorio")
+    await montajeStore.cargarObras("default-repertorio")
     console.log("✅ Datos del módulo Montaje cargados")
   } catch (error) {
     console.error("❌ Error loading montaje data:", error)

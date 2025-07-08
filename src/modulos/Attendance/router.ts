@@ -13,7 +13,7 @@ const attendanceRoutes: Array<RouteRecordRaw> = [
     },
   },
   {
-    path: "/teacher/attendance/calendar",
+    path: "/attendance/calendar",
     name: "TeacherAttendanceCalendar",
     component: () => import("./views/TeacherAttendanceDashboard.vue"),
     props: {mode: "calendar"},
@@ -25,7 +25,7 @@ const attendanceRoutes: Array<RouteRecordRaw> = [
     },
   },
   {
-    path: "/teacher/attendance/:date?/:classId?",
+    path: "/attendance/:date?/:classId?",
     name: "TeacherAttendanceDetail",
     component: () => import("./views/AttendanceFormView.vue"),
     props: true,

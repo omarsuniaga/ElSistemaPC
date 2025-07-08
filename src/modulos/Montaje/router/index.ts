@@ -9,6 +9,10 @@ import EvaluationsView from "../views/EvaluationsView.vue"
 import WeeklyEvaluationsView from "../views/WeeklyEvaluationsView.vue"
 import AnalyticsView from "../views/AnalyticsView.vue"
 
+// Nuevas vistas para progreso por instrumento con RBAC
+import InstrumentProgressView from "../views/InstrumentProgressView.vue"
+import DirectorDashboardView from "../views/DirectorDashboardView.vue"
+
 // Componentes funcionales
 import MusicalTools from "../components/MusicalTools.vue"
 import InteractiveCalendar from "../components/InteractiveCalendar.vue"
@@ -22,8 +26,9 @@ const montajeRoutes: RouteRecordRaw[] = [
     component: MontajeDashboard,
     meta: {
       title: "Sistema Musical",
-      permissions: ["montaje:access"],
       requiresAuth: true,
+      moduleKey: "montaje",
+      permission: "access"
     },
     children: [
       // Dashboard principal
@@ -31,7 +36,7 @@ const montajeRoutes: RouteRecordRaw[] = [
         path: "",
         name: "montaje-dashboard",
         component: MontajeDashboard,
-        meta: { title: "Dashboard Musical", permissions: ["montaje:access"] },
+        meta: { title: "Dashboard Musical", moduleKey: "montaje", permission: "access" },
       },
 
       // Gestión de obras musicales
@@ -39,27 +44,27 @@ const montajeRoutes: RouteRecordRaw[] = [
         path: "works",
         name: "montaje-works-list",
         component: MontajeDashboard, // Lista de obras
-        meta: { title: "Lista de Obras", permissions: ["works:read"] },
+        meta: { title: "Lista de Obras", moduleKey: "montaje", permission: "works_read" },
       },
       {
         path: "works/create",
         name: "montaje-work-create",
         component: MontajeDashboard, // Crear obra
-        meta: { title: "Nueva Obra", permissions: ["works:create"] },
+        meta: { title: "Nueva Obra", moduleKey: "montaje", permission: "works_create" },
       },
       {
         path: "works/:id",
         name: "montaje-work-detail",
         component: WorkDetail,
         props: true,
-        meta: { title: "Detalle de Obra", permissions: ["works:read"] },
+        meta: { title: "Detalle de Obra", moduleKey: "montaje", permission: "works_read" },
       },
       {
         path: "works/:id/edit",
         name: "montaje-work-edit",
         component: WorkDetail, // Modo edición
         props: true,
-        meta: { title: "Editar Obra", permissions: ["works:edit"] },
+        meta: { title: "Editar Obra", moduleKey: "montaje", permission: "works_edit" },
       },
 
       // Instrumentos
@@ -68,7 +73,33 @@ const montajeRoutes: RouteRecordRaw[] = [
         name: "montaje-instrument-detail",
         component: InstrumentDetail,
         props: true,
-        meta: { title: "Detalle de Instrumento", permissions: ["works:read"] },
+        meta: { title: "Detalle de Instrumento", moduleKey: "montaje", permission: "works_read" },
+      },
+      
+      // Progreso por instrumento (RBAC)
+      {
+        path: "works/:id/instrument-progress",
+        name: "montaje-instrument-progress",
+        component: InstrumentProgressView,
+        props: true,
+        meta: { 
+          title: "Progreso por Instrumento", 
+          moduleKey: "montaje", 
+          permission: "instrument_progress_view"
+        },
+      },
+      
+      // Dashboard para directores (RBAC)
+      {
+        path: "works/:id/director-dashboard",
+        name: "montaje-director-dashboard",
+        component: DirectorDashboardView,
+        props: true,
+        meta: { 
+          title: "Dashboard de Director", 
+          moduleKey: "montaje", 
+          permission: "view_aggregated_reports" 
+        },
       },
 
       // Evaluaciones
@@ -76,21 +107,21 @@ const montajeRoutes: RouteRecordRaw[] = [
         path: "evaluations",
         name: "montaje-evaluations-list",
         component: EvaluationsView,
-        meta: { title: "Todas las Evaluaciones", permissions: ["evaluations:read"] },
+        meta: { title: "Todas las Evaluaciones", moduleKey: "montaje", permission: "evaluations_read" },
       },
       {
         path: "works/:id/evaluations",
         name: "montaje-work-evaluations",
         component: EvaluationsView,
         props: true,
-        meta: { title: "Evaluaciones de Obra", permissions: ["evaluations:read"] },
+        meta: { title: "Evaluaciones de Obra", moduleKey: "montaje", permission: "evaluations_read" },
       },
       {
         path: "works/:id/weekly-evaluations",
         name: "montaje-weekly-evaluations",
         component: WeeklyEvaluationsView,
         props: true,
-        meta: { title: "Evaluaciones Semanales", permissions: ["evaluations:read"] },
+        meta: { title: "Evaluaciones Semanales", moduleKey: "montaje", permission: "evaluations_read" },
       },
 
       // Analytics y reportes
@@ -98,14 +129,14 @@ const montajeRoutes: RouteRecordRaw[] = [
         path: "analytics",
         name: "montaje-analytics-general",
         component: AnalyticsView,
-        meta: { title: "Analytics Generales", permissions: ["reports:read"] },
+        meta: { title: "Analytics Generales", moduleKey: "montaje", permission: "reports_read" },
       },
       {
         path: "works/:id/analytics",
         name: "montaje-work-analytics",
         component: AnalyticsView,
         props: true,
-        meta: { title: "Analytics de Obra", permissions: ["reports:read"] },
+        meta: { title: "Analytics de Obra", moduleKey: "montaje", permission: "reports_read" },
       },
 
       // Herramientas musicales
@@ -113,19 +144,19 @@ const montajeRoutes: RouteRecordRaw[] = [
         path: "tools",
         name: "montaje-musical-tools",
         component: MusicalTools,
-        meta: { title: "Herramientas Musicales", permissions: ["montaje:read"] },
+        meta: { title: "Herramientas Musicales", moduleKey: "montaje", permission: "read" },
       },
       {
         path: "tools/metronome",
         name: "montaje-metronome",
         component: MusicalTools, // Vista específica del metrónomo
-        meta: { title: "Metrónomo", permissions: ["montaje:read"] },
+        meta: { title: "Metrónomo", moduleKey: "montaje", permission: "read" },
       },
       {
         path: "tools/tuner",
         name: "montaje-tuner",
         component: MusicalTools, // Vista específica del afinador
-        meta: { title: "Afinador", permissions: ["montaje:read"] },
+        meta: { title: "Afinador", moduleKey: "montaje", permission: "read" },
       },
 
       // Calendario y sesiones
@@ -133,13 +164,13 @@ const montajeRoutes: RouteRecordRaw[] = [
         path: "calendar",
         name: "montaje-calendar",
         component: InteractiveCalendar,
-        meta: { title: "Calendario", permissions: ["montaje:read"] },
+        meta: { title: "Calendario", moduleKey: "montaje", permission: "read" },
       },
       {
         path: "sessions",
         name: "montaje-sessions-list",
         component: InteractiveCalendar, // Lista de sesiones
-        meta: { title: "Sesiones Programadas", permissions: ["montaje:read"] },
+        meta: { title: "Sesiones Programadas", moduleKey: "montaje", permission: "read" },
       },
 
       // Gestión de usuarios
@@ -147,33 +178,33 @@ const montajeRoutes: RouteRecordRaw[] = [
         path: "users",
         name: "montaje-users-management",
         component: UsersApp,
-        meta: { title: "Gestión de Usuarios", permissions: ["users:access"] },
+        meta: { title: "Gestión de Usuarios", moduleKey: "montaje", permission: "users_access" },
         children: [
           {
             path: "",
             name: "montaje-users-list",
             component: UsersApp,
-            meta: { title: "Lista de Usuarios", permissions: ["users:read"] },
+            meta: { title: "Lista de Usuarios", moduleKey: "montaje", permission: "users_read" },
           },
           {
             path: "create",
             name: "montaje-user-create",
             component: UsersApp,
-            meta: { title: "Crear Usuario", permissions: ["users:manage"] },
+            meta: { title: "Crear Usuario", moduleKey: "montaje", permission: "users_manage" },
           },
           {
             path: ":userId",
             name: "montaje-user-detail",
             component: UsersApp,
             props: true,
-            meta: { title: "Detalle de Usuario", permissions: ["users:read"] },
+            meta: { title: "Detalle de Usuario", moduleKey: "montaje", permission: "users_read" },
           },
           {
             path: ":userId/edit",
             name: "montaje-user-edit",
             component: UsersApp,
             props: true,
-            meta: { title: "Editar Usuario", permissions: ["users:manage"] },
+            meta: { title: "Editar Usuario", moduleKey: "montaje", permission: "users_manage" },
           },
         ],
       },
@@ -183,13 +214,13 @@ const montajeRoutes: RouteRecordRaw[] = [
         path: "settings",
         name: "montaje-settings",
         component: PermissionsManager,
-        meta: { title: "Configuraciones", permissions: ["montaje:read"] },
+        meta: { title: "Configuraciones", moduleKey: "montaje", permission: "read" },
       },
       {
         path: "permissions",
         name: "montaje-permissions",
         component: PermissionsManager,
-        meta: { title: "Gestión de Permisos", permissions: ["users:manage"] },
+        meta: { title: "Gestión de Permisos", moduleKey: "montaje", permission: "users_manage" },
       },
 
       // Perfil de usuario
@@ -197,7 +228,7 @@ const montajeRoutes: RouteRecordRaw[] = [
         path: "profile",
         name: "montaje-user-profile",
         component: UsersApp, // Vista de perfil
-        meta: { title: "Mi Perfil", permissions: ["montaje:access"] },
+        meta: { title: "Mi Perfil", moduleKey: "montaje", permission: "access" },
       },
     ],
   },

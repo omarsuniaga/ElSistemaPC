@@ -1,12 +1,16 @@
 import { ref, computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { useMontaje } from './useMontaje'
+import { montajeService } from '../service/montajeService'
 import type { MusicalWork, LevelConfig, Instrument } from '../types/heatmap'
 
 export function useMusicalWorks() {
   const works = ref<MusicalWork[]>([])
   const currentWork = ref<MusicalWork | null>(null)
-  const loading = ref(true)
+  const loading = ref(false)
+  const { currentProject } = useMontaje()
+  const authStore = useAuthStore()
 
-  // Default level configurations
   const defaultLevels: LevelConfig[] = [
     { id: 0, name: 'Muy Bajo', color: 'bg-red-500', description: 'Nivel mínimo' },
     { id: 1, name: 'Bajo', color: 'bg-orange-500', description: 'Nivel bajo' },
@@ -15,7 +19,6 @@ export function useMusicalWorks() {
     { id: 4, name: 'Muy Alto', color: 'bg-green-500', description: 'Nivel máximo' }
   ]
 
-  // Default instruments for orchestral works
   const getDefaultInstruments = (): Instrument[] => {
     return [
       { id: 'violin1', name: 'Violín I', family: 'Cuerda', quantity: 16 },
@@ -35,160 +38,116 @@ export function useMusicalWorks() {
     ]
   }
 
-  // Local storage fallback functions
-  const saveToLocalStorage = (key: string, data: any) => {
-    try {
-      localStorage.setItem(key, JSON.stringify(data))
-    } catch (error) {
-      console.warn('Could not save to localStorage:', error)
-    }
-  }
+  const createWork = async (workData: Partial<MusicalWork> & Pick<MusicalWork, 'name' | 'composer'>): Promise<string> => {
+    if (!authStore.user?.uid) throw new Error("Usuario no autenticado.")
 
-  const loadFromLocalStorage = (key: string) => {
-    try {
-      const data = localStorage.getItem(key)
-      return data ? JSON.parse(data) : null
-    } catch (error) {
-      console.warn('Could not load from localStorage:', error)
-      return null
-    }
-  }
-
-  // Create a new musical work with local storage fallback
-  const createWork = async (
-    name: string,
-    composer: string,
-    description: string = '',
-    rows: number = 12,
-    cols: number = 18,
-    key: string = 'Do Mayor',
-    tempo: string = 'Moderato',
-    timeSignature: string = '4/4',
-    requirements: string = '',
-    techniques: string = '',
-    startDate: string = new Date().toISOString().split('T')[0],
-    endDate: string = '',
-    instruments: Instrument[] = []
-  ): Promise<string> => {
-    const workId = `work_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    const totalMeasures = rows * cols
-    
-    const newWork: MusicalWork = {
-      id: workId,
-      projectId: 'current_project_id',
-      name,
-      composer,
-      description,
-      genre: '',
-      difficulty: 3,
-      duration: 0,
-      rows,
-      cols,
-      totalMeasures,
-      key,
-      tempo,
-      timeSignature,
-      requirements,
-      techniques,
-      startDate,
-      endDate,
-      instruments: instruments.length > 0 ? instruments : getDefaultInstruments(),
-      levels: [...defaultLevels],
-      sections: [],
-      resources: [],
-      milestones: [],
-      status: 'planning',
-      priority: 1,
-      tags: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      createdBy: 'current_user_id'
-    }
-
-    // Always add to local array first for immediate feedback
-    works.value.push(newWork)
-    
-    // Save to localStorage as primary storage
-    const allWorks = [...works.value]
-    saveToLocalStorage('musical_works', allWorks)
-
-    return workId
-  }
-
-  // Load all works with local storage fallback
-  const loadWorks = async () => {
     loading.value = true
-    
     try {
-      // Try to load from localStorage for immediate response
-      const localWorks = loadFromLocalStorage('musical_works')
-      if (localWorks && Array.isArray(localWorks)) {
-        works.value = localWorks
+      const newWorkData = {
+        ...workData,
+        // Usar repertorioIds en lugar de projectId para el nuevo modelo de datos
+        repertorioIds: currentProject.value?.id ? [currentProject.value.id] : [],
+        createdBy: authStore.user.uid,
+        // Usamos el UID del usuario como sessionId
+        sessionId: authStore.user.uid,
+        instruments: workData.instruments?.length ? workData.instruments : getDefaultInstruments(),
+        levels: workData.levels?.length ? workData.levels : defaultLevels,
       }
-      
-      // If no local works exist, create a default one
-      if (works.value.length === 0) {
-        await createWork('Sinfonía No. 40', 'Wolfgang Amadeus Mozart', 'Sinfonía en Sol menor, K. 550')
-      }
+
+      // Ya no se pasa projectId como primer parámetro
+      const docId = await montajeService.crearObra(newWorkData as any)
+      // After successful creation, reload works to update the list
+      await loadWorks()
+      return docId
+    } catch (error) {
+      console.error("Error creando la obra:", error)
+      throw error
     } finally {
       loading.value = false
     }
   }
 
-  // Load specific work with local storage fallback
-  const loadWork = async (workId: string) => {
+  const loadWorks = async () => {
+    loading.value = true
     try {
-      // First check local works
-      const localWork = works.value.find(w => w.id === workId)
-      if (localWork) {
-        currentWork.value = localWork
+      // Ya no necesitamos pasar el projectId
+      const allWorks = await montajeService.obtenerObras()
+      
+      console.log('Obras obtenidas de Firestore:', allWorks)
+      
+      // Verificamos que tengamos obras
+      if (allWorks.length === 0) {
+        console.log('No se encontraron obras en Firestore')
+        works.value = []
+        return
+      }
+      
+      // Si hay un proyecto seleccionado, filtramos las obras que pertenecen a ese proyecto
+      if (currentProject.value?.id) {
+        // Compatibilidad con modelo antiguo (projectId) y nuevo (repertorioIds)
+        works.value = allWorks.filter(work => 
+          work.repertorioIds?.includes(currentProject.value!.id) || 
+          work.projectId === currentProject.value!.id
+        )
+        console.log('Obras filtradas por proyecto:', works.value)
+      } else {
+        works.value = allWorks
+        console.log('Mostrando todas las obras:', works.value)
       }
     } catch (error) {
-      console.warn('Could not load work, using local copy:', error)
-      
-      // Fallback to local work if available
-      if (!currentWork.value) {
-        const localWork = works.value.find(w => w.id === workId)
-        if (localWork) {
-          currentWork.value = localWork
-        }
+      console.error("Error cargando las obras:", error)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const loadWork = async (workId: string) => {
+    loading.value = true
+    try {
+      // Ya no necesitamos pasar el projectId
+      const work = await montajeService.obtenerObra(workId)
+      if (work) {
+        currentWork.value = work
       }
+    } catch (error) {
+      console.error("Error cargando la obra:", error)
+    } finally {
+      loading.value = false
     }
   }
 
-  // Update work with local storage fallback
   const updateWork = async (work: MusicalWork) => {
-    const updatedWork = {
-      ...work,
-      totalMeasures: work.rows * work.cols,
-      updatedAt: new Date().toISOString()
+    loading.value = true
+    try {
+      // Ya no necesitamos pasar el projectId
+      await montajeService.actualizarObra(work.id, work)
+      // Update local array after successful update
+      const index = works.value.findIndex(w => w.id === work.id)
+      if (index !== -1) works.value[index] = work
+      if (currentWork.value?.id === work.id) currentWork.value = work
+    } catch (error) {
+      console.error("Error actualizando obra:", error)
+      throw error
+    } finally {
+      loading.value = false
     }
-
-    // Update local copy immediately
-    const index = works.value.findIndex(w => w.id === work.id)
-    if (index !== -1) {
-      works.value[index] = updatedWork
-    }
-    
-    if (currentWork.value?.id === work.id) {
-      currentWork.value = updatedWork
-    }
-    
-    saveToLocalStorage('musical_works', works.value)
   }
 
-  // Delete work with local storage fallback
   const deleteWork = async (workId: string) => {
-    // Remove from local array immediately
-    works.value = works.value.filter(w => w.id !== workId)
-    saveToLocalStorage('musical_works', works.value)
-    
-    if (currentWork.value?.id === workId) {
-      currentWork.value = null
+    loading.value = true
+    try {
+      // Ya no necesitamos pasar el projectId
+      await montajeService.eliminarObra(workId)
+      works.value = works.value.filter(w => w.id !== workId)
+      if (currentWork.value?.id === workId) currentWork.value = null
+    } catch (error) {
+      console.error("Error eliminando obra:", error)
+      throw error
+    } finally {
+      loading.value = false
     }
   }
 
-  // Update level configuration
   const updateLevelConfig = async (workId: string, levels: LevelConfig[]) => {
     const work = works.value.find(w => w.id === workId)
     if (work) {
@@ -197,7 +156,6 @@ export function useMusicalWorks() {
     }
   }
 
-  // Get level by id
   const getLevelConfig = (levelId: number): LevelConfig | undefined => {
     return currentWork.value?.levels.find(l => l.id === levelId)
   }

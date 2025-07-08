@@ -112,8 +112,8 @@ export interface MusicalWork {
   genre: string
   difficulty: number
   duration: number // minutes
-  rows: number
-  cols: number
+  compas: number // Número total de compases
+  agruparEn: number // Agrupar en X compases por fila
   totalMeasures: number
   key: string
   tempo?: string
@@ -135,6 +135,10 @@ export interface MusicalWork {
   createdAt: string
   updatedAt: string
   createdBy: string
+  
+  // Propiedades para compatibilidad con versiones anteriores
+  rows?: number // @deprecated - Usar agruparEn en su lugar
+  cols?: number // @deprecated - Se calcula como Math.ceil(compas / agruparEn)
 }
 
 export interface Movement {

@@ -70,6 +70,24 @@ export const getAttendanceDocumentFirebase = async (
 }
 
 /**
+ * Verifica si un documento de asistencia existe para una fecha y clase específicas.
+ */
+export const checkAttendanceDocumentExists = async (
+  fecha: string,
+  classId: string
+): Promise<boolean> => {
+  try {
+    const docId = getAttendanceDocId(fecha, classId)
+    const docRef = doc(db, ATTENDANCE_COLLECTION, docId)
+    const docSnap = await getDoc(docRef)
+    return docSnap.exists()
+  } catch (error) {
+    console.error("Error al verificar la existencia del documento de asistencia:", error)
+    throw error
+  }
+}
+
+/**
  * Crea o actualiza un documento de asistencia
  */
 export const saveAttendanceDocumentFirebase = async (

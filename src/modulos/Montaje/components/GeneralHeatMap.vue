@@ -6,9 +6,9 @@
     </div>
 
     <!-- Heat Map Grid -->
-    <div v-else class="bg-gray-50 rounded-lg p-4 overflow-x-auto">
-      <div class="mb-4 text-center text-sm text-gray-600">
-        Dimensiones: {{ work.rows }} filas × {{ work.cols }} columnas = {{ work.totalMeasures }} compases
+    <div v-else class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 overflow-x-auto border border-blue-500">
+      <div class="mb-4 text-center text-sm text-gray-600 dark:text-gray-100">
+        Dimensiones: {{ Math.ceil((work.totalMeasures || work.compas || 0) / (work.cols || 10)) }} filas × {{ work.cols || 10 }} columnas = {{ work.totalMeasures || work.compas || 0 }} compases
       </div>
       
       <div 
@@ -28,42 +28,41 @@
           {{ cell.measureNumber }}
         </div>
       </div>
-    </div>
-
-    <!-- Legend -->
-    <div class="bg-white rounded-lg p-4 border border-gray-200">
-      <h3 class="text-sm font-medium text-gray-700 mb-2">Leyenda de Niveles (Promedio General)</h3>
-      <div class="flex flex-wrap gap-3">
-        <div 
-          v-for="level in work.levels" 
-          :key="level.id"
-          class="flex items-center gap-2"
-        >
+      <!-- Legend -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-4 ">
+        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-100 mb-2">Leyenda de Niveles (Promedio General)</h3>
+        <div class="flex flex-wrap gap-3">
           <div 
-            class="w-6 h-6 rounded-sm border border-gray-300"
-            :class="level.color"
-          ></div>
-          <span class="text-sm text-gray-600">{{ level.name }}</span>
-          <span v-if="level.description" class="text-xs text-gray-400">({{ level.description }})</span>
+            v-for="level in work.levels" 
+            :key="level.id"
+            class="flex items-center gap-2"
+          >
+            <div 
+              class="w-6 h-6 rounded-sm border border-gray-700"
+              :class="level.color"
+            ></div>
+            <span class="text-sm text-gray-600 dark:text-gray-100">{{ level.name }}</span>
+          </div>
         </div>
       </div>
     </div>
 
+
     <!-- Statistics -->
-    <div class="bg-white rounded-lg p-4 border border-gray-200">
-      <h3 class="text-sm font-medium text-gray-700 mb-3">Estadísticas Generales</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-500">
+      <h3 class="text-sm font-medium text-gray-700 dark:text-gray-100 mb-3">Estadísticas Generales</h3>
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div class="text-center">
-          <div class="text-2xl font-bold text-gray-800">{{ stats.total }}</div>
-          <div class="text-sm text-gray-500">Total Compases</div>
+          <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats.total }}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-300">Total Compases</div>
         </div>
         <div 
           v-for="(level, index) in work.levels" 
           :key="level.id"
           class="text-center"
-        >
-          <div class="text-2xl font-bold text-gray-800">{{ stats.levels[index] || 0 }}</div>
-          <div class="text-sm text-gray-500">
+        > 
+          <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats.levels[index] || 0 }}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-300">
             {{ level.name }} ({{ stats.percentages[index] || 0 }}%)
           </div>
           <div 
@@ -91,9 +90,15 @@ const grid = ref<GridCell[]>([])
 const initializeGrid = () => {
   const newGrid: GridCell[] = []
   let measureNumber = 1
+  const totalMeasures = props.work.totalMeasures || props.work.compas || 0
   
-  for (let row = 0; row < props.work.rows; row++) {
-    for (let col = 0; col < props.work.cols; col++) {
+  // Determinar filas y columnas optimizadas
+  const cols = props.work.cols || 10
+  const rows = Math.ceil(totalMeasures / cols)
+  
+  // Crear solo las celdas necesarias para el número real de compases
+  for (let row = 0; row < rows && measureNumber <= totalMeasures; row++) {
+    for (let col = 0; col < cols && measureNumber <= totalMeasures; col++) {
       newGrid.push({
         id: `${row}-${col}`,
         level: Math.floor(Math.random() * props.work.levels.length), // Random for demo

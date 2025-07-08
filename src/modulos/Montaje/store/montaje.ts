@@ -1,8 +1,7 @@
-﻿// src/modulos/Montaje/store/montaje.ts
+// src/modulos/Montaje/store/montaje.ts
 
 import {defineStore} from "pinia"
 import {ref, computed} from "vue"
-import {Timestamp} from "firebase/firestore"
 import type {
   Obra,
   PlanAccion,
@@ -14,9 +13,13 @@ import type {
   NotificacionMontaje,
   FiltrosMontaje,
   CambioEstadoCompass,
+  MontajeProject,
+  ProjectMember,
+  MontajeSettings,
 } from "../types"
 import {EstadoCompass, DificultadFrase, TipoInstrumento} from "../types"
 import {montajeService} from "../service/montajeService"
+import {teacherService} from "../service/teacherService"
 import {useAuthStore} from "@/stores/auth"
 
 export const useMontajeStore = defineStore("montaje", () => {
@@ -31,10 +34,31 @@ export const useMontajeStore = defineStore("montaje", () => {
   const evaluacionesContinuas = ref<EvaluacionContinua[]>([])
   const evaluacionesFinales = ref<EvaluacionFinal[]>([])
   const notificaciones = ref<NotificacionMontaje[]>([])
+  const selectedWork = ref<Obra | null>(null)
+
+  const currentProject = ref<MontajeProject | null>(null)
+  const projects = ref<MontajeProject[]>([])
+  const isLoadingProjects = ref(false)
+  
+  // Estado para instrumentos del profesor actual
+  const teacherInstruments = ref<TipoInstrumento[]>([])
+  const isLoadingInstruments = ref(false)
+  const selectedInstrument = ref<TipoInstrumento | null>(null)
+  
+  // Estados de compases por instrumento
+  const instrumentCompassStates = ref<EstadoCompassInstrumento[]>([])
+  const instrumentStatistics = ref<EstadisticasProgreso | null>(null)
+  const isLoadingInstrumentStates = ref(false)
+  const hasInstrumentStatePermission = ref(false)
 
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const filtros = ref<FiltrosMontaje>({})
+  const activeTab = ref<'obras' | 'planes' | 'evaluaciones' | 'analytics'>('obras')
+  const searchQuery = ref("")
+  const statusFilter = ref("")
+  const difficultyFilter = ref("")
+  const instrumentFilter = ref<TipoInstrumento | null>(null)
 
   // ================== GETTERS ==================
   const obrasActivasPorRepertorio = computed(
@@ -77,6 +101,36 @@ export const useMontajeStore = defineStore("montaje", () => {
     return problematicos.sort((a, b) => a - b)
   })
 
+  // Getter para obras filtradas por instrumentos del maestro
+  const obrasFiltradasPorMaestro = computed(() => {
+    if (!teacherInstruments.value.length) return obras.value
+    
+    return obras.value.filter(obra => {
+      if (!obra.instruments || !Array.isArray(obra.instruments)) return false
+      
+      // Verificar si al menos uno de los instrumentos del maestro está en la obra
+      return obra.instruments.some(instrumento => 
+        teacherInstruments.value.includes(instrumento.id as TipoInstrumento)
+      )
+    })
+  })
+  
+  // Getter para verificar si hay compases con dificultad para el instrumento seleccionado
+  const compassesDificultadPorInstrumento = computed(() => {
+    if (!selectedInstrument.value) return []
+    
+    return instrumentCompassStates.value
+      .filter(estado => estado.estado === EstadoCompass.CON_DIFICULTAD)
+      .map(estado => estado.numeroCompas)
+      .sort((a, b) => a - b)
+  })
+  
+  // Getter para estadísticas de progreso del instrumento seleccionado
+  const estadisticasInstrumento = computed(() => instrumentStatistics.value)
+  
+  // Getter para verificar si el usuario puede actualizar estados por instrumento
+  const puedeActualizarEstadosInstrumento = computed(() => hasInstrumentStatePermission.value)
+
   const estadisticasEvaluacion = computed(() => {
     const continuas = evaluacionesContinuas.value
     const finales = evaluacionesFinales.value
@@ -96,6 +150,170 @@ export const useMontajeStore = defineStore("montaje", () => {
     notificaciones.value.filter((n) => !n.metadatos.leida)
   )
 
+  const calculateProjectProgress = (project: MontajeProject): number => {
+    const totalDays = Math.ceil(
+      (new Date(project.endDate).getTime() - new Date(project.startDate).getTime()) / (1000 * 60 * 60 * 24)
+    )
+    const elapsedDays = Math.ceil(
+      (new Date().getTime() - new Date(project.startDate).getTime()) / (1000 * 60 * 60 * 24)
+    )
+    
+    return Math.min(100, Math.max(0, (elapsedDays / totalDays) * 100))
+  }
+
+  const getProjectStats = computed(() => {
+    if (!currentProject.value) return null
+
+    return {
+      totalWorks: currentProject.value.works.length,
+      totalMembers: currentProject.value.members.length,
+      daysRemaining: Math.max(0, Math.ceil(
+        (new Date(currentProject.value.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+      )),
+      progress: calculateProjectProgress(currentProject.value)
+    }
+  })
+
+  // ================== ACCIONES DE PROYECTOS DE MONTAJE ==================
+
+  const createMontajeProject = async (
+    name: string,
+    description: string,
+    director: string,
+    organization: string,
+    season: string,
+    startDate: string,
+    endDate: string
+  ): Promise<string> => {
+    isLoadingProjects.value = true
+    const authStore = useAuthStore()
+    if (!authStore.user) throw new Error('Usuario no autenticado.')
+
+    try {
+      const newMember: ProjectMember = {
+        id: authStore.user.uid,
+        name: authStore.user.email || 'Sin nombre',
+        email: authStore.user.email || 'unknown@example.com', // Assuming email is available
+        role: 'director',
+        instruments: [], // Or default instruments
+        joinedAt: new Date().toISOString(),
+        permissions: [], // Or default permissions
+      };
+
+      const newProject: Omit<MontajeProject, 'id' | 'createdAt' | 'updatedAt'> = {
+        name,
+        description,
+        director,
+        organization,
+        season,
+        startDate,
+        endDate,
+        status: 'planning',
+        works: [],
+        members: [newMember],
+        settings: getDefaultSettings(),
+        ownerId: authStore.user.uid
+      }
+
+      const docId = await montajeService.createMontajeProject(newProject)
+      
+      const createdProject: MontajeProject = {
+        ...newProject,
+        id: docId,
+        createdAt: new Date().toISOString(), // Placeholder, actual timestamp from service
+        updatedAt: new Date().toISOString()  // Placeholder, actual timestamp from service
+      }
+
+      projects.value.push(createdProject)
+      currentProject.value = createdProject
+      
+      return docId
+    } catch (error) {
+      console.error("Error creando el proyecto de montaje:", error)
+      throw error
+    } finally {
+      isLoadingProjects.value = false
+    }
+  }
+
+  const loadMontajeProjects = async () => {
+    isLoadingProjects.value = true
+    const authStore = useAuthStore()
+    if (!authStore.user) {
+      isLoadingProjects.value = false
+      return
+    }
+    
+    try {
+      const userProjects = await montajeService.loadMontajeProjects(authStore.user.uid)
+      projects.value = userProjects
+      
+      if (projects.value.length > 0) {
+        const lastProjectId = localStorage.getItem('montaje_current_project')
+        const projectToSelect = projects.value.find(p => p.id === lastProjectId) || projects.value[0]
+        selectMontajeProject(projectToSelect.id)
+      }
+
+    } catch (error) {
+      console.error("Error cargando proyectos de montaje:", error)
+    } finally {
+      isLoadingProjects.value = false
+    }
+  }
+
+  const selectMontajeProject = (projectId: string) => {
+    const project = projects.value.find(p => p.id === projectId)
+    if (project) {
+      currentProject.value = project
+      localStorage.setItem('montaje_current_project', projectId)
+    }
+  }
+
+  const addMemberToMontajeProject = async (projectId: string, member: Omit<ProjectMember, 'id' | 'joinedAt'>) => {
+    const project = projects.value.find(p => p.id === projectId)
+    if (!project) return
+
+    const newMember: ProjectMember = {
+      ...member,
+      id: `member_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Idealmente usar UID de usuario real
+      joinedAt: new Date().toISOString()
+    }
+
+    project.members.push(newMember)
+    await montajeService.saveMontajeProject(project)
+  }
+
+  const updateMontajeProjectSettings = async (projectId: string, settings: Partial<MontajeSettings>) => {
+    const project = projects.value.find(p => p.id === projectId)
+    if (!project) return
+
+    project.settings = { ...project.settings, ...settings }
+    await montajeService.saveMontajeProject(project)
+  }
+
+  const saveMontajeProject = async (project: MontajeProject) => {
+    try {
+      await montajeService.saveMontajeProject(project)
+      console.log('Project saved:', project.id)
+    } catch (error) {
+      console.error('Error saving project:', error)
+      throw error
+    }
+  }
+
+  const getDefaultSettings = (): MontajeSettings => ({
+    evaluationFrequency: 'weekly',
+    autoReminders: true,
+    reportGeneration: 'manual',
+    exportFormats: ['pdf', 'excel'],
+    integrations: {
+      calendar: true,
+      email: true,
+      metronome: false,
+      tuner: false
+    }
+  });
+
   // ================== ACCIONES DE OBRAS ==================
 
   /**
@@ -106,10 +324,13 @@ export const useMontajeStore = defineStore("montaje", () => {
       isLoading.value = true
       error.value = null
 
-      const obrasData = await montajeService.obtenerObras(repertorioId)
-      obras.value = obrasData
+      const obrasResult = await montajeService.obtenerObras()
+      const obrasDelRepertorio = obrasResult.filter(
+        (obra) => obra.repertorioId === repertorioId && obra.auditoria?.activo !== false
+      )
+      obras.value = obrasDelRepertorio
 
-      console.log("✅ Obras cargadas:", obrasData.length)
+      console.log("✅ Obras cargadas:", obrasDelRepertorio.length)
     } catch (err) {
       console.error("❌ Error cargando obras:", err)
       error.value = "No se pudieron cargar las obras"
@@ -120,58 +341,90 @@ export const useMontajeStore = defineStore("montaje", () => {
   }
 
   /**
+   * Cargar obras filtradas por instrumento del profesor
+   * Esta función carga solo las obras que tienen instrumentos
+   * asignados al profesor actual
+   */
+  const cargarObrasPorInstrumentoProfesor = async (repertorioId: string) => {
+    try {
+      const authStore = useAuthStore()
+      if (!authStore.user?.uid) {
+        throw new Error("Usuario no autenticado")
+      }
+      
+      isLoading.value = true
+      error.value = null
+      
+      // Primero cargar los instrumentos del profesor si no están cargados
+      if (teacherInstruments.value.length === 0) {
+        await cargarInstrumentosMaestro()
+      }
+      
+      // Luego cargar todas las obras del repertorio especificado o todas si no hay repertorio
+      const obrasResult = await montajeService.obtenerObras()
+      // Filtramos por repertorio si se proporciona, y solo obras activas
+      const obrasDelRepertorio = obrasResult.filter((obra) => {
+        const coincideRepertorio = repertorioId ? obra.repertorioId === repertorioId : true
+        return coincideRepertorio && obra.auditoria?.activo !== false
+      })
+      
+      // Filtrar obras que contengan al menos uno de los instrumentos del profesor
+      if (teacherInstruments.value.length > 0) {
+        const obrasFiltradas = obrasDelRepertorio.filter(obra => {
+          // Verificar si la obra tiene instrumentos que coinciden con los del profesor
+          return obra.instrumentacion?.some((instrumento: string) => 
+            teacherInstruments.value.includes(instrumento as TipoInstrumento)
+          )
+        })
+        
+        obras.value = obrasFiltradas
+        console.log(`✅ Obras filtradas por instrumentos del profesor: ${obrasFiltradas.length}`)
+      } else {
+        // Si el profesor no tiene instrumentos asignados, mostrar todas las obras
+        obras.value = obrasDelRepertorio
+        console.log("⚠️ El profesor no tiene instrumentos asignados, mostrando todas las obras")
+      }
+    } catch (err) {
+      console.error("❌ Error cargando obras por instrumento:", err)
+      error.value = "No se pudieron cargar las obras filtradas por instrumento"
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+  
+  /**
+   * Cargar instrumentos asignados al profesor
+   */
+  const cargarInstrumentosProfesor = async (userId: string) => {
+    try {
+      isLoadingInstruments.value = true
+      error.value = null
+      
+      const instrumentos = await teacherService.getUserInstruments(userId)
+      teacherInstruments.value = instrumentos
+      
+      console.log(`✅ Instrumentos del profesor cargados: ${instrumentos.length}`, instrumentos)
+      return instrumentos
+    } catch (err) {
+      console.error("❌ Error cargando instrumentos del profesor:", err)
+      error.value = "No se pudieron cargar los instrumentos del profesor"
+      throw err
+    } finally {
+      isLoadingInstruments.value = false
+    }
+  }
+
+  /**
    * Cargar una obra específica
-   */ const cargarObra = async (obraId: string) => {
+   */ 
+  const cargarObra = async (obraId: string) => {
     try {
       isLoading.value = true
       error.value = null
 
-      console.log("🔍 Buscando obra en múltiples colecciones...")
-
-      // Primero intentar en la colección 'obras'
-      let obra = await montajeService.obtenerObra(obraId)
-
-      // Si no se encuentra, intentar en 'repertorios'
-      if (!obra) {
-        console.log('📚 Obra no encontrada en "obras", intentando en "repertorios"...')
-        try {
-          // doc y getDoc ya están importados arriba
-
-          const docRef = doc(db, "repertorios", obraId)
-          const docSnap = await getDoc(docRef)
-
-          if (docSnap.exists()) {
-            obra = {
-              id: docSnap.id,
-              ...docSnap.data(),
-            } as any // Convertir de repertorio a obra
-            console.log('✅ Obra encontrada en colección "repertorios"')
-          }
-        } catch (repoError) {
-          console.log("⚠️ Error buscando en repertorios:", repoError)
-        }
-      }
-
-      // Si aún no se encuentra, intentar en 'montaje-repertorios'
-      if (!obra) {
-        console.log('📖 Intentando en "montaje-repertorios"...')
-        try {
-          // doc y getDoc ya están importados arriba
-
-          const docRef = doc(db, "montaje-repertorios", obraId)
-          const docSnap = await getDoc(docRef)
-
-          if (docSnap.exists()) {
-            obra = {
-              id: docSnap.id,
-              ...docSnap.data(),
-            } as any
-            console.log('✅ Obra encontrada en colección "montaje-repertorios"')
-          }
-        } catch (montajeRepoError) {
-          console.log("⚠️ Error buscando en montaje-repertorios:", montajeRepoError)
-        }
-      }
+      console.log("🔍 Buscando obra en múltiples colecciones a través del servicio...")
+      const obra = await montajeService.obtenerObraEnMultiplesColecciones(obraId)
 
       if (obra) {
         obraActual.value = obra
@@ -181,7 +434,7 @@ export const useMontajeStore = defineStore("montaje", () => {
         }
         console.log("✅ Obra cargada:", obra?.titulo || obra?.title || obra?.nombre)
       } else {
-        console.error("❌ Obra no encontrada en ninguna colección")
+        console.error("❌ Obra no encontrada en ninguna colección a través del servicio")
         error.value = "Obra no encontrada"
       }
     } catch (err) {
@@ -196,7 +449,7 @@ export const useMontajeStore = defineStore("montaje", () => {
   /**
    * Crear nueva obra
    */
-  const crearObra = async (obraData: Omit<Obra, "id" | "fechaCreacion" | "auditoria">) => {
+  const crearObra = async (obraData: Omit<Obra, "id" | "auditoria">) => {
     try {
       isLoading.value = true
       error.value = null
@@ -207,10 +460,8 @@ export const useMontajeStore = defineStore("montaje", () => {
       const authStore = useAuthStore()
       const datosCompletos: Omit<Obra, "id"> = {
         ...obraData,
-        fechaCreacion: Timestamp.now(),
         auditoria: {
           creadoPor: authStore.user?.uid || "unknown",
-          fechaCreacion: Timestamp.now(),
           version: 1,
           activo: true,
         }, // Asegurar metadatos básicos
@@ -302,6 +553,14 @@ export const useMontajeStore = defineStore("montaje", () => {
       isLoading.value = false
     }
   }
+
+  const selectWork = (work: Obra | null) => {
+    selectedWork.value = work
+  }
+
+  const clearSelectedWork = () => {
+    selectedWork.value = null
+  }
   // ================== ACCIONES DE PLANES ==================
 
   /**
@@ -339,7 +598,6 @@ export const useMontajeStore = defineStore("montaje", () => {
         ...planData,
         auditoria: {
           creadoPor: authStore.user?.uid || "unknown",
-          fechaCreacion: Timestamp.now(),
           version: 1,
           activo: true,
         },
@@ -354,7 +612,7 @@ export const useMontajeStore = defineStore("montaje", () => {
       }
 
       console.log("🔄 Creando plan de acción con datos:", datosCompletos)
-      const planId = await montajeService.crearPlanAccion(datosCompletos)
+      const planId = await montajeService.crearPlanAccion(planData.obraId, datosCompletos)
 
       // Cargar el plan creado
       const planCreado = await montajeService.obtenerPlanAccion(planData.obraId)
@@ -433,7 +691,6 @@ export const useMontajeStore = defineStore("montaje", () => {
         ...fraseData,
         auditoria: {
           creadoPor: authStore.user?.uid || "unknown",
-          fechaCreacion: Timestamp.now(),
           version: 1,
           activo: true,
         },
@@ -449,7 +706,7 @@ export const useMontajeStore = defineStore("montaje", () => {
       }
 
       console.log("🔄 Creando frase con datos:", datosCompletos)
-      const fraseId = await montajeService.crearFrase(datosCompletos)
+      const fraseId = await montajeService.crearFrase(fraseData.obraId, fraseData.planAccionId, datosCompletos)
 
       // Actualizar la lista de frases
       await cargarFrases(fraseData.planAccionId)
@@ -559,14 +816,13 @@ export const useMontajeStore = defineStore("montaje", () => {
         ...evaluacionData,
         auditoria: {
           creadoPor: authStore.user?.uid || "unknown",
-          fechaCreacion: Timestamp.now(),
           version: 1,
           activo: true,
         },
       }
 
       console.log("🔄 Creando evaluación continua con datos:", datosCompletos)
-      const evaluacionId = await montajeService.crearEvaluacionContinua(datosCompletos)
+      const evaluacionId = await montajeService.crearEvaluacionContinua(evaluacionData.obraId, datosCompletos)
 
       // Actualizar la lista de evaluaciones
       await cargarEvaluacionesContinuas(evaluacionData.obraId)
@@ -597,14 +853,13 @@ export const useMontajeStore = defineStore("montaje", () => {
         ...evaluacionData,
         auditoria: {
           creadoPor: authStore.user?.uid || "unknown",
-          fechaCreacion: Timestamp.now(),
           version: 1,
           activo: true,
         },
       }
 
       console.log("🔄 Creando evaluación final con datos:", datosCompletos)
-      const evaluacionId = await montajeService.crearEvaluacionFinal(datosCompletos)
+      const evaluacionId = await montajeService.crearEvaluacionFinal(evaluacionData.obraId, datosCompletos)
 
       // Actualizar la lista de evaluaciones
       await cargarEvaluacionesFinales(evaluacionData.obraId)
@@ -668,6 +923,27 @@ export const useMontajeStore = defineStore("montaje", () => {
     }
   }
 
+  const markAllNotificationsAsRead = async () => {
+    try {
+      const authStore = useAuthStore()
+      if (!authStore.user?.uid) {
+        console.warn("⚠️ Usuario no autenticado para marcar notificaciones como leídas")
+        return
+      }
+
+      for (const notification of notificaciones.value) {
+        if (!notification.metadatos.leida) {
+          await montajeService.marcarNotificacionLeida(notification.id)
+          notification.metadatos.leida = true
+        }
+      }
+      console.log("✅ Todas las notificaciones marcadas como leídas")
+    } catch (err) {
+      console.error("❌ Error marcando todas las notificaciones como leídas:", err)
+      throw err
+    }
+  }
+
   // ================== ACCIONES DE CAMBIO DE ESTADO ==================
   /**
    * Cambiar estado de compás
@@ -693,17 +969,15 @@ export const useMontajeStore = defineStore("montaje", () => {
         estadoNuevo: nuevoEstado,
         razon,
         maestroId: authStore.user?.uid || "unknown",
-        fecha: Timestamp.now(),
       }
 
       console.log("🔄 Aplicando cambio de estado:", cambio)
-      await montajeService.cambiarEstadoCompass(compassNumber, nuevoEstado, cambio) // Actualizar el estado local
+      await montajeService.cambiarEstadoCompass(obraActual.value?.id || "", compassNumber, nuevoEstado, cambio) // Actualizar el estado local
       estadosCompases.value.set(compassNumber, {
         compas: compassNumber,
         estado: nuevoEstado,
         instrumentos: crearEstadoInstrumentos(nuevoEstado),
         observaciones: razon ? [razon] : [],
-        fechaUltimaModificacion: Timestamp.now(),
         modificadoPor: authStore.user?.uid || "unknown",
         sesionesEnsayo: 1,
         dificultadesEspecificas: [],
@@ -713,6 +987,8 @@ export const useMontajeStore = defineStore("montaje", () => {
     } catch (err) {
       console.error("❌ Error cambiando estado de compás:", err)
       throw err
+    } finally {
+      isLoading.value = false
     }
   }
 
@@ -765,6 +1041,10 @@ export const useMontajeStore = defineStore("montaje", () => {
     filtros.value = {...filtros.value, ...nuevosFiltros}
   }
 
+  const setActiveTab = (tab: 'obras' | 'planes' | 'evaluaciones' | 'analytics') => {
+    activeTab.value = tab
+  }
+
   // ================== UTILIDADES PRIVADAS ==================
 
   /**
@@ -778,6 +1058,23 @@ export const useMontajeStore = defineStore("montaje", () => {
       },
       {} as Record<TipoInstrumento, EstadoCompass>
     )
+  }
+
+  // Importar e integrar acciones para progreso por instrumento y RBAC
+  // Nota: Cambiado de dynamic import a import estático para evitar problemas
+  let cargarInstrumentosMaestro, cargarObrasParaMaestro, seleccionarInstrumento, actualizarEstadoCompassInstrumento, actualizarCompassesMasivamente, verificarPermisosReportesAgregados;
+  
+  try {
+    // Importamos desde un módulo separado usando require
+    const montajeActions = require('./montajeActions');
+    cargarInstrumentosMaestro = montajeActions.cargarInstrumentosMaestro;
+    cargarObrasParaMaestro = montajeActions.cargarObrasParaMaestro;
+    seleccionarInstrumento = montajeActions.seleccionarInstrumento;
+    actualizarEstadoCompassInstrumento = montajeActions.actualizarEstadoCompassInstrumento;
+    actualizarCompassesMasivamente = montajeActions.actualizarCompassesMasivamente;
+    verificarPermisosReportesAgregados = montajeActions.verificarPermisosReportesAgregados;
+  } catch (error) {
+    console.error('Error al cargar montajeActions:', error);
   }
 
   return {
@@ -795,6 +1092,21 @@ export const useMontajeStore = defineStore("montaje", () => {
     isLoading,
     error,
     filtros,
+    currentProject,
+    projects,
+    isLoadingProjects,
+    activeTab,
+    selectedWork,
+    teacherInstruments,
+    isLoadingInstruments,
+    instrumentFilter,
+    
+    // Estado para progreso por instrumento
+    selectedInstrument,
+    instrumentCompassStates,
+    instrumentStatistics,
+    isLoadingInstrumentStates,
+    hasInstrumentStatePermission,
 
     // Getters computados
     obrasActivasPorRepertorio,
@@ -806,13 +1118,31 @@ export const useMontajeStore = defineStore("montaje", () => {
     compassesProblematicos,
     estadisticasEvaluacion,
     notificacionesSinLeer,
+    getProjectStats,
+    obrasFiltradasPorMaestro,
+    compassesDificultadPorInstrumento,
+    estadisticasInstrumento,
+    puedeActualizarEstadosInstrumento,
 
     // Acciones principales
     cargarObras,
+    cargarObrasPorInstrumentoProfesor,
     cargarObra,
     crearObra,
     actualizarObra,
     eliminarObra,
+    // Definimos aliases para compatibilidad con código existente
+    selectWork: cargarObra,
+    clearSelectedWork: () => { obraActual.value = null },
+
+    // Acciones de proyectos de montaje
+    createMontajeProject,
+    loadMontajeProjects,
+    selectMontajeProject,
+    addMemberToMontajeProject,
+    updateMontajeProjectSettings,
+    saveMontajeProject,
+    getDefaultSettings,
 
     // Acciones de planes
     cargarPlanAccion,
@@ -832,6 +1162,7 @@ export const useMontajeStore = defineStore("montaje", () => {
     // Acciones de notificaciones
     cargarNotificaciones,
     marcarNotificacionLeida,
+    markAllNotificationsAsRead,
     // Acciones de estados
     cambiarEstadoCompass,
     cargarEstadosCompases,
@@ -839,6 +1170,16 @@ export const useMontajeStore = defineStore("montaje", () => {
     // Utilidades
     limpiarEstado,
     actualizarFiltros,
+    setActiveTab,
+    
+    // Acciones para gestión de progreso por instrumento con RBAC
+    cargarInstrumentosMaestro,
+    cargarObrasParaMaestro,
+    cargarInstrumentosProfesor,
+    seleccionarInstrumento,
+    actualizarEstadoCompassInstrumento,
+    actualizarCompassesMasivamente,
+    verificarPermisosReportesAgregados,
 
     // Utilidades privadas
     crearEstadoInstrumentos,

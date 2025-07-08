@@ -112,8 +112,8 @@ export interface MusicalWork {
   genre: string
   difficulty: number
   duration: number // minutes
-  rows: number
-  cols: number
+  compas: number // Número total de compases
+  agruparEn: number // Agrupar en X compases por fila
   totalMeasures: number
   key: string
   tempo?: string

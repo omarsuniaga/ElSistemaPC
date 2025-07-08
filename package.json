@@ -10,48 +10,39 @@
     "dev": "vite",
     "dev:clean": "npm run clean-processes && npm run dev",
     "clean-processes": "powershell -ExecutionPolicy Bypass -File scripts/fix-websocket.ps1",
+    
     "build": "vite build",
-    "build:with-migrate": "npm run migrate:schedules && vite build",
     "build:prod": "cross-env NODE_ENV=production vite build",
-    "build:analyze": "npm run build && npm run analyze:bundle",
-    "validate:env": "node scripts/validate-env.js",
+    "build:analyze": "npm run build && tsx scripts/analyze-bundle.ts",
     "preview": "vite preview",
+    
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:unit": "vitest run src/**/*.test.ts",
-    "test:montaje": "vitest run --config vitest.config.montaje.ts",
-    "test:montaje:watch": "vitest --config vitest.config.montaje.ts",
-    "test:montaje:coverage": "vitest run --config vitest.config.montaje.ts --coverage",
-    "test:montaje:ui": "vitest --config vitest.config.montaje.ts --ui",
-    "test:montaje:script": "powershell -ExecutionPolicy Bypass -File test-montaje.ps1",
-    "migrate:schedules": "tsx src/utils/cli/migrate.ts",
-    "analyze:bundle": "tsx scripts/analyze-bundle.ts",
+    "test:montaje": "vitest --config vitest.config.montaje.ts",
+    
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx,.vue --fix --ignore-path .gitignore",
-    "lint:check": "eslint . --ext .js,.jsx,.ts,.tsx,.vue --ignore-path .gitignore",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,vue,json,md}\" --ignore-path .gitignore",
-    "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,vue,json,md}\" --ignore-path .gitignore",
     "type-check": "vue-tsc --noEmit",
-    "spell-check": "cspell \"src/**/*.{ts,vue,js}\" \"*.md\"",
-    "validate": "npm run lint && npm run format:check && npm run type-check",
-    "predeploy": "npm run migrate:schedules",
+    "validate": "npm run lint && npm run format -- --check && npm run type-check",
+
+    "predeploy": "tsx src/utils/cli/migrate.ts",
     "deploy": "npm run build && firebase deploy",
-    "setup-permissions": "tsx scripts/setup-permissions.ts",
-    "validate-permissions": "tsx scripts/validate-permissions.ts",
-    "test-permissions": "tsx scripts/test-permissions.ts",
-    "fix-imports": "node scripts/safe-import-analyzer.js",
-    "fix-imports:quick": "node scripts/quick-import-fix.js",
-    "fix-imports:advanced": "node scripts/advanced-import-resolver.js",
-    "fix-imports:full": "node scripts/fix-import-conflicts.js",
-    "fix-imports:analyze": "node scripts/safe-import-analyzer.js",
-    "fix-imports:windows": "powershell -ExecutionPolicy Bypass -File scripts/fix-imports.ps1",
-    "backup:alumnos": "node scripts/backup-alumnos.js",
+    
+    "permissions": "tsx scripts/setup-permissions.ts",
+    "permissions:validate": "tsx scripts/validate-permissions.ts",
+    
+    "imports": "node scripts/advanced-import-resolver.js",
+    "imports:analyze": "node scripts/safe-import-analyzer.js",
+    
+    "backup": "node scripts/backup-alumnos.js",
     "backup:list": "node -e \"import('./scripts/backup-alumnos.js').then(m => m.listAvailableBackups())\"",
-    "analyze:alumnos": "node scripts/analyze-alumnos-collection.js",
-    "migrate:safe-process": "node scripts/safe-migration-process.js",
-    "migrate:analyze-csv": "node scripts/analyze-csv-data.js",
-    "migrate:students-csv": "node scripts/migrate-students-from-csv.js"
+    
+    "migrate": "node scripts/safe-migration-process.js",
+    "migrate:csv": "node scripts/migrate-students-from-csv.js",
+    
+    "standards": "node scripts/check-standards.js",
+    "standards:show": "node -e \"import('./src/standards/development.standards.js').then(m => console.log(m.getFormattedStandards()))\""
   },
   "dependencies": {
     "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
@@ -113,6 +104,7 @@
     "@vue/eslint-config-typescript": "^12.0.0",
     "@vue/test-utils": "^2.4.6",
     "autoprefixer": "^10.4.21",
+    "chalk": "^4.1.2",
     "cross-env": "^7.0.3",
     "cspell": "^9.1.1",
     "eslint": "^8.57.0",
@@ -140,5 +132,10 @@
     "workbox-routing": "^7.3.0",
     "workbox-strategies": "^7.3.0",
     "workbox-window": "^7.3.0"
+  },
+  "husky": {
+  "hooks": {
+    "pre-commit": "npm run standards:check && npm run lint"
   }
+}
 }

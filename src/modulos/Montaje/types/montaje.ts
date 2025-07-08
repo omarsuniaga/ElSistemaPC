@@ -1,3 +1,60 @@
+export enum DificultadFrase {
+  FACIL = 'FACIL',
+  MEDIO = 'MEDIO',
+  DIFICIL = 'DIFICIL',
+  MUY_DIFICIL = 'MUY_DIFICIL'
+}
+
+export enum TipoInstrumento {
+  // Cuerdas
+  VIOLIN_I = 'VIOLIN_I',
+  VIOLIN_II = 'VIOLIN_II',
+  VIOLA = 'VIOLA',
+  CELLO = 'CELLO',
+  CONTRABASS = 'CONTRABASS',
+  HARP = 'HARP',
+  
+  // Vientos Madera
+  FLUTE = 'FLUTE',
+  PICCOLO = 'PICCOLO',
+  OBOE = 'OBOE',
+  ENGLISH_HORN = 'ENGLISH_HORN',
+  CLARINET = 'CLARINET',
+  BASS_CLARINET = 'BASS_CLARINET',
+  BASSOON = 'BASSOON',
+  CONTRABASSOON = 'CONTRABASSOON',
+  SAXOPHONE = 'SAXOPHONE',
+  
+  // Vientos Metal
+  TRUMPET = 'TRUMPET',
+  FRENCH_HORN = 'FRENCH_HORN',
+  TROMBONE = 'TROMBONE',
+  BASS_TROMBONE = 'BASS_TROMBONE',
+  TUBA = 'TUBA',
+  
+  // Percusión
+  TIMPANI = 'TIMPANI',
+  PERCUSSION = 'PERCUSSION',
+  PIANO = 'PIANO',
+  CELESTA = 'CELESTA',
+  
+  // Otros
+  VOICE = 'VOICE',
+  CHOIR = 'CHOIR',
+  OTHER = 'OTHER'
+}
+
+export enum EstadoCompass {
+  SIN_TRABAJAR = 'SIN_TRABAJAR',
+  LEIDO = 'LEIDO',
+  EN_PROGRESO = 'EN_PROGRESO',
+  CON_DIFICULTAD = 'CON_DIFICULTAD',
+  LOGRADO = 'LOGRADO',
+  DOMINADO = 'DOMINADO',
+  COMPLETADO = 'COMPLETADO',
+  NO_TRABAJADO = 'NO_TRABAJADO'
+}
+
 export interface MontajeProject {
   id: string
   name: string
@@ -13,11 +70,11 @@ export interface MontajeProject {
   settings: MontajeSettings
   createdAt: string
   updatedAt: string
+  ownerId: string
 }
 
 export interface ProjectMember {
   id: string
-  userId: string
   name: string
   email: string
   role: 'director' | 'assistant' | 'section_leader' | 'musician'

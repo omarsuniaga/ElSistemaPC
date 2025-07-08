@@ -1,5 +1,3 @@
-// src/modulos/Montaje/service/montajeService.ts
-
 import {
   collection,
   doc,
@@ -12,11 +10,13 @@ import {
   orderBy,
   limit as limitToFirst,
   Timestamp,
+  serverTimestamp,
 } from "firebase/firestore"
 import {db} from "../../../firebase/config"
 import {TipoInstrumento, EstadoCompass} from "../types"
 import type {
   Obra,
+  Repertorio,
   PlanAccion,
   FraseMontaje,
   EstadoCompassDetalle,
@@ -25,18 +25,58 @@ import type {
   NotificacionMontaje,
   FiltrosMontaje,
   CambioEstadoCompass,
+  MontajeProject,
 } from "../types"
 
 /**
  * Servicio profesional para gestión de montajes en Firebase
  */
 class MontajeService {
-  private readonly obrasCollection = "obras"
-  private readonly planesAccionCollection = "planes_accion"
-  private readonly frasesCollection = "frases_montaje"
-  private readonly evaluacionesCollection = "evaluaciones_continuas"
-  private readonly evaluacionesFinalesCollection = "evaluaciones_finales"
+  private readonly repertoriosCollection = "montaje_repertories"
+  private readonly obrasCollection = "montaje_works"
   private readonly notificacionesCollection = "notificaciones_montaje"
+  private readonly projectsCollection = "montaje_projects"
+
+  // ================== GESTIÓN DE PROYECTOS DE MONTAJE ==================
+  async createMontajeProject(projectData: Omit<MontajeProject, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    try {
+      const docRef = await addDoc(collection(db, this.projectsCollection), {
+        ...projectData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+      return docRef.id
+    } catch (error) {
+      console.error("Error creando proyecto de montaje:", error)
+      throw error
+    }
+  }
+
+  async loadMontajeProjects(userId: string): Promise<MontajeProject[]> {
+    try {
+      const q = query(collection(db, this.projectsCollection), where('members.id', '==', userId))
+      const querySnapshot = await getDocs(q)
+      
+      const userProjects: MontajeProject[] = []
+      querySnapshot.forEach((doc) => {
+        userProjects.push({ id: doc.id, ...doc.data() } as MontajeProject)
+      });
+      return userProjects
+    } catch (error) {
+      console.error("Error cargando proyectos de montaje:", error)
+      throw error
+    }
+  }
+
+  async saveMontajeProject(project: MontajeProject): Promise<void> {
+    try {
+      const projectRef = doc(db, this.projectsCollection, project.id)
+      await setDoc(projectRef, { ...project, updatedAt: serverTimestamp() }, { merge: true })
+    } catch (error) {
+      console.error('Error guardando proyecto de montaje:', error)
+      throw error
+    }
+  }
 
   private cache = new Map<string, {data: any; expiry: number}>()
   private readonly cacheExpiry = 5 * 60 * 1000 // 5 minutos
@@ -56,50 +96,109 @@ class MontajeService {
     )
   }
 
+  // ================== GESTIÓN DE REPERTORIOS ==================
+  async crearRepertorio(datos: Omit<Repertorio, "id">): Promise<string> {
+    try {
+      const docRef = await addDoc(collection(db, this.repertoriosCollection), datos)
+      this.invalidarCacheRepertorios()
+      return docRef.id
+    } catch (error) {
+      console.error("Error creando repertorio:", error)
+      throw new Error("No se pudo crear el repertorio")
+    }
+  }
+
+  async obtenerRepertorios(): Promise<Repertorio[]> {
+    try {
+      const cacheKey = `repertorios_all`
+      const cached = this.cache.get(cacheKey)
+      if (cached && Date.now() < cached.expiry) {
+        return cached.data
+      }
+
+      const q = query(collection(db, this.repertoriosCollection))
+      const snapshot = await getDocs(q)
+      const repertorios = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Repertorio[]
+      this.cache.set(cacheKey, { data: repertorios, expiry: Date.now() + this.cacheExpiry })
+      return repertorios
+    } catch (error) {
+      console.error("Error obteniendo repertorios:", error)
+      return []
+    }
+  }
+
+  async obtenerRepertorio(id: string): Promise<Repertorio | null> {
+    try {
+      const cacheKey = `repertorio_${id}`
+      const cached = this.cache.get(cacheKey)
+      if (cached && Date.now() < cached.expiry) {
+        return cached.data
+      }
+
+      const docRef = doc(db, this.repertoriosCollection, id)
+      const docSnap = await getDoc(docRef)
+      if (!docSnap.exists()) return null
+
+      const repertorio = { id: docSnap.id, ...docSnap.data() } as Repertorio
+      this.cache.set(cacheKey, { data: repertorio, expiry: Date.now() + this.cacheExpiry })
+      return repertorio
+    } catch (error) {
+      console.error("Error obteniendo repertorio:", error)
+      throw new Error("No se pudo obtener el repertorio")
+    }
+  }
+
+  async actualizarRepertorio(id: string, datos: Partial<Repertorio>): Promise<void> {
+    try {
+      const docRef = doc(db, this.repertoriosCollection, id)
+      await updateDoc(docRef, datos)
+      this.invalidarCacheRepertorios(id)
+    } catch (error) {
+      console.error("Error actualizando repertorio:", error)
+      throw new Error("No se pudo actualizar el repertorio")
+    }
+  }
+
+  async eliminarRepertorio(id: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, this.repertoriosCollection, id))
+      this.invalidarCacheRepertorios(id)
+    } catch (error) {
+      console.error("Error eliminando repertorio:", error)
+      throw new Error("No se pudo eliminar el repertorio")
+    }
+  }
+
+  private invalidarCacheRepertorios(id?: string): void {
+    if (id) this.cache.delete(`repertorio_${id}`)
+    this.cache.delete(`repertorios_all`)
+  }
+
   // ================== GESTIÓN DE OBRAS ==================
   /**
-   * Obtener todas las obras de un repertorio
+   * Obtener todas las obras
    */
-  async obtenerObras(repertorioId: string): Promise<Obra[]> {
+  async obtenerObras(): Promise<Obra[]> {
     try {
-      const cacheKey = `obras_${repertorioId}`
+      const cacheKey = `obras_all`
       const cached = this.cache.get(cacheKey)
 
       if (cached && Date.now() < cached.expiry) {
-        console.log("📦 Cache hit para obras:", repertorioId)
+        console.log("📦 Cache hit para obras: all")
         return cached.data
       }
-      console.log("🔍 Consultando obras desde Firestore:", repertorioId)
+      console.log("🔍 Consultando obras desde Firestore: all")
 
-      // Consulta más simple posible para evitar problemas de índices
-      const q = query(collection(db, this.obrasCollection))
-
-      const snapshot = await getDocs(q)
-      let obras = snapshot.docs.map((doc) => ({
+    const obrasRef = collection(db, this.obrasCollection)
+    // Eliminamos el filtro para obtener todas las obras
+    
+    const snapshot = await getDocs(obrasRef)
+      const obras = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       })) as Obra[]
 
       console.log("📊 Total de obras obtenidas desde Firestore:", obras.length)
-
-      // Filtrar localmente por estado activo y repertorio
-      obras = obras.filter((obra) => {
-        const isActive = obra.auditoria?.activo !== false // por defecto activo si no está definido
-        const matchesRepertorio =
-          !repertorioId ||
-          repertorioId === "default-repertorio" ||
-          obra.repertorioId === repertorioId
-        return isActive && matchesRepertorio
-      })
-
-      console.log("📊 Obras después del filtrado local:", obras.length)
-
-      // Ordenar por fecha de creación (más recientes primero)
-      obras.sort((a, b) => {
-        const dateA = a.fechaCreacion?.toDate() || new Date(0)
-        const dateB = b.fechaCreacion?.toDate() || new Date(0)
-        return dateB.getTime() - dateA.getTime()
-      })
 
       // Guardar en caché
       this.cache.set(cacheKey, {
@@ -110,9 +209,8 @@ class MontajeService {
       return obras
     } catch (error) {
       console.error("❌ Error obteniendo obras:", error)
-      // En lugar de lanzar error, devolver array vacío para no romper la app
       console.warn("⚠️ Devolviendo array vacío de obras debido al error")
-      const cacheKey = `obras_${repertorioId}`
+      const cacheKey = `obras_all`
       this.cache.set(cacheKey, {
         data: [],
         expiry: Date.now() + this.cacheExpiry,
@@ -159,16 +257,53 @@ class MontajeService {
   }
 
   /**
+   * Obtener una obra específica buscando en múltiples colecciones.
+   */
+  async obtenerObraEnMultiplesColecciones(obraId: string): Promise<Obra | null> {
+    try {
+      // Primero intentar en la colección 'montaje_works'
+      let obra = await this.obtenerObra(obraId);
+      if (obra) return obra;
+
+      console.log('📚 Obra no encontrada en "montaje_works", intentando en "repertorios"...');
+      // Si no se encuentra, intentar en 'repertorios'
+      const repertoriosRef = doc(db, "repertorios", obraId);
+      const repertoriosSnap = await getDoc(repertoriosRef);
+      if (repertoriosSnap.exists()) {
+        return { id: repertoriosSnap.id, ...repertoriosSnap.data() } as Obra;
+      }
+
+      console.log('📖 Intentando en "montaje-repertorios"...');
+      // Si aún no se encuentra, intentar en 'montaje-repertorios'
+      const montajeRepertoriosRef = doc(db, "montaje-repertorios", obraId);
+      const montajeRepertoriosSnap = await getDoc(montajeRepertoriosRef);
+      if (montajeRepertoriosSnap.exists()) {
+        return { id: montajeRepertoriosSnap.id, ...montajeRepertoriosSnap.data() } as Obra;
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error obteniendo obra en múltiples colecciones:", error);
+      throw new Error("No se pudo obtener la obra en múltiples colecciones");
+    }
+  }
+
+  /**
    * Crear nueva obra
    */
   async crearObra(datos: Omit<Obra, "id">): Promise<string> {
     try {
-      console.log("🔄 Creando obra:", datos.titulo)
-
-      const docRef = await addDoc(collection(db, this.obrasCollection), datos)
+      console.log("🔄 Creando obra:", datos.titulo || datos.name)
+      
+      const obrasRef = collection(db, this.obrasCollection)
+      const docRef = await addDoc(obrasRef, {
+        ...datos,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
 
       // Limpiar caché relacionado
-      this.invalidarCacheObras(datos.repertorioId)
+      this.invalidarCacheObras()
 
       console.log("✅ Obra creada con ID:", docRef.id)
       return docRef.id
@@ -186,16 +321,12 @@ class MontajeService {
       const docRef = doc(db, this.obrasCollection, id)
       await updateDoc(docRef, {
         ...datos,
-        "auditoria.fechaModificacion": Timestamp.now(),
+        "auditoria.fechaModificacion": serverTimestamp(),
       })
 
       // Limpiar caché
       this.cache.delete(`obra_${id}`)
-
-      // Si cambió el repertorio, limpiar ambos cachés
-      if (datos.repertorioId) {
-        this.invalidarCacheObras(datos.repertorioId)
-      }
+      this.invalidarCacheObras()
 
       console.log("✅ Obra actualizada:", id)
     } catch (error) {
@@ -212,11 +343,12 @@ class MontajeService {
       const docRef = doc(db, this.obrasCollection, id)
       await updateDoc(docRef, {
         "auditoria.activo": false,
-        "auditoria.fechaModificacion": Timestamp.now(),
+        "auditoria.fechaModificacion": serverTimestamp(),
       })
 
       // Limpiar caché
       this.cache.delete(`obra_${id}`)
+      this.invalidarCacheObras()
 
       console.log("✅ Obra eliminada:", id)
     } catch (error) {
@@ -234,7 +366,7 @@ class MontajeService {
     try {
       const notificacionCompleta = {
         ...datos,
-        fecha: Timestamp.now(),
+        fecha: serverTimestamp(),
         metadatos: {
           ...datos.metadatos,
           leida: false,
@@ -286,7 +418,7 @@ class MontajeService {
       const docRef = doc(db, this.notificacionesCollection, notificacionId)
       await updateDoc(docRef, {
         "metadatos.leida": true,
-        "metadatos.fechaLectura": Timestamp.now(),
+        "metadatos.fechaLectura": serverTimestamp(),
       })
     } catch (error) {
       console.error("Error marcando notificación como leída:", error)
@@ -299,9 +431,16 @@ class MontajeService {
   /**
    * Crear evaluación continua
    */
-  async crearEvaluacionContinua(datos: Omit<EvaluacionContinua, "id">): Promise<string> {
+  async crearEvaluacionContinua(obraId: string, datos: Omit<EvaluacionContinua, "id">): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, this.evaluacionesCollection), datos)
+      const evaluacionesRef = collection(db, this.obrasCollection, obraId, "evaluaciones_continuas")
+      const docRef = await addDoc(evaluacionesRef, {
+        ...datos,
+        auditoria: {
+          ...datos.auditoria,
+          fechaCreacion: serverTimestamp(),
+        },
+      })
       return docRef.id
     } catch (error) {
       console.error("Error creando evaluación continua:", error)
@@ -312,9 +451,16 @@ class MontajeService {
   /**
    * Crear evaluación final
    */
-  async crearEvaluacionFinal(datos: Omit<EvaluacionFinal, "id">): Promise<string> {
+  async crearEvaluacionFinal(obraId: string, datos: Omit<EvaluacionFinal, "id">): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, this.evaluacionesFinalesCollection), datos)
+      const evaluacionesRef = collection(db, this.obrasCollection, obraId, "evaluaciones_finales")
+      const docRef = await addDoc(evaluacionesRef, {
+        ...datos,
+        auditoria: {
+          ...datos.auditoria,
+          fechaCreacion: serverTimestamp(),
+        },
+      })
       return docRef.id
     } catch (error) {
       console.error("Error creando evaluación final:", error)
@@ -330,12 +476,11 @@ class MontajeService {
     tipo: "continua" | "final" = "continua"
   ): Promise<EvaluacionContinua[] | EvaluacionFinal[]> {
     try {
-      const collectionName =
-        tipo === "continua" ? this.evaluacionesCollection : this.evaluacionesFinalesCollection
+      const collectionName = tipo === "continua" ? "evaluaciones_continuas" : "evaluaciones_finales"
+      const evaluacionesRef = collection(db, this.obrasCollection, obraId, collectionName)
 
       const q = query(
-        collection(db, collectionName),
-        where("obraId", "==", obraId),
+        evaluacionesRef,
         orderBy("fecha", "desc")
       )
 
@@ -350,6 +495,220 @@ class MontajeService {
     }
   }
 
+  // ================== GESTIÓN DE PLANES DE ACCIÓN ==================
+  /**
+   * Obtener plan de acción de una obra
+   */
+  async obtenerPlanAccion(obraId: string): Promise<PlanAccion | null> {
+    try {
+      const cacheKey = `plan_${obraId}`
+      const cached = this.cache.get(cacheKey)
+
+      if (cached && Date.now() < cached.expiry) {
+        return cached.data
+      }
+
+      const planesAccionRef = collection(db, this.obrasCollection, obraId, "planes_accion")
+      const q = query(
+        planesAccionRef,
+        where("auditoria.activo", "==", true),
+        orderBy("auditoria.fechaCreacion", "desc"),
+        limitToFirst(1)
+      )
+
+      const snapshot = await getDocs(q)
+      const plan = snapshot.empty
+        ? null
+        : ({id: snapshot.docs[0].id, ...snapshot.docs[0].data()} as PlanAccion)
+
+      this.cache.set(cacheKey, {data: plan, expiry: Date.now() + this.cacheExpiry})
+      return plan
+    } catch (error) {
+      console.error("Error obteniendo plan de acción:", error)
+      throw error
+    }
+  }
+
+  /**
+   * Crear plan de acción
+   */
+  async crearPlanAccion(obraId: string, datos: Omit<PlanAccion, "id">): Promise<string> {
+    try {
+      const planesAccionRef = collection(db, this.obrasCollection, obraId, "planes_accion")
+      const docRef = await addDoc(planesAccionRef, {
+        ...datos,
+        auditoria: {
+          ...datos.auditoria,
+          fechaCreacion: serverTimestamp(),
+        },
+      })
+      this.invalidarCachePlanes(obraId)
+      return docRef.id
+    } catch (error) {
+      console.error("Error creando plan de acción:", error)
+      throw error
+    }
+  }
+
+  /**
+   * Actualizar plan de acción
+   */
+  async actualizarPlanAccion(obraId: string, id: string, datos: Partial<PlanAccion>): Promise<void> {
+    try {
+      const docRef = doc(db, this.obrasCollection, obraId, "planes_accion", id)
+      await updateDoc(docRef, {
+        ...datos,
+        "auditoria.fechaModificacion": serverTimestamp(),
+      })
+
+      // Invalidar caché relacionado
+      this.invalidarCachePlanes(obraId)
+    } catch (error) {
+      console.error("Error actualizando plan de acción:", error)
+      throw error
+    }
+  }
+
+  // ================== GESTIÓN DE FRASES ==================
+  /**
+   * Obtener frases de un plan de acción
+   */
+  async obtenerFrases(obraId: string, planAccionId: string): Promise<FraseMontaje[]> {
+    try {
+      const cacheKey = `frases_${obraId}_${planAccionId}`
+      const cached = this.cache.get(cacheKey)
+
+      if (cached && Date.now() < cached.expiry) {
+        return cached.data
+      }
+
+      const frasesRef = collection(db, this.obrasCollection, obraId, "planes_accion", planAccionId, "frases")
+      const q = query(
+        frasesRef,
+        where("auditoria.activo", "==", true),
+        orderBy("orden", "asc")
+      )
+
+      const snapshot = await getDocs(q)
+      const frases = snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}) as FraseMontaje)
+
+      this.cache.set(cacheKey, {data: frases, expiry: Date.now() + this.cacheExpiry})
+      return frases
+    } catch (error) {
+      console.error("Error obteniendo frases:", error)
+      throw error
+    }
+  }
+
+  /**
+   * Crear frase
+   */
+  async crearFrase(obraId: string, planAccionId: string, datos: Omit<FraseMontaje, "id">): Promise<string> {
+    try {
+      const frasesRef = collection(db, this.obrasCollection, obraId, "planes_accion", planAccionId, "frases")
+      const docRef = await addDoc(frasesRef, {
+        ...datos,
+        auditoria: {
+          ...datos.auditoria,
+          fechaCreacion: serverTimestamp(),
+        },
+      })
+      this.invalidarCacheFrases(obraId, planAccionId)
+      return docRef.id
+    } catch (error) {
+      console.error("Error creando frase:", error)
+      throw error
+    }
+  }
+
+  /**
+   * Actualizar frase existente
+   */
+  async actualizarFrase(obraId: string, planAccionId: string, id: string, datos: Partial<FraseMontaje>): Promise<void> {
+    try {
+      const docRef = doc(db, this.obrasCollection, obraId, "planes_accion", planAccionId, "frases", id)
+      await updateDoc(docRef, {
+        ...datos,
+        "auditoria.fechaModificacion": serverTimestamp(),
+      })
+
+      // Invalidar caché relacionado
+      this.invalidarCacheFrases(obraId, planAccionId)
+
+      console.log("✅ Frase actualizada:", id)
+    } catch (error) {
+      console.error("Error actualizando frase:", error)
+      throw new Error("No se pudo actualizar la frase")
+    }
+  }
+
+  /**
+   * Obtener estados de compases de una obra
+   */
+  async obtenerEstadosCompases(obraId: string): Promise<Array<[number, EstadoCompassDetalle]>> {
+    try {
+      const cacheKey = `estados_compases_${obraId}`
+      const cached = this.cache.get(cacheKey)
+
+      if (cached && Date.now() < cached.expiry) {
+        return cached.data
+      }
+
+      const estadosCompasesRef = collection(db, this.obrasCollection, obraId, "estados_compases")
+      const q = query(estadosCompasesRef)
+
+      const snapshot = await getDocs(q)
+      const estados: Array<[number, EstadoCompassDetalle]> = []
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data()
+        estados.push([
+          data.compas,
+          {
+            compas: data.compas,
+            estado: data.estado,
+            instrumentos: data.instrumentos || this.crearEstadoInstrumentos(),
+            observaciones: data.observaciones || [],
+            fechaUltimaModificacion: data.fechaUltimaModificacion || Timestamp.now(),
+            modificadoPor: data.modificadoPor || "",
+            sesionesEnsayo: data.sesionesEnsayo || 0,
+            dificultadesEspecificas: data.dificultadesEspecificas || [],
+          },
+        ])
+      })
+
+      this.cache.set(cacheKey, {data: estados, expiry: Date.now() + this.cacheExpiry})
+      return estados
+    } catch (error) {
+      console.error("Error obteniendo estados de compases:", error)
+      return []
+    }
+  }
+
+  // ================== GESTIÓN DE COMPASES ==================
+  /**
+   * Cambiar estado de un compás
+   */
+  async cambiarEstadoCompass(
+    obraId: string,
+    compassNumber: number,
+    nuevoEstado: any,
+    cambio: CambioEstadoCompass
+  ): Promise<void> {
+    try {
+      const docRef = doc(db, this.obrasCollection, obraId, "estados_compases", `${cambio.obraId}_${compassNumber}`)
+      await updateDoc(docRef, {
+        estado: nuevoEstado,
+        fechaModificacion: serverTimestamp(),
+        modificadoPor: cambio.maestroId,
+      })
+
+      console.log("Estado del compás actualizado:", cambio)
+    } catch (error) {
+      console.error("Error cambiando estado del compás:", error)
+      throw error
+    }
+  }
+
   // ================== BÚSQUEDA Y FILTROS ==================
 
   /**
@@ -357,7 +716,8 @@ class MontajeService {
    */
   async buscarObras(filtros: FiltrosMontaje): Promise<Obra[]> {
     try {
-      let q = query(collection(db, this.obrasCollection))
+      const obrasRef = collection(db, this.obrasCollection)
+      let q: any = query(obrasRef)
 
       // Aplicar filtros básicos
       if (filtros.repertorioId) {
@@ -373,27 +733,12 @@ class MontajeService {
       }
 
       // Solo obras activas
-      q = query(q, where("auditoria.activo", "==", true))
+      q = query(q, where("auditoria.activo", "!=", false))
       const snapshot = await getDocs(q)
       let obras = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       })) as Obra[]
-
-      // Aplicar filtros adicionales en memoria
-      if (filtros.estado) {
-        obras = obras.filter((obra) => obra.estado === filtros.estado)
-      }
-
-      if (filtros.dificultad) {
-        obras = obras.filter((obra) => obra.metadatos?.complejidadGeneral === filtros.dificultad)
-      }
-
-      if (filtros.instrumento) {
-        obras = obras.filter((obra) =>
-          obra.instrumentosRequeridos?.some((instr) => instr.instrumentoId === filtros.instrumento)
-        )
-      }
 
       // Los tags no están en la interfaz Obra actual, comentamos este filtro
       // if (filtros.tags && filtros.tags.length > 0) {
@@ -462,10 +807,10 @@ class MontajeService {
   // ================== UTILIDADES PRIVADAS ==================
 
   /**
-   * Invalidar caché de obras de un repertorio
+   * Invalidar caché de obras de un proyecto
    */
-  private invalidarCacheObras(repertorioId: string): void {
-    const cacheKey = `obras_${repertorioId}`
+  private invalidarCacheObras(): void {
+    const cacheKey = `obras_all`
     this.cache.delete(cacheKey)
   }
   /**
@@ -478,208 +823,6 @@ class MontajeService {
     }
   }
 
-  // ================== GESTIÓN DE PLANES DE ACCIÓN ==================
-  /**
-   * Obtener plan de acción de una obra
-   */
-  async obtenerPlanAccion(obraId: string): Promise<PlanAccion | null> {
-    try {
-      const cacheKey = `plan_${obraId}`
-      const cached = this.cache.get(cacheKey)
-
-      if (cached && Date.now() < cached.expiry) {
-        return cached.data
-      }
-
-      const q = query(
-        collection(db, this.planesAccionCollection),
-        where("obraId", "==", obraId),
-        where("auditoria.activo", "==", true),
-        orderBy("auditoria.fechaCreacion", "desc"),
-        limitToFirst(1)
-      )
-
-      const snapshot = await getDocs(q)
-      const plan = snapshot.empty
-        ? null
-        : ({id: snapshot.docs[0].id, ...snapshot.docs[0].data()} as PlanAccion)
-
-      this.cache.set(cacheKey, {data: plan, expiry: Date.now() + this.cacheExpiry})
-      return plan
-    } catch (error) {
-      console.error("Error obteniendo plan de acción:", error)
-      throw error
-    }
-  }
-
-  /**
-   * Crear plan de acción
-   */
-  async crearPlanAccion(datos: Omit<PlanAccion, "id">): Promise<string> {
-    try {
-      const docRef = await addDoc(collection(db, this.planesAccionCollection), datos)
-      this.invalidarCachePlanes(datos.obraId)
-      return docRef.id
-    } catch (error) {
-      console.error("Error creando plan de acción:", error)
-      throw error
-    }
-  }
-
-  /**
-   * Actualizar plan de acción
-   */
-  async actualizarPlanAccion(id: string, datos: Partial<PlanAccion>): Promise<void> {
-    try {
-      const docRef = doc(db, this.planesAccionCollection, id)
-      await updateDoc(docRef, datos)
-
-      // Invalidar caché relacionado
-      if (datos.obraId) {
-        this.invalidarCachePlanes(datos.obraId)
-      }
-    } catch (error) {
-      console.error("Error actualizando plan de acción:", error)
-      throw error
-    }
-  }
-
-  // ================== GESTIÓN DE FRASES ==================
-  /**
-   * Obtener frases de un plan de acción
-   */
-  async obtenerFrases(planAccionId: string): Promise<FraseMontaje[]> {
-    try {
-      const cacheKey = `frases_${planAccionId}`
-      const cached = this.cache.get(cacheKey)
-
-      if (cached && Date.now() < cached.expiry) {
-        return cached.data
-      }
-
-      const q = query(
-        collection(db, this.frasesCollection),
-        where("planAccionId", "==", planAccionId),
-        where("auditoria.activo", "==", true),
-        orderBy("orden", "asc")
-      )
-
-      const snapshot = await getDocs(q)
-      const frases = snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}) as FraseMontaje)
-
-      this.cache.set(cacheKey, {data: frases, expiry: Date.now() + this.cacheExpiry})
-      return frases
-    } catch (error) {
-      console.error("Error obteniendo frases:", error)
-      throw error
-    }
-  }
-
-  /**
-   * Crear frase
-   */
-  async crearFrase(datos: Omit<FraseMontaje, "id">): Promise<string> {
-    try {
-      const docRef = await addDoc(collection(db, this.frasesCollection), datos)
-      this.invalidarCacheFrases(datos.planAccionId)
-      return docRef.id
-    } catch (error) {
-      console.error("Error creando frase:", error)
-      throw error
-    }
-  }
-
-  /**
-   * Actualizar frase existente
-   */
-  async actualizarFrase(id: string, datos: Partial<FraseMontaje>): Promise<void> {
-    try {
-      const docRef = doc(db, this.frasesCollection, id)
-      await updateDoc(docRef, {
-        ...datos,
-        "auditoria.fechaModificacion": Timestamp.now(),
-      })
-
-      // Invalidar caché relacionado
-      if (datos.planAccionId) {
-        this.invalidarCacheFrases(datos.planAccionId)
-      }
-
-      console.log("✅ Frase actualizada:", id)
-    } catch (error) {
-      console.error("Error actualizando frase:", error)
-      throw new Error("No se pudo actualizar la frase")
-    }
-  }
-
-  /**
-   * Obtener estados de compases de una obra
-   */
-  async obtenerEstadosCompases(obraId: string): Promise<Array<[number, EstadoCompassDetalle]>> {
-    try {
-      const cacheKey = `estados_compases_${obraId}`
-      const cached = this.cache.get(cacheKey)
-
-      if (cached && Date.now() < cached.expiry) {
-        return cached.data
-      }
-
-      const q = query(collection(db, "estados_compases"), where("obraId", "==", obraId))
-
-      const snapshot = await getDocs(q)
-      const estados: Array<[number, EstadoCompassDetalle]> = []
-      snapshot.docs.forEach((doc) => {
-        const data = doc.data()
-        estados.push([
-          data.compas,
-          {
-            compas: data.compas,
-            estado: data.estado,
-            instrumentos: data.instrumentos || this.crearEstadoInstrumentos(),
-            observaciones: data.observaciones || [],
-            fechaUltimaModificacion: data.fechaUltimaModificacion || Timestamp.now(),
-            modificadoPor: data.modificadoPor || "",
-            sesionesEnsayo: data.sesionesEnsayo || 0,
-            dificultadesEspecificas: data.dificultadesEspecificas || [],
-          },
-        ])
-      })
-
-      this.cache.set(cacheKey, {data: estados, expiry: Date.now() + this.cacheExpiry})
-      return estados
-    } catch (error) {
-      console.error("Error obteniendo estados de compases:", error)
-      return []
-    }
-  }
-
-  // ================== GESTIÓN DE COMPASES ==================
-  /**
-   * Cambiar estado de un compás
-   */
-  async cambiarEstadoCompass(
-    compassNumber: number,
-    nuevoEstado: any,
-    cambio: CambioEstadoCompass
-  ): Promise<void> {
-    try {
-      // Aquí implementarías la lógica para cambiar el estado del compás
-      // Por ahora, solo simularemos la operación
-      const docRef = doc(db, "estados_compases", `${cambio.obraId}_${compassNumber}`)
-      await updateDoc(docRef, {
-        estado: nuevoEstado,
-        fechaModificacion: Timestamp.now(),
-        modificadoPor: cambio.maestroId,
-      })
-
-      console.log("Estado del compás actualizado:", cambio)
-    } catch (error) {
-      console.error("Error cambiando estado del compás:", error)
-      throw error
-    }
-  }
-
-  // ================== MÉTODOS PRIVADOS DE CACHÉ ==================
   /**
    * Invalidar caché de planes de una obra
    */
@@ -691,8 +834,16 @@ class MontajeService {
   /**
    * Invalidar caché de frases de un plan
    */
-  private invalidarCacheFrases(planAccionId: string): void {
-    const cacheKey = `frases_${planAccionId}`
+  private invalidarCacheFrases(obraId: string, planAccionId: string): void {
+    const cacheKey = `frases_${obraId}_${planAccionId}`
+    this.cache.delete(cacheKey)
+  }
+
+  /**
+   * Invalidar caché de estados de compases de una obra
+   */
+  private invalidarCacheEstadosCompases(obraId: string): void {
+    const cacheKey = `estados_compases_${obraId}`
     this.cache.delete(cacheKey)
   }
 }

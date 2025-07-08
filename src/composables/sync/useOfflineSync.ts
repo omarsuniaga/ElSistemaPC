@@ -29,6 +29,7 @@ export function useOfflineSync() {
   async function registerSW() {
     if ("serviceWorker" in navigator) {
       try {
+        // Registrar el Service Worker
         swRegistration = await navigator.serviceWorker.register("/sw.js")
         console.log("🎯 Service Worker registrado")
 
@@ -47,9 +48,32 @@ export function useOfflineSync() {
           }
         })
 
-        // Configurar sincronización periódica si está disponible
+        // Esperar a que el Service Worker esté activo antes de intentar registrar la sincronización
         if (swRegistration && "sync" in swRegistration) {
-          await swRegistration.sync.register("background-sync")
+          // Verificar si hay un worker activo o esperar a que se active
+          if (navigator.serviceWorker.controller) {
+            try {
+              await swRegistration.sync.register("background-sync")
+              console.log("✅ Background sync registrada correctamente")
+            } catch (syncError) {
+              console.warn("⚠️ No se pudo registrar la sincronización:", syncError)
+            }
+          } else {
+            // Si no hay controller, esperar a que el Service Worker se active
+            console.log("⏳ Esperando a que el Service Worker se active...")
+            
+            // Intentar nuevamente después de un tiempo para permitir la activación
+            setTimeout(async () => {
+              try {
+                if (swRegistration && "sync" in swRegistration) {
+                  await swRegistration.sync.register("background-sync")
+                  console.log("✅ Background sync registrada con retraso")
+                }
+              } catch (delayedError) {
+                console.error("❌ Error al registrar sync con retraso:", delayedError)
+              }
+            }, 3000); // Esperar 3 segundos
+          }
         }
       } catch (error) {
         console.error("❌ Error registrando Service Worker:", error)

@@ -7,7 +7,7 @@ import {useClassesStore} from "../modulos/Classes/store/classes"
  * @param {Array} emergentClasses - Lista de clases emergentes para notificar
  * @returns {Promise} - Promesa con el resultado del envío
  */
-export const sendEmergentClassNotifications = async (emergentClasses) => {
+const sendEmergentClassNotifications = async (emergentClasses) => {
   if (!emergentClasses || emergentClasses.length === 0) {
     throw new Error("No hay clases emergentes para notificar")
   }
@@ -90,7 +90,7 @@ export const sendEmergentClassNotifications = async (emergentClasses) => {
  * @param {String} notificationId - ID de la notificación
  * @returns {Promise} - Promesa con el resultado de la operación
  */
-export const markNotificationAsRead = async (notificationId) => {
+const markNotificationAsRead = async (notificationId) => {
   // Implementación pendiente
 }
 
@@ -99,6 +99,15 @@ export const markNotificationAsRead = async (notificationId) => {
  * @param {String} userId - ID del usuario
  * @returns {Promise} - Promesa con las notificaciones del usuario
  */
-export const getUserNotifications = async (userId) => {
+const getUserNotifications = async (userId) => {
   // Implementación pendiente
+}
+
+/**
+ * Servicio para manejo de notificaciones
+ */
+export const notificationsService = {
+  sendEmergentClassNotifications,
+  markNotificationAsRead,
+  getUserNotifications
 }

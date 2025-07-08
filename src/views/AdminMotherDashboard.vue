@@ -345,24 +345,72 @@ function generateWeeklyAttendanceData(attendances: any[]) {
   const weekData = []
   const today = new Date()
   
+  // Función auxiliar para validar fechas
+  const isValidDate = (date: any): date is Date => {
+    return date instanceof Date && !isNaN(date.getTime())
+  }
+  
+  // Procesar cada día de la semana
   for (let i = 6; i >= 0; i--) {
     const date = new Date(today)
     date.setDate(today.getDate() - i)
+    date.setHours(0, 0, 0, 0) // Normalizar la hora
+    
     const dateString = date.toISOString().split('T')[0]
     
-    const dayAttendances = attendances.filter(att => {
-      const attDate = new Date(att.fecha || att.timestamp?.toDate?.() || att.timestamp)
-      return attDate.toISOString().split('T')[0] === dateString
-    })
-    
-    weekData.push({
-      date: dateString,
-      day: date.toLocaleDateString('es-ES', { weekday: 'short' }),
-      attendances: dayAttendances.length,
-      presents: dayAttendances.filter(att => att.estado === 'presente').length,
-      absents: dayAttendances.filter(att => att.estado === 'ausente').length,
-      lates: dayAttendances.filter(att => att.estado === 'tarde').length
-    })
+    try {
+      const dayAttendances = attendances.filter(att => {
+        try {
+          // Intentar obtener la fecha de diferentes maneras
+          let dateValue = att.fecha || att.timestamp
+          
+          // Si es un timestamp de Firestore (tiene el método toDate)
+          if (dateValue?.toDate) {
+            dateValue = dateValue.toDate()
+          }
+          
+          const attDate = new Date(dateValue)
+          
+          // Validar que la fecha sea válida
+          if (!isValidDate(attDate)) {
+            console.warn('Fecha de asistencia inválida:', dateValue)
+            return false
+          }
+          
+          // Normalizar fechas para comparación
+          attDate.setHours(0, 0, 0, 0)
+          const compareDate = new Date(dateString)
+          compareDate.setHours(0, 0, 0, 0)
+          
+          return attDate.getTime() === compareDate.getTime()
+          
+        } catch (error) {
+          console.warn('Error procesando fecha de asistencia:', error)
+          return false
+        }
+      })
+      
+      weekData.push({
+        date: dateString,
+        day: date.toLocaleDateString('es-ES', { weekday: 'short' }),
+        attendances: dayAttendances.length,
+        presents: dayAttendances.filter(att => att.estado === 'presente').length,
+        absents: dayAttendances.filter(att => att.estado === 'ausente').length,
+        lates: dayAttendances.filter(att => att.estado === 'tarde').length
+      })
+      
+    } catch (error) {
+      console.error(`Error procesando día ${dateString}:`, error)
+      // Asegurarse de que siempre haya un dato para el día, aunque sea cero
+      weekData.push({
+        date: dateString,
+        day: date.toLocaleDateString('es-ES', { weekday: 'short' }),
+        attendances: 0,
+        presents: 0,
+        absents: 0,
+        lates: 0
+      })
+    }
   }
   
   return weekData

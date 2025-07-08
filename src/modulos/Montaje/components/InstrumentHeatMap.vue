@@ -1,11 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- Heat Map Grid -->
-    <div class="bg-gray-50 rounded-lg p-4 overflow-x-auto relative">
-      <div class="mb-4 text-center text-sm text-gray-600">
-        Dimensiones: {{ work.rows }} filas × {{ work.cols }} columnas = {{ work.totalMeasures }} compases (1-{{ work.totalMeasures }})
-      </div>
-      
+    <div class="bg-gray-50 dark:bg-gray-800  rounded-lg p-4 overflow-x-auto relative">
       <div 
         class="grid gap-1 mx-auto select-none"
         :style="{ 
@@ -76,9 +72,9 @@
     </div>
 
     <!-- Controls -->
-    <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+    <div class="bg-blue-50 dark:bg-gray-800  border-2 border-blue-500 rounded-lg p-4">
       <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-        <h3 class="text-lg font-semibold text-blue-800">Control de Niveles</h3>
+        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 text-shadow mb-3">Control de Niveles</h3>
         <button
           @click="toggleMultiSelectionMode"
           class="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md text-sm"
@@ -89,7 +85,7 @@
       
       <!-- Level selection buttons -->
       <div class="mb-4">
-        <h4 class="text-sm font-medium text-blue-700 mb-2">Establecer Nivel:</h4>
+        <h4 class="text-sm font-medium text-gray-800 dark:text-gray-300 mb-2">Establecer Nivel:</h4>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
           <button
             v-for="level in work.levels"
@@ -115,40 +111,22 @@
       </div>
     </div>
 
-    <!-- Legend -->
-    <div class="bg-white rounded-lg p-4 border border-gray-200">
-      <h3 class="text-sm font-medium text-gray-700 mb-2">Leyenda de Niveles</h3>
-      <div class="flex flex-wrap gap-3">
-        <div 
-          v-for="level in work.levels" 
-          :key="level.id"
-          class="flex items-center gap-2"
-        >
-          <div 
-            class="w-6 h-6 rounded-sm border border-gray-300"
-            :class="level.color"
-          ></div>
-          <span class="text-sm text-gray-600">{{ level.name }}</span>
-          <span v-if="level.description" class="text-xs text-gray-400">({{ level.description }})</span>
-        </div>
-      </div>
-    </div>
 
     <!-- Statistics -->
-    <div class="bg-white rounded-lg p-4 border border-gray-200">
-      <h3 class="text-sm font-medium text-gray-700 mb-3">Estadísticas - {{ instrument.name }}</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200">
+      <h3 class="text-sm font-medium text-gray-700 dark:text-gray-100 mb-3">Estadísticas - {{ instrument.name }}</h3>
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div class="text-center">
-          <div class="text-2xl font-bold text-gray-800">{{ stats.total }}</div>
-          <div class="text-sm text-gray-500">Total Compases</div>
+          <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats.total }}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">Total Compases</div>
         </div>
         <div 
           v-for="(level, index) in work.levels" 
           :key="level.id"
           class="text-center"
         >
-          <div class="text-2xl font-bold text-gray-800">{{ stats.levels[index] || 0 }}</div>
-          <div class="text-sm text-gray-500">
+          <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats.levels[index] || 0 }}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">
             {{ level.name }} ({{ stats.percentages[index] || 0 }}%)
           </div>
           <div 
@@ -160,7 +138,7 @@
     </div>
 
     <!-- Instructions -->
-    <div class="text-center text-sm text-gray-500 space-y-2">
+    <div class="text-center text-sm text-gray-500 dark:text-gray-400 space-y-2">
       <p><strong>Clic simple:</strong> Cambia el nivel del compás individual</p>
       <p><strong>Multiselección:</strong> Activa el modo y selecciona múltiples compases</p>
       <p><strong>Arrastrar:</strong> Selecciona múltiples compases arrastrando el cursor</p>
@@ -192,18 +170,22 @@ const floatingMenuPosition = ref({ x: 0, y: 0 })
 const initializeGrid = () => {
   const newGrid: GridCell[] = []
   let measureNumber = 1
+  const totalMeasures = props.work.totalMeasures || 0
   
   for (let row = 0; row < props.work.rows; row++) {
     for (let col = 0; col < props.work.cols; col++) {
-      newGrid.push({
-        id: `${row}-${col}`,
-        level: 0, // Start with lowest level
-        row,
-        col,
-        selected: false,
-        measureNumber: measureNumber
-      })
-      measureNumber++
+      // Solo crear celdas hasta alcanzar el total de compases
+      if (measureNumber <= totalMeasures) {
+        newGrid.push({
+          id: `${row}-${col}`,
+          level: 0, // Start with lowest level
+          row,
+          col,
+          selected: false,
+          measureNumber: measureNumber
+        })
+        measureNumber++
+      }
     }
   }
   
